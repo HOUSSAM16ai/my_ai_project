@@ -5,7 +5,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_create_mission_endpoint(client: AsyncClient, db_session):
+async def test_create_mission_endpoint(async_client: AsyncClient, db_session):
     """
     Test creating a mission via the API.
     """
@@ -27,7 +27,7 @@ async def test_create_mission_endpoint(client: AsyncClient, db_session):
     # Assuming open or mocked auth for this specific test scope.
 
     # Note: If security middleware is active, we might need headers.
-    response = await client.post("/api/v1/overmind/missions", json=payload)
+    response = await async_client.post("/api/v1/overmind/missions", json=payload)
 
     # If 401, we know it's protected. If 200, it works.
     if response.status_code == 401:
@@ -42,11 +42,11 @@ async def test_create_mission_endpoint(client: AsyncClient, db_session):
         pass
 
 @pytest.mark.asyncio
-async def test_stream_endpoint_structure(client: AsyncClient):
+async def test_stream_endpoint_structure(async_client: AsyncClient):
     """
     Test that the streaming endpoint exists.
     """
-    response = await client.get("/api/v1/overmind/missions/1/stream")
+    response = await async_client.get("/api/v1/overmind/missions/1/stream")
     # Should be 200 OK with text/event-stream if mission exists, or 404/error stream
     # Since mission 1 likely doesn't exist in empty DB:
     # assert response.status_code in [200, 404]

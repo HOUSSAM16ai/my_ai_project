@@ -7,7 +7,7 @@ CRUD Router - عمليات البيانات العامة
 """
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.crud import GenericResourceResponse, PaginatedResponse
@@ -51,8 +51,16 @@ async def list_resources(
         order=order,
         filters=filters
     )
-    # Ensure result matches the PaginatedResponse structure
-    return PaginatedResponse[GenericResourceResponse].model_validate(result)
+    # Map from domain/management PaginatedResponse to API CRUD PaginatedResponse
+    # Domain: { items: [...], pagination: { page: 1, ... } }
+    # API: { items: [...], page: 1, total: 100, ... }
+    return PaginatedResponse[GenericResourceResponse](
+        items=result.items,
+        total=result.pagination.total_items,
+        page=result.pagination.page,
+        per_page=result.pagination.per_page,
+        pages=result.pagination.total_pages
+    )
 
 
 @router.post(
@@ -86,6 +94,8 @@ async def get_resource(
     جلب مورد محدد بواسطة المعرف.
     """
     result = await service.get_item(resource_type, item_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Resource not found")
     return GenericResourceResponse.model_validate(result)
 
 

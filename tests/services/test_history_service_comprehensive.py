@@ -69,60 +69,31 @@ class TestHistoryServiceComprehensive:
         return user, conversation, messages
 
     @pytest.mark.asyncio
-    async def test_get_recent_conversations_success(self, user_with_conversations):
+    async def test_get_recent_conversations_success(self, user_with_conversations, db_session):
         user, _expected_conversations = user_with_conversations
 
-        # We need to ensure the async_session_factory uses our test db_session
-        # However, get_recent_conversations uses async_session_factory() internally.
-        # We should patch it to return our session.
+        # Use the actual db_session from fixture which is connected to the in-memory DB with tables
+        mock_session_ctx = MagicMock()
+        mock_session_ctx.__aenter__.return_value = db_session
+        mock_session_ctx.__aexit__.return_value = None
 
-        # But wait, tests/conftest.py overrides get_db, but async_session_factory is imported from app.core.database
-        # Let's see if we can patch app.services.users.history_service.async_session_factory
-
-        # Creating a mock context manager for the session
-        AsyncMock()
-
-        # Mocking execute result
-        # expected_conversations are SQLModel objects.
-        # result.scalars().all() should return them.
-
-        # Ideally we should run against the real DB since we have it in tests.
-        # So let's patch async_session_factory to return a session connected to our test engine.
-
-        from tests.conftest import TestingSessionLocal
-
-        # We can't easily patch it to be a context manager that returns a specific session instance
-        # if the function creates a new session every time.
-        # But we can make it return a TestingSessionLocal instance which is configured to use the test engine.
-
-        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
-            # Configure mock_factory to return a context manager that yields a session
-            session = TestingSessionLocal()
-            mock_factory.return_value.__aenter__.return_value = session
-            mock_factory.return_value.__aexit__.return_value = None
-
+        with patch("app.services.users.history_service.async_session_factory", return_value=mock_session_ctx):
             conversations = await get_recent_conversations(user.id)
-
-            await session.close()
 
             assert len(conversations) == 3
             # Check ordering (descending ID/created_at) - newest should be first
             assert conversations[0].id > conversations[1].id
 
     @pytest.mark.asyncio
-    async def test_get_recent_conversations_limit(self, user_with_conversations):
+    async def test_get_recent_conversations_limit(self, user_with_conversations, db_session):
         user, _ = user_with_conversations
 
-        from tests.conftest import TestingSessionLocal
+        mock_session_ctx = MagicMock()
+        mock_session_ctx.__aenter__.return_value = db_session
+        mock_session_ctx.__aexit__.return_value = None
 
-        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
-            session = TestingSessionLocal()
-            mock_factory.return_value.__aenter__.return_value = session
-            mock_factory.return_value.__aexit__.return_value = None
-
+        with patch("app.services.users.history_service.async_session_factory", return_value=mock_session_ctx):
             conversations = await get_recent_conversations(user.id, limit=1)
-
-            await session.close()
 
             assert len(conversations) == 1
 
@@ -135,36 +106,16 @@ class TestHistoryServiceComprehensive:
             assert conversations == []
 
     @pytest.mark.asyncio
-    async def test_rate_message_success(self, user_with_messages):
+    async def test_rate_message_success(self, user_with_messages, db_session):
         user, _, messages = user_with_messages
         message_to_rate = messages[0]
 
-        from tests.conftest import TestingSessionLocal
+        mock_session_ctx = MagicMock()
+        mock_session_ctx.__aenter__.return_value = db_session
+        mock_session_ctx.__aexit__.return_value = None
 
-        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
-            session = TestingSessionLocal()
-            mock_factory.return_value.__aenter__.return_value = session
-            mock_factory.return_value.__aexit__.return_value = None
-
-            # Since AdminMessage doesn't actually have a rating field in models.py (based on logs),
-            # we need to skip the DB update check or add the field if possible.
-            # "WARNING  app.services.users.history_service:history_service.py:97 Message model has no rating field. Skipping update."
-            # The service handles this gracefully.
-
-            # However, if we want to test that it returns success, we should do that.
-            # But wait, if it skips update, it should verify that we don't crash.
-
-            # If we want to test data persistence, we'd need to add 'rating' to AdminMessage model
-            # or mock hasattr.
-
-            # Mocking hasattr on the object returned from DB is tricky because it's an object from session.
-            # Let's mock the session result to return a mock object that has 'rating'.
-
-            # Actually, let's just assert result["status"] == "success" and accept that it skips update for now
-            # as the model doesn't support it yet.
-
+        with patch("app.services.users.history_service.async_session_factory", return_value=mock_session_ctx):
             result = await rate_message_in_db(message_to_rate.id, "good", user.id)
-            await session.close()
 
             assert result["status"] == "success"
             assert "rated as 'good'" in result["message"]
@@ -176,18 +127,15 @@ class TestHistoryServiceComprehensive:
         assert "Invalid rating" in result["message"]
 
     @pytest.mark.asyncio
-    async def test_rate_message_not_found(self, user_with_messages):
+    async def test_rate_message_not_found(self, user_with_messages, db_session):
         user, _, _ = user_with_messages
 
-        from tests.conftest import TestingSessionLocal
+        mock_session_ctx = MagicMock()
+        mock_session_ctx.__aenter__.return_value = db_session
+        mock_session_ctx.__aexit__.return_value = None
 
-        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
-            session = TestingSessionLocal()
-            mock_factory.return_value.__aenter__.return_value = session
-            mock_factory.return_value.__aexit__.return_value = None
-
+        with patch("app.services.users.history_service.async_session_factory", return_value=mock_session_ctx):
             result = await rate_message_in_db(999999, "good", user.id)
-            await session.close()
 
             assert result["status"] == "error"
             assert "not found" in result["message"]
@@ -204,15 +152,12 @@ class TestHistoryServiceComprehensive:
 
         message_to_rate = messages[0]
 
-        from tests.conftest import TestingSessionLocal
+        mock_session_ctx = MagicMock()
+        mock_session_ctx.__aenter__.return_value = db_session
+        mock_session_ctx.__aexit__.return_value = None
 
-        with patch("app.services.users.history_service.async_session_factory") as mock_factory:
-            session = TestingSessionLocal()
-            mock_factory.return_value.__aenter__.return_value = session
-            mock_factory.return_value.__aexit__.return_value = None
-
+        with patch("app.services.users.history_service.async_session_factory", return_value=mock_session_ctx):
             result = await rate_message_in_db(message_to_rate.id, "bad", other_user.id)
-            await session.close()
 
             assert result["status"] == "error"
             assert "Permission denied" in result["message"]

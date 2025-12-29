@@ -87,7 +87,7 @@ class AuthBoundaryService:
         return {
             "status": "success",
             "message": "User registered successfully",
-            "user": {"id": new_user.id, "email": new_user.email},
+            "user": {"id": new_user.id, "email": new_user.email, "full_name": new_user.full_name},
         }
 
     async def authenticate_user(
