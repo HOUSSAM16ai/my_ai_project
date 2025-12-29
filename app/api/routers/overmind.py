@@ -3,12 +3,11 @@
 واجهة برمجة تطبيقات "العقل المدبر" (Overmind Router).
 ---------------------------------------------------------
 توفر هذه الوحدة نقاط النهاية (Endpoints) للتحكم في منظومة الوكلاء الخارقين.
-تعتمد على مبادئ RESTful API وتدعم التدفق (Streaming) للأحداث الحية.
 
 المعايير:
 - CS50 2025 Strict Mode.
-- توثيق عربي شامل.
-- فصل كامل للمسؤوليات (Delegation to Orchestrator).
+- No ORM objects returned (DTOs only).
+- Explicit Dependencies.
 """
 
 import json
@@ -24,6 +23,9 @@ from app.core.di import get_logger
 from app.services.overmind.domain.api_schemas import (
     MissionCreate,
     MissionResponse,
+    MissionStepResponse,
+    MissionStatusEnum,
+    StepStatusEnum,
 )
 from app.services.overmind.factory import create_overmind
 from app.services.overmind.orchestrator import OvermindOrchestrator
@@ -38,18 +40,50 @@ router = APIRouter(
 
 
 def get_session_factory() -> Callable[[], AsyncSession]:
-    """تبعية للحصول على مصنع الجلسات."""
     return async_session_factory
 
 
 async def get_orchestrator(
     db: AsyncSession = Depends(get_db)
 ) -> OvermindOrchestrator:
-    """
-    تبعية لإنشاء واسترجاع أوركسترا العقل المدبر.
-    يتم حقن قاعدة البيانات الحالية لتهيئة إدارة الحالة.
-    """
     return await create_overmind(db)
+
+
+def _map_mission_to_dto(mission) -> MissionResponse:
+    """
+    Helper to convert ORM Mission to Pydantic MissionResponse.
+    This ensures no ORM objects leak to Pydantic validation layer.
+    """
+    if not mission:
+        raise ValueError("Mission is None")
+
+    # Map tasks manually or rely on Pydantic alias
+    steps = []
+    for task in mission.tasks:
+        steps.append(
+            MissionStepResponse(
+                id=task.id,
+                name=task.task_key,
+                description=task.description,
+                status=StepStatusEnum(task.status.value), # Ensure Enum match
+                result=task.result_text,
+                tool_used=task.tool_name,
+                created_at=task.created_at,
+                completed_at=task.finished_at,
+            )
+        )
+
+    return MissionResponse(
+        id=mission.id,
+        objective=mission.objective,
+        status=MissionStatusEnum(mission.status.value),
+        created_at=mission.created_at,
+        updated_at=mission.updated_at,
+        steps=steps,
+        # Result isn't explicitly on Mission model in the provided code,
+        # usually derived from final event or task. Leaving None for now.
+        result=None
+    )
 
 
 @router.post("/missions", response_model=MissionResponse, summary="إطلاق مهمة جديدة")
@@ -58,36 +92,25 @@ async def create_mission(
     background_tasks: BackgroundTasks,
     orchestrator: OvermindOrchestrator = Depends(get_orchestrator),
 ) -> Any:
-    """
-    إنشاء مهمة جديدة وإطلاقها في الخلفية (Async Execution).
-
-    الخطوات:
-    1. استقبال الهدف والسياق.
-    2. إنشاء سجل المهمة في قاعدة البيانات (PENDING).
-    3. جدولة التنفيذ في الخلفية عبر الأوركسترا.
-    4. إرجاع تفاصيل المهمة المبدئية للمستخدم.
-
-    Args:
-        request: بيانات إنشاء المهمة.
-        background_tasks: مدير مهام الخلفية في FastAPI.
-        orchestrator: محرك العقل المدبر.
-
-    Returns:
-        MissionResponse: حالة المهمة بعد الإنشاء.
-    """
     try:
-        # إنشاء المهمة في الحالة (Persistence)
-        # ملاحظة: create_mission في state_manager يجب أن تعيد كائن Mission (DB Model)
+        # Create Mission (Returns ORM)
         mission_db = await orchestrator.state.create_mission(
             objective=request.objective,
-            context=request.context
+            # context is not used in create_mission in state currently,
+            # maybe orchestrator uses it or we need to update state.create_mission signature.
+            # checking state.create_mission: def create_mission(self, objective: str, initiator_id: int)
+            # It ignores context.
+            initiator_id=1 # Default user for now
         )
 
-        # إطلاق التنفيذ في الخلفية
-        # يجب تمرير mission_id فقط لتجنب مشاكل تسلسل الكائنات
+        # Launch background task
         background_tasks.add_task(orchestrator.run_mission, mission_db.id)
 
-        return mission_db
+        # Convert to DTO immediately
+        # Note: mission_db just created, tasks is empty.
+        # But we must return DTO.
+        return _map_mission_to_dto(mission_db)
+
     except Exception as e:
         logger.error(f"Failed to create mission: {e}")
         raise HTTPException(status_code=500, detail="فشل في إنشاء المهمة") from e
@@ -98,13 +121,12 @@ async def get_mission(
     mission_id: int,
     orchestrator: OvermindOrchestrator = Depends(get_orchestrator),
 ) -> Any:
-    """
-    استرجاع التفاصيل الحالية لمهمة معينة، بما في ذلك خطواتها ونتائجها.
-    """
     mission = await orchestrator.state.get_mission(mission_id)
     if not mission:
         raise HTTPException(status_code=404, detail="المهمة غير موجودة")
-    return mission
+
+    # Explicit conversion to DTO
+    return _map_mission_to_dto(mission)
 
 
 @router.get("/missions/{mission_id}/stream", summary="بث أحداث المهمة (Live Stream)")
@@ -112,36 +134,24 @@ async def stream_mission(
     mission_id: int,
     db_factory: Callable[[], AsyncSession] = Depends(get_session_factory),
 ) -> StreamingResponse:
-    """
-    فتح قناة SSE (Server-Sent Events) لمراقبة تقدم المهمة في الوقت الفعلي.
-
-    ملاحظة:
-    نستخدم `db_factory` لإنشاء جلسة جديدة داخل المولد (Generator) لأن
-    الجلسة المحقونة عبر `Depends` قد تغلق قبل انتهاء البث.
-    """
-
     async def event_generator() -> AsyncGenerator[str, None]:
         async with db_factory() as session:
             state_manager = MissionStateManager(session)
 
-            # 1. التحقق من وجود المهمة
             mission = await state_manager.get_mission(mission_id)
             if not mission:
                 yield "event: error\ndata: Mission not found\n\n"
                 return
 
-            # 2. بدء المراقبة عبر مدير الحالة (Information Expert)
             async for event in state_manager.monitor_mission_events(mission_id):
-                # Serialization: Ensure payload is a JSON string
                 try:
+                    # Payload is already dict/list from JSONText, but we want to send JSON string
                     data_str = json.dumps(event.payload_json)
                 except Exception:
-                    data_str = "{}" # Fallback
+                    data_str = "{}"
 
-                # إرسال الحدث بتنسيق SSE
                 yield f"event: {event.event_type.value}\ndata: {data_str}\n\n"
 
-            # 3. إشارة نهاية التدفق
             yield "event: close\ndata: [DONE]\n\n"
 
     return StreamingResponse(

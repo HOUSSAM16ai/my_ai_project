@@ -1,28 +1,31 @@
 # app/services/overmind/state.py
 # =================================================================================================
 # OVERMIND STATE MANAGER – NEURAL MEMORY SUBSYSTEM
-# Version: 11.2.0-pacelc-gapless
+# Version: 11.4.0-dto-strict
 # =================================================================================================
 
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
 from app.core.event_bus import event_bus
 from app.models import (
     Mission,
-    MissionEvent,
     MissionEventType,
     MissionPlan,
-    MissionStatus,
     PlanStatus,
     Task,
     TaskStatus,
 )
+from app.services.overmind.domain.api_schemas import (
+    MissionResponse,
+    MissionStepResponse,
+    MissionStatusEnum,
+    StepStatusEnum,
+)
+from app.services.overmind.infrastructure.repository import MissionRepository
 
 
 def utc_now():
@@ -31,218 +34,212 @@ def utc_now():
 
 class MissionStateManager:
     """
-    Manages the persistent state of Missions and Tasks within the Reality Kernel.
-    Uses Async I/O for maximum throughput and scalability.
-    Implements PACELC optimizations: Using EventBus for Low Latency (L) updates
-    while maintaining Database Consistency (C).
+    Service Layer for managing Mission State.
+    Coordinates between Domain logic, Repository (DB), and EventBus.
+
+    Follows strictly:
+    1. Repository for SQL Queries.
+    2. Explicit Transactions.
+    3. DTO conversion happens INSIDE this Service Layer to prevent ORM leakage.
     """
 
     def __init__(self, session: AsyncSession):
         self.session = session
+        self.repo = MissionRepository(session)
 
-    async def create_mission(self, objective: str, initiator_id: int) -> Mission:
-        mission = Mission(
-            objective=objective,
-            initiator_id=initiator_id,
-            status=MissionStatus.PENDING,
-            created_at=utc_now(),
-            updated_at=utc_now(),
-        )
-        self.session.add(mission)
-        await self.session.flush()
-        await self.session.commit()
-        return mission
+    def _to_dto(self, mission: Mission) -> MissionResponse:
+        """
+        Internal Helper: Converts ORM Mission to Pydantic DTO.
+        Must be called while session/object is active if accessing lazy fields (though we use Eager Loading).
+        """
+        # Map tasks
+        steps = []
+        # Since we use lazy="raise", this will crash if tasks weren't loaded.
+        # But our Repository ensures selectinload(Mission.tasks).
+        if mission.tasks:
+            for task in mission.tasks:
+                steps.append(
+                    MissionStepResponse(
+                        id=task.id,
+                        name=task.task_key,
+                        description=task.description,
+                        status=StepStatusEnum(task.status.value),
+                        result=task.result_text,
+                        tool_used=task.tool_name,
+                        created_at=task.created_at,
+                        completed_at=task.finished_at,
+                    )
+                )
 
-    async def get_mission(self, mission_id: int) -> Mission | None:
-        stmt = (
-            select(Mission)
-            .options(
-                joinedload(Mission.mission_plans),
-                joinedload(Mission.tasks),
-            )
-            .where(Mission.id == mission_id)
+        return MissionResponse(
+            id=mission.id, # type: ignore
+            objective=mission.objective,
+            status=MissionStatusEnum(mission.status.value),
+            created_at=mission.created_at,
+            updated_at=mission.updated_at,
+            steps=steps,
+            result=None
         )
-        result = await self.session.execute(stmt)
-        # Using unique() is essential when using joinedload with one-to-many relationships
-        # to prevent duplicate Mission objects due to the Cartesian product.
-        return result.unique().scalar_one_or_none()
+
+    async def create_mission(self, objective: str, initiator_id: int = 1) -> MissionResponse:
+        """
+        Creates a mission and returns the DTO.
+        """
+        async with self.session.begin():
+            mission = await self.repo.create_mission(objective, initiator_id)
+            # Mission created. Tasks are empty.
+            # Convert to DTO inside the transaction to be safe,
+            # although mission is attached until exit.
+
+            # Note: mission.tasks is empty list for new object usually, or implicit.
+            # Since we just created it and didn't commit yet (session.begin handles commit on exit),
+            # it is attached.
+            dto = self._to_dto(mission)
+
+        return dto
+
+    async def get_mission(self, mission_id: int) -> MissionResponse | None:
+        """
+        Retrieves a mission and returns DTO.
+        """
+        # Repo handles eager loading.
+        mission = await self.repo.get_mission_by_id(mission_id)
+        if not mission:
+            return None
+        return self._to_dto(mission)
+
+    async def get_mission_model(self, mission_id: int) -> Mission | None:
+        """
+        Internal/Orchestrator use only: Retrieve the actual ORM model.
+        """
+        return await self.repo.get_mission_by_id(mission_id)
 
     async def update_mission_status(
-        self, mission_id: int, status: MissionStatus, note: str | None = None
+        self, mission_id: int, status: Any, note: str | None = None
     ):
-        stmt = select(Mission).where(Mission.id == mission_id)
-        result = await self.session.execute(stmt)
-        mission = result.scalar_one_or_none()
-        if mission:
-            old_status = str(mission.status)
-            mission.status = status
-            mission.updated_at = utc_now()
-
-            # Log the status change event (which now commits)
-            await self.log_event(
-                mission_id,
-                MissionEventType.STATUS_CHANGE,
-                {"old_status": old_status, "new_status": str(status), "note": note},
-            )
-            # Explicit commit to ensure status update is visible
-            await self.session.commit()
+        """
+        Updates mission status and logs an event.
+        """
+        async with self.session.begin():
+            mission = await self.repo.update_mission_status(mission_id, status)
+            if mission:
+                await self.log_event_in_tx(
+                    mission_id,
+                    MissionEventType.STATUS_CHANGE,
+                    {"new_status": str(status), "note": note},
+                )
 
     async def log_event(
         self, mission_id: int, event_type: MissionEventType, payload: dict[str, Any]
     ):
-        event = MissionEvent(
-            mission_id=mission_id,
-            event_type=event_type,
-            payload_json=payload,
-            created_at=utc_now(),
-        )
-        self.session.add(event)
-        # Commit immediately for Persistence (Consistency)
-        await self.session.commit()
+        async with self.session.begin():
+            await self.log_event_in_tx(mission_id, event_type, payload)
 
-        # Broadcast immediately for Streaming (Latency)
+    async def log_event_in_tx(
+        self, mission_id: int, event_type: MissionEventType, payload: dict[str, Any]
+    ):
+        event = await self.repo.create_event(mission_id, event_type, payload)
         await event_bus.publish(f"mission:{mission_id}", event)
 
     async def persist_plan(
         self,
         mission_id: int,
         planner_name: str,
-        plan_schema: Any,  # MissionPlanSchema
+        plan_schema: Any,
         score: float,
         rationale: str,
     ) -> MissionPlan:
-        # Determine version
-        stmt = select(func.max(MissionPlan.version)).where(MissionPlan.mission_id == mission_id)
-        result = await self.session.execute(stmt)
-        current_max = result.scalar() or 0
-        version = current_max + 1
+        async with self.session.begin():
+            version = await self.repo.get_latest_plan_version(mission_id)
+            new_version = version + 1
 
-        raw_data = {
-            "objective": getattr(plan_schema, "objective", ""),
-            "tasks_count": len(getattr(plan_schema, "tasks", [])),
-        }
+            raw_data = {
+                "objective": getattr(plan_schema, "objective", ""),
+                "tasks_count": len(getattr(plan_schema, "tasks", [])),
+            }
 
-        mp = MissionPlan(
-            mission_id=mission_id,
-            version=version,
-            planner_name=planner_name,
-            status=PlanStatus.VALID,
-            score=score,
-            rationale=rationale,
-            raw_json=raw_data,
-            stats_json={},
-            warnings_json=[],
-            created_at=utc_now(),
-        )
-        self.session.add(mp)
-        await self.session.flush()
-
-        # Update Mission active plan
-        mission_stmt = select(Mission).where(Mission.id == mission_id)
-        mission_res = await self.session.execute(mission_stmt)
-        mission = mission_res.scalar_one()
-        mission.active_plan_id = mp.id
-
-        # Create Tasks
-        tasks_schema = getattr(plan_schema, "tasks", [])
-        for t in tasks_schema:
-            task_row = Task(
+            mp = MissionPlan(
                 mission_id=mission_id,
-                plan_id=mp.id,
-                task_key=t.task_id,
-                description=t.description,
-                tool_name=t.tool_name,
-                tool_args_json=t.tool_args,
-                status=TaskStatus.PENDING,
-                attempt_count=0,
-                max_attempts=3,  # Default
-                priority=getattr(t, "priority", 0),
-                depends_on_json=t.dependencies,
+                version=new_version,
+                planner_name=planner_name,
+                status=PlanStatus.VALID,
+                score=score,
+                rationale=rationale,
+                raw_json=raw_data,
+                stats_json={},
+                warnings_json=[],
                 created_at=utc_now(),
-                updated_at=utc_now(),
             )
-            self.session.add(task_row)
+            await self.repo.create_mission_plan(mp)
+            await self.session.flush()
 
-        await self.session.commit()
-        return mp
+            await self.repo.set_active_plan(mission_id, mp.id)
+
+            tasks_schema = getattr(plan_schema, "tasks", [])
+            for t in tasks_schema:
+                task_row = Task(
+                    mission_id=mission_id,
+                    plan_id=mp.id,
+                    task_key=t.task_id,
+                    description=t.description,
+                    tool_name=t.tool_name,
+                    tool_args_json=t.tool_args,
+                    status=TaskStatus.PENDING,
+                    attempt_count=0,
+                    max_attempts=3,
+                    priority=getattr(t, "priority", 0),
+                    depends_on_json=t.dependencies,
+                    created_at=utc_now(),
+                    updated_at=utc_now(),
+                )
+                await self.repo.create_task(task_row)
+
+            return mp
 
     async def get_tasks(self, mission_id: int) -> list[Task]:
-        stmt = select(Task).where(Task.mission_id == mission_id).order_by(Task.id)
-        result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+        return await self.repo.get_tasks_for_mission(mission_id)
 
     async def mark_task_running(self, task_id: int):
-        stmt = select(Task).where(Task.id == task_id)
-        result = await self.session.execute(stmt)
-        task = result.scalar_one()
-        task.status = TaskStatus.RUNNING
-        task.started_at = utc_now()
-        task.attempt_count += 1
-        await self.session.flush()
-        await self.session.commit()
+        async with self.session.begin():
+            task = await self.repo.get_task_by_id(task_id)
+            if task:
+                task.status = TaskStatus.RUNNING
+                task.started_at = utc_now()
+                task.attempt_count += 1
+                self.session.add(task)
 
     async def mark_task_complete(self, task_id: int, result_text: str, meta: dict | None = None):
         if meta is None:
             meta = {}
-        stmt = select(Task).where(Task.id == task_id)
-        result = await self.session.execute(stmt)
-        task = result.scalar_one()
-        task.status = TaskStatus.SUCCESS
-        task.finished_at = utc_now()
-        task.result_text = result_text
-        task.result_meta_json = meta
-        await self.session.flush()
-        await self.session.commit()
+        async with self.session.begin():
+            task = await self.repo.get_task_by_id(task_id)
+            if task:
+                task.status = TaskStatus.SUCCESS
+                task.finished_at = utc_now()
+                task.result_text = result_text
+                task.result_meta_json = meta
+                self.session.add(task)
 
     async def mark_task_failed(self, task_id: int, error_text: str):
-        stmt = select(Task).where(Task.id == task_id)
-        result = await self.session.execute(stmt)
-        task = result.scalar_one()
-        task.status = TaskStatus.FAILED
-        task.finished_at = utc_now()
-        task.error_text = error_text
-        await self.session.flush()
-        await self.session.commit()
+        async with self.session.begin():
+            task = await self.repo.get_task_by_id(task_id)
+            if task:
+                task.status = TaskStatus.FAILED
+                task.finished_at = utc_now()
+                task.error_text = error_text
+                self.session.add(task)
 
     async def monitor_mission_events(
         self, mission_id: int, poll_interval: float = 1.0
     ) -> AsyncGenerator[MissionEvent, None]:
-        """
-        Monitors a mission for new events using PACELC Optimization.
-        Prioritizes EventBus for Low Latency (L), falling back to DB Polling
-        only for recovery/initial load (Consistency).
-
-        Gap-Free Strategy:
-        1. Subscribe to EventBus (buffer events).
-        2. Query Database (get past events).
-        3. Yield DB events.
-        4. Yield Buffered events (deduplicate).
-        5. Continue Streaming from Bus.
-
-        Args:
-            mission_id (int): ID of the mission to monitor.
-            poll_interval (float): Unused in EventBus mode.
-
-        Yields:
-            MissionEvent: The next event in the stream.
-        """
         last_event_id = 0
         channel = f"mission:{mission_id}"
 
-        # 1. Subscribe FIRST to avoid Race Condition (Gap-Free)
         queue = event_bus.subscribe_queue(channel)
 
         try:
-            # 2. Catch-up from Database (Consistency)
-            stmt = (
-                select(MissionEvent)
-                .where(MissionEvent.mission_id == mission_id)
-                .order_by(MissionEvent.id.asc())
-            )
-            result = await self.session.execute(stmt)
-            db_events = result.scalars().all()
+            db_events = await self.repo.get_mission_events(mission_id)
 
-            # Yield DB events
             for event in db_events:
                 yield event
                 if event.id:
@@ -250,11 +247,9 @@ class MissionStateManager:
                 if self._is_terminal_event(event):
                     return
 
-            # 3. Process Buffered Queue & Live Stream (Latency)
             while True:
                 event = await queue.get()
 
-                # Deduplicate: Skip if we already saw this ID from DB
                 if event.id and event.id <= last_event_id:
                     continue
 
@@ -269,7 +264,6 @@ class MissionStateManager:
             event_bus.unsubscribe_queue(channel, queue)
 
     def _is_terminal_event(self, event: MissionEvent) -> bool:
-        """Helper to check if an event concludes the mission."""
         return event.event_type in [
             MissionEventType.MISSION_COMPLETED,
             MissionEventType.MISSION_FAILED,

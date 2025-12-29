@@ -220,10 +220,10 @@ class User(SQLModel, table=True):
 
     # Relationships
     admin_conversations: list[AdminConversation] = Relationship(
-        sa_relationship=relationship("AdminConversation", back_populates="user")
+        sa_relationship=relationship("AdminConversation", back_populates="user", lazy="raise")
     )
     missions: list[Mission] = Relationship(
-        sa_relationship=relationship("Mission", back_populates="initiator")
+        sa_relationship=relationship("Mission", back_populates="initiator", lazy="raise")
     )
 
     def set_password(self, password: str):
@@ -256,10 +256,10 @@ class AdminConversation(SQLModel, table=True):
 
     # Relationships
     user: User = Relationship(
-        sa_relationship=relationship("User", back_populates="admin_conversations")
+        sa_relationship=relationship("User", back_populates="admin_conversations", lazy="raise")
     )
     messages: list[AdminMessage] = Relationship(
-        sa_relationship=relationship("AdminMessage", back_populates="conversation")
+        sa_relationship=relationship("AdminMessage", back_populates="conversation", lazy="raise")
     )
 
 
@@ -276,7 +276,7 @@ class AdminMessage(SQLModel, table=True):
 
     # Relationships
     conversation: AdminConversation = Relationship(
-        sa_relationship=relationship("AdminConversation", back_populates="messages")
+        sa_relationship=relationship("AdminConversation", back_populates="messages", lazy="raise")
     )
 
 
@@ -304,19 +304,27 @@ class Mission(SQLModel, table=True):
     )
 
     # Relationships
-    initiator: User = Relationship(sa_relationship=relationship("User", back_populates="missions"))
+    initiator: User = Relationship(
+        sa_relationship=relationship("User", back_populates="missions", lazy="raise")
+    )
     tasks: list[Task] = Relationship(
         sa_relationship=relationship(
-            "Task", back_populates="mission", foreign_keys="[Task.mission_id]"
+            "Task",
+            back_populates="mission",
+            foreign_keys="[Task.mission_id]",
+            lazy="raise",
         )
     )
     mission_plans: list[MissionPlan] = Relationship(
         sa_relationship=relationship(
-            "MissionPlan", back_populates="mission", foreign_keys="[MissionPlan.mission_id]"
+            "MissionPlan",
+            back_populates="mission",
+            foreign_keys="[MissionPlan.mission_id]",
+            lazy="raise",
         )
     )
     events: list[MissionEvent] = Relationship(
-        sa_relationship=relationship("MissionEvent", back_populates="mission")
+        sa_relationship=relationship("MissionEvent", back_populates="mission", lazy="raise")
     )
 
 
@@ -372,10 +380,15 @@ class MissionPlan(SQLModel, table=True):
     # Relationships
     mission: Mission = Relationship(
         sa_relationship=relationship(
-            "Mission", back_populates="mission_plans", foreign_keys="[MissionPlan.mission_id]"
+            "Mission",
+            back_populates="mission_plans",
+            foreign_keys="[MissionPlan.mission_id]",
+            lazy="raise",
         )
     )
-    tasks: list[Task] = Relationship(sa_relationship=relationship("Task", back_populates="plan"))
+    tasks: list[Task] = Relationship(
+        sa_relationship=relationship("Task", back_populates="plan", lazy="raise")
+    )
 
 
 class Task(SQLModel, table=True):
@@ -421,12 +434,18 @@ class Task(SQLModel, table=True):
     # Relationships
     mission: Mission = Relationship(
         sa_relationship=relationship(
-            "Mission", back_populates="tasks", foreign_keys="[Task.mission_id]"
+            "Mission",
+            back_populates="tasks",
+            foreign_keys="[Task.mission_id]",
+            lazy="raise",
         )
     )
     plan: MissionPlan = Relationship(
         sa_relationship=relationship(
-            "MissionPlan", back_populates="tasks", foreign_keys="[Task.plan_id]"
+            "MissionPlan",
+            back_populates="tasks",
+            foreign_keys="[Task.plan_id]",
+            lazy="raise",
         )
     )
 
@@ -445,7 +464,7 @@ class MissionEvent(SQLModel, table=True):
 
     # Relationships
     mission: Mission = Relationship(
-        sa_relationship=relationship("Mission", back_populates="events")
+        sa_relationship=relationship("Mission", back_populates="events", lazy="raise")
     )
 
 
@@ -456,7 +475,7 @@ class PromptTemplate(SQLModel, table=True):
     template: str
 
     generated_prompts: list[GeneratedPrompt] = Relationship(
-        sa_relationship=relationship("GeneratedPrompt", back_populates="template")
+        sa_relationship=relationship("GeneratedPrompt", back_populates="template", lazy="raise")
     )
 
 
@@ -468,7 +487,7 @@ class GeneratedPrompt(SQLModel, table=True):
 
     # Relationships
     template: PromptTemplate = Relationship(
-        sa_relationship=relationship("PromptTemplate", back_populates="generated_prompts")
+        sa_relationship=relationship("PromptTemplate", back_populates="generated_prompts", lazy="raise")
     )
 
 
