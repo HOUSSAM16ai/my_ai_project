@@ -11,7 +11,6 @@ from app.services.agent_tools.registry import get_tool_registry
 # We keep legacy imports BUT we must ensure they don't trigger cycles.
 # If `cognitive_tools` causes a cycle, we might need to lazy import it.
 # For now, we assume the cleanup of `common_imports` helps.
-
 from .cognitive_tools import (
     generic_think,
     refine_text,
@@ -122,8 +121,6 @@ def code_search_lexical_tool(**kwargs): return code_search_lexical(**kwargs)
 def code_search_semantic_tool(**kwargs): return code_search_semantic(**kwargs)
 
 __all__ = [
-    "get_registry",
-    "get_tool_registry",
     # Constants
     "PROJECT_ROOT",
     "_ALIAS_INDEX",
@@ -136,6 +133,8 @@ __all__ = [
     # Tools
     "analyze_path_semantics_tool",
     "append_file_tool",
+    # Functions
+    "canonicalize_tool_name",
     "code_index_project_tool",
     "code_search_lexical_tool",
     "code_search_semantic_tool",
@@ -148,14 +147,21 @@ __all__ = [
     "generic_think_tool",
     "get_active_context_tool",
     "get_project_metrics_tool",
+    "get_registry",
+    "get_tool",
+    "get_tool_registry",
+    "get_tools_schema",
+    "has_tool",
     "introspect_tools_tool",
     "list_dir_tool",
+    "list_tools",
     "memory_get_tool",
     "memory_put_tool",
     "read_bulk_files_tool",
     "read_file_tool",
     "refine_text_tool",
     "reload_deep_struct_map_tool",
+    "resolve_tool_name",
     "summarize_text_tool",
     "write_file_if_changed_tool",
     "write_file_tool",
