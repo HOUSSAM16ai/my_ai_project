@@ -525,6 +525,7 @@
             };
 
             const loadConversation = async (id) => {
+                if (!id) return;
                 // Set active state immediately for visual feedback
                 setConversationId(id);
                 setIsLoadingConversation(true);
@@ -706,17 +707,17 @@
                              </div>
                              <div className="conversation-list">
                                  {conversations.map(conv => {
-                                     const isActive = conversationId === conv.id;
+                                     const isActive = conversationId === conv.conversation_id;
                                      const isLoading = isActive && isLoadingConversation;
                                      const iconClass = isLoading ? 'fa-spinner fa-spin' : 'fa-comment-alt';
                                      return (
                                          <div
-                                             key={conv.id}
+                                             key={conv.conversation_id}
                                              className={`conversation-item ${isActive ? 'active' : ''}`}
-                                             onClick={() => loadConversation(conv.id)}
+                                             onClick={() => loadConversation(conv.conversation_id)}
                                          >
                                              <i className={`fas ${iconClass}`} style={{marginRight: '8px'}}></i>
-                                             {conv.title || `Conversation ${conv.id}`}
+                                             {conv.title || `Conversation ${conv.conversation_id}`}
                                          </div>
                                      );
                                  })}
