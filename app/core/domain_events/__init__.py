@@ -9,7 +9,7 @@ It decouples services from specific implementations and provides a standardized 
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, ClassVar, Type
+from typing import Any, ClassVar
 
 
 class EventCategory(Enum):
