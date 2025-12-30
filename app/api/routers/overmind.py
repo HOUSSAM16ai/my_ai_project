@@ -27,6 +27,7 @@ from app.services.overmind.domain.api_schemas import (
 )
 from app.services.overmind.factory import create_overmind
 from app.services.overmind.orchestrator import OvermindOrchestrator
+from app.services.overmind.runner import run_mission_in_background
 from app.services.overmind.state import MissionStateManager
 
 logger = get_logger(__name__)
@@ -64,28 +65,32 @@ async def create_mission(
     الخطوات:
     1. استقبال الهدف والسياق.
     2. إنشاء سجل المهمة في قاعدة البيانات (PENDING).
-    3. جدولة التنفيذ في الخلفية عبر الأوركسترا.
+    3. جدولة التنفيذ في الخلفية عبر دالة مخصصة (Runner).
     4. إرجاع تفاصيل المهمة المبدئية للمستخدم.
 
     Args:
         request: بيانات إنشاء المهمة.
         background_tasks: مدير مهام الخلفية في FastAPI.
-        orchestrator: محرك العقل المدبر.
+        orchestrator: محرك العقل المدبر (يستخدم للإنشاء فقط).
 
     Returns:
         MissionResponse: حالة المهمة بعد الإنشاء.
     """
     try:
         # إنشاء المهمة في الحالة (Persistence)
-        # ملاحظة: create_mission في state_manager يجب أن تعيد كائن Mission (DB Model)
+        # ملاحظة: نستخدم Orchestrator الحالي لإنشاء السجل ضمن معاملة الطلب الحالية
+        # TODO: Get real user ID from auth dependency. Using 1 for now (System/Admin).
+        initiator_id = 1
         mission_db = await orchestrator.state.create_mission(
             objective=request.objective,
-            context=request.context
+            initiator_id=initiator_id,
+            context=request.context,
         )
 
         # إطلاق التنفيذ في الخلفية
-        # يجب تمرير mission_id فقط لتجنب مشاكل تسلسل الكائنات
-        background_tasks.add_task(orchestrator.run_mission, mission_db.id)
+        # نستخدم دالة منفصلة لإنشاء جلسة قاعدة بيانات جديدة ومستقلة
+        # هذا يحل مشكلة "Garbage Collection" للجلسات المغلقة
+        background_tasks.add_task(run_mission_in_background, mission_db.id)
 
         return mission_db
     except Exception as e:
