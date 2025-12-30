@@ -226,7 +226,7 @@ class AdminChatBoundaryService:
             return None
 
         # استخدام حد أقصى (Limit) لمنع تحميل آلاف الرسائل
-        messages = await self.persistence.get_conversation_messages(conversation.id, limit=100)
+        messages = await self.persistence.get_conversation_messages(conversation.id, limit=1000)
         return {
             "conversation_id": conversation.id,
             "title": conversation.title,
@@ -262,7 +262,7 @@ class AdminChatBoundaryService:
         يفرض حداً أقصى للرسائل (100) لمنع انهيار المتصفح.
         """
         conversation = await self.verify_conversation_access(user_id, conversation_id)
-        messages = await self.persistence.get_conversation_messages(conversation.id, limit=100)
+        messages = await self.persistence.get_conversation_messages(conversation.id, limit=1000)
         return {
             "conversation_id": conversation.id,
             "title": conversation.title,

@@ -60,7 +60,12 @@ class FileReadHandler(IntentHandler):
             logger.error(f"File read error: {e}", extra={"path": path, "user_id": context.user_id})
 
     async def _read_file(self, path: str) -> str:
-        """Read file contents."""
+        """Read file contents in a non-blocking way."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, lambda: self._read_file_sync(path))
+
+    def _read_file_sync(self, path: str) -> str:
+        """Synchronous file read."""
         with open(path, encoding="utf-8") as f:
             return f.read()
 
@@ -264,6 +269,7 @@ class MissionComplexHandler(IntentHandler):
             return f"ℹ️ {event.event_type.value}: {payload}\n"
         except Exception:
             return "ℹ️ حدث جديد...\n"
+
 
 class HelpHandler(IntentHandler):
     """Handle help requests."""

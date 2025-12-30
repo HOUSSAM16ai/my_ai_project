@@ -114,7 +114,7 @@ class AdminChatPersistence:
         return list(result.scalars().all())
 
     async def get_conversation_messages(
-        self, conversation_id: int, limit: int = 100
+        self, conversation_id: int, limit: int = 1000
     ) -> list[AdminMessage]:
         """
         Retrieves messages for a specific conversation with a strict limit.
