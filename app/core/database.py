@@ -54,15 +54,28 @@ def _create_engine() -> AsyncEngine:
         # SQLite يحتاج إعدادات خاصة للمسارات
         engine_args["connect_args"] = {"check_same_thread": False}
     else:
-        # إعدادات خاصة بـ Postgres (Pool Size)
-        # نستخدم قيماً محافظة للبدء
-        engine_args["pool_size"] = settings.DB_POOL_SIZE
-        engine_args["max_overflow"] = settings.DB_MAX_OVERFLOW
+        # إعدادات خاصة بـ Postgres
 
-        # تعطيل prepared statements للتوافق مع Supabase Transaction Pooler
-        engine_args["connect_args"] = {"statement_cache_size": 0}
+        # ⚠️ CRITICAL: تقليل حجم المسبح في بيئات التطوير لمنع انهيار الذاكرة (OOM Kill)
+        # Codespaces غالباً لديها ذاكرة محدودة
+        if settings.ENVIRONMENT == "development" or settings.CODESPACES:
+            logger.info("🔧 Development/Codespaces mode detected: Reducing DB pool size to prevent OOM.")
+            engine_args["pool_size"] = 5      # عدد اتصالات قليل
+            engine_args["max_overflow"] = 10  # زيادة محدودة
+        else:
+            engine_args["pool_size"] = settings.DB_POOL_SIZE
+            engine_args["max_overflow"] = settings.DB_MAX_OVERFLOW
+
+        # ⚠️ CRITICAL FIX: تعطيل prepared statements نهائياً
+        # هذا ضروري جداً للتوافق مع Supabase Transaction Pooler (PgBouncer)
+        # وبدون هذا الإعداد سينهار النظام مع خطأ: prepared statement "..." does not exist
+        engine_args["connect_args"] = {
+            "statement_cache_size": 0,
+        }
 
     logger.info(f"🔌 Connecting to database: {settings.ENVIRONMENT} mode")
+    if "sqlite" not in db_url:
+        logger.info("   -> Prepared Statements: DISABLED (PgBouncer Compatibility Mode)")
 
     return create_async_engine(db_url, **engine_args)
 
