@@ -40,7 +40,14 @@ class MissionStateManager:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create_mission(self, objective: str, initiator_id: int) -> Mission:
+    async def create_mission(
+        self, objective: str, initiator_id: int, context: dict[str, Any] | None = None
+    ) -> Mission:
+        # Context is not currently stored in the Mission model (DB schema).
+        # We might want to add it to the model later, but for now we'll accept it
+        # and ignore it or log it to prevent API errors.
+        # Alternatively, we could append it to objective or store in a JSON field if available.
+        # Given strict mode, we shouldn't fail if context is passed but not used.
         mission = Mission(
             objective=objective,
             initiator_id=initiator_id,

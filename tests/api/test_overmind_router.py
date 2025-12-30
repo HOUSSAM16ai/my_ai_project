@@ -5,49 +5,42 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_create_mission_endpoint(client: AsyncClient, db_session):
+async def test_create_mission_endpoint(async_client: AsyncClient, db_session):
     """
     Test creating a mission via the API.
     """
-    # Override dependency logic handled by framework or manual patch if needed
-    # Here we assume the client + app setup works.
-
-    # Mocking orchestrator creation if complex, but better to test integration if possible
-    # We will rely on the real stack but mock the LLM part usually.
-    # For now, let's verify the endpoint structure.
-
     payload = {
         "objective": "Build a Dyson Sphere",
         "context": {"radius": "1AU"},
         "priority": 1
     }
 
-    # We need to authenticate usually (admin only?), but let's check open endpoint
-    # or ensure we have admin headers if required.
-    # Assuming open or mocked auth for this specific test scope.
+    response = await async_client.post("/api/v1/overmind/missions", json=payload)
 
-    # Note: If security middleware is active, we might need headers.
-    response = await client.post("/api/v1/overmind/missions", json=payload)
-
-    # If 401, we know it's protected. If 200, it works.
+    # Allow 200 (Created) or 401 (Unauthorized) depending on auth config
     if response.status_code == 401:
-        # Retry with auth mock if possible, or assert 401 is correct behavior
-        pass
-    else:
-        # In a real test we'd expect 200 and a MissionResponse
-        # assert response.status_code == 200
-        # data = response.json()
-        # assert data["objective"] == "Build a Dyson Sphere"
-        # assert data["status"] == "PENDING"
-        pass
+        pytest.skip("Auth required but not mocked in this scope")
+
+    assert response.status_code == 200, f"Response: {response.text}"
+    data = response.json()
+    assert data["objective"] == "Build a Dyson Sphere"
+    assert data["status"] == "pending"
+
 
 @pytest.mark.asyncio
-async def test_stream_endpoint_structure(client: AsyncClient):
+async def test_stream_endpoint_structure(async_client: AsyncClient):
     """
     Test that the streaming endpoint exists.
     """
-    response = await client.get("/api/v1/overmind/missions/1/stream")
-    # Should be 200 OK with text/event-stream if mission exists, or 404/error stream
-    # Since mission 1 likely doesn't exist in empty DB:
-    # assert response.status_code in [200, 404]
-    pass
+    # Just check if it connects, even if 404 for missing mission
+    response = await async_client.get("/api/v1/overmind/missions/999/stream")
+
+    # 200 if it starts streaming (even error event), or 404 if validation fails before stream
+    # The current implementation checks mission existence inside the generator,
+    # so it returns 200 with an error event.
+    assert response.status_code == 200
+
+    # Consume a bit of the stream
+    async for line in response.aiter_lines():
+        if "mission not found" in line.lower() or "event: error" in line:
+            break
