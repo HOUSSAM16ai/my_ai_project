@@ -56,8 +56,8 @@ def _create_engine() -> AsyncEngine:
     else:
         # إعدادات خاصة بـ Postgres (Pool Size)
         # نستخدم قيماً محافظة للبدء
-        engine_args["pool_size"] = 10
-        engine_args["max_overflow"] = 20
+        engine_args["pool_size"] = settings.DB_POOL_SIZE
+        engine_args["max_overflow"] = settings.DB_MAX_OVERFLOW
 
         # تعطيل prepared statements للتوافق مع Supabase Transaction Pooler
         engine_args["connect_args"] = {"statement_cache_size": 0}
