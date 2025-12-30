@@ -82,6 +82,8 @@ class AppSettings(BaseSettings):
     DATABASE_URL: str | None = Field(
         default=None, description="رابط قاعدة البيانات (يتم معالجته وتصحيحه تلقائياً)"
     )
+    DB_POOL_SIZE: int = Field(40, description="حجم مسبح الاتصالات الأساسي")
+    DB_MAX_OVERFLOW: int = Field(60, description="الحد الأقصى للاتصالات الإضافية")
 
     REDIS_URL: str | None = Field(None, description="رابط تخزين الذاكرة المؤقتة (Redis)")
 
