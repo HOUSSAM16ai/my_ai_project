@@ -29,7 +29,7 @@ class AdminChatStreamer:
 
     المبادئ المعمارية:
     - **فصل الاهتمامات (Separation of Concerns)**: منطق البث مفصول تماماً عن منطق التخزين.
-    - **المرونة (Resilience)**: استخدام `asyncio.create_task` لضمان عدم حجب التدفق أثناء الحفظ.
+    - **الموثوقية (Reliability)**: انتظار اكتمال الحفظ لضمان عدم ضياع الرسائل.
     - **الاستجابة الفورية (Low Latency)**: إرسال الأجزاء (Chunks) فور وصولها.
     """
 
@@ -60,7 +60,7 @@ class AdminChatStreamer:
         3. إرسال حدث بدء المحادثة.
         4. استدعاء المنسق (Orchestrator) لمعالجة الطلب.
         5. بث النتائج جزئياً (Streaming).
-        6. بدء حفظ النتيجة في الخلفية (Background Persistence) لعدم تأخير إشارة النهاية.
+        6. حفظ النتيجة (Persistence) بشكل موثوق قبل إشارة الانتهاء.
 
         Yields:
             str: أحداث SSE بتنسيق `event: type\ndata: json\n\n`.
@@ -107,7 +107,7 @@ class AdminChatStreamer:
                 async with session_factory_func() as session:
                     p = AdminChatPersistence(session)
                     await p.save_message(conversation.id, MessageRole.ASSISTANT, assistant_content)
-                logger.info(f"✅ Conversation {conversation.id} saved successfully in background.")
+                logger.info(f"✅ Conversation {conversation.id} saved successfully.")
             except Exception as e:
                 logger.error(f"❌ Failed to save assistant message: {e}")
 
@@ -130,15 +130,12 @@ class AdminChatStreamer:
                         yield f"data: {json.dumps(chunk_data)}\n\n"
 
             finally:
-                # حماية عملية الحفظ: تشغيلها كعملية خلفية مستقلة (Fire-and-Forget)
-                # هذا يضمن وصول إشارة [DONE] إلى العميل فوراً دون انتظار قاعدة البيانات
-                # RUF006: نحتفظ بمرجع للمهمة في المجموعة العالمية لمنع جمع القمامة المبكر
-                task = asyncio.create_task(safe_persist())
-                _background_tasks.add(task)
-                task.add_done_callback(_background_tasks.discard)
+                # حماية عملية الحفظ: نستخدم await هنا لضمان الحفظ قبل إغلاق الاتصال
+                # هذا يحل مشكلة "الرسائل المفقودة" عند تشنج التطبيق أو انقطاع الاتصال
+                # لأننا نضمن تنفيذ الحفظ قبل الوصول إلى finally الخارجية أو إرسال [DONE]
+                await safe_persist()
 
             # 5. إشارة الانتهاء (Completion Signal)
-            # تصل للعميل فوراً بفضل فصل عملية الحفظ
             yield "data: [DONE]\n\n"
 
         except Exception as e:
