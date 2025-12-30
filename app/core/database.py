@@ -58,6 +58,9 @@ def _create_engine() -> AsyncEngine:
         # نستخدم قيماً محافظة للبدء
         engine_args["pool_size"] = 10
         engine_args["max_overflow"] = 20
+        # Fix for Supabase Transaction Pooler (pgbouncer)
+        # Disabling prepared statements is required for transaction pooling
+        engine_args["connect_args"] = {"statement_cache_size": 0}
 
     logger.info(f"🔌 Connecting to database: {settings.ENVIRONMENT} mode")
 
