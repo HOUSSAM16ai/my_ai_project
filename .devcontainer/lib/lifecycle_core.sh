@@ -127,7 +127,8 @@ lifecycle_wait_for_port() {
     local timeout="${2:-30}"
     local start_time=$(date +%s)
 
-    while ! nc -z localhost "$port" 2>/dev/null; do
+    # Use Python for port checking to avoid dependency on netcat (nc)
+    while ! python3 -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.settimeout(1); s.connect(('localhost', $port))" >/dev/null 2>&1; do
         local current_time=$(date +%s)
         local elapsed=$((current_time - start_time))
 
