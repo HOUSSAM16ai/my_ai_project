@@ -683,10 +683,21 @@
                         let isNewMessage = true;
                         let lastUpdateTimestamp = 0;
                         let assistantMsgId = generateId(); // Stable ID for the stream
+                        let loopCount = 0;
 
                         while (true) {
                             const { value, done } = await reader.read();
                             if (done) break;
+
+                            // BROWSER SAFETY VALVE: Prevent infinite loop crash
+                            loopCount++;
+                            if (loopCount > 10000) {
+                                console.error("⚠️ Emergency Brake: Stream loop limit reached.");
+                                break;
+                            }
+
+                            // Micro-delay to yield to the main thread
+                            await new Promise(resolve => setTimeout(resolve, 5));
 
                             const chunk = decoder.decode(value, { stream: true });
                             const lines = chunk.split('\n\n');

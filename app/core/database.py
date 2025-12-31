@@ -47,17 +47,19 @@ def _create_engine() -> AsyncEngine:
     engine_args = {
         "echo": settings.DEBUG,  # طباعة استعلامات SQL في وضع التطوير
         "pool_pre_ping": True,   # التحقق من صحة الاتصال قبل استخدامه
+        "pool_recycle": 1800,    # إعادة تدوير الاتصال كل 30 دقيقة
     }
 
     # تخصيص إعدادات SQLite
     if "sqlite" in db_url:
         # SQLite يحتاج إعدادات خاصة للمسارات
         engine_args["connect_args"] = {"check_same_thread": False}
+        logger.info("🔌 Database: SQLite (Local/Testing Mode)")
     else:
         # إعدادات خاصة بـ Postgres
 
+        # 1. إعدادات حجم المسبح (Connection Pool)
         # ⚠️ CRITICAL: تقليل حجم المسبح في بيئات التطوير لمنع انهيار الذاكرة (OOM Kill)
-        # Codespaces غالباً لديها ذاكرة محدودة
         if settings.ENVIRONMENT == "development" or settings.CODESPACES:
             logger.info("🔧 Development/Codespaces mode detected: Reducing DB pool size to prevent OOM.")
             engine_args["pool_size"] = 5      # عدد اتصالات قليل
@@ -66,17 +68,22 @@ def _create_engine() -> AsyncEngine:
             engine_args["pool_size"] = settings.DB_POOL_SIZE
             engine_args["max_overflow"] = settings.DB_MAX_OVERFLOW
 
+        # 2. إعدادات التوافقية (Compatibility Settings)
         # ⚠️ CRITICAL FIX: تعطيل prepared statements نهائياً
         # هذا ضروري جداً للتوافق مع Supabase Transaction Pooler (PgBouncer)
         # وبدون هذا الإعداد سينهار النظام مع خطأ: prepared statement "..." does not exist
+        # نستخدم setdefault للتأكد من عدم مسح أي إعدادات سابقة عن طريق الخطأ، ولكن هنا نحن ننشئ القاموس
         engine_args["connect_args"] = {
-            "statement_cache_size": 0,
+            "statement_cache_size": 0,  # Disable prepared statements for AsyncPG
+            "prepared_statement_cache_size": 0, # Redundant safety for some SQLAlchemy versions
         }
 
-    logger.info(f"🔌 Connecting to database: {settings.ENVIRONMENT} mode")
-    if "sqlite" not in db_url:
-        logger.info("   -> Prepared Statements: DISABLED (PgBouncer Compatibility Mode)")
-        logger.debug(f"   -> Engine Args: {engine_args}")
+        logger.info(f"🔌 Connecting to Postgres Database: {settings.ENVIRONMENT}")
+        logger.warning("   -> Prepared Statements: DISABLED (PgBouncer Strict Compatibility Mode)")
+
+    # 🛑 LOGGING THE FINAL CONFIGURATION FOR DEBUGGING
+    # هذا السطر مهم جداً للتأكد من أن الإعدادات وصلت للمحرك بشكل صحيح
+    logger.debug(f"   -> Final Engine Args: {engine_args}")
 
     return create_async_engine(db_url, **engine_args)
 
