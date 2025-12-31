@@ -18,7 +18,7 @@
 #   - Health-Gated: Don't signal ready until healthy
 #   - Comprehensive Logging: Every action is logged
 #
-# الإصدار (Version): 2.0.0
+# الإصدار (Version): 2.0.1
 # التاريخ (Date): 2025-12-31
 ###############################################################################
 
@@ -48,13 +48,13 @@ trap 'lifecycle_error "Supervisor failed at line $LINENO"' ERR
 
 lifecycle_info "═══════════════════════════════════════════════════════"
 lifecycle_info "🎯 Application Lifecycle Supervisor Started"
-lifecycle_info "   Version: 2.0.0"
+lifecycle_info "   Version: 2.0.1"
 lifecycle_info "   PID: $$"
 lifecycle_info "   Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
 lifecycle_info "═══════════════════════════════════════════════════════"
 
 # ==============================================================================
-# STEP 0: System Readiness (جاهزية النظام)
+# STEP 0: System Readiness & Environment (جاهزية النظام والبيئة)
 # ==============================================================================
 
 lifecycle_info "Step 0/5: System readiness check..."
@@ -62,6 +62,20 @@ lifecycle_info "Step 0/5: System readiness check..."
 # Give container time to fully initialize
 lifecycle_info "Waiting for system stabilization (2s)..."
 sleep 2
+
+# Create default .env if missing (Critical for environment consistency)
+if [ ! -f .env ]; then
+    lifecycle_info "Creating default .env file..."
+    cat > .env <<EOF
+DATABASE_URL=sqlite+aiosqlite:///./dev.db
+SECRET_KEY=dev-secret
+TESTING=1
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=password
+ADMIN_NAME=AdminUser
+EOF
+    lifecycle_info "✅ Created default .env file"
+fi
 
 lifecycle_info "✅ System ready"
 lifecycle_set_state "system_ready" "$(date +%s)"
@@ -112,7 +126,8 @@ run_migrations() {
     lifecycle_info "Running database migrations..."
     
     if [ -f "scripts/smart_migrate.py" ]; then
-        if python scripts/smart_migrate.py; then
+        # IMPORTANT: Must pass 'upgrade head' to smart_migrate.py
+        if python scripts/smart_migrate.py upgrade head; then
             lifecycle_info "✅ Migrations completed successfully"
             return 0
         else
@@ -140,8 +155,9 @@ lifecycle_info "Step 3/5: Admin user seeding..."
 seed_admin() {
     lifecycle_info "Seeding admin user..."
     
-    if [ -f "scripts/seed_admin.py" ]; then
-        if python scripts/seed_admin.py; then
+    # Check for ensure_admin.py (Correct script name)
+    if [ -f "scripts/ensure_admin.py" ]; then
+        if python scripts/ensure_admin.py; then
             lifecycle_info "✅ Admin user seeded successfully"
             return 0
         else
@@ -149,7 +165,7 @@ seed_admin() {
             return 0  # Don't fail supervisor on seeding errors
         fi
     else
-        lifecycle_warn "Admin seeding script not found (skipping)"
+        lifecycle_warn "Admin seeding script (scripts/ensure_admin.py) not found (skipping)"
         return 0
     fi
 }
