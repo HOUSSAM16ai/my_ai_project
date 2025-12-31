@@ -783,7 +783,14 @@
                                                      isNewMessage = false;
                                                      lastUpdateTimestamp = Date.now();
                                                  } else {
-                                                     assistantMessage += content;
+                                                     // BROWSER SAFETY VALVE: Prevent OOM from massive streams
+                                                     if (assistantMessage.length < 50000) {
+                                                         assistantMessage += content;
+                                                     } else if (!assistantMessage.endsWith("... [Truncated by Browser Safeguard]")) {
+                                                         assistantMessage += "\n\n... [Truncated by Browser Safeguard]";
+                                                         console.warn("Stream truncated to prevent browser crash (50k limit reached)");
+                                                     }
+
                                                      // Throttled update: 200ms
                                                      const now = Date.now();
                                                      if (now - lastUpdateTimestamp > 200) {

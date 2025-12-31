@@ -125,6 +125,15 @@ class AdminChatStreamer:
                 ):
                     if content_part:
                         full_response.append(content_part)
+
+                        # NETWORK SAFETY VALVE: Prevent infinite stream attacks (Server Side)
+                        # إذا تجاوز الحجم الإجمالي 100 ألف حرف، نوقف البث لحماية الخادم والمتصفح
+                        current_size = sum(len(x) for x in full_response)
+                        if current_size > 100000:
+                            error_payload = {"type": "error", "payload": {"error": "Response exceeded safety limit (100k chars). Aborting stream."}}
+                            yield f"event: error\ndata: {json.dumps(error_payload)}\n\n"
+                            break
+
                         # تغليف المحتوى في الهيكل المتوقع (OpenAI Style Delta)
                         chunk_data = {"choices": [{"delta": {"content": content_part}}]}
                         yield f"data: {json.dumps(chunk_data)}\n\n"
