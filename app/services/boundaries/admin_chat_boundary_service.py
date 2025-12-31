@@ -233,7 +233,7 @@ class AdminChatBoundaryService:
             "messages": [
                 {
                     "role": msg.role.value,
-                    "content": msg.content,
+                    "content": msg.content[:50000] if msg.content else "",
                     "created_at": msg.created_at.isoformat() if msg.created_at else "",
                 }
                 for msg in messages
@@ -270,7 +270,7 @@ class AdminChatBoundaryService:
             "messages": [
                 {
                     "role": msg.role.value,
-                    "content": msg.content,
+                    "content": msg.content[:50000] if msg.content else "",
                     "created_at": msg.created_at.isoformat() if msg.created_at else "",
                 }
                 for msg in messages

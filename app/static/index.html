@@ -297,10 +297,46 @@
         // DOM SAFETY VALVE: Reduced to 15 to prevent memory exhaustion
         const MAX_MESSAGES = 15;
 
+        // Error Boundary to prevent "Browser Explosion"
+        class ErrorBoundary extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false };
+            }
+
+            static getDerivedStateFromError(error) {
+                return { hasError: true };
+            }
+
+            componentDidCatch(error, errorInfo) {
+                console.error("React Error Boundary caught an error:", error, errorInfo);
+            }
+
+            render() {
+                if (this.state.hasError) {
+                    return (
+                        <div style={{ padding: '20px', color: 'var(--error-color)', textAlign: 'center' }}>
+                            <h2>⚠️ Interface Error</h2>
+                            <p>Something went wrong rendering the chat interface.</p>
+                            <button onClick={() => window.location.reload()} style={{ width: 'auto', marginTop: '10px' }}>
+                                Reload Application
+                            </button>
+                        </div>
+                    );
+                }
+                return this.props.children;
+            }
+        }
+
         // Memoized Markdown Component
         // This is CRITICAL: It prevents re-parsing markdown for messages that haven't changed.
         const Markdown = memo(({ content }) => {
-            const html = showdownConverter.makeHtml(content);
+            // SAFEGUARD: Truncate content to 20,000 chars to prevent Showdown regex freeze
+            const safeContent = (content || "").length > 20000
+                ? (content.substring(0, 20000) + "\n\n... [Message Truncated due to size] ...")
+                : (content || "");
+
+            const html = showdownConverter.makeHtml(safeContent);
             return <div className="markdown-content" dangerouslySetInnerHTML={{ __html: html }} />;
         }, (prevProps, nextProps) => {
             return prevProps.content === nextProps.content;
@@ -845,7 +881,12 @@
             );
         };
 
-        ReactDOM.render(<App />, document.getElementById('root'));
+        ReactDOM.render(
+            <ErrorBoundary>
+                <App />
+            </ErrorBoundary>,
+            document.getElementById('root')
+        );
     </script>
 </body>
 </html>
