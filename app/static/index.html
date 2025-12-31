@@ -183,6 +183,8 @@
             flex-grow: 1;
             overflow-y: auto;
             padding: 10px 0;
+            /* Browser Optimization: helps with rendering large lists */
+            content-visibility: auto;
         }
         .message {
             margin-bottom: 15px;
@@ -195,6 +197,8 @@
             max-width: 80%;
             padding: 10px 15px;
             border-radius: 18px;
+            /* Optimization: reduce repaint area */
+            will-change: transform;
         }
         .message.user .message-bubble {
             background-color: var(--primary-color);
@@ -287,21 +291,27 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useCallback, memo } = React;
 
         const showdownConverter = new showdown.Converter();
-        // DOM SAFETY VALVE: Maximum number of messages to keep in the DOM
-        const MAX_MESSAGES = 20;
+        // DOM SAFETY VALVE: Reduced to 15 to prevent memory exhaustion
+        const MAX_MESSAGES = 15;
 
-        const Markdown = ({ content }) => {
+        // Memoized Markdown Component
+        // This is CRITICAL: It prevents re-parsing markdown for messages that haven't changed.
+        const Markdown = memo(({ content }) => {
             const html = showdownConverter.makeHtml(content);
             return <div className="markdown-content" dangerouslySetInnerHTML={{ __html: html }} />;
-        };
+        }, (prevProps, nextProps) => {
+            return prevProps.content === nextProps.content;
+        });
+
+        // Helper to generate unique IDs
+        const generateId = () => Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
 
         const App = () => {
             const [token, setToken] = useState(localStorage.getItem('token'));
             const [user, setUser] = useState(null);
-            // Initialize loading state if a token exists, to prevent flashing AuthScreen
             const [isLoading, setIsLoading] = useState(!!localStorage.getItem('token'));
 
             useEffect(() => {
@@ -334,9 +344,7 @@
                 localStorage.setItem('token', newToken);
                 setToken(newToken);
                 setUser(userData);
-                // Removed window.location.href reload to prevent "Temporal State Dislocation"
                 if (userData && userData.is_admin) {
-                     // Optionally update URL without reload
                      window.history.pushState({}, '', '/admin');
                 }
             };
@@ -511,24 +519,32 @@
 
             useEffect(scrollToBottom, [messages]);
 
-            // Helper to enforce safety valve
-            const safeSetMessages = (update) => {
+            // Transform backend messages to include a stable ID
+            const normalizeMessages = (msgs) => {
+                return msgs.map(msg => ({
+                    ...msg,
+                    id: msg.id || generateId() // Ensure every message has a stable ID
+                }));
+            };
+
+            // Helper to enforce safety valve with stable IDs
+            const safeSetMessages = useCallback((update) => {
                 setMessages(prev => {
                     let nextMessages;
                     if (typeof update === 'function') {
                         nextMessages = update(prev);
                     } else {
-                        nextMessages = update;
+                        // Normalize incoming full updates
+                        nextMessages = Array.isArray(update) ? normalizeMessages(update) : update;
                     }
 
                     // DOM SAFETY VALVE: Enforce strict limit
                     if (nextMessages.length > MAX_MESSAGES) {
-                         // Keep the last MAX_MESSAGES
                          return nextMessages.slice(nextMessages.length - MAX_MESSAGES);
                     }
                     return nextMessages;
                 });
-            };
+            }, []);
 
             const fetchConversations = async () => {
                 try {
@@ -547,7 +563,6 @@
 
             const loadConversation = async (id) => {
                 if (!id) return;
-                // Set active state immediately for visual feedback
                 setConversationId(id);
                 setIsLoadingConversation(true);
                 setMessages([]);
@@ -558,18 +573,16 @@
                     });
                     if (res.ok) {
                         const data = await res.json();
-                        // Use safeSetMessages to enforce limit on load
                         safeSetMessages(data.messages || []);
                         setConversationId(data.conversation_id);
                     } else {
-                        // Handle error - show error message to user
                         const errorData = await res.json().catch(() => ({}));
                         const errorMessage = errorData.detail || 'Failed to load conversation';
-                        safeSetMessages([{ role: 'assistant', content: `Error: ${errorMessage}` }]);
+                        safeSetMessages([{ id: generateId(), role: 'assistant', content: `Error: ${errorMessage}` }]);
                     }
                 } catch (e) {
                     console.error("Failed to load conversation", e);
-                    safeSetMessages([{ role: 'assistant', content: 'Error: Failed to load conversation. Please try again.' }]);
+                    safeSetMessages([{ id: generateId(), role: 'assistant', content: 'Error: Failed to load conversation. Please try again.' }]);
                 } finally {
                     setIsLoadingConversation(false);
                 }
@@ -577,7 +590,6 @@
 
             useEffect(() => {
                 fetchConversations();
-                // Load latest chat by default or new chat
                 const fetchLatest = async () => {
                      try {
                         const token = localStorage.getItem('token');
@@ -607,8 +619,9 @@
 
             const handleSend = async () => {
                 if (input.trim()) {
-                    // Optimistically add user message
-                    safeSetMessages(prev => [...prev, { role: 'user', content: input }]);
+                    // Optimistically add user message with a unique ID
+                    const userMsgId = generateId();
+                    safeSetMessages(prev => [...prev, { id: userMsgId, role: 'user', content: input }]);
                     setInput('');
 
                     try {
@@ -633,6 +646,7 @@
                         let assistantMessage = '';
                         let isNewMessage = true;
                         let lastUpdateTimestamp = 0;
+                        let assistantMsgId = generateId(); // Stable ID for the stream
 
                         while (true) {
                             const { value, done } = await reader.read();
@@ -652,9 +666,8 @@
 
                                         if (parsed.conversation_id && parsed.title) {
                                              setConversationId(parsed.conversation_id);
-                                             safeSetMessages(prev => [...prev, { role: 'init', content: `Conversation ${parsed.conversation_id} - ${parsed.title}` }]);
+                                             safeSetMessages(prev => [...prev, { id: generateId(), role: 'init', content: `Conversation ${parsed.conversation_id} - ${parsed.title}` }]);
                                              isNewMessage = true;
-                                             // Refresh conversation list to show new chat
                                              fetchConversations();
                                         }
                                         else if (parsed.choices && parsed.choices[0]) {
@@ -664,17 +677,18 @@
                                              if (content) {
                                                  if (isNewMessage) {
                                                      assistantMessage = content;
-                                                     safeSetMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+                                                     // Create new message block
+                                                     safeSetMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: assistantMessage }]);
                                                      isNewMessage = false;
                                                      lastUpdateTimestamp = Date.now();
                                                  } else {
                                                      assistantMessage += content;
-                                                     // Throttle updates: only update every 100ms
+                                                     // Throttled update: 200ms
                                                      const now = Date.now();
-                                                     if (now - lastUpdateTimestamp > 100) {
+                                                     if (now - lastUpdateTimestamp > 200) {
                                                          safeSetMessages(prev =>
-                                                             prev.map((msg, index) =>
-                                                                 index === prev.length - 1 ? { ...msg, content: assistantMessage } : msg
+                                                             prev.map(msg =>
+                                                                 msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
                                                              )
                                                          );
                                                          lastUpdateTimestamp = now;
@@ -683,19 +697,19 @@
                                              }
                                         }
                                         else if (parsed.content) {
+                                            // Handle other formats similar to above...
                                             if (isNewMessage) {
                                                  assistantMessage = parsed.content;
-                                                 safeSetMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+                                                 safeSetMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: assistantMessage }]);
                                                  isNewMessage = false;
                                                  lastUpdateTimestamp = Date.now();
                                              } else {
                                                  assistantMessage += parsed.content;
-                                                 // Throttle updates: only update every 100ms
                                                  const now = Date.now();
-                                                 if (now - lastUpdateTimestamp > 100) {
+                                                 if (now - lastUpdateTimestamp > 200) {
                                                      safeSetMessages(prev =>
-                                                         prev.map((msg, index) =>
-                                                             index === prev.length - 1 ? { ...msg, content: assistantMessage } : msg
+                                                         prev.map(msg =>
+                                                             msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
                                                          )
                                                      );
                                                      lastUpdateTimestamp = now;
@@ -703,7 +717,7 @@
                                              }
                                         }
                                         else if (parsed.type === 'error') {
-                                            safeSetMessages(prev => [...prev, { role: 'assistant', content: `Error: ${parsed.payload.error}` }]);
+                                            safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Error: ${parsed.payload.error}` }]);
                                         }
 
                                     } catch (e) {
@@ -713,18 +727,18 @@
                             });
                         }
 
-                        // Final update to ensure we have the complete message
+                        // Final update
                         if (!isNewMessage) {
                              safeSetMessages(prev =>
-                                 prev.map((msg, index) =>
-                                     index === prev.length - 1 ? { ...msg, content: assistantMessage } : msg
+                                 prev.map(msg =>
+                                     msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
                                  )
                              );
                         }
 
                     } catch (error) {
                         console.error('Streaming Error:', error);
-                        safeSetMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error.' }]);
+                        safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Sorry, I encountered an error.' }]);
                     }
                 }
             };
@@ -797,12 +811,14 @@
                                             <p style={{marginTop: '15px', color: '#888'}}>ابدأ محادثة جديدة للتفاعل مع Overmind...</p>
                                         </div>
                                     ) : (
-                                        messages.map((msg, index) => {
+                                        messages.map((msg) => {
+                                            // Ensure key is unique and stable. Fallback to random if no ID (should be covered by normalize)
+                                            const key = msg.id || Math.random();
                                             if (msg.role === 'init') {
-                                                return <div key={index} className="conversation-init">{msg.content}</div>;
+                                                return <div key={key} className="conversation-init">{msg.content}</div>;
                                             }
                                             return (
-                                                <div key={index} className={`message ${msg.role}`}>
+                                                <div key={key} className={`message ${msg.role}`}>
                                                     <div className="message-bubble">
                                                         <Markdown content={msg.content} />
                                                     </div>
