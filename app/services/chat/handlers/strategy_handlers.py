@@ -247,7 +247,7 @@ class MissionComplexHandler(IntentHandler):
         Runs the Overmind mission in a background task with its own session.
         """
         async with session_factory() as session:
-            overmind = create_overmind(session)
+            overmind = await create_overmind(session)
             await overmind.run_mission(mission_id)
 
     def _format_event(self, event: MissionEvent) -> str:

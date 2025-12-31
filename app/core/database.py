@@ -76,6 +76,7 @@ def _create_engine() -> AsyncEngine:
     logger.info(f"🔌 Connecting to database: {settings.ENVIRONMENT} mode")
     if "sqlite" not in db_url:
         logger.info("   -> Prepared Statements: DISABLED (PgBouncer Compatibility Mode)")
+        logger.debug(f"   -> Engine Args: {engine_args}")
 
     return create_async_engine(db_url, **engine_args)
 
