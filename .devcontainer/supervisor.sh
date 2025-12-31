@@ -216,7 +216,7 @@ fi
 lifecycle_info "Step 5/5: Health check and readiness verification..."
 
 # Wait for port to be available
-if ! lifecycle_wait_for_port "$APP_PORT" 30; then
+if ! lifecycle_wait_for_port "$APP_PORT" 60; then
     lifecycle_error "Port $APP_PORT did not become available"
     exit 1
 fi
@@ -247,7 +247,8 @@ fi
 # ==============================================================================
 
 lifecycle_info "═══════════════════════════════════════════════════════"
-lifecycle_info "🎉 Application Lifecycle Complete"
+lifecycle_info "🎉 Application Lifecycle Complete - SUPER SMOOTH STARTUP"
+lifecycle_info "═══════════════════════════════════════════════════════"
 lifecycle_info ""
 lifecycle_info "✅ All Systems Operational"
 lifecycle_info "   • Dependencies: Installed"
@@ -256,7 +257,7 @@ lifecycle_info "   • Admin User: Seeded"
 lifecycle_info "   • Server: Running on port $APP_PORT"
 lifecycle_info "   • Health: Verified"
 lifecycle_info ""
-lifecycle_info "🌐 Access Application:"
+lifecycle_info "🚀 CLICK HERE TO LOGIN:"
 lifecycle_info "   http://localhost:$APP_PORT"
 lifecycle_info ""
 lifecycle_info "📊 System Status:"
