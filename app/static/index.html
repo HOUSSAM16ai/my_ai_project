@@ -1,851 +1,470 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CogniForge V3 - Overmind CLI</title>
-    <script src="https://cdn.jsdelivr.net/npm/react@17/umd/react.development.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-dom@17/umd/react-dom.development.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CogniForge - نظام الذكاء الإدراكي</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --background-color: #1a1a1a;
-            --text-color: #e0e0e0;
-            --primary-color: #00aaff;
-            --secondary-color: #444;
-            --border-color: #555;
-            --input-bg-color: #2c2c2c;
-            --error-color: #ff4d4d;
-            --sidebar-bg: #252525;
+            --bg-1: #0a0e27; --bg-2: #1a1f3a; --bg-3: #252b48;
+            --text-1: #e8eaf6; --text-2: #9fa8da;
+            --accent-1: #00d4ff; --accent-2: #7c4dff;
+            --success: #00e676; --error: #ff1744; --border: #3d4466;
         }
-        body, html {
-            height: 100%;
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            overflow: hidden;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+            color: var(--text-1); min-height: 100vh; display: flex;
+            align-items: center; justify-content: center;
         }
-        #root {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
+        .container { width: 90%; max-width: 1200px; margin: 0 auto; }
+        .auth-screen {
+            background: var(--bg-2); border: 1px solid var(--border);
+            border-radius: 12px; padding: 3rem; max-width: 450px;
+            margin: 0 auto; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
-        .app-container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
+        .auth-screen h1 {
+            text-align: center; color: var(--accent-1);
+            margin-bottom: 2rem; font-size: 2rem;
         }
-        .login-container, .dashboard-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 20px;
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label {
+            display: block; margin-bottom: 0.5rem;
+            color: var(--text-2); font-size: 0.9rem;
         }
-        .login-form, .register-form {
-            background-color: var(--secondary-color);
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            width: 100%;
-            max-width: 400px;
+        .form-group input {
+            width: 100%; padding: 0.75rem; background: var(--bg-3);
+            border: 1px solid var(--border); border-radius: 6px;
+            color: var(--text-1); font-size: 1rem; transition: border-color 0.3s;
         }
-        h2 {
-            color: var(--primary-color);
-            text-align: center;
-            margin-bottom: 20px;
+        .form-group input:focus {
+            outline: none; border-color: var(--accent-1);
         }
-        .input-group {
-            margin-bottom: 20px;
+        .btn {
+            width: 100%; padding: 0.875rem;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            border: none; border-radius: 6px; color: white;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+            transition: transform 0.2s, opacity 0.3s;
         }
-        .input-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background-color: var(--input-bg-color);
-            color: var(--text-color);
+        .btn:hover { transform: translateY(-2px); opacity: 0.9; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .error-msg {
+            background: rgba(255, 23, 68, 0.1); border: 1px solid var(--error);
+            color: var(--error); padding: 0.75rem; border-radius: 6px;
+            margin-bottom: 1rem; text-align: center; font-size: 0.9rem;
         }
-        .error-message {
-            color: var(--error-color);
-            text-align: center;
-            margin-bottom: 15px;
-            min-height: 20px;
+        .success-msg {
+            background: rgba(0, 230, 118, 0.1); border: 1px solid var(--success);
+            color: var(--success); padding: 0.75rem; border-radius: 6px;
+            margin-bottom: 1rem; text-align: center; font-size: 0.9rem;
         }
-        button {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 4px;
-            background-color: var(--primary-color);
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
+        .toggle-auth {
+            text-align: center; margin-top: 1.5rem; color: var(--text-2);
         }
-        button:hover {
-            background-color: #0088cc;
+        .toggle-auth a {
+            color: var(--accent-1); cursor: pointer; text-decoration: none;
         }
-        .toggle-form {
-            text-align: center;
-            margin-top: 20px;
+        .toggle-auth a:hover { text-decoration: underline; }
+        .dashboard { display: none; }
+        .dashboard.active { display: block; }
+        .dashboard-header {
+            background: var(--bg-2); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .toggle-form a {
-            color: var(--primary-color);
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        /* Dashboard Layout */
-        .dashboard-layout {
-            display: flex;
-            height: 100%;
-            overflow: hidden;
-        }
-        .sidebar {
-            width: 250px;
-            background-color: var(--sidebar-bg);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-            overflow-y: auto;
-        }
-        .sidebar-header {
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 10px;
-        }
-        .new-chat-btn {
-            background-color: var(--primary-color);
-            margin-bottom: 15px;
-        }
-        .conversation-list {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .conversation-item {
-            padding: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: #ccc;
-        }
-        .conversation-item:hover {
-            background-color: var(--border-color);
-        }
-        .conversation-item.active {
-            background-color: #333;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-        .chat-area {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .chat-container {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            padding: 20px;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
-        }
+        .dashboard-header h1 { color: var(--accent-1); font-size: 1.5rem; }
+        .user-info { display: flex; align-items: center; gap: 1rem; }
         .logout-btn {
-            background: none;
-            border: none;
-            color: var(--primary-color);
-            cursor: pointer;
-            font-size: 16px;
+            padding: 0.5rem 1.5rem; background: var(--bg-3);
+            border: 1px solid var(--border); border-radius: 6px;
+            color: var(--text-1); cursor: pointer; transition: background 0.3s;
         }
-        .messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 10px 0;
-            /* Browser Optimization: helps with rendering large lists */
-            content-visibility: auto;
+        .logout-btn:hover { background: var(--border); }
+        .chat-container {
+            background: var(--bg-2); border: 1px solid var(--border);
+            border-radius: 12px; height: 70vh; display: flex; flex-direction: column;
+        }
+        .chat-messages {
+            flex: 1; overflow-y: auto; padding: 1.5rem;
+            display: flex; flex-direction: column; gap: 1rem;
+        }
+        .chat-messages::-webkit-scrollbar { width: 8px; }
+        .chat-messages::-webkit-scrollbar-track { background: var(--bg-3); }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--border); border-radius: 4px;
         }
         .message {
-            margin-bottom: 15px;
-            display: flex;
+            max-width: 70%; padding: 1rem; border-radius: 12px; line-height: 1.6;
+            word-wrap: break-word; white-space: pre-wrap;
         }
         .message.user {
-            justify-content: flex-end;
-        }
-        .message-bubble {
-            max-width: 80%;
-            padding: 10px 15px;
-            border-radius: 18px;
-            /* Optimization: reduce repaint area */
-            will-change: transform;
-        }
-        .message.user .message-bubble {
-            background-color: var(--primary-color);
+            align-self: flex-end;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
             color: white;
-            border-bottom-right-radius: 4px;
         }
-        .message.assistant .message-bubble {
-            background-color: var(--secondary-color);
-            border-bottom-left-radius: 4px;
+        .message.assistant {
+            align-self: flex-start; background: var(--bg-3);
+            border: 1px solid var(--border);
         }
-        .input-area {
-            display: flex;
-            padding-top: 10px;
-            border-top: 1px solid var(--border-color);
+        .welcome-message {
+            text-align: center; color: var(--text-2); padding: 2rem;
         }
-        .input-area textarea {
-            flex-grow: 1;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background-color: var(--input-bg-color);
-            color: var(--text-color);
-            resize: none;
-            max-height: 100px;
-            font-family: inherit;
+        .welcome-message h2 {
+            color: var(--accent-1); margin-bottom: 1rem;
         }
-        .input-area button {
-            width: auto;
-            margin-left: 10px;
-            padding: 0 20px;
+        .chat-input-area {
+            padding: 1.5rem; border-top: 1px solid var(--border);
+            display: flex; gap: 1rem;
         }
-        /* Markdown styles */
-        .markdown-content p {
-            margin-top: 0;
-            margin-bottom: 1em;
+        .chat-input-area input {
+            flex: 1; padding: 0.875rem; background: var(--bg-3);
+            border: 1px solid var(--border); border-radius: 6px;
+            color: var(--text-1); font-size: 1rem;
         }
-        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
-            margin-top: 1em;
-            margin-bottom: 0.5em;
-            color: var(--primary-color);
+        .chat-input-area input:focus {
+            outline: none; border-color: var(--accent-1);
         }
-        .markdown-content ul, .markdown-content ol {
-            padding-left: 20px;
+        .send-btn {
+            padding: 0.875rem 2rem;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            border: none; border-radius: 6px; color: white;
+            font-weight: 600; cursor: pointer; transition: transform 0.2s;
         }
-        .markdown-content code {
-            background-color: var(--input-bg-color);
-            padding: 0.2em 0.4em;
-            border-radius: 3px;
-            font-family: 'Courier New', Courier, monospace;
+        .send-btn:hover { transform: translateY(-2px); }
+        .send-btn:disabled {
+            opacity: 0.5; cursor: not-allowed; transform: none;
         }
-        .markdown-content pre {
-            background-color: var(--input-bg-color);
-            padding: 10px;
-            border-radius: 4px;
-            overflow-x: auto;
+        .loading {
+            display: inline-block; width: 20px; height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%; border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
         }
-        .markdown-content pre code {
-            padding: 0;
-            background-color: transparent;
-        }
-         .welcome-message {
-            text-align: center;
-            margin-top: 20%;
-            font-size: 1.2em;
-            color: #888;
-        }
-        .conversation-init {
-            text-align: center;
-            font-size: 0.9em;
-            color: #888;
-            margin: 10px 0;
-            font-weight: bold;
-        }
-        /* Loading Screen */
-        .loading-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            color: var(--primary-color);
-        }
-        .loading-screen i {
-            font-size: 3em;
-            margin-bottom: 20px;
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div class="container">
+        <div id="authScreen" class="auth-screen">
+            <h1>🧠 CogniForge</h1>
+            <div id="authError" class="error-msg hidden"></div>
+            <div id="authSuccess" class="success-msg hidden"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">البريد الإلكتروني</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">كلمة المرور</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn">
+                    <span id="loginBtnText">تسجيل الدخول</span>
+                    <span id="loginBtnLoading" class="loading hidden"></span>
+                </button>
+            </form>
+            <form id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label for="registerName">الاسم</label>
+                    <input type="text" id="registerName" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">البريد الإلكتروني</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">كلمة المرور</label>
+                    <input type="password" id="registerPassword" required>
+                </div>
+                <button type="submit" class="btn">
+                    <span id="registerBtnText">إنشاء حساب</span>
+                    <span id="registerBtnLoading" class="loading hidden"></span>
+                </button>
+            </form>
+            <div class="toggle-auth">
+                <span id="toggleText">ليس لديك حساب؟</span>
+                <a id="toggleLink">إنشاء حساب</a>
+            </div>
+        </div>
+        <div id="dashboard" class="dashboard">
+            <div class="dashboard-header">
+                <h1>لوحة التحكم - Overmind</h1>
+                <div class="user-info">
+                    <span id="userName"></span>
+                    <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
+                </div>
+            </div>
+            <div class="chat-container">
+                <div id="chatMessages" class="chat-messages">
+                    <div class="welcome-message">
+                        <h2>مرحباً بك في Overmind</h2>
+                        <p>نظام الذكاء الإدراكي المتقدم</p>
+                        <p style="margin-top: 1rem;">ابدأ محادثة جديدة...</p>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="اكتب رسالتك هنا..." onkeypress="handleKeyPress(event)">
+                    <button class="send-btn" onclick="sendMessage()">
+                        <span id="sendBtnText">إرسال</span>
+                        <span id="sendBtnLoading" class="loading hidden"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let token = localStorage.getItem('token');
+        let currentUser = null;
+        let isLoginMode = true;
+        let conversationId = null;
+        const MAX_MESSAGES = 50;
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback, memo } = React;
-
-        const showdownConverter = new showdown.Converter();
-        // DOM SAFETY VALVE: Reduced to 15 to prevent memory exhaustion
-        const MAX_MESSAGES = 15;
-
-        // Memoized Markdown Component
-        // This is CRITICAL: It prevents re-parsing markdown for messages that haven't changed.
-        const Markdown = memo(({ content }) => {
-            const html = showdownConverter.makeHtml(content);
-            return <div className="markdown-content" dangerouslySetInnerHTML={{ __html: html }} />;
-        }, (prevProps, nextProps) => {
-            return prevProps.content === nextProps.content;
+        document.addEventListener('DOMContentLoaded', () => {
+            if (token) verifyToken();
+            setupEventListeners();
         });
 
-        // Helper to generate unique IDs
-        const generateId = () => Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        function setupEventListeners() {
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('registerForm').addEventListener('submit', handleRegister);
+            document.getElementById('toggleLink').addEventListener('click', toggleAuthMode);
+        }
 
-        const App = () => {
-            const [token, setToken] = useState(localStorage.getItem('token'));
-            const [user, setUser] = useState(null);
-            const [isLoading, setIsLoading] = useState(!!localStorage.getItem('token'));
-
-            useEffect(() => {
-                const fetchUser = async () => {
-                    if (token) {
-                        try {
-                            const response = await fetch('/api/security/user/me', {
-                                headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            if (response.ok) {
-                                const userData = await response.json();
-                                setUser(userData);
-                            } else {
-                                logout();
-                            }
-                        } catch (error) {
-                            console.error("Failed to fetch user:", error);
-                            logout();
-                        } finally {
-                            setIsLoading(false);
-                        }
-                    } else {
-                        setIsLoading(false);
-                    }
-                };
-                fetchUser();
-            }, [token]);
-
-            const handleLogin = (newToken, userData) => {
-                localStorage.setItem('token', newToken);
-                setToken(newToken);
-                setUser(userData);
-                if (userData && userData.is_admin) {
-                     window.history.pushState({}, '', '/admin');
-                }
-            };
-
-            const logout = () => {
-                localStorage.removeItem('token');
-                setToken(null);
-                setUser(null);
-                window.location.href = '/';
-            };
-
-            if (isLoading) {
-                return (
-                    <div className="loading-screen">
-                        <i className="fas fa-circle-notch fa-spin"></i>
-                        <h2>Initializing Reality Kernel...</h2>
-                    </div>
-                );
-            }
-
-            if (!token || !user) {
-                return <AuthScreen onLogin={handleLogin} />;
-            }
-
-            if (user.is_admin) {
-               return <AdminDashboard user={user} onLogout={logout} />;
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const toggleText = document.getElementById('toggleText');
+            const toggleLink = document.getElementById('toggleLink');
+            if (isLoginMode) {
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                toggleText.textContent = 'ليس لديك حساب؟';
+                toggleLink.textContent = 'إنشاء حساب';
             } else {
-               return (
-                   <div className="dashboard-container">
-                       <h2>Welcome, {user.name}</h2>
-                       <p>You do not have administrative privileges.</p>
-                       <button onClick={logout}>Logout</button>
-                   </div>
-               );
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+                toggleText.textContent = 'لديك حساب بالفعل؟';
+                toggleLink.textContent = 'تسجيل الدخول';
             }
-        };
+            clearMessages();
+        }
 
-        const AuthScreen = ({ onLogin }) => {
-            const [isLogin, setIsLogin] = useState(true);
-            return (
-                <div className="login-container">
-                    {isLogin ?
-                        <LoginForm onLogin={onLogin} onToggle={() => setIsLogin(false)} /> :
-                        <RegisterForm onToggle={() => setIsLogin(true)} />
-                    }
-                </div>
-            );
-        };
-
-        const LoginForm = ({ onLogin, onToggle }) => {
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
-            const [error, setError] = useState('');
-            const [isSubmitting, setIsSubmitting] = useState(false);
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setError('');
-                setIsSubmitting(true);
-                try {
-                    const response = await fetch('/api/security/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, password })
-                    });
-                    if (response.ok) {
-                        const data = await response.json();
-                        onLogin(data.access_token, data.user);
-                    } else {
-                        const errorData = await response.json();
-                        setError(errorData.detail || 'Login failed');
-                    }
-                } catch (err) {
-                    setError('An error occurred. Please try again.');
-                } finally {
-                    setIsSubmitting(false);
-                }
-            };
-
-            return (
-                <div className="login-form">
-                    <form onSubmit={handleSubmit}>
-                        <h2>Admin Login</h2>
-                        <div className="error-message">{error}</div>
-                        <div className="input-group">
-                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required />
-                        </div>
-                        <div className="input-group">
-                            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required />
-                        </div>
-                        <button type="submit" disabled={isSubmitting}>
-                            {isSubmitting ? <i className="fas fa-spinner fa-spin"></i> : 'Login'}
-                        </button>
-                    </form>
-                    <div className="toggle-form">
-                        <a onClick={onToggle}>Don't have an account? Register</a>
-                    </div>
-                </div>
-            );
-        };
-
-        const RegisterForm = ({ onToggle }) => {
-            const [name, setName] = useState('');
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
-            const [error, setError] = useState('');
-            const [success, setSuccess] = useState('');
-            const [isSubmitting, setIsSubmitting] = useState(false);
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setError('');
-                setSuccess('');
-                setIsSubmitting(true);
-                try {
-                    const response = await fetch('/api/security/register', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ full_name: name, email, password, is_admin: false })
-                    });
-                    if (response.ok) {
-                        setSuccess('Registration successful! Please login.');
-                        setTimeout(onToggle, 2000);
-                    } else {
-                        const errorData = await response.json();
-                        setError(errorData.detail || 'Registration failed');
-                    }
-                } catch (err) {
-                    setError('An error occurred. Please try again.');
-                } finally {
-                    setIsSubmitting(false);
-                }
-            };
-
-            return (
-                <div className="register-form">
-                    <form onSubmit={handleSubmit}>
-                         <h2>Register</h2>
-                        <div className="error-message">{error}</div>
-                        {success && <div style={{color: 'lightgreen', textAlign: 'center', marginBottom: '15px'}}>{success}</div>}
-                        <div className="input-group">
-                             <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Name" required />
-                        </div>
-                        <div className="input-group">
-                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required />
-                        </div>
-                        <div className="input-group">
-                             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required />
-                        </div>
-                        <button type="submit" disabled={isSubmitting}>
-                             {isSubmitting ? <i className="fas fa-spinner fa-spin"></i> : 'Register'}
-                        </button>
-                    </form>
-                    <div className="toggle-form">
-                        <a onClick={onToggle}>Already have an account? Login</a>
-                    </div>
-                </div>
-            );
-        };
-
-        const AdminDashboard = ({ user, onLogout }) => {
-            const [messages, setMessages] = useState([]);
-            const [conversations, setConversations] = useState([]);
-            const [conversationId, setConversationId] = useState(null);
-            const [input, setInput] = useState('');
-            const [isLoadingConversation, setIsLoadingConversation] = useState(false);
-            const messagesEndRef = useRef(null);
-
-            const scrollToBottom = () => {
-                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-            };
-
-            useEffect(scrollToBottom, [messages]);
-
-            // Transform backend messages to include a stable ID
-            const normalizeMessages = (msgs) => {
-                return msgs.map(msg => ({
-                    ...msg,
-                    id: msg.id || generateId() // Ensure every message has a stable ID
-                }));
-            };
-
-            // Helper to enforce safety valve with stable IDs
-            const safeSetMessages = useCallback((update) => {
-                setMessages(prev => {
-                    let nextMessages;
-                    if (typeof update === 'function') {
-                        nextMessages = update(prev);
-                    } else {
-                        // Normalize incoming full updates
-                        nextMessages = Array.isArray(update) ? normalizeMessages(update) : update;
-                    }
-
-                    // DOM SAFETY VALVE: Enforce strict limit
-                    if (nextMessages.length > MAX_MESSAGES) {
-                         return nextMessages.slice(nextMessages.length - MAX_MESSAGES);
-                    }
-                    return nextMessages;
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            setLoading('login', true);
+            clearMessages();
+            try {
+                const response = await fetch('/api/security/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
                 });
-            }, []);
-
-            const fetchConversations = async () => {
-                try {
-                    const token = localStorage.getItem('token');
-                    const res = await fetch('/admin/api/conversations', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        setConversations(data);
-                    }
-                } catch (e) {
-                    console.error("Failed to fetch conversations", e);
+                const data = await response.json();
+                if (response.ok) {
+                    token = data.access_token;
+                    localStorage.setItem('token', token);
+                    currentUser = data.user;
+                    showDashboard();
+                } else {
+                    showError(data.detail || 'فشل تسجيل الدخول');
                 }
-            };
+            } catch (error) {
+                showError('حدث خطأ في الاتصال');
+            } finally {
+                setLoading('login', false);
+            }
+        }
 
-            const loadConversation = async (id) => {
-                if (!id) return;
-                setConversationId(id);
-                setIsLoadingConversation(true);
-                setMessages([]);
-                try {
-                    const token = localStorage.getItem('token');
-                    const res = await fetch(`/admin/api/conversations/${id}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        safeSetMessages(data.messages || []);
-                        setConversationId(data.conversation_id);
-                    } else {
-                        const errorData = await res.json().catch(() => ({}));
-                        const errorMessage = errorData.detail || 'Failed to load conversation';
-                        safeSetMessages([{ id: generateId(), role: 'assistant', content: `Error: ${errorMessage}` }]);
-                    }
-                } catch (e) {
-                    console.error("Failed to load conversation", e);
-                    safeSetMessages([{ id: generateId(), role: 'assistant', content: 'Error: Failed to load conversation. Please try again.' }]);
-                } finally {
-                    setIsLoadingConversation(false);
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            setLoading('register', true);
+            clearMessages();
+            try {
+                const response = await fetch('/api/security/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ full_name: name, email, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showSuccess('تم إنشاء الحساب بنجاح! جاري تسجيل الدخول...');
+                    setTimeout(() => {
+                        document.getElementById('loginEmail').value = email;
+                        document.getElementById('loginPassword').value = password;
+                        toggleAuthMode();
+                    }, 1500);
+                } else {
+                    showError(data.detail || 'فشل إنشاء الحساب');
                 }
-            };
+            } catch (error) {
+                showError('حدث خطأ في الاتصال');
+            } finally {
+                setLoading('register', false);
+            }
+        }
 
-            useEffect(() => {
-                fetchConversations();
-                const fetchLatest = async () => {
-                     try {
-                        const token = localStorage.getItem('token');
-                        const res = await fetch('/admin/api/chat/latest', {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        if (res.ok) {
-                            const data = await res.json();
-                            if (data.messages && Array.isArray(data.messages)) {
-                                safeSetMessages(data.messages);
-                            }
-                            if (data.conversation_id) {
-                                setConversationId(data.conversation_id);
-                            }
-                        }
-                    } catch (e) {
-                        console.error("Failed to fetch latest", e);
-                    }
-                };
-                fetchLatest();
-            }, []);
+        async function verifyToken() {
+            try {
+                const response = await fetch('/api/security/user/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    currentUser = await response.json();
+                    showDashboard();
+                } else {
+                    logout();
+                }
+            } catch (error) {
+                logout();
+            }
+        }
 
-            const handleNewChat = () => {
-                setMessages([]);
-                setConversationId(null);
-            };
+        function showDashboard() {
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('dashboard').classList.add('active');
+            document.getElementById('userName').textContent = currentUser.full_name || currentUser.name || currentUser.email;
+        }
 
-            const handleSend = async () => {
-                if (input.trim()) {
-                    // Optimistically add user message with a unique ID
-                    const userMsgId = generateId();
-                    safeSetMessages(prev => [...prev, { id: userMsgId, role: 'user', content: input }]);
-                    setInput('');
+        function logout() {
+            localStorage.removeItem('token');
+            token = null;
+            currentUser = null;
+            location.reload();
+        }
 
-                    try {
-                        const payload = { question: input };
-                        if (conversationId) {
-                            payload.conversation_id = String(conversationId);
-                        }
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
 
-                        const response = await fetch('/admin/api/chat/stream', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`
-                            },
-                            body: JSON.stringify(payload)
-                        });
+            addMessage(message, 'user');
+            input.value = '';
+            setLoading('send', true);
 
-                        if (!response.ok) throw new Error('Network response was not ok');
+            try {
+                const payload = { question: message };
+                if (conversationId) payload.conversation_id = String(conversationId);
 
-                        const reader = response.body.getReader();
-                        const decoder = new TextDecoder();
-                        let assistantMessage = '';
-                        let isNewMessage = true;
-                        let lastUpdateTimestamp = 0;
-                        let assistantMsgId = generateId(); // Stable ID for the stream
+                const response = await fetch('/admin/api/chat/stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
 
-                        while (true) {
-                            const { value, done } = await reader.read();
-                            if (done) break;
+                if (!response.ok) throw new Error('Network response was not ok');
 
-                            const chunk = decoder.decode(value, { stream: true });
-                            const lines = chunk.split('\n\n');
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let assistantMessage = '';
+                let assistantMsgElement = null;
 
-                            lines.forEach(line => {
-                                if (line.startsWith('data: ')) {
-                                    const dataContent = line.substring(6);
-                                    if (dataContent === '[DONE]') {
-                                        return;
-                                    }
-                                    try {
-                                        const parsed = JSON.parse(dataContent);
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
 
-                                        if (parsed.conversation_id && parsed.title) {
-                                             setConversationId(parsed.conversation_id);
-                                             safeSetMessages(prev => [...prev, { id: generateId(), role: 'init', content: `Conversation ${parsed.conversation_id} - ${parsed.title}` }]);
-                                             isNewMessage = true;
-                                             fetchConversations();
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const dataContent = line.substring(6);
+                            if (dataContent === '[DONE]') continue;
+
+                            try {
+                                const parsed = JSON.parse(dataContent);
+                                if (parsed.conversation_id) {
+                                    conversationId = parsed.conversation_id;
+                                } else if (parsed.choices && parsed.choices[0]) {
+                                    const content = parsed.choices[0].delta?.content || '';
+                                    if (content) {
+                                        assistantMessage += content;
+                                        if (!assistantMsgElement) {
+                                            assistantMsgElement = addMessage(assistantMessage, 'assistant');
+                                        } else {
+                                            assistantMsgElement.textContent = assistantMessage;
                                         }
-                                        else if (parsed.choices && parsed.choices[0]) {
-                                             const delta = parsed.choices[0].delta || {};
-                                             const content = delta.content || '';
-
-                                             if (content) {
-                                                 if (isNewMessage) {
-                                                     assistantMessage = content;
-                                                     // Create new message block
-                                                     safeSetMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: assistantMessage }]);
-                                                     isNewMessage = false;
-                                                     lastUpdateTimestamp = Date.now();
-                                                 } else {
-                                                     assistantMessage += content;
-                                                     // Throttled update: 200ms
-                                                     const now = Date.now();
-                                                     if (now - lastUpdateTimestamp > 200) {
-                                                         safeSetMessages(prev =>
-                                                             prev.map(msg =>
-                                                                 msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
-                                                             )
-                                                         );
-                                                         lastUpdateTimestamp = now;
-                                                     }
-                                                 }
-                                             }
-                                        }
-                                        else if (parsed.content) {
-                                            // Handle other formats similar to above...
-                                            if (isNewMessage) {
-                                                 assistantMessage = parsed.content;
-                                                 safeSetMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: assistantMessage }]);
-                                                 isNewMessage = false;
-                                                 lastUpdateTimestamp = Date.now();
-                                             } else {
-                                                 assistantMessage += parsed.content;
-                                                 const now = Date.now();
-                                                 if (now - lastUpdateTimestamp > 200) {
-                                                     safeSetMessages(prev =>
-                                                         prev.map(msg =>
-                                                             msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
-                                                         )
-                                                     );
-                                                     lastUpdateTimestamp = now;
-                                                 }
-                                             }
-                                        }
-                                        else if (parsed.type === 'error') {
-                                            safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Error: ${parsed.payload.error}` }]);
-                                        }
-
-                                    } catch (e) {
-                                        console.error('Error parsing stream data:', e);
                                     }
                                 }
-                            });
+                            } catch (e) {
+                                console.error('Parse error:', e);
+                            }
                         }
-
-                        // Final update
-                        if (!isNewMessage) {
-                             safeSetMessages(prev =>
-                                 prev.map(msg =>
-                                     msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
-                                 )
-                             );
-                        }
-
-                    } catch (error) {
-                        console.error('Streaming Error:', error);
-                        safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Sorry, I encountered an error.' }]);
                     }
                 }
-            };
+            } catch (error) {
+                console.error('Streaming Error:', error);
+                addMessage('عذراً، حدث خطأ في معالجة الرسالة', 'assistant');
+            } finally {
+                setLoading('send', false);
+            }
+        }
 
-            const handleKeyPress = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                }
-            };
+        function addMessage(content, role) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const welcome = messagesContainer.querySelector('.welcome-message');
+            if (welcome) welcome.remove();
 
-            return (
-                <div className="app-container">
-                    <div className="header">
-                        <h2>Overmind CLI Mindgate - Welcome, {user.name}</h2>
-                        <button onClick={onLogout} className="logout-btn"><i className="fas fa-sign-out-alt"></i> Logout</button>
-                    </div>
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            messageDiv.textContent = content;
+            messagesContainer.appendChild(messageDiv);
 
-                    <div className="dashboard-layout">
-                        <div className="sidebar">
-                             <div className="sidebar-header">
-                                 <button className="new-chat-btn" onClick={handleNewChat}>
-                                     <i className="fas fa-plus"></i> New Chat
-                                 </button>
-                             </div>
-                             <div className="conversation-list">
-                                 {conversations.map(conv => {
-                                     const isActive = conversationId === conv.conversation_id;
-                                     const isLoading = isActive && isLoadingConversation;
-                                     const iconClass = isLoading ? 'fa-spinner fa-spin' : 'fa-comment-alt';
-                                     return (
-                                         <div
-                                             key={conv.conversation_id}
-                                             className={`conversation-item ${isActive ? 'active' : ''}`}
-                                             onClick={() => loadConversation(conv.conversation_id)}
-                                         >
-                                             <i className={`fas ${iconClass}`} style={{marginRight: '8px'}}></i>
-                                             {conv.title || `Conversation ${conv.conversation_id}`}
-                                         </div>
-                                     );
-                                 })}
-                             </div>
-                        </div>
+            const messages = messagesContainer.querySelectorAll('.message');
+            if (messages.length > MAX_MESSAGES) {
+                messages[0].remove();
+            }
 
-                        <div className="chat-area">
-                            <div className="chat-container">
-                                <div className="messages">
-                                    {isLoadingConversation ? (
-                                        <div className="welcome-message">
-                                            <i className="fas fa-spinner fa-spin" style={{fontSize: '2em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
-                                            <p>Loading conversation...</p>
-                                        </div>
-                                    ) : messages.length === 0 ? (
-                                        <div className="welcome-message">
-                                            <i className="fas fa-brain" style={{fontSize: '3em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
-                                            <h3 style={{margin: '10px 0', color: 'var(--primary-color)'}}>🧠 OVERMIND CLI MINDGATE</h3>
-                                            <p style={{fontSize: '0.9em', color: '#666', marginBottom: '15px'}}>
-                                                <strong>الهوية:</strong> المُنسق الذكي الأعلى لمنصة CogniForge
-                                            </p>
-                                            <div style={{textAlign: 'right', fontSize: '0.85em', color: '#555', maxWidth: '500px', margin: '0 auto', padding: '15px', background: 'rgba(74, 144, 226, 0.05)', borderRadius: '10px', border: '1px solid rgba(74, 144, 226, 0.2)'}}>
-                                                <p><strong>📊 القدرات:</strong></p>
-                                                <ul style={{textAlign: 'right', paddingRight: '20px', margin: '10px 0'}}>
-                                                    <li>تحليل المشاكل المعمارية المعقدة</li>
-                                                    <li>اقتراح حلول كود جاهزة للتنفيذ</li>
-                                                    <li>فهم سياق المحادثة السابقة</li>
-                                                    <li>التواصل بالعربية والإنجليزية</li>
-                                                </ul>
-                                                <p style={{marginTop: '10px'}}><strong>🏗️ النظام:</strong> FastAPI + SQLAlchemy + Pydantic v2</p>
-                                            </div>
-                                            <p style={{marginTop: '15px', color: '#888'}}>ابدأ محادثة جديدة للتفاعل مع Overmind...</p>
-                                        </div>
-                                    ) : (
-                                        messages.map((msg) => {
-                                            // Ensure key is unique and stable. Fallback to random if no ID (should be covered by normalize)
-                                            const key = msg.id || Math.random();
-                                            if (msg.role === 'init') {
-                                                return <div key={key} className="conversation-init">{msg.content}</div>;
-                                            }
-                                            return (
-                                                <div key={key} className={`message ${msg.role}`}>
-                                                    <div className="message-bubble">
-                                                        <Markdown content={msg.content} />
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                    <div ref={messagesEndRef} />
-                                </div>
-                                <div className="input-area">
-                                    <textarea
-                                        value={input}
-                                        onChange={(e) => setInput(e.target.value)}
-                                        onKeyPress={handleKeyPress}
-                                        placeholder="Enter your command..."
-                                        rows="1"
-                                    />
-                                    <button onClick={handleSend}><i className="fas fa-paper-plane"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            return messageDiv;
+        }
 
-        ReactDOM.render(<App />, document.getElementById('root'));
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') sendMessage();
+        }
+
+        function setLoading(type, isLoading) {
+            const btnText = document.getElementById(`${type}BtnText`);
+            const btnLoading = document.getElementById(`${type}BtnLoading`);
+            const btn = btnText.closest('button');
+            if (isLoading) {
+                btnText.classList.add('hidden');
+                btnLoading.classList.remove('hidden');
+                btn.disabled = true;
+            } else {
+                btnText.classList.remove('hidden');
+                btnLoading.classList.add('hidden');
+                btn.disabled = false;
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('authError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('authSuccess');
+            successDiv.textContent = message;
+            successDiv.classList.remove('hidden');
+        }
+
+        function clearMessages() {
+            document.getElementById('authError').classList.add('hidden');
+            document.getElementById('authSuccess').classList.add('hidden');
+        }
     </script>
 </body>
 </html>
