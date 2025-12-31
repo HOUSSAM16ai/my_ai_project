@@ -219,14 +219,14 @@ class AdminChatBoundaryService:
     async def get_latest_conversation_details(self, user_id: int) -> dict[str, Any] | None:
         """
         استرجاع تفاصيل آخر محادثة للوحة التحكم.
-        يفرض حداً أقصى صارماً للرسائل (50) لمنع انهيار المتصفح وتجميد التطبيق.
+        يفرض حداً أقصى صارماً للرسائل (20) لمنع انهيار المتصفح وتجميد التطبيق.
         """
         conversation = await self.persistence.get_latest_conversation(user_id)
         if not conversation:
             return None
 
         # استخدام حد أقصى صارم (Strict Limit) لمنع التجميد (Freezing)
-        messages = await self.persistence.get_conversation_messages(conversation.id, limit=25)
+        messages = await self.persistence.get_conversation_messages(conversation.id, limit=20)
         return {
             "conversation_id": conversation.id,
             "title": conversation.title,
@@ -259,11 +259,11 @@ class AdminChatBoundaryService:
     async def get_conversation_details(self, user_id: int, conversation_id: int) -> dict[str, Any]:
         """
         استرجاع التفاصيل الكاملة لمحادثة محددة.
-        يفرض حداً أقصى صارماً للرسائل (50) لمنع انهيار المتصفح وتجميد التطبيق.
+        يفرض حداً أقصى صارماً للرسائل (20) لمنع انهيار المتصفح وتجميد التطبيق.
         """
         conversation = await self.verify_conversation_access(user_id, conversation_id)
-        # خفض الحد من 1000 إلى 25 لحل مشكلة التشنج (App Freeze) - تم التخفيض مرة أخرى
-        messages = await self.persistence.get_conversation_messages(conversation.id, limit=25)
+        # خفض الحد من 1000 إلى 25 ثم إلى 20 لحل مشكلة التشنج (App Freeze) - تم التخفيض مرة أخرى
+        messages = await self.persistence.get_conversation_messages(conversation.id, limit=20)
         return {
             "conversation_id": conversation.id,
             "title": conversation.title,
