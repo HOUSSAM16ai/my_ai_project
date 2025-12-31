@@ -226,7 +226,7 @@ class AdminChatBoundaryService:
             return None
 
         # استخدام حد أقصى صارم (Strict Limit) لمنع التجميد (Freezing)
-        messages = await self.persistence.get_conversation_messages(conversation.id, limit=50)
+        messages = await self.persistence.get_conversation_messages(conversation.id, limit=25)
         return {
             "conversation_id": conversation.id,
             "title": conversation.title,
@@ -262,8 +262,8 @@ class AdminChatBoundaryService:
         يفرض حداً أقصى صارماً للرسائل (50) لمنع انهيار المتصفح وتجميد التطبيق.
         """
         conversation = await self.verify_conversation_access(user_id, conversation_id)
-        # خفض الحد من 1000 إلى 50 لحل مشكلة التشنج (App Freeze)
-        messages = await self.persistence.get_conversation_messages(conversation.id, limit=50)
+        # خفض الحد من 1000 إلى 25 لحل مشكلة التشنج (App Freeze) - تم التخفيض مرة أخرى
+        messages = await self.persistence.get_conversation_messages(conversation.id, limit=25)
         return {
             "conversation_id": conversation.id,
             "title": conversation.title,
