@@ -291,7 +291,7 @@
 
         const showdownConverter = new showdown.Converter();
         // DOM SAFETY VALVE: Maximum number of messages to keep in the DOM
-        const MAX_MESSAGES = 40;
+        const MAX_MESSAGES = 20;
 
         const Markdown = ({ content }) => {
             const html = showdownConverter.makeHtml(content);
@@ -632,6 +632,7 @@
                         const decoder = new TextDecoder();
                         let assistantMessage = '';
                         let isNewMessage = true;
+                        let lastUpdateTimestamp = 0;
 
                         while (true) {
                             const { value, done } = await reader.read();
@@ -665,13 +666,19 @@
                                                      assistantMessage = content;
                                                      safeSetMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
                                                      isNewMessage = false;
+                                                     lastUpdateTimestamp = Date.now();
                                                  } else {
                                                      assistantMessage += content;
-                                                     safeSetMessages(prev =>
-                                                         prev.map((msg, index) =>
-                                                             index === prev.length - 1 ? { ...msg, content: assistantMessage } : msg
-                                                         )
-                                                     );
+                                                     // Throttle updates: only update every 100ms
+                                                     const now = Date.now();
+                                                     if (now - lastUpdateTimestamp > 100) {
+                                                         safeSetMessages(prev =>
+                                                             prev.map((msg, index) =>
+                                                                 index === prev.length - 1 ? { ...msg, content: assistantMessage } : msg
+                                                             )
+                                                         );
+                                                         lastUpdateTimestamp = now;
+                                                     }
                                                  }
                                              }
                                         }
@@ -680,13 +687,19 @@
                                                  assistantMessage = parsed.content;
                                                  safeSetMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
                                                  isNewMessage = false;
+                                                 lastUpdateTimestamp = Date.now();
                                              } else {
                                                  assistantMessage += parsed.content;
-                                                 safeSetMessages(prev =>
-                                                     prev.map((msg, index) =>
-                                                         index === prev.length - 1 ? { ...msg, content: assistantMessage } : msg
-                                                     )
-                                                 );
+                                                 // Throttle updates: only update every 100ms
+                                                 const now = Date.now();
+                                                 if (now - lastUpdateTimestamp > 100) {
+                                                     safeSetMessages(prev =>
+                                                         prev.map((msg, index) =>
+                                                             index === prev.length - 1 ? { ...msg, content: assistantMessage } : msg
+                                                         )
+                                                     );
+                                                     lastUpdateTimestamp = now;
+                                                 }
                                              }
                                         }
                                         else if (parsed.type === 'error') {
@@ -699,6 +712,16 @@
                                 }
                             });
                         }
+
+                        // Final update to ensure we have the complete message
+                        if (!isNewMessage) {
+                             safeSetMessages(prev =>
+                                 prev.map((msg, index) =>
+                                     index === prev.length - 1 ? { ...msg, content: assistantMessage } : msg
+                                 )
+                             );
+                        }
+
                     } catch (error) {
                         console.error('Streaming Error:', error);
                         safeSetMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error.' }]);
