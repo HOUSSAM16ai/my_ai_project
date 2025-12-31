@@ -290,6 +290,8 @@
         const { useState, useEffect, useRef } = React;
 
         const showdownConverter = new showdown.Converter();
+        // DOM SAFETY VALVE: Maximum number of messages to keep in the DOM
+        const MAX_MESSAGES = 40;
 
         const Markdown = ({ content }) => {
             const html = showdownConverter.makeHtml(content);
@@ -509,6 +511,25 @@
 
             useEffect(scrollToBottom, [messages]);
 
+            // Helper to enforce safety valve
+            const safeSetMessages = (update) => {
+                setMessages(prev => {
+                    let nextMessages;
+                    if (typeof update === 'function') {
+                        nextMessages = update(prev);
+                    } else {
+                        nextMessages = update;
+                    }
+
+                    // DOM SAFETY VALVE: Enforce strict limit
+                    if (nextMessages.length > MAX_MESSAGES) {
+                         // Keep the last MAX_MESSAGES
+                         return nextMessages.slice(nextMessages.length - MAX_MESSAGES);
+                    }
+                    return nextMessages;
+                });
+            };
+
             const fetchConversations = async () => {
                 try {
                     const token = localStorage.getItem('token');
@@ -537,17 +558,18 @@
                     });
                     if (res.ok) {
                         const data = await res.json();
-                        setMessages(data.messages || []);
+                        // Use safeSetMessages to enforce limit on load
+                        safeSetMessages(data.messages || []);
                         setConversationId(data.conversation_id);
                     } else {
                         // Handle error - show error message to user
                         const errorData = await res.json().catch(() => ({}));
                         const errorMessage = errorData.detail || 'Failed to load conversation';
-                        setMessages([{ role: 'assistant', content: `Error: ${errorMessage}` }]);
+                        safeSetMessages([{ role: 'assistant', content: `Error: ${errorMessage}` }]);
                     }
                 } catch (e) {
                     console.error("Failed to load conversation", e);
-                    setMessages([{ role: 'assistant', content: 'Error: Failed to load conversation. Please try again.' }]);
+                    safeSetMessages([{ role: 'assistant', content: 'Error: Failed to load conversation. Please try again.' }]);
                 } finally {
                     setIsLoadingConversation(false);
                 }
@@ -565,7 +587,7 @@
                         if (res.ok) {
                             const data = await res.json();
                             if (data.messages && Array.isArray(data.messages)) {
-                                setMessages(data.messages);
+                                safeSetMessages(data.messages);
                             }
                             if (data.conversation_id) {
                                 setConversationId(data.conversation_id);
@@ -585,8 +607,8 @@
 
             const handleSend = async () => {
                 if (input.trim()) {
-                    const newMessages = [...messages, { role: 'user', content: input }];
-                    setMessages(newMessages);
+                    // Optimistically add user message
+                    safeSetMessages(prev => [...prev, { role: 'user', content: input }]);
                     setInput('');
 
                     try {
@@ -629,7 +651,7 @@
 
                                         if (parsed.conversation_id && parsed.title) {
                                              setConversationId(parsed.conversation_id);
-                                             setMessages(prev => [...prev, { role: 'init', content: `Conversation ${parsed.conversation_id} - ${parsed.title}` }]);
+                                             safeSetMessages(prev => [...prev, { role: 'init', content: `Conversation ${parsed.conversation_id} - ${parsed.title}` }]);
                                              isNewMessage = true;
                                              // Refresh conversation list to show new chat
                                              fetchConversations();
@@ -641,11 +663,11 @@
                                              if (content) {
                                                  if (isNewMessage) {
                                                      assistantMessage = content;
-                                                     setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+                                                     safeSetMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
                                                      isNewMessage = false;
                                                  } else {
                                                      assistantMessage += content;
-                                                     setMessages(prev =>
+                                                     safeSetMessages(prev =>
                                                          prev.map((msg, index) =>
                                                              index === prev.length - 1 ? { ...msg, content: assistantMessage } : msg
                                                          )
@@ -656,11 +678,11 @@
                                         else if (parsed.content) {
                                             if (isNewMessage) {
                                                  assistantMessage = parsed.content;
-                                                 setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+                                                 safeSetMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
                                                  isNewMessage = false;
                                              } else {
                                                  assistantMessage += parsed.content;
-                                                 setMessages(prev =>
+                                                 safeSetMessages(prev =>
                                                      prev.map((msg, index) =>
                                                          index === prev.length - 1 ? { ...msg, content: assistantMessage } : msg
                                                      )
@@ -668,7 +690,7 @@
                                              }
                                         }
                                         else if (parsed.type === 'error') {
-                                            setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${parsed.payload.error}` }]);
+                                            safeSetMessages(prev => [...prev, { role: 'assistant', content: `Error: ${parsed.payload.error}` }]);
                                         }
 
                                     } catch (e) {
@@ -679,7 +701,7 @@
                         }
                     } catch (error) {
                         console.error('Streaming Error:', error);
-                        setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error.' }]);
+                        safeSetMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error.' }]);
                     }
                 }
             };
