@@ -12,7 +12,7 @@ from sqlalchemy import pool
 sys.path.append(os.getcwd())
 
 from app.config.settings import get_settings
-from app.core.engine_factory import FatalEngineError, create_unified_async_engine
+from app.core.database import engine
 from app.models import SQLModel  # Import SQLModel to get metadata
 
 settings = get_settings()
@@ -75,28 +75,11 @@ async def run_async_migrations() -> None:
     In this scenario we need to create an Engine
     and associate a connection with the context.
     """
-    try:
-        # --- CRITICAL: USE UNIFIED ENGINE FACTORY ---
-        # This ensures we inherit the statement_cache_size=0 fix
-        # and all other safety protocols.
-        connectable = create_unified_async_engine(
-            database_url=settings.DATABASE_URL,
-            echo=True,
-            poolclass=pool.NullPool, # NullPool is used for migrations to avoid locking
-        )
-    except FatalEngineError as e:
-        logger.error(f"CRITICAL: Migration Engine Creation Failed: {e}")
-        sys.exit(1)
-
-    # Explicitly verify configuration before running
-    if "sqlite" not in settings.DATABASE_URL and connectable.dialect.name == "postgresql":
-         # Verify cache is disabled (if accessible, though factory guarantees it)
-         logger.info("Using Unified Factory for Migrations. Safety checks passed.")
+    # Use the existing engine from database.py
+    connectable = engine
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
-
-    await connectable.dispose()
 
 
 def run_migrations_online() -> None:
