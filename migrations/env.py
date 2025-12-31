@@ -6,13 +6,14 @@ from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import create_async_engine
 
 # --- 1. ENVIRONMENT BOOTSTRAP ---
 # Ensure we can import the app modules
 sys.path.append(os.getcwd())
 
 from app.config.settings import get_settings
-from app.core.engine_factory import FatalEngineError, create_unified_async_engine
+# REMOVED: from app.core.engine_factory import FatalEngineError, create_unified_async_engine
 from app.models import SQLModel  # Import SQLModel to get metadata
 
 settings = get_settings()
@@ -75,23 +76,21 @@ async def run_async_migrations() -> None:
     In this scenario we need to create an Engine
     and associate a connection with the context.
     """
-    try:
-        # --- CRITICAL: USE UNIFIED ENGINE FACTORY ---
-        # This ensures we inherit the statement_cache_size=0 fix
-        # and all other safety protocols.
-        connectable = create_unified_async_engine(
-            database_url=settings.DATABASE_URL,
-            echo=True,
-            poolclass=pool.NullPool, # NullPool is used for migrations to avoid locking
-        )
-    except FatalEngineError as e:
-        logger.error(f"CRITICAL: Migration Engine Creation Failed: {e}")
-        sys.exit(1)
+    # Create engine directly using sqlalchemy.ext.asyncio
+    # We apply the same critical settings as the app (e.g. statement_cache_size=0 for Supabase)
 
-    # Explicitly verify configuration before running
-    if "sqlite" not in settings.DATABASE_URL and connectable.dialect.name == "postgresql":
-         # Verify cache is disabled (if accessible, though factory guarantees it)
-         logger.info("Using Unified Factory for Migrations. Safety checks passed.")
+    connect_args = {}
+    # Apply Supabase/PgBouncer compatibility fix if using PostgreSQL
+    if "postgresql" in settings.DATABASE_URL:
+        connect_args["statement_cache_size"] = 0
+
+    connectable = create_async_engine(
+        settings.DATABASE_URL,
+        echo=True,
+        future=True,
+        poolclass=pool.NullPool,  # NullPool is used for migrations to avoid locking
+        connect_args=connect_args,
+    )
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
