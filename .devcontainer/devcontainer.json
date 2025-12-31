@@ -20,14 +20,14 @@
   // 1. Initialize: Local setup (Optional, usually implicit)
   // "initializeCommand": "bash .devcontainer/local-setup.sh",
 
-  // 2. Post Create: Dependencies & DB Migrations
+  // 2. Post Create: Environment configuration (Fast Path < 5s)
   "postCreateCommand": "bash .devcontainer/on-create.sh",
 
-  // 3. Post Start: Launch background services
+  // 3. Post Start: Launch background supervisor (Non-blocking)
   "postStartCommand": "bash .devcontainer/on-start.sh",
 
-  // 4. Post Attach: Orchestrate setup
-  "postAttachCommand": "/bin/bash scripts/setup_dev.sh",
+  // 4. Post Attach: Display status only (Informational, no execution)
+  "postAttachCommand": "bash .devcontainer/on-attach.sh",
 
   // STRICT PORT CONFIGURATION
   // "forwardPorts" makes them available locally.
@@ -39,13 +39,21 @@
 
   "portsAttributes": {
       "8000": {
-        "label": "CogniForge Unified Interface",
-        "onAutoForward": "openBrowser",
-        "visibility": "public"
+        "label": "CogniForge Application",
+        "onAutoForward": "notify",
+        "visibility": "public",
+        "protocol": "http",
+        "requireLocalPort": false
       },
-      // Explicitly ignore common noise ports to prevent confusion
-      "5000": { "onAutoForward": "ignore" },
-      "5432": { "onAutoForward": "ignore" }
+      // Explicitly ignore common noise ports
+      "5000": { 
+        "onAutoForward": "ignore",
+        "label": "Unused Port"
+      },
+      "5432": { 
+        "onAutoForward": "ignore",
+        "label": "Database (Internal)"
+      }
   },
 
   "features": {

@@ -46,16 +46,20 @@ if [ -f .env ]; then
     set +a
 fi
 
-# --- Step 1: Dependencies ---
-log "Step 1/4: Checking dependencies..."
+# --- Step 1: Wait for system readiness ---
+log "Step 1/5: Waiting for system readiness..."
+sleep 2  # Give container time to fully initialize
+
+# --- Step 2: Dependencies ---
+log "Step 2/5: Checking dependencies..."
 if pip install --no-cache-dir -r requirements.txt >> "$LOG_FILE" 2>&1; then
     log "✅ Python dependencies verified."
 else
     warn "Python dependency check had issues. See logs."
 fi
 
-# --- Step 2: Migrations ---
-log "Step 2/4: Smart Migrations..."
+# --- Step 3: Migrations ---
+log "Step 3/5: Smart Migrations..."
 if [ -f "scripts/smart_migrate.py" ]; then
     log "Executing smart_migrate.py..."
     if python scripts/smart_migrate.py >> "$LOG_FILE" 2>&1; then
@@ -68,8 +72,8 @@ else
     warn "scripts/smart_migrate.py not found."
 fi
 
-# --- Step 3: Admin Seeding ---
-log "Step 3/4: Admin Seeding..."
+# --- Step 4: Admin Seeding ---
+log "Step 4/5: Admin Seeding..."
 if [ -f "scripts/seed_admin.py" ]; then
     if python scripts/seed_admin.py >> "$LOG_FILE" 2>&1; then
         log "✅ Admin seeded."
@@ -78,8 +82,8 @@ if [ -f "scripts/seed_admin.py" ]; then
     fi
 fi
 
-# --- Step 4: Launch App ---
-log "Step 4/4: Launching Uvicorn..."
+# --- Step 5: Launch App ---
+log "Step 5/5: Launching Uvicorn..."
 
 # Check if already running
 if pgrep -f "uvicorn" > /dev/null; then
@@ -103,6 +107,17 @@ else
     bash scripts/start.sh >> "$LOG_FILE" 2>&1 &
     PID=$!
     log "✅ Uvicorn started with PID $PID. Logs are streaming to $LOG_FILE"
+    
+    # Wait for application to be ready
+    log "⏳ Waiting for application health check..."
+    for i in {1..30}; do
+        if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+            log "✅ Application is healthy and ready!"
+            break
+        fi
+        sleep 1
+    done
 fi
 
 log "🎉 --- Supervisor sequence complete --- 🎉"
+log "🌐 Access the application at: http://localhost:8000"

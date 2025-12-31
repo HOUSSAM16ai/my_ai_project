@@ -1,36 +1,107 @@
 #!/usr/bin/env bash
 ###############################################################################
-# on-start.sh (Superhuman Automation Edition - Non-Blocking)
+# on-start.sh - DevContainer Post-Start Hook (v2.0)
 #
-# Executed every time the container starts.
+# يُنفَّذ في كل مرة تبدأ فيها الحاوية
+# Executed every time the container starts
 #
-# CHANGE: This script now delegates all heavy lifting to 'scripts/launch_stack.sh'
-# and exits IMMEDIATELY. This solves the "Codespaces Stuck" issue where the
-# lifecycle hook waits for foreground processes.
+# المسؤوليات (Responsibilities):
+#   1. إطلاق المشرف في الخلفية
+#   2. الخروج فوراً لإلغاء حظر IDE
+#   3. تسجيل معلومات الحالة
+#
+# المبادئ (Principles):
+#   - Non-Blocking: Exit immediately after launching background process
+#   - Idempotent: Safe to run multiple times
+#   - Observable: All output logged to file
+#   - Fail Safe: Errors don't block IDE
+#
+# الإصدار (Version): 2.0.0
+# التاريخ (Date): 2025-12-31
 ###############################################################################
 
 set -Eeuo pipefail
-cd /app  # FORCE ROOT CONTEXT
-source .devcontainer/utils.sh
 
-trap 'err "An unexpected error occurred (Line $LINENO)."' ERR
+# ==============================================================================
+# INITIALIZATION (التهيئة)
+# ==============================================================================
 
-log "🚀 On-Start: Initializing Superhuman Supervisor..."
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly APP_ROOT="/app"
+readonly SUPERVISOR_SCRIPT="$SCRIPT_DIR/supervisor.sh"
+readonly LOG_FILE="$APP_ROOT/.superhuman_bootstrap.log"
 
-# Check if the supervisor script exists
-if [ ! -f "scripts/launch_stack.sh" ]; then
-    err "Critical: scripts/launch_stack.sh not found!"
+cd "$APP_ROOT"
+
+# Load core library
+if [ -f "$SCRIPT_DIR/lib/lifecycle_core.sh" ]; then
+    source "$SCRIPT_DIR/lib/lifecycle_core.sh"
+else
+    echo "ERROR: lifecycle_core.sh not found" >&2
     exit 1
 fi
 
-# Launch the full stack in the background
-# We redirect all output to .superhuman_bootstrap.log
-nohup bash scripts/launch_stack.sh > .superhuman_bootstrap.log 2>&1 &
-PID=$!
+lifecycle_info "═══════════════════════════════════════════════════════"
+lifecycle_info "🚀 Post-Start Hook: Background Service Launcher"
+lifecycle_info "═══════════════════════════════════════════════════════"
 
-ok "✅ Background Bootstrap Initiated (PID: $PID)."
-log "📝 logs: tail -f .superhuman_bootstrap.log"
-log "⚡ The environment is now interactive. The app will appear on port 8000 shortly."
+# ==============================================================================
+# SUPERVISOR LAUNCH (إطلاق المشرف)
+# ==============================================================================
 
-# Exit immediately to unblock the IDE
+# Check if supervisor already running
+if lifecycle_has_state "supervisor_running"; then
+    supervisor_pid=$(lifecycle_get_state "supervisor_running")
+    if kill -0 "$supervisor_pid" 2>/dev/null; then
+        lifecycle_info "Supervisor already running (PID: $supervisor_pid)"
+        lifecycle_info "Logs: tail -f $LOG_FILE"
+        exit 0
+    else
+        lifecycle_warn "Stale supervisor PID found, cleaning up..."
+        lifecycle_clear_state "supervisor_running"
+    fi
+fi
+
+# Verify supervisor script exists
+if [ ! -f "$SUPERVISOR_SCRIPT" ]; then
+    lifecycle_error "Supervisor script not found: $SUPERVISOR_SCRIPT"
+    exit 1
+fi
+
+# Launch supervisor in background
+lifecycle_info "Launching background supervisor..."
+
+# Use nohup to detach from terminal and redirect all output
+nohup bash "$SUPERVISOR_SCRIPT" > "$LOG_FILE" 2>&1 &
+SUPERVISOR_PID=$!
+
+# Save supervisor PID
+lifecycle_set_state "supervisor_running" "$SUPERVISOR_PID"
+lifecycle_set_state "supervisor_started_at" "$(date +%s)"
+
+# ==============================================================================
+# USER INFORMATION (معلومات المستخدم)
+# ==============================================================================
+
+lifecycle_info "═══════════════════════════════════════════════════════"
+lifecycle_info "✅ Background Supervisor Launched"
+lifecycle_info "   PID: $SUPERVISOR_PID"
+lifecycle_info "   Logs: tail -f $LOG_FILE"
+lifecycle_info ""
+lifecycle_info "⏳ Application Startup Timeline:"
+lifecycle_info "   • Dependencies: ~10-15 seconds"
+lifecycle_info "   • Migrations: ~5-10 seconds"
+lifecycle_info "   • Server Launch: ~5-10 seconds"
+lifecycle_info "   • Health Check: ~5-10 seconds"
+lifecycle_info "   • Total: ~30-45 seconds"
+lifecycle_info ""
+lifecycle_info "🌐 Access Application:"
+lifecycle_info "   • Wait for 'Application is healthy' message"
+lifecycle_info "   • Then open: http://localhost:8000"
+lifecycle_info ""
+lifecycle_info "🔍 Monitor Progress:"
+lifecycle_info "   tail -f $LOG_FILE"
+lifecycle_info "═══════════════════════════════════════════════════════"
+
+# Exit immediately to unblock IDE
 exit 0
