@@ -26,6 +26,9 @@ logger = logging.getLogger(__name__)
 
 ALGORITHM = "HS256"
 
+# Service boundary configuration constant
+ADMIN_CHAT_SERVICE_NAME = "admin_chat"
+
 class AdminChatBoundaryService:
     """
     خدمة حدود محادثة المسؤول (Admin Chat Boundary Service).
@@ -49,7 +52,7 @@ class AdminChatBoundaryService:
         """
         self.db = db
         self.settings = get_settings()
-        self.service_boundary = get_service_boundary("admin_chat")
+        self.service_boundary = get_service_boundary(ADMIN_CHAT_SERVICE_NAME)
         self.policy_boundary = get_policy_boundary()
 
         # التفويض للمكونات المتخصصة (Delegation)
