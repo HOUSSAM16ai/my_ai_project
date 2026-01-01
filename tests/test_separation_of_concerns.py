@@ -49,6 +49,9 @@ from app.boundaries.service_boundaries import (
     get_service_boundary,
 )
 
+# Test constants
+TEST_SERVICE_NAME = "test_service"
+
 # ======================================================================================
 # SERVICE BOUNDARIES TESTS
 # ======================================================================================
@@ -563,11 +566,11 @@ class TestIntegration:
     def test_global_instances_singleton(self):
         """اختبار المثيلات العامة (Singleton)"""
         # الحصول على المثيلات مرتين
-        service1 = get_service_boundary("test_service")
-        service2 = get_service_boundary("test_service")
+        service1 = get_service_boundary(TEST_SERVICE_NAME)
+        service2 = get_service_boundary(TEST_SERVICE_NAME)
 
-        data1 = get_data_boundary("test_service")
-        data2 = get_data_boundary("test_service")
+        data1 = get_data_boundary(TEST_SERVICE_NAME)
+        data2 = get_data_boundary(TEST_SERVICE_NAME)
 
         policy1 = get_policy_boundary()
         policy2 = get_policy_boundary()
