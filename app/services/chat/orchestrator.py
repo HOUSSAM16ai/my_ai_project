@@ -13,6 +13,7 @@ from collections.abc import AsyncGenerator, Callable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.ai_gateway import AIClient
 from app.core.patterns.strategy import StrategyRegistry
 from app.services.chat.context import ChatContext
 from app.services.chat.handlers.strategy_handlers import (
