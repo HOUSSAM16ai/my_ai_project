@@ -314,25 +314,9 @@
             event.preventDefault(); // Prevent browser crash
         });
 
-        // Memory monitoring (Codespaces has limited resources)
-        if (performance.memory) {
-            setInterval(() => {
-                const usedMemory = performance.memory.usedJSHeapSize;
-                const totalMemory = performance.memory.jsHeapSizeLimit;
-                const percentUsed = (usedMemory / totalMemory) * 100;
-                
-                if (percentUsed > 90) {
-                    console.warn(`⚠️ High memory usage: ${percentUsed.toFixed(1)}%`);
-                }
-            }, 30000); // Check every 30 seconds
-        }
-
-        // Periodic garbage collection hint for memory optimization
-        setInterval(() => {
-            if (window.gc) {
-                window.gc(); // Manual GC if available (Chrome with --expose-gc flag)
-            }
-        }, 60000); // Every 60 seconds
+        // CRITICAL FIX: Memory monitoring moved to component level to enable proper cleanup
+        // Previously these global setInterval calls caused memory leaks and browser crashes
+        // Now they will be managed inside the App component with proper cleanup on unmount
 
         // ══════════════════════════════════════════════════════════════════════
         // PERFORMANCE CONFIGURATION | تكوين الأداء
@@ -469,6 +453,39 @@
                 };
                 fetchUser();
             }, [token]);
+
+            // CRITICAL FIX: Memory monitoring and GC with proper cleanup
+            // This prevents memory leaks that were causing browser crashes in Codespaces
+            useEffect(() => {
+                const timers = [];
+                
+                // Memory monitoring (Codespaces has limited resources)
+                if (performance.memory) {
+                    const memoryTimer = setInterval(() => {
+                        const usedMemory = performance.memory.usedJSHeapSize;
+                        const totalMemory = performance.memory.jsHeapSizeLimit;
+                        const percentUsed = (usedMemory / totalMemory) * 100;
+                        
+                        if (percentUsed > 90) {
+                            console.warn(`⚠️ High memory usage: ${percentUsed.toFixed(1)}%`);
+                        }
+                    }, 30000); // Check every 30 seconds
+                    timers.push(memoryTimer);
+                }
+
+                // Periodic garbage collection hint for memory optimization
+                const gcTimer = setInterval(() => {
+                    if (window.gc) {
+                        window.gc(); // Manual GC if available (Chrome with --expose-gc flag)
+                    }
+                }, 60000); // Every 60 seconds
+                timers.push(gcTimer);
+
+                // CLEANUP: Clear all timers when component unmounts
+                return () => {
+                    timers.forEach(timer => clearInterval(timer));
+                };
+            }, []); // Empty dependency array - run once on mount
 
             const handleLogin = (newToken, userData) => {
                 localStorage.setItem('token', newToken);
@@ -648,12 +665,33 @@
             const [input, setInput] = useState('');
             const [isLoadingConversation, setIsLoadingConversation] = useState(false);
             const messagesEndRef = useRef(null);
+            const abortControllerRef = useRef(null); // For aborting in-flight requests
+
+            // CRITICAL FIX: Cleanup on unmount to prevent memory leaks
+            useEffect(() => {
+                return () => {
+                    // Abort any in-flight requests when component unmounts
+                    if (abortControllerRef.current) {
+                        abortControllerRef.current.abort();
+                    }
+                };
+            }, []);
 
             const scrollToBottom = () => {
-                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                // Use requestAnimationFrame to avoid layout thrashing
+                if (messagesEndRef.current) {
+                    requestAnimationFrame(() => {
+                        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                    });
+                }
             };
 
-            useEffect(scrollToBottom, [messages]);
+            // OPTIMIZED: Scroll only when messages array length changes, not on every update
+            // This prevents excessive re-renders during streaming
+            const messagesLength = messages.length;
+            useEffect(() => {
+                scrollToBottom();
+            }, [messagesLength]);
 
             // Transform backend messages to include a stable ID
             const normalizeMessages = (msgs) => {
@@ -755,6 +793,14 @@
 
             const handleSend = async () => {
                 if (input.trim()) {
+                    // Abort any previous request
+                    if (abortControllerRef.current) {
+                        abortControllerRef.current.abort();
+                    }
+                    
+                    // Create new AbortController for this request
+                    abortControllerRef.current = new AbortController();
+                    
                     // Optimistically add user message with a unique ID
                     const userMsgId = generateId();
                     safeSetMessages(prev => [...prev, { id: userMsgId, role: 'user', content: input }]);
@@ -772,7 +818,8 @@
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`
                             },
-                            body: JSON.stringify(payload)
+                            body: JSON.stringify(payload),
+                            signal: abortControllerRef.current.signal // Add abort signal
                         });
 
                         if (!response.ok) {
@@ -901,6 +948,11 @@
                         }
 
                         } catch (streamError) {
+                            // Ignore abort errors - they're expected when requests are cancelled
+                            if (streamError.name === 'AbortError') {
+                                console.log('Stream aborted by user');
+                                return;
+                            }
                             console.error('Stream reading error:', streamError);
                             // Add error message to chat
                             safeSetMessages(prev => [
@@ -917,6 +969,11 @@
                         }
 
                     } catch (error) {
+                        // Ignore abort errors - they're expected when user cancels
+                        if (error.name === 'AbortError') {
+                            console.log('Request aborted by user');
+                            return;
+                        }
                         console.error('Streaming Error:', error);
                         safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Sorry, I encountered an error.' }]);
                     }
