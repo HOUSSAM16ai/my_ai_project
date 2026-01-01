@@ -43,7 +43,6 @@ CIRCUIT_RECOVERY_TIMEOUT = 30.0
 # Initialize global optimizer
 _performance_optimizer = get_performance_optimizer()
 
-
 @runtime_checkable
 class AIClient(Protocol):
     async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]: ...
@@ -57,7 +56,6 @@ class AIClient(Protocol):
 
     async def __aiter__(self):
         return self
-
 
 class NeuralRoutingMesh:
     """
@@ -114,6 +112,7 @@ class NeuralRoutingMesh:
             if mid != SAFETY_NET_MODEL_ID:
                 self.omni_router.register_node(mid)
 
+    # TODO: Split this function (32 lines) - KISS principle
     def _get_prioritized_nodes(self, prompt: str) -> list[NeuralNode]:
         """
         Returns a list of nodes sorted by their Omni-Cognitive Score.
@@ -162,6 +161,7 @@ class NeuralRoutingMesh:
         final_score = (0.4 * length_score) + (0.6 * density_score)
         return max(0.0, min(1.0, final_score))
 
+    # TODO: Reduce parameters (8 params) - Use config object
     def _record_metrics(
         self,
         node: NeuralNode,
@@ -361,14 +361,14 @@ class NeuralRoutingMesh:
     ) -> str:
         """
         دالة مساعدة لإرسال رسالة وتلقي رد كامل (غير متدفق).
-        
+
         تستخدم stream_chat داخلياً وتجمع كل الأجزاء في نص واحد.
-        
+
         Args:
             system_prompt: رسالة النظام (السياق).
             user_message: رسالة المستخدم.
             temperature: درجة الإبداع (0.0 = دقيق، 1.0 = إبداعي).
-            
+
         Returns:
             str: الرد الكامل من النموذج.
         """
@@ -388,7 +388,6 @@ class NeuralRoutingMesh:
             raise
 
         return "".join(full_response)
-
 
 def get_ai_client() -> AIClient:
     """

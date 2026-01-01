@@ -45,13 +45,11 @@ class PolicyBoundary:
         self.security_pipeline.add_layer(AuditLoggingLayer())
         logger.info("✅ Default security layers configured")
 
-
 # ======================================================================================
 # GLOBAL INSTANCE (اختياري)
 # ======================================================================================
 
 _global_policy_boundary: PolicyBoundary | None = None
-
 
 def get_policy_boundary() -> PolicyBoundary:
     """الحصول على مثيل عام من حدود السياسات"""

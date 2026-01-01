@@ -3,7 +3,7 @@ from pathlib import Path
 
 from ..models import ProjectAnalysis
 
-
+# TODO: Split this function (85 lines) - KISS principle
 def generate_markdown_report(analysis: ProjectAnalysis, output_path: Path) -> None:
     """Generate Markdown report"""
     md = f"""# 🔍 تقرير التحليل البنيوي للكود

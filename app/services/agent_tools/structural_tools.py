@@ -10,7 +10,6 @@ from .definitions import ToolResult
 from .structural_logic import _load_deep_struct_map_logic, _maybe_reload_struct_map
 from .utils import _safe_path
 
-
 @tool(
     name="analyze_path_semantics",
     description="Return structural meta (layer/hotspot/dup_group) for a path if present in deep map.",
@@ -38,7 +37,6 @@ def analyze_path_semantics(path: str) -> ToolResult:
         return ToolResult(ok=True, data=payload)
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
-
 
 @tool(
     name="reload_deep_struct_map",

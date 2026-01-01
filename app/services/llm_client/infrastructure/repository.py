@@ -5,7 +5,6 @@ In-Memory Repository for LlmClient
 import threading
 from collections import deque
 
-
 class InMemoryLlmClientRepository:
     """In-memory implementation"""
 

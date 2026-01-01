@@ -16,8 +16,8 @@ from app.core.database import async_session_factory, engine
 # NOTE: We now import engine and factory from app.core.database,
 # which are powered by the Unified Engine Factory.
 
-
-def register_db_commands(root):
+# TODO: Split this function (63 lines) - KISS principle
+def register_db_commands(root) -> None:
     @root.group("db")
     def db_group() -> None:
         "Database utilities"
@@ -25,7 +25,7 @@ def register_db_commands(root):
 
     @db_group.command("create-all")
     @click.pass_context
-    def create_all(ctx):
+    def create_all(ctx) -> None:
         """Creates all database tables."""
         logger = ctx.obj["logger"]
         logger.info("Creating all database tables...")
@@ -40,8 +40,9 @@ def register_db_commands(root):
     @db_group.command("seed")
     @click.option("--confirm", is_flag=True, default=False)
     @click.option("--dry-run", is_flag=True, default=False)
+    # TODO: Split this function (39 lines) - KISS principle
     @click.pass_context
-    def seed(ctx, confirm, dry_run):
+    def seed(ctx, confirm, dry_run) -> None:
         logger = ctx.obj["logger"]
         admin_email = os.getenv("ADMIN_EMAIL", "admin@cogniforge.com")
         admin_password = os.getenv("ADMIN_PASSWORD", "admin")
@@ -81,7 +82,6 @@ def register_db_commands(root):
                 logger.info("seed: completed")
 
         asyncio.run(_seed())
-
 
 @asynccontextmanager
 async def transactional_session(

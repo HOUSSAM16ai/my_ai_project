@@ -5,7 +5,6 @@ Chat endpoints with streaming support.
 import logging
 import time
 from collections.abc import AsyncGenerator
-from typing import Any as AIClient  # Placeholder for AI client type
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -21,7 +20,6 @@ from app.services.chat.orchestrator import ChatOrchestrator
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/chat", tags=["chat"])
-
 
 @router.post("/stream")
 async def chat_stream(
@@ -58,7 +56,6 @@ async def chat_stream(
             "Connection": "keep-alive",
         },
     )
-
 
 @router.post("/", response_model=ChatResponse)
 async def chat(

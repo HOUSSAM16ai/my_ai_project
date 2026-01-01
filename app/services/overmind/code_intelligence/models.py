@@ -1,6 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Any
-
 
 @dataclass
 class FileMetrics:
@@ -54,7 +52,6 @@ class FileMetrics:
     smell_rank: float = 0.0
     hotspot_score: float = 0.0
     priority_tier: str = ""  # "CRITICAL", "HIGH", "MEDIUM", "LOW"
-
 
 @dataclass
 class ProjectAnalysis:

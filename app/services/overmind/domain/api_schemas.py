@@ -19,7 +19,6 @@ from pydantic import AliasChoices, Field
 
 from app.core.schemas import RobustBaseModel
 
-
 class MissionStatusEnum(str, Enum):
     """حالات المهمة الممكنة."""
     # Ensure values match app.models.MissionStatus (lowercase)
@@ -35,7 +34,6 @@ class MissionStatusEnum(str, Enum):
     # Backwards compatibility if needed, or to handle mixed case
     # Pydantic 2 Enums are strict by default on value
 
-
 class StepStatusEnum(str, Enum):
     """حالات خطوة التنفيذ."""
     # Aligned with app.models.TaskStatus
@@ -46,7 +44,6 @@ class StepStatusEnum(str, Enum):
     FAILED = "failed"
     SKIPPED = "skipped"
     RETRY = "retry"
-
 
 class MissionStepResponse(RobustBaseModel):
     """
@@ -61,7 +58,6 @@ class MissionStepResponse(RobustBaseModel):
     created_at: datetime = Field(..., description="توقيت إنشاء الخطوة")
     completed_at: datetime | None = Field(None, validation_alias=AliasChoices("finished_at", "completed_at"), description="توقيت اكتمال الخطوة")
 
-
 class MissionCreate(RobustBaseModel):
     """
     نموذج إنشاء مهمة جديدة.
@@ -72,7 +68,6 @@ class MissionCreate(RobustBaseModel):
         default_factory=dict, description="سياق إضافي للمهمة (مثل بيئة العمل، قيود)"
     )
     priority: int = Field(1, ge=1, le=5, description="أولوية المهمة (1-5)")
-
 
 class MissionResponse(RobustBaseModel):
     """
@@ -93,7 +88,6 @@ class MissionResponse(RobustBaseModel):
         validation_alias=AliasChoices("tasks", "steps"),
         description="قائمة خطوات التنفيذ"
     )
-
 
 class MissionEventResponse(RobustBaseModel):
     """

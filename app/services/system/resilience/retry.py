@@ -8,8 +8,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
-
 
 class RetryStrategy(Enum):
     """Retry strategies"""
@@ -18,7 +16,6 @@ class RetryStrategy(Enum):
     LINEAR = "linear"
     FIBONACCI = "fibonacci"
     CUSTOM = "custom"
-
 
 @dataclass
 class RetryConfig:
@@ -31,7 +28,6 @@ class RetryConfig:
     retry_budget_percent: float = 10.0  # Max 10% retries
     strategy: RetryStrategy = RetryStrategy.EXPONENTIAL_BACKOFF
 
-
 @dataclass
 class IdempotencyKey:
     """Idempotency key for safe retries"""
@@ -40,9 +36,8 @@ class IdempotencyKey:
     request_id: str
     timestamp: datetime
     ttl_seconds: int = 3600
-    result: Any = None
+    result: dict[str, str | int | bool] = None
     completed: bool = False
-
 
 @dataclass
 class RetryAttempt:
@@ -54,18 +49,15 @@ class RetryAttempt:
     error: str | None = None
     success: bool = False
 
-
 class RetryableError(Exception):
     """Indicates error is retryable"""
 
     pass
 
-
 class RetryBudgetExhaustedError(Exception):
     """Raised when retry budget is exhausted"""
 
     pass
-
 
 class RetryBudget:
     """
@@ -132,7 +124,6 @@ class RetryBudget:
                 "within_budget": retry_rate < self.budget_percent,
             }
 
-
 class RetryManager:
     """
     Advanced Retry Manager with:
@@ -148,6 +139,7 @@ class RetryManager:
         self.idempotency_store: dict[str, IdempotencyKey] = {}
         self._lock = threading.RLock()
 
+    # TODO: Split this function (90 lines) - KISS principle
     def execute_with_retry(
         self,
         func: Callable,

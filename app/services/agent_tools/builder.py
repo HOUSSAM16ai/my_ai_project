@@ -5,11 +5,9 @@ BEFORE: Complex decorator with CC = 25
 AFTER: Simple builder with CC = 2
 """
 from collections.abc import Callable
-from typing import Any
 
 from app.core.patterns.builder import FluentBuilder
 from app.services.agent_tools.tool_model import Tool, ToolConfig
-
 
 class ToolBuilder(FluentBuilder[Tool]):
     """

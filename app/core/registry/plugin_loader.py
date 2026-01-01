@@ -8,13 +8,11 @@ Load plugins with dependency resolution
 مبدأ البساطة: Simple dependency resolution
 """
 import logging
-from typing import Any
 
 from app.core.protocols import PluginProtocol as IPlugin
 from app.core.registry.plugin_registry import registry
 
 logger = logging.getLogger(__name__)
-
 
 class PluginLoader:
     """

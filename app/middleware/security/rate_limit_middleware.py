@@ -16,7 +16,6 @@ from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 from app.security.rate_limiter import AdaptiveRateLimiter, UserTier
 
-
 class RateLimitMiddleware(BaseMiddleware):
     """
     Adaptive Rate Limiting Middleware
@@ -37,6 +36,7 @@ class RateLimitMiddleware(BaseMiddleware):
         self.rate_limited_count = 0
         self.checked_count = 0
 
+    # TODO: Split this function (49 lines) - KISS principle
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
         """
         Check if request should be rate limited

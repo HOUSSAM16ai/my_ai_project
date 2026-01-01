@@ -23,11 +23,10 @@ from app.services.data_mesh.domain.models import (
 # Singleton instance
 _manager_instance: DataMeshManager | None = None
 
-
 def get_data_mesh_service() -> DataMeshManager:
     """
     Get singleton Data Mesh Manager instance.
-    
+
     Note: Renamed from get_data_mesh_service for backward compatibility,
     but now returns DataMeshManager directly (KISS principle).
     """
@@ -35,7 +34,6 @@ def get_data_mesh_service() -> DataMeshManager:
     if _manager_instance is None:
         _manager_instance = DataMeshManager()
     return _manager_instance
-
 
 __all__ = [
     "BoundedContext",

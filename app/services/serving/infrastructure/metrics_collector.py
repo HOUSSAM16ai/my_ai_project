@@ -8,10 +8,8 @@ from __future__ import annotations
 import random
 import threading
 from collections import defaultdict, deque
-from typing import Any
 
 from app.services.serving.domain.models import ModelMetrics, ModelResponse, ModelVersion
-
 
 class MetricsCollector:
     """
@@ -30,12 +28,12 @@ class MetricsCollector:
         self._lock = threading.RLock()
         self._monitoring_active = False
 
-    def collect_all_metrics(self):
+    def collect_all_metrics(self) -> None:
         """جمع مقاييس جميع النماذج"""
         with self._lock:
             pass
 
-    def update_metrics(self, version_id: str, response: ModelResponse):
+    def update_metrics(self, version_id: str, response: ModelResponse) -> None:
         """
         تحديث مقاييس النموذج
 

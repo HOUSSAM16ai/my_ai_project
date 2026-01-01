@@ -4,8 +4,6 @@ Tool definition and configuration.
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
-
 
 @dataclass
 class ToolConfig:
@@ -34,7 +32,6 @@ class ToolConfig:
             errors.append("Tool handler is required")
 
         return errors
-
 
 @dataclass
 class Tool:

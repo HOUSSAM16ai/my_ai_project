@@ -7,7 +7,6 @@ from .analyzers.git import GitAnalyzer
 from .analyzers.smells import StructuralSmellDetector
 from .models import FileMetrics, ProjectAnalysis
 
-
 class StructuralCodeIntelligence:
     """Main Structural Intelligence Analyzer"""
 
@@ -48,6 +47,7 @@ class StructuralCodeIntelligence:
         # Must be in target paths
         return any(target in path_str for target in self.target_paths)
 
+    # TODO: Split this function (92 lines) - KISS principle
     def analyze_file(self, file_path: Path) -> FileMetrics | None:
         """Comprehensive single file analysis"""
         try:
@@ -141,6 +141,7 @@ class StructuralCodeIntelligence:
         except Exception:
             # print(f"Error analyzing {file_path}: {e}", file=sys.stderr)
             return None
+# TODO: Split this function (44 lines) - KISS principle
 
     def calculate_hotspot_scores(self, all_metrics: list[FileMetrics]) -> None:
         """Calculate hotspot scores with normalization"""
@@ -186,6 +187,7 @@ class StructuralCodeIntelligence:
             elif score >= 0.3:
                 metrics.priority_tier = "MEDIUM"
             else:
+                # TODO: Split this function (62 lines) - KISS principle
                 metrics.priority_tier = "LOW"
 
     def analyze_project(self) -> ProjectAnalysis:

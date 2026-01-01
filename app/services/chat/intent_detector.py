@@ -5,8 +5,6 @@ Intent detection service.
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
-
 
 class ChatIntent(str, Enum):
     """Chat intents."""
@@ -19,7 +17,6 @@ class ChatIntent(str, Enum):
     HELP = "HELP"
     DEFAULT = "DEFAULT"
 
-
 @dataclass
 class IntentResult:
     """Intent detection result."""
@@ -27,7 +24,6 @@ class IntentResult:
     intent: str
     confidence: float
     params: dict[str, Any]
-
 
 class IntentDetector:
     """Detect user intent from question."""

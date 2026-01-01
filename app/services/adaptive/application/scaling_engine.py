@@ -12,7 +12,6 @@ from datetime import datetime
 
 from app.services.adaptive.domain.models import ScalingDecision, ScalingDirection, ServiceMetrics
 
-
 class AIScalingEngine:
     """
     محرك التوسع الذكي المدعوم بالذكاء الاصطناعي
@@ -45,6 +44,7 @@ class AIScalingEngine:
         confidence = max(0.5, min(0.95, 1.0 - variance / (avg_load + 1)))
         return max(0, predicted_load), confidence
 
+    # TODO: Split this function (44 lines) - KISS principle
     def calculate_optimal_instances(self, service_name: str,
         current_metrics: ServiceMetrics, current_instances: int
         ) ->ScalingDecision:

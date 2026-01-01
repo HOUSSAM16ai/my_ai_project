@@ -15,7 +15,6 @@ from app.core.di import get_health_check_service
 # موجه خاص للنقاط الجذرية (بدون بادئة)
 root_router = APIRouter(tags=["Root System"])
 
-
 @root_router.get(
     "/health",
     summary="فحص صحة النظام العام (General Health Check)",

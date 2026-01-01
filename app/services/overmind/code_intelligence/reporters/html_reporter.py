@@ -2,7 +2,7 @@ from pathlib import Path
 
 from ..models import ProjectAnalysis
 
-
+# TODO: Split this function (282 lines) - KISS principle
 def generate_heatmap_html(analysis: ProjectAnalysis, output_path: Path) -> None:
     """Generate HTML heatmap"""
 

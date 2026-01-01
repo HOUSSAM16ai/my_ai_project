@@ -3,7 +3,6 @@ from pathlib import Path
 
 from ..models import ProjectAnalysis
 
-
 def save_csv_report(analysis: ProjectAnalysis, output_path: Path) -> None:
     """Save report as CSV"""
     with open(output_path, "w", newline="", encoding="utf-8") as f:

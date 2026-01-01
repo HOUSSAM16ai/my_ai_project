@@ -15,7 +15,6 @@ from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 
-
 class SecurityHeadersMiddleware(BaseMiddleware):
     """
     Security Headers Middleware
@@ -33,6 +32,7 @@ class SecurityHeadersMiddleware(BaseMiddleware):
     name = "SecurityHeaders"
     order = 100  # Execute last, add headers to response
 
+    # TODO: Split this function (47 lines) - KISS principle
     def _setup(self):
         """Initialize security headers configuration"""
         self.headers = {

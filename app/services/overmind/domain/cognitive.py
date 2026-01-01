@@ -16,7 +16,7 @@
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Any, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -35,7 +35,6 @@ T = TypeVar("T")
 class EventLogger(Protocol):
     async def __call__(self, event_type: str, payload: dict[str, Any]) -> None: ...
 
-
 class CognitiveCritique(BaseModel):
     """
     نموذج نتيجة المراجعة والتدقيق.
@@ -43,7 +42,6 @@ class CognitiveCritique(BaseModel):
     approved: bool = Field(..., description="هل تمت الموافقة على العمل؟")
     feedback: str = Field(..., description="ملاحظات المراجعة أو أسباب الرفض")
     score: float = Field(0.0, description="درجة الجودة من 0 إلى 1")
-
 
 class CognitiveState(BaseModel):
     """
@@ -61,7 +59,6 @@ class CognitiveState(BaseModel):
 
     # الذاكرة التجميعية (Cumulative Memory) لمنع الحلقات المفرغة
     history_hashes: list[str] = Field(default_factory=list, description="سجل بصمات الخطط السابقة")
-
 
 class SuperBrain:
     """

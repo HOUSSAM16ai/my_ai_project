@@ -6,13 +6,11 @@ Part of the Omni-Plan Refactoring Initiative.
 
 import os
 from dataclasses import asdict, dataclass
-from typing import Any
 
 # ======================================================================================
 # Version
 # ======================================================================================
 __version__ = "4.5.0-hyper-l5++-omniplan"
-
 
 # ======================================================================================
 # Data Structures
@@ -20,7 +18,7 @@ __version__ = "4.5.0-hyper-l5++-omniplan"
 @dataclass
 class ToolResult:
     ok: bool
-    data: Any = None
+    data: dict[str, str | int | bool] = None
     error: str | None = None
     meta: dict[str, Any] = None
     trace_id: str | None = None
@@ -28,7 +26,6 @@ class ToolResult:
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         return {k: v for k, v in d.items() if v is not None}
-
 
 # ======================================================================================
 # Helpers
@@ -39,7 +36,6 @@ def _int_env(name: str, default: int) -> int:
     except Exception:
         return default
 
-
 def _bool_env(name: str, default: bool = False) -> bool:
     return os.getenv(name, str(1 if default else 0)).strip().lower() in (
         "1",
@@ -47,7 +43,6 @@ def _bool_env(name: str, default: bool = False) -> bool:
         "yes",
         "on",
     )
-
 
 # ======================================================================================
 # Core Limits / Config

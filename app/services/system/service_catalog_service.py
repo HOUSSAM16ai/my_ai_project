@@ -6,8 +6,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
-
 
 class ServiceType(Enum):
     """Service types"""
@@ -19,7 +17,6 @@ class ServiceType(Enum):
     FRONTEND = 'frontend'
     LIBRARY = 'library'
 
-
 class ServiceLifecycle(Enum):
     """Service lifecycle stages"""
     EXPERIMENTAL = 'experimental'
@@ -27,14 +24,12 @@ class ServiceLifecycle(Enum):
     DEPRECATED = 'deprecated'
     RETIRED = 'retired'
 
-
 class HealthStatus(Enum):
     """Service health status"""
     HEALTHY = 'healthy'
     DEGRADED = 'degraded'
     DOWN = 'down'
     UNKNOWN = 'unknown'
-
 
 @dataclass
 class ServiceMetadata:
@@ -55,7 +50,6 @@ class ServiceMetadata:
     created_at: datetime = field(default_factory=lambda : datetime.now(UTC))
     updated_at: datetime = field(default_factory=lambda : datetime.now(UTC))
 
-
 @dataclass
 class APISpec:
     """API specification"""
@@ -66,7 +60,6 @@ class APISpec:
     spec_content: dict[str, Any]
     endpoints: list[dict[str, Any]]
     created_at: datetime = field(default_factory=lambda : datetime.now(UTC))
-
 
 @dataclass
 class ServiceTemplate:
@@ -80,7 +73,6 @@ class ServiceTemplate:
     parameters: dict[str, Any]
     created_at: datetime = field(default_factory=lambda : datetime.now(UTC))
 
-
 @dataclass
 class ServiceHealth:
     """Service health information"""
@@ -90,7 +82,6 @@ class ServiceHealth:
     last_checked: datetime
     metrics: dict[str, float]
     incidents: list[dict[str, Any]] = field(default_factory=list)
-
 
 class ServiceCatalogService:
     """
@@ -180,7 +171,7 @@ RUN pip install -r requirements.txt"""
         return templates
 
     def update_service_health(self, service_id: str, status: HealthStatus,
-        metrics: dict[str, float]):
+        metrics: dict[str, float]) -> None:
         """Update service health status"""
         with self.lock:
             if service_id in self.health_status:
@@ -219,10 +210,8 @@ RUN pip install -r requirements.txt"""
             h.status == HealthStatus.DEGRADED]), 'down': len([h for h in
             self.health_status.values() if h.status == HealthStatus.DOWN])}}
 
-
 _catalog_instance: ServiceCatalogService | None = None
 _catalog_lock = threading.Lock()
-
 
 def get_service_catalog() ->ServiceCatalogService:
     """Get singleton service catalog instance"""

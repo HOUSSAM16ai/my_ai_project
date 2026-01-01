@@ -5,7 +5,7 @@ Simplified architecture using KISS principle - direct access to application serv
 
 Usage:
     from app.services.security_metrics import MetricsCalculator
-    
+
     calculator = MetricsCalculator(findings_repo)
     metrics = calculator.calculate_metrics(service_id)
 """

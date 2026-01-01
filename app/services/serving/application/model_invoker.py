@@ -9,7 +9,6 @@ import random
 import time
 import uuid
 from collections import deque
-from typing import Any
 
 from app.services.serving.domain.models import (
     ModelRequest,
@@ -18,7 +17,6 @@ from app.services.serving.domain.models import (
     ModelType,
     ModelVersion,
 )
-
 
 class ModelInvoker:
     """
@@ -34,6 +32,8 @@ class ModelInvoker:
         self._request_history: deque[ModelRequest] = deque(maxlen=10000)
         self._response_history: deque[ModelResponse] = deque(maxlen=10000)
 
+    # TODO: Split this function (45 lines) - KISS principle
+    # TODO: Reduce parameters (6 params) - Use config object
     def serve_request(self, model: ModelVersion, input_data: dict[str, Any],
         parameters: (dict[str, Any] | None)=None, cost_calculator: (
         callable | None)=None, metrics_updater: (callable | None)=None

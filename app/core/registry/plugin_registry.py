@@ -8,10 +8,7 @@ Central registration and management of all plugins
 مبدأ البساطة: Singleton Pattern بسيط وواضح
 """
 
-from typing import Any
-
 from app.core.protocols import PluginProtocol as IPlugin
-
 
 class PluginRegistry:
     """
@@ -83,7 +80,6 @@ class PluginRegistry:
     def get_metadata(self, name: str) -> dict[str, Any]:
         """Get plugin metadata"""
         return self._metadata.get(name, {})
-
 
 # Global registry instance
 registry = PluginRegistry()

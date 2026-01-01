@@ -8,10 +8,8 @@ from __future__ import annotations
 import threading
 import uuid
 from collections import Counter
-from typing import Any
 
 from app.services.serving.domain.models import EnsembleConfig, ModelResponse
-
 
 class EnsembleRouter:
     """

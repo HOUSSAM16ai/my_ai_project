@@ -7,14 +7,13 @@ if TYPE_CHECKING:
     pass
 logger = logging.getLogger(__name__)
 
-
 class CircuitBreakerProtocol(Protocol):
     """
     Protocol for the Resilience Grid's Circuit Breaker mechanism.
     Enforces a strict contract for fault tolerance across the Neural Routing Mesh.
     """
 
-    async def call(self, func, *args, **kwargs):
+    async def call(self, func, *args, **kwargs) -> None:
         ...
 
     @property
@@ -24,7 +23,6 @@ class CircuitBreakerProtocol(Protocol):
     @property
     def failure_count(self) ->int:
         ...
-
 
 class AsyncToolsProtocol(Protocol):
 
@@ -45,7 +43,6 @@ class AsyncToolsProtocol(Protocol):
     async def code_index_project(self, root: str, max_files: int=500) ->dict:
         ...
 
-
 class AsyncOvermindProtocol(Protocol):
 
     @property
@@ -58,12 +55,10 @@ class AsyncOvermindProtocol(Protocol):
     async def get_mission_status(self, mission_id: int) ->dict:
         ...
 
-
 class RateLimiterProtocol(Protocol):
 
     def check(self, user_id: int, key: str) ->tuple[bool, str]:
         ...
-
 
 class ChatContext:
     """

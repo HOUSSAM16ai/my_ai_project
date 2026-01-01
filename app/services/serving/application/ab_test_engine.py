@@ -10,13 +10,12 @@ import threading
 import time
 import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from app.services.serving.domain.models import ABTestConfig
 
 if TYPE_CHECKING:
     from app.services.serving.application.model_registry import ModelRegistry
-
 
 class ABTestEngine:
     """

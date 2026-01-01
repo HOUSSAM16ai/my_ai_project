@@ -15,7 +15,6 @@ import threading
 import time
 import uuid
 from datetime import UTC, datetime
-from typing import Any
 
 from app.services.serving.application.inference_router import InferenceRouter
 from app.services.serving.application.model_registry import ModelRegistry
@@ -27,7 +26,6 @@ from app.services.serving.domain.models import (
 )
 
 _LOG = logging.getLogger(__name__)
-
 
 class ExperimentManager:
     """
@@ -68,6 +66,8 @@ class ExperimentManager:
     # A/B TESTING
     # ======================================================================================
 
+    # TODO: Split this function (49 lines) - KISS principle
+    # TODO: Reduce parameters (6 params) - Use config object
     def start_ab_test(
         self,
         model_a_id: str,
@@ -118,6 +118,7 @@ class ExperimentManager:
         ).start()
 
         return test_id
+# TODO: Split this function (39 lines) - KISS principle
 
     def serve_ab_test_request(
         self,
@@ -158,6 +159,7 @@ class ExperimentManager:
             input_data,
             version_id=version_id,
             parameters=parameters,
+        # TODO: Split this function (40 lines) - KISS principle
         )
 
     def analyze_ab_test(self, test_id: str) -> dict[str, Any]:
@@ -226,6 +228,7 @@ class ExperimentManager:
             _LOG.error(f"Failed to auto-end test {test_id}: {e}")
 
     # ======================================================================================
+    # TODO: Split this function (34 lines) - KISS principle
     # SHADOW DEPLOYMENT
     # ======================================================================================
 

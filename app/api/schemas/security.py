@@ -1,14 +1,11 @@
-from typing import Any
 
 from pydantic import Field, field_validator
 
 from app.core.schemas import RobustBaseModel
 
-
 class TokenRequest(RobustBaseModel):
     user_id: int | None = None
     scopes: list[str] = Field(default_factory=list)
-
 
 class LoginRequest(RobustBaseModel):
     email: str
@@ -18,7 +15,6 @@ class LoginRequest(RobustBaseModel):
     @classmethod
     def lowercase_email(cls, v: str) -> str:
         return v.lower().strip()
-
 
 class RegisterRequest(RobustBaseModel):
     full_name: str
@@ -30,10 +26,8 @@ class RegisterRequest(RobustBaseModel):
     def lowercase_email(cls, v: str) -> str:
         return v.lower().strip()
 
-
 class TokenVerifyRequest(RobustBaseModel):
     token: str | None = None
-
 
 class UserResponse(RobustBaseModel):
     id: int
@@ -46,29 +40,24 @@ class UserResponse(RobustBaseModel):
     def map_full_name(cls, v: dict[str, str | int | bool], _info: dict[str, str | int | bool]) -> str:
         return v
 
-
 class AuthResponse(RobustBaseModel):
     access_token: str
     token_type: str = "Bearer"
     user: UserResponse
     status: str = "success"
 
-
 class RegisterResponse(RobustBaseModel):
     status: str = "success"
     message: str
     user: UserResponse
 
-
 class HealthResponse(RobustBaseModel):
     status: str
     data: dict[str, Any]
 
-
 class TokenVerifyResponse(RobustBaseModel):
     status: str
     data: dict[str, Any]
-
 
 class TokenGenerateResponse(RobustBaseModel):
     """

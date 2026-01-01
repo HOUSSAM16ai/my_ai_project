@@ -1,7 +1,6 @@
 # app/security/zero_trust.py
 from fastapi import HTTPException, Request, status
 
-
 class ZeroTrustAuthenticator:
     def __init__(self):
         # In a real implementation, this would manage sessions
@@ -15,6 +14,5 @@ class ZeroTrustAuthenticator:
                 detail="Invalid or missing session ID.",
             )
         return {"user_id": 1, "session_id": session_id}
-
 
 zero_trust_authenticator = ZeroTrustAuthenticator()

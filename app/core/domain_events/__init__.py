@@ -9,15 +9,13 @@ It decouples services from specific implementations and provides a standardized 
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, ClassVar, Type
-
+from typing import ClassVar, Type
 
 class EventCategory(Enum):
     SYSTEM = "system"
     USER = "user"
     MISSION = "mission"
     INTEGRATION = "integration"
-
 
 class BoundedContext(Enum):
     USER_MANAGEMENT = "user_management"
@@ -29,7 +27,6 @@ class BoundedContext(Enum):
     NOTIFICATION_DELIVERY = "notification_delivery"
     ANALYTICS_REPORTING = "analytics_reporting"
     UNKNOWN = "unknown"
-
 
 @dataclass
 class DomainEvent:
@@ -51,14 +48,13 @@ class DomainEvent:
         if not self.event_type:
              self.event_type = self.__class__.__name__
 
-
 class DomainEventRegistry:
     """Registry for domain events to allow dynamic loading/handling."""
 
     _registry: ClassVar[dict[str, type[DomainEvent]]] = {}
 
     @classmethod
-    def register(cls, event_class: type[DomainEvent]):
+    def register(cls, event_class: type[DomainEvent]) -> None:
         cls._registry[event_class.__name__] = event_class
         return event_class
 
@@ -69,7 +65,6 @@ class DomainEventRegistry:
     @classmethod
     def list_events(cls) -> list[str]:
         return list(cls._registry.keys())
-
 
 # --- Concrete Events ---
 
@@ -111,7 +106,6 @@ class UserDeleted(DomainEvent):
             aggregate_type="User",
             payload={"reason": reason}
         )
-
 
 @DomainEventRegistry.register
 @dataclass
@@ -164,7 +158,6 @@ class MissionFailed(DomainEvent):
             aggregate_type="Mission",
             payload={"error": error, "failed_task_id": failed_task_id}
         )
-
 
 @DomainEventRegistry.register
 @dataclass
@@ -294,10 +287,10 @@ class RateLimitExceeded(DomainEvent):
             payload={"endpoint": endpoint, "limit": limit}
         )
 
-
 @DomainEventRegistry.register
 @dataclass
 class ChatIntentDetected(DomainEvent):
+    # TODO: Reduce parameters (6 params) - Use config object
     def __init__(self, conversation_id: str, user_id: str, intent: str, confidence: float, original_message: str):
         super().__init__(
             event_type="ChatIntentDetected",
@@ -323,8 +316,9 @@ class ToolExecutionStarted(DomainEvent):
 
 @DomainEventRegistry.register
 @dataclass
+# TODO: Reduce parameters (7 params) - Use config object
 class ToolExecutionCompleted(DomainEvent):
-    def __init__(self, tool_name: str, executed_by: str, context_id: str, success: bool, duration_ms: float, result: Any = None):
+    def __init__(self, tool_name: str, executed_by: str, context_id: str, success: bool, duration_ms: float, result: dict[str, str | int | bool] = None):
          super().__init__(
             event_type="ToolExecutionCompleted",
             bounded_context=BoundedContext.TASK_EXECUTION,
@@ -333,7 +327,6 @@ class ToolExecutionCompleted(DomainEvent):
             aggregate_type="Context",
             payload={"tool_name": tool_name, "executed_by": executed_by, "success": success, "duration_ms": duration_ms, "result": str(result)[:500] if result else None}
         )
-
 
 @DomainEventRegistry.register
 @dataclass
@@ -347,7 +340,6 @@ class MissionCreatedFromChat(DomainEvent):
             aggregate_type="Mission",
             payload={"conversation_id": conversation_id, "user_id": user_id, "objective": objective}
         )
-
 
 @DomainEventRegistry.register
 @dataclass

@@ -15,14 +15,13 @@
 
 import asyncio
 from collections.abc import AsyncGenerator
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from app.core.di import get_logger
 
 logger = get_logger(__name__)
 
 T = TypeVar("T")
-
 
 class EventBus(Generic[T]):
     """
@@ -109,7 +108,6 @@ class EventBus(Generic[T]):
                 yield event
         finally:
             self.unsubscribe_queue(channel, queue)
-
 
 # Global Instance
 event_bus = EventBus()

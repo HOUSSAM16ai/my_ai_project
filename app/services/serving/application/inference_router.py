@@ -25,7 +25,6 @@ from app.services.serving.infrastructure.mock_model_invoker import MockModelInvo
 
 _LOG = logging.getLogger(__name__)
 
-
 class InferenceRouter:
     """
     Routes and executes inference requests.
@@ -60,6 +59,7 @@ class InferenceRouter:
         self._invoker = invoker or MockModelInvoker()
         self._metrics_repo = metrics_repo or InMemoryMetricsRepository()
 
+    # TODO: Split this function (87 lines) - KISS principle
     def serve_request(
         self,
         model_name: str,

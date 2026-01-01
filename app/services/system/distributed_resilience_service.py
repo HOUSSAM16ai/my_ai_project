@@ -5,7 +5,6 @@
 Handles distributed transactions, circuit breaking, and system self-healing.
 """
 import logging
-from typing import Any
 
 # Removed broken imports from non-existent 'app.services.resilience'
 # from app.services.resilience import ...

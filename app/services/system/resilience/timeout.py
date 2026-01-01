@@ -4,7 +4,6 @@ import threading
 from collections import deque
 from dataclasses import dataclass, field
 
-
 @dataclass
 class TimeoutConfig:
     """Timeout hierarchy configuration"""
@@ -13,7 +12,6 @@ class TimeoutConfig:
     read_timeout_ms: int = 30000  # 30s for read
     request_timeout_ms: int = 60000  # 60s total
     adaptive_enabled: bool = True  # Use P95-based adaptive timeout
-
 
 @dataclass
 class LatencyMetrics:
@@ -24,7 +22,6 @@ class LatencyMetrics:
     p95: float = 0.0
     p99: float = 0.0
     p999: float = 0.0
-
 
 class AdaptiveTimeout:
     """

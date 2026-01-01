@@ -17,10 +17,8 @@ across the entire application. Follows Single Responsibility Principle (SRP).
 """
 
 from datetime import UTC, datetime
-from typing import Any
 
 from fastapi import FastAPI
-
 
 class ErrorResponseFactory:
     """
@@ -32,7 +30,7 @@ class ErrorResponseFactory:
 
     @staticmethod
     def create_error_response(
-        code: int, message: str, details: Any = None, include_debug_info: bool = False  # noqa: unused variable
+        code: int, message: str, details: dict[str, str | int | bool] = None, include_debug_info: bool = False  # noqa: unused variable
     ) -> dict:
         """
         Create a standardized error response dictionary.

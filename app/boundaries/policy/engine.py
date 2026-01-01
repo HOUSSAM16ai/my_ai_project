@@ -5,7 +5,6 @@ import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
 
 from .auth import Principal
 
@@ -16,7 +15,6 @@ class Effect(Enum):
 
     ALLOW = "allow"
     DENY = "deny"
-
 
 @dataclass
 class PolicyRule:
@@ -32,7 +30,6 @@ class PolicyRule:
     resources: list[str] = field(default_factory=list)  # ["user:*", "document:123"]
     conditions: list[str] = field(default_factory=list)  # ["user.region == 'EU'"]
 
-
 @dataclass
 class Policy:
     """
@@ -45,7 +42,6 @@ class Policy:
     description: str
     rules: list[PolicyRule]
     priority: int = 0  # أولوية السياسة (أعلى رقم = أولوية أعلى)
-
 
 class PolicyEngine:
     """
@@ -64,6 +60,7 @@ class PolicyEngine:
         self.policies.sort(key=lambda p: p.priority, reverse=True)
         logger.info(f"✅ Policy added: {policy.name}")
 
+    # TODO: Split this function (49 lines) - KISS principle
     def evaluate(
         self,
         principal: Principal,
@@ -115,6 +112,7 @@ class PolicyEngine:
         )
         return False
 
+    # TODO: Reduce parameters (6 params) - Use config object
     def _matches_rule(
         self,
         principal: Principal,
@@ -203,6 +201,7 @@ class PolicyEngine:
                 return False
 
         return True
+# TODO: Split this function (43 lines) - KISS principle
 
     def _evaluate_simple_condition(self, condition: str, eval_context: dict[str, Any]) -> bool:
         """

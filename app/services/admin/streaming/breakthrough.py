@@ -4,16 +4,13 @@ import json
 import logging
 import time
 from collections.abc import AsyncGenerator, Callable
-from typing import Any
 
 logger = logging.getLogger(__name__)
-
 
 class StreamingConfig:
     OPTIMAL_CHUNK_SIZE = 3
     MIN_CHUNK_DELAY_MS = 30
     MAX_CHUNK_DELAY_MS = 100
-
 
 class BreakthroughStreamingService:
     """
@@ -46,7 +43,6 @@ class BreakthroughStreamingService:
     async def predict_next_tokens(self, text: str) -> list[str]:
         # Placeholder for speculative decoding
         return []
-
 
 class AdaptiveCache:
     """

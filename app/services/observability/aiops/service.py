@@ -5,7 +5,6 @@ import statistics
 import threading
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 from .models import (
     AnomalyDetection,
@@ -33,13 +32,13 @@ from .repositories import (
     InMemoryTelemetryRepository,
 )
 
-
 class AIOpsService:
     """
     خدمة AIOps الخارقة - World-class AIOps and self-healing
     Refactored to Simplified Architecture
     """
 
+    # TODO: Reduce parameters (6 params) - Use config object
     def __init__(
         self,
         telemetry_repo: TelemetryRepository = None,
@@ -70,7 +69,7 @@ class AIOpsService:
     # TELEMETRY COLLECTION
     # ==================================================================================
 
-    def collect_telemetry(self, data: TelemetryData):
+    def collect_telemetry(self, data: TelemetryData) -> None:
         """Collect telemetry data point"""
         with self.lock:
             self.telemetry_repo.add(data)
@@ -133,6 +132,7 @@ class AIOpsService:
                 self._record_anomaly(anomaly)
                 self._trigger_healing(anomaly)
 
+    # TODO: Split this function (32 lines) - KISS principle
     def _detect_zscore_anomaly(
         self, data: TelemetryData, baseline: dict[str, float]
     ) -> AnomalyDetection | None:
@@ -251,6 +251,7 @@ class AIOpsService:
     # ==================================================================================
     # PREDICTIVE ANALYTICS
     # ==================================================================================
+# TODO: Split this function (31 lines) - KISS principle
 
     def forecast_load(
         self, service_name: str, metric_type: MetricType, hours_ahead: int = 24

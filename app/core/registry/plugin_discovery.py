@@ -17,7 +17,7 @@ from app.core.registry.plugin_registry import registry
 
 logger = logging.getLogger(__name__)
 
-
+# TODO: Split this function (43 lines) - KISS principle
 def discover_plugins(plugin_dir: str='app.plugins', auto_register: bool=True
     ) ->list[IPlugin]:
     """

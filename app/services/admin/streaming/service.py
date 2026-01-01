@@ -29,13 +29,11 @@ import re
 import time
 from collections import deque
 from collections.abc import AsyncGenerator, Generator
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Constants
 MS_TO_SECONDS = 1000.0  # Milliseconds to seconds conversion
-
 
 class StreamingConfig:
     """Configuration for streaming behavior"""
@@ -57,7 +55,6 @@ class StreamingConfig:
     MAX_CONTEXT_TOKENS = 32000  # Increased for complex queries
     CONTEXT_SUMMARY_THRESHOLD = 0.8  # Summarize when 80% full
 
-
 class SmartTokenChunker:
     """
     Smart token chunking for optimal streaming experience.
@@ -69,6 +66,7 @@ class SmartTokenChunker:
     """
 
     @staticmethod
+    # TODO: Split this function (41 lines) - KISS principle
     def chunk_text(text: str, chunk_size: int = StreamingConfig.OPTIMAL_CHUNK_SIZE) -> list[str]:
         """
         Split text into optimal chunks for streaming while STRICTLY preserving whitespace.
@@ -133,7 +131,6 @@ class SmartTokenChunker:
             for chunk in SmartTokenChunker.chunk_text(text):
                 yield chunk
 
-
 class SpeculativeDecoder:
     """
     Speculative decoding for 2-3x speed improvement.
@@ -180,7 +177,6 @@ class SpeculativeDecoder:
 
         return []
 
-
 class StreamingMetrics:
     """Track streaming performance metrics"""
 
@@ -190,7 +186,7 @@ class StreamingMetrics:
         self.total_latency_ms = 0.0
         self.chunk_times: deque = deque(maxlen=1000)
 
-    def record_chunk(self, chunk_size: int, latency_ms: float):
+    def record_chunk(self, chunk_size: int, latency_ms: float) -> None:
         """Record a chunk streaming event"""
         self.total_streams += 1
         self.total_tokens += chunk_size
@@ -220,7 +216,6 @@ class StreamingMetrics:
             "total_streams": self.total_streams,
             "total_tokens": self.total_tokens,
         }
-
 
 class AdminChatStreamingService:
     """
@@ -338,10 +333,8 @@ class AdminChatStreamingService:
         """Get streaming performance metrics"""
         return self.metrics.get_stats()
 
-
 # Singleton instance
 _streaming_service: AdminChatStreamingService | None = None
-
 
 def get_streaming_service() -> AdminChatStreamingService:
     """Get or create streaming service singleton"""

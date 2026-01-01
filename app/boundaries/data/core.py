@@ -2,12 +2,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
 
 from app.boundaries.data.database import InMemoryDatabaseBoundary
 from app.boundaries.data.events import InMemoryEventStore
 from app.boundaries.data.saga import SagaOrchestrator
-
 
 class CommandHandler(ABC):
     """
@@ -29,7 +27,6 @@ class CommandHandler(ABC):
         """
         pass
 
-
 class QueryHandler(ABC):
     """
     معالج الاستعلامات (Query Handler)
@@ -49,7 +46,6 @@ class QueryHandler(ABC):
             نتيجة الاستعلام
         """
         pass
-
 
 class ReadModel:
     """
@@ -73,7 +69,6 @@ class ReadModel:
                 results.append(entity_data)
         return results
 
-
 class AntiCorruptionLayer:
     """
     طبقة مكافحة الفساد (Anti-Corruption Layer)
@@ -87,7 +82,6 @@ class AntiCorruptionLayer:
 
     def __init__(self, service_name: str):
         self.service_name = service_name
-
 
 class DataBoundary:
     """
@@ -112,9 +106,7 @@ class DataBoundary:
         """إنشاء Saga جديد"""
         return SagaOrchestrator(saga_name)
 
-
 _global_data_boundaries: dict[str, DataBoundary] = {}
-
 
 def get_data_boundary(service_name: str) -> DataBoundary:
     """الحصول على حدود البيانات لخدمة معينة"""

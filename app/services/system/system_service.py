@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import async_session_factory
 from app.models import User
 
-
 class SystemService:
     """
     خدمة النظام (The Doctor).
@@ -68,7 +67,6 @@ class SystemService:
             "admin_present": admin_present,
             "db": db_status,
         }
-
 
 # مثيل واحد للخدمة يمكن استخدامه في كل مكان
 system_service = SystemService()

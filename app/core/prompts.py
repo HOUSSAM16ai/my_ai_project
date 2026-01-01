@@ -37,7 +37,6 @@ OVERMIND_IDENTITY = """
 5. **Project Expert**: Deep knowledge of codebase.
 """
 
-
 def _get_static_structure() -> str:
     return """
 ## 🏗️ PROJECT STRUCTURE (CogniForge)
@@ -47,11 +46,9 @@ def _get_static_structure() -> str:
 - **Frontend**: Static HTML/JS (No Build)
 """
 
-
 # =============================================================================
 # DYNAMIC CONTEXT HELPERS (Refactored for Low Complexity)
 # =============================================================================
-
 
 async def _get_dynamic_metrics() -> str:
     """Retrieves project metrics asynchronously."""
@@ -78,7 +75,6 @@ async def _get_dynamic_metrics() -> str:
         logger.debug(f"Metrics unavailable: {e}")
         return ""
 
-
 def _get_agent_tools_status() -> str:
     """concise tool status report."""
     try:
@@ -104,14 +100,12 @@ def _get_agent_tools_status() -> str:
     except Exception:
         return ""
 
-
 def _get_system_health() -> str:
     """Check vital signs."""
     env = os.getenv("ENVIRONMENT", "unknown")
     db = "PostgreSQL" if "postgresql" in os.getenv("DATABASE_URL", "") else "SQLite"
     ai = "✅" if os.getenv("OPENROUTER_API_KEY") else "⚠️"
     return f"## 📊 STATUS\n- Env: {env}\n- DB: {db}\n- AI: {ai}"
-
 
 # =============================================================================
 # MAIN PROMPT GENERATOR
@@ -136,7 +130,6 @@ def get_static_system_prompt(include_health=True) -> str:
 
     return "\n".join(parts)
 
-
 async def get_system_prompt(include_health=True, include_dynamic=False) -> str:
     """
     Returns the system prompt, optionally resolving dynamic async context.
@@ -157,7 +150,6 @@ async def get_system_prompt(include_health=True, include_dynamic=False) -> str:
     parts.append(f"\n## ⏰ Time: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
     return "\n".join(parts)
-
 
 # Global constant using the static version
 OVERMIND_SYSTEM_PROMPT = get_static_system_prompt(include_health=True)

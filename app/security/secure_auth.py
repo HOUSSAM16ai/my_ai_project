@@ -1,10 +1,8 @@
 # app/security/secure_auth.py
-from typing import Any
 
 from fastapi import Request
 
 from app.models import pwd_context
-
 
 class SecureAuthenticationService:
     def __init__(self):

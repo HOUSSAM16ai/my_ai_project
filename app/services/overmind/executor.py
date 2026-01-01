@@ -12,7 +12,6 @@ import asyncio
 import json
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Any
 
 from app.core.protocols import MissionStateManagerProtocol
 from app.models import Task
@@ -23,7 +22,6 @@ __all__ = ["TaskExecutor"]
 
 # تعريف نوع السجل: قاموس يربط الاسم بدالة (متزامنة أو غير متزامنة)
 type ToolRegistry = dict[str, Callable[..., Awaitable[Any] | Any]]
-
 
 class TaskExecutor:
     """

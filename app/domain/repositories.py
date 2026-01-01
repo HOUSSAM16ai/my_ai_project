@@ -4,8 +4,7 @@ Defines contracts for data access following Dependency Inversion Principle.
 Domain layer defines interfaces, Infrastructure layer implements them.
 """
 
-from typing import Any, Protocol
-
+from typing import Protocol
 
 class DatabaseRepository(Protocol):
     """Database operations interface."""
@@ -13,7 +12,6 @@ class DatabaseRepository(Protocol):
     async def check_connection(self) -> bool:
         """Check if database connection is alive."""
         ...
-
 
 class UserRepository(Protocol):
     """User repository interface."""

@@ -1,6 +1,5 @@
 # app/services/admin_ai_service.py
 import logging
-from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -9,11 +8,9 @@ from app.models import AdminConversation, AdminMessage, User
 
 logger = logging.getLogger(__name__)
 
-
 # Module-level function for testing patching
 def get_llm_client() -> None:
     return get_ai_client()
-
 
 class AdminAIService:
     def create_conversation(
@@ -42,7 +39,7 @@ class AdminAIService:
         conversation_id: int,
         role: str,
         content: str,
-    ):
+    ) -> None:
         message = AdminMessage(
             conversation_id=conversation_id,
             role=role,
@@ -55,20 +52,21 @@ class AdminAIService:
     def _save_message(self, db, conversation_id, role, content):
         return self.save_message(db, conversation_id, role, content)
 
-    def get_llm_client(self):
+    def get_llm_client(self) -> None:
         """
         Returns the AIClient. This method is primarily a hook for testing.
         """
         return get_llm_client()
 
     # Added answer_question method which was missing and caused AttributeError
+    # TODO: Split this function (111 lines) - KISS principle
     def answer_question(
         self,
         question: str,
         user: dict[str, str | int | bool],
         conversation_id: str | None = None,
         use_deep_context: bool = False,
-    ):
+    ) -> None:
         """
         Answer a question using AI.
 
@@ -174,6 +172,5 @@ class AdminAIService:
             "answer": "Unexpected execution flow in AI service.",
             "error_type": "unknown",
         }
-
 
 admin_ai_service = AdminAIService()

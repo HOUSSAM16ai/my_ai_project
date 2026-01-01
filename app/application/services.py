@@ -3,10 +3,7 @@ Application Service Implementations
 Concrete implementations of application service interfaces.
 """
 
-from typing import Any
-
 from app.domain.repositories import DatabaseRepository, UserRepository
-
 
 class DefaultHealthCheckService:
     """Default health check service implementation."""
@@ -37,7 +34,6 @@ class DefaultHealthCheckService:
                 "error": str(e),
             }
 
-
 class DefaultSystemService:
     """Default system operations service implementation."""
 
@@ -59,7 +55,6 @@ class DefaultSystemService:
             "database": db_ok,
             "overall": db_ok,
         }
-
 
 class DefaultUserService:
     """Default user management service implementation."""

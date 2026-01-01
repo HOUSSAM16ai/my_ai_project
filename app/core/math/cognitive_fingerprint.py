@@ -10,7 +10,6 @@ import re
 from dataclasses import dataclass
 from enum import Enum
 
-
 class CognitiveComplexity(Enum):
     """
     Refined Cognitive Complexity Levels.
@@ -22,7 +21,6 @@ class CognitiveComplexity(Enum):
     CREATIVE = 3  # Poetry, story writing, artistic tasks.
     LOGICAL_REASONING = 4  # Puzzles, math problems, structured logic.
 
-
 @dataclass
 class CognitiveFingerprint:
     """
@@ -32,7 +30,6 @@ class CognitiveFingerprint:
     complexity: CognitiveComplexity = CognitiveComplexity.REFLEX
     # Future: Add vectors for creativity, logic, etc.
     # e.g., skill_vectors: dict[str, float] = field(default_factory=dict)
-
 
 class FingerprintAnalyzer:
     """
@@ -84,9 +81,7 @@ class FingerprintAnalyzer:
         # 3. Default to simple
         return CognitiveComplexity.REFLEX
 
-
 _analyzer = FingerprintAnalyzer()
-
 
 def assess_cognitive_complexity(prompt: str) -> CognitiveComplexity:
     """

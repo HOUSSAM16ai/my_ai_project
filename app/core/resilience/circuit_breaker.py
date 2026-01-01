@@ -36,10 +36,8 @@ import threading
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
 
 logger = logging.getLogger(__name__)
-
 
 class CircuitState(Enum):
     """Circuit breaker states"""
@@ -47,7 +45,6 @@ class CircuitState(Enum):
     CLOSED = "closed"  # Normal operation, requests allowed
     OPEN = "open"  # Failing, requests rejected
     HALF_OPEN = "half_open"  # Testing recovery, limited requests
-
 
 @dataclass
 class CircuitBreakerConfig:
@@ -57,7 +54,6 @@ class CircuitBreakerConfig:
     success_threshold: int = 2  # Successes in half-open before closing
     timeout: float = 60.0  # Seconds to wait before trying half-open
     half_open_max_calls: int = 3  # Max concurrent calls in half-open
-
 
 class CircuitBreaker:
     """
@@ -166,7 +162,7 @@ class CircuitBreaker:
                 return True, "ok"
             return False, "Circuit half-open, max test calls reached"
 
-    def record_success(self):
+    def record_success(self) -> None:
         """Record a successful call"""
         with self._lock:
             current_state = self._state
@@ -191,7 +187,7 @@ class CircuitBreaker:
                     logger.debug(f"Circuit '{self.name}' resetting failure count")
                     self._failure_count = 0
 
-    def record_failure(self):
+    def record_failure(self) -> None:
         """Record a failed call"""
         with self._lock:
             current_state = self._state
@@ -218,7 +214,7 @@ class CircuitBreaker:
                     )
                     self._state = CircuitState.OPEN
 
-    def reset(self):
+    def reset(self) -> None:
         """Manually reset the circuit breaker to closed state"""
         with self._lock:
             logger.info(f"Circuit '{self.name}' manually reset")
@@ -254,7 +250,6 @@ class CircuitBreaker:
                     "half_open_max_calls": self.config.half_open_max_calls,
                 },
             }
-
 
 class CircuitBreakerRegistry:
     """
@@ -302,13 +297,13 @@ class CircuitBreakerRegistry:
                 logger.info(f"Created circuit breaker '{name}'")
             return self._breakers[name]
 
-    def reset(self, name: str):
+    def reset(self, name: str) -> None:
         """Reset a specific circuit breaker"""
         with self._breakers_lock:
             if name in self._breakers:
                 self._breakers[name].reset()
 
-    def reset_all(self):
+    def reset_all(self) -> None:
         """Reset all circuit breakers"""
         with self._breakers_lock:
             for breaker in self._breakers.values():
@@ -320,19 +315,18 @@ class CircuitBreakerRegistry:
         with self._breakers_lock:
             return {name: breaker.get_stats() for name, breaker in self._breakers.items()}
 
-    def remove(self, name: str):
+    def remove(self, name: str) -> None:
         """Remove a circuit breaker from registry"""
         with self._breakers_lock:
             if name in self._breakers:
                 del self._breakers[name]
                 logger.info(f"Removed circuit breaker '{name}'")
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all circuit breakers"""
         with self._breakers_lock:
             self._breakers.clear()
             logger.info("Circuit breaker registry cleared")
-
 
 class CircuitOpenError(Exception):
     """Raised when circuit breaker is open"""
@@ -341,11 +335,9 @@ class CircuitOpenError(Exception):
         self.breaker_name = breaker_name
         super().__init__(f"Circuit breaker '{breaker_name}' is OPEN")
 
-
 # =============================================================================
 # PUBLIC API
 # =============================================================================
-
 
 def get_circuit_breaker(
     name: str,
@@ -367,24 +359,20 @@ def get_circuit_breaker(
     registry = CircuitBreakerRegistry.get_instance()
     return registry.get(name, config)
 
-
-def reset_circuit_breaker(name: str):
+def reset_circuit_breaker(name: str) -> None:
     """Reset a specific circuit breaker"""
     registry = CircuitBreakerRegistry.get_instance()
     registry.reset(name)
-
 
 def reset_all_circuit_breakers() -> None:
     """Reset all circuit breakers"""
     registry = CircuitBreakerRegistry.get_instance()
     registry.reset_all()
 
-
 def get_all_circuit_breaker_stats() -> dict[str, dict[str, Any]]:
     """Get statistics for all circuit breakers"""
     registry = CircuitBreakerRegistry.get_instance()
     return registry.get_all_stats()
-
 
 __all__ = [
     "CircuitBreaker",

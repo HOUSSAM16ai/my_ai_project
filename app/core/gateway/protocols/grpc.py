@@ -1,9 +1,7 @@
-from typing import Any
 
 from fastapi import Request
 
 from .base import ProtocolAdapter
-
 
 class GRPCAdapter(ProtocolAdapter):
     """gRPC protocol adapter (placeholder for future implementation)"""

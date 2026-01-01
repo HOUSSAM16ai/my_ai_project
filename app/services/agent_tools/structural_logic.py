@@ -8,7 +8,6 @@ Separated from tools to allow usage in other modules.
 import hashlib
 import json
 import os
-from typing import Any
 
 # Redefining to use direct module access for re-assignment compatibility
 from . import globals as g
@@ -19,7 +18,6 @@ from .definitions import (
     HASH_AFTER_WRITE,
 )
 from .utils import _dbg, _file_hash, _now
-
 
 def _touch_layer(layer: str, op: str):
     if not layer:
@@ -32,7 +30,7 @@ def _touch_layer(layer: str, op: str):
             d[op] += 1
         d["last_ts"] = _now()
 
-
+# TODO: Split this function (32 lines) - KISS principle
 def _load_deep_struct_map_logic(force: bool = False) -> bool:
     if not DEEP_MAP_PATH or not os.path.isfile(DEEP_MAP_PATH):
         return False
@@ -67,7 +65,6 @@ def _load_deep_struct_map_logic(force: bool = False) -> bool:
             _dbg(f"[deep_struct_map] load failed: {e}")
             return False
 
-
 def _maybe_reload_struct_map():
     if not DEEP_MAP_PATH:
         return
@@ -77,7 +74,6 @@ def _maybe_reload_struct_map():
         return
     if (_now() - g._DEEP_STRUCT_LOADED_AT) >= DEEP_MAP_TTL:
         _load_deep_struct_map_logic(force=False)
-
 
 def _annotate_struct_meta(abs_path: str, meta: dict[str, Any]):
     _maybe_reload_struct_map()
@@ -91,7 +87,6 @@ def _annotate_struct_meta(abs_path: str, meta: dict[str, Any]):
     dup_group = info.get("dup_group")
     meta.update({"struct_layer": layer, "struct_hotspot": hotspot, "struct_dup_group": dup_group})
 
-
 def _maybe_hash_and_size(abs_path: str, result_data: dict[str, Any]):
     if HASH_AFTER_WRITE and os.path.isfile(abs_path):
         try:
@@ -99,7 +94,6 @@ def _maybe_hash_and_size(abs_path: str, result_data: dict[str, Any]):
             result_data["size_after"] = os.path.getsize(abs_path)
         except Exception:
             pass
-
 
 def _apply_struct_limit(meta: dict[str, Any]):
     if not DEEP_LIMIT_KEYS or not meta:

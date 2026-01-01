@@ -5,12 +5,10 @@ Collects security-related metrics, events, and audit logs.
 Integrates with observability systems for security monitoring.
 """
 import time
-from typing import Any
 
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
-
 
 class TelemetryGuard(BaseMiddleware):
     """
@@ -55,7 +53,7 @@ class TelemetryGuard(BaseMiddleware):
         ctx.add_metadata('security_start_time', time.time())
         return MiddlewareResult.success()
 
-    def on_error(self, ctx: RequestContext, error: Exception):
+    def on_error(self, ctx: RequestContext, error: Exception) -> None:
         """
         Track security errors
 
@@ -74,7 +72,7 @@ class TelemetryGuard(BaseMiddleware):
             'trace_id': ctx.trace_id}
         self._add_security_event(event)
 
-    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+    def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
         """
         Track completion metrics
 

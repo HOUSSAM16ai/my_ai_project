@@ -34,10 +34,8 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any
 
 logger = logging.getLogger(__name__)
-
 
 class BoundedContext(ABC):
     """
@@ -66,7 +64,6 @@ class BoundedContext(ABC):
         """التحقق من قواعد العمل الخاصة بهذا المجال"""
         pass
 
-
 class EventType(Enum):
     """أنواع الأحداث في النظام"""
     MISSION_CREATED = 'mission.created'
@@ -84,7 +81,6 @@ class EventType(Enum):
     INVENTORY_RELEASED = 'inventory.released'
     NOTIFICATION_SENT = 'notification.sent'
 
-
 @dataclass
 class DomainEvent:
     """
@@ -101,7 +97,6 @@ class DomainEvent:
     metadata: dict[str, Any] = field(default_factory=dict)
     correlation_id: str | None = None
     causation_id: str | None = None
-
 
 class EventBus(ABC):
     """
@@ -123,7 +118,6 @@ class EventBus(ABC):
         DomainEvent], Awaitable[None]]) ->None:
         """الاشتراك في نوع معين من الأحداث"""
         pass
-
 
 class InMemoryEventBus(EventBus):
     """
@@ -167,7 +161,6 @@ class InMemoryEventBus(EventBus):
                 aggregate_id]
         return self._event_history
 
-
 @dataclass
 class ServiceDefinition:
     """تعريف خدمة في Gateway"""
@@ -176,7 +169,6 @@ class ServiceDefinition:
     health_check_path: str = '/health'
     timeout: float = 30.0
     max_retries: int = 3
-
 
 class APIGateway:
     """
@@ -247,13 +239,11 @@ class APIGateway:
         self._cache[cache_key] = result, datetime.now()
         return result
 
-
 class CircuitState(Enum):
     """حالات قاطع الدائرة"""
     CLOSED = 'closed'
     OPEN = 'open'
     HALF_OPEN = 'half_open'
-
 
 @dataclass
 class CircuitBreakerConfig:
@@ -262,7 +252,6 @@ class CircuitBreakerConfig:
     success_threshold: int = 2
     timeout: float = 60.0
     call_timeout: float = 30.0
-
 
 class CircuitBreaker:
     """
@@ -342,7 +331,6 @@ class CircuitBreaker:
         elapsed = (datetime.now() - self.last_failure_time).total_seconds()
         return elapsed >= self.config.timeout
 
-
 class BulkheadExecutor:
     """
     نمط الحاجز (Bulkhead Pattern)
@@ -386,7 +374,6 @@ class BulkheadExecutor:
             finally:
                 self._active_tasks -= 1
 
-
 class ServiceBoundary:
     """
     حدود الخدمة (Service Boundary)
@@ -421,9 +408,7 @@ class ServiceBoundary:
                 queue_size)
         return self._bulkheads[name]
 
-
 _global_service_boundary: ServiceBoundary | None = None
-
 
 def get_service_boundary() ->ServiceBoundary:
     """الحصول على مثيل عام من حدود الخدمة"""

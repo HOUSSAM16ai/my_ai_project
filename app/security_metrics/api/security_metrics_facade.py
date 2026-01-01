@@ -1,7 +1,5 @@
 """Security Metrics Facade - Unified interface following Facade Pattern."""
 
-from typing import Any
-
 from app.security_metrics.application.developer_scoring import DeveloperSecurityScorer
 from app.security_metrics.application.report_generation import SecurityReportGenerator
 from app.security_metrics.application.risk_scoring import RiskScoreCalculator
@@ -13,7 +11,6 @@ from app.security_metrics.domain.interfaces import (
 )
 from app.security_metrics.domain.value_objects import Severity
 from app.security_metrics.infrastructure.in_memory_repository import InMemorySecurityRepository
-
 
 class SecurityMetricsFacade:
     """
@@ -35,6 +32,7 @@ class SecurityMetricsFacade:
         self.report_generator = report_generator
         self.developer_scorer = developer_scorer
 
+    # TODO: Reduce parameters (10 params) - Use config object
     def add_finding(
         self,
         finding_id: str,
@@ -102,7 +100,6 @@ class SecurityMetricsFacade:
 
         return summary
 
-
 def get_security_metrics_facade() -> SecurityMetricsFacade:
     """
     Factory function to create SecurityMetricsFacade with default dependencies.
@@ -121,10 +118,8 @@ def get_security_metrics_facade() -> SecurityMetricsFacade:
         developer_scorer=developer_scorer,
     )
 
-
 # Singleton instance for backward compatibility
 _security_metrics_instance: SecurityMetricsFacade | None = None
-
 
 def get_security_metrics_service() -> SecurityMetricsFacade:
     """Get singleton instance of security metrics facade."""

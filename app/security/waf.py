@@ -1,10 +1,8 @@
 # app/security/waf.py
 import contextlib
 import re
-from typing import Any
 
 from fastapi import HTTPException, Request, status
-
 
 class WebApplicationFirewall:
     def __init__(self):
@@ -19,7 +17,7 @@ class WebApplicationFirewall:
             {"name": "XSS", "pattern": re.compile(r"<script>", re.IGNORECASE)},
         ]
 
-    async def check_request(self, request: Request):
+    async def check_request(self, request: Request) -> None:
         all_params = await self._extract_all_params(request)
         for _param_name, param_value in all_params.items():
             if not isinstance(param_value, str):
@@ -38,6 +36,5 @@ class WebApplicationFirewall:
             with contextlib.suppress(Exception):
                 params.update(await request.json())
         return params
-
 
 waf = WebApplicationFirewall()

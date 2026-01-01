@@ -5,12 +5,11 @@ Ensures strict typing and governance for data exchange.
 """
 
 from datetime import datetime
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel
 
 T = TypeVar("T")
-
 
 class PaginationMeta(BaseModel):
     """Metadata for paginated responses."""
@@ -21,7 +20,6 @@ class PaginationMeta(BaseModel):
     has_next: bool
     has_prev: bool
 
-
 class PaginatedResponse[T](BaseModel):
     """
     Generic wrapper for paginated data.
@@ -29,7 +27,6 @@ class PaginatedResponse[T](BaseModel):
     """
     items: list[T]
     pagination: PaginationMeta
-
 
 class UserResponse(BaseModel):
     """
@@ -47,7 +44,6 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 class MissionResponse(BaseModel):
     """DTO for Mission data."""
     id: int
@@ -60,7 +56,6 @@ class MissionResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 class TaskResponse(BaseModel):
     """DTO for Task data."""
     id: int
@@ -72,7 +67,6 @@ class TaskResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
 
 class GenericResponse(BaseModel):
     """Simple success/error response."""

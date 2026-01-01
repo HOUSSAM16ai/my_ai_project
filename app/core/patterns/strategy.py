@@ -11,7 +11,6 @@ from typing import TypeVar
 T = TypeVar("T")
 R = TypeVar("R")
 
-
 class Strategy[T, R](ABC):
     """Base strategy interface."""
 
@@ -29,7 +28,6 @@ class Strategy[T, R](ABC):
     def priority(self) -> int:
         """Strategy priority (higher = checked first)."""
         return 0
-
 
 class StrategyRegistry[T, R]:
     """Registry for managing strategies."""

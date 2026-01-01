@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from ..domain.models import SecurityFinding, SecurityMetrics, Severity, TrendDirection
 from ..domain.ports import MetricsCalculatorPort
 
-
 class ComprehensiveMetricsCalculator(MetricsCalculatorPort):
     """Calculate comprehensive security metrics"""
 

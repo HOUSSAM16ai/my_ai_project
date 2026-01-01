@@ -1,12 +1,10 @@
 import logging
 import threading
 from datetime import UTC, datetime
-from typing import Any
 
 from .models import PolicyRule
 
 logger = logging.getLogger(__name__)
-
 
 class PolicyEngine:
     """
@@ -24,7 +22,7 @@ class PolicyEngine:
         self.violations: list[dict[str, Any]] = []
         self.lock = threading.RLock()
 
-    def add_policy(self, policy: PolicyRule):
+    def add_policy(self, policy: PolicyRule) -> None:
         """Add or update policy"""
         with self.lock:
             self.policies[policy.rule_id] = policy

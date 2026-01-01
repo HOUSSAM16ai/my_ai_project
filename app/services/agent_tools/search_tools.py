@@ -23,7 +23,6 @@ from .definitions import (
 )
 from .utils import _safe_path
 
-
 @tool(
     name="code_index_project",
     description="Lightweight lexical project index: collects file metadata, size, line counts, simple complexity heuristic.",
@@ -38,6 +37,7 @@ from .utils import _safe_path
         },
     },
 )
+# TODO: Split this function (67 lines) - KISS principle
 def code_index_project(
     root: str = ".",
     max_files: int = CODE_INDEX_MAX_FILES,
@@ -107,7 +107,6 @@ def code_index_project(
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
-
 @tool(
     name="code_search_lexical",
     description="Lexical scan for a query (substring or optional regex) returning contextual snippets.",
@@ -124,6 +123,7 @@ def code_index_project(
         },
         "required": ["query"],
     },
+# TODO: Split this function (80 lines) - KISS principle
 )
 def code_search_lexical(
     query: str,
@@ -206,7 +206,6 @@ def code_search_lexical(
         )
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
-
 
 @tool(
     name="code_search_semantic",

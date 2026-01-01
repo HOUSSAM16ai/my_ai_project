@@ -30,14 +30,12 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Thread-safe singleton management
 _CLIENT_LOCK = threading.Lock()
 _HTTP_CLIENTS: dict[str, Any] = {}
-
 
 class HTTPClientFactory:
     """
@@ -47,6 +45,8 @@ class HTTPClientFactory:
     """
 
     @staticmethod
+    # TODO: Split this function (64 lines) - KISS principle
+    # TODO: Reduce parameters (6 params) - Use config object
     def create_client(
         name: str = "default",
         timeout: float = 30.0,
@@ -114,7 +114,7 @@ class HTTPClientFactory:
                 return HTTPClientFactory._create_mock_http_client(name)
 
     @staticmethod
-    async def close_client(name: str = "default"):
+    async def close_client(name: str = "default") -> None:
         """Close a specific HTTP client"""
         # More efficient: find keys directly without creating list
         with _CLIENT_LOCK:
@@ -160,15 +160,15 @@ class HTTPClientFactory:
                 self._closed = False
                 self._is_mock_client = True  # Protocol marker for detection
 
-            async def get(self, url: str, **kwargs):
+            async def get(self, url: str, **kwargs) -> None:
                 """Mock GET request"""
                 raise RuntimeError("httpx not available - mock client only")
 
-            async def post(self, url: str, **kwargs):
+            async def post(self, url: str, **kwargs) -> None:
                 """Mock POST request"""
                 raise RuntimeError("httpx not available - mock client only")
 
-            async def aclose(self):
+            async def aclose(self) -> None:
                 """Mock close"""
                 self._closed = True
 
@@ -177,12 +177,12 @@ class HTTPClientFactory:
 
         return MockHTTPClient(name)
 
-
 # =============================================================================
 # PUBLIC API
 # =============================================================================
 
-
+# TODO: Split this function (32 lines) - KISS principle
+# TODO: Reduce parameters (6 params) - Use config object
 def get_http_client(
     name: str = "default",
     timeout: float = 30.0,
@@ -217,21 +217,17 @@ def get_http_client(
         use_cache=use_cache,
     )
 
-
-async def close_http_client(name: str = "default"):
+async def close_http_client(name: str = "default") -> None:
     """Close a specific HTTP client"""
     await HTTPClientFactory.close_client(name)
-
 
 async def close_all_http_clients() -> None:
     """Close all HTTP clients"""
     await HTTPClientFactory.close_all()
 
-
 def get_http_client_stats() -> dict[str, Any]:
     """Get statistics about cached HTTP clients"""
     return HTTPClientFactory.get_cached_clients()
-
 
 __all__ = [
     "HTTPClientFactory",

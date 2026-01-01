@@ -19,7 +19,7 @@
 """
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from app.core.protocols import MissionStateManagerProtocol, TaskExecutorProtocol
 from app.models import Mission, MissionEventType, MissionStatus
@@ -31,7 +31,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 __all__ = ["OvermindOrchestrator"]
-
 
 class OvermindOrchestrator:
     """

@@ -12,7 +12,6 @@ from datetime import datetime
 
 from ...domain.models import SecurityEvent, ThreatDetection, ThreatLevel, ThreatType
 
-
 class DeepLearningThreatDetector:
     """
     كاشف التهديدات بالتعلم العميق
@@ -41,6 +40,7 @@ class DeepLearningThreatDetector:
             r"<object",
         ]
 
+    # TODO: Split this function (48 lines) - KISS principle
     def detect_threats(self, event: SecurityEvent) -> list[ThreatDetection]:
         """
         Detect threats in security event.
@@ -127,6 +127,5 @@ class DeepLearningThreatDetector:
                 findings.append(f"XSS pattern detected: {pattern}")
 
         return findings
-
 
 __all__ = ["DeepLearningThreatDetector"]

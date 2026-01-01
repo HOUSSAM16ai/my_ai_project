@@ -9,12 +9,9 @@ Bridge to analytics platforms for business intelligence and
 user behavior analysis.
 """
 
-from typing import Any
-
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
-
 
 class AnalyticsAdapter(BaseMiddleware):
     """
@@ -51,7 +48,7 @@ class AnalyticsAdapter(BaseMiddleware):
 
         return MiddlewareResult.success()
 
-    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+    def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
         """
         Send analytics event
 

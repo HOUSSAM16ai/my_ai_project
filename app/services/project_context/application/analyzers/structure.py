@@ -9,7 +9,6 @@ from pathlib import Path
 
 from app.services.project_context.domain.models import ProjectStructure
 
-
 @dataclass
 class StructureAnalyzer:
     """Analyzer for project structure."""

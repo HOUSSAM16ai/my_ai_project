@@ -4,14 +4,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-
 class DataClassification(Enum):
     """تصنيف البيانات"""
     PUBLIC = 'public'
     INTERNAL = 'internal'
     CONFIDENTIAL = 'confidential'
     HIGHLY_RESTRICTED = 'highly_restricted'
-
 
 @dataclass
 class DataGovernancePolicy:
@@ -22,7 +20,6 @@ class DataGovernancePolicy:
     backup_required: bool
     access_logging_required: bool
     allowed_locations: list[str]
-
 
 class DataGovernanceFramework:
     """

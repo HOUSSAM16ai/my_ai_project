@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import AsyncGenerator, Callable
-from typing import Any
 
 import jwt
 from fastapi import HTTPException
@@ -23,7 +22,6 @@ from app.services.admin.chat_streamer import AdminChatStreamer
 logger = logging.getLogger(__name__)
 
 ALGORITHM = "HS256"
-
 
 class AdminChatBoundaryService:
     """
@@ -63,6 +61,7 @@ class AdminChatBoundaryService:
             ),
         )
 
+    # TODO: Split this function (31 lines) - KISS principle
     def validate_auth_header(self, auth_header: str | None) -> int:
         """
         التحقق من ترويسة المصادقة واستخراج معرف المستخدم.

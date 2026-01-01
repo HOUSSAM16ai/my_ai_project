@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.settings import AppSettings
 
 logger = logging.getLogger(__name__)
-
 
 class DatabaseService:
     def __init__(
@@ -76,6 +74,5 @@ class DatabaseService:
             return {"status": "success", "rowcount": result.rowcount}
         except Exception as e:
             return {"status": "error", "message": str(e)}
-
 
 database_service = DatabaseService()

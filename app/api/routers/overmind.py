@@ -13,7 +13,6 @@
 
 import json
 from collections.abc import AsyncGenerator, Callable
-from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -37,11 +36,9 @@ router = APIRouter(
     tags=["Overmind (Super Agent)"],
 )
 
-
 def get_session_factory() -> Callable[[], AsyncSession]:
     """تبعية للحصول على مصنع الجلسات."""
     return async_session_factory
-
 
 async def get_orchestrator(
     db: AsyncSession = Depends(get_db)
@@ -51,7 +48,6 @@ async def get_orchestrator(
     يتم حقن قاعدة البيانات الحالية لتهيئة إدارة الحالة.
     """
     return await create_overmind(db)
-
 
 @router.post("/missions", response_model=MissionResponse, summary="إطلاق مهمة جديدة")
 async def create_mission(
@@ -97,7 +93,6 @@ async def create_mission(
         logger.error(f"Failed to create mission: {e}")
         raise HTTPException(status_code=500, detail="فشل في إنشاء المهمة") from e
 
-
 @router.get("/missions/{mission_id}", response_model=MissionResponse, summary="استرجاع حالة مهمة")
 async def get_mission(
     mission_id: int,
@@ -110,7 +105,6 @@ async def get_mission(
     if not mission:
         raise HTTPException(status_code=404, detail="المهمة غير موجودة")
     return mission
-
 
 @router.get("/missions/{mission_id}/stream", summary="بث أحداث المهمة (Live Stream)")
 async def stream_mission(

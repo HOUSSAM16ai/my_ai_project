@@ -6,7 +6,6 @@
 
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
-from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,10 +23,8 @@ from app.models import (
     TaskStatus,
 )
 
-
 def utc_now() -> None:
     return datetime.now(UTC)
-
 
 class MissionStateManager:
     """
@@ -76,7 +73,7 @@ class MissionStateManager:
 
     async def update_mission_status(
         self, mission_id: int, status: MissionStatus, note: str | None = None
-    ):
+    ) -> None:
         stmt = select(Mission).where(Mission.id == mission_id)
         result = await self.session.execute(stmt)
         mission = result.scalar_one_or_none()
@@ -96,7 +93,7 @@ class MissionStateManager:
 
     async def log_event(
         self, mission_id: int, event_type: MissionEventType, payload: dict[str, Any]
-    ):
+    ) -> None:
         event = MissionEvent(
             mission_id=mission_id,
             event_type=event_type,
@@ -178,7 +175,7 @@ class MissionStateManager:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def mark_task_running(self, task_id: int):
+    async def mark_task_running(self, task_id: int) -> None:
         stmt = select(Task).where(Task.id == task_id)
         result = await self.session.execute(stmt)
         task = result.scalar_one()
@@ -188,7 +185,7 @@ class MissionStateManager:
         await self.session.flush()
         await self.session.commit()
 
-    async def mark_task_complete(self, task_id: int, result_text: str, meta: dict | None = None):
+    async def mark_task_complete(self, task_id: int, result_text: str, meta: dict | None = None) -> None:
         if meta is None:
             meta = {}
         stmt = select(Task).where(Task.id == task_id)
@@ -201,7 +198,7 @@ class MissionStateManager:
         await self.session.flush()
         await self.session.commit()
 
-    async def mark_task_failed(self, task_id: int, error_text: str):
+    async def mark_task_failed(self, task_id: int, error_text: str) -> None:
         stmt = select(Task).where(Task.id == task_id)
         result = await self.session.execute(stmt)
         task = result.scalar_one()

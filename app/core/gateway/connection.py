@@ -29,6 +29,6 @@ class ConnectionManager:
         return cls._instance
 
     @classmethod
-    async def close(cls):
+    async def close(cls) -> None:
         if cls._instance and not cls._instance.is_closed:
             await cls._instance.aclose()

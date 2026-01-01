@@ -1,10 +1,8 @@
 from datetime import datetime
-from typing import Any
 
 from pydantic import Field
 
 from app.core.schemas import RobustBaseModel
-
 
 class MessageResponse(RobustBaseModel):
     """
@@ -15,7 +13,6 @@ class MessageResponse(RobustBaseModel):
     content: str = Field(..., description="محتوى الرسالة")
     timestamp: datetime | None = Field(None, description="وقت الرسالة")
 
-
 class ConversationSummaryResponse(RobustBaseModel):
     """
     نموذج ملخص المحادثة للقوائم.
@@ -25,7 +22,6 @@ class ConversationSummaryResponse(RobustBaseModel):
     created_at: datetime | None = Field(None, description="تاريخ الإنشاء")
     updated_at: datetime | None = Field(None, description="تاريخ آخر تحديث")
     message_count: int = Field(0, description="عدد الرسائل")
-
 
 class ConversationDetailsResponse(RobustBaseModel):
     """

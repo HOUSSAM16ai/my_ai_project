@@ -29,11 +29,10 @@ from .domain import (
 # Singleton instance
 _manager_instance: SecurityManager | None = None
 
-
 def get_security_manager() -> SecurityManager:
     """
     Get singleton Security Manager instance.
-    
+
     Returns:
         SecurityManager: The security manager instance
     """
@@ -46,7 +45,7 @@ def get_security_manager() -> SecurityManager:
             SimpleBehavioralAnalyzer,
             SimpleResponseSystem,
         )
-        
+
         _manager_instance = SecurityManager(
             threat_detector=DeepLearningThreatDetector(),
             behavioral_analyzer=SimpleBehavioralAnalyzer(),
@@ -56,10 +55,8 @@ def get_security_manager() -> SecurityManager:
         )
     return _manager_instance
 
-
 # Backward compatibility
 get_superhuman_security_system = get_security_manager
-
 
 __all__ = [
     # Domain Models

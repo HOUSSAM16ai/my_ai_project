@@ -9,8 +9,6 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
-
 
 class FaultType(Enum):
     """Types of faults to inject"""
@@ -22,7 +20,6 @@ class FaultType(Enum):
     NETWORK_PARTITION = 'network_partition'
     SERVICE_UNAVAILABLE = 'service_unavailable'
 
-
 class ExperimentStatus(Enum):
     """Experiment execution status"""
     SCHEDULED = 'scheduled'
@@ -31,14 +28,12 @@ class ExperimentStatus(Enum):
     FAILED = 'failed'
     ABORTED = 'aborted'
 
-
 class BlastRadiusLevel(Enum):
     """Control blast radius of experiments"""
     MINIMAL = 'minimal'
     LIMITED = 'limited'
     MODERATE = 'moderate'
     EXTENSIVE = 'extensive'
-
 
 @dataclass
 class SteadyStateHypothesis:
@@ -48,7 +43,6 @@ class SteadyStateHypothesis:
     validation_function: Callable[[], bool]
     tolerance_threshold: float = 0.95
     measurement_window_seconds: int = 60
-
 
 @dataclass
 class FaultInjection:
@@ -62,7 +56,6 @@ class FaultInjection:
     duration_seconds: int = 60
     abort_on_metric: str | None = None
     abort_threshold: float | None = None
-
 
 @dataclass
 class ChaosExperiment:
@@ -81,7 +74,6 @@ class ChaosExperiment:
     auto_rollback: bool = True
     blast_radius: BlastRadiusLevel = BlastRadiusLevel.LIMITED
 
-
 @dataclass
 class GameDay:
     """Game Day simulation event"""
@@ -93,7 +85,6 @@ class GameDay:
     duration_hours: int
     participants: list[str]
     runbook_url: str | None = None
-
 
 class ChaosMonkey:
     """
@@ -121,7 +112,6 @@ class ChaosMonkey:
             return {'timeout_ms': random.randint(30000, 60000)}
         return {}
 
-
 class ChaosEngineer:
     """
     Chaos Engineering Service
@@ -136,6 +126,7 @@ class ChaosEngineer:
         self.experiment_history: deque = deque(maxlen=100)
         self.lock = threading.RLock()
 
+    # TODO: Reduce parameters (6 params) - Use config object
     def create_experiment(self, name: str, description: str,
         steady_state_hypothesis: SteadyStateHypothesis, fault_injections:
         list[FaultInjection], blast_radius: BlastRadiusLevel=
@@ -198,10 +189,8 @@ class ChaosEngineer:
                 'active_faults': len(self.chaos_monkey.active_faults),
                 'scheduled_game_days': len(self.game_days)}
 
-
 _chaos_engineer_instance: ChaosEngineer | None = None
 _chaos_lock = threading.Lock()
-
 
 def get_chaos_engineer() ->ChaosEngineer:
     """Get singleton chaos engineer instance"""

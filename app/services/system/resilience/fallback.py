@@ -4,8 +4,6 @@ import logging
 import threading
 from collections.abc import Callable
 from enum import Enum
-from typing import Any
-
 
 class FallbackLevel(Enum):
     """Fallback chain levels"""
@@ -16,7 +14,6 @@ class FallbackLevel(Enum):
     LOCAL_CACHE = "local_cache"  # In-memory cache
     BACKUP_SERVICE = "backup_service"  # Alternative provider
     DEFAULT = "default"  # Always succeeds
-
 
 class FallbackChain:
     """

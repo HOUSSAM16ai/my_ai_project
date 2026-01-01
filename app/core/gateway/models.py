@@ -1,8 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
-
 
 class ProtocolType(Enum):
     """Supported protocol types"""
@@ -11,7 +9,6 @@ class ProtocolType(Enum):
     GRAPHQL = "graphql"
     GRPC = "grpc"
     WEBSOCKET = "websocket"
-
 
 class RoutingStrategy(Enum):
     """Routing strategies for requests"""
@@ -22,7 +19,6 @@ class RoutingStrategy(Enum):
     LATENCY_BASED = "latency_based"
     COST_OPTIMIZED = "cost_optimized"
     INTELLIGENT = "intelligent"  # ML-based routing
-
 
 class ModelProvider(Enum):
     """AI Model providers"""
@@ -35,7 +31,6 @@ class ModelProvider(Enum):
     LOCAL = "local"
     CUSTOM = "custom"
 
-
 class CacheStrategy(Enum):
     """Caching strategies"""
 
@@ -44,7 +39,6 @@ class CacheStrategy(Enum):
     MEMORY = "memory"
     DISTRIBUTED = "distributed"
     INTELLIGENT = "intelligent"  # ML-based caching
-
 
 @dataclass
 class GatewayRoute:
@@ -59,7 +53,6 @@ class GatewayRoute:
     rate_limit: int | None = None
     cache_ttl: int | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
-
 
 @dataclass
 class UpstreamService:
@@ -76,7 +69,6 @@ class UpstreamService:
     circuit_breaker_threshold: int = 5
     metadata: dict[str, Any] = field(default_factory=dict)
 
-
 @dataclass
 class RoutingDecision:
     """Routing decision result"""
@@ -90,7 +82,6 @@ class RoutingDecision:
     reasoning: str
     metadata: dict[str, Any] = field(default_factory=dict)
 
-
 @dataclass
 class LoadBalancerState:
     """Load balancer state tracking"""
@@ -102,7 +93,6 @@ class LoadBalancerState:
     avg_latency_ms: float = 0.0
     last_health_check: datetime | None = None
     is_healthy: bool = True
-
 
 @dataclass
 class PolicyRule:

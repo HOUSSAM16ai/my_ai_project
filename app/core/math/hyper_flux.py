@@ -14,7 +14,6 @@ import statistics
 from collections import deque
 from dataclasses import dataclass, field
 
-
 @dataclass
 class HyperFluxCapacitor:
     """
@@ -31,7 +30,7 @@ class HyperFluxCapacitor:
     # The Flux History (Rolling window of squared innovations)
     _flux_history: deque[float] = field(default_factory=lambda: deque(maxlen=20))
 
-    def observe_flux(self, innovation: float):
+    def observe_flux(self, innovation: float) -> None:
         """
         Record a new flux vector (innovation).
         """

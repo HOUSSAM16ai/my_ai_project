@@ -1,12 +1,10 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
 
 # ======================================================================================
 # ENUMERATIONS
 # ======================================================================================
-
 
 class AnomalyType(Enum):
     """Types of anomalies"""
@@ -18,7 +16,6 @@ class AnomalyType(Enum):
     CAPACITY_LIMIT = "capacity_limit"
     PATTERN_DEVIATION = "pattern_deviation"
 
-
 class AnomalySeverity(Enum):
     """Anomaly severity levels"""
 
@@ -27,7 +24,6 @@ class AnomalySeverity(Enum):
     MEDIUM = "medium"
     LOW = "low"
     INFO = "info"
-
 
 class HealingAction(Enum):
     """Self-healing actions"""
@@ -41,7 +37,6 @@ class HealingAction(Enum):
     CLEAR_CACHE = "clear_cache"
     ADJUST_RATE_LIMIT = "adjust_rate_limit"
 
-
 class MetricType(Enum):
     """Metric types for telemetry"""
 
@@ -53,11 +48,9 @@ class MetricType(Enum):
     DISK_USAGE = "disk_usage"
     NETWORK_IO = "network_io"
 
-
 # ======================================================================================
 # DATA STRUCTURES
 # ======================================================================================
-
 
 @dataclass
 class TelemetryData:
@@ -70,7 +63,6 @@ class TelemetryData:
     timestamp: datetime
     labels: dict[str, str] = field(default_factory=dict)
     unit: str = ""
-
 
 @dataclass
 class AnomalyDetection:
@@ -89,7 +81,6 @@ class AnomalyDetection:
     resolved: bool = False
     resolved_at: datetime | None = None
 
-
 @dataclass
 class LoadForecast:
     """Load prediction"""
@@ -101,7 +92,6 @@ class LoadForecast:
     confidence_interval: tuple[float, float]
     model_accuracy: float
     generated_at: datetime
-
 
 @dataclass
 class HealingDecision:
@@ -116,7 +106,6 @@ class HealingDecision:
     executed_at: datetime | None = None
     success: bool | None = None
     impact: dict[str, Any] = field(default_factory=dict)
-
 
 @dataclass
 class CapacityPlan:

@@ -5,10 +5,8 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
 
 logger = logging.getLogger(__name__)
-
 
 @dataclass
 class ServiceInstance:
@@ -25,7 +23,6 @@ class ServiceInstance:
     def address(self) ->str:
         """Get service address."""
         return f'{self.host}:{self.port}'
-
 
 class ServiceRegistry:
     """

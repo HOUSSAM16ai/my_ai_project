@@ -27,7 +27,6 @@ RESONANCE_THRESHOLD = 0.60  # Tuned for high-recall in V1 (Caveman-speak compati
 CACHE_TTL = 3600  # 1 Hour
 MAX_MEMORY_SLOTS = 1000  # Max number of semantic patterns to hold
 
-
 @dataclass
 class SemanticEngram:
     """
@@ -44,7 +43,6 @@ class SemanticEngram:
     @property
     def is_expired(self) -> bool:
         return (time.time() - self.created_at) > CACHE_TTL
-
 
 class CognitiveResonanceEngine:
     """
@@ -103,6 +101,7 @@ class CognitiveResonanceEngine:
 
         return final_score
 
+    # TODO: Split this function (39 lines) - KISS principle
     def recall(self, prompt: str, context_hash: str) -> list[dict] | None:
         """
         Attempts to recall a memory that resonates with the input prompt.
@@ -144,7 +143,7 @@ class CognitiveResonanceEngine:
         self._stats["misses"] += 1
         return None
 
-    def memorize(self, prompt: str, context_hash: str, response: list[dict]):
+    def memorize(self, prompt: str, context_hash: str, response: list[dict]) -> None:
         """
         Stores a new experience in the Cognitive Cache.
         """
@@ -161,13 +160,11 @@ class CognitiveResonanceEngine:
         self.memory.appendleft(engram)  # MRU (Most Recently Used) logic via appendleft + maxlen
         logger.debug(f"Memorized new pattern: '{prompt[:30]}...'")
 
-    def get_stats(self):
+    def get_stats(self) -> None:
         return {**self._stats, "memory_usage": len(self.memory), "capacity": MAX_MEMORY_SLOTS}
-
 
 # Singleton Instance
 _cognitive_engine = CognitiveResonanceEngine()
-
 
 def get_cognitive_engine() -> CognitiveResonanceEngine:
     return _cognitive_engine

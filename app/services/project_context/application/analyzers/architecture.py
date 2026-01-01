@@ -7,13 +7,13 @@ Detects architectural layers.
 from dataclasses import dataclass
 from pathlib import Path
 
-
 @dataclass
 class ArchitectureAnalyzer:
     """Analyzer for architecture layers."""
 
     project_root: Path
 
+    # TODO: Split this function (35 lines) - KISS principle
     def analyze(self) -> dict[str, list[str]]:
         """Identify architecture layers."""
         layers = {

@@ -2,7 +2,6 @@
 
 from enum import Enum
 
-
 class Severity(Enum):
     """Security finding severity levels."""
 
@@ -12,7 +11,6 @@ class Severity(Enum):
     LOW = "LOW"
     INFO = "INFO"
 
-
 class RiskLevel(Enum):
     """Risk assessment levels."""
 
@@ -21,7 +19,6 @@ class RiskLevel(Enum):
     MEDIUM = "MEDIUM"
     LOW = "LOW"
     MINIMAL = "MINIMAL"
-
 
 class TrendDirection(Enum):
     """Security trend directions."""

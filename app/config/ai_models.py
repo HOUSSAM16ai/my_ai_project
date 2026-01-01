@@ -34,7 +34,6 @@ from functools import lru_cache
 
 from app.config.settings import get_settings
 
-
 class AvailableModels:
     """
     📚 All Available AI Models | جميع النماذج المتاحة
@@ -61,7 +60,6 @@ class AvailableModels:
     PHI_3_MINI_FREE = 'microsoft/phi-3-mini-128k-instruct:free'
     KAT_CODER_PRO_FREE = 'kwaipilot/kat-coder-pro:free'
     QWEN_QWEN3_CODER_FREE = 'qwen/qwen3-coder:free'
-
 
 class ActiveModels:
     """
@@ -93,7 +91,6 @@ class ActiveModels:
     TIER_FAST = AvailableModels.GPT_4O_MINI
     TIER_SMART = AvailableModels.CLAUDE_35_SONNET
     TIER_GENIUS = AvailableModels.CLAUDE_3_OPUS
-
 
 @dataclass(frozen=True)
 class AIConfig:
@@ -182,12 +179,10 @@ class AIConfig:
             '╚══════════════════════════════════════════════════════════════════════════════╝'
             )
 
-
 @lru_cache(maxsize=1)
 def get_ai_config() -> AIConfig:
     """Get the AI configuration singleton."""
     return AIConfig()
-
 
 ai_config = get_ai_config()
 __all__ = ['AIConfig', 'ActiveModels', 'AvailableModels', 'ai_config', 'get_ai_config']

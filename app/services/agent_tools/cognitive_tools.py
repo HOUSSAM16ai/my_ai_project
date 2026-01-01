@@ -79,7 +79,6 @@ async def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
         },
     )
 
-
 @tool(
     name="summarize_text",
     description="Summarize provided text (delegates to generic_think).",
@@ -101,7 +100,6 @@ async def summarize_text(text: str, style: str = "concise") -> ToolResult:
     snippet = t[:8000]
     prompt = f"Summarize the following text in a {style} manner. Provide key bullet points:\n---\n{snippet}\n---"
     return await generic_think(prompt=prompt, mode="summary")
-
 
 @tool(
     name="refine_text",

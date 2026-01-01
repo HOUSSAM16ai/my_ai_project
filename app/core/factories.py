@@ -31,11 +31,9 @@ from app.services.system.database_service import DatabaseService
 if TYPE_CHECKING:
     pass
 
-
 # ======================================================================================
 # ==                              SERVICE LAYER FACTORIES                             ==
 # ======================================================================================
-
 
 def get_db_service(
     session: AsyncSession = Depends(get_db),

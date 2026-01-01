@@ -9,7 +9,6 @@ from typing import TypeVar
 
 T = TypeVar("T")
 
-
 class Builder[T](ABC):
     """Base builder interface."""
 
@@ -25,7 +24,6 @@ class Builder[T](ABC):
     def build(self) -> T:
         """Build and return the final object."""
         pass
-
 
 class FluentBuilder(Builder[T]):
     """Builder with fluent interface support."""

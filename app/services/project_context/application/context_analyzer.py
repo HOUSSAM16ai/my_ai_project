@@ -12,7 +12,6 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 from app.services.project_context.application.analyzers.architecture import ArchitectureAnalyzer
 from app.services.project_context.application.analyzers.components import ComponentAnalyzer
@@ -33,11 +32,10 @@ logger = logging.getLogger(__name__)
 # Project root detection
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent.parent
 
-
 class ProjectContextService:
     """
     خدمة سياق المشروع (Project Context Service) - طبقة ذكاء Overmind.
-    
+
     مقسمة الآن إلى محللات (Analyzers) متخصصة.
     """
 
@@ -149,6 +147,7 @@ class ProjectContextService:
         """🎯 KEY COMPONENTS IDENTIFICATION"""
         return self.component_analyzer.analyze()
 
+    # TODO: Split this function (72 lines) - KISS principle
     def generate_context_for_ai(self) -> str:
         """Generate comprehensive context for the AI."""
         now = datetime.now()
@@ -223,7 +222,7 @@ class ProjectContextService:
 
         return self._cached_context
 
-    def invalidate_cache(self):
+    def invalidate_cache(self) -> None:
         """Force refresh of cached context."""
         self._cached_context = None
         self._cache_timestamp = None
@@ -252,7 +251,6 @@ class ProjectContextService:
             "strengths": self.get_strengths(),
             "analyzed_at": datetime.now().isoformat(),
         }
-
 
 __all__ = [
     "ProjectContextService",

@@ -1,8 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
-
 
 class Environment(Enum):
     """Deployment environments"""
@@ -11,7 +9,6 @@ class Environment(Enum):
     STAGING = "staging"
     PRODUCTION = "production"
     TEST = "test"
-
 
 class SecretType(Enum):
     """Types of secrets"""
@@ -24,7 +21,6 @@ class SecretType(Enum):
     WEBHOOK_SECRET = "webhook_secret"
     CERTIFICATE = "certificate"
 
-
 class RotationPolicy(Enum):
     """Secret rotation policies"""
 
@@ -34,7 +30,6 @@ class RotationPolicy(Enum):
     MONTHLY = "monthly"
     QUARTERLY = "quarterly"
     CUSTOM = "custom"
-
 
 @dataclass
 class Secret:
@@ -52,7 +47,6 @@ class Secret:
     next_rotation: datetime | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
-
 @dataclass
 class ConfigEntry:
     """Configuration entry"""
@@ -64,7 +58,6 @@ class ConfigEntry:
     is_sensitive: bool = False
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     updated_by: str | None = None
-
 
 @dataclass
 class SecretAccessLog:
@@ -78,7 +71,6 @@ class SecretAccessLog:
     ip_address: str | None = None
     success: bool = True
     reason: str | None = None
-
 
 @dataclass
 class EnvironmentConfig:

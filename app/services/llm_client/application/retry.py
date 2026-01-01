@@ -5,7 +5,6 @@ Retry strategy for transient errors.
 
 import openai
 
-
 class RetryStrategy:
     """
     يحدد ما إذا كان الخطأ قابلاً لإعادة المحاولة ويصنف الأخطاء.

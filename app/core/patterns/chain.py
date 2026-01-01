@@ -10,7 +10,6 @@ from typing import TypeVar
 T = TypeVar("T")
 R = TypeVar("R")
 
-
 class ChainLink[T, R](ABC):
     """Base chain link."""
 
@@ -41,7 +40,6 @@ class ChainLink[T, R](ABC):
     async def process(self, request: T) -> R:
         """Process the request."""
         pass
-
 
 class Chain[T, R]:
     """Chain manager."""

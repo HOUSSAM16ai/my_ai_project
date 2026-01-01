@@ -1,8 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
-
 
 class DataDomainType(Enum):
     """Data domain types"""
@@ -16,7 +14,6 @@ class DataDomainType(Enum):
     CONTENT_MANAGEMENT = "content_management"
     BILLING = "billing"
 
-
 class DataProductStatus(Enum):
     """Data product lifecycle status"""
 
@@ -24,7 +21,6 @@ class DataProductStatus(Enum):
     ACTIVE = "active"
     DEPRECATED = "deprecated"
     SUNSET = "sunset"
-
 
 class SchemaCompatibility(Enum):
     """Schema evolution compatibility"""
@@ -34,14 +30,12 @@ class SchemaCompatibility(Enum):
     FULL = "full"  # Both backward and forward compatible
     BREAKING = "breaking"  # Incompatible changes
 
-
 class GovernanceLevel(Enum):
     """Governance enforcement level"""
 
     MANDATORY = "mandatory"
     RECOMMENDED = "recommended"
     OPTIONAL = "optional"
-
 
 @dataclass
 class DataContract:
@@ -62,7 +56,6 @@ class DataContract:
     status: DataProductStatus = DataProductStatus.ACTIVE
     metadata: dict[str, Any] = field(default_factory=dict)
 
-
 @dataclass
 class DataProduct:
     """Data product - business-oriented data asset"""
@@ -79,7 +72,6 @@ class DataProduct:
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     status: DataProductStatus = DataProductStatus.ACTIVE
 
-
 @dataclass
 class BoundedContext:
     """Bounded context for domain isolation"""
@@ -93,7 +85,6 @@ class BoundedContext:
     downstream_contexts: list[str]
     governance_policies: dict[str, Any]
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-
 
 @dataclass
 class GovernancePolicy:
@@ -109,7 +100,6 @@ class GovernancePolicy:
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     enabled: bool = True
 
-
 @dataclass
 class DataQualityMetrics:
     """Data quality metrics"""
@@ -123,7 +113,6 @@ class DataQualityMetrics:
     freshness_seconds: float
     volume: int
     error_rate: float
-
 
 @dataclass
 class SchemaEvolution:

@@ -12,7 +12,6 @@ from app.core.scaling.service_registry import ServiceInstance, ServiceRegistry
 logger = logging.getLogger(__name__)
 T = TypeVar('T')
 
-
 class LoadBalancingStrategy(ABC):
     """Base load balancing strategy."""
 
@@ -21,7 +20,6 @@ class LoadBalancingStrategy(ABC):
          | None):
         """Select instance using strategy."""
         pass
-
 
 class RoundRobinStrategy(LoadBalancingStrategy):
     """Round-robin load balancing."""
@@ -40,7 +38,6 @@ class RoundRobinStrategy(LoadBalancingStrategy):
             self._counter += 1
             return instance
 
-
 class RandomStrategy(LoadBalancingStrategy):
     """Random load balancing."""
 
@@ -50,7 +47,6 @@ class RandomStrategy(LoadBalancingStrategy):
         if not instances:
             return None
         return random.choice(instances)
-
 
 class WeightedRandomStrategy(LoadBalancingStrategy):
     """Weighted random load balancing."""
@@ -70,7 +66,6 @@ class WeightedRandomStrategy(LoadBalancingStrategy):
             if r <= cumulative:
                 return instance
         return instances[-1]
-
 
 class LeastConnectionsStrategy(LoadBalancingStrategy):
     """Least connections load balancing."""
@@ -102,7 +97,6 @@ class LeastConnectionsStrategy(LoadBalancingStrategy):
             if instance_id in self._connections:
                 self._connections[instance_id] = max(0, self._connections[
                     instance_id] - 1)
-
 
 class LoadBalancer:
     """

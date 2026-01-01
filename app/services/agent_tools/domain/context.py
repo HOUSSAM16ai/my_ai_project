@@ -1,10 +1,8 @@
 """
 Domain tools for context awareness (active file, line number).
 """
-from typing import Any
 
 from app.services.agent_tools.tool_model import Tool, ToolConfig
-
 
 async def context_awareness_handler(metadata: dict[str, Any] | None = None, **kwargs) -> dict[str, Any]:
     """

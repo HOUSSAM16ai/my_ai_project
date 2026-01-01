@@ -6,7 +6,6 @@ from fastapi import APIRouter
 
 from app.api.v2.endpoints import chat, health, tools
 
-
 def create_api_router() -> APIRouter:
     """
     Create API v2 router with all endpoints.

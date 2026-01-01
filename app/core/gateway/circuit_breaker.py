@@ -15,7 +15,6 @@ class CircuitState(Enum):
     HALF_OPEN = "HALF_OPEN"  # Testing recovery
     SATURATED = "SATURATED"  # Rate limited, temporary backoff (V7.2)
 
-
 class CircuitBreaker:
     """
     A Finite State Machine implementing the Circuit Breaker pattern.
@@ -30,7 +29,7 @@ class CircuitBreaker:
         self.last_failure_time = 0.0
         self.state = CircuitState.CLOSED
 
-    def record_success(self):
+    def record_success(self) -> None:
         """Reset failure count on success."""
         if self.state in [CircuitState.HALF_OPEN, CircuitState.SATURATED]:
             logger.info(f"Circuit Breaker [{self.name}]: Recovered to CLOSED state.")
@@ -39,7 +38,7 @@ class CircuitBreaker:
         elif self.state == CircuitState.CLOSED:
             self.failure_count = 0
 
-    def record_failure(self):
+    def record_failure(self) -> None:
         """Record a failure and potentially open the circuit."""
         self.failure_count += 1
         self.last_failure_time = time.time()
@@ -56,7 +55,7 @@ class CircuitBreaker:
             # If we fail in HALF_OPEN, we go back to OPEN immediately
             self._open_circuit()
 
-    def record_saturation(self):
+    def record_saturation(self) -> None:
         """
         V7.2: Record a Rate Limit (Saturation) event.
         This is distinct from a failure; it means the service is working but busy.

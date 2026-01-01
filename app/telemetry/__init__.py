@@ -15,7 +15,6 @@ Features surpassing tech giants:
 """
 import logging
 import sys
-from typing import Any
 
 # Import from existing files
 from app.telemetry.events import EventTracker
@@ -46,23 +45,23 @@ class StructuredLogger(LoggingManager):
     Adapter for StructuredLogger to match existing usage.
     Delegates to LoggingManager for correlation AND writes to standard output.
     """
-    def info(self, message: str, **kwargs):
+    def info(self, message: str, **kwargs) -> None:
         self.log("INFO", message, context=kwargs)
         _std_logger.info(message, extra=kwargs)
 
-    def error(self, message: str, exception: Exception | None = None, **kwargs):
+    def error(self, message: str, exception: Exception | None = None, **kwargs) -> None:
         self.log("ERROR", message, context=kwargs, exception=exception)
         _std_logger.error(message, exc_info=exception, extra=kwargs)
 
-    def warning(self, message: str, **kwargs):
+    def warning(self, message: str, **kwargs) -> None:
         self.log("WARNING", message, context=kwargs)
         _std_logger.warning(message, extra=kwargs)
 
-    def debug(self, message: str, **kwargs):
+    def debug(self, message: str, **kwargs) -> None:
         self.log("DEBUG", message, context=kwargs)
         _std_logger.debug(message, extra=kwargs)
 
-    def critical(self, message: str, **kwargs):
+    def critical(self, message: str, **kwargs) -> None:
         self.log("CRITICAL", message, context=kwargs)
         _std_logger.critical(message, extra=kwargs)
 
@@ -70,13 +69,13 @@ class MetricsCollector(MetricsManager):
     """
     Adapter for MetricsCollector.
     """
-    def increment(self, name: str, amount: float = 1.0, tags: dict[str, str] | None = None):
+    def increment(self, name: str, amount: float = 1.0, tags: dict[str, str] | None = None) -> None:
         self.increment_counter(name, amount, labels=tags)
 
-    def gauge(self, name: str, value: float, tags: dict[str, str] | None = None):
+    def gauge(self, name: str, value: float, tags: dict[str, str] | None = None) -> None:
         self.set_gauge(name, value, labels=tags)
 
-    def histogram(self, name: str, value: float, tags: dict[str, str] | None = None):
+    def histogram(self, name: str, value: float, tags: dict[str, str] | None = None) -> None:
         self.record_metric(name, value, labels=tags)
 
 class DistributedTracer(TracingManager):
@@ -90,7 +89,7 @@ class DistributedTracer(TracingManager):
     # Based on 'app/services/distributed_tracing.py' grep result: "class DistributedTracer:"
     # It likely had `start_span`.
 
-    def start_span(self, operation_name: str, parent_context=None, tags=None):
+    def start_span(self, operation_name: str, parent_context=None, tags=None) -> None:
         return self.start_trace(operation_name, parent_context, tags)
 
 __all__ = [

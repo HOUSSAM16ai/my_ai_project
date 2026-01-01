@@ -17,7 +17,6 @@ from ...domain.models import (
     UserBehaviorProfile,
 )
 
-
 class SimpleBehavioralAnalyzer:
     """
     محلل سلوك بسيط
@@ -25,6 +24,7 @@ class SimpleBehavioralAnalyzer:
     Simple implementation of behavioral analysis.
     """
 
+    # TODO: Split this function (32 lines) - KISS principle
     def analyze_behavior(
         self, event: SecurityEvent, profile: UserBehaviorProfile
     ) -> list[ThreatDetection]:
@@ -75,6 +75,5 @@ class SimpleBehavioralAnalyzer:
 
         # Update timestamp
         profile.last_updated = datetime.now()
-
 
 __all__ = ["SimpleBehavioralAnalyzer"]

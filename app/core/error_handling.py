@@ -20,25 +20,23 @@ import logging
 import traceback
 from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Any, TypeVar, cast
+from typing import TypeVar, cast
 
 # Type variables for generic functions
 T = TypeVar("T")
 F = TypeVar("F", bound=Callable[..., Any])
 
-
 logger = logging.getLogger(__name__)
-
 
 # ==================== DECORATORS ====================
 
-
+# TODO: Split this function (38 lines) - KISS principle
 def safe_execute(
-    default_return: Any = None,
+    default_return: dict[str, str | int | bool] = None,
     log_error: bool = True,
     error_message: str | None = None,
     raise_on_error: bool = False,
-):
+) -> None:
     """
     Decorator for safe function execution with automatic error handling.
 
@@ -58,7 +56,7 @@ def safe_execute(
 
     def decorator(func: F) -> F:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> None:
             try:
                 return func(*args, **kwargs)
             except Exception as e:
@@ -73,6 +71,7 @@ def safe_execute(
 
     return decorator
 
+# TODO: Split this function (53 lines) - KISS principle
 
 def retry_on_failure(
     max_retries: int = 3,
@@ -99,7 +98,7 @@ def retry_on_failure(
 
     def decorator(func: F) -> F:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> None:
             import time
 
             current_delay = delay
@@ -129,8 +128,7 @@ def retry_on_failure(
 
     return decorator
 
-
-def suppress_errors(*exceptions: type[Exception], log_error: bool = False):
+def suppress_errors(*exceptions: type[Exception], log_error: bool = False) -> None:
     """
     Decorator to suppress specific exceptions.
 
@@ -140,13 +138,13 @@ def suppress_errors(*exceptions: type[Exception], log_error: bool = False):
 
     Example:
         @suppress_errors(ValueError, KeyError, log_error=True)
-        def parse_data(data):
+        def parse_data(data) -> None:
             return data['key']  # Won't crash if key missing
     """
 
     def decorator(func: F) -> F:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> None:
             try:
                 return func(*args, **kwargs)
             except exceptions as e:
@@ -158,17 +156,15 @@ def suppress_errors(*exceptions: type[Exception], log_error: bool = False):
 
     return decorator
 
-
 # ==================== CONTEXT MANAGERS ====================
-
 
 @contextmanager
 def safe_context(
     error_message: str = "Operation failed",
-    default_return: Any = None,
+    default_return: dict[str, str | int | bool] = None,
     log_error: bool = True,
     raise_on_error: bool = False,
-):
+) -> None:
     """
     Context manager for safe execution blocks.
 
@@ -192,9 +188,8 @@ def safe_context(
             raise
         # Don't yield again, just pass
 
-
 @contextmanager
-def capture_errors(error_list: list[Exception] | None = None):
+def capture_errors(error_list: list[Exception] | None = None) -> None:
     """
     Context manager to capture errors without crashing.
 
@@ -214,9 +209,7 @@ def capture_errors(error_list: list[Exception] | None = None):
             error_list.append(e)
         logger.debug(f"Captured error: {e}")
 
-
 # ==================== ERROR HANDLERS ====================
-
 
 class ErrorHandler:
     """Centralized error handling with logging and metrics."""
@@ -253,7 +246,7 @@ class ErrorHandler:
             f"{type(error).__name__}: {error}{context_str}"
         )
 
-    def wrap_function(self, func: F, default_return: Any = None) -> F:
+    def wrap_function(self, func: F, default_return: dict[str, str | int | bool] = None) -> F:
         """
         Wrap a function with error handling.
 
@@ -266,7 +259,7 @@ class ErrorHandler:
         """
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> None:
             try:
                 return func(*args, **kwargs)
             except Exception as e:
@@ -275,9 +268,7 @@ class ErrorHandler:
 
         return cast(F, wrapper)
 
-
 # ==================== UTILITY FUNCTIONS ====================
-
 
 def log_exception(
     logger_instance: logging.Logger | None = None,
@@ -295,7 +286,6 @@ def log_exception(
     log = logger_instance or logger
     log_func = getattr(log, level, log.error)
     log_func(f"{message}\n{traceback.format_exc()}")
-
 
 def format_exception(error: Exception, include_traceback: bool = True) -> str:
     """
@@ -317,7 +307,6 @@ def format_exception(error: Exception, include_traceback: bool = True) -> str:
 
     return f"{error_type}: {error_msg}"
 
-
 # ==================== EXPORTS ====================
 
 __all__ = [
@@ -335,7 +324,6 @@ __all__ = [
     "suppress_errors",
 ]
 
-
 # ==================== USAGE EXAMPLES ====================
 """
 # Example 1: Replace try-except with decorator
@@ -352,7 +340,6 @@ def fetch_data() -> None:
 def fetch_data() -> None:
     return api.get_data()
 
-
 # Example 2: Retry on failure
 # Before:
 def unreliable_operation() -> None:
@@ -368,7 +355,6 @@ def unreliable_operation() -> None:
 @retry_on_failure(max_retries=3, delay=1.0)
 def unreliable_operation() -> None:
     return external_call()
-
 
 # Example 3: Context manager for safe blocks
 # Before:

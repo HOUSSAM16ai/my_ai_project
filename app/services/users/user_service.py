@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,7 +27,6 @@ from app.core.database import async_session_factory
 from app.models import User
 
 logger = logging.getLogger(__name__)
-
 
 class UserService:
     """
@@ -169,7 +167,6 @@ class UserService:
             )
             return {"status": "error", "message": str(operation_error)}
 
-
 # =============================================================================
 # واجهات الاستخدام المستقلة (Standalone Facades)
 # =============================================================================
@@ -183,7 +180,6 @@ async def get_all_users_async() -> list[User]:
         service = UserService(session)
         users = await service.get_all_users()
         return list(users)
-
 
 async def create_new_user_async(
     full_name: str, email: str, password: str, is_admin: bool = False

@@ -19,8 +19,9 @@ class MetricsManager:
         self.lock = threading.RLock()
         self.stats = {'metrics_recorded': 0}
 
+    # TODO: Reduce parameters (6 params) - Use config object
     def record_metric(self, name: str, value: float, labels: dict[str, str] | None = None,
-                      trace_id: str | None = None, span_id: str | None = None):
+                      trace_id: str | None = None, span_id: str | None = None) -> None:
         sample = MetricSample(
             value=value,
             timestamp=time.time(),
@@ -35,12 +36,12 @@ class MetricsManager:
             if trace_id:
                 self.trace_metrics[trace_id].append(sample)
 
-    def increment_counter(self, name: str, amount: float = 1.0, labels: dict[str, str] | None = None):
+    def increment_counter(self, name: str, amount: float = 1.0, labels: dict[str, str] | None = None) -> None:
         key = self._metric_key(name, labels)
         with self.lock:
             self.counters[key] += amount
 
-    def set_gauge(self, name: str, value: float, labels: dict[str, str] | None = None):
+    def set_gauge(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
         key = self._metric_key(name, labels)
         with self.lock:
             self.gauges[key] = value

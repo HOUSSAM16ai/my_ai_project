@@ -1,10 +1,9 @@
 """Domain interfaces - Contracts for implementations."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Protocol
+from typing import Protocol
 
 from app.security_metrics.domain.entities import RiskScore, SecurityFinding, SecurityMetrics
-
 
 class SecurityRepository(Protocol):
     """Repository for storing and retrieving security data."""
@@ -29,7 +28,6 @@ class SecurityRepository(Protocol):
         """Get metrics history for the last N days."""
         ...
 
-
 class RiskCalculator(ABC):
     """Interface for risk calculation - Open/Closed Principle."""
 
@@ -37,7 +35,6 @@ class RiskCalculator(ABC):
     def calculate(self, findings: list[SecurityFinding]) -> RiskScore:
         """Calculate risk score from findings."""
         pass
-
 
 class ReportGenerator(ABC):
     """Interface for report generation - Open/Closed Principle."""

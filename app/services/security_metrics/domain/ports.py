@@ -8,7 +8,6 @@ from typing import Protocol
 
 from .models import RiskPrediction, SecurityFinding, SecurityMetrics
 
-
 class RiskCalculatorPort(ABC):
     """Port for risk calculation"""
 
@@ -24,7 +23,6 @@ class RiskCalculatorPort(ABC):
         """Calculate file exposure factor"""
         pass
 
-
 class PredictiveAnalyticsPort(ABC):
     """Port for predictive analytics"""
 
@@ -34,7 +32,6 @@ class PredictiveAnalyticsPort(ABC):
     ) -> RiskPrediction:
         """Predict future risk based on historical data"""
         pass
-
 
 class MetricsCalculatorPort(ABC):
     """Port for metrics calculation"""
@@ -46,7 +43,6 @@ class MetricsCalculatorPort(ABC):
         """Calculate comprehensive security metrics"""
         pass
 
-
 class AnomalyDetectorPort(ABC):
     """Port for anomaly detection"""
 
@@ -56,7 +52,6 @@ class AnomalyDetectorPort(ABC):
     ) -> list[dict]:
         """Detect anomalies in security metrics"""
         pass
-
 
 class FindingsRepositoryPort(Protocol):
     """Port for findings persistence"""
@@ -72,7 +67,6 @@ class FindingsRepositoryPort(Protocol):
     def update_finding(self, finding_id: str, updates: dict) -> None:
         """Update a finding"""
         ...
-
 
 class MetricsRepositoryPort(Protocol):
     """Port for metrics persistence"""

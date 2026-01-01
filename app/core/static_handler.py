@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # المجلدات المسموح بتقديمها مباشرة
 MOUNTABLE_FOLDERS: Final[list[str]] = ["css", "js", "src", "assets"]
 
-
+# TODO: Split this function (78 lines) - KISS principle
 def setup_static_files(app: FastAPI, static_dir: str | None = None) -> None:
     """
     إعداد خدمة الملفات الثابتة واستراتيجية الرد (Fallback) لتطبيقات الصفحة الواحدة.

@@ -1,21 +1,17 @@
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
-
 
 class SamplingDecision(Enum):
     SAMPLE = 'sample'
     DROP = 'drop'
     DEFER = 'defer'
 
-
 class AlertSeverity(Enum):
     LOW = 'low'
     MEDIUM = 'medium'
     HIGH = 'high'
     CRITICAL = 'critical'
-
 
 @dataclass
 class TraceContext:
@@ -62,7 +58,6 @@ class TraceContext:
         except Exception:
             return None
 
-
 @dataclass
 class UnifiedSpan:
     trace_id: str
@@ -80,10 +75,9 @@ class UnifiedSpan:
     metrics: dict[str, float] = field(default_factory=dict)
     baggage: dict[str, str] = field(default_factory=dict)
 
-    def finalize(self):
+    def finalize(self) -> None:
         if self.end_time:
             self.duration_ms = (self.end_time - self.start_time) * 1000
-
 
 @dataclass
 class UnifiedTrace:
@@ -97,7 +91,7 @@ class UnifiedTrace:
     critical_path_ms: float | None = None
     bottleneck_span_id: str | None = None
 
-    def analyze_critical_path(self):
+    def analyze_critical_path(self) -> None:
         if not self.spans:
             return
         max_duration = 0.0
@@ -109,7 +103,6 @@ class UnifiedTrace:
         self.critical_path_ms = max_duration
         self.bottleneck_span_id = bottleneck
 
-
 @dataclass
 class MetricSample:
     value: float
@@ -117,7 +110,6 @@ class MetricSample:
     labels: dict[str, str] = field(default_factory=dict)
     exemplar_trace_id: str | None = None
     exemplar_span_id: str | None = None
-
 
 @dataclass
 class CorrelatedLog:
@@ -128,7 +120,6 @@ class CorrelatedLog:
     span_id: str | None = None
     context: dict[str, Any] = field(default_factory=dict)
     exception: dict[str, Any] | None = None
-
 
 @dataclass
 class AnomalyAlert:

@@ -7,8 +7,6 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
-
 
 class SpanKind(Enum):
     """Span kind classification"""
@@ -18,14 +16,12 @@ class SpanKind(Enum):
     CONSUMER = 'consumer'
     INTERNAL = 'internal'
 
-
 class SamplingStrategy(Enum):
     """Trace sampling strategies"""
     ALWAYS = 'always'
     NEVER = 'never'
     PROBABILISTIC = 'probabilistic'
     RATE_LIMITING = 'rate_limiting'
-
 
 @dataclass
 class SpanContext:
@@ -34,7 +30,6 @@ class SpanContext:
     span_id: str
     parent_span_id: str | None = None
     baggage: dict[str, str] = field(default_factory=dict)
-
 
 @dataclass
 class Span:
@@ -54,7 +49,6 @@ class Span:
     status_message: str | None = None
     baggage: dict[str, str] = field(default_factory=dict)
 
-
 @dataclass
 class Trace:
     """Complete trace aggregation"""
@@ -68,7 +62,6 @@ class Trace:
     span_count: int = 0
     error_count: int = 0
 
-
 class TraceContextPropagator:
     """
     Propagates trace context across services
@@ -79,7 +72,7 @@ class TraceContextPropagator:
     TRACESTATE_HEADER = 'tracestate'
 
     @staticmethod
-    def inject(span_context: SpanContext, headers: dict[str, str]):
+    def inject(span_context: SpanContext, headers: dict[str, str]) -> None:
         """
         Inject trace context into HTTP headers
 
@@ -117,7 +110,6 @@ class TraceContextPropagator:
             logging.getLogger('distributed_tracing').error(
                 f'Failed to extract trace context: {e}')
             return None
-
 
 class DistributedTracer:
     """
@@ -181,7 +173,7 @@ class DistributedTracer:
             del self.active_spans[span_id]
             self._try_aggregate_trace(span.trace_id)
 
-    def add_span_tag(self, span_context: SpanContext, key: str, value: dict[str, str | int | bool]):
+    def add_span_tag(self, span_context: SpanContext, key: str, value: dict[str, str | int | bool]) -> None:
         """Add tag to span"""
         with self.lock:
             span = self.active_spans.get(span_context.span_id)
@@ -198,7 +190,7 @@ class DistributedTracer:
                     'message': message, 'fields': fields or {}}
                 span.logs.append(log_entry)
 
-    def add_baggage(self, span_context: SpanContext, key: str, value: str):
+    def add_baggage(self, span_context: SpanContext, key: str, value: str) -> None:
         """Add baggage item (propagated to child spans)"""
         span_context.baggage[key] = value
         with self.lock:
@@ -303,10 +295,8 @@ class DistributedTracer:
         """Generate unique span ID (16 hex chars)"""
         return uuid.uuid4().hex[:16]
 
-
 _tracer_instance: DistributedTracer | None = None
 _tracer_lock = threading.Lock()
-
 
 def get_distributed_tracer() ->DistributedTracer:
     """Get singleton distributed tracer instance"""

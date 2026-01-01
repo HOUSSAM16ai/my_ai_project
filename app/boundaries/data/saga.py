@@ -7,7 +7,6 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,6 @@ class SagaStepStatus(Enum):
     COMPLETED = 'completed'
     FAILED = 'failed'
     COMPENSATED = 'compensated'
-
 
 @dataclass
 class SagaStep:
@@ -38,7 +36,6 @@ class SagaStep:
     error: str | None = None
     started_at: datetime | None = None
     completed_at: datetime | None = None
-
 
 class SagaOrchestrator:
     """

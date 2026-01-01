@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 
 from ..domain.models import SecurityFinding, SecurityMetrics
 
-
 class InMemoryFindingsRepository:
     """In-memory findings repository"""
 
@@ -43,7 +42,6 @@ class InMemoryFindingsRepository:
             for key, value in updates.items():
                 if hasattr(finding, key):
                     setattr(finding, key, value)
-
 
 class InMemoryMetricsRepository:
     """In-memory metrics repository"""

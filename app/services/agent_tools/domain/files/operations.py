@@ -7,7 +7,6 @@ Uses `tool_model` for cleaner definition.
 """
 
 import os
-from typing import Any
 
 from app.services.agent_tools.tool_model import Tool, ToolConfig
 from app.services.agent_tools.utils import _safe_path

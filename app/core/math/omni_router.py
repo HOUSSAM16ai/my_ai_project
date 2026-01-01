@@ -15,7 +15,6 @@ from dataclasses import dataclass, field
 from app.core.math.cognitive_fingerprint import CognitiveComplexity, assess_cognitive_complexity
 from app.core.math.kalman import KalmanFilter
 
-
 @dataclass
 class ContextualBeliefState:
     """
@@ -26,7 +25,6 @@ class ContextualBeliefState:
     beta: float = 1.0
     failure_streak: int = 0
     last_decay: float = field(default_factory=time.time)
-
 
 @dataclass
 class OmniNodeState:
@@ -47,13 +45,14 @@ class OmniNodeState:
         for level in CognitiveComplexity:
             self.skills[level] = ContextualBeliefState()
 
+    # TODO: Split this function (50 lines) - KISS principle
     def update(
         self,
         complexity: CognitiveComplexity,
         success: bool,
         raw_latency_ms: float,
         quality_score: float = 0.5,  # Default to neutral
-    ):
+    ) -> None:
         """
         Update the specific skill belief based on outcome.
         """
@@ -106,7 +105,6 @@ class OmniNodeState:
         belief = self.skills.get(complexity, self.skills[CognitiveComplexity.REFLEX])
         return random.betavariate(belief.alpha, belief.beta)
 
-
 class SemanticAffinityEngine:
     """
     Pillar 2: Neuro-Symbolic Semantic Routing.
@@ -131,6 +129,7 @@ class SemanticAffinityEngine:
             "wizard": "creative",
             "gemini": "analysis",
         }
+# TODO: Split this function (31 lines) - KISS principle
 
     def get_affinity_score(self, prompt: str, model_id: str) -> float:
         """
@@ -165,7 +164,6 @@ class SemanticAffinityEngine:
 
         return 1.0
 
-
 class OmniCognitiveRouter:
     """
     The Router.
@@ -176,12 +174,12 @@ class OmniCognitiveRouter:
         self.semantic_engine = SemanticAffinityEngine()
         self._lock = threading.Lock()
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset state for testing."""
         with self._lock:
             self.nodes = {}
 
-    def register_node(self, model_id: str):
+    def register_node(self, model_id: str) -> None:
         with self._lock:
             if model_id not in self.nodes:
                 self.nodes[model_id] = OmniNodeState(model_id=model_id)
@@ -213,6 +211,7 @@ class OmniCognitiveRouter:
         candidates.sort(key=lambda x: x[1], reverse=True)
         return [c[0] for c in candidates]
 
+    # TODO: Reduce parameters (6 params) - Use config object
     def record_outcome(
         self,
         model_id: str,
@@ -220,18 +219,16 @@ class OmniCognitiveRouter:
         success: bool,
         latency_ms: float,
         quality_score: float = 0.5,
-    ):
+    ) -> None:
         if model_id not in self.nodes:
             self.register_node(model_id)
 
         complexity = assess_cognitive_complexity(prompt)
         self.nodes[model_id].update(complexity, success, latency_ms, quality_score)
 
-
 # Singleton instance for production/development
 _omni_router_instance: OmniCognitiveRouter | None = None
 _lock = threading.Lock()
-
 
 def get_omni_router() -> OmniCognitiveRouter:
     """

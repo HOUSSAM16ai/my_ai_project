@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 
 from app.security_metrics.domain.entities import SecurityFinding, SecurityMetrics
 
-
 class InMemorySecurityRepository:
     """In-memory security repository - DIP: Implements domain interface."""
 

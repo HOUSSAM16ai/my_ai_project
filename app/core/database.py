@@ -31,7 +31,7 @@ __all__ = [
     "get_db",
 ]
 
-
+# TODO: Split this function (53 lines) - KISS principle
 def _create_engine() -> AsyncEngine:
     """
     إنشاء محرك قاعدة البيانات.
@@ -87,10 +87,8 @@ def _create_engine() -> AsyncEngine:
 
     return create_async_engine(db_url, **engine_args)
 
-
 # 1. إنشاء المحرك (The Engine)
 engine: Final[AsyncEngine] = _create_engine()
-
 
 # 2. مصنع الجلسات (Session Factory)
 async_session_factory: Final[async_sessionmaker[AsyncSession]] = async_sessionmaker(
@@ -100,7 +98,6 @@ async_session_factory: Final[async_sessionmaker[AsyncSession]] = async_sessionma
     autocommit=False,
     autoflush=False,
 )
-
 
 # 3. حاقن التبعية (Dependency Injection)
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

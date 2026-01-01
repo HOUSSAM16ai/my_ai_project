@@ -1,6 +1,5 @@
 import hashlib
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 from app.services.api_config_secrets.domain.models import (
     ConfigEntry,
@@ -17,7 +16,6 @@ from app.services.api_config_secrets.domain.ports import (
     SecretMetadataRepository,
     VaultBackend,
 )
-
 
 class ConfigSecretsManager:
     """
@@ -38,6 +36,7 @@ class ConfigSecretsManager:
 
         self._initialize_environments()
 
+    # TODO: Split this function (33 lines) - KISS principle
     def _initialize_environments(self):
         """Initialize default configurations for each environment"""
 
@@ -73,6 +72,7 @@ class ConfigSecretsManager:
         )
         self.set_config(Environment.PRODUCTION, "strict_ssl", True, "Enforce SSL/TLS in production")
 
+    # TODO: Reduce parameters (7 params) - Use config object
     def set_config(
         self,
         environment: Environment,
@@ -81,7 +81,7 @@ class ConfigSecretsManager:
         description: str,
         is_sensitive: bool = False,
         updated_by: str | None = None,
-    ):
+    ) -> None:
         """Set configuration value for an environment"""
         entry = ConfigEntry(
             key=key,
@@ -93,12 +93,14 @@ class ConfigSecretsManager:
         )
         self.config_repo.set_config(entry)
 
-    def get_config(self, environment: Environment, key: str, default: Any = None) -> dict[str, str | int | bool]:
+    def get_config(self, environment: Environment, key: str, default: dict[str, str | int | bool] = None) -> dict[str, str | int | bool]:
         """Get configuration value for an environment"""
         entry = self.config_repo.get_config(environment, key)
         if entry:
             return entry.value
         return default
+# TODO: Split this function (42 lines) - KISS principle
+# TODO: Reduce parameters (7 params) - Use config object
 
     def create_secret(
         self,
@@ -205,6 +207,7 @@ class ConfigSecretsManager:
             return from_date + timedelta(days=30)
         if policy == RotationPolicy.QUARTERLY:
             return from_date + timedelta(days=90)
+        # TODO: Reduce parameters (6 params) - Use config object
         return from_date + timedelta(days=365)  # Default to yearly
 
     def _log_access(

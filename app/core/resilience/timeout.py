@@ -12,12 +12,10 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-
 class TimeoutError(Exception):
     """Raised when operation times out."""
 
     pass
-
 
 class TimeoutPolicy:
     """

@@ -7,11 +7,10 @@ Encapsulates requests as objects for queuing, logging, and undo operations.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, TypeVar
+from typing import TypeVar
 from uuid import uuid4
 
 T = TypeVar("T")
-
 
 @dataclass
 class CommandResult[T]:
@@ -21,7 +20,6 @@ class CommandResult[T]:
     data: T | None = None
     error: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
-
 
 class Command[T](ABC):
     """Base command interface."""
@@ -47,7 +45,6 @@ class Command[T](ABC):
     async def on_failure(self, result: CommandResult[T]) -> None:
         """Hook called after failed execution."""
         pass
-
 
 class CommandBus:
     """Command bus for executing commands with middleware support."""
@@ -91,11 +88,10 @@ class CommandBus:
 
         return handler
 
-
 class CommandMiddleware(ABC):
     """Base middleware for command processing."""
 
     @abstractmethod
-    def wrap(self, command: Command, next_handler):  # noqa: unused variable
+    def wrap(self, command: Command, next_handler) -> None:  # noqa: unused variable
         """Wrap the next handler with middleware logic."""
         pass

@@ -6,7 +6,6 @@ Orchestrates threat detection, analysis, and response.
 مدير الأمان - خدمة التطبيق الرئيسية
 """
 
-
 from ..domain.models import SecurityEvent, ThreatDetection
 from ..domain.ports import (
     BehavioralAnalyzerPort,
@@ -16,7 +15,6 @@ from ..domain.ports import (
     ThreatLoggerPort,
 )
 
-
 class SecurityManager:
     """
     مدير الأمان الرئيسي - Main security orchestrator
@@ -24,6 +22,7 @@ class SecurityManager:
     Coordinates threat detection, behavioral analysis, and automated response.
     """
 
+    # TODO: Reduce parameters (6 params) - Use config object
     def __init__(
         self,
         threat_detector: ThreatDetectorPort,
@@ -48,6 +47,7 @@ class SecurityManager:
         self.profile_repo = profile_repo
         self.threat_logger = threat_logger
 
+    # TODO: Split this function (44 lines) - KISS principle
     def analyze_event(self, event: SecurityEvent) -> list[ThreatDetection]:
         """
         Analyze security event for threats.
@@ -117,6 +117,5 @@ class SecurityManager:
             User profile or None if not found
         """
         return self.profile_repo.get_profile(user_id)
-
 
 __all__ = ["SecurityManager"]

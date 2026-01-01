@@ -32,7 +32,7 @@ import logging
 import threading
 import time
 import uuid
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 # Import requests inside methods to allow late binding/patching, but we can import at top level if needed
 # For now, keep it local to methods or inside try blocks if it's optional dependency.
@@ -50,7 +50,6 @@ _CLIENT_LOCK = threading.Lock()
 _CLIENT_CACHE: dict[str, Any] = {}
 _CLIENT_META: dict[str, Any] = {}
 
-
 @runtime_checkable
 class AIClientProtocol(Protocol):
     """Protocol defining the interface for AI clients"""
@@ -62,7 +61,6 @@ class AIClientProtocol(Protocol):
     def meta(self) -> dict[str, Any]:
         """Returns client metadata"""
         ...
-
 
 class AIClientFactory:
     """
@@ -123,6 +121,7 @@ class AIClientFactory:
         return None
 
     @staticmethod
+    # TODO: Reduce parameters (6 params) - Use config object
     def _create_and_cache(
         provider: str,
         api_key: str,
@@ -156,6 +155,7 @@ class AIClientFactory:
             return client
 
     @staticmethod
+    # TODO: Split this function (34 lines) - KISS principle
     def _create_new_client(
         provider: str,
         api_key: str,
@@ -223,7 +223,6 @@ class AIClientFactory:
         """Get information about cached clients"""
         return dict(_CLIENT_META)
 
-
 class SimpleFallbackClient:
     """Minimal HTTP client for AI API calls"""
 
@@ -242,7 +241,7 @@ class SimpleFallbackClient:
             def __init__(self, parent):
                 self._parent = parent
 
-            def create(self, model: str, messages: list, **kwargs):
+            def create(self, model: str, messages: list, **kwargs) -> None:
                 """Make API call using requests"""
                 # We use the global requests which is imported at top level or fallback
                 if requests is None:
@@ -273,11 +272,11 @@ class SimpleFallbackClient:
                     raise
 
         @property
-        def completions(self):
+        def completions(self) -> None:
             return self._CompletionsWrapper(self)
 
     @property
-    def chat(self):
+    def chat(self) -> None:
         return self._ChatWrapper(self)
 
     def meta(self) -> dict[str, Any]:
@@ -286,7 +285,6 @@ class SimpleFallbackClient:
             "created_at": self._created_at,
             "type": "fallback",
         }
-
 
 class MockClient:
     """Mock client that returns synthetic responses"""
@@ -305,7 +303,7 @@ class MockClient:
             def __init__(self, parent):
                 self._parent = parent
 
-            def create(self, model: str, messages: list, **kwargs):
+            def create(self, model: str, messages: list, **kwargs) -> None:
                 """Return mock response"""
 
                 class _Message:
@@ -331,11 +329,11 @@ class MockClient:
                 return _Response([choice])
 
         @property
-        def completions(self):
+        def completions(self) -> None:
             return self._CompletionsWrapper(self)
 
     @property
-    def chat(self):
+    def chat(self) -> None:
         return self._ChatWrapper(self)
 
     def meta(self) -> dict[str, Any]:
@@ -346,11 +344,9 @@ class MockClient:
             "reason": self.reason,
         }
 
-
 # =============================================================================
 # PUBLIC API
 # =============================================================================
-
 
 def get_ai_client(
     provider: str | None = None,
@@ -383,16 +379,13 @@ def get_ai_client(
         use_cache=use_cache,
     )
 
-
 def clear_ai_client_cache() -> None:
     """Clear the AI client cache"""
     AIClientFactory.clear_cache()
 
-
 def get_client_metadata() -> dict[str, Any]:
     """Get metadata about cached clients"""
     return AIClientFactory.get_cached_clients()
-
 
 __all__ = [
     "AIClientFactory",

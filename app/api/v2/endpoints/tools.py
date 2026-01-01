@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/tools", tags=["tools"])
 
-
 @router.post("/execute", response_model=ToolExecutionResponse)
 async def execute_tool(
     request: ToolExecutionRequest,
@@ -56,7 +55,6 @@ async def execute_tool(
             metadata={"user_id": user_id},
         )
 
-
 @router.get("/list")
 async def list_tools(
     category: str | None = None,
@@ -81,7 +79,6 @@ async def list_tools(
         ],
         "total": len(tools),
     }
-
 
 @router.get("/stats")
 async def get_tool_stats(

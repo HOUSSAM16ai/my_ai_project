@@ -7,13 +7,13 @@ Intelligent code search.
 from dataclasses import dataclass
 from pathlib import Path
 
-
 @dataclass
 class SearchAnalyzer:
     """Analyzer for code search."""
 
     project_root: Path
 
+    # TODO: Split this function (53 lines) - KISS principle
     def search(self, query: str, max_results: int = 20) -> list[dict]:
         """Intelligent code search."""
         results = []

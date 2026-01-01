@@ -20,7 +20,6 @@ from datetime import datetime
 
 security_logger = logging.getLogger('security')
 
-
 class SecurityEventLogger:
     """
     Centralized security event logging.
@@ -30,6 +29,7 @@ class SecurityEventLogger:
     """
 
     @staticmethod
+    # TODO: Reduce parameters (6 params) - Use config object
     def log_auth_attempt(user_id: (str | None), username: (str | None),
         success: bool, ip_address: str, user_agent: (str | None)=None,
         reason: (str | None)=None):
@@ -57,6 +57,7 @@ class SecurityEventLogger:
                 f'Authentication failed: user={username}, ip={ip_address}, reason={reason}'
                 , extra=event)
 
+    # TODO: Reduce parameters (6 params) - Use config object
     @staticmethod
     def log_access_denied(user_id: str, username: str, resource: str,
         action: str, ip_address: str, reason: (str | None)=None):
@@ -79,26 +80,22 @@ class SecurityEventLogger:
             f'Access denied: user={username}, resource={resource}, action={action}'
             , extra=event)
 
-
 def log_login_success(username: str, ip: str, user_id: (str | None)=None):
     """Log successful login."""
     SecurityEventLogger.log_auth_attempt(user_id=user_id, username=username,
         success=True, ip_address=ip)
 
-
 def log_login_failure(username: str, ip: str, reason: str='invalid_credentials'
-    ):
+    ) -> None:
     """Log failed login attempt."""
     SecurityEventLogger.log_auth_attempt(user_id=None, username=username,
         success=False, ip_address=ip, reason=reason)
 
-
-def log_unauthorized_access(user_id: str, resource: str, action: str, ip: str):
+def log_unauthorized_access(user_id: str, resource: str, action: str, ip: str) -> None:
     """Log unauthorized access attempt."""
     SecurityEventLogger.log_access_denied(user_id=user_id, username=
         f'user_{user_id}', resource=resource, action=action, ip_address=ip,
         reason='insufficient_permissions')
-
 
 __all__ = ['SecurityEventLogger', 'log_login_failure', 'log_login_success',
     'log_unauthorized_access']

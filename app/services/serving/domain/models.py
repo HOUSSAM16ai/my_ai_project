@@ -13,12 +13,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
 
 # ======================================================================================
 # ENUMERATIONS
 # ======================================================================================
-
 
 class ModelStatus(Enum):
     """حالات النموذج"""
@@ -30,7 +28,6 @@ class ModelStatus(Enum):
     STOPPED = "stopped"
     FAILED = "failed"
 
-
 class ServingStrategy(Enum):
     """استراتيجيات التقديم"""
 
@@ -41,7 +38,6 @@ class ServingStrategy(Enum):
     MULTI_MODEL = "multi_model"  # نماذج متعددة مع توجيه ذكي
     ENSEMBLE = "ensemble"  # تجميع نتائج نماذج متعددة
 
-
 class ModelType(Enum):
     """أنواع النماذج"""
 
@@ -49,7 +45,6 @@ class ModelType(Enum):
     VISION_MODEL = "vision_model"  # نماذج الرؤية
     EMBEDDING_MODEL = "embedding_model"  # نماذج التضمين
     CUSTOM_MODEL = "custom_model"  # نماذج مخصصة
-
 
 class RoutingStrategy(Enum):
     """استراتيجيات التوجيه"""
@@ -60,11 +55,9 @@ class RoutingStrategy(Enum):
     WEIGHTED = "weighted"
     INTELLIGENT = "intelligent"  # ML-based routing
 
-
 # ======================================================================================
 # DOMAIN ENTITIES
 # ======================================================================================
-
 
 @dataclass
 class ModelVersion:
@@ -90,7 +83,6 @@ class ModelVersion:
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     loaded_at: datetime | None = None
 
-
 @dataclass
 class ModelMetrics:
     """
@@ -114,7 +106,6 @@ class ModelMetrics:
     memory_usage_mb: float = 0.0
     gpu_usage: float = 0.0
 
-
 @dataclass
 class ABTestConfig:
     """
@@ -134,7 +125,6 @@ class ABTestConfig:
     ended_at: datetime | None = None
     winner: str | None = None
 
-
 @dataclass
 class ShadowDeployment:
     """
@@ -152,7 +142,6 @@ class ShadowDeployment:
     started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     comparison_results: list[dict[str, Any]] = field(default_factory=list)
 
-
 @dataclass
 class ModelRequest:
     """
@@ -167,7 +156,6 @@ class ModelRequest:
     input_data: dict[str, Any]
     parameters: dict[str, Any] = field(default_factory=dict)
     timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
-
 
 @dataclass
 class ModelResponse:
@@ -187,7 +175,6 @@ class ModelResponse:
     success: bool = True
     error: str | None = None
     timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
-
 
 @dataclass
 class EnsembleConfig:

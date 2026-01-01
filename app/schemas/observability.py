@@ -7,12 +7,11 @@ Ensures strict typing and governance for the Observability Domain.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel, Field
 
 T = TypeVar("T")
-
 
 class LegacyResponse[T](BaseModel):
     """
@@ -24,11 +23,9 @@ class LegacyResponse[T](BaseModel):
     message: str | None = Field(None, description="Optional status message")
     data: T | None = Field(None, description="The actual payload data")
 
-
 class HealthCheckData(BaseModel):
     """Data for health check response."""
     status: str = "healthy"
-
 
 class AIOpsMetrics(BaseModel):
     """Pydantic model for AIOps Metrics."""
@@ -37,7 +34,6 @@ class AIOpsMetrics(BaseModel):
     system_health_score: float
     active_threats: int = 0
     predicted_failures: int = 0
-
 
 class PerformanceSnapshotModel(BaseModel):
     """Pydantic model for Performance Snapshot."""
@@ -58,12 +54,10 @@ class PerformanceSnapshotModel(BaseModel):
     class Config:
         from_attributes = True
 
-
 class MetricsData(BaseModel):
     """Data payload for the /metrics endpoint."""
     api_performance: PerformanceSnapshotModel
     aiops_health: AIOpsMetrics | dict[str, Any]
-
 
 class MetricsResponse(BaseModel):
     """
@@ -78,7 +72,6 @@ class MetricsResponse(BaseModel):
     timestamp: datetime
     metrics: MetricsData
 
-
 class EndpointAnalyticsData(BaseModel):
     """Analytics data for a specific endpoint."""
     path: str
@@ -88,7 +81,6 @@ class EndpointAnalyticsData(BaseModel):
     p95_latency: float
     status: str
 
-
 class AlertModel(BaseModel):
     """Model for a system alert."""
     id: str
@@ -96,7 +88,6 @@ class AlertModel(BaseModel):
     message: str
     timestamp: datetime
     details: dict[str, Any] | None = None
-
 
 # --- Specific Legacy Formats (Fixing the "Disaster") ---
 
@@ -108,7 +99,6 @@ class AiOpsResponse(BaseModel):
     ok: bool = True
     data: dict[str, Any]
 
-
 class SnapshotResponse(BaseModel):
     """
     Legacy format for /performance/snapshot
@@ -116,7 +106,6 @@ class SnapshotResponse(BaseModel):
     """
     status: str = "success"
     snapshot: PerformanceSnapshotModel | dict[str, Any]
-
 
 class AlertsResponse(BaseModel):
     """

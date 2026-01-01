@@ -30,12 +30,10 @@ from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundar
 
 logger = get_logger(__name__)
 
-
 router = APIRouter(
     prefix="/admin",
     tags=["Admin"],
 )
-
 
 def get_session_factory() -> Callable[[], AsyncSession]:
     """
@@ -44,11 +42,9 @@ def get_session_factory() -> Callable[[], AsyncSession]:
     """
     return async_session_factory
 
-
 def get_admin_service(db: AsyncSession = Depends(get_db)) -> AdminChatBoundaryService:
     """تبعية للحصول على خدمة حدود محادثة المسؤول."""
     return AdminChatBoundaryService(db)
-
 
 def get_current_user_id(
     request: Request, service: AdminChatBoundaryService = Depends(get_admin_service)
@@ -58,7 +54,6 @@ def get_current_user_id(
     """
     auth_header = request.headers.get("Authorization")
     return service.validate_auth_header(auth_header)
-
 
 @router.post("/api/chat/stream", summary="بث محادثة المسؤول (Admin Chat Stream)")
 async def chat_stream(
@@ -110,7 +105,6 @@ async def chat_stream(
         },
     )
 
-
 @router.get(
     "/api/chat/latest",
     summary="استرجاع آخر محادثة (Get Latest Conversation)",
@@ -128,7 +122,6 @@ async def get_latest_chat(
     if not conversation_data:
         return None
     return ConversationDetailsResponse.model_validate(conversation_data)
-
 
 @router.get(
     "/api/conversations",
@@ -157,7 +150,6 @@ async def list_conversations(
             r_mapped["conversation_id"] = r_mapped["id"]
         cleaned.append(ConversationSummaryResponse.model_validate(r_mapped))
     return cleaned
-
 
 @router.get(
     "/api/conversations/{conversation_id}",

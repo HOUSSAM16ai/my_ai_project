@@ -4,8 +4,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
-
 
 @dataclass
 class Principal:
@@ -30,7 +28,6 @@ class Principal:
         if self.expires_at is None:
             return False
         return datetime.now() > self.expires_at
-
 
 class AuthenticationService(ABC):
     """

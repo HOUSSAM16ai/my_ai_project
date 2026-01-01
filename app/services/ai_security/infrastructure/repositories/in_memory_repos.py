@@ -10,7 +10,6 @@ from collections import deque
 
 from ...domain.models import ThreatDetection, UserBehaviorProfile
 
-
 class InMemoryProfileRepository:
     """
     مستودع الملفات الشخصية في الذاكرة
@@ -33,7 +32,6 @@ class InMemoryProfileRepository:
     def delete_profile(self, user_id: str) -> None:
         """Delete user profile"""
         self._profiles.pop(user_id, None)
-
 
 class InMemoryThreatLogger:
     """
@@ -64,7 +62,6 @@ class InMemoryThreatLogger:
     def clear(self) -> None:
         """Clear all logged threats"""
         self._threats.clear()
-
 
 __all__ = [
     "InMemoryProfileRepository",

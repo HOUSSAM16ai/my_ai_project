@@ -6,10 +6,8 @@ Enables plugin-based architecture with runtime registration.
 
 Design Pattern: Registry Pattern + Service Locator
 """
-from typing import Any
 
 from .base_middleware import BaseMiddleware
-
 
 class MiddlewareRegistry:
     """
@@ -107,7 +105,7 @@ class MiddlewareRegistry:
         """
         return self._metadata.get(name, {})
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all registered middleware"""
         self._registry.clear()
         self._instances.clear()
@@ -121,9 +119,7 @@ class MiddlewareRegistry:
         """Get count of registered middleware"""
         return len(self._registry)
 
-
 _global_registry = MiddlewareRegistry()
-
 
 def register_middleware(name: str, middleware_class: type[BaseMiddleware],
     metadata: (dict[str, Any] | None)=None):
@@ -136,7 +132,6 @@ def register_middleware(name: str, middleware_class: type[BaseMiddleware],
         metadata: Optional metadata
     """
     _global_registry.register(name, middleware_class, metadata)
-
 
 def create_middleware(name: str, config: (dict[str, Any] | None)=None) ->(
     BaseMiddleware | None):

@@ -5,14 +5,12 @@ from enum import Enum
 
 from fastapi import HTTPException, Request, status
 
-
 class UserTier(Enum):
     """مستويات المستخدمين لتحديد المعدل"""
 
     FREE = "free"
     PREMIUM = "premium"
     ENTERPRISE = "enterprise"
-
 
 class RateLimiter:
     def __init__(self, requests_per_minute: int):
@@ -33,7 +31,6 @@ class RateLimiter:
 
         self.history[ip].append(now)
 
-
 class AdaptiveRateLimiter:
     """
     محدد معدل متكيف يدعم مستويات المستخدمين المختلفة
@@ -50,6 +47,7 @@ class AdaptiveRateLimiter:
         # In-memory fallback
         self.memory_store = defaultdict(list)
 
+    # TODO: Split this function (40 lines) - KISS principle
     def check_rate_limit(
         self, request: Request, user_id: str | None = None, tier: UserTier = UserTier.FREE
     ) -> tuple[bool, dict]:
@@ -91,6 +89,5 @@ class AdaptiveRateLimiter:
             "remaining": remaining - 1,  # -1 because we just added one
             "reset_time": reset_time,
         }
-
 
 rate_limiter = RateLimiter(requests_per_minute=20)

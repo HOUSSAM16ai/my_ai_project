@@ -19,7 +19,6 @@ from app.services.serving.domain.models import (
     ModelVersion,
 )
 
-
 class MockModelInvoker:
     """
     Mock implementation of ModelInvoker port.
@@ -49,6 +48,7 @@ class MockModelInvoker:
         self.max_latency_ms = max_latency_ms
         self.error_rate = error_rate
 
+    # TODO: Split this function (60 lines) - KISS principle
     def invoke(
         self,
         model: ModelVersion,
@@ -114,6 +114,7 @@ class MockModelInvoker:
     def health_check(self, model: ModelVersion) -> bool:
         """Check if model is healthy"""
         return model.status in (ModelStatus.READY, ModelStatus.SERVING)
+# TODO: Split this function (36 lines) - KISS principle
 
     def _generate_mock_output(
         self,

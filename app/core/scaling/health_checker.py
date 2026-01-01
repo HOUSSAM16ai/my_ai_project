@@ -11,7 +11,6 @@ from app.core.scaling.service_registry import ServiceRegistry
 
 logger = logging.getLogger(__name__)
 
-
 class HealthChecker:
     """
     Health checker for monitoring service instances.

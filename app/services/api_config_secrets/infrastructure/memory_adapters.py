@@ -13,7 +13,6 @@ from app.services.api_config_secrets.domain.ports import (
     SecretMetadataRepository,
 )
 
-
 class InMemoryConfigRepository(ConfigRepository):
     def __init__(self):
         self._store: dict[Environment, dict[str, ConfigEntry]] = defaultdict(dict)
@@ -31,7 +30,6 @@ class InMemoryConfigRepository(ConfigRepository):
         with self._lock:
             return self._store.get(environment, {}).copy()
 
-
 class InMemorySecretMetadataRepository(SecretMetadataRepository):
     def __init__(self):
         self._registry: dict[str, Secret] = {}
@@ -48,7 +46,6 @@ class InMemorySecretMetadataRepository(SecretMetadataRepository):
     def get_all_secrets(self) -> list[Secret]:
         with self._lock:
             return list(self._registry.values())
-
 
 class InMemoryAuditLogger(AuditLogger):
     def __init__(self, maxlen: int = 10000):

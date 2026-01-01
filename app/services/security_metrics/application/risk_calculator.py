@@ -8,7 +8,6 @@ from datetime import datetime
 from ..domain.models import SecurityFinding
 from ..domain.ports import RiskCalculatorPort
 
-
 class AdvancedRiskCalculator(RiskCalculatorPort):
     """
     Advanced risk calculator using FAANG-style algorithms
@@ -32,6 +31,7 @@ class AdvancedRiskCalculator(RiskCalculatorPort):
             "CWE-22": 1.7,  # Path traversal
         }
 
+    # TODO: Split this function (31 lines) - KISS principle
     def calculate_risk_score(
         self, findings: list[SecurityFinding], code_metrics: dict | None = None
     ) -> float:
