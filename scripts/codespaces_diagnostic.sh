@@ -2,7 +2,8 @@
 ###############################################################################
 # codespaces_diagnostic.sh - GitHub Codespaces Health Diagnostic
 #
-# تشخيص صحة بيئة GitHub Codespaces
+# تشخيص صحة بيئة GitHub Codespaces - أداة شاملة لفحص النظام
+# Comprehensive health check tool for diagnosing application issues in Codespaces
 # 
 # Purpose:
 #   Comprehensive health check for the application running in Codespaces
@@ -93,10 +94,12 @@ else
 fi
 
 # Disk
-DISK_USAGE=$(df -h "$APP_ROOT" | awk 'NR==2 {print $5}' | sed 's/%//')
-DISK_AVAIL=$(df -h "$APP_ROOT" | awk 'NR==2 {print $4}')
+DISK_USAGE=$(df -h "$APP_ROOT" 2>/dev/null | awk 'NR==2 {print $5}' | sed 's/%//' || echo "0")
+DISK_AVAIL=$(df -h "$APP_ROOT" 2>/dev/null | awk 'NR==2 {print $4}' || echo "N/A")
 
-if [ "$DISK_USAGE" -lt 80 ]; then
+if [ -z "$DISK_USAGE" ] || [ "$DISK_USAGE" = "0" ]; then
+    print_status "WARN" "Could not determine disk usage for $APP_ROOT"
+elif [ "$DISK_USAGE" -lt 80 ]; then
     print_status "OK" "Disk: ${DISK_USAGE}% used, ${DISK_AVAIL} available"
 elif [ "$DISK_USAGE" -lt 90 ]; then
     print_status "WARN" "Disk: ${DISK_USAGE}% used, ${DISK_AVAIL} available"
