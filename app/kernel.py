@@ -13,7 +13,7 @@
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, Final
+from typing import Final
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -41,7 +41,8 @@ __all__ = ["RealityKernel"]
 # ==============================================================================
 
 # تعريف نوع MiddlewareSpec: (الفئة، المعاملات)
-type MiddlewareSpec = tuple[type[BaseHTTPMiddleware] | type[ASGIApp] | Any, dict[str, Any]]
+# يدعم أي middleware متوافق مع BaseHTTPMiddleware أو ASGIApp
+type MiddlewareSpec = tuple[type[BaseHTTPMiddleware] | type, dict[str, object]]
 
 # تعريف نوع RouterSpec: (الموجه، البادئة)
 type RouterSpec = tuple[APIRouter, str]
