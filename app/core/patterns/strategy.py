@@ -135,6 +135,7 @@
 import inspect
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator
 from typing import Generic, TypeVar
 
 # إعداد Logger للتتبع والتشخيص
