@@ -322,6 +322,17 @@
         // PERFORMANCE CONFIGURATION | تكوين الأداء
         // ══════════════════════════════════════════════════════════════════════
         
+        // CRITICAL: Detect Codespaces environment for resource optimization
+        const IS_CODESPACES = window.location.hostname.includes('github.dev') || 
+                             window.location.hostname.includes('app.github.dev') ||
+                             window.location.hostname.includes('preview.app.github.dev');
+        
+        const IS_CLOUD_ENV = IS_CODESPACES || 
+                            window.location.hostname.includes('gitpod.io') ||
+                            window.location.hostname.includes('repl.it');
+        
+        console.log(`🌍 Environment: ${IS_CODESPACES ? 'GitHub Codespaces' : IS_CLOUD_ENV ? 'Cloud IDE' : 'Local/Production'}`);
+        
         // Showdown converter with performance optimizations
         const showdownConverter = new showdown.Converter({
             simplifiedAutoLink: true,
@@ -334,11 +345,15 @@
         });
         
         // DOM SAFETY VALVE: Limit messages to prevent memory exhaustion
-        const MAX_MESSAGES = 15;  // Optimized for Codespaces memory constraints
+        // More aggressive limits in cloud environments
+        const MAX_MESSAGES = IS_CLOUD_ENV ? 10 : 15;
         
         // CODESPACES COMPATIBILITY: Reduced limits for cloud environments
-        const MAX_STREAM_CHUNK_SIZE = 1000; // Max chars per update cycle
-        const STREAM_UPDATE_THROTTLE = 300; // Optimized for Codespaces stability
+        const MAX_STREAM_CHUNK_SIZE = IS_CLOUD_ENV ? 800 : 1000;
+        const STREAM_UPDATE_THROTTLE = IS_CLOUD_ENV ? 400 : 300; // Higher throttle for Codespaces
+        const STREAM_MICRO_DELAY = IS_CLOUD_ENV ? 12 : 8; // Longer delays in cloud
+        
+        console.log(`⚙️ Performance Config: MAX_MESSAGES=${MAX_MESSAGES}, THROTTLE=${STREAM_UPDATE_THROTTLE}ms, DELAY=${STREAM_MICRO_DELAY}ms`);
         
         // Performance monitoring
         const PERFORMANCE_MONITOR = {
@@ -469,6 +484,14 @@
                         if (percentUsed > 90) {
                             console.warn(`⚠️ High memory usage: ${percentUsed.toFixed(1)}%`);
                         }
+                        
+                        // CRITICAL: Auto-reload if memory exceeds 95% in Codespaces
+                        if (IS_CODESPACES && percentUsed > 95) {
+                            console.error('🚨 CRITICAL: Memory exhaustion detected! Forcing reload to prevent crash...');
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 2000);
+                        }
                     }, 30000); // Check every 30 seconds
                     timers.push(memoryTimer);
                 }
@@ -480,6 +503,40 @@
                     }
                 }, 60000); // Every 60 seconds
                 timers.push(gcTimer);
+                
+                // CODESPACES: Health check to detect server issues
+                if (IS_CODESPACES) {
+                    let consecutiveFailures = 0;
+                    const healthTimer = setInterval(async () => {
+                        try {
+                            const response = await fetch('/health', { 
+                                method: 'GET',
+                                cache: 'no-cache',
+                                signal: AbortSignal.timeout(5000) // 5 second timeout
+                            });
+                            
+                            if (response.ok) {
+                                consecutiveFailures = 0;
+                            } else {
+                                consecutiveFailures++;
+                                console.warn(`⚠️ Health check failed (${consecutiveFailures}/3)`);
+                            }
+                        } catch (error) {
+                            consecutiveFailures++;
+                            console.warn(`⚠️ Health check error (${consecutiveFailures}/3):`, error.message);
+                        }
+                        
+                        // If 3 consecutive failures, show warning
+                        if (consecutiveFailures >= 3) {
+                            console.error('🚨 Server appears to be down. Page will reload in 5 seconds...');
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 5000);
+                            clearInterval(healthTimer);
+                        }
+                    }, 60000); // Check every 60 seconds
+                    timers.push(healthTimer);
+                }
 
                 // CLEANUP: Clear all timers when component unmounts
                 return () => {
@@ -854,7 +911,7 @@
 
                                 // CODESPACES OPTIMIZATION: Slightly longer delay for cloud environments
                                 // This prevents browser overload in resource-constrained environments
-                                await new Promise(resolve => setTimeout(resolve, 8));
+                                await new Promise(resolve => setTimeout(resolve, STREAM_MICRO_DELAY));
 
                                 const chunk = decoder.decode(value, { stream: true });
                                 const lines = chunk.split('\n\n');
@@ -1088,6 +1145,34 @@
             </ErrorBoundary>,
             document.getElementById('root')
         );
+        
+        // ══════════════════════════════════════════════════════════════════════
+        // STARTUP DIAGNOSTICS | تشخيص بدء التشغيل
+        // ══════════════════════════════════════════════════════════════════════
+        console.log('╔══════════════════════════════════════════════════════════════════╗');
+        console.log('║             CogniForge V3 - Startup Diagnostics                 ║');
+        console.log('╚══════════════════════════════════════════════════════════════════╝');
+        console.log(`🌍 Environment: ${IS_CODESPACES ? 'GitHub Codespaces' : IS_CLOUD_ENV ? 'Cloud IDE' : 'Local/Production'}`);
+        console.log(`📊 Performance Limits:`);
+        console.log(`   - MAX_MESSAGES: ${MAX_MESSAGES}`);
+        console.log(`   - STREAM_UPDATE_THROTTLE: ${STREAM_UPDATE_THROTTLE}ms`);
+        console.log(`   - STREAM_MICRO_DELAY: ${STREAM_MICRO_DELAY}ms`);
+        console.log(`   - MAX_STREAM_CHUNK_SIZE: ${MAX_STREAM_CHUNK_SIZE} chars`);
+        
+        if (performance.memory) {
+            const memoryMB = (performance.memory.jsHeapSizeLimit / 1024 / 1024).toFixed(0);
+            console.log(`💾 Memory Limit: ${memoryMB} MB`);
+        }
+        
+        console.log(`⚙️ React Version: ${React.version}`);
+        console.log(`✅ Application initialized successfully`);
+        console.log('═══════════════════════════════════════════════════════════════════');
+        
+        // Track initial load time
+        window.addEventListener('load', () => {
+            const loadTime = performance.now();
+            console.log(`⏱️ Total load time: ${loadTime.toFixed(2)}ms`);
+        });
     </script>
 </body>
 </html>

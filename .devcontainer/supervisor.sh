@@ -60,8 +60,14 @@ lifecycle_info "═════════════════════�
 lifecycle_info "Step 0/5: System readiness check..."
 
 # Give container time to fully initialize
-lifecycle_info "Waiting for system stabilization (2s)..."
-sleep 2
+# CODESPACES: Longer stabilization time for cloud environments
+if [ -n "${CODESPACES:-}" ]; then
+    lifecycle_info "Detected Codespaces environment - using extended stabilization (5s)..."
+    sleep 5
+else
+    lifecycle_info "Waiting for system stabilization (2s)..."
+    sleep 2
+fi
 
 # Create default .env if missing (Critical for environment consistency)
 if [ ! -f .env ]; then
@@ -215,14 +221,24 @@ fi
 
 lifecycle_info "Step 5/5: Health check and readiness verification..."
 
+# CODESPACES: Longer timeout for slower cloud environment
+if [ -n "${CODESPACES:-}" ]; then
+    PORT_TIMEOUT=90
+    HEALTH_TIMEOUT=45
+    lifecycle_info "Using extended timeouts for Codespaces (port: ${PORT_TIMEOUT}s, health: ${HEALTH_TIMEOUT}s)"
+else
+    PORT_TIMEOUT=60
+    HEALTH_TIMEOUT=30
+fi
+
 # Wait for port to be available
-if ! lifecycle_wait_for_port "$APP_PORT" 60; then
+if ! lifecycle_wait_for_port "$APP_PORT" "$PORT_TIMEOUT"; then
     lifecycle_error "Port $APP_PORT did not become available"
     exit 1
 fi
 
 # Wait for health endpoint
-if ! lifecycle_wait_for_http "$HEALTH_ENDPOINT" 30 200; then
+if ! lifecycle_wait_for_http "$HEALTH_ENDPOINT" "$HEALTH_TIMEOUT" 200; then
     lifecycle_error "Health endpoint did not become healthy"
     exit 1
 fi
