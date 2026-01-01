@@ -1,23 +1,23 @@
 """
-AI Security Service - Hexagonal Architecture
+AI Security Service - SOLID Principles Applied
 ============================================
 Advanced AI-powered security with threat detection and response.
 
-نظام الأمان الخارق - معمارية سداسية
+نظام الأمان الخارق - تطبيق مبادئ SOLID
 
-This package follows Hexagonal Architecture (Ports & Adapters):
+Simplified architecture using KISS principle:
 - Domain: Pure business entities and interfaces
-- Application: Business logic orchestration
+- Application: SecurityManager (direct access, no facade)
 - Infrastructure: Concrete implementations
-- Facade: Unified entry point
 
 Usage:
-    from app.services.ai_security import get_superhuman_security_system
+    from app.services.ai_security import get_security_manager
 
-    security = get_superhuman_security_system()
+    security = get_security_manager()
     threats = security.analyze_event(event)
 """
 
+from .application.security_manager import SecurityManager
 from .domain import (
     SecurityEvent,
     ThreatDetection,
@@ -25,16 +25,51 @@ from .domain import (
     ThreatType,
     UserBehaviorProfile,
 )
-from .facade import SuperhumanSecuritySystem, get_superhuman_security_system
+
+# Singleton instance
+_manager_instance: SecurityManager | None = None
+
+
+def get_security_manager() -> SecurityManager:
+    """
+    Get singleton Security Manager instance.
+    
+    Returns:
+        SecurityManager: The security manager instance
+    """
+    global _manager_instance
+    if _manager_instance is None:
+        from .infrastructure import (
+            DeepLearningThreatDetector,
+            InMemoryProfileRepository,
+            InMemoryThreatLogger,
+            SimpleBehavioralAnalyzer,
+            SimpleResponseSystem,
+        )
+        
+        _manager_instance = SecurityManager(
+            threat_detector=DeepLearningThreatDetector(),
+            behavioral_analyzer=SimpleBehavioralAnalyzer(),
+            response_system=SimpleResponseSystem(),
+            profile_repo=InMemoryProfileRepository(),
+            threat_logger=InMemoryThreatLogger(),
+        )
+    return _manager_instance
+
+
+# Backward compatibility
+get_superhuman_security_system = get_security_manager
+
 
 __all__ = [
     # Domain Models
     "SecurityEvent",
-    # Facade
-    "SuperhumanSecuritySystem",
+    "SecurityManager",
     "ThreatDetection",
     "ThreatLevel",
     "ThreatType",
     "UserBehaviorProfile",
-    "get_superhuman_security_system",
+    # Functions
+    "get_security_manager",
+    "get_superhuman_security_system",  # Backward compatibility
 ]

@@ -231,7 +231,7 @@ class APIGateway:
         return results
 
     async def _call_service(self, service_name: str, endpoint: str, params:
-        dict[str, Any]) ->Any:
+        dict[str, Any]) ->dict[str, str | int | bool]:
         """استدعاء خدمة (مثال بسيط)"""
         service = self.get_service(service_name)
         if not service:
@@ -283,8 +283,8 @@ class CircuitBreaker:
         self.last_failure_time: datetime | None = None
         self.last_state_change = datetime.now()
 
-    async def call(self, func: Callable[..., Awaitable[Any]], *args: Any,
-        **kwargs: Any) ->Any:
+    async def call(self, func: Callable[..., Awaitable[Any]], *args: dict[str, str | int | bool],
+        **kwargs: dict[str, str | int | bool]) ->dict[str, str | int | bool]:
         """
         استدعاء دالة عبر قاطع الدائرة
 
@@ -361,8 +361,8 @@ class BulkheadExecutor:
         self._queue: asyncio.Queue = asyncio.Queue(maxsize=queue_size)
         self._active_tasks = 0
 
-    async def execute(self, func: Callable[..., Awaitable[Any]], *args: Any,
-        **kwargs: Any) ->Any:
+    async def execute(self, func: Callable[..., Awaitable[Any]], *args: dict[str, str | int | bool],
+        **kwargs: dict[str, str | int | bool]) ->dict[str, str | int | bool]:
         """
         تنفيذ دالة عبر الحاجز
 

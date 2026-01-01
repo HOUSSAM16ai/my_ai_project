@@ -289,7 +289,7 @@ class AdminChatStreamingService:
             {"total_time_ms": total_time * 1000, "chunks_sent": self.metrics.total_streams},
         )
 
-    def _format_sse_event(self, event_type: str, data: Any) -> str:
+    def _format_sse_event(self, event_type: str, data: dict[str, str | int | bool]) -> str:
         """
         Format data as Server-Sent Event.
 

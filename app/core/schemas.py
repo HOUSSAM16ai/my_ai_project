@@ -41,7 +41,7 @@ class RobustBaseModel(BaseModel):
         }
     )
 
-    def to_dict(self, **kwargs: Any) -> dict[str, Any]:
+    def to_dict(self, **kwargs: dict[str, str | int | bool]) -> dict[str, Any]:
         """
         تحويل النموذج إلى قاموس.
         """

@@ -48,7 +48,7 @@ class EnsembleRouter:
             self._ensembles[ensemble_id] = config
         return ensemble_id
 
-    def _voting_aggregation(self, responses: list[ModelResponse]) ->Any:
+    def _voting_aggregation(self, responses: list[ModelResponse]) ->dict[str, str | int | bool]:
         """التصويت الأغلبي"""
         results = [r.output_data for r in responses if r.success]
         if not results:
@@ -70,7 +70,7 @@ class EnsembleRouter:
             'individual_latencies': [r.latency_ms for r in responses]}
 
     def create_ensemble_response(self, ensemble_id: str, aggregated_output:
-        Any, responses: list[ModelResponse], total_latency: float
+        dict[str, str | int | bool], responses: list[ModelResponse], total_latency: float
         ) ->ModelResponse:
         """
         إنشاء استجابة التجميع

@@ -25,7 +25,7 @@ from app.models import (
 )
 
 
-def utc_now():
+def utc_now() -> None:
     return datetime.now(UTC)
 
 
@@ -114,7 +114,7 @@ class MissionStateManager:
         self,
         mission_id: int,
         planner_name: str,
-        plan_schema: Any,  # MissionPlanSchema
+        plan_schema: dict[str, str | int | bool],  # MissionPlanSchema
         score: float,
         rationale: str,
     ) -> MissionPlan:

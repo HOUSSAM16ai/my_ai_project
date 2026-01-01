@@ -28,6 +28,6 @@ class RESTAdapter(ProtocolAdapter):
             "body": body,
         }
 
-    def transform_response(self, response_data: dict[str, Any]) -> Any:
+    def transform_response(self, response_data: dict[str, Any]) -> dict[str, str | int | bool]:
         """Transform to REST response"""
         return JSONResponse(content=response_data)

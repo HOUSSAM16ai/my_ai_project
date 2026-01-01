@@ -5,7 +5,7 @@ import click
 
 def register_maintenance_commands(root):
     @root.group("maintenance")
-    def maintenance_group():
+    def maintenance_group() -> None:
         "Maintenance commands"
         pass
 

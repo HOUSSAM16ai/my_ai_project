@@ -85,7 +85,7 @@ get_tool_registry().register(_metrics_tool)
 get_tool_registry().register(_file_count_tool)
 get_tool_registry().register(_context_tool)
 
-def get_registry():
+def get_registry() -> None:
     """
     Returns the legacy dict registry.
     Used by Overmind Factory.

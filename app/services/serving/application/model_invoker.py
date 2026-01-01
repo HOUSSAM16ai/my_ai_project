@@ -82,7 +82,7 @@ class ModelInvoker:
         return response
 
     def _invoke_model(self, model: ModelVersion, input_data: dict[str, Any],
-        parameters: dict[str, Any]) ->Any:
+        parameters: dict[str, Any]) ->dict[str, str | int | bool]:
         """
         استدعاء النموذج الفعلي
 

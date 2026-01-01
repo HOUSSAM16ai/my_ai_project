@@ -31,26 +31,26 @@ class BaseService(ABC):
         self._service_name = service_name or self.__class__.__name__
         self._logger = logging.getLogger(f"{__name__}.{self._service_name}")
 
-    def _log_info(self, message: str, **kwargs: Any) -> None:
+    def _log_info(self, message: str, **kwargs: dict[str, str | int | bool]) -> None:
         """تسجيل رسالة معلومات."""
         self._logger.info(message, extra=kwargs)
 
-    def _log_error(self, message: str, exc: Exception | None = None, **kwargs: Any) -> None:
+    def _log_error(self, message: str, exc: Exception | None = None, **kwargs: dict[str, str | int | bool]) -> None:
         """تسجيل رسالة خطأ."""
         if exc:
             self._logger.error(message, exc_info=exc, extra=kwargs)
         else:
             self._logger.error(message, extra=kwargs)
 
-    def _log_warning(self, message: str, **kwargs: Any) -> None:
+    def _log_warning(self, message: str, **kwargs: dict[str, str | int | bool]) -> None:
         """تسجيل رسالة تحذير."""
         self._logger.warning(message, extra=kwargs)
 
-    def _log_debug(self, message: str, **kwargs: Any) -> None:
+    def _log_debug(self, message: str, **kwargs: dict[str, str | int | bool]) -> None:
         """تسجيل رسالة تصحيح."""
         self._logger.debug(message, extra=kwargs)
 
-    def _validate_not_none(self, value: Any, name: str) -> None:
+    def _validate_not_none(self, value: dict[str, str | int | bool], name: str) -> None:
         """
         التحقق من أن القيمة ليست None.
         

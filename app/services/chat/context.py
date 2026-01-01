@@ -26,6 +26,6 @@ class ChatContext:
     # Factory to create new DB sessions for background tasks
     session_factory: Callable[[], AsyncSession] | None = None
 
-    def get_param(self, key: str, default: Any=None) -> Any:
+    def get_param(self, key: str, default: Any=None) -> dict[str, str | int | bool]:
         """Get parameter with default."""
         return self.params.get(key, default)

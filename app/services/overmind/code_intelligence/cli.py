@@ -9,7 +9,7 @@ from .reporters.json_reporter import save_json_report
 from .reporters.markdown_reporter import generate_markdown_report
 
 
-def main():
+def main() -> None:
     """Main entry point"""
     parser = argparse.ArgumentParser(
         description="المرحلة الأولى: التحليل الكمي البنيوي لقاعدة الشيفرة\nPhase 1: Structural Code Intelligence Analysis (Deconstructed)",

@@ -58,7 +58,7 @@ class Tool:
         """Check if tool can be executed."""
         return not self.is_disabled and self.config.handler is not None
 
-    async def execute(self, **kwargs) -> Any:
+    async def execute(self, **kwargs) -> dict[str, str | int | bool]:
         """Execute tool."""
         if not self.can_execute():
             raise PermissionError(f"Tool '{self.name}' is disabled or has no handler")

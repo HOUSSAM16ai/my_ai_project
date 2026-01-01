@@ -27,7 +27,7 @@ class MiddlewareSettings:
         """
         self.config: dict[str, Any] = kwargs
 
-    def get(self, key: str, default: Any = None) -> Any:
+    def get(self, key: str, default: Any = None) -> dict[str, str | int | bool]:
         """
         Get configuration value
 
@@ -40,7 +40,7 @@ class MiddlewareSettings:
         """
         return self.config.get(key, default)
 
-    def set(self, key: str, value: Any):
+    def set(self, key: str, value: dict[str, str | int | bool]):
         """
         Set configuration value
 

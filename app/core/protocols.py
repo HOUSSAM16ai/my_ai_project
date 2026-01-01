@@ -161,7 +161,7 @@ class CollaborationContext(Protocol):
     """
     shared_memory: dict[str, Any]
 
-    def update(self, key: str, value: Any) -> None:
+    def update(self, key: str, value: dict[str, str | int | bool]) -> None:
         ...
 
     def get(self, key: str) -> Any | None:

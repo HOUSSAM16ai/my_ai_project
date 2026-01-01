@@ -181,7 +181,7 @@ class DistributedTracer:
             del self.active_spans[span_id]
             self._try_aggregate_trace(span.trace_id)
 
-    def add_span_tag(self, span_context: SpanContext, key: str, value: Any):
+    def add_span_tag(self, span_context: SpanContext, key: str, value: dict[str, str | int | bool]):
         """Add tag to span"""
         with self.lock:
             span = self.active_spans.get(span_context.span_id)

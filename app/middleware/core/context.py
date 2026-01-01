@@ -107,11 +107,11 @@ class RequestContext:
         self.user_id = user_id
         self.session_id = session_id
 
-    def add_metadata(self, key: str, value: Any) -> None:
+    def add_metadata(self, key: str, value: dict[str, str | int | bool]) -> None:
         """Add arbitrary metadata to context"""
         self.metadata[key] = value
 
-    def get_metadata(self, key: str, default: Any = None) -> Any:
+    def get_metadata(self, key: str, default: Any = None) -> dict[str, str | int | bool]:
         """Retrieve metadata from context"""
         return self.metadata.get(key, default)
 

@@ -86,7 +86,7 @@ def get_container() -> DIContainer:
 def inject[T](func: Callable[..., T]) -> Callable[..., T]:
     """Decorator for automatic dependency injection."""
 
-    def wrapper(*args: Any, **kwargs: Any) -> T:
+    def wrapper(*args: dict[str, str | int | bool], **kwargs: dict[str, str | int | bool]) -> T:
         sig = inspect.signature(func)
         container = get_container()
 

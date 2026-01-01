@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from app.api.routers import system
 
 
-def create_app():
+def create_app() -> None:
     app = FastAPI()
     app.include_router(system.router)
     return app

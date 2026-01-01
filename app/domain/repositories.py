@@ -26,7 +26,7 @@ class UserRepository(Protocol):
         """Find user by email."""
         ...
 
-    async def create(self, user_data: dict[str, Any]) -> Any:
+    async def create(self, user_data: dict[str, Any]) -> dict[str, str | int | bool]:
         """Create new user."""
         ...
 

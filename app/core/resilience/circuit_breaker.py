@@ -374,7 +374,7 @@ def reset_circuit_breaker(name: str):
     registry.reset(name)
 
 
-def reset_all_circuit_breakers():
+def reset_all_circuit_breakers() -> None:
     """Reset all circuit breakers"""
     registry = CircuitBreakerRegistry.get_instance()
     registry.reset_all()

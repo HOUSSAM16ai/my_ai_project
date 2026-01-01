@@ -62,7 +62,7 @@ def transform_arguments(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
 # ======================================================================================
 # Argument Validation
 # ======================================================================================
-def _validate_type(name: str, value: Any, expected: str):
+def _validate_type(name: str, value: dict[str, str | int | bool], expected: str):
     py_type = SUPPORTED_TYPES.get(expected)
     if py_type and not isinstance(value, py_type):
         raise TypeError(f"Parameter '{name}' must be of type '{expected}'.")

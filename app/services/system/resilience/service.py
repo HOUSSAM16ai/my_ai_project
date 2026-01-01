@@ -123,7 +123,7 @@ def resilient(
             retry_config=RetryConfig(max_retries=3),
             bulkhead_name="api_calls"
         )
-        def my_function():
+        def my_function() -> None:
             pass
     """
 
@@ -137,7 +137,7 @@ def resilient(
             if circuit_breaker_name:
                 cb = service.get_or_create_circuit_breaker(circuit_breaker_name)
 
-                def func_to_call():
+                def func_to_call() -> None:
                     return func(*args, **kwargs)
 
                 return cb.call(func_to_call)

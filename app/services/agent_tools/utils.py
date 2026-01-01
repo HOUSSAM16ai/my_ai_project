@@ -45,7 +45,7 @@ def _generate_trace_id() -> str:
     return uuid.uuid4().hex[:16]
 
 
-def _coerce_to_tool_result(obj: Any) -> ToolResult:
+def _coerce_to_tool_result(obj: dict[str, str | int | bool]) -> ToolResult:
     if isinstance(obj, ToolResult):
         return obj
     if isinstance(obj, tuple) and len(obj) == 2 and isinstance(obj[0], bool):
@@ -60,11 +60,11 @@ def _coerce_to_tool_result(obj: Any) -> ToolResult:
     return ToolResult(ok=True, data=obj)
 
 
-def _lower(s: Any) -> str:
+def _lower(s: dict[str, str | int | bool]) -> str:
     return str(s or "").strip().lower()
 
 
-def _safe_json_dumps(obj: Any, max_bytes: int = 2_000_000) -> str:
+def _safe_json_dumps(obj: dict[str, str | int | bool], max_bytes: int = 2_000_000) -> str:
     raw = json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
     b = raw.encode("utf-8")
     if len(b) <= max_bytes:

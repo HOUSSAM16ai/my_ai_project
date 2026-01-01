@@ -46,7 +46,7 @@ class MetricsCollector:
         with self._lock:
             pass
 
-    def calculate_cost(self, model: ModelVersion, output: Any) ->float:
+    def calculate_cost(self, model: ModelVersion, output: dict[str, str | int | bool]) ->float:
         """
         حساب تكلفة الطلب
 

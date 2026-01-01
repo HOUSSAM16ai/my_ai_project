@@ -4,7 +4,7 @@ FastAPI dependencies for dependency injection.
 from typing import Any as AIClient
 
 
-def get_ai_client():
+def get_ai_client() -> None:
     """Get AI client (placeholder)."""
     return
 

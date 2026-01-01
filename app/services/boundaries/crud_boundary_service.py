@@ -119,7 +119,7 @@ class CrudBoundaryService:
         sort_by: str | None = None,
         order: str = "asc",
         filters: dict[str, Any] | None = None
-    ) -> Any:
+    ) -> dict[str, str | int | bool]:
         """
         Generic list items method to support generic CRUD router.
         Maps resource_type to specific method call.
@@ -142,7 +142,7 @@ class CrudBoundaryService:
         # For now return empty paginated response structure or raise error
         raise ValueError(f"Unknown resource type: {resource_type}")
 
-    async def get_item(self, resource_type: str, item_id: str) -> Any:
+    async def get_item(self, resource_type: str, item_id: str) -> dict[str, str | int | bool]:
         """
         Generic get item method.
         """
@@ -154,15 +154,15 @@ class CrudBoundaryService:
                 return None
         return None
 
-    async def create_item(self, resource_type: str, payload: dict[str, Any]) -> Any:
+    async def create_item(self, resource_type: str, payload: dict[str, Any]) -> dict[str, str | int | bool]:
         """Generic create item stub."""
         # Implement actual creation logic mapping
         return {"status": "created", "resource": resource_type}
 
-    async def update_item(self, resource_type: str, item_id: str, payload: dict[str, Any]) -> Any:
+    async def update_item(self, resource_type: str, item_id: str, payload: dict[str, Any]) -> dict[str, str | int | bool]:
         """Generic update item stub."""
         return {"status": "updated", "resource": resource_type}
 
-    async def delete_item(self, resource_type: str, item_id: str) -> Any:
+    async def delete_item(self, resource_type: str, item_id: str) -> dict[str, str | int | bool]:
         """Generic delete item stub."""
         return {"status": "deleted", "resource": resource_type}

@@ -11,7 +11,7 @@
 
 الاستخدام (Usage):
     @safe_execute(default_return={})
-    def risky_operation():
+    def risky_operation() -> None:
         return dangerous_call()
 """
 
@@ -52,7 +52,7 @@ def safe_execute(
 
     Example:
         @safe_execute(default_return={}, log_error=True)
-        def risky_operation():
+        def risky_operation() -> None:
             return dangerous_call()
     """
 
@@ -93,7 +93,7 @@ def retry_on_failure(
 
     Example:
         @retry_on_failure(max_retries=3, delay=1.0)
-        def unstable_api_call():
+        def unstable_api_call() -> None:
             return external_service.call()
     """
 
@@ -340,7 +340,7 @@ __all__ = [
 """
 # Example 1: Replace try-except with decorator
 # Before:
-def fetch_data():
+def fetch_data() -> None:
     try:
         return api.get_data()
     except Exception as e:
@@ -349,13 +349,13 @@ def fetch_data():
 
 # After:
 @safe_execute(default_return={}, log_error=True)
-def fetch_data():
+def fetch_data() -> None:
     return api.get_data()
 
 
 # Example 2: Retry on failure
 # Before:
-def unreliable_operation():
+def unreliable_operation() -> None:
     for attempt in range(3):
         try:
             return external_call()
@@ -366,7 +366,7 @@ def unreliable_operation():
 
 # After:
 @retry_on_failure(max_retries=3, delay=1.0)
-def unreliable_operation():
+def unreliable_operation() -> None:
     return external_call()
 
 

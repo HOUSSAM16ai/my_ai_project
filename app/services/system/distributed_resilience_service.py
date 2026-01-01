@@ -18,7 +18,7 @@ class DistributedResilienceService:
     Placeholder implementation until the resilience module is fully restored.
     """
 
-    async def execute_safely(self, func, *args, **kwargs) -> Any:
+    async def execute_safely(self, func, *args, **kwargs) -> dict[str, str | int | bool]:
         """
         Executes a function with safety mechanisms (currently pass-through).
         """
