@@ -75,6 +75,9 @@ class ReadEffect(Effect):
     
     def describe(self) -> str:
         return f"Read {self.key} from {self.source}"
+    
+    def __hash__(self) -> int:
+        return hash((self.effect_type, self.source, self.key))
 
 
 @dataclass(frozen=True)
@@ -87,6 +90,9 @@ class WriteEffect(Effect):
     
     def describe(self) -> str:
         return f"Write {self.key}={self.value} to {self.destination}"
+    
+    def __hash__(self) -> int:
+        return hash((self.effect_type, self.destination, self.key, str(self.value)))
 
 
 @dataclass(frozen=True)
@@ -98,6 +104,9 @@ class DatabaseQueryEffect(Effect):
     
     def describe(self) -> str:
         return f"Query: {self.query} with params {self.params}"
+    
+    def __hash__(self) -> int:
+        return hash((self.effect_type, self.query, tuple(sorted(self.params.items()))))
 
 
 @dataclass(frozen=True)
@@ -108,7 +117,10 @@ class DatabaseCommandEffect(Effect):
     entity: Any
     
     def describe(self) -> str:
-        return f"Execute: {self.command} on {type(entity).__name__}"
+        return f"Execute: {self.command} on {type(self.entity).__name__}"
+    
+    def __hash__(self) -> int:
+        return hash((self.effect_type, self.command, id(self.entity)))
 
 
 @dataclass(frozen=True)
@@ -121,6 +133,9 @@ class LogEffect(Effect):
     
     def describe(self) -> str:
         return f"Log[{self.level}]: {self.message}"
+    
+    def __hash__(self) -> int:
+        return hash((self.effect_type, self.level, self.message, tuple(sorted(self.context.items()))))
 
 
 @dataclass(frozen=True)
@@ -133,6 +148,9 @@ class MetricEffect(Effect):
     
     def describe(self) -> str:
         return f"Metric: {self.metric_name}={self.value}"
+    
+    def __hash__(self) -> int:
+        return hash((self.effect_type, self.metric_name, self.value, tuple(sorted(self.tags.items()))))
 
 
 @dataclass(frozen=True)
@@ -145,6 +163,9 @@ class NotificationEffect(Effect):
     
     def describe(self) -> str:
         return f"Notify {self.recipient} via {self.channel}"
+    
+    def __hash__(self) -> int:
+        return hash((self.effect_type, self.channel, self.recipient, self.message))
 
 
 @dataclass(frozen=True)
@@ -158,6 +179,9 @@ class CacheEffect(Effect):
     
     def describe(self) -> str:
         return f"Cache.{self.operation}({self.key})"
+    
+    def __hash__(self) -> int:
+        return hash((self.effect_type, self.operation, self.key, str(self.value), self.ttl))
 
 
 # ============================================================================
