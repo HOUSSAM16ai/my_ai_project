@@ -1,7 +1,7 @@
 """Data Boundary Events - Event sourcing and streaming."""
-from typing import Any
-
 from __future__ import annotations
+
+from typing import Any
 
 import logging
 from abc import ABC, abstractmethod
