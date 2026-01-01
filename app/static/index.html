@@ -509,11 +509,17 @@
                     let consecutiveFailures = 0;
                     const healthTimer = setInterval(async () => {
                         try {
+                            // Create manual timeout with AbortController for better browser compatibility
+                            const controller = new AbortController();
+                            const timeoutId = setTimeout(() => controller.abort(), 5000);
+                            
                             const response = await fetch('/health', { 
                                 method: 'GET',
                                 cache: 'no-cache',
-                                signal: AbortSignal.timeout(5000) // 5 second timeout
+                                signal: controller.signal
                             });
+                            
+                            clearTimeout(timeoutId);
                             
                             if (response.ok) {
                                 consecutiveFailures = 0;
