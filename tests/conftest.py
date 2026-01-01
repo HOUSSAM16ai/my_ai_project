@@ -3,6 +3,7 @@ import asyncio
 import os
 import pytest
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -54,3 +55,25 @@ def client():
     import app.main
     with TestClient(app.main.app) as test_client:
         yield test_client
+
+@pytest.fixture
+async def async_client(init_db):
+    """
+    Async client fixture for async API testing.
+    Provides a fully functional async HTTP client with database.
+    """
+    import app.main
+    from app.core.database import get_db
+    
+    # Override get_db dependency to use test database
+    async def override_get_db():
+        async with TestingSessionLocal() as session:
+            yield session
+    
+    app.main.app.dependency_overrides[get_db] = override_get_db
+    
+    async with AsyncClient(app=app.main.app, base_url="http://test") as ac:
+        yield ac
+    
+    # Cleanup
+    app.main.app.dependency_overrides.clear()

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import functools
+import inspect
 import logging
 import time
 from collections import defaultdict, deque
@@ -148,12 +149,48 @@ def profile_async(func: Callable[P, asyncio.Future[T]]) -> Callable[P, asyncio.F
     مُزخرف قياس الأداء للدوال اللاتزامنية (Profiler for async functions).
     
     CS61 Principle: Non-blocking profiling for async/await patterns.
+    يدعم تلقائياً async generators (functions with yield).
     
     Example:
         @profile_async
         async def fetch_data(user_id: int) -> User:
             return await db.get(User, user_id)
+        
+        @profile_async
+        async def get_db() -> AsyncGenerator[Session, None]:
+            yield session  # Automatically handles generators!
     """
+    # فحص ذكي: هل الدالة async generator؟
+    if inspect.isasyncgenfunction(func):
+        # معالجة خاصة للـ async generators (دوال بها yield)
+        @functools.wraps(func)
+        async def gen_wrapper(*args: P.args, **kwargs: P.kwargs):
+            start = time.perf_counter()
+            item_count = 0
+            try:
+                # استخدام async for بدلاً من await
+                async for item in func(*args, **kwargs):
+                    item_count += 1
+                    yield item
+            finally:
+                elapsed_ms = (time.perf_counter() - start) * 1000
+                stats = _performance_registry[func.__name__]
+                stats.function_name = func.__name__
+                stats.record_call(elapsed_ms)
+                
+                logger.debug(
+                    f"🔄 Async generator {func.__name__}: "
+                    f"{item_count} items in {elapsed_ms:.2f}ms"
+                )
+                
+                if elapsed_ms > 100:  # Log slow operations
+                    logger.warning(
+                        f"⚠️ Slow async generator: {func.__name__} took {elapsed_ms:.2f}ms"
+                    )
+        
+        return gen_wrapper
+    
+    # المعالجة الاعتيادية للـ coroutines
     @functools.wraps(func)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         start = time.perf_counter()
