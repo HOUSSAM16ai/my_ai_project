@@ -217,14 +217,38 @@ class User(SQLModel, table=True):
     )
 
     def set_password(self, password: str) -> None:
+        """
+        تعيين كلمة المرور للمستخدم (تشفير وتخزين).
+        
+        Args:
+            password: كلمة المرور النصية
+        """
         self.password_hash = pwd_context.hash(password)
 
     def check_password(self, password: str) -> bool:
+        """
+        التحقق من صحة كلمة المرور.
+        
+        Args:
+            password: كلمة المرور للتحقق منها
+            
+        Returns:
+            True إذا كانت كلمة المرور صحيحة، False خلاف ذلك
+        """
         if not self.password_hash:
             return False
         return pwd_context.verify(password, self.password_hash)
 
     def verify_password(self, password: str) -> bool:
+        """
+        التحقق من صحة كلمة المرور (اسم بديل لـ check_password).
+        
+        Args:
+            password: كلمة المرور للتحقق منها
+            
+        Returns:
+            True إذا كانت كلمة المرور صحيحة، False خلاف ذلك
+        """
         return self.check_password(password)
 
     def __repr__(self):
@@ -454,6 +478,19 @@ class GeneratedPrompt(SQLModel, table=True):
 
 # Helpers
 def log_mission_event(mission: Mission, event_type: MissionEventType, payload: dict, session=None) -> None:
+    """
+    تسجيل حدث مهمة في قاعدة البيانات.
+    
+    Args:
+        mission: المهمة المراد تسجيل الحدث لها
+        event_type: نوع الحدث
+        payload: بيانات الحدث (dict)
+        session: جلسة قاعدة البيانات (اختياري)
+    
+    Note:
+        payload_json يستخدم JSONText TypeDecorator الذي يتعامل مع json.dumps() داخلياً.
+        لا تستخدم json.dumps(payload) هنا لتجنب التشفير المزدوج.
+    """
     # Note: payload_json uses JSONText TypeDecorator which handles json.dumps() internally.
     # Do NOT call json.dumps(payload) here as it would cause double encoding.
     evt = MissionEvent(mission_id=mission.id, event_type=event_type, payload_json=payload)
@@ -463,6 +500,15 @@ def log_mission_event(mission: Mission, event_type: MissionEventType, payload: d
 def update_mission_status(
     mission: Mission, status: MissionStatus, note: str | None = None, session=None
 ) -> None:
+    """
+    تحديث حالة المهمة.
+    
+    Args:
+        mission: المهمة المراد تحديثها
+        status: الحالة الجديدة
+        note: ملاحظة إضافية (اختياري)
+        session: جلسة قاعدة البيانات (اختياري)
+    """
     mission.status = status
     mission.updated_at = utc_now()
 
