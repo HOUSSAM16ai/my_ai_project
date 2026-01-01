@@ -87,6 +87,25 @@
 
 مثال متقدم مع Async Generators:
 ---------------------------------
+    ⚠️ تحذير هام (CRITICAL WARNING):
+    ---------------------------------
+    عند استخدام Async Generators، يجب تعريف execute() بـ yield وليس return!
+    
+    ❌ خطأ شائع (Common Mistake):
+        async def execute(self, context) -> AsyncGenerator:
+            result = await some_async_gen()  # ❌ TypeError!
+            return result
+    
+    ✅ الطريقة الصحيحة (Correct Way):
+        async def execute(self, context) -> AsyncGenerator:
+            async for chunk in some_async_gen():
+                yield chunk
+    
+    أو:
+        async def execute(self, context) -> AsyncGenerator:
+            yield "Chunk 1"
+            yield "Chunk 2"
+    
     class StreamingStrategy(Strategy[str, AsyncGenerator[str, None]]):
         async def can_handle(self, context: str) -> bool:
             return context.startswith("stream:")
@@ -97,7 +116,7 @@
                 await asyncio.sleep(0.1)
                 yield f"Chunk {i}: {context}"
 
-    # الاستخدام:
+    # الاستخدام (Usage):
     registry = StrategyRegistry[str, AsyncGenerator[str, None]]()
     registry.register(StreamingStrategy())
 
@@ -268,6 +287,21 @@ class Strategy(ABC, Generic[TInput, TOutput]):
         ✅ معالجة الأخطاء بشكل مناسب
         ✅ تسجيل العمليات المهمة (logging)
         ✅ إرجاع نتيجة واضحة ومحددة
+        
+        ⚠️ تحذير خاص بـ Async Generators:
+        ------------------------------------
+        إذا كان TOutput هو AsyncGenerator، يجب استخدام yield وليس return!
+        
+        ❌ خطأ: async def execute(...) -> AsyncGenerator:
+                     return some_async_gen()  # TypeError!
+        
+        ✅ صح: async def execute(...) -> AsyncGenerator:
+                    async for item in some_async_gen():
+                        yield item
+        
+        ✅ أو: async def execute(...) -> AsyncGenerator:
+                    yield "chunk 1"
+                    yield "chunk 2"
 
         Args:
             context: السياق المُعطى للمعالجة (Input context to process)
@@ -512,24 +546,34 @@ class StrategyRegistry(Generic[TInput, TOutput]):
                     )
                     
                     # تنفيذ الاستراتيجية
-                    # لا نستخدم await هنا لأن النتيجة قد تكون async generator
+                    # CRITICAL: لا نستخدم await هنا لأن النتيجة قد تكون async generator
+                    # استخدام await على async generator يسبب TypeError
                     result = strategy.execute(context)
                     
                     # معالجة أنواع النتائج المختلفة
                     
                     # 1. Async Generator - إرجاع مباشر للبث التدريجي
+                    # IMPORTANT: Async generators are NOT awaited, they're iterated with 'async for'
                     if inspect.isasyncgen(result):
                         logger.debug(
-                            f"إرجاع async generator من {strategy.__class__.__name__}"
+                            f"✅ Returning async generator from {strategy.__class__.__name__}"
                         )
                         return result
                     
-                    # 2. Coroutine - انتظار النتيجة
+                    # 2. Coroutine - انتظار النتيجة ثم التحقق مرة أخرى
+                    # The coroutine might return an async generator when awaited
                     if inspect.iscoroutine(result):
                         logger.debug(
-                            f"انتظار coroutine من {strategy.__class__.__name__}"
+                            f"⏳ Awaiting coroutine from {strategy.__class__.__name__}"
                         )
                         result = await result
+                        
+                        # Check again if the awaited result is an async generator
+                        if inspect.isasyncgen(result):
+                            logger.debug(
+                                f"✅ Coroutine returned async generator from {strategy.__class__.__name__}"
+                            )
+                            return result
                     
                     # 3. قيمة عادية - إرجاع مباشر
                     logger.info(
