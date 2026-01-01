@@ -37,7 +37,8 @@
             marks: {},
             measures: {},
             memorySnapshots: [],
-            errors: []
+            errors: [],
+            intervals: [] // Track intervals for cleanup
         },
         
         /**
@@ -102,7 +103,7 @@
          * Start memory monitoring
          */
         startMemoryMonitoring: function() {
-            setInterval(() => {
+            const intervalId = setInterval(() => {
                 if (window.performance.memory) {
                     const memory = {
                         used: window.performance.memory.usedJSHeapSize,
@@ -125,6 +126,9 @@
                     }
                 }
             }, this.config.memoryCheckInterval);
+            
+            // Store interval ID for cleanup
+            this.state.intervals.push(intervalId);
         },
         
         /**
@@ -223,6 +227,29 @@
         },
         
         /**
+         * Cleanup and destroy performance monitor
+         * CRITICAL: Call this to prevent memory leaks
+         */
+        destroy: function() {
+            // Clear all intervals
+            this.state.intervals.forEach(intervalId => {
+                clearInterval(intervalId);
+            });
+            this.state.intervals = [];
+            
+            // Clear performance data
+            this.clear();
+            
+            // Reset state
+            this.state.initialized = false;
+            this.state.memorySnapshots = [];
+            
+            if (this.config.logToConsole) {
+                console.log('[PerformanceMonitor] Destroyed and cleaned up');
+            }
+        },
+        
+        /**
          * Log current report to console
          */
         logReport: function() {
@@ -241,10 +268,27 @@
     // Export to window
     window.PerformanceMonitor = PerformanceMonitor;
     
-    // Auto-initialize if not in production
+    // Detect Codespaces environment
+    const isCodespaces = window.location.hostname.includes('github.dev') || 
+                        window.location.hostname.includes('app.github.dev') ||
+                        window.location.hostname.includes('preview.app.github.dev');
+    
+    // Auto-initialize with environment-specific settings
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         PerformanceMonitor.config.logToConsole = true;
         PerformanceMonitor.init();
+    } else if (isCodespaces) {
+        // Codespaces: Less aggressive monitoring to conserve resources
+        PerformanceMonitor.config.logToConsole = false;
+        PerformanceMonitor.config.memoryCheckInterval = 30000; // 30 seconds (increased from 10)
+        PerformanceMonitor.init();
     }
+    
+    // CRITICAL: Cleanup on page unload to prevent memory leaks
+    window.addEventListener('beforeunload', () => {
+        if (PerformanceMonitor.state.initialized) {
+            PerformanceMonitor.destroy();
+        }
+    });
     
 })(window);
