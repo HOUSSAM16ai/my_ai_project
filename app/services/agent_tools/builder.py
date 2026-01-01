@@ -4,6 +4,8 @@ Tool builder with fluent interface.
 BEFORE: Complex decorator with CC = 25
 AFTER: Simple builder with CC = 2
 """
+from typing import Any
+
 from collections.abc import Callable
 
 from app.core.patterns.builder import FluentBuilder

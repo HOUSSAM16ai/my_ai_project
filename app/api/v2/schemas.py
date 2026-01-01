@@ -2,6 +2,8 @@
 API schemas with validation.
 """
 
+from typing import Any
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field, validator

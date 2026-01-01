@@ -1,6 +1,8 @@
 """
 Service registry for service discovery.
 """
+from typing import Any
+
 import asyncio
 import logging
 from dataclasses import dataclass, field

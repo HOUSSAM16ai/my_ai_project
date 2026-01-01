@@ -1,6 +1,8 @@
 """
 Domain tools for project metrics and file system statistics.
 """
+from typing import Any
+
 import os
 import subprocess
 from pathlib import Path

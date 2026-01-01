@@ -3,7 +3,7 @@
 Data models for the LLM Client service.
 """
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 

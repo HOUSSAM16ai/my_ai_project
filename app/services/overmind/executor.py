@@ -8,6 +8,8 @@
 - SICP: Abstraction Barriers (لا يعرف تفاصيل التسجيل، فقط يستقبله).
 """
 
+from typing import Any
+
 import asyncio
 import json
 import logging

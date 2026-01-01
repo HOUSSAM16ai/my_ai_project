@@ -12,6 +12,8 @@ Design Pattern: Template Method + Strategy Pattern
 Architecture: Plugin-based with lifecycle hooks
 """
 
+from typing import Any
+
 from abc import ABC, abstractmethod
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint

@@ -14,6 +14,8 @@
         def __init__(self, repo: RepositoryProtocol):
             self.repo = repo  # يعمل مع أي تطبيق للبروتوكول
 """
+from typing import Any
+
 from collections.abc import AsyncGenerator
 from typing import Protocol, runtime_checkable
 

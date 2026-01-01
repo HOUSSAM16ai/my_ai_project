@@ -7,6 +7,8 @@ Base class فائق الذكاء لتوحيد telemetry/profiler duplications
 This eliminates the catastrophic duplication found in overmind/planning/telemetry.py
 """
 
+from typing import Any
+
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Generic, TypeVar

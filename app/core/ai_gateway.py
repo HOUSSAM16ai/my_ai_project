@@ -14,6 +14,8 @@
     response = await client.generate("prompt")
 """
 
+from typing import Any
+
 import logging
 
 from app.core.gateway.circuit_breaker import CircuitBreaker, CircuitState

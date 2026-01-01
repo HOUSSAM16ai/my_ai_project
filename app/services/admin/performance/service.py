@@ -15,6 +15,8 @@ Features:
 - User experience metrics
 - Automatic optimization suggestions
 """
+from typing import Any
+
 import logging
 import time
 from collections import defaultdict, deque

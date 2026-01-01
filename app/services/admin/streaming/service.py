@@ -22,6 +22,8 @@ CORE CAPABILITIES:
 5. Multi-model routing (fast/reasoning models)
 """
 
+from typing import Any
+
 import asyncio
 import json
 import logging

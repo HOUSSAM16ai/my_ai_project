@@ -7,6 +7,7 @@
 
 Configuration model for middleware system.
 """
+from typing import Any
 
 class MiddlewareSettings:
     """

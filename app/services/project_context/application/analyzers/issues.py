@@ -4,6 +4,8 @@ Issue Analyzer
 Detects code issues and smells.
 """
 
+from typing import Any
+
 import ast
 import re
 from dataclasses import dataclass

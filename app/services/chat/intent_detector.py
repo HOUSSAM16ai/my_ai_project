@@ -2,6 +2,8 @@
 Intent detection service.
 """
 
+from typing import Any
+
 import re
 from dataclasses import dataclass
 from enum import Enum

@@ -4,6 +4,8 @@
 Collects security-related metrics, events, and audit logs.
 Integrates with observability systems for security monitoring.
 """
+from typing import Any
+
 import time
 
 from app.middleware.core.base_middleware import BaseMiddleware

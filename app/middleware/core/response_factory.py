@@ -4,7 +4,7 @@ Response Factory - FastAPI Optimized
 Creates HTTP responses for FastAPI.
 Refactored to remove Django/Flask/ASGI fallback complexity.
 """
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from fastapi.responses import JSONResponse
 

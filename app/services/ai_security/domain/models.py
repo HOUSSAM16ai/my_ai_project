@@ -6,6 +6,8 @@ Pure business entities with zero external dependencies.
 نماذج المجال الأمني - كيانات نقية بدون تبعيات خارجية
 """
 
+from typing import Any
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum

@@ -11,6 +11,8 @@
 - فصل كامل للمسؤوليات (Delegation to Orchestrator).
 """
 
+from typing import Any
+
 import json
 from collections.abc import AsyncGenerator, Callable
 

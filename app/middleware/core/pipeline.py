@@ -12,6 +12,8 @@ Design Pattern: Chain of Responsibility + Pipeline Pattern
 Architecture: Sequential execution with short-circuit capability
 """
 
+from typing import Any
+
 import time
 from collections.abc import Awaitable, Callable
 

@@ -1,6 +1,8 @@
 """
 Analysis Context - Shared state for analysis pipeline.
 """
+from typing import Any
+
 from dataclasses import dataclass, field
 from pathlib import Path
 

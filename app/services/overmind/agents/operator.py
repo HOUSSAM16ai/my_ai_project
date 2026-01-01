@@ -11,6 +11,8 @@
 - استخدام واجهات صارمة.
 """
 
+from typing import Any
+
 import json
 
 from app.core.di import get_logger

@@ -11,6 +11,8 @@ Enables consistent error handling and flow control across the pipeline.
 Design Pattern: Result Pattern (Railway-Oriented Programming)
 """
 
+from typing import Any
+
 from dataclasses import dataclass, field
 
 @dataclass

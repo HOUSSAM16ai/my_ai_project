@@ -4,6 +4,8 @@ Hyper-Dispatch & Introspection Tools
 Meta-tools for tool management and dynamic invocation.
 """
 
+from typing import Any
+
 from .core import (
     canonicalize_tool_name,
     resolve_tool_name,
