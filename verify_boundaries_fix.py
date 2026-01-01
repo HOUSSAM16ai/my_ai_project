@@ -3,7 +3,7 @@
 Verification Script for ModuleNotFoundError Fix
 ================================================
 
-This script verifies that the fix for the 'ModuleNotFoundError: No module named app.boundaries'
+This script verifies that the fix for the 'ModuleNotFoundError: No module named app.services.boundaries'
 issue is working correctly by testing all import paths.
 
 Tests:
@@ -45,11 +45,17 @@ def test_package_structure():
             print(f"❌ FAILED: Syntax error in __init__.py: {e}")
             return False
     
-    # Check __all__ exports
-    import re
-    all_match = re.search(r'__all__\s*=\s*\[(.*?)\]', code, re.DOTALL)
-    if all_match:
-        exports = [s.strip().strip('"').strip("'") for s in all_match.group(1).split(',') if s.strip()]
+    # Check __all__ exports using AST
+    tree = ast.parse(code)
+    exports = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == '__all__':
+                    if isinstance(node.value, ast.List):
+                        exports = [elt.value for elt in node.value.elts if isinstance(elt, ast.Constant)]
+    
+    if exports:
         print(f"✅ __all__ exports: {exports}")
         
         expected = ['AdminChatBoundaryService', 'AuthBoundaryService', 
