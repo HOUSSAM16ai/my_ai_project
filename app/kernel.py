@@ -13,7 +13,7 @@
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, Final
+from typing import Final
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -46,11 +46,11 @@ type MiddlewareSpec = tuple[type[BaseHTTPMiddleware] | type[ASGIApp] | Any, dict
 # تعريف نوع RouterSpec: (الموجه، البادئة)
 type RouterSpec = tuple[APIRouter, str]
 
-
 # ==============================================================================
 # SICP: Functional Core (الجوهر الوظيفي)
 # ==============================================================================
 
+# TODO: Split this function (44 lines) - KISS principle
 def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
     """
     تكوين قائمة البرمجيات الوسيطة كبيانات وصفية (Declarative Data).
@@ -97,7 +97,6 @@ def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
 
     return stack
 
-
 def _get_router_registry() -> list[RouterSpec]:
     """
     سجل الموجهات (Router Registry) كبيانات.
@@ -116,7 +115,6 @@ def _get_router_registry() -> list[RouterSpec]:
         (overmind.router, ""),
     ]
 
-
 def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
     """
     Combinator: تطبيق قائمة الميدل وير على التطبيق.
@@ -125,7 +123,6 @@ def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
         app.add_middleware(mw_cls, **mw_options)
     return app
 
-
 def _mount_routers(app: FastAPI, registry: list[RouterSpec]) -> FastAPI:
     """
     Combinator: ربط الموجهات بالتطبيق.
@@ -133,7 +130,6 @@ def _mount_routers(app: FastAPI, registry: list[RouterSpec]) -> FastAPI:
     for router, prefix in registry:
         app.include_router(router, prefix=prefix)
     return app
-
 
 # ==============================================================================
 # The Evaluator (مُنفذ النظام)
@@ -164,11 +160,9 @@ class RealityKernel:
         # بناء التطبيق فور الإنشاء
         self.app: Final[FastAPI] = self._construct_app()
 
-
     def get_app(self) -> FastAPI:
         """Returns the constructed application."""
         return self.app
-
 
     def _construct_app(self) -> FastAPI:
         """
@@ -200,7 +194,6 @@ class RealityKernel:
 
         return app
 
-
     def _create_base_app_instance(self) -> FastAPI:
         """
         إنشاء مثيل FastAPI الخام مع مدير دورة الحياة.
@@ -220,7 +213,6 @@ class RealityKernel:
             redoc_url="/redoc" if is_dev else None,
             lifespan=lifespan,
         )
-
 
     async def _handle_lifespan_events(self) -> AsyncGenerator[None, None]:
         """

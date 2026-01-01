@@ -3,7 +3,6 @@ from pydantic import Field
 
 from app.core.schemas import RobustBaseModel
 
-
 class GenericResourceResponse(RobustBaseModel):
     """
     نموذج استجابة عام للموارد.
@@ -12,7 +11,6 @@ class GenericResourceResponse(RobustBaseModel):
     id: str | int | None = Field(None, description="معرف المورد")
     # بما أن الموارد عامة، لا يمكننا تحديد حقول دقيقة، لكن نستخدم هذا النموذج كقاعدة.
     # الحقول الفعلية ستأتي من البيانات الديناميكية.
-
 
 class PaginatedResponse[T](RobustBaseModel):
     """

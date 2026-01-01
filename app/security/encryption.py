@@ -15,10 +15,8 @@ Preparation for quantum computing era:
 import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 from cryptography.fernet import Fernet
-
 
 @dataclass
 class EncryptionKey:
@@ -30,7 +28,6 @@ class EncryptionKey:
     created_at: datetime
     expires_at: datetime
     rotation_count: int = 0
-
 
 class QuantumSafeEncryption:
     """
@@ -119,7 +116,7 @@ class QuantumSafeEncryption:
 
         return key_id
 
-    def rotate_keys(self):
+    def rotate_keys(self) -> None:
         """Rotate encryption keys"""
         # Generate new key
         new_key_id = self._generate_new_key()

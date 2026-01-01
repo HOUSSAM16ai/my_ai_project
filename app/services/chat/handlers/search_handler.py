@@ -11,7 +11,6 @@ from app.services.chat.security import ErrorSanitizer
 
 logger = logging.getLogger(__name__)
 
-
 async def handle_code_search(
     context: ChatContext,
     query: str,

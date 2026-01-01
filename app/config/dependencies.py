@@ -3,7 +3,6 @@
 from .settings import AppSettings
 from .settings import get_settings as get_cached_settings
 
-
 def get_settings() -> AppSettings:
     """
     Dependency injection entry point for accessing application settings.

@@ -15,7 +15,6 @@ from app.services.overmind.factory import create_overmind
 
 logger = logging.getLogger(__name__)
 
-
 class IntentHandler(Strategy[ChatContext, AsyncGenerator[str, None]]):
     """Base intent handler."""
 
@@ -30,7 +29,6 @@ class IntentHandler(Strategy[ChatContext, AsyncGenerator[str, None]]):
     @property
     def priority(self) -> int:
         return self._priority
-
 
 class FileReadHandler(IntentHandler):
     """Handle file read requests."""
@@ -69,7 +67,6 @@ class FileReadHandler(IntentHandler):
         with open(path, encoding="utf-8") as f:
             return f.read()
 
-
 class FileWriteHandler(IntentHandler):
     """Handle file write requests."""
 
@@ -86,7 +83,6 @@ class FileWriteHandler(IntentHandler):
 
         yield f"📝 لإنشاء ملف `{path}`، يرجى تحديد المحتوى.\n"
         yield "يمكنك كتابة المحتوى في الرسالة التالية.\n"
-
 
 class CodeSearchHandler(IntentHandler):
     """Handle code search requests."""
@@ -118,7 +114,6 @@ class CodeSearchHandler(IntentHandler):
         logger.info(f"Code search: {query}", extra={"user_id": user_id})
         return []
 
-
 class ProjectIndexHandler(IntentHandler):
     """Handle project indexing requests."""
 
@@ -139,7 +134,6 @@ class ProjectIndexHandler(IntentHandler):
         logger.info("Project indexing started", extra={"user_id": user_id})
         return {"files": 0, "lines": 0}
 
-
 class DeepAnalysisHandler(IntentHandler):
     """Handle deep analysis requests."""
 
@@ -157,7 +151,6 @@ class DeepAnalysisHandler(IntentHandler):
     async def _analyze(self, question: str, ai_client) -> str:
         """Perform deep analysis."""
         return "تحليل عميق (قيد التطوير)"
-
 
 class MissionComplexHandler(IntentHandler):
     """
@@ -241,7 +234,6 @@ class MissionComplexHandler(IntentHandler):
 
         yield "\n✅ **تم انتهاء متابعة المهمة.**\n"
 
-
     async def _run_mission_bg(self, mission_id: int, session_factory):
         """
         Runs the Overmind mission in a background task with its own session.
@@ -270,7 +262,6 @@ class MissionComplexHandler(IntentHandler):
         except Exception:
             return "ℹ️ حدث جديد...\n"
 
-
 class HelpHandler(IntentHandler):
     """Handle help requests."""
 
@@ -286,7 +277,6 @@ class HelpHandler(IntentHandler):
         yield "- البحث: `ابحث عن query`\n"
         yield "- فهرسة: `فهرس المشروع`\n"
         yield "- مهمة معقدة: (أي سؤال معقد سيتم تحويله للوكيل الخارق)\n"
-
 
 class DefaultChatHandler(IntentHandler):
     """Default chat handler (fallback)."""

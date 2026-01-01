@@ -5,18 +5,16 @@ Bulkhead pattern for resource isolation.
 import asyncio
 import logging
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import TypeVar
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-
 class BulkheadFullError(Exception):
     """Raised when bulkhead is at capacity."""
 
     pass
-
 
 class Bulkhead:
     """

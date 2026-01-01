@@ -14,11 +14,9 @@ Architecture: Immutable data structure
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
 from uuid import uuid4
 
 from fastapi import Request
-
 
 @dataclass
 class RequestContext:
@@ -50,7 +48,7 @@ class RequestContext:
     # Request data
     headers: dict[str, str] = field(default_factory=dict)
     query_params: dict[str, Any] = field(default_factory=dict)
-    body: Any = None
+    body: dict[str, str | int | bool] = None
 
     # Client information
     ip_address: str = "unknown"
@@ -111,7 +109,7 @@ class RequestContext:
         """Add arbitrary metadata to context"""
         self.metadata[key] = value
 
-    def get_metadata(self, key: str, default: Any = None) -> dict[str, str | int | bool]:
+    def get_metadata(self, key: str, default: dict[str, str | int | bool] = None) -> dict[str, str | int | bool]:
         """Retrieve metadata from context"""
         return self.metadata.get(key, default)
 

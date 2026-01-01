@@ -9,12 +9,9 @@ Bridge to external observability platforms like OpenTelemetry,
 Prometheus, Datadog, etc.
 """
 
-from typing import Any
-
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
-
 
 class TelemetryBridge(BaseMiddleware):
     """
@@ -85,7 +82,7 @@ class TelemetryBridge(BaseMiddleware):
 
         return MiddlewareResult.success()
 
-    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+    def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
         """
         Export telemetry data
 

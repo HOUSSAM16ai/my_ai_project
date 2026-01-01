@@ -7,7 +7,6 @@ import os
 import random
 import time
 from collections.abc import Callable, Generator
-from typing import Any
 
 from app.core.logging import get_logger
 from app.services.llm_client.application.circuit_breaker import CircuitBreaker
@@ -22,15 +21,13 @@ _LOG = get_logger(__name__)
 _PRE_HOOKS: list[Callable[[LLMPayload], None]] = []
 _POST_HOOKS: list[Callable[[LLMPayload, LLMResponseEnvelope], None]] = []
 
-
 def register_llm_pre_hook(fn: Callable[[LLMPayload], None]) -> None:
     _PRE_HOOKS.append(fn)
-
 
 def register_llm_post_hook(fn: Callable[[LLMPayload, LLMResponseEnvelope], None]) -> None:
     _POST_HOOKS.append(fn)
 
-
+# TODO: Split this function (164 lines) - KISS principle
 def invoke_chat(
     model: str,
     messages: list[dict[str, str]],
@@ -84,6 +81,7 @@ def invoke_chat(
     start_ts = time.time()
     retry_schedule: list[float] = []
 
+    # TODO: Split this function (77 lines) - KISS principle
     # 5. Execution Function
     def _execute() -> LLMResponseEnvelope:
         attempts = 0
@@ -197,7 +195,6 @@ def invoke_chat(
 
     return _stream_generator()
 
-
-def invoke_chat_stream(*args, **kwargs):
+def invoke_chat_stream(*args, **kwargs) -> None:
     kwargs["stream"] = True
     return invoke_chat(*args, **kwargs)

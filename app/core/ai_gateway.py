@@ -15,7 +15,6 @@
 """
 
 import logging
-from typing import Any
 
 from app.core.gateway.circuit_breaker import CircuitBreaker, CircuitState
 from app.core.gateway.connection import ConnectionManager
@@ -56,29 +55,27 @@ __all__ = [
 logger = logging.getLogger(__name__)
 _performance_optimizer = get_performance_optimizer()
 
-
 def get_performance_report() -> dict[str, "Any"]:
     """
     الحصول على تقرير أداء شامل من محسن الأداء.
-    
+
     يفوض العملية إلى خدمة المحسن (Optimizer Service).
-    
+
     Returns:
         تقرير مفصل عن أداء النماذج المختلفة
     """
     return _performance_optimizer.get_detailed_report()
 
-
 def get_recommended_model(available_models: list[str], context: str = "") -> str:
     """
     الحصول على النموذج الموصى به بناءً على الأداء التاريخي.
-    
+
     يستخدم الذكاء الاصطناعي لاختيار أفضل نموذج بناءً على السياق والأداء السابق.
-    
+
     Args:
         available_models: قائمة النماذج المتاحة
         context: السياق الحالي (اختياري)
-        
+
     Returns:
         اسم النموذج الموصى به
     """

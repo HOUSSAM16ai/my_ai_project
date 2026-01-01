@@ -14,7 +14,6 @@ from dataclasses import dataclass, field
 
 from app.core.math.hyper_flux import HyperFluxCapacitor
 
-
 @dataclass
 class KalmanFilter:
     """
@@ -29,7 +28,7 @@ class KalmanFilter:
     flux_capacitor: HyperFluxCapacitor = field(default_factory=
         HyperFluxCapacitor)
 
-    def predict(self):
+    def predict(self) -> None:
         """
         Time Update (Predict).
         """

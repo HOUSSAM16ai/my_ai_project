@@ -7,13 +7,12 @@ from __future__ import annotations
 
 import threading
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from app.services.serving.domain.models import ShadowDeployment
 
 if TYPE_CHECKING:
     pass
-
 
 class ShadowDeploymentManager:
     """
@@ -50,6 +49,7 @@ class ShadowDeploymentManager:
             self._shadow_deployments[shadow_id] = deployment
         return shadow_id
 
+    # TODO: Split this function (33 lines) - KISS principle
     def get_shadow_deployment_stats(self, shadow_id: str) ->(dict[str, Any] |
         None):
         """

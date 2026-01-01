@@ -6,9 +6,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.telemetry.unified_observability import TraceContext, get_unified_observability
 
-
 class FastAPIObservabilityMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next) -> None:
         obs = get_unified_observability()
         parent_context = TraceContext.from_headers(dict(request.headers))
         operation_name = f"{request.method} {request.url.path}"

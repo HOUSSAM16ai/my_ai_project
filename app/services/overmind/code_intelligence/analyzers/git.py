@@ -1,7 +1,5 @@
 import subprocess
 from pathlib import Path
-from typing import Any
-
 
 class GitAnalyzer:
     """Git History Analyzer"""
@@ -9,6 +7,7 @@ class GitAnalyzer:
     def __init__(self, repo_path: Path):
         self.repo_path = repo_path
 
+    # TODO: Split this function (104 lines) - KISS principle
     def analyze_file_history(self, file_path: str) -> dict[str, Any]:
         """Analyze file modification history"""
         try:

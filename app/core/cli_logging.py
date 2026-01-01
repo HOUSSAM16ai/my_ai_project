@@ -3,8 +3,7 @@
 import logging
 import sys
 
-
-def create_logger(settings):
+def create_logger(settings) -> None:
     """Creates a logger."""
     logger = logging.getLogger("cogniforge.cli")
     logger.setLevel(settings.LOG_LEVEL)

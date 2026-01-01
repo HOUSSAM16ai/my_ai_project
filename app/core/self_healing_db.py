@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
@@ -17,7 +16,6 @@ logger = logging.getLogger(__name__)
 _SAFE_IDENTIFIER = re.compile('^[a-zA-Z_][a-zA-Z0-9_]{0,62}$')
 _ALLOWED_TABLES = frozenset({'admin_conversations', 'admin_messages'})
 
-
 def _validate_table_name(name: str) ->str:
     if name not in _ALLOWED_TABLES:
         raise ValueError(f"Table '{name}' is not in the allowed whitelist")
@@ -25,12 +23,10 @@ def _validate_table_name(name: str) ->str:
         raise ValueError(f'Invalid table name: {name}')
     return name
 
-
 def _validate_column_name(name: str) ->str:
     if not _SAFE_IDENTIFIER.match(name):
         raise ValueError(f'Invalid column name: {name}')
     return name
-
 
 class ColumnType(Enum):
     INTEGER = 'INTEGER'
@@ -40,7 +36,6 @@ class ColumnType(Enum):
     TIMESTAMP = 'TIMESTAMP WITH TIME ZONE'
     JSON = 'JSONB'
     FLOAT = 'FLOAT'
-
 
 @dataclass
 class ColumnDefinition:
@@ -53,7 +48,6 @@ class ColumnDefinition:
     def __post_init__(self):
         _validate_column_name(self.name)
 
-
 @dataclass
 class TableSchema:
     name: str
@@ -61,7 +55,6 @@ class TableSchema:
 
     def __post_init__(self):
         _validate_table_name(self.name)
-
 
 REQUIRED_SCHEMA: dict[str, TableSchema] = {'admin_conversations':
     TableSchema(name='admin_conversations', columns=[ColumnDefinition('id',
@@ -77,7 +70,6 @@ REQUIRED_SCHEMA: dict[str, TableSchema] = {'admin_conversations':
     index=True), ColumnDefinition('role', ColumnType.TEXT, nullable=False),
     ColumnDefinition('content', ColumnType.TEXT, nullable=False),
     ColumnDefinition('created_at', ColumnType.TIMESTAMP, nullable=True)])}
-
 
 class SQLGenerator:
 
@@ -110,7 +102,6 @@ class SQLGenerator:
             'SELECT column_name FROM information_schema.columns WHERE table_name = :table_name'
             , {'table_name': table})
 
-
 @dataclass
 class HealingOperation:
     table: str
@@ -120,7 +111,6 @@ class HealingOperation:
     success: bool = False
     error: str | None = None
     timestamp: datetime = field(default_factory=lambda : datetime.now(UTC))
-
 
 @dataclass
 class HealingReport:
@@ -132,7 +122,6 @@ class HealingReport:
     errors: list[str] = field(default_factory=list)
     status: str = 'pending'
 
-
 class ExecutionStrategy(ABC):
     """Abstract base class for Unified Database Execution."""
 
@@ -141,13 +130,12 @@ class ExecutionStrategy(ABC):
         ...
 
     @abstractmethod
-    async def commit(self):
+    async def commit(self) -> None:
         ...
 
     @abstractmethod
-    async def close(self):
+    async def close(self) -> None:
         ...
-
 
 class AsyncStrategy(ExecutionStrategy):
 
@@ -157,12 +145,11 @@ class AsyncStrategy(ExecutionStrategy):
     async def execute(self, sql: str, params: (dict | None)=None) ->Any:
         return await self.conn.execute(text(sql), params or {})
 
-    async def commit(self):
+    async def commit(self) -> None:
         await self.conn.commit()
 
-    async def close(self):
+    async def close(self) -> None:
         pass
-
 
 class SyncStrategy(ExecutionStrategy):
 
@@ -172,12 +159,11 @@ class SyncStrategy(ExecutionStrategy):
     async def execute(self, sql: str, params: (dict | None)=None) ->Any:
         return self.conn.execute(text(sql), params or {})
 
-    async def commit(self):
+    async def commit(self) -> None:
         self.conn.commit()
 
-    async def close(self):
+    async def close(self) -> None:
         pass
-
 
 class SelfHealingEngine:
     """
@@ -327,9 +313,7 @@ class SelfHealingEngine:
         return {'healed': False, 'action': 'log_only', 'suggestion':
             'No specific fix found.'}
 
-
 _healing_engine: SelfHealingEngine | None = None
-
 
 def get_healing_engine() ->SelfHealingEngine:
     global _healing_engine
@@ -337,7 +321,6 @@ def get_healing_engine() ->SelfHealingEngine:
         from app.core.database import engine
         _healing_engine = SelfHealingEngine(engine)
     return _healing_engine
-
 
 def run_self_healing_sync(auto_fix: bool=True) ->HealingReport:
     engine = get_healing_engine()

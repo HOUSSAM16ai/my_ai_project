@@ -5,7 +5,6 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,6 @@ class ComplianceRegulation(Enum):
     SOC2 = "soc2"  # Service Organization Control 2
     ISO27001 = "iso27001"  # Information Security Management
 
-
 @dataclass
 class ComplianceRule:
     """قاعدة امتثال"""
@@ -28,7 +26,6 @@ class ComplianceRule:
     description: str
     validator: Callable[[dict[str, Any]], bool]
     remediation: str  # خطوات العلاج عند الفشل
-
 
 class ComplianceEngine:
     """

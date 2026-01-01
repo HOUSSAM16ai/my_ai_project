@@ -10,7 +10,6 @@ from .models import (
     TelemetryData,
 )
 
-
 class TelemetryRepository(Protocol):
     def add(self, data: TelemetryData) -> None: ...
     def get_by_service(self, service_name: str, metric_type: MetricType) -> list[TelemetryData]: ...

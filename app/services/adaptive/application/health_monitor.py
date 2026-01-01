@@ -12,7 +12,6 @@ from collections import defaultdict
 
 from app.services.adaptive.domain.models import ServiceHealth, ServiceMetrics
 
-
 class PredictiveHealthMonitor:
     """
     نظام مراقبة صحة تنبؤي يكتشف المشاكل قبل حدوثها
@@ -22,6 +21,7 @@ class PredictiveHealthMonitor:
         self.health_patterns = defaultdict(list)
         self.anomaly_threshold = 2.5  # Standard deviations
 
+    # TODO: Split this function (45 lines) - KISS principle
     def analyze_health(
         self, service_name: str, current_metrics: ServiceMetrics
     ) -> tuple[ServiceHealth, list[str]]:
@@ -68,6 +68,7 @@ class PredictiveHealthMonitor:
             return ServiceHealth.DEGRADED, warnings
 
         return ServiceHealth.HEALTHY, []
+# TODO: Split this function (37 lines) - KISS principle
 
     def _detect_anomalies(self, service_name: str, current_metrics: ServiceMetrics) -> list[str]:
         """
@@ -106,6 +107,7 @@ class PredictiveHealthMonitor:
                         f"(mean={mean:.1f}, z-score={z_score:.1f})"
                     )
 
+        # TODO: Split this function (43 lines) - KISS principle
         return anomalies
 
     def predict_failure(

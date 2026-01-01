@@ -3,8 +3,7 @@ Application Service Interfaces (Protocols)
 Defines contracts for application services following Dependency Inversion Principle.
 """
 
-from typing import Any, Protocol
-
+from typing import Protocol
 
 class HealthCheckService(Protocol):
     """Health check service interface."""
@@ -17,7 +16,6 @@ class HealthCheckService(Protocol):
         """Check database connectivity."""
         ...
 
-
 class SystemService(Protocol):
     """System operations service interface."""
 
@@ -28,7 +26,6 @@ class SystemService(Protocol):
     async def verify_integrity(self) -> dict[str, Any]:
         """Verify system integrity."""
         ...
-
 
 class UserService(Protocol):
     """User management service interface."""

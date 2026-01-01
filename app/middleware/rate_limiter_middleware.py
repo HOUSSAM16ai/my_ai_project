@@ -24,10 +24,8 @@ try:
 except ImportError:
     FASTAPI_AVAILABLE = False
 
-
     class Request:
         pass
-
 
     class HTTPException(Exception):
 
@@ -38,7 +36,6 @@ except ImportError:
             self.headers = headers or {}
             super().__init__(detail)
 logger = logging.getLogger(__name__)
-
 
 class TokenBucketRateLimiter:
     """
@@ -123,15 +120,14 @@ class TokenBucketRateLimiter:
             )
         return False, metadata
 
-
 _rate_limiters: dict[str, TokenBucketRateLimiter] = {'default':
     TokenBucketRateLimiter(max_requests=100, window_seconds=60), 'strict':
     TokenBucketRateLimiter(max_requests=20, window_seconds=60), 'lenient':
     TokenBucketRateLimiter(max_requests=300, window_seconds=60)}
 
-
+# TODO: Split this function (37 lines) - KISS principle
 def rate_limit(max_requests: int=100, window_seconds: int=60, limiter_key:
-    str='default'):
+    str='default') -> None:
     """
     Decorator for rate limiting endpoints.
 
@@ -151,10 +147,10 @@ def rate_limit(max_requests: int=100, window_seconds: int=60, limiter_key:
             max_requests, window_seconds=window_seconds)
     limiter = _rate_limiters[limiter_key]
 
-    def decorator(func: Callable):
+    def decorator(func: Callable) -> None:
 
         @wraps(func)
-        async def wrapper(request: Request, *args, **kwargs):
+        async def wrapper(request: Request, *args, **kwargs) -> None:
             allowed, metadata = limiter.is_allowed(request)
             if not allowed:
                 headers = {'X-RateLimit-Limit': str(limiter.max_requests),
@@ -169,10 +165,8 @@ def rate_limit(max_requests: int=100, window_seconds: int=60, limiter_key:
         return wrapper
     return decorator
 
-
 def get_rate_limiter(limiter_key: str='default') ->TokenBucketRateLimiter:
     """Get a rate limiter instance by key."""
     return _rate_limiters.get(limiter_key, _rate_limiters['default'])
-
 
 __all__ = ['TokenBucketRateLimiter', 'get_rate_limiter', 'rate_limit']

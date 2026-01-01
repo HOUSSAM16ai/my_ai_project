@@ -5,7 +5,6 @@ import threading
 import time
 import uuid
 from collections import deque
-from typing import Any
 
 from fastapi import Request
 
@@ -27,6 +26,7 @@ class TracingManager:
         # Dependency tracking
         self.service_dependencies: dict[str, set[str]] = {} # Will be re-computed or updated
 
+    # TODO: Split this function (49 lines) - KISS principle
     def start_trace(self, operation_name: str, parent_context: TraceContext | None = None,
                     tags: dict[str, Any] | None = None, request: Request | None = None) -> TraceContext:
         if parent_context:
@@ -77,6 +77,7 @@ class TracingManager:
             request.state.current_span_id = span_id
 
         return context
+# TODO: Split this function (38 lines) - KISS principle
 
     def end_span(self, span_id: str, status: str = 'OK', error_message: str | None = None,
                  metrics: dict[str, float] | None = None) -> UnifiedTrace | None:
@@ -118,7 +119,7 @@ class TracingManager:
             del self.active_spans[span_id]
             return completed_trace
 
-    def add_span_event(self, span_id: str, event_name: str, attributes: dict[str, Any] | None = None):
+    def add_span_event(self, span_id: str, event_name: str, attributes: dict[str, Any] | None = None) -> None:
         with self.lock:
             if span_id in self.active_spans:
                 event = {

@@ -6,7 +6,6 @@ import ast
 
 from .context import AnalysisContext
 
-
 class FileReadStep:
     """
     Reads file content from disk.
@@ -21,7 +20,6 @@ class FileReadStep:
         except Exception as e:
             context.add_error(f"Failed to read file: {e}")
         return context
-
 
 class ParseStep:
     """
@@ -42,7 +40,6 @@ class ParseStep:
         except Exception as e:
             context.add_error(f"Parse error: {e}")
         return context
-
 
 class ComplexityAnalysisStep:
     """
@@ -74,7 +71,6 @@ class ComplexityAnalysisStep:
             "functions": functions,
             "lines": lines,
         }
-
 
 class FormatStep:
     """

@@ -10,7 +10,6 @@ from .core import tool
 from .definitions import _MEMORY_ALLOWLIST, ToolResult
 from .globals import _MEMORY_LOCK, _MEMORY_STORE
 
-
 @tool(
     name="memory_put",
     description="Store a small JSON-serializable string under a key (ephemeral).",
@@ -39,7 +38,6 @@ def memory_put(key: str, value: str) -> ToolResult:
     with _MEMORY_LOCK:
         _MEMORY_STORE[key] = value
     return ToolResult(ok=True, data={"stored": True, "key": key})
-
 
 @tool(
     name="memory_get",

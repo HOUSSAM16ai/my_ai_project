@@ -8,7 +8,7 @@ from .reporters.html_reporter import generate_heatmap_html
 from .reporters.json_reporter import save_json_report
 from .reporters.markdown_reporter import generate_markdown_report
 
-
+# TODO: Split this function (54 lines) - KISS principle
 def main() -> None:
     """Main entry point"""
     parser = argparse.ArgumentParser(

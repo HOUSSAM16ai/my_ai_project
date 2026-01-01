@@ -4,8 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-
-async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> None:
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -16,8 +15,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         },
     )
 
-
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> None:
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
@@ -28,8 +26,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         },
     )
 
-
-async def general_exception_handler(request: Request, exc: Exception):
+async def general_exception_handler(request: Request, exc: Exception) -> None:
     return JSONResponse(
         status_code=500,
         content={
@@ -40,8 +37,7 @@ async def general_exception_handler(request: Request, exc: Exception):
         },
     )
 
-
-def add_error_handlers(app):
+def add_error_handlers(app) -> None:
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(Exception, general_exception_handler)

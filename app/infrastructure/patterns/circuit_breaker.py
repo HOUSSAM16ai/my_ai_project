@@ -5,10 +5,9 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import wraps
-from typing import Any, TypeVar
+from typing import TypeVar
 
 T = TypeVar("T")
-
 
 class CircuitState(Enum):
     """Circuit breaker states."""
@@ -16,7 +15,6 @@ class CircuitState(Enum):
     CLOSED = auto()  # Normal operation
     OPEN = auto()  # Failing, reject requests
     HALF_OPEN = auto()  # Testing if service recovered
-
 
 @dataclass
 class CircuitBreakerConfig:
@@ -27,10 +25,8 @@ class CircuitBreakerConfig:
     timeout_seconds: float = 60.0
     expected_exception: type[Exception] = Exception
 
-
 class CircuitBreakerError(Exception):
     """Circuit breaker is open."""
-
 
 class CircuitBreaker:
     """Circuit breaker for fault tolerance."""
@@ -83,7 +79,7 @@ class CircuitBreaker:
         """Check if enough time passed to attempt reset."""
         return (time.time() - self.last_failure_time) >= self.config.timeout_seconds
 
-    def reset(self):
+    def reset(self) -> None:
         """Manually reset circuit breaker."""
         self.state = CircuitState.CLOSED
         self.failure_count = 0
@@ -93,12 +89,11 @@ class CircuitBreaker:
         """Get current state."""
         return self.state
 
-
 def circuit_breaker(
     failure_threshold: int = 5,
     timeout_seconds: float = 60.0,
     expected_exception: type[Exception] = Exception,
-):
+) -> None:
     """Decorator for circuit breaker pattern."""
 
     def decorator(func: Callable[..., T]) -> Callable[..., T]:

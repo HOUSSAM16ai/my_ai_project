@@ -4,11 +4,9 @@ from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)
-
 
 @dataclass
 class Event:
@@ -19,7 +17,6 @@ class Event:
     timestamp: datetime = field(default_factory=lambda : datetime.now(UTC))
     metadata: dict[str, Any] = field(default_factory=dict)
 
-
 class EventBus:
     """Event bus for publish-subscribe pattern."""
 
@@ -29,19 +26,19 @@ class EventBus:
         self._event_history: list[Event] = []
         self._max_history = 1000
 
-    def subscribe(self, event_type: str, handler: Callable[[Event], None]):
+    def subscribe(self, event_type: str, handler: Callable[[Event], None]) -> None:
         """Subscribe to event type."""
         self._subscribers[event_type].append(handler)
         logger.debug(f'Subscribed handler to {event_type}')
 
-    def unsubscribe(self, event_type: str, handler: Callable):
+    def unsubscribe(self, event_type: str, handler: Callable) -> None:
         """Unsubscribe from event type."""
         if handler in self._subscribers[event_type]:
             self._subscribers[event_type].remove(handler)
         if handler in self._async_subscribers[event_type]:
             self._async_subscribers[event_type].remove(handler)
 
-    def publish(self, event: Event):
+    def publish(self, event: Event) -> None:
         """Publish event to subscribers."""
         self._add_to_history(event)
         for handler in self._subscribers.get(event.event_type, []):
@@ -78,9 +75,7 @@ class EventBus:
             events = self._event_history
         return events[-limit:]
 
-
 _global_event_bus = EventBus()
-
 
 def get_event_bus() ->EventBus:
     """Get global event bus instance."""

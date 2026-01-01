@@ -13,8 +13,7 @@ import time
 from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, ClassVar
-
+from typing import ClassVar
 
 class VitalType(Enum):
     """Web Vitals types"""
@@ -25,7 +24,6 @@ class VitalType(Enum):
     TTFB = 'ttfb'
     INP = 'inp'
 
-
 class PerformanceEntryType(Enum):
     """Performance entry types"""
     NAVIGATION = 'navigation'
@@ -35,7 +33,6 @@ class PerformanceEntryType(Enum):
     MEASURE = 'measure'
     LONGTASK = 'longtask'
     LAYOUT_SHIFT = 'layout-shift'
-
 
 @dataclass
 class WebVital:
@@ -53,7 +50,6 @@ class WebVital:
             'timestamp': self.timestamp, 'rating': self.rating, 'page_url':
             self.page_url, 'user_id': self.user_id}
 
-
 @dataclass
 class PerformanceEntry:
     """Performance entry"""
@@ -62,7 +58,6 @@ class PerformanceEntry:
     start_time: float
     duration: float
     attributes: dict[str, Any] = field(default_factory=dict)
-
 
 class PerformanceMonitor:
     """
@@ -108,7 +103,7 @@ class PerformanceMonitor:
             self.stats['poor_vitals'] += 1
         return rating
 
-    def mark(self, name: str):
+    def mark(self, name: str) -> None:
         """Create a performance mark"""
         self.marks[name] = time.time()
 

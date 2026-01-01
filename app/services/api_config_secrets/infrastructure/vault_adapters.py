@@ -6,7 +6,6 @@ from cryptography.fernet import Fernet
 
 from app.services.api_config_secrets.domain.ports import VaultBackend
 
-
 class SecretEncryption:
     """
     Secret encryption utility using Fernet (symmetric encryption)
@@ -30,7 +29,6 @@ class SecretEncryption:
     def decrypt(self, ciphertext: str) -> str:
         """Decrypt ciphertext"""
         return self.cipher.decrypt(ciphertext.encode()).decode()
-
 
 class LocalVaultBackend(VaultBackend):
     """
@@ -72,7 +70,6 @@ class LocalVaultBackend(VaultBackend):
         # For local backend, rotation just marks the secret for update
         return True
 
-
 class HashiCorpVaultBackend(VaultBackend):
     """
     HashiCorp Vault backend
@@ -96,7 +93,6 @@ class HashiCorpVaultBackend(VaultBackend):
 
     def rotate_secret(self, secret_id: str) -> bool:
         raise NotImplementedError("HashiCorp Vault integration requires hvac library")
-
 
 class AWSSecretsManagerBackend(VaultBackend):
     """

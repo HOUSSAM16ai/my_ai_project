@@ -9,12 +9,9 @@
 - Postel's Law: استخدام `extra='ignore'` في النماذج لضمان التوافقية.
 """
 
-from typing import Any
-
 from pydantic import BaseModel, ConfigDict
 
 __all__ = ["RobustBaseModel"]
-
 
 class RobustBaseModel(BaseModel):
     """

@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
-
 class Severity(str, Enum):
     """Security finding severity levels"""
     CRITICAL = "CRITICAL"
@@ -16,13 +15,11 @@ class Severity(str, Enum):
     LOW = "LOW"
     INFO = "INFO"
 
-
 class TrendDirection(str, Enum):
     """Security trend direction"""
     IMPROVING = "IMPROVING"
     DEGRADING = "DEGRADING"
     STABLE = "STABLE"
-
 
 @dataclass
 class SecurityFinding:
@@ -48,7 +45,6 @@ class SecurityFinding:
         if not self.last_seen:
             self.last_seen = datetime.now()
 
-
 @dataclass
 class SecurityMetrics:
     """Security metrics aggregate"""
@@ -73,7 +69,6 @@ class SecurityMetrics:
     def __post_init__(self):
         if not self.timestamp:
             self.timestamp = datetime.now()
-
 
 @dataclass
 class RiskPrediction:

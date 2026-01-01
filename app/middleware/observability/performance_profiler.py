@@ -5,12 +5,10 @@ Detailed performance profiling middleware that tracks latency,
 throughput, and identifies bottlenecks.
 """
 import time
-from typing import Any
 
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
-
 
 class PerformanceProfiler(BaseMiddleware):
     """
@@ -46,7 +44,7 @@ class PerformanceProfiler(BaseMiddleware):
         ctx.add_metadata('profiler_start', time.time())
         return MiddlewareResult.success()
 
-    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+    def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
         """
         Record performance metrics
 

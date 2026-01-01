@@ -25,7 +25,6 @@ from app.services.overmind.state import MissionStateManager
 
 __all__ = ["create_overmind"]
 
-
 async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
     """
     دالة المصنع لتجميع العقل المدبر مع مجلس الحكمة.

@@ -21,7 +21,6 @@ from app.services.serving.infrastructure.in_memory_repository import (
 
 _LOG = logging.getLogger(__name__)
 
-
 class ModelRegistry:
     """
     Application service for model registration and lifecycle management.
@@ -80,6 +79,7 @@ class ModelRegistry:
 
             return True
 
+    # TODO: Split this function (31 lines) - KISS principle
     def unload_model(self, version_id: str) -> bool:
         """
         Unload a model (graceful shutdown).

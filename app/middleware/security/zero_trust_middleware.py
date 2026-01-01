@@ -14,7 +14,6 @@ from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 from app.security.zero_trust import ZeroTrustAuthenticator
 
-
 class ZeroTrustMiddleware(ConditionalMiddleware):
     """
     Zero Trust Authentication Middleware
@@ -37,6 +36,7 @@ class ZeroTrustMiddleware(ConditionalMiddleware):
         self.verified_count = 0
         self.failed_count = 0
 
+    # TODO: Split this function (46 lines) - KISS principle
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
         """
         Verify Zero Trust session

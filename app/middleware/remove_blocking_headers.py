@@ -19,7 +19,6 @@ BLOCKED_HEADERS: Final[set[str]] = {
     # "keep-alive",  # REMOVED: Essential for SSE and persistent connections
 }
 
-
 class RemoveBlockingHeadersMiddleware(BaseHTTPMiddleware):
     """
     برمجية وسيطة لإزالة الترويسات غير المرغوب فيها (Sanitization Middleware).

@@ -1,14 +1,11 @@
-from typing import Any
 
 from pydantic import Field
 
 from app.core.schemas import RobustBaseModel
 
-
 class HealthComponent(RobustBaseModel):
     status: str
     details: dict[str, Any] | None = None
-
 
 class HealthResponse(RobustBaseModel):
     """
@@ -16,7 +13,6 @@ class HealthResponse(RobustBaseModel):
     """
     status: str = Field(..., description="الحالة العامة للنظام")
     components: dict[str, HealthComponent] | None = Field(None, description="حالة المكونات الفرعية")
-
 
 class GoldenSignalsResponse(RobustBaseModel):
     """
@@ -27,7 +23,6 @@ class GoldenSignalsResponse(RobustBaseModel):
     errors: float = Field(..., description="معدل الأخطاء (%)")
     saturation: float = Field(..., description="درجة التشبع (%)")
 
-
 class AIOpsMetricsResponse(RobustBaseModel):
     """
     نموذج مقاييس الذكاء الاصطناعي للعمليات (AIOps).
@@ -35,7 +30,6 @@ class AIOpsMetricsResponse(RobustBaseModel):
     anomaly_score: float = Field(..., description="درجة الشذوذ")
     self_healing_events: int = Field(0, description="عدد أحداث المعالجة الذاتية")
     predictions: dict[str, Any] | None = Field(None, description="توقعات مستقبلية")
-
 
 class GitOpsMetricsResponse(RobustBaseModel):
     """
@@ -45,7 +39,6 @@ class GitOpsMetricsResponse(RobustBaseModel):
     sync_rate: float = Field(..., description="معدل المزامنة (%)")
     last_sync: str | None = Field(None, description="توقيت آخر مزامنة")
 
-
 class PerformanceSnapshotResponse(RobustBaseModel):
     """
     نموذج لقطة الأداء.
@@ -53,7 +46,6 @@ class PerformanceSnapshotResponse(RobustBaseModel):
     cpu_usage: float = Field(..., description="استهلاك المعالج (%)")
     memory_usage: float = Field(..., description="استهلاك الذاكرة (%)")
     active_requests: int = Field(..., description="عدد الطلبات النشطة")
-
 
 class EndpointAnalyticsResponse(RobustBaseModel):
     """
@@ -64,7 +56,6 @@ class EndpointAnalyticsResponse(RobustBaseModel):
     p95_latency: float = Field(..., description="P95 Latency")
     error_count: int = Field(0, description="عدد الأخطاء")
     total_calls: int = Field(0, description="إجمالي الاستدعاءات")
-
 
 class AlertResponse(RobustBaseModel):
     """

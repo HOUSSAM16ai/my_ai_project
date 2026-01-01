@@ -10,7 +10,7 @@
 """
 
 import logging
-from typing import Any, Final
+from typing import Final
 
 from sqlalchemy import text
 
@@ -47,7 +47,6 @@ REQUIRED_SCHEMA: Final[dict[str, dict[str, Any]]] = {
     }
 }
 
-
 async def _get_existing_columns(conn: dict[str, str | int | bool], table_name: str) -> set[str]:
     """استخراج أسماء الأعمدة الموجودة في الجدول."""
     dialect_name = conn.dialect.name
@@ -67,7 +66,6 @@ async def _get_existing_columns(conn: dict[str, str | int | bool], table_name: s
         {"table_name": table_name},
     )
     return {row[0] for row in result.fetchall()}
-
 
 async def _fix_missing_column(
     conn: dict[str, str | int | bool],
@@ -92,7 +90,6 @@ async def _fix_missing_column(
     except Exception as e:
         logger.error(f"❌ Failed to fix {table_name}.{col}: {e}")
         return False
-
 
 async def validate_and_fix_schema(auto_fix: bool = True) -> dict[str, Any]:
     """
@@ -154,7 +151,6 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict[str, Any]:
         results["status"] = "warning"
 
     return results
-
 
 async def validate_schema_on_startup() -> None:
     """

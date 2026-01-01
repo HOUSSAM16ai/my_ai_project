@@ -1,11 +1,10 @@
 """Chain of Responsibility pattern for request processing."""
 
 from abc import ABC, abstractmethod
-from typing import Any, TypeVar
+from typing import TypeVar
 
 TRequest = TypeVar("TRequest")
 TResponse = TypeVar("TResponse")
-
 
 class Handler[TRequest, TResponse](ABC):
     """Abstract handler in chain of responsibility."""
@@ -34,7 +33,6 @@ class Handler[TRequest, TResponse](ABC):
     def _process(self, request: TRequest) -> TResponse | None:
         """Process request. Return None to pass to next handler."""
 
-
 class RequestContext:
     """Request context for handlers."""
 
@@ -44,18 +42,17 @@ class RequestContext:
         self.errors: list[str] = []
         self.stopped = False
 
-    def stop_chain(self):
+    def stop_chain(self) -> None:
         """Stop chain execution."""
         self.stopped = True
 
-    def add_error(self, error: str):
+    def add_error(self, error: str) -> None:
         """Add error to context."""
         self.errors.append(error)
 
     def has_errors(self) -> bool:
         """Check if context has errors."""
         return len(self.errors) > 0
-
 
 class AuthenticationHandler(Handler[RequestContext, RequestContext]):
     """Authentication handler."""
@@ -81,7 +78,6 @@ class AuthenticationHandler(Handler[RequestContext, RequestContext]):
         """Validate authentication token."""
         return len(token) > 0
 
-
 class AuthorizationHandler(Handler[RequestContext, RequestContext]):
     """Authorization handler."""
 
@@ -102,7 +98,6 @@ class AuthorizationHandler(Handler[RequestContext, RequestContext]):
 
         request.metadata["authorized"] = True
         return None
-
 
 class RateLimitHandler(Handler[RequestContext, RequestContext]):
     """Rate limiting handler."""
@@ -126,7 +121,6 @@ class RateLimitHandler(Handler[RequestContext, RequestContext]):
         request.metadata["rate_limit_remaining"] = self.max_requests - count - 1
         return None
 
-
 class ValidationHandler(Handler[RequestContext, RequestContext]):
     """Request validation handler."""
 
@@ -147,7 +141,6 @@ class ValidationHandler(Handler[RequestContext, RequestContext]):
         request.metadata["validated"] = True
         return None
 
-
 class LoggingHandler(Handler[RequestContext, RequestContext]):
     """Logging handler."""
 
@@ -159,7 +152,6 @@ class LoggingHandler(Handler[RequestContext, RequestContext]):
         logger.info(f"Processing request: {request.data.get('request_id', 'unknown')}")
 
         return None
-
 
 class CachingHandler(Handler[RequestContext, RequestContext]):
     """Caching handler."""
@@ -179,10 +171,9 @@ class CachingHandler(Handler[RequestContext, RequestContext]):
 
         return None
 
-    def cache_response(self, key: str, response: dict[str, str | int | bool]):
+    def cache_response(self, key: str, response: dict[str, str | int | bool]) -> None:
         """Cache response."""
         self._cache[key] = response
-
 
 def build_request_pipeline() -> Handler[RequestContext, RequestContext]:
     """Build standard request processing pipeline."""

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import logging
 from math import ceil
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,7 +21,6 @@ from app.schemas.management import (
 from app.services.crud.crud_persistence import CrudPersistence
 
 logger = logging.getLogger(__name__)
-
 
 class CrudBoundaryService:
     """

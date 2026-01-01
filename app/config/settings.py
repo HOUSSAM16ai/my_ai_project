@@ -17,7 +17,7 @@
 import functools
 import logging
 import os
-from typing import Any, Literal
+from typing import Literal
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 from pydantic import Field, ValidationInfo, computed_field, field_validator, model_validator
@@ -25,7 +25,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # إعداد السجل (Logging) لهذه الوحدة
 logger = logging.getLogger("app.config")
-
 
 class AppSettings(BaseSettings):
     """
@@ -160,6 +159,7 @@ class AppSettings(BaseSettings):
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
+    # TODO: Split this function (52 lines) - KISS principle
     def heal_database_url(cls, v: str | None, info: ValidationInfo) -> str:
         """
         💊 Database Auto-Healing Algorithm.
@@ -232,7 +232,6 @@ class AppSettings(BaseSettings):
     def is_production(self) -> bool:
         """🚀 Returns True if we are in production mode."""
         return self.ENVIRONMENT == "production"
-
 
 @functools.lru_cache
 def get_settings() -> AppSettings:

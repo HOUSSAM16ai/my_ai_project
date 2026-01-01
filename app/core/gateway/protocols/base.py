@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any
 
 from fastapi import Request
-
 
 class ProtocolAdapter(ABC):
     """Abstract protocol adapter interface"""

@@ -5,7 +5,6 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +22,6 @@ class StoredEvent:
     event_data: dict[str, Any]
     occurred_at: datetime
     version: int
-
 
 class EventStore(ABC):
     """
@@ -47,7 +45,6 @@ class EventStore(ABC):
         """الحصول على الإصدار الحالي لكيان"""
         pass
 
-
 class InMemoryEventStore(EventStore):
     """تطبيق في الذاكرة لمخزن الأحداث (للتطوير والاختبار)"""
 
@@ -68,7 +65,6 @@ class InMemoryEventStore(EventStore):
     async def get_current_version(self, aggregate_id: str) -> int:
         """الحصول على الإصدار الحالي لكيان"""
         return self._versions.get(aggregate_id, 0)
-
 
 class EventSourcedAggregate:
     """

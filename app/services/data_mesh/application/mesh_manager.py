@@ -6,7 +6,6 @@ import uuid
 from collections import defaultdict, deque
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any
 
 from app.services.data_mesh.domain.models import (
     BoundedContext,
@@ -19,7 +18,6 @@ from app.services.data_mesh.domain.models import (
     SchemaCompatibility,
     SchemaEvolution,
 )
-
 
 class DataMeshManager:
     """
@@ -43,6 +41,7 @@ class DataMeshManager:
 
         self._initialize_governance()
 
+    # TODO: Split this function (31 lines) - KISS principle
     def _initialize_governance(self):
         """Initialize default governance policies"""
         self.add_governance_policy(
@@ -119,6 +118,7 @@ class DataMeshManager:
             )
 
             return True
+# TODO: Split this function (42 lines) - KISS principle
 
     def evolve_contract_schema(
         self,
@@ -242,7 +242,7 @@ class DataMeshManager:
             return contract.compatibility_mode.value in allowed_modes
         return True
 
-    def record_quality_metrics(self, metrics: DataQualityMetrics):
+    def record_quality_metrics(self, metrics: DataQualityMetrics) -> None:
         with self.lock:
             self.quality_metrics[metrics.product_id].append(metrics)
             self._check_quality_thresholds(metrics)

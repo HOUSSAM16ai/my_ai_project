@@ -16,8 +16,7 @@ from app.core.database import async_session_factory
 
 logger = logging.getLogger(__name__)
 
-
-async def get_recent_conversations(user_id: int, limit: int = 5):
+async def get_recent_conversations(user_id: int, limit: int = 5) -> None:
     """
     Retrieves the most recent conversation objects for the current user.
     This is a pure data retrieval function using async database session.
@@ -46,8 +45,7 @@ async def get_recent_conversations(user_id: int, limit: int = 5):
         logger.error(f"Failed to fetch recent conversations for user {user_id}: {e}", exc_info=True)
         return []
 
-
-async def rate_message_in_db(message_id: int, rating: str, user_id: int):
+async def rate_message_in_db(message_id: int, rating: str, user_id: int) -> None:
     """
     Finds a specific message by its ID and updates its rating.
     This is the core function for the AI's learning feedback loop.

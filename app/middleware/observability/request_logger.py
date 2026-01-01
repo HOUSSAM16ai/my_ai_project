@@ -14,7 +14,6 @@ from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 from app.telemetry.logging import StructuredLogger
 
-
 class RequestLoggerMiddleware(BaseMiddleware):
     """
     Request Logger Middleware
@@ -34,6 +33,7 @@ class RequestLoggerMiddleware(BaseMiddleware):
         self.logger = StructuredLogger()
         self.logged_count = 0
 
+    # TODO: Split this function (32 lines) - KISS principle
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
         """
         Log request details
@@ -68,7 +68,7 @@ class RequestLoggerMiddleware(BaseMiddleware):
 
         return MiddlewareResult.success()
 
-    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+    def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
         """
         Log request completion
 

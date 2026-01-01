@@ -2,7 +2,6 @@ import logging
 import time
 from collections.abc import Callable
 from functools import wraps
-from typing import Any
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -17,7 +16,6 @@ from .protocols.rest import RESTAdapter
 from .routing import IntelligentRouter
 
 logger = logging.getLogger(__name__)
-
 
 class APIGatewayService:
     """
@@ -66,12 +64,12 @@ class APIGatewayService:
             )
         )
 
-    def register_route(self, route: GatewayRoute):
+    def register_route(self, route: GatewayRoute) -> None:
         """Register a gateway route"""
         self.routes[route.route_id] = route
         logger.info(f"Registered route: {route.route_id} -> {route.path_pattern}")
 
-    def register_upstream_service(self, service: UpstreamService):
+    def register_upstream_service(self, service: UpstreamService) -> None:
         """Register an upstream service"""
         self.upstream_services[service.service_id] = service
         logger.info(f"Registered upstream service: {service.service_id}")
@@ -156,27 +154,25 @@ class APIGatewayService:
             "protocols_supported": list(self.protocol_adapters.keys()),
         }
 
-
 # ======================================================================================
 # SINGLETON INSTANCE
 # ======================================================================================
 
 api_gateway_service = APIGatewayService()
 
-
 # ======================================================================================
 # DECORATOR FOR GATEWAY PROCESSING
 # ======================================================================================
 
-
-def gateway_process(protocol: ProtocolType = ProtocolType.REST, _cacheable: bool = False):
+# TODO: Split this function (36 lines) - KISS principle
+def gateway_process(protocol: ProtocolType = ProtocolType.REST, _cacheable: bool = False) -> None:
     """
     Decorator to process requests through API Gateway (FastAPI Dependency Injection Friendly)
 
     Usage:
         @router.get("/my-endpoint")
         @gateway_process(protocol=ProtocolType.REST, _cacheable=True)
-        async def my_endpoint(request: Request):
+        async def my_endpoint(request: Request) -> None:
             ...
     """
 
@@ -184,7 +180,7 @@ def gateway_process(protocol: ProtocolType = ProtocolType.REST, _cacheable: bool
     # This is a simplified adaptation.
     def decorator(f: Callable) -> Callable:
         @wraps(f)
-        async def decorated_function(request: Request, *args, **kwargs):
+        async def decorated_function(request: Request, *args, **kwargs) -> None:
             gateway = api_gateway_service
 
             # Process through gateway
@@ -206,7 +202,6 @@ def gateway_process(protocol: ProtocolType = ProtocolType.REST, _cacheable: bool
         return decorated_function
 
     return decorator
-
 
 def get_gateway_service() -> APIGatewayService:
     """Get the singleton instance of APIGatewayService"""

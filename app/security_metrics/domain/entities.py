@@ -5,7 +5,6 @@ from datetime import datetime
 
 from app.security_metrics.domain.value_objects import RiskLevel, Severity, TrendDirection
 
-
 @dataclass
 class SecurityFinding:
     """Security finding entity."""
@@ -24,7 +23,6 @@ class SecurityFinding:
     fixed: bool = False
     fix_time_hours: float | None = None
     developer_id: str | None = None
-
 
 @dataclass
 class SecurityMetrics:
@@ -48,7 +46,6 @@ class SecurityMetrics:
     fix_rate_per_developer: dict[str, float]
     timestamp: datetime = field(default_factory=datetime.now)
 
-
 @dataclass
 class RiskScore:
     """Risk assessment score."""
@@ -57,7 +54,6 @@ class RiskScore:
     level: RiskLevel
     breakdown: dict[str, float]
     timestamp: datetime
-
 
 @dataclass
 class DeveloperSecurityScore:
@@ -69,7 +65,6 @@ class DeveloperSecurityScore:
     fix_rate: float
     avg_fix_time: float
     timestamp: datetime
-
 
 @dataclass
 class SecurityDebt:

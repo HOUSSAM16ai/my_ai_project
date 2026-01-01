@@ -10,10 +10,8 @@ from app.services.ai_security import SuperhumanSecuritySystem
 # Global singleton instance
 security_service = SuperhumanSecuritySystem()
 
-
 def get_security_service() -> SuperhumanSecuritySystem:
     """Get the security service instance."""
     return security_service
-
 
 __all__ = ["SuperhumanSecuritySystem", "get_security_service", "security_service"]

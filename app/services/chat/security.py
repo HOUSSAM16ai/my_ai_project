@@ -4,7 +4,6 @@ Security utilities for chat.
 
 import re
 
-
 class PathValidator:
     """Validate file paths."""
 
@@ -16,7 +15,6 @@ class PathValidator:
             return False
         # Prevent absolute paths (optional, depending on requirements)
         return not path.startswith("/")
-
 
 class ErrorSanitizer:
     """Sanitize error messages."""

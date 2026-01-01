@@ -6,8 +6,6 @@ from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
-
 
 class PriorityLevel(Enum):
     """Request priority levels"""
@@ -18,7 +16,6 @@ class PriorityLevel(Enum):
     LOW = 4
     BACKGROUND = 5
 
-
 @dataclass
 class BulkheadConfig:
     """Bulkhead isolation configuration"""
@@ -28,12 +25,10 @@ class BulkheadConfig:
     timeout_ms: int = 30000
     priority_enabled: bool = True
 
-
 class BulkheadFullError(Exception):
     """Raised when bulkhead is at capacity"""
 
     pass
-
 
 class Bulkhead:
     """
@@ -56,6 +51,7 @@ class Bulkhead:
         self.rejected_calls = 0
         self._lock = threading.RLock()
 
+    # TODO: Split this function (35 lines) - KISS principle
     def execute(
         self, func: Callable, priority: PriorityLevel = PriorityLevel.NORMAL, *args, **kwargs
     ) -> dict[str, str | int | bool]:

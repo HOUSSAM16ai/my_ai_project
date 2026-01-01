@@ -3,7 +3,7 @@ Chat context for intent handlers.
 """
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +26,6 @@ class ChatContext:
     # Factory to create new DB sessions for background tasks
     session_factory: Callable[[], AsyncSession] | None = None
 
-    def get_param(self, key: str, default: Any=None) -> dict[str, str | int | bool]:
+    def get_param(self, key: str, default: dict[str, str | int | bool]=None) -> dict[str, str | int | bool]:
         """Get parameter with default."""
         return self.params.get(key, default)

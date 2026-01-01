@@ -10,7 +10,6 @@
 import logging
 import time
 from collections.abc import AsyncGenerator, Callable
-from typing import Any as AIClient  # Placeholder for AI client type
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,7 +28,6 @@ from app.services.chat.handlers.strategy_handlers import (
 from app.services.chat.intent_detector import IntentDetector
 
 logger = logging.getLogger(__name__)
-
 
 class ChatOrchestrator:
     """

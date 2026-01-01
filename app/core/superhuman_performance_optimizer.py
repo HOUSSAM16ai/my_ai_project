@@ -24,10 +24,8 @@ import logging
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from typing import Any
 
 logger = logging.getLogger(__name__)
-
 
 @dataclass
 class PerformanceMetrics:
@@ -94,7 +92,6 @@ class PerformanceMetrics:
             self.quality_scores)}, 'tokens': {'total': self.total_tokens,
             'avg_per_request': round(self.avg_tokens_per_request, 2)}}
 
-
 class IntelligentModelSelector:
     """
     Advanced model selection using multi-armed bandit algorithm.
@@ -159,7 +156,6 @@ class IntelligentModelSelector:
         return {model_id: stats['score'] for model_id, stats in self.
             model_stats.items()}
 
-
 class AdaptiveBatchProcessor:
     """
     Intelligent request batching for optimal throughput.
@@ -179,7 +175,6 @@ class AdaptiveBatchProcessor:
         self.pending_requests: list[dict[str, Any]] = []
         self.batch_start_time: float = 0.0
         self.lock = asyncio.Lock()
-
 
 class SuperhumanPerformanceOptimizer:
     """
@@ -203,6 +198,8 @@ class SuperhumanPerformanceOptimizer:
                 first_request_time=time.time())
         return self.metrics[model_id]
 
+    # TODO: Split this function (33 lines) - KISS principle
+    # TODO: Reduce parameters (7 params) - Use config object
     def record_request(self, model_id: str, success: bool, latency_ms:
         float, tokens: int=0, quality_score: float=0.0, empty_response:
         bool=False) ->None:
@@ -264,9 +261,7 @@ class SuperhumanPerformanceOptimizer:
         return {'global': self.get_global_stats(), 'models': {model_id:
             metrics.to_dict() for model_id, metrics in self.metrics.items()}}
 
-
 _global_optimizer: SuperhumanPerformanceOptimizer | None = None
-
 
 def get_performance_optimizer() ->SuperhumanPerformanceOptimizer:
     """Get or create global optimizer instance."""
@@ -275,12 +270,10 @@ def get_performance_optimizer() ->SuperhumanPerformanceOptimizer:
         _global_optimizer = SuperhumanPerformanceOptimizer()
     return _global_optimizer
 
-
 def reset_optimizer() ->None:
     """Reset global optimizer (for testing)."""
     global _global_optimizer
     _global_optimizer = None
-
 
 __all__ = ['AdaptiveBatchProcessor', 'IntelligentModelSelector',
     'PerformanceMetrics', 'SuperhumanPerformanceOptimizer',

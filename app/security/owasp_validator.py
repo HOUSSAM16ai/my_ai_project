@@ -18,8 +18,7 @@ Similar to tools used by:
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, ClassVar
-
+from typing import ClassVar
 
 class SecuritySeverity(Enum):
     """Security issue severity levels"""
@@ -28,7 +27,6 @@ class SecuritySeverity(Enum):
     MEDIUM = 'medium'
     LOW = 'low'
     INFO = 'info'
-
 
 class OWASPCategory(Enum):
     """OWASP Top 10 categories (2021)"""
@@ -44,7 +42,6 @@ class OWASPCategory(Enum):
         'A09:2021 - Security Logging and Monitoring Failures')
     A10_SSRF = 'A10:2021 - Server-Side Request Forgery'
 
-
 @dataclass
 class SecurityIssue:
     """Security issue found during validation"""
@@ -57,7 +54,6 @@ class SecurityIssue:
     code_snippet: str | None = None
     recommendation: str = ''
     cwe_id: str | None = None
-
 
 class OWASPValidator:
     """
@@ -100,6 +96,7 @@ class OWASPValidator:
         self._id_generation_pattern = (
             'hashlib\\.(md5|sha1)\\([^)]*\\)\\.hexdigest\\(\\)\\[:?\\d*\\]')
 
+    # TODO: Split this function (42 lines) - KISS principle
     def validate_authentication_code(self, code: str, file_path: str=''
         ) ->list[SecurityIssue]:
         """
@@ -143,6 +140,7 @@ class OWASPValidator:
                 'Add rate limiting to prevent brute force attacks', cwe_id=
                 'CWE-307'))
         return issues
+# TODO: Split this function (33 lines) - KISS principle
 
     def validate_access_control(self, code: str, file_path: str='') ->list[
         SecurityIssue]:
@@ -177,6 +175,7 @@ class OWASPValidator:
                 file_path=file_path, recommendation=
                 'Add @login_required and verify user owns the resource',
                 cwe_id='CWE-862'))
+        # TODO: Split this function (32 lines) - KISS principle
         return issues
 
     def validate_injection_prevention(self, code: str, file_path: str=''
@@ -210,6 +209,7 @@ class OWASPValidator:
                     'Potential Cross-Site Scripting (XSS)', description=
                     'Direct HTML manipulation detected', file_path=
                     file_path, recommendation=
+                    # TODO: Split this function (46 lines) - KISS principle
                     'Use proper escaping and sanitization', cwe_id='CWE-79'))
         return issues
 

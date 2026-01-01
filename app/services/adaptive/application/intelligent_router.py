@@ -12,7 +12,6 @@ from datetime import datetime
 
 from app.services.adaptive.domain.models import ServiceHealth, ServiceInstance
 
-
 class IntelligentRouter:
     """
     موجه ذكي يستخدم ML لاختيار أفضل instance للطلب
@@ -22,6 +21,7 @@ class IntelligentRouter:
         self.routing_history = defaultdict(list)
         self.instance_scores = defaultdict(float)
 
+    # TODO: Split this function (43 lines) - KISS principle
     def select_instance(
         self,
         service_name: str,
@@ -66,6 +66,7 @@ class IntelligentRouter:
         )
 
         return best_instance
+# TODO: Split this function (37 lines) - KISS principle
 
     def _calculate_instance_score(
         self, instance: ServiceInstance, request_metadata: dict | None = None
@@ -106,7 +107,7 @@ class IntelligentRouter:
 
         return total_score
 
-    def update_instance_score(self, instance_id: str, success: bool, response_time: float):
+    def update_instance_score(self, instance_id: str, success: bool, response_time: float) -> None:
         """
         تحديث score الـ instance بناءً على نتيجة الطلب
         """

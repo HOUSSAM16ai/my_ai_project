@@ -5,7 +5,6 @@ import uuid
 from collections import defaultdict, deque
 from dataclasses import asdict
 from datetime import UTC, datetime
-from typing import Any
 
 from fastapi import Request
 
@@ -23,7 +22,6 @@ from app.telemetry.models import (
 )
 from app.telemetry.structured_logging import LoggingManager
 from app.telemetry.tracing import TracingManager
-
 
 class UnifiedObservabilityService:
     def __init__(self, service_name: str = 'cogniforge', sample_rate: float = 1.0, sla_target_ms: float = 100.0):
@@ -70,12 +68,12 @@ class UnifiedObservabilityService:
         return self.tracing.start_trace(operation_name, parent_context, tags, request)
 
     def end_span(self, span_id: str, status: str = 'OK', error_message: str | None = None,
-                 metrics: dict[str, float] | None = None):
+                 metrics: dict[str, float] | None = None) -> None:
         completed_trace = self.tracing.end_span(span_id, status, error_message, metrics)
         if completed_trace:
             self._correlate_trace(completed_trace)
 
-    def add_span_event(self, span_id: str, event_name: str, attributes: dict[str, Any] | None = None):
+    def add_span_event(self, span_id: str, event_name: str, attributes: dict[str, Any] | None = None) -> None:
         self.tracing.add_span_event(span_id, event_name, attributes)
 
     # Delegate Metrics Methods
@@ -99,14 +97,15 @@ class UnifiedObservabilityService:
     def trace_metrics(self) -> dict[str, list[MetricSample]]:
         return self.metrics.trace_metrics
 
+    # TODO: Reduce parameters (6 params) - Use config object
     def record_metric(self, name: str, value: float, labels: dict[str, str] | None = None,
-                      trace_id: str | None = None, span_id: str | None = None):
+                      trace_id: str | None = None, span_id: str | None = None) -> None:
         self.metrics.record_metric(name, value, labels, trace_id, span_id)
 
-    def increment_counter(self, name: str, amount: float = 1.0, labels: dict[str, str] | None = None):
+    def increment_counter(self, name: str, amount: float = 1.0, labels: dict[str, str] | None = None) -> None:
         self.metrics.increment_counter(name, amount, labels)
 
-    def set_gauge(self, name: str, value: float, labels: dict[str, str] | None = None):
+    def set_gauge(self, name: str, value: float, labels: dict[str, str] | None = None) -> None:
         self.metrics.set_gauge(name, value, labels)
 
     def get_percentiles(self, metric_name: str) -> dict[str, float]:
@@ -123,14 +122,16 @@ class UnifiedObservabilityService:
     @property
     def trace_logs(self) -> dict[str, list[CorrelatedLog]]:
         return self.logging.trace_logs
+# TODO: Reduce parameters (7 params) - Use config object
 
     def log(self, level: str, message: str, context: dict[str, Any] | None = None,
             exception: Exception | None = None, trace_id: str | None = None,
-            span_id: str | None = None):
+            span_id: str | None = None) -> None:
         self.logging.log(level, message, context, exception, trace_id, span_id)
 
     # Aggregated Methods (High Level Logic)
 
+    # TODO: Split this function (50 lines) - KISS principle
     def get_trace_with_correlation(self, trace_id: str) -> dict[str, Any] | None:
         trace = None
         # Access tracing manager lock directly or rely on atomic dict operations where possible,
@@ -212,6 +213,7 @@ class UnifiedObservabilityService:
     def _correlate_trace(self, trace: UnifiedTrace):
         # Placeholder for complex post-processing correlation logic
         pass
+# TODO: Split this function (59 lines) - KISS principle
 
     def get_golden_signals(self, time_window_seconds: int = 300) -> dict[str, Any]:
         cutoff = time.time() - time_window_seconds
@@ -286,6 +288,7 @@ class UnifiedObservabilityService:
             'error_rate_target_percent': self.error_rate_target,
             'error_rate_actual_percent': errors['error_rate'],
             'overall_compliant': p99_compliant and error_rate_compliant
+        # TODO: Split this function (33 lines) - KISS principle
         }
 
     def detect_anomalies(self) -> list[dict[str, Any]]:

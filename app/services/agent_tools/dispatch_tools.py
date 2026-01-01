@@ -4,8 +4,6 @@ Hyper-Dispatch & Introspection Tools
 Meta-tools for tool management and dynamic invocation.
 """
 
-from typing import Any
-
 from .core import (
     canonicalize_tool_name,
     resolve_tool_name,
@@ -19,7 +17,6 @@ from .globals import (
     _TOOL_REGISTRY,
     _TOOL_STATS,
 )
-
 
 @tool(
     name="introspect_tools",
@@ -39,6 +36,8 @@ from .globals import (
         },
     },
 )
+# TODO: Split this function (48 lines) - KISS principle
+# TODO: Reduce parameters (7 params) - Use config object
 def introspect_tools(
     include_aliases: bool = True,
     include_disabled: bool = True,
@@ -88,7 +87,6 @@ def introspect_tools(
         with _LAYER_LOCK:
             payload["layer_stats"] = _LAYER_STATS.copy()
     return ToolResult(ok=True, data=payload)
-
 
 @tool(
     name="dispatch_tool",

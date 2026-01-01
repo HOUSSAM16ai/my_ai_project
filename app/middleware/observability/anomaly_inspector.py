@@ -16,7 +16,6 @@ from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 
-
 class AnomalyInspector(BaseMiddleware):
     """
     Anomaly Inspector Middleware
@@ -50,7 +49,8 @@ class AnomalyInspector(BaseMiddleware):
         ctx.add_metadata("anomaly_inspector_start", time.time())
         return MiddlewareResult.success()
 
-    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+    # TODO: Split this function (41 lines) - KISS principle
+    def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
         """
         Inspect for anomalies
 

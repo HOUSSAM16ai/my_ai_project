@@ -14,12 +14,10 @@ Architecture: Sequential execution with short-circuit capability
 
 import time
 from collections.abc import Awaitable, Callable
-from typing import Any
 
 from .base_middleware import BaseMiddleware
 from .context import RequestContext
 from .result import MiddlewareResult
-
 
 class SmartPipeline:
     """
@@ -54,7 +52,7 @@ class SmartPipeline:
             for mw in middlewares:
                 self.add_middleware(mw)
 
-    def add_middleware(self, middleware: BaseMiddleware):
+    def add_middleware(self, middleware: BaseMiddleware) -> None:
         """
         Add middleware to pipeline
 
@@ -239,7 +237,7 @@ class SmartPipeline:
             "middleware_stats": self._execution_stats["middleware_stats"],
         }
 
-    def reset_statistics(self):
+    def reset_statistics(self) -> None:
         """Reset all execution statistics"""
         self._execution_stats = {
             "total_requests": 0,

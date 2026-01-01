@@ -4,7 +4,6 @@ import logging
 import threading
 import time
 from collections import defaultdict, deque
-from typing import Any
 
 from app.telemetry.models import CorrelatedLog
 
@@ -17,9 +16,10 @@ class LoggingManager:
         self.lock = threading.RLock()
         self.stats = {'logs_recorded': 0}
 
+    # TODO: Reduce parameters (7 params) - Use config object
     def log(self, level: str, message: str, context: dict[str, Any] | None = None,
             exception: Exception | None = None, trace_id: str | None = None,
-            span_id: str | None = None):
+            span_id: str | None = None) -> None:
         log_entry = CorrelatedLog(
             timestamp=time.time(),
             level=level,

@@ -3,10 +3,9 @@ import random
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from app.core.protocols import StrategyProtocol as StrategyInterface
-
 
 @dataclass
 class ServiceEndpoint:
@@ -20,7 +19,6 @@ class ServiceEndpoint:
     health_score: float = 1.0
     last_health_check: float = 0.0
 
-
 @dataclass
 class RoutingRequest:
     """Request to be routed."""
@@ -28,9 +26,8 @@ class RoutingRequest:
     method: str
     path: str
     headers: dict[str, str]
-    body: Any = None
+    body: dict[str, str | int | bool] = None
     metadata: dict[str, Any] | None = None
-
 
 class RoutingStrategy(StrategyInterface[RoutingRequest, ServiceEndpoint], ABC):
     """Base routing strategy."""
@@ -47,7 +44,6 @@ class RoutingStrategy(StrategyInterface[RoutingRequest, ServiceEndpoint], ABC):
         """Check if strategy is applicable."""
         return len(self.endpoints) > 0
 
-
 class RoundRobinStrategy(RoutingStrategy):
     """Round-robin routing strategy."""
 
@@ -62,7 +58,6 @@ class RoundRobinStrategy(RoutingStrategy):
     def get_name(self) ->str:
         return 'round_robin'
 
-
 class LeastConnectionsStrategy(RoutingStrategy):
     """Least connections routing strategy."""
 
@@ -74,7 +69,6 @@ class LeastConnectionsStrategy(RoutingStrategy):
 
     def get_name(self) ->str:
         return 'least_connections'
-
 
 class WeightedStrategy(RoutingStrategy):
     """Weighted random routing strategy."""
@@ -95,7 +89,6 @@ class WeightedStrategy(RoutingStrategy):
     def get_name(self) ->str:
         return 'weighted'
 
-
 class LatencyBasedStrategy(RoutingStrategy):
     """Latency-based routing strategy."""
 
@@ -107,7 +100,6 @@ class LatencyBasedStrategy(RoutingStrategy):
 
     def get_name(self) ->str:
         return 'latency_based'
-
 
 class HealthAwareStrategy(RoutingStrategy):
     """Health-aware routing strategy."""
@@ -129,7 +121,6 @@ class HealthAwareStrategy(RoutingStrategy):
 
     def get_name(self) ->str:
         return 'health_aware'
-
 
 class IntelligentStrategy(RoutingStrategy):
     """ML-based intelligent routing strategy."""
@@ -162,7 +153,6 @@ class IntelligentStrategy(RoutingStrategy):
     def get_name(self) ->str:
         return 'intelligent'
 
-
 class StrategyFactory:
     """Factory for creating routing strategies."""
     _strategies: ClassVar[dict[str, type[RoutingStrategy]]] = {'round_robin':
@@ -181,7 +171,7 @@ class StrategyFactory:
         return strategy_class(endpoints)
 
     @classmethod
-    def register(cls, name: str, strategy_class: type[RoutingStrategy]):
+    def register(cls, name: str, strategy_class: type[RoutingStrategy]) -> None:
         """Register custom strategy."""
         cls._strategies[name] = strategy_class
 

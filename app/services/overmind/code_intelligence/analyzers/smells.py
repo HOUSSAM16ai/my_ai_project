@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 
 from ..models import FileMetrics
 
@@ -10,7 +12,6 @@ class StructuralSmellDetector:
     GOD_CLASS_METHODS_THRESHOLD = 20
 
     # Layer mixing patterns
-from typing import ClassVar
 
     LAYER_PATTERNS: ClassVar[dict[str, list[str]]] = {
         "api": ["api", "routers", "endpoints", "controllers"],

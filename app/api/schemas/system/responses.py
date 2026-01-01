@@ -1,21 +1,17 @@
 from pydantic import BaseModel, Field
 
-
 class DatabaseHealth(BaseModel):
     status: str = Field(..., description="حالة قاعدة البيانات (e.g., connected, disconnected)")
     detail: str | None = Field(None, description="تفاصيل إضافية في حالة الخطأ")
-
 
 class HealthResponse(BaseModel):
     application: str = Field(..., description="حالة التطبيق (e.g., ok)")
     database: str = Field(..., description="حالة اتصال قاعدة البيانات")
     version: str = Field(..., description="إصدار التطبيق")
 
-
 class HealthzResponse(BaseModel):
     status: str = Field(..., description="الحالة العامة (ok/error)")
     detail: str | None = Field(None, description="تفاصيل الخطأ إن وجدت")
-
 
 class SystemInfoResponse(BaseModel):
     """

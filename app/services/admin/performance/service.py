@@ -21,10 +21,8 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
 
 logger = logging.getLogger(__name__)
-
 
 class PerformanceCategory(Enum):
     """Performance categories"""
@@ -32,7 +30,6 @@ class PerformanceCategory(Enum):
     GOOD = 'good'
     ACCEPTABLE = 'acceptable'
     SLOW = 'slow'
-
 
 @dataclass
 class PerformanceMetric:
@@ -55,7 +52,6 @@ class PerformanceMetric:
             return PerformanceCategory.ACCEPTABLE
         return PerformanceCategory.SLOW
 
-
 class ABTestVariant(Enum):
     """A/B testing variants"""
     STREAMING_ENABLED = 'streaming_enabled'
@@ -63,7 +59,6 @@ class ABTestVariant(Enum):
     CHUNK_SIZE_3 = 'chunk_size_3'
     CHUNK_SIZE_5 = 'chunk_size_5'
     CHUNK_SIZE_1 = 'chunk_size_1'
-
 
 @dataclass
 class ABTestResult:
@@ -74,7 +69,6 @@ class ABTestResult:
     p95_latency_ms: float = 0.0
     user_satisfaction: float = 0.0
     conversion_rate: float = 0.0
-
 
 class AdminChatPerformanceService:
     """
@@ -95,6 +89,7 @@ class AdminChatPerformanceService:
         self.error_threshold_pct = 5.0
         logger.info('✨ Admin Chat Performance Service initialized')
 
+    # TODO: Reduce parameters (7 params) - Use config object
     def record_metric(self, category: str, latency_ms: float, tokens: int,
         model_used: str, user_id: (int | None)=None, variant: (
         ABTestVariant | None)=None) ->PerformanceMetric:
@@ -121,6 +116,7 @@ class AdminChatPerformanceService:
         self._check_performance_alerts(metric)
         return metric
 
+    # TODO: Split this function (35 lines) - KISS principle
     def get_statistics(self, category: (str | None)=None, hours: int=24
         ) ->dict[str, Any]:
         """
@@ -161,6 +157,7 @@ class AdminChatPerformanceService:
     def get_ab_results(self) ->dict[str, ABTestResult]:
         """Get A/B testing results"""
         return {v.value: r for v, r in self.ab_tests.items()}
+# TODO: Split this function (52 lines) - KISS principle
 
     def get_optimization_suggestions(self) ->list[str]:
         """
@@ -237,9 +234,7 @@ class AdminChatPerformanceService:
                 f'⚠️ Slow request detected: {metric.latency_ms}ms (user: {metric.user_id}, category: {metric.category})'
                 )
 
-
 _performance_service: AdminChatPerformanceService | None = None
-
 
 def get_performance_service() ->AdminChatPerformanceService:
     """Get or create performance service singleton"""

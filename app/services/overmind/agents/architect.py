@@ -12,14 +12,12 @@
 """
 
 import json
-from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
 from app.core.protocols import AgentArchitect, CollaborationContext
 
 logger = get_logger(__name__)
-
 
 class ArchitectAgent(AgentArchitect):
     """

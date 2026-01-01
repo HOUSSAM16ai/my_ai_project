@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +9,6 @@ from app.core.prompts import get_system_prompt
 from app.models import AdminConversation, AdminMessage, MessageRole, User
 
 logger = logging.getLogger(__name__)
-
 
 class AdminChatPersistence:
     """

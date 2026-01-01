@@ -19,7 +19,6 @@ from app.models import pwd_context
 
 settings = get_settings()
 
-
 def generate_service_token(user_id: str) -> str:
     """
     Generates a short-lived JWT for authenticating with internal services.
@@ -40,7 +39,6 @@ def generate_service_token(user_id: str) -> str:
         'sub': user_id
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
-
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """

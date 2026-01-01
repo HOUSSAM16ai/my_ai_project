@@ -5,7 +5,6 @@ CRUD Router - عمليات البيانات العامة
 يوفر هذا الموجه (Router) نقاط نهاية موحدة للعمليات الأساسية (CRUD) للموارد.
 يعتمد على `CrudBoundaryService` لتنفيذ المنطق، مما يضمن فصل طبقة العرض عن طبقة البيانات.
 """
-from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,11 +15,9 @@ from app.services.boundaries.crud_boundary_service import CrudBoundaryService
 
 router = APIRouter(tags=["CRUD"])
 
-
 def get_crud_service(db: AsyncSession = Depends(get_db)) -> CrudBoundaryService:
     """Dependency to get the CRUD Boundary Service."""
     return CrudBoundaryService(db)
-
 
 @router.get(
     "/resources/{resource_type}",
@@ -54,7 +51,6 @@ async def list_resources(
     # Ensure result matches the PaginatedResponse structure
     return PaginatedResponse[GenericResourceResponse].model_validate(result)
 
-
 @router.post(
     "/resources/{resource_type}",
     summary="Create Resource",
@@ -70,7 +66,6 @@ async def create_resource(
     """
     result = await service.create_item(resource_type, payload)
     return GenericResourceResponse.model_validate(result)
-
 
 @router.get(
     "/resources/{resource_type}/{item_id}",
@@ -88,7 +83,6 @@ async def get_resource(
     result = await service.get_item(resource_type, item_id)
     return GenericResourceResponse.model_validate(result)
 
-
 @router.put(
     "/resources/{resource_type}/{item_id}",
     summary="Update Resource",
@@ -105,7 +99,6 @@ async def update_resource(
     """
     result = await service.update_item(resource_type, item_id, payload)
     return GenericResourceResponse.model_validate(result)
-
 
 @router.delete(
     "/resources/{resource_type}/{item_id}",

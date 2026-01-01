@@ -7,7 +7,6 @@ from app.security_metrics.domain.entities import RiskScore, SecurityFinding
 from app.security_metrics.domain.interfaces import RiskCalculator
 from app.security_metrics.domain.value_objects import RiskLevel, Severity
 
-
 class RiskScoreCalculator(RiskCalculator):
     """Risk score calculator - SRP: Only calculates risk scores."""
 

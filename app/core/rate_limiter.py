@@ -13,7 +13,6 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass
 
-
 @dataclass
 class RateLimitConfig:
     """Rate limit configuration."""
@@ -21,7 +20,6 @@ class RateLimitConfig:
     max_calls: int = 20  # Max calls per window
     window_seconds: float = 60  # Time window in seconds
     cooldown_seconds: float = 5  # Cooldown after limit hit
-
 
 class ToolRateLimiter:
     """Thread-safe rate limiter for tool execution."""
@@ -41,6 +39,7 @@ class ToolRateLimiter:
         cutoff = now - self.config.window_seconds
         self._calls[key] = [t for t in self._calls[key] if t > cutoff]
 
+    # TODO: Split this function (34 lines) - KISS principle
     def _periodic_cleanup(self, now: float):
         """Periodic cleanup to prevent memory leaks from abandoned keys."""
         # Only run cleanup every 5 minutes
@@ -76,6 +75,7 @@ class ToolRateLimiter:
             )
             for key in sorted_keys[: len(sorted_keys) - self._MAX_KEYS]:
                 self._calls.pop(key, None)
+# TODO: Split this function (35 lines) - KISS principle
 
     def check(self, user_id: int, tool_name: str) -> tuple[bool, str]:
         """
@@ -114,7 +114,7 @@ class ToolRateLimiter:
             self._calls[key].append(now)
             return True, "ok"
 
-    def reset(self, user_id: int, tool_name: str | None = None):
+    def reset(self, user_id: int, tool_name: str | None = None) -> None:
         """Reset rate limit for user (admin function)."""
         with self._lock:
             if tool_name:
@@ -128,10 +128,8 @@ class ToolRateLimiter:
                     self._calls.pop(k, None)
                     self._cooldowns.pop(k, None)
 
-
 # Global rate limiter instance
 _rate_limiter = ToolRateLimiter()
-
 
 def get_rate_limiter() -> ToolRateLimiter:
     return _rate_limiter

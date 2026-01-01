@@ -43,9 +43,7 @@ def get_di_settings() -> AppSettings:
     """
     return _SETTINGS_SINGLETON
 
-
 get_settings = get_di_settings
-
 
 async def get_di_db() -> AsyncGenerator[AsyncSession, None]:
     """
@@ -55,11 +53,9 @@ async def get_di_db() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_factory() as session:
         yield session
 
-
 get_session = get_di_db
 get_db = get_di_db
 get_logger = _get_logger
-
 
 # ==============================================================================
 # Application Service Dependencies (Clean Architecture)
@@ -76,7 +72,6 @@ async def get_health_check_service() -> AsyncGenerator['HealthCheckService', Non
     async with async_session_factory() as session:
         db_repo = SQLAlchemyDatabaseRepository(session)
         yield DefaultHealthCheckService(db_repo)
-
 
 async def get_system_service() -> AsyncGenerator['SystemService', None]:
     """

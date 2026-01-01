@@ -9,10 +9,9 @@ This eliminates the catastrophic duplication found in overmind/planning/telemetr
 
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 T = TypeVar("T")
-
 
 @dataclass
 class RingBuffer(Generic[T]):  # noqa: UP046
@@ -47,7 +46,6 @@ class RingBuffer(Generic[T]):  # noqa: UP046
     def to_list(self) -> list[T]:
         """Convert to list."""
         return list(self.buffer)
-
 
 class BaseProfiler:
     """
@@ -93,7 +91,6 @@ class BaseProfiler:
     def get_samples(self) -> list[Any]:
         """Get all samples as list."""
         return self._buffer.to_list()
-
 
 class BaseMetricsCollector(BaseProfiler):
     """
@@ -144,9 +141,7 @@ class BaseMetricsCollector(BaseProfiler):
             "max_samples": self._buffer.max_size,
         }
 
-
 # ==================== SPECIALIZED PROFILERS ====================
-
 
 class TimeProfiler(BaseMetricsCollector):
     """
@@ -186,7 +181,6 @@ class TimeProfiler(BaseMetricsCollector):
 
         return stats
 
-
 class CountProfiler(BaseMetricsCollector):
     """
     Counter-based profiler for event counting.
@@ -221,7 +215,6 @@ class CountProfiler(BaseMetricsCollector):
         stats["categories"] = category_counts
         return stats
 
-
 # ==================== EXPORTS ====================
 
 __all__ = [
@@ -231,7 +224,6 @@ __all__ = [
     "RingBuffer",
     "TimeProfiler",
 ]
-
 
 # ==================== MIGRATION GUIDE ====================
 """
@@ -244,13 +236,13 @@ class MyProfiler:
         self._buffer = RingBuffer(max_samples)
         self._enabled = True
 
-    def clear(self):
+    def clear(self) -> None:
         self._buffer.clear()
 
-    def enable(self):
+    def enable(self) -> None:
         self._enabled = True
 
-    def disable(self):
+    def disable(self) -> None:
         self._enabled = False
 
     @property
@@ -264,9 +256,8 @@ class MyProfiler(BaseMetricsCollector):
     # All common methods inherited!
 
     # Only implement custom functionality:
-    def my_custom_method(self):
+    def my_custom_method(self) -> None:
         self.record({"custom": "data"})
-
 
 # For timing:
 profiler = TimeProfiler()

@@ -13,7 +13,6 @@ Architecture: Plugin-based with lifecycle hooks
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
@@ -22,7 +21,6 @@ from starlette.types import ASGIApp
 
 from .context import RequestContext
 from .result import MiddlewareResult
-
 
 class BaseMiddleware(BaseHTTPMiddleware, ABC):
     """
@@ -150,15 +148,15 @@ class BaseMiddleware(BaseHTTPMiddleware, ABC):
             self.on_error(ctx, e)
             raise e
 
-    def on_success(self, ctx: RequestContext):
+    def on_success(self, ctx: RequestContext) -> None:
         """Lifecycle hook called when middleware check passes"""
         # Default implementation is empty
 
-    def on_error(self, ctx: RequestContext, error: Exception):
+    def on_error(self, ctx: RequestContext, error: Exception) -> None:
         """Lifecycle hook called when middleware encounters an error"""
         # Default implementation is empty
 
-    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+    def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
         """Lifecycle hook called after middleware execution completes"""
         # Default implementation is empty
 
@@ -177,7 +175,6 @@ class BaseMiddleware(BaseHTTPMiddleware, ABC):
     def __repr__(self) -> str:
         """String representation"""
         return f"{self.__class__.__name__}(name={self.name}, order={self.order})"
-
 
 class ConditionalMiddleware(BaseMiddleware):
     """Base class for middleware that only runs under certain conditions"""
@@ -212,7 +209,6 @@ class ConditionalMiddleware(BaseMiddleware):
         # Check HTTP methods
         return not (self.methods and ctx.method not in self.methods)
 
-
 class MetricsMiddleware(BaseMiddleware):
     """Base class for middleware that collects metrics"""
 
@@ -222,11 +218,11 @@ class MetricsMiddleware(BaseMiddleware):
         self.success_count = 0
         self.failure_count = 0
 
-    def on_success(self, ctx: RequestContext):
+    def on_success(self, ctx: RequestContext) -> None:
         self.success_count += 1
         self.request_count += 1
 
-    def on_error(self, ctx: RequestContext, error: Exception):
+    def on_error(self, ctx: RequestContext, error: Exception) -> None:
         self.failure_count += 1
         self.request_count += 1
 

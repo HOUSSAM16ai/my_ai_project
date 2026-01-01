@@ -4,12 +4,11 @@ import click
 from alembic import command
 from alembic.config import Config
 
-
-def register_migrate_commands(root):
+def register_migrate_commands(root) -> None:
     @root.command("db-migrate")
     @click.option("--rev", default="head")
     @click.pass_context
-    def db_migrate(ctx, rev):
+    def db_migrate(ctx, rev) -> None:
         settings = ctx.obj["settings"]
         logger = ctx.obj["logger"]
         cfg = Config()

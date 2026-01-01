@@ -11,7 +11,6 @@ from collections import defaultdict
 
 from app.services.adaptive.domain.models import ServiceInstance, ServiceMetrics
 
-
 class InMemoryServiceInstanceRepository:
     """In-memory repository for service instances"""
 
@@ -49,7 +48,6 @@ class InMemoryServiceInstanceRepository:
         """List all instances for a service"""
         instance_ids = self._services.get(service_name, [])
         return [self._instances[iid] for iid in instance_ids if iid in self._instances]
-
 
 class InMemoryMetricsRepository:
     """In-memory repository for metrics"""

@@ -1,7 +1,5 @@
-from typing import Any
 
 from .base import ModelProviderAdapter
-
 
 class OpenAIAdapter(ModelProviderAdapter):
     """OpenAI model provider adapter"""

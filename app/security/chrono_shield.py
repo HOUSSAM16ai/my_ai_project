@@ -24,7 +24,6 @@ else:
         logger.warning(f"ChronoShield: Could not pre-compute DUMMY_HASH ({e}). Using fallback.")
         DUMMY_HASH = "$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$QaH8hQ"
 
-
 class ChronoShield:
     """
     The Chrono-Kinetic Defense Shield (Advanced Authentication Protection).
@@ -142,7 +141,6 @@ class ChronoShield:
         # Verify against the dummy hash. Always returns False (hopefully),
         # but takes the same time as a real verify.
         return pwd_context.verify(password, DUMMY_HASH)
-
 
 # Singleton Instance
 chrono_shield = ChronoShield()

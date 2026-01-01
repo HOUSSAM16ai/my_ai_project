@@ -9,11 +9,9 @@
 - Robustness: التعامل مع مدخلات غير متوقعة.
 """
 
-from typing import Any
-
 __all__ = ["strip_markdown_fences", "extract_first_json_object"]
 
-
+# TODO: Split this function (33 lines) - KISS principle
 def strip_markdown_fences(text: str | None) -> str:
     """
     إزالة علامات Markdown (```) من النص.
@@ -49,6 +47,7 @@ def strip_markdown_fences(text: str | None) -> str:
 
     return t
 
+# TODO: Split this function (56 lines) - KISS principle
 
 def extract_first_json_object(text: str | None) -> str | None:
     """

@@ -14,8 +14,6 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
-
 
 class EventType(Enum):
     """Event types"""
@@ -24,7 +22,6 @@ class EventType(Enum):
     BUSINESS = 'business'
     ERROR = 'error'
     SECURITY = 'security'
-
 
 @dataclass
 class Event:
@@ -48,7 +45,6 @@ class Event:
             'trace_id': self.trace_id, 'properties': self.properties,
             'context': self.context}
 
-
 class EventTracker:
     """
     تتبع الأحداث - Event Tracker
@@ -69,6 +65,7 @@ class EventTracker:
             0, 'business_events': 0, 'error_events': 0, 'security_events':
             0, 'duplicates_filtered': 0}
 
+    # TODO: Reduce parameters (8 params) - Use config object
     def track(self, event_type: EventType, name: str, user_id: (str | None)
         =None, session_id: (str | None)=None, trace_id: (str | None)=None,
         properties: (dict[str, Any] | None)=None, context: (dict[str, Any] |

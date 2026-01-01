@@ -4,7 +4,7 @@ Composite resilience policy combining multiple patterns.
 
 import logging
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from app.core.resilience.bulkhead import Bulkhead
 from app.core.resilience.circuit_breaker import CircuitBreaker
@@ -15,7 +15,6 @@ from app.core.resilience.timeout import TimeoutPolicy
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
-
 
 class CompositeResiliencePolicy:
     """
@@ -29,6 +28,7 @@ class CompositeResiliencePolicy:
     5. Fallback (graceful degradation)
     """
 
+    # TODO: Reduce parameters (6 params) - Use config object
     def __init__(
         self,
         bulkhead: Bulkhead | None = None,

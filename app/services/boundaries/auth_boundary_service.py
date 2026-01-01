@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import Any
 
 import jwt
 from fastapi import HTTPException, Request
@@ -27,7 +26,6 @@ from app.services.security.auth_persistence import AuthPersistence
 logger = logging.getLogger(__name__)
 
 __all__ = ["AuthBoundaryService"]
-
 
 class AuthBoundaryService:
     """

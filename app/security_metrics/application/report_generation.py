@@ -2,7 +2,6 @@
 
 from collections import defaultdict
 from datetime import datetime
-from typing import Any
 
 from app.security_metrics.domain.entities import RiskScore, SecurityFinding
 from app.security_metrics.domain.interfaces import (
@@ -11,7 +10,6 @@ from app.security_metrics.domain.interfaces import (
     SecurityRepository,
 )
 from app.security_metrics.domain.value_objects import RiskLevel, Severity
-
 
 class SecurityReportGenerator(ReportGenerator):
     """Security report generator - SRP: Only generates security reports."""

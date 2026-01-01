@@ -1,7 +1,6 @@
 import logging
 import sys
 
-
 def setup_logging(level: str = "INFO") -> None:
     """
     Setup basic logging configuration.

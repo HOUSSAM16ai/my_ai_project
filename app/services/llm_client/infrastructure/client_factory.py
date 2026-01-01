@@ -4,13 +4,12 @@ OpenAI Client Factory and Infrastructure.
 """
 
 import threading
-from typing import Any, Protocol
+from typing import Protocol
 
 from app.config.settings import get_settings
 from app.core.logging import get_logger
 
 _LOG = get_logger(__name__)
-
 
 class LLMClientProtocol(Protocol):
     """
@@ -18,7 +17,6 @@ class LLMClientProtocol(Protocol):
     Protocol defining the client interface.
     """
     chat: Any  # Should be narrower, but OpenAI client structure is complex
-
 
 class MockClient:
     """
@@ -53,11 +51,9 @@ class MockClient:
             model="mock-model-v1"
         )
 
-
 _CLIENT_SINGLETON: Any | None = None
 _CLIENT_LOCK = threading.Lock()
 _CLIENT_META: dict[str, Any] = {}
-
 
 def get_llm_client() -> dict[str, str | int | bool]:
     """
@@ -90,7 +86,6 @@ def get_llm_client() -> dict[str, str | int | bool]:
 
         return _CLIENT_SINGLETON
 
-
 def reset_llm_client() -> None:
     """
     إعادة تعيين العميل (للاختبارات).
@@ -99,7 +94,6 @@ def reset_llm_client() -> None:
     global _CLIENT_SINGLETON
     with _CLIENT_LOCK:
         _CLIENT_SINGLETON = None
-
 
 def is_mock_client(client: dict[str, str | int | bool]) -> bool:
     return hasattr(client, "_is_mock_client")

@@ -3,10 +3,9 @@
 import contextlib
 import inspect
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import TypeVar
 
 T = TypeVar("T")
-
 
 class DIContainer:
     """Dependency injection container."""
@@ -16,18 +15,18 @@ class DIContainer:
         self._factories: dict[type, Callable] = {}
         self._singletons: dict[type, Any] = {}
 
-    def register(self, interface: type[T], implementation: type[T] | T):
+    def register(self, interface: type[T], implementation: type[T] | T) -> None:
         """Register service implementation."""
         if inspect.isclass(implementation):
             self._services[interface] = implementation
         else:
             self._singletons[interface] = implementation
 
-    def register_factory(self, interface: type[T], factory: Callable[..., T]):
+    def register_factory(self, interface: type[T], factory: Callable[..., T]) -> None:
         """Register factory function."""
         self._factories[interface] = factory
 
-    def register_singleton(self, interface: type[T], instance: T):
+    def register_singleton(self, interface: type[T], instance: T) -> None:
         """Register singleton instance."""
         self._singletons[interface] = instance
 
@@ -68,20 +67,17 @@ class DIContainer:
 
         return cls(**params)
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all registrations."""
         self._services.clear()
         self._factories.clear()
         self._singletons.clear()
 
-
 _global_container = DIContainer()
-
 
 def get_container() -> DIContainer:
     """Get global DI container."""
     return _global_container
-
 
 def inject[T](func: Callable[..., T]) -> Callable[..., T]:
     """Decorator for automatic dependency injection."""

@@ -2,18 +2,15 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any
 
 import yaml
 
 _LOG = logging.getLogger("yaml_utils")
 
-
 class YamlSecurityError(Exception):
     """Raised when unsafe YAML loading is attempted."""
 
     pass
-
 
 def load_yaml_safely(content: str | bytes) -> dict[str, str | int | bool]:
     """
@@ -25,7 +22,6 @@ def load_yaml_safely(content: str | bytes) -> dict[str, str | int | bool]:
     except yaml.YAMLError as e:
         _LOG.error(f"Failed to parse YAML safely: {e}")
         raise YamlSecurityError(f"Invalid or unsafe YAML content: {e}") from e
-
 
 def load_yaml_file_safely(path: str) -> dict[str, str | int | bool]:
     """

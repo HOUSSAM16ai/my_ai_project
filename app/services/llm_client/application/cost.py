@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 """
 مدير التكلفة لتتبع استهلاك الرموز (Tokens).
 Cost Manager for tracking token usage.
@@ -23,8 +25,6 @@ class CostManager:
 
     # Simplified pricing model (can be injected or config-based)
     # Price per 1k tokens
-from typing import ClassVar
-
     PRICING: ClassVar[dict[str, float]] = {
         "gpt-4": 0.03,
         "gpt-3.5-turbo": 0.002,

@@ -4,11 +4,9 @@ from dataclasses import dataclass
 
 from fastapi import Request
 
-
 @dataclass
 class ThreatDetection:
     threat_score: float
-
 
 class AIThreatDetector:
     def __init__(self):

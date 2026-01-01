@@ -4,7 +4,6 @@ import asyncio
 import json
 import logging
 from collections.abc import AsyncGenerator, Callable
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,7 +17,6 @@ logger = logging.getLogger(__name__)
 # مجموعة عالمية للحفاظ على مراجع المهام الخلفية ومنع جمع القمامة (Garbage Collection)
 # هذا يضمن استمرار عمليات الحفظ حتى بعد انتهاء دالة البث
 _background_tasks: set[asyncio.Task] = set()
-
 
 class AdminChatStreamer:
     """

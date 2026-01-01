@@ -8,13 +8,13 @@ import statistics
 from ..domain.models import RiskPrediction, SecurityMetrics, TrendDirection
 from ..domain.ports import PredictiveAnalyticsPort
 
-
 class LinearRegressionPredictor(PredictiveAnalyticsPort):
     """
     Predictive analytics using linear regression
     Inspired by: Google's Predictive Security, AWS GuardDuty ML
     """
 
+    # TODO: Split this function (45 lines) - KISS principle
     def predict_future_risk(
         self, historical_metrics: list[SecurityMetrics], days_ahead: int = 30
     ) -> RiskPrediction:

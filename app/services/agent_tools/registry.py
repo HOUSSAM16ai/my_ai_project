@@ -3,12 +3,10 @@ Tool registry with thread-safe operations.
 """
 import logging
 import threading
-from typing import Any
 
 from app.services.agent_tools.tool_model import Tool
 
 logger = logging.getLogger(__name__)
-
 
 class ToolRegistry:
     """
@@ -97,9 +95,7 @@ class ToolRegistry:
             self._aliases.clear()
             logger.info('Tool registry cleared')
 
-
 _global_registry = ToolRegistry()
-
 
 def get_tool_registry() ->ToolRegistry:
     """Get global tool registry."""

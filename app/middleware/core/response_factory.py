@@ -4,13 +4,12 @@ Response Factory - FastAPI Optimized
 Creates HTTP responses for FastAPI.
 Refactored to remove Django/Flask/ASGI fallback complexity.
 """
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from fastapi.responses import JSONResponse
 
 if TYPE_CHECKING:
     pass
-
 
 class ResponseFactory:
     """
@@ -43,7 +42,7 @@ class ResponseFactory:
         return ResponseFactory.make_json_response(data, status_code)
 
     @staticmethod
-    def make_success_response(data: Any=None, message: str='Success',
+    def make_success_response(data: dict[str, str | int | bool]=None, message: str='Success',
         status_code: int=200) ->JSONResponse:
         """
         Create a success response

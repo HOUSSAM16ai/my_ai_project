@@ -9,13 +9,13 @@ from pathlib import Path
 
 from app.services.project_context.domain.models import FileAnalysis
 
-
 @dataclass
 class DeepFileAnalyzer:
     """Analyzer for deep file analysis."""
 
     project_root: Path
 
+    # TODO: Split this function (54 lines) - KISS principle
     def analyze(self) -> FileAnalysis:
         """Deep analyze all files."""
         analysis = FileAnalysis()

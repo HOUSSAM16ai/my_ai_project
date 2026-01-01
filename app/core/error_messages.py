@@ -2,7 +2,6 @@
 import os
 import re
 
-
 def _format_timeout_error(max_tokens: int) -> str:
     """Formats timeout error message"""
     return (
@@ -31,7 +30,6 @@ def _format_timeout_error(max_tokens: int) -> str:
         f"4. Or ask a more specific question"
     )
 
-
 def _format_rate_limit_error(error: str) -> str:
     """Formats rate limit error message"""
     return (
@@ -47,7 +45,6 @@ def _format_rate_limit_error(error: str) -> str:
         f"**Technical Details:**\n"
         f"- Error: {error}"
     )
-
 
 def _format_context_error(prompt_length: int, max_tokens: int, error: str) -> str:
     """Formats context length error message"""
@@ -77,7 +74,6 @@ def _format_context_error(prompt_length: int, max_tokens: int, error: str) -> st
         f"- Error: {error}"
     )
 
-
 def _format_auth_error(error: str) -> str:
     """Formats authentication error message"""
     return (
@@ -94,7 +90,7 @@ def _format_auth_error(error: str) -> str:
         f"- Error: {error}"
     )
 
-
+# TODO: Split this function (46 lines) - KISS principle
 def _format_server_error(prompt_length: int, max_tokens: int, error: str) -> str:
     """Formats server error message (500)"""
     ultimate_active = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
@@ -143,7 +139,6 @@ def _format_server_error(prompt_length: int, max_tokens: int, error: str) -> str
         f"- Error: {error}"
     )
 
-
 def _format_no_response_error(prompt_length: int, max_tokens: int) -> str:
     """Formats no response error message"""
     return (
@@ -164,7 +159,6 @@ def _format_no_response_error(prompt_length: int, max_tokens: int) -> str:
         f"- Prompt length: {prompt_length:,} characters\n"
         f"- Max tokens: {max_tokens:,}"
     )
-
 
 def _format_generic_error(prompt_length: int, max_tokens: int, error: str) -> str:
     """Formats generic error message"""
@@ -188,6 +182,7 @@ def _format_generic_error(prompt_length: int, max_tokens: int, error: str) -> st
         f"- Error: {error}"
     )
 
+# TODO: Split this function (31 lines) - KISS principle
 
 def build_bilingual_error_message(error: str, prompt_length: int, max_tokens: int) -> str:
     """
@@ -221,7 +216,6 @@ def build_bilingual_error_message(error: str, prompt_length: int, max_tokens: in
         return _format_no_response_error(prompt_length, max_tokens)
 
     return _format_generic_error(prompt_length, max_tokens, error)
-
 
 def _add_technical_details(prompt_length: int, max_tokens: int, error: str) -> str:
     """Helper to add technical details block if not present"""

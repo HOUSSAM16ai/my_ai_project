@@ -16,7 +16,6 @@ from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 from app.telemetry.unified_observability import TraceContext, get_unified_observability
 
-
 class ObservabilityMiddleware(BaseMiddleware):
     """
     Unified Observability Middleware
@@ -36,6 +35,7 @@ class ObservabilityMiddleware(BaseMiddleware):
         self.obs = get_unified_observability()
         self.traces_started = 0
 
+    # TODO: Split this function (62 lines) - KISS principle
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
         """
         Start trace and collect request metadata
@@ -99,8 +99,9 @@ class ObservabilityMiddleware(BaseMiddleware):
         )
 
         return MiddlewareResult.success()
+# TODO: Split this function (74 lines) - KISS principle
 
-    def on_complete(self, ctx: RequestContext, result: MiddlewareResult):
+    def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
         """
         End trace and record metrics
 
@@ -174,9 +175,10 @@ class ObservabilityMiddleware(BaseMiddleware):
             },
             trace_id=trace_context.trace_id,
             span_id=trace_context.span_id,
+        # TODO: Split this function (33 lines) - KISS principle
         )
 
-    def on_error(self, ctx: RequestContext, error: Exception):
+    def on_error(self, ctx: RequestContext, error: Exception) -> None:
         """
         Log errors and add to trace
 

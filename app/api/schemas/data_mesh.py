@@ -1,9 +1,7 @@
-from typing import Any
 
 from pydantic import Field
 
 from app.core.schemas import RobustBaseModel
-
 
 class DataContractRequest(RobustBaseModel):
     """
@@ -14,7 +12,6 @@ class DataContractRequest(RobustBaseModel):
     sla: dict[str, Any] | None = Field(None, description="اتفاقية مستوى الخدمة")
     owner: str = Field(..., description="المالك")
 
-
 class DataContractResponse(RobustBaseModel):
     """
     نموذج استجابة لعقد البيانات.
@@ -23,7 +20,6 @@ class DataContractResponse(RobustBaseModel):
     domain: str = Field(..., description="المجال")
     schema_definition: dict[str, Any] = Field(..., description="تعريف المخطط")
     status: str = Field("active", description="حالة العقد")
-
 
 class DataMeshMetricsResponse(RobustBaseModel):
     """

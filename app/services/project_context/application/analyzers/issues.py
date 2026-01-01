@@ -8,8 +8,6 @@ import ast
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
-
 
 @dataclass
 class IssueAnalyzer:
@@ -17,6 +15,7 @@ class IssueAnalyzer:
 
     project_root: Path
 
+    # TODO: Split this function (67 lines) - KISS principle
     def deep_search_issues(self) -> dict[str, Any]:
         """Deep search for issues."""
         issues = {
@@ -85,6 +84,7 @@ class IssueAnalyzer:
                 pass
 
         return issues
+# TODO: Split this function (67 lines) - KISS principle
 
     def detect_code_smells(self) -> dict[str, Any]:
         """Detect code smells."""

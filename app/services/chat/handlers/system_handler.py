@@ -11,7 +11,6 @@ from app.services.chat.security import ErrorSanitizer
 
 logger = logging.getLogger(__name__)
 
-
 async def handle_project_index(
     context: ChatContext,
     user_id: int,
@@ -81,7 +80,6 @@ async def handle_project_index(
     duration = (time.time() - start_time) * 1000
     yield f"\n⏱️ وقت التنفيذ: {duration:.0f}ms\n"
     logger.debug(f"project_index completed in {duration:.2f}ms")
-
 
 async def handle_help() -> AsyncGenerator[str, None]:
     """Show available commands."""

@@ -11,7 +11,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,18 +20,17 @@ T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
 
-
 class BaseRepository(ABC, Generic[T]):
     """
     مستودع قاعدي لجميع عمليات قاعدة البيانات.
-    
+
     يوفر عمليات CRUD الأساسية ويقلل من التكرار.
     """
 
     def __init__(self, session: AsyncSession, model: type[T]):
         """
         تهيئة المستودع.
-        
+
         Args:
             session: جلسة قاعدة البيانات
             model: نموذج SQLAlchemy
@@ -83,7 +82,7 @@ class BaseRepository(ABC, Generic[T]):
     async def find_by_criteria(self, **criteria: dict[str, str | int | bool]) -> list[T]:
         """
         البحث بناءً على معايير محددة.
-        
+
         يجب تنفيذها في الفئات الفرعية حسب الحاجة.
         """
         pass

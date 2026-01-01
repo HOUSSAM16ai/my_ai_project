@@ -8,7 +8,6 @@ Simple automated threat response implementation.
 
 from ...domain.models import ThreatDetection, ThreatLevel
 
-
 class SimpleResponseSystem:
     """
     نظام استجابة بسيط
@@ -60,6 +59,5 @@ class SimpleResponseSystem:
     def is_blocked(self, ip_address: str) -> bool:
         """Check if IP is blocked"""
         return ip_address in self.blocked_ips
-
 
 __all__ = ["SimpleResponseSystem"]

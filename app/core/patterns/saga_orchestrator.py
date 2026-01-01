@@ -24,8 +24,6 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
-
 
 # ======================================================================================
 # ENUMERATIONS
@@ -40,7 +38,6 @@ class SagaStatus(Enum):
     COMPENSATED = "compensated"  # Rolled back successfully
     FAILED = "failed"
 
-
 class StepStatus(Enum):
     """Individual step status"""
 
@@ -51,13 +48,11 @@ class StepStatus(Enum):
     COMPENSATED = "compensated"
     FAILED = "failed"
 
-
 class SagaType(Enum):
     """Type of saga orchestration"""
 
     ORCHESTRATED = "orchestrated"  # Central coordinator
     CHOREOGRAPHED = "choreographed"  # Event-driven, decentralized
-
 
 # ======================================================================================
 # DATA STRUCTURES
@@ -72,14 +67,13 @@ class SagaStep:
     compensation: Callable[..., Any]  # Rollback action
     parameters: dict[str, Any] = field(default_factory=dict)
     status: StepStatus = StepStatus.PENDING
-    result: Any = None
+    result: dict[str, str | int | bool] = None
     error: str | None = None
     started_at: datetime | None = None
     completed_at: datetime | None = None
     retry_count: int = 0
     max_retries: int = 3
     timeout_seconds: int = 30
-
 
 @dataclass
 class Saga:
@@ -97,7 +91,6 @@ class Saga:
     metadata: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
 
-
 @dataclass
 class SagaEvent:
     """Event emitted during saga execution"""
@@ -108,7 +101,6 @@ class SagaEvent:
     step_id: str | None
     timestamp: datetime
     payload: dict[str, Any]
-
 
 # ======================================================================================
 # SAGA ORCHESTRATOR
@@ -136,6 +128,8 @@ class SagaOrchestrator:
         self.lock = threading.RLock()
         self._running_sagas: set[str] = set()
 
+    # TODO: Split this function (61 lines) - KISS principle
+    # TODO: Reduce parameters (6 params) - Use config object
     def create_saga(
         self,
         saga_name: str,
@@ -198,6 +192,7 @@ class SagaOrchestrator:
         logging.info(f"Saga created: {saga_name} ({saga_id}) with {len(saga_steps)} steps")
 
         return saga_id
+# TODO: Split this function (75 lines) - KISS principle
 
     def execute_saga(self, saga_id: str) -> bool:
         """
@@ -274,6 +269,7 @@ class SagaOrchestrator:
 
         finally:
             with self.lock:
+                # TODO: Split this function (64 lines) - KISS principle
                 self._running_sagas.discard(saga_id)
 
     def _execute_step(self, saga_id: str, step: SagaStep) -> bool:
@@ -339,6 +335,7 @@ class SagaOrchestrator:
                     )
 
                     return False
+# TODO: Split this function (65 lines) - KISS principle
 
         return False
 
@@ -490,13 +487,11 @@ class SagaOrchestrator:
                 "compensation_rate": (compensated / total_sagas * 100) if total_sagas > 0 else 0,
             }
 
-
 # ======================================================================================
 # SINGLETON INSTANCE
 # ======================================================================================
 _saga_orchestrator_instance: SagaOrchestrator | None = None
 _orchestrator_lock = threading.Lock()
-
 
 def get_saga_orchestrator() -> SagaOrchestrator:
     """Get singleton saga orchestrator instance"""

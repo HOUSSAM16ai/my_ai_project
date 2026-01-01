@@ -5,19 +5,16 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
 
 from app.core.ai_gateway import AIClient, get_ai_client
 
 logger = logging.getLogger(__name__)
-
 
 class AgentState(Enum):
     IDLE = "IDLE"
     WORKING = "WORKING"
     WAITING = "WAITING"
     ERROR = "ERROR"
-
 
 @dataclass
 class AgentMessage:
@@ -26,7 +23,6 @@ class AgentMessage:
     target_id: str = ""
     content: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
-
 
 class AgentNode:
     """
@@ -43,12 +39,12 @@ class AgentNode:
         self.ai_client: AIClient = get_ai_client()
         self.neighbors: list[str] = []  # IDs of connected agents
 
-    def connect(self, other_agent_id: str):
+    def connect(self, other_agent_id: str) -> None:
         """Connects this agent to another agent in the graph."""
         if other_agent_id not in self.neighbors:
             self.neighbors.append(other_agent_id)
 
-    async def receive(self, message: AgentMessage):
+    async def receive(self, message: AgentMessage) -> None:
         """Receives a message into the inbox."""
         await self.inbox.put(message)
 

@@ -4,12 +4,10 @@
 Policy-Based Access Control (PBAC) middleware.
 Enforces access rules based on configurable policies.
 """
-from typing import Any
 
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
-
 
 class PolicyEnforcer(BaseMiddleware):
     """
@@ -73,6 +71,7 @@ class PolicyEnforcer(BaseMiddleware):
                 return policy
         return None
 
+    # TODO: Split this function (32 lines) - KISS principle
     def _check_policy(self, ctx: RequestContext, policy: dict[str, Any]
         ) ->bool:
         """
@@ -107,7 +106,7 @@ class PolicyEnforcer(BaseMiddleware):
         ip_blacklist = policy.get('ip_blacklist', [])
         return not (ip_blacklist and ctx.ip_address in ip_blacklist)
 
-    def add_policy(self, path: str, policy: dict[str, Any]):
+    def add_policy(self, path: str, policy: dict[str, Any]) -> None:
         """
         Add a new policy
 

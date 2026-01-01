@@ -15,7 +15,6 @@ from app.models import User
 
 logger = logging.getLogger(__name__)
 
-
 class AuthPersistence:
     """
     Encapsulates all Data Access Logic for Authentication.

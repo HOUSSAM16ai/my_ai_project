@@ -5,7 +5,6 @@ import time
 from collections import deque
 from dataclasses import dataclass
 
-
 @dataclass
 class RateLimitConfig:
     """Rate limiting configuration"""
@@ -14,7 +13,6 @@ class RateLimitConfig:
     capacity: int = 1000
     refill_rate: int = 100  # per second
     priority_enabled: bool = True
-
 
 class TokenBucket:
     """
@@ -53,7 +51,6 @@ class TokenBucket:
             self.tokens = min(self.capacity, self.tokens + tokens_to_add)
             self.last_refill = now
 
-
 class SlidingWindowCounter:
     """
     Sliding Window Algorithm
@@ -82,7 +79,6 @@ class SlidingWindowCounter:
                 self.requests.append(now)
                 return True
             return False
-
 
 class LeakyBucket:
     """

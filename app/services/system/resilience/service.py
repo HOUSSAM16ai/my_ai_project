@@ -4,7 +4,6 @@ import threading
 from collections.abc import Callable
 from datetime import UTC, datetime
 from functools import wraps
-from typing import Any
 
 from app.services.resilience.bulkhead import Bulkhead, BulkheadConfig
 from app.services.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerConfig
@@ -12,7 +11,6 @@ from app.services.resilience.fallback import FallbackChain
 from app.services.resilience.health import HealthChecker
 from app.services.resilience.retry import RetryConfig, RetryManager
 from app.services.resilience.timeout import AdaptiveTimeout
-
 
 class DistributedResilienceService:
     """
@@ -91,14 +89,12 @@ class DistributedResilienceService:
 
         return stats
 
-
 # ======================================================================================
 # GLOBAL INSTANCE
 # ======================================================================================
 
 # Singleton instance for global access
 _resilience_service: DistributedResilienceService | None = None
-
 
 def get_resilience_service() -> DistributedResilienceService:
     """Get global resilience service instance"""
@@ -107,13 +103,13 @@ def get_resilience_service() -> DistributedResilienceService:
         _resilience_service = DistributedResilienceService()
     return _resilience_service
 
-
+# TODO: Split this function (49 lines) - KISS principle
 def resilient(
     circuit_breaker_name: str | None = None,
     retry_config: RetryConfig | None = None,
     bulkhead_name: str | None = None,
     fallback_chain: FallbackChain | None = None,  # noqa: unused variable
-):
+) -> None:
     """
     Decorator to make functions resilient
 
@@ -129,7 +125,7 @@ def resilient(
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> None:
             # Use global singleton service for component reuse
             service = get_resilience_service()
 

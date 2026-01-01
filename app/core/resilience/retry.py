@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-
 @dataclass
 class RetryConfig:
     """Retry configuration."""
@@ -22,7 +21,6 @@ class RetryConfig:
     max_delay: float = 2.0
     exponential_base: float = 2.0
     jitter: bool = True
-
 
 class RetryPolicy:
     """

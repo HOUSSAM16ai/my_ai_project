@@ -3,8 +3,7 @@
 
 Maps Python exceptions to appropriate HTTP status codes and error responses.
 """
-from typing import Any, ClassVar
-
+from typing import ClassVar
 
 class ExceptionMapper:
     """
@@ -26,7 +25,7 @@ class ExceptionMapper:
 
     @classmethod
     def register_exception(cls, exception_type: type, status_code: int,
-        message: str):
+        message: str) -> None:
         """
         Register a custom exception mapping
 

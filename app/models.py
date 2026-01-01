@@ -19,7 +19,7 @@ from __future__ import annotations
 import enum
 import json
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from passlib.context import CryptContext
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text, TypeDecorator, func
@@ -35,26 +35,24 @@ pwd_context = CryptContext(
     deprecated="auto",
 )
 
-
 def utc_now() -> datetime:
     """
     الحصول على الوقت الحالي بتوقيت UTC.
-    
+
     يستخدم UTC لتجنب مشاكل المناطق الزمنية والتوقيت الصيفي.
-    
+
     Returns:
         datetime: الوقت الحالي بتوقيت UTC
     """
     return datetime.now(UTC)
 
-
 class CaseInsensitiveEnum(str, enum.Enum):
     """
     فئة Enum غير حساسة لحالة الأحرف (Case-Insensitive Enum).
-    
+
     تسمح بقبول 'user' و 'USER' من قاعدة البيانات دون أخطاء.
     يحل مشكلة شائعة في التعامل مع البيانات من مصادر مختلفة.
-    
+
     المبدأ (Principle):
         Robustness - التعامل مع الاختلافات في حالة الأحرف بشكل تلقائي
     """
@@ -63,7 +61,7 @@ class CaseInsensitiveEnum(str, enum.Enum):
     def _missing_(cls, value):
         """
         معالجة القيم المفقودة بطريقة ذكية.
-        
+
         يحاول إيجاد القيمة بغض النظر عن حالة الأحرف.
         """
         if isinstance(value, str):
@@ -77,14 +75,13 @@ class CaseInsensitiveEnum(str, enum.Enum):
                     return member
         return None
 
-
 class FlexibleEnum(TypeDecorator):
     """
     محول نوع مرن للـ Enum (Flexible Enum Type Decorator).
-    
+
     يضمن البحث غير الحساس لحالة الأحرف باستخدام _missing_ من Enum.
     يُخزن كـ TEXT في قاعدة البيانات للمرونة.
-    
+
     المبدأ (Principle):
         Adapter Pattern - تحويل بين تمثيل Python وقاعدة البيانات
     """
@@ -95,17 +92,17 @@ class FlexibleEnum(TypeDecorator):
     def __init__(self, enum_type: type[enum.Enum], *args, **kwargs):
         """
         تهيئة المحول.
-        
+
         Args:
             enum_type: نوع Enum المراد استخدامه
         """
         super().__init__(*args, **kwargs)
         self._enum_type = enum_type
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value, dialect) -> None:
         """
         معالجة القيمة قبل الحفظ في قاعدة البيانات.
-        
+
         يحول Enum إلى string ويطبع القيمة.
         """
         if value is None:
@@ -121,10 +118,10 @@ class FlexibleEnum(TypeDecorator):
                 return value.lower()
         return value
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value, dialect) -> None:
         """
         معالجة القيمة بعد القراءة من قاعدة البيانات.
-        
+
         يحول string إلى Enum باستخدام _missing_.
         """
         if value is None:
@@ -134,11 +131,10 @@ class FlexibleEnum(TypeDecorator):
         except ValueError:
             return value
 
-
 class MessageRole(CaseInsensitiveEnum):
     """
     أدوار الرسائل في المحادثة (Message Roles).
-    
+
     يحدد من أرسل الرسالة في سياق المحادثة مع الذكاء الاصطناعي.
     """
     USER = "user"           # المستخدم البشري
@@ -146,11 +142,10 @@ class MessageRole(CaseInsensitiveEnum):
     TOOL = "tool"           # أداة خارجية
     SYSTEM = "system"       # رسالة النظام
 
-
 class MissionStatus(CaseInsensitiveEnum):
     """
     حالات المهمة (Mission Status).
-    
+
     يتتبع دورة حياة المهمة من البداية حتى الاكتمال.
     """
     PENDING = "pending"     # في الانتظار
@@ -162,14 +157,12 @@ class MissionStatus(CaseInsensitiveEnum):
     FAILED = "failed"
     CANCELED = "canceled"
 
-
 class PlanStatus(CaseInsensitiveEnum):
     DRAFT = "draft"
     VALID = "valid"
     INVALID = "invalid"
     SELECTED = "selected"
     ABANDONED = "abandoned"
-
 
 class TaskStatus(CaseInsensitiveEnum):
     PENDING = "pending"
@@ -178,7 +171,6 @@ class TaskStatus(CaseInsensitiveEnum):
     FAILED = "failed"
     RETRY = "retry"
     SKIPPED = "skipped"
-
 
 class MissionEventType(CaseInsensitiveEnum):
     CREATED = "mission_created"
@@ -196,11 +188,9 @@ class MissionEventType(CaseInsensitiveEnum):
     MISSION_FAILED = "mission_failed"
     FINALIZED = "mission_finalized"
 
-
 # ==============================================================================
 # MODELS
 # ==============================================================================
-
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -226,7 +216,7 @@ class User(SQLModel, table=True):
         sa_relationship=relationship("Mission", back_populates="initiator")
     )
 
-    def set_password(self, password: str):
+    def set_password(self, password: str) -> None:
         self.password_hash = pwd_context.hash(password)
 
     def check_password(self, password: str) -> bool:
@@ -239,7 +229,6 @@ class User(SQLModel, table=True):
 
     def __repr__(self):
         return f"<User id={self.id} email={self.email}>"
-
 
 class AdminConversation(SQLModel, table=True):
     __tablename__ = "admin_conversations"
@@ -262,7 +251,6 @@ class AdminConversation(SQLModel, table=True):
         sa_relationship=relationship("AdminMessage", back_populates="conversation")
     )
 
-
 class AdminMessage(SQLModel, table=True):
     __tablename__ = "admin_messages"
     id: int | None = Field(default=None, primary_key=True)
@@ -278,7 +266,6 @@ class AdminMessage(SQLModel, table=True):
     conversation: AdminConversation = Relationship(
         sa_relationship=relationship("AdminConversation", back_populates="messages")
     )
-
 
 class Mission(SQLModel, table=True):
     __tablename__ = "missions"
@@ -319,7 +306,6 @@ class Mission(SQLModel, table=True):
         sa_relationship=relationship("MissionEvent", back_populates="mission")
     )
 
-
 class JSONText(TypeDecorator):
     """
     SQLAlchemy TypeDecorator that serializes JSON to Text for storage
@@ -330,21 +316,20 @@ class JSONText(TypeDecorator):
     impl = Text
     cache_ok = True
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value, dialect) -> None:
         if value is None:
             return None
         # Always serialize to JSON string to preserve type info
         # This handles dict, list, int, bool, and str correctly
         return json.dumps(value)
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value, dialect) -> None:
         if value is None:
             return None
         try:
             return json.loads(value)
         except (json.JSONDecodeError, TypeError):
             return value
-
 
 class MissionPlan(SQLModel, table=True):
     __tablename__ = "mission_plans"
@@ -376,7 +361,6 @@ class MissionPlan(SQLModel, table=True):
         )
     )
     tasks: list[Task] = Relationship(sa_relationship=relationship("Task", back_populates="plan"))
-
 
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"
@@ -430,7 +414,6 @@ class Task(SQLModel, table=True):
         )
     )
 
-
 class MissionEvent(SQLModel, table=True):
     __tablename__ = "mission_events"
     id: int | None = Field(default=None, primary_key=True)
@@ -448,7 +431,6 @@ class MissionEvent(SQLModel, table=True):
         sa_relationship=relationship("Mission", back_populates="events")
     )
 
-
 class PromptTemplate(SQLModel, table=True):
     __tablename__ = "prompt_templates"
     id: int | None = Field(default=None, primary_key=True)
@@ -458,7 +440,6 @@ class PromptTemplate(SQLModel, table=True):
     generated_prompts: list[GeneratedPrompt] = Relationship(
         sa_relationship=relationship("GeneratedPrompt", back_populates="template")
     )
-
 
 class GeneratedPrompt(SQLModel, table=True):
     __tablename__ = "generated_prompts"
@@ -471,22 +452,19 @@ class GeneratedPrompt(SQLModel, table=True):
         sa_relationship=relationship("PromptTemplate", back_populates="generated_prompts")
     )
 
-
 # Helpers
-def log_mission_event(mission: Mission, event_type: MissionEventType, payload: dict, session=None):
+def log_mission_event(mission: Mission, event_type: MissionEventType, payload: dict, session=None) -> None:
     # Note: payload_json uses JSONText TypeDecorator which handles json.dumps() internally.
     # Do NOT call json.dumps(payload) here as it would cause double encoding.
     evt = MissionEvent(mission_id=mission.id, event_type=event_type, payload_json=payload)
     if session:
         session.add(evt)
 
-
 def update_mission_status(
     mission: Mission, status: MissionStatus, note: str | None = None, session=None
-):
+) -> None:
     mission.status = status
     mission.updated_at = utc_now()
-
 
 # Rebuild models for forward refs
 try:

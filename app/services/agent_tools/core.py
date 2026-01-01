@@ -7,7 +7,6 @@ The central nervous system of the toolset.
 import time
 import traceback
 from collections.abc import Callable
-from typing import Any
 
 from .definitions import (
     AUTOFILL,
@@ -30,14 +29,12 @@ from .globals import (
 )
 from .utils import _coerce_to_tool_result, _dbg, _generate_trace_id, _lower
 
-
 # ======================================================================================
 # Metrics Helpers
 # ======================================================================================
 def _init_tool_stats(name: str):
     if name not in _TOOL_STATS:
         _TOOL_STATS[name] = {"invocations": 0, "errors": 0, "total_ms": 0.0, "last_error": None}
-
 
 def _record_invocation(name: str, elapsed_ms: float, ok: bool, error: str | None):
     st = _TOOL_STATS[name]
@@ -47,17 +44,14 @@ def _record_invocation(name: str, elapsed_ms: float, ok: bool, error: str | None
         st["errors"] += 1
         st["last_error"] = (error or "")[:300]
 
-
 # ======================================================================================
 # Policy Hooks (stubs)
 # ======================================================================================
 def policy_can_execute(tool_name: str, args: dict[str, Any]) -> bool:
     return True
 
-
 def transform_arguments(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
     return args
-
 
 # ======================================================================================
 # Argument Validation
@@ -66,7 +60,6 @@ def _validate_type(name: str, value: dict[str, str | int | bool], expected: str)
     py_type = SUPPORTED_TYPES.get(expected)
     if py_type and not isinstance(value, py_type):
         raise TypeError(f"Parameter '{name}' must be of type '{expected}'.")
-
 
 def _validate_arguments(schema: dict[str, Any], args: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(schema, dict) or schema.get("type") != "object":
@@ -90,7 +83,6 @@ def _validate_arguments(schema: dict[str, Any], args: dict[str, Any]) -> dict[st
         raise ValueError(f"Missing required parameters: {missing}")
     return cleaned
 
-
 # ======================================================================================
 # Canonicalization
 # ======================================================================================
@@ -98,11 +90,9 @@ def _looks_like_write(desc: str) -> bool:
     d = desc.lower()
     return any(k in d for k in WRITE_KEYWORDS)
 
-
 def _looks_like_read(desc: str) -> bool:
     d = desc.lower()
     return any(k in d for k in READ_KEYWORDS)
-
 
 def canonicalize_tool_name(raw_name: str, description: str = "") -> tuple[str, list[str]]:
     """
@@ -129,7 +119,6 @@ def canonicalize_tool_name(raw_name: str, description: str = "") -> tuple[str, l
 
     return canonical, notes
 
-
 def resolve_tool_name(name: str) -> str | None:
     canon, _ = canonicalize_tool_name(name)
     if canon in _TOOL_REGISTRY and not _TOOL_REGISTRY[canon].get("is_alias"):
@@ -138,17 +127,14 @@ def resolve_tool_name(name: str) -> str | None:
         return _ALIAS_INDEX[canon]
     return None
 
-
 def has_tool(name: str) -> bool:
     return resolve_tool_name(name) is not None
-
 
 def get_tool(name: str) -> dict[str, Any] | None:
     cname = resolve_tool_name(name)
     if not cname:
         return None
     return _TOOL_REGISTRY.get(cname)
-
 
 def list_tools(include_aliases: bool = False) -> list[dict[str, Any]]:
     out = []
@@ -158,10 +144,11 @@ def list_tools(include_aliases: bool = False) -> list[dict[str, Any]]:
         out.append(meta)
     return out
 
-
 # ======================================================================================
 # Helper Functions for Tool Decorator
 # ======================================================================================
+# TODO: Split this function (45 lines) - KISS principle
+# TODO: Reduce parameters (7 params) - Use config object
 def _register_tool_metadata(
     name: str,
     description: str,
@@ -209,7 +196,6 @@ def _register_tool_metadata(
         _CAPABILITIES[a] = capabilities
         _init_tool_stats(a)
 
-
 def _apply_autofill(kwargs: dict[str, Any], canonical_name: str, trace_id: str):
     """Apply autofill logic for write operations."""
     if not AUTOFILL:
@@ -223,7 +209,6 @@ def _apply_autofill(kwargs: dict[str, Any], canonical_name: str, trace_id: str):
         kwargs["path"] = f"autofill_{trace_id}{AUTOFILL_EXT}"
     if not isinstance(kwargs.get("content"), str) or not kwargs["content"].strip():
         kwargs["content"] = "Auto-generated content placeholder."
-
 
 def _execute_tool(
     func: Callable[..., Any],
@@ -252,6 +237,8 @@ def _execute_tool(
     raw = func(**transformed)
     return _coerce_to_tool_result(raw)
 
+# TODO: Split this function (33 lines) - KISS principle
+# TODO: Reduce parameters (8 params) - Use config object
 
 def _enrich_result_metadata(
     result: ToolResult,
@@ -288,8 +275,8 @@ def _enrich_result_metadata(
     })
     result.trace_id = trace_id
 
-
 # ======================================================================================
+# TODO: Split this function (47 lines) - KISS principle
 # Decorator
 # ======================================================================================
 def tool(
@@ -301,19 +288,20 @@ def tool(
     aliases: list[str] | None = None,
     allow_disable: bool = True,
     capabilities: list[str] | None = None,
-):
+) -> None:
     parameters = parameters or {"type": "object", "properties": {}}
+    # TODO: Split this function (31 lines) - KISS principle
     aliases = aliases or []
     capabilities = capabilities or []
 
-    def decorator(func: Callable[..., Any]):
+    def decorator(func: Callable[..., Any]) -> None:
         with _REGISTRY_LOCK:
             _register_tool_metadata(
                 name, description, parameters, category,
                 aliases, allow_disable, capabilities
             )
 
-            def wrapper(**kwargs):
+            def wrapper(**kwargs) -> None:
                 trace_id = _generate_trace_id()
                 start = time.perf_counter()
                 meta_entry = _TOOL_REGISTRY[name]
@@ -340,7 +328,6 @@ def tool(
         return wrapper
 
     return decorator
-
 
 def get_tools_schema(include_disabled: bool = False) -> list[dict[str, Any]]:
     schema: list[dict[str, Any]] = []

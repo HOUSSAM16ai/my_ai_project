@@ -15,10 +15,9 @@
             self.repo = repo  # يعمل مع أي تطبيق للبروتوكول
 """
 from collections.abc import AsyncGenerator
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from app.models import Mission, MissionEvent, MissionEventType, MissionStatus, Task
-
 
 @runtime_checkable
 class LifecycleProtocol(Protocol):
@@ -32,7 +31,6 @@ class LifecycleProtocol(Protocol):
     async def shutdown(self) -> None:
         """Shutdown the component"""
         ...
-
 
 @runtime_checkable
 class BaseService(LifecycleProtocol, Protocol):
@@ -55,7 +53,6 @@ class BaseService(LifecycleProtocol, Protocol):
         """Check service health"""
         ...
 
-
 @runtime_checkable
 class PluginProtocol(BaseService, Protocol):
     """
@@ -76,7 +73,6 @@ class PluginProtocol(BaseService, Protocol):
     def configure(self, config: dict[str, Any]) -> None:
         """Configure the plugin"""
         ...
-
 
 @runtime_checkable
 class PlannerProtocol(Protocol):
@@ -102,7 +98,6 @@ class PlannerProtocol(Protocol):
         """Get planner capabilities."""
         ...
 
-
 @runtime_checkable
 class StrategyProtocol[TInput, TOutput](Protocol):
     """
@@ -121,7 +116,6 @@ class StrategyProtocol[TInput, TOutput](Protocol):
     def is_applicable(self, context: dict[str, Any]) -> bool:
         """Check if strategy is applicable in given context."""
         ...
-
 
 @runtime_checkable
 class RepositoryProtocol[T](Protocol):

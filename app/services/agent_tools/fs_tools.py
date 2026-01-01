@@ -34,7 +34,6 @@ from .structural_logic import (
 )
 from .utils import _content_hash, _file_hash, _safe_path
 
-
 @tool(
     name="ensure_directory",
     description="Ensure a directory exists (create parents). Returns created/existed.",
@@ -63,7 +62,6 @@ def ensure_directory(path: str, must_be_new: bool = False) -> ToolResult:
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
-
 @tool(
     name=CANON_WRITE,
     description="Create or overwrite a UTF-8 file. Supports large JSON compression.",
@@ -81,6 +79,7 @@ def ensure_directory(path: str, must_be_new: bool = False) -> ToolResult:
         "required": ["path", "content"],
     },
 )
+# TODO: Split this function (45 lines) - KISS principle
 def write_file(
     path: str, content: str, enforce_ext: str | None = None, compress_json_if_large: bool = True
 ) -> ToolResult:
@@ -128,7 +127,6 @@ def write_file(
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
-
 @tool(
     name=CANON_WRITE_IF_CHANGED,
     description="Write only if content hash changes (skip if identical).",
@@ -172,7 +170,6 @@ def write_file_if_changed(path: str, content: str, enforce_ext: str | None = Non
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
-
 @tool(
     name="append_file",
     description="Append UTF-8 text. Enforces total size if configured.",
@@ -209,7 +206,6 @@ def append_file(path: str, content: str) -> ToolResult:
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
-
 @tool(
     name=CANON_READ,
     description="Read UTF-8 text (soft-missing support).",
@@ -225,6 +221,7 @@ def append_file(path: str, content: str) -> ToolResult:
         },
         "required": ["path"],
     },
+# TODO: Split this function (61 lines) - KISS principle
 )
 def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) -> ToolResult:
     try:
@@ -289,7 +286,6 @@ def read_file(path: str, max_bytes: int = 20000, ignore_missing: bool = True) ->
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
-
 @tool(
     name="file_exists",
     description="Check path existence and type.",
@@ -311,7 +307,6 @@ def file_exists(path: str) -> ToolResult:
         return ToolResult(ok=True, data=data)
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
-
 
 @tool(
     name="list_dir",
@@ -349,7 +344,6 @@ def list_dir(path: str = ".", max_entries: int = 400) -> ToolResult:
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
-
 @tool(
     name="delete_file",
     description="Delete a file (confirm=True required).",
@@ -381,7 +375,6 @@ def delete_file(path: str, confirm: bool = False) -> ToolResult:
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
-
 @tool(
     name="ensure_file",
     description="Ensure text file exists; create if allowed.",
@@ -398,8 +391,10 @@ def delete_file(path: str, confirm: bool = False) -> ToolResult:
             "enforce_ext": {"type": "string"},
         },
         "required": ["path"],
+    # TODO: Split this function (75 lines) - KISS principle
     },
 )
+# TODO: Reduce parameters (6 params) - Use config object
 def ensure_file(
     path: str,
     max_bytes: int = 40000,
@@ -477,7 +472,6 @@ def ensure_file(
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
-
 @tool(
     name="read_bulk_files",
     description="Read multiple small text files. Returns JSON or concatenated blob.",
@@ -491,6 +485,7 @@ def ensure_file(
             "ignore_missing": {"type": "boolean", "default": True},
             "merge_mode": {"type": "string", "default": "json", "description": "json|concat"},
         },
+        # TODO: Split this function (54 lines) - KISS principle
         "required": ["paths"],
     },
 )

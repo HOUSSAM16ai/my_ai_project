@@ -11,10 +11,8 @@ from __future__ import annotations
 
 import threading
 from collections import defaultdict, deque
-from typing import Any
 
 from app.services.serving.domain.models import ModelMetrics, ModelVersion
-
 
 class InMemoryModelRepository:
     """
@@ -70,7 +68,6 @@ class InMemoryModelRepository:
             self._models[model.version_id] = model
             return True
 
-
 class InMemoryMetricsRepository:
     """
     In-memory implementation of MetricsRepository port.
@@ -96,6 +93,7 @@ class InMemoryMetricsRepository:
             all_metrics = list(self._metrics.get(version_id, []))
             return all_metrics[-limit:] if all_metrics else []
 
+    # TODO: Split this function (31 lines) - KISS principle
     def get_summary(self, version_id: str) -> dict[str, Any]:
         """Get aggregated metrics summary"""
         with self._lock:

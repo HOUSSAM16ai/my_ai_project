@@ -8,9 +8,6 @@
 Configuration model for middleware system.
 """
 
-from typing import Any
-
-
 class MiddlewareSettings:
     """
     Middleware Settings
@@ -27,7 +24,7 @@ class MiddlewareSettings:
         """
         self.config: dict[str, Any] = kwargs
 
-    def get(self, key: str, default: Any = None) -> dict[str, str | int | bool]:
+    def get(self, key: str, default: dict[str, str | int | bool] = None) -> dict[str, str | int | bool]:
         """
         Get configuration value
 
@@ -40,7 +37,7 @@ class MiddlewareSettings:
         """
         return self.config.get(key, default)
 
-    def set(self, key: str, value: dict[str, str | int | bool]):
+    def set(self, key: str, value: dict[str, str | int | bool]) -> None:
         """
         Set configuration value
 

@@ -11,20 +11,18 @@
 
 import logging
 from abc import ABC
-from typing import Any
-
 
 class BaseService(ABC):
     """
     خدمة قاعدية لجميع خدمات التطبيق.
-    
+
     توفر وظائف مشتركة مثل التسجيل والتحقق من الصحة.
     """
 
     def __init__(self, service_name: str | None = None):
         """
         تهيئة الخدمة.
-        
+
         Args:
             service_name: اسم الخدمة (اختياري)
         """
@@ -53,11 +51,11 @@ class BaseService(ABC):
     def _validate_not_none(self, value: dict[str, str | int | bool], name: str) -> None:
         """
         التحقق من أن القيمة ليست None.
-        
+
         Args:
             value: القيمة المراد التحقق منها
             name: اسم المتغير
-            
+
         Raises:
             ValueError: إذا كانت القيمة None
         """
@@ -67,11 +65,11 @@ class BaseService(ABC):
     def _validate_not_empty(self, value: str, name: str) -> None:
         """
         التحقق من أن النص ليس فارغاً.
-        
+
         Args:
             value: النص المراد التحقق منه
             name: اسم المتغير
-            
+
         Raises:
             ValueError: إذا كان النص فارغاً
         """
@@ -81,11 +79,11 @@ class BaseService(ABC):
     def _validate_positive(self, value: int | float, name: str) -> None:
         """
         التحقق من أن الرقم موجب.
-        
+
         Args:
             value: الرقم المراد التحقق منه
             name: اسم المتغير
-            
+
         Raises:
             ValueError: إذا كان الرقم سالباً أو صفراً
         """

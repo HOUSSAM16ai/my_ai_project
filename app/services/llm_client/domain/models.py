@@ -3,10 +3,9 @@
 Data models for the LLM Client service.
 """
 
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
-
 
 class LLMTool(BaseModel):
     """
@@ -15,7 +14,6 @@ class LLMTool(BaseModel):
     """
     type: Literal["function"] = "function"
     function: dict[str, Any]
-
 
 class LLMMessage(BaseModel):
     """
@@ -27,7 +25,6 @@ class LLMMessage(BaseModel):
     name: str | None = None
     tool_calls: list[dict[str, Any]] | None = None
     tool_call_id: str | None = None
-
 
 class LLMPayload(BaseModel):
     """
@@ -45,7 +42,6 @@ class LLMPayload(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
-
 class LLMMeta(BaseModel):
     """
     بيانات وصفية حول الاستجابة.
@@ -59,7 +55,6 @@ class LLMMeta(BaseModel):
     model_used: str
     finish_reason: str | None = None
     stream: bool = False
-
 
 class LLMResponseEnvelope(BaseModel):
     """

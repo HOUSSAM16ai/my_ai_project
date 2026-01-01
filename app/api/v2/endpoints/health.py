@@ -12,7 +12,6 @@ router = APIRouter(prefix="/health", tags=["health"])
 
 _start_time = time.time()
 
-
 @router.get("/", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
     """
@@ -33,7 +32,6 @@ async def health_check() -> HealthResponse:
         },
     )
 
-
 @router.get("/ready")
 async def readiness_check() -> dict:
     """
@@ -42,7 +40,6 @@ async def readiness_check() -> dict:
     Complexity: 1
     """
     return {"ready": True}
-
 
 @router.get("/live")
 async def liveness_check() -> dict:

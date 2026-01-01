@@ -2,8 +2,6 @@ import hashlib
 import json
 import threading
 from datetime import UTC, datetime, timedelta
-from typing import Any
-
 
 class IntelligentCache:
     """
@@ -68,9 +66,10 @@ class IntelligentCache:
             self.miss_count += 1
             return None
 
+    # TODO: Split this function (57 lines) - KISS principle
     def put(
         self, request_data: dict[str, Any], response_data: dict[str, Any], ttl_seconds: int = 300
-    ):
+    ) -> None:
         """Put into cache"""
         key = self._generate_key(request_data)
 

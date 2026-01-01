@@ -1,11 +1,9 @@
 """Refactored planner using clean architecture."""
 
 from dataclasses import dataclass
-from typing import Any
 
 from app.core.protocols import PlannerProtocol as PlannerInterface
 from app.infrastructure.patterns import EventBus, get_event_bus
-
 
 @dataclass
 class Task:
@@ -17,7 +15,6 @@ class Task:
     tool_args: dict[str, Any]
     dependencies: list[str]
 
-
 @dataclass
 class Plan:
     """Plan entity."""
@@ -26,7 +23,6 @@ class Plan:
     objective: str
     tasks: list[Task]
     metadata: dict[str, Any]
-
 
 class PlanValidator:
     """Validates plans."""
@@ -49,7 +45,6 @@ class PlanValidator:
 
         return len(errors) == 0, errors
 
-
 class PlanOptimizer:
     """Optimizes plan execution order."""
 
@@ -69,7 +64,7 @@ class PlanOptimizer:
         visited = set()
         result = []
 
-        def visit(task_id: str):
+        def visit(task_id: str) -> None:
             if task_id in visited:
                 return
             visited.add(task_id)
@@ -85,7 +80,6 @@ class PlanOptimizer:
             visit(task.task_id)
 
         return result
-
 
 class ContextAnalyzer:
     """Analyzes planning context."""
@@ -120,7 +114,6 @@ class ContextAnalyzer:
         if arabic_chars > len(text) * 0.3:
             return "arabic"
         return "english"
-
 
 class TaskGenerator:
     """Generates tasks for plans."""
@@ -182,6 +175,7 @@ class TaskGenerator:
             ),
         ]
 
+    # TODO: Split this function (38 lines) - KISS principle
     def _generate_complex_tasks(self, objective: str) -> list[Task]:
         """Generate tasks for complex objectives."""
         return [
@@ -222,10 +216,10 @@ class TaskGenerator:
             ),
         ]
 
-
 class RefactoredPlanner(PlannerInterface):
     """Clean, maintainable planner implementation."""
 
+    # TODO: Reduce parameters (6 params) - Use config object
     def __init__(
         self,
         event_bus: EventBus | None = None,

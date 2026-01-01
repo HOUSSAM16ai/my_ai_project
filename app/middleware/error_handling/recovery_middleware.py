@@ -12,7 +12,6 @@ from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 
-
 class RecoveryMiddleware(BaseMiddleware):
     """
     Recovery Middleware
@@ -45,7 +44,7 @@ class RecoveryMiddleware(BaseMiddleware):
         """
         return MiddlewareResult.success()
 
-    def on_error(self, ctx: RequestContext, error: Exception):
+    def on_error(self, ctx: RequestContext, error: Exception) -> None:
         """
         Attempt to recover from errors
 

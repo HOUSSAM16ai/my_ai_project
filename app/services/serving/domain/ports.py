@@ -9,7 +9,7 @@ Following Hexagonal Architecture / Ports & Adapters pattern.
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Protocol
 
 from app.services.serving.domain.models import (
     ModelMetrics,
@@ -21,7 +21,6 @@ from app.services.serving.domain.models import (
 # ======================================================================================
 # REPOSITORY PORTS
 # ======================================================================================
-
 
 class ModelRepository(Protocol):
     """
@@ -53,7 +52,6 @@ class ModelRepository(Protocol):
         """List all models"""
         ...
 
-
 class MetricsRepository(Protocol):
     """
     Port for metrics storage.
@@ -75,11 +73,9 @@ class MetricsRepository(Protocol):
         """Get aggregated metrics summary"""
         ...
 
-
 # ======================================================================================
 # INFERENCE PORTS
 # ======================================================================================
-
 
 class ModelInvoker(Protocol):
     """
@@ -104,7 +100,6 @@ class ModelInvoker(Protocol):
         """Check if model is healthy and ready"""
         ...
 
-
 class CostCalculator(Protocol):
     """
     Port for cost calculation.
@@ -121,11 +116,9 @@ class CostCalculator(Protocol):
         """Calculate the cost of an inference request"""
         ...
 
-
 # ======================================================================================
 # ORCHESTRATION PORTS
 # ======================================================================================
-
 
 class LoadBalancer(Protocol):
     """

@@ -2,7 +2,6 @@ import logging
 import threading
 from collections import deque
 from datetime import UTC, datetime
-from typing import Any
 
 from .models import LoadBalancerState, ProtocolType, RoutingDecision, RoutingStrategy
 from .providers.anthropic import AnthropicAdapter
@@ -11,7 +10,6 @@ from .providers.openai import OpenAIAdapter
 from .strategies.implementations import get_strategy
 
 logger = logging.getLogger(__name__)
-
 
 class SuperCircuitBreaker:
     """
@@ -25,7 +23,7 @@ class SuperCircuitBreaker:
         self.state: dict[str, dict[str, Any]] = {}
         self.lock = threading.RLock()
 
-    def report_failure(self, service_id: str):
+    def report_failure(self, service_id: str) -> None:
         with self.lock:
             if service_id not in self.state:
                 self.state[service_id] = {
@@ -42,7 +40,7 @@ class SuperCircuitBreaker:
                     f"Circuit Breaker OPEN for {service_id}. Failures: {self.state[service_id]['failures']}"
                 )
 
-    def report_success(self, service_id: str):
+    def report_success(self, service_id: str) -> None:
         with self.lock:
             if service_id in self.state:
                 self.state[service_id]["failures"] = 0
@@ -64,7 +62,6 @@ class SuperCircuitBreaker:
                     logger.info(f"Circuit Breaker HALF-OPEN for {service_id}")
                     return False
             return True
-
 
 class IntelligentRouter:
     """
@@ -97,6 +94,7 @@ class IntelligentRouter:
         self.provider_stats: dict[str, LoadBalancerState] = AutoInitDict()
         self.lock = threading.RLock()
 
+    # TODO: Split this function (39 lines) - KISS principle
     def _evaluate_candidates(
         self, model_type: str, estimated_tokens: int, constraints: dict[str, Any]
     ) -> list[dict[str, Any]]:
@@ -137,6 +135,7 @@ class IntelligentRouter:
                 logger.warning(f"Error evaluating provider {provider_name}: {e}")
                 continue
         return candidates
+# TODO: Split this function (55 lines) - KISS principle
 
     def route_request(
         self,
@@ -195,7 +194,7 @@ class IntelligentRouter:
 
         return decision
 
-    def update_provider_stats(self, provider: str, success: bool, latency_ms: float):
+    def update_provider_stats(self, provider: str, success: bool, latency_ms: float) -> None:
         """Update provider statistics after request"""
         # Update Circuit Breaker
         if success:

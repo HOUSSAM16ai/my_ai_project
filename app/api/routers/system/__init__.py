@@ -3,7 +3,6 @@
 نظام التوجيه المركزي - (System Router Package)
 يجمع كافة موجهات النظام الفرعية ويصدرها كواجهة موحدة.
 """
-from typing import Any
 
 from fastapi import APIRouter, Depends, Response, status
 
@@ -17,7 +16,6 @@ __all__ = ["root_router", "router"]
 
 # إنشاء كائن الموجه (Router Instance) - النطاق الفرعي
 router = APIRouter(prefix="/system", tags=["System"])
-
 
 @router.get(
     "/health",
@@ -47,7 +45,6 @@ async def health_check(
         version="v4.0-clean",
     )
 
-
 @router.get(
     "/healthz",
     summary="فحص الحيوية (Kubernetes Liveness Probe)",
@@ -68,7 +65,6 @@ async def healthz(
 
     response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return HealthzResponse(status="error", detail="Database connection failed")
-
 
 @router.get(
     "/info",

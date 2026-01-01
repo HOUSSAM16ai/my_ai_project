@@ -11,8 +11,6 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
-
 
 class ServiceHealth(Enum):
     """حالة صحة الخدمة"""
@@ -23,14 +21,12 @@ class ServiceHealth(Enum):
     CRITICAL = "critical"
     RECOVERING = "recovering"
 
-
 class ScalingDirection(Enum):
     """اتجاه التوسع"""
 
     UP = "scale_up"
     DOWN = "scale_down"
     STABLE = "stable"
-
 
 @dataclass
 class ServiceMetrics:
@@ -63,7 +59,6 @@ class ServiceMetrics:
             "queue_depth": self.queue_depth,
         }
 
-
 @dataclass
 class ScalingDecision:
     """قرار التوسع الذكي"""
@@ -76,7 +71,6 @@ class ScalingDecision:
     reason: str
     predicted_impact: dict[str, float]
     timestamp: datetime
-
 
 @dataclass
 class ServiceInstance:

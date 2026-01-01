@@ -8,10 +8,9 @@ mocking in tests and flexibility in choosing HTTP clients.
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Any, Protocol
+from typing import Protocol
 
 import requests
-
 
 class ResponseLike(Protocol):
     """A protocol for what a response object should look like."""
@@ -25,7 +24,6 @@ class ResponseLike(Protocol):
 
     def json(self) -> dict[str, str | int | bool]: ...
 
-
 class HttpClient(Protocol):
     """A protocol for an HTTP client."""
 
@@ -38,7 +36,6 @@ class HttpClient(Protocol):
         stream: bool = False,
         timeout: int | None = None,
     ) -> ResponseLike: ...
-
 
 class RequestsAdapter:
     """An adapter for the requests library that conforms to the HttpClient protocol."""

@@ -11,7 +11,6 @@ from typing import Protocol
 
 from app.services.adaptive.domain.models import ServiceInstance, ServiceMetrics
 
-
 class ServiceInstanceRepository(Protocol):
     """Repository for service instance management"""
 
@@ -34,7 +33,6 @@ class ServiceInstanceRepository(Protocol):
     def list_by_service(self, service_name: str) -> list[ServiceInstance]:
         """List all instances for a service"""
         ...
-
 
 class MetricsRepository(Protocol):
     """Repository for metrics storage and retrieval"""

@@ -14,7 +14,6 @@ from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 from app.security.waf import WebApplicationFirewall
 
-
 class WAFMiddleware(BaseMiddleware):
     """
     Web Application Firewall Middleware
@@ -36,6 +35,7 @@ class WAFMiddleware(BaseMiddleware):
         self.blocked_count = 0
         self.checked_count = 0
 
+    # TODO: Split this function (35 lines) - KISS principle
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
         """
         Check request for malicious patterns

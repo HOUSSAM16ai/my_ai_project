@@ -6,7 +6,6 @@ Implements DatabaseRepository interface from domain layer.
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
 class SQLAlchemyDatabaseRepository:
     """SQLAlchemy implementation of DatabaseRepository."""
 

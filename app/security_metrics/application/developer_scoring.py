@@ -6,7 +6,6 @@ from datetime import datetime
 from app.security_metrics.domain.entities import DeveloperSecurityScore
 from app.security_metrics.domain.interfaces import SecurityRepository
 
-
 class DeveloperSecurityScorer:
     """Developer security scorer - SRP: Only scores developers."""
 

@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 from .models import ConfigEntry, Environment, Secret, SecretAccessLog
 
-
 class VaultBackend(ABC):
     """
     Abstract base for secret vault backends.
@@ -34,7 +33,6 @@ class VaultBackend(ABC):
         """Rotate secret"""
         ...
 
-
 class ConfigRepository(ABC):
     """Port for configuration storage"""
 
@@ -53,7 +51,6 @@ class ConfigRepository(ABC):
         """Get all configuration entries for an environment"""
         ...
 
-
 class SecretMetadataRepository(ABC):
     """Port for storing secret metadata (not the values)"""
 
@@ -71,7 +68,6 @@ class SecretMetadataRepository(ABC):
     def get_all_secrets(self) -> list[Secret]:
         """Get all secret metadata"""
         ...
-
 
 class AuditLogger(ABC):
     """Port for audit logging"""

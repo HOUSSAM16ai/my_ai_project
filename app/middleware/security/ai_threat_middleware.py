@@ -14,7 +14,6 @@ from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 from app.security.threat_detector import AIThreatDetector
 
-
 class AIThreatMiddleware(BaseMiddleware):
     """
     AI-Powered Threat Detection Middleware
@@ -36,6 +35,7 @@ class AIThreatMiddleware(BaseMiddleware):
         self.analyzed_count = 0
         self.critical_blocks = 0
 
+    # TODO: Split this function (56 lines) - KISS principle
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
         """
         Analyze request for AI-detected threats

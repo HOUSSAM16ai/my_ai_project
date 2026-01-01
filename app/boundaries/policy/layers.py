@@ -4,17 +4,14 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from typing import Any
 
 from .engine import PolicyEngine
 
 logger = logging.getLogger(__name__)
 
-
 class SecurityException(Exception):
     """استثناء أمني"""
     pass
-
 
 class SecurityLayer(ABC):
     """
@@ -28,7 +25,6 @@ class SecurityLayer(ABC):
         """معالجة الطلب عبر طبقة الأمان"""
         pass
 
-
 class TLSLayer(SecurityLayer):
     """طبقة 1: تشفير النقل (TLS/mTLS)"""
 
@@ -38,7 +34,6 @@ class TLSLayer(SecurityLayer):
             raise SecurityException('Connection must be secure (HTTPS/TLS)')
         logger.info('✅ TLS validation passed')
         return request
-
 
 class JWTValidationLayer(SecurityLayer):
     """طبقة 2: المصادقة (JWT Validation)"""
@@ -50,7 +45,6 @@ class JWTValidationLayer(SecurityLayer):
             raise SecurityException('Missing authentication token')
         logger.info('✅ JWT validation passed')
         return request
-
 
 class AuthorizationLayer(SecurityLayer):
     """طبقة 3: الترخيص (Policy Enforcement)"""
@@ -69,7 +63,6 @@ class AuthorizationLayer(SecurityLayer):
         logger.info('✅ Authorization passed')
         return request
 
-
 class InputValidationLayer(SecurityLayer):
     """طبقة 4: التحقق من المدخلات (Input Validation)"""
 
@@ -83,7 +76,6 @@ class InputValidationLayer(SecurityLayer):
                     f'Potential SQL injection detected in {key}')
         logger.info('✅ Input validation passed')
         return request
-
 
 class RateLimitingLayer(SecurityLayer):
     """طبقة 5: حدود المعدل (Rate Limiting)"""
@@ -112,7 +104,6 @@ class RateLimitingLayer(SecurityLayer):
         logger.info('✅ Rate limiting passed')
         return request
 
-
 class AuditLoggingLayer(SecurityLayer):
     """طبقة 6: التدقيق (Audit Logging)"""
 
@@ -129,7 +120,6 @@ class AuditLoggingLayer(SecurityLayer):
         self._audit_log.append(audit_entry)
         logger.info(f'📝 Audit log: {audit_entry}')
         return request
-
 
 class SecurityPipeline:
     """

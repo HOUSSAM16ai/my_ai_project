@@ -16,11 +16,9 @@ from app.services.data_mesh.service import DataMeshBoundaryService
 
 router = APIRouter(tags=["Data Mesh"])
 
-
 def get_data_mesh_service() -> DataMeshBoundaryService:
     """Dependency to get the Data Mesh Boundary Service."""
     return DataMeshBoundaryService()
-
 
 @router.post(
     "/contracts",
@@ -37,7 +35,6 @@ async def create_data_contract(
     """
     result = await service.create_data_contract(contract.model_dump())
     return DataContractResponse.model_validate(result)
-
 
 @router.get(
     "/metrics",

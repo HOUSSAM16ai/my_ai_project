@@ -1,6 +1,5 @@
 import os
 import threading
-from typing import Any
 
 from app.services.api_config_secrets.application.config_secrets_manager import ConfigSecretsManager
 from app.services.api_config_secrets.domain.models import (
@@ -42,7 +41,6 @@ __all__ = [
     'get_config_secrets_service',
 ]
 
-
 class ConfigSecretsService:
     """
     Facade for ConfigSecretsManager to maintain backward compatibility.
@@ -71,9 +69,10 @@ class ConfigSecretsService:
         return self._manager.vault
 
     @property
-    def lock(self):
+    def lock(self) -> None:
         return self._config_repo._lock
 
+    # TODO: Reduce parameters (7 params) - Use config object
     def set_config(self, environment: Environment, key: str, value: dict[str, str | int | bool],
         description: str, is_sensitive: bool=False, updated_by: (str | None
         )=None):
@@ -81,10 +80,11 @@ class ConfigSecretsService:
         return self._manager.set_config(environment, key, value,
             description, is_sensitive, updated_by)
 
-    def get_config(self, environment: Environment, key: str, default: Any=None
+    def get_config(self, environment: Environment, key: str, default: dict[str, str | int | bool]=None
         ) ->dict[str, str | int | bool]:
         """Get configuration value for an environment"""
         return self._manager.get_config(environment, key, default)
+# TODO: Reduce parameters (7 params) - Use config object
 
     def create_secret(self, name: str, value: str, secret_type: SecretType,
         environment: Environment, rotation_policy: RotationPolicy=
@@ -108,6 +108,7 @@ class ConfigSecretsService:
         return self._manager.check_rotation_needed()
 
     def _calculate_next_rotation(self, from_date, policy):
+        # TODO: Reduce parameters (6 params) - Use config object
         return self._manager._calculate_next_rotation(from_date, policy)
 
     def _log_access(self, secret_id, accessed_by, action, success, reason=None
@@ -128,10 +129,8 @@ class ConfigSecretsService:
     def _initialize_environments(self):
         pass
 
-
 _config_secrets_instance: ConfigSecretsService | None = None
 _config_lock = threading.Lock()
-
 
 def get_config_secrets_service() ->ConfigSecretsService:
     """Get singleton config & secrets service instance"""

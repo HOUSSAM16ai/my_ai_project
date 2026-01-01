@@ -11,7 +11,6 @@ from app.core.logging import get_logger
 
 _LOG = get_logger(__name__)
 
-
 class CircuitBreaker:
     """
     يدير حالة قاطع الدائرة (مغلق، مفتوح، نصف مفتوح).
