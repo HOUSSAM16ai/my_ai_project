@@ -49,7 +49,8 @@ from app.boundaries.service_boundaries import (
     get_service_boundary,
 )
 
-# Test constants
+# Test configuration constants
+# Used to ensure consistent service naming across test cases
 TEST_SERVICE_NAME = "test_service"
 
 # ======================================================================================
