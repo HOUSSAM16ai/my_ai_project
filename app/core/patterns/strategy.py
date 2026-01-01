@@ -511,7 +511,8 @@ class StrategyRegistry(Generic[TInput, TOutput]):
                     )
                     
                     # تنفيذ الاستراتيجية
-                    result = await strategy.execute(context)
+                    # لا نستخدم await هنا لأن النتيجة قد تكون async generator
+                    result = strategy.execute(context)
                     
                     # معالجة أنواع النتائج المختلفة
                     
@@ -527,7 +528,7 @@ class StrategyRegistry(Generic[TInput, TOutput]):
                         logger.debug(
                             f"انتظار coroutine من {strategy.__class__.__name__}"
                         )
-                        return await result
+                        result = await result
                     
                     # 3. قيمة عادية - إرجاع مباشر
                     logger.info(
