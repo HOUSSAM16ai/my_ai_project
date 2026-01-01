@@ -12,6 +12,8 @@ Preparation for quantum computing era:
 ✅ Forward secrecy
 """
 
+from typing import Any
+
 import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta

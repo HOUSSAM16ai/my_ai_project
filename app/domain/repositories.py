@@ -4,7 +4,7 @@ Defines contracts for data access following Dependency Inversion Principle.
 Domain layer defines interfaces, Infrastructure layer implements them.
 """
 
-from typing import Protocol
+from typing import Any, Protocol
 
 class DatabaseRepository(Protocol):
     """Database operations interface."""

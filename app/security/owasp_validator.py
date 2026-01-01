@@ -18,7 +18,7 @@ Similar to tools used by:
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import ClassVar
+from typing import Any, ClassVar
 
 class SecuritySeverity(Enum):
     """Security issue severity levels"""

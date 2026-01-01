@@ -1,3 +1,5 @@
+from typing import Any
+
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum

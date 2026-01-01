@@ -1,4 +1,6 @@
 """Event Bus pattern for event-driven architecture."""
+from typing import Any
+
 import logging
 from collections import defaultdict
 from collections.abc import Callable

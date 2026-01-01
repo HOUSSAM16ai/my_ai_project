@@ -1,5 +1,7 @@
 """Refactored planner using clean architecture."""
 
+from typing import Any
+
 from dataclasses import dataclass
 
 from app.core.protocols import PlannerProtocol as PlannerInterface

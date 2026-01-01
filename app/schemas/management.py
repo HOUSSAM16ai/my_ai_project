@@ -5,7 +5,7 @@ Ensures strict typing and governance for data exchange.
 """
 
 from datetime import datetime
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from pydantic import BaseModel
 

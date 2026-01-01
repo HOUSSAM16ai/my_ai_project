@@ -1,4 +1,6 @@
 """Data Boundary Core - Core data access abstractions."""
+from typing import Any
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

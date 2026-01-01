@@ -3,7 +3,7 @@
 import contextlib
 import inspect
 from collections.abc import Callable
-from typing import TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 

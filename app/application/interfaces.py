@@ -3,7 +3,7 @@ Application Service Interfaces (Protocols)
 Defines contracts for application services following Dependency Inversion Principle.
 """
 
-from typing import Protocol
+from typing import Any, Protocol
 
 class HealthCheckService(Protocol):
     """Health check service interface."""

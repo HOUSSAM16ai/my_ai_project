@@ -1,4 +1,6 @@
 """Data Boundary Saga - Distributed transaction coordination."""
+from typing import Any
+
 from __future__ import annotations
 
 import logging

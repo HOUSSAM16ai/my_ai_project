@@ -3,6 +3,8 @@ SQLAlchemy User Repository Implementation
 Implements UserRepository interface from domain layer.
 """
 
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

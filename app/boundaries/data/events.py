@@ -1,4 +1,6 @@
 """Data Boundary Events - Event sourcing and streaming."""
+from typing import Any
+
 from __future__ import annotations
 
 import logging
