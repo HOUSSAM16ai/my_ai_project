@@ -41,14 +41,9 @@ services:
       retries: 5
       start_period: 30s
 
-    # Direct command without scripts for reliability
-    command: >
-      bash -c "
-      echo 'Running migrations...' &&
-      python -m alembic upgrade head 2>/dev/null || echo 'Migration skipped (SQLite)' &&
-      echo 'Starting Uvicorn...' &&
-      python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-      "
+    # Sleep infinity - supervisor.sh handles Uvicorn startup
+    # This prevents duplicate Uvicorn instances (one from docker-compose, one from supervisor.sh)
+    command: ["sleep", "infinity"]
 
     volumes:
       - ..:/app  # Mount root directory to /app

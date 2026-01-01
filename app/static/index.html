@@ -327,6 +327,13 @@
             }, 30000); // Check every 30 seconds
         }
 
+        // Periodic garbage collection hint for memory optimization
+        setInterval(() => {
+            if (window.gc) {
+                window.gc(); // Manual GC if available (Chrome with --expose-gc flag)
+            }
+        }, 60000); // Every 60 seconds
+
         // ══════════════════════════════════════════════════════════════════════
         // PERFORMANCE CONFIGURATION | تكوين الأداء
         // ══════════════════════════════════════════════════════════════════════
@@ -343,11 +350,11 @@
         });
         
         // DOM SAFETY VALVE: Limit messages to prevent memory exhaustion
-        const MAX_MESSAGES = 20;  // Increased from 15 for better UX
+        const MAX_MESSAGES = 15;  // Optimized for Codespaces memory constraints
         
         // CODESPACES COMPATIBILITY: Reduced limits for cloud environments
         const MAX_STREAM_CHUNK_SIZE = 1000; // Max chars per update cycle
-        const STREAM_UPDATE_THROTTLE = 250; // Increased from 200ms for stability
+        const STREAM_UPDATE_THROTTLE = 300; // Optimized for Codespaces stability
         
         // Performance monitoring
         const PERFORMANCE_MONITOR = {
@@ -397,7 +404,7 @@
             const startTime = performance.now();
             
             // SAFEGUARD: Truncate content to prevent Showdown regex freeze
-            const MAX_CONTENT_LENGTH = 25000;  // Increased from 20k
+            const MAX_CONTENT_LENGTH = 20000;  // Optimized for Codespaces
             const safeContent = (content || "").length > MAX_CONTENT_LENGTH
                 ? (content.substring(0, MAX_CONTENT_LENGTH) + "\n\n... [Message Truncated] ...")
                 : (content || "");
