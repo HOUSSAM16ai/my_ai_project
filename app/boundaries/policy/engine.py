@@ -1,7 +1,7 @@
 """Policy Engine - Policy evaluation and enforcement engine."""
-from typing import Any
-
 from __future__ import annotations
+
+from typing import Any
 
 import logging
 import re
