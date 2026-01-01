@@ -19,7 +19,7 @@ from app.core.database import async_session_factory, engine
 
 def register_db_commands(root):
     @root.group("db")
-    def db_group():
+    def db_group() -> None:
         "Database utilities"
         pass
 

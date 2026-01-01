@@ -48,7 +48,7 @@ REQUIRED_SCHEMA: Final[dict[str, dict[str, Any]]] = {
 }
 
 
-async def _get_existing_columns(conn: Any, table_name: str) -> set[str]:
+async def _get_existing_columns(conn: dict[str, str | int | bool], table_name: str) -> set[str]:
     """استخراج أسماء الأعمدة الموجودة في الجدول."""
     dialect_name = conn.dialect.name
 
@@ -70,7 +70,7 @@ async def _get_existing_columns(conn: Any, table_name: str) -> set[str]:
 
 
 async def _fix_missing_column(
-    conn: Any,
+    conn: dict[str, str | int | bool],
     table_name: str,
     col: str,
     auto_fix_queries: dict[str, str],

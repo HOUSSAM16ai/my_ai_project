@@ -42,7 +42,7 @@ class CircuitBreaker:
         self.success_count = 0
         self.last_failure_time = 0.0
 
-    def call(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+    def call(self, func: Callable[..., T], *args: dict[str, str | int | bool], **kwargs: dict[str, str | int | bool]) -> T:
         """Execute function with circuit breaker protection."""
         if self.state == CircuitState.OPEN:
             if self._should_attempt_reset():
@@ -110,7 +110,7 @@ def circuit_breaker(
         breaker = CircuitBreaker(config)
 
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> T:
+        def wrapper(*args: dict[str, str | int | bool], **kwargs: dict[str, str | int | bool]) -> T:
             return breaker.call(func, *args, **kwargs)
 
         wrapper.circuit_breaker = breaker  # type: ignore

@@ -34,7 +34,7 @@ class MockClient:
     def completions(self) -> "MockClient":
         return self
 
-    def create(self, *args: Any, **kwargs: Any) -> Any:
+    def create(self, *args: dict[str, str | int | bool], **kwargs: dict[str, str | int | bool]) -> dict[str, str | int | bool]:
         # Return a structure resembling OpenAI response
         # This is minimal; usually mocks are more sophisticated or use unittest.mock
         from types import SimpleNamespace
@@ -59,7 +59,7 @@ _CLIENT_LOCK = threading.Lock()
 _CLIENT_META: dict[str, Any] = {}
 
 
-def get_llm_client() -> Any:
+def get_llm_client() -> dict[str, str | int | bool]:
     """
     الحصول على مثيل عميل LLM (نمط Singleton).
     Get LLM client instance (Singleton pattern).
@@ -101,5 +101,5 @@ def reset_llm_client() -> None:
         _CLIENT_SINGLETON = None
 
 
-def is_mock_client(client: Any) -> bool:
+def is_mock_client(client: dict[str, str | int | bool]) -> bool:
     return hasattr(client, "_is_mock_client")

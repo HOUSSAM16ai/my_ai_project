@@ -155,7 +155,7 @@ class RetryManager:
         idempotency_key: str | None = None,
         retry_on_status: list[int] | None = None,
         **kwargs,
-    ) -> Any:
+    ) -> dict[str, str | int | bool]:
         """
         Execute function with retry logic
 
@@ -268,7 +268,7 @@ class RetryManager:
             a, b = b, a + b
         return b
 
-    def _get_cached_result(self, key: str) -> Any:
+    def _get_cached_result(self, key: str) -> dict[str, str | int | bool]:
         """Get cached idempotent result"""
         with self._lock:
             if key in self.idempotency_store:
@@ -279,7 +279,7 @@ class RetryManager:
                     return idem_key.result
         return None
 
-    def _cache_result(self, key: str, result: Any) -> None:
+    def _cache_result(self, key: str, result: dict[str, str | int | bool]) -> None:
         """Cache result for idempotent operations"""
         with self._lock:
             self.idempotency_store[key] = IdempotencyKey(

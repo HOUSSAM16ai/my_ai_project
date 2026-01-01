@@ -18,6 +18,6 @@ class ProtocolAdapter(ABC):
         pass
 
     @abstractmethod
-    def transform_response(self, response_data: dict[str, Any]) -> Any:
+    def transform_response(self, response_data: dict[str, Any]) -> dict[str, str | int | bool]:
         """Transform internal format to protocol format"""
         pass

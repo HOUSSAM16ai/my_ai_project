@@ -80,7 +80,7 @@ class BaseRepository(ABC, Generic[T]):
         return False
 
     @abstractmethod
-    async def find_by_criteria(self, **criteria: Any) -> list[T]:
+    async def find_by_criteria(self, **criteria: dict[str, str | int | bool]) -> list[T]:
         """
         البحث بناءً على معايير محددة.
         

@@ -29,6 +29,6 @@ class GraphQLAdapter(ProtocolAdapter):
             "metadata": {"protocol": "graphql"},
         }
 
-    def transform_response(self, response_data: dict[str, Any]) -> Any:
+    def transform_response(self, response_data: dict[str, Any]) -> dict[str, str | int | bool]:
         """Transform to GraphQL response"""
         return JSONResponse(content={"data": response_data, "errors": None})

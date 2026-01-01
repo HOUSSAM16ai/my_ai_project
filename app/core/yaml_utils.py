@@ -15,7 +15,7 @@ class YamlSecurityError(Exception):
     pass
 
 
-def load_yaml_safely(content: str | bytes) -> Any:
+def load_yaml_safely(content: str | bytes) -> dict[str, str | int | bool]:
     """
     Safely load YAML content using yaml.safe_load().
     Strictly forbids yaml.load() to prevent Remote Code Execution (RCE).
@@ -27,7 +27,7 @@ def load_yaml_safely(content: str | bytes) -> Any:
         raise YamlSecurityError(f"Invalid or unsafe YAML content: {e}") from e
 
 
-def load_yaml_file_safely(path: str) -> Any:
+def load_yaml_file_safely(path: str) -> dict[str, str | int | bool]:
     """
     Safely read and load a YAML file.
     """

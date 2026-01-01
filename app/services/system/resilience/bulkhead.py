@@ -58,7 +58,7 @@ class Bulkhead:
 
     def execute(
         self, func: Callable, priority: PriorityLevel = PriorityLevel.NORMAL, *args, **kwargs
-    ) -> Any:
+    ) -> dict[str, str | int | bool]:
         """Execute function with bulkhead protection"""
         # Try to acquire semaphore
         acquired = self.semaphore.acquire(blocking=False)

@@ -82,7 +82,7 @@ class CommandBus:
     def _build_handler(self, command: Command[T]):
         """Build middleware chain."""
 
-        async def final_handler():
+        async def final_handler() -> None:
             return await command.execute()
 
         handler = final_handler

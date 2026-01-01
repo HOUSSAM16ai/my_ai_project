@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 # Module-level function for testing patching
-def get_llm_client():
+def get_llm_client() -> None:
     return get_ai_client()
 
 
@@ -65,7 +65,7 @@ class AdminAIService:
     def answer_question(
         self,
         question: str,
-        user: Any,
+        user: dict[str, str | int | bool],
         conversation_id: str | None = None,
         use_deep_context: bool = False,
     ):

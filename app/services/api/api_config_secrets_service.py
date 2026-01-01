@@ -74,7 +74,7 @@ class ConfigSecretsService:
     def lock(self):
         return self._config_repo._lock
 
-    def set_config(self, environment: Environment, key: str, value: Any,
+    def set_config(self, environment: Environment, key: str, value: dict[str, str | int | bool],
         description: str, is_sensitive: bool=False, updated_by: (str | None
         )=None):
         """Set configuration value for an environment"""
@@ -82,7 +82,7 @@ class ConfigSecretsService:
             description, is_sensitive, updated_by)
 
     def get_config(self, environment: Environment, key: str, default: Any=None
-        ) ->Any:
+        ) ->dict[str, str | int | bool]:
         """Get configuration value for an environment"""
         return self._manager.get_config(environment, key, default)
 

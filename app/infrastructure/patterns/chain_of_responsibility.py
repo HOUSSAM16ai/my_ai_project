@@ -179,7 +179,7 @@ class CachingHandler(Handler[RequestContext, RequestContext]):
 
         return None
 
-    def cache_response(self, key: str, response: Any):
+    def cache_response(self, key: str, response: dict[str, str | int | bool]):
         """Cache response."""
         self._cache[key] = response
 

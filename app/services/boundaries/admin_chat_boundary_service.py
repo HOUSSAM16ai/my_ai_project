@@ -133,7 +133,7 @@ class AdminChatBoundaryService:
         except ValueError as e:
             raise HTTPException(status_code=404, detail="Invalid conversation ID") from e
 
-    async def save_message(self, conversation_id: int, role: MessageRole, content: str) -> Any:
+    async def save_message(self, conversation_id: int, role: MessageRole, content: str) -> dict[str, str | int | bool]:
         """حفظ رسالة في قاعدة البيانات."""
         return await self.persistence.save_message(conversation_id, role, content)
 

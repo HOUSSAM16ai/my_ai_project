@@ -1,14 +1,20 @@
 # app/services/adaptive/__init__.py
 """
-AI-Driven Self-Adaptive Microservices
-======================================
-Hexagonal architecture implementation for adaptive microservices.
+AI-Driven Self-Adaptive Microservices - SOLID Principles Applied
+===============================================================
+Simplified architecture using KISS principle.
 
 This package provides:
 - Domain models and business logic
-- Application services (scaling, routing, health monitoring)
+- Application services (scaling, routing, health monitoring) - Direct Access
 - Infrastructure implementations
-- Facade for backward compatibility
+
+Usage:
+    from app.services.adaptive import (
+        AIScalingEngine,
+        IntelligentRouter,
+        PredictiveHealthMonitor
+    )
 """
 
 from app.services.adaptive.application import (
@@ -23,30 +29,23 @@ from app.services.adaptive.domain import (
     ServiceInstance,
     ServiceMetrics,
 )
-from app.services.adaptive.facade import (
-    SelfAdaptiveMicroservices,
-    get_adaptive_microservices,
-)
 from app.services.adaptive.infrastructure import (
     InMemoryMetricsRepository,
     InMemoryServiceInstanceRepository,
 )
 
 __all__ = [
-    # Application
+    # Application Services (Direct Access - KISS)
     "AIScalingEngine",
-    "InMemoryMetricsRepository",
-    # Infrastructure
-    "InMemoryServiceInstanceRepository",
     "IntelligentRouter",
     "PredictiveHealthMonitor",
+    # Domain Models
     "ScalingDecision",
     "ScalingDirection",
-    # Facade
-    "SelfAdaptiveMicroservices",
-    # Domain
     "ServiceHealth",
     "ServiceInstance",
     "ServiceMetrics",
-    "get_adaptive_microservices",
+    # Infrastructure
+    "InMemoryMetricsRepository",
+    "InMemoryServiceInstanceRepository",
 ]

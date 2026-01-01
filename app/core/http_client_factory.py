@@ -54,7 +54,7 @@ class HTTPClientFactory:
         max_keepalive_connections: int = 20,
         keepalive_expiry: float = 30.0,
         use_cache: bool = True,
-    ) -> Any:
+    ) -> dict[str, str | int | bool]:
         """
         Create or retrieve an HTTP client.
 
@@ -130,7 +130,7 @@ class HTTPClientFactory:
                         logger.error(f"Error closing HTTP client '{key}': {e}")
 
     @staticmethod
-    async def close_all():
+    async def close_all() -> None:
         """Close all HTTP clients"""
         with _CLIENT_LOCK:
             for key, client in list(_HTTP_CLIENTS.items()):
@@ -149,7 +149,7 @@ class HTTPClientFactory:
         return {key: {"created": True} for key in _HTTP_CLIENTS}
 
     @staticmethod
-    def _create_mock_http_client(name: str) -> Any:
+    def _create_mock_http_client(name: str) -> dict[str, str | int | bool]:
         """Create a mock HTTP client for testing/development when httpx unavailable"""
 
         class MockHTTPClient:
@@ -190,7 +190,7 @@ def get_http_client(
     max_keepalive_connections: int = 20,
     keepalive_expiry: float = 30.0,
     use_cache: bool = True,
-) -> Any:
+) -> dict[str, str | int | bool]:
     """
     Get an HTTP client instance.
 
@@ -223,7 +223,7 @@ async def close_http_client(name: str = "default"):
     await HTTPClientFactory.close_client(name)
 
 
-async def close_all_http_clients():
+async def close_all_http_clients() -> None:
     """Close all HTTP clients"""
     await HTTPClientFactory.close_all()
 

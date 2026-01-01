@@ -55,7 +55,7 @@ class ABTestEngine:
         with self._lock:
             self._ab_tests[test_id] = config
 
-        def end_test():
+        def end_test() -> None:
             time.sleep(duration_hours * 3600)
             self.analyze_ab_test(test_id)
         threading.Thread(target=end_test, daemon=True).start()

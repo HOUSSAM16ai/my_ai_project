@@ -77,7 +77,7 @@ class ConfigSecretsManager:
         self,
         environment: Environment,
         key: str,
-        value: Any,
+        value: dict[str, str | int | bool],
         description: str,
         is_sensitive: bool = False,
         updated_by: str | None = None,
@@ -93,7 +93,7 @@ class ConfigSecretsManager:
         )
         self.config_repo.set_config(entry)
 
-    def get_config(self, environment: Environment, key: str, default: Any = None) -> Any:
+    def get_config(self, environment: Environment, key: str, default: Any = None) -> dict[str, str | int | bool]:
         """Get configuration value for an environment"""
         entry = self.config_repo.get_config(environment, key)
         if entry:

@@ -25,7 +25,7 @@ class InMemoryCollaborationContext(CollaborationContext):
     def __init__(self, initial_data: dict[str, Any] | None = None) -> None:
         self.shared_memory: dict[str, Any] = initial_data or {}
 
-    def update(self, key: str, value: Any) -> None:
+    def update(self, key: str, value: dict[str, str | int | bool]) -> None:
         """
         تحديث قيمة في الذاكرة المشتركة.
 

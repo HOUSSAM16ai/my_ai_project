@@ -16,6 +16,6 @@ class GRPCAdapter(ProtocolAdapter):
         """Transform gRPC request"""
         return {"metadata": {"protocol": "grpc"}}
 
-    def transform_response(self, response_data: dict[str, Any]) -> Any:
+    def transform_response(self, response_data: dict[str, Any]) -> dict[str, str | int | bool]:
         """Transform to gRPC response"""
         return response_data

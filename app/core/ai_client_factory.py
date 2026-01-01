@@ -55,7 +55,7 @@ _CLIENT_META: dict[str, Any] = {}
 class AIClientProtocol(Protocol):
     """Protocol defining the interface for AI clients"""
 
-    def chat(self) -> Any:
+    def chat(self) -> dict[str, str | int | bool]:
         """Returns chat interface"""
         ...
 
@@ -77,7 +77,7 @@ class AIClientFactory:
         base_url: str | None = None,
         timeout: float = 180.0,
         use_cache: bool = True,
-    ) -> Any:
+    ) -> dict[str, str | int | bool]:
         """
         Create or retrieve an AI client.
         Refactored to reduce complexity.
@@ -130,7 +130,7 @@ class AIClientFactory:
         timeout: float,
         cache_key: str,
         use_cache: bool,
-    ) -> Any:
+    ) -> dict[str, str | int | bool]:
         # Thread-safe client creation
         with _CLIENT_LOCK:
             # Double-check after acquiring lock
@@ -161,7 +161,7 @@ class AIClientFactory:
         api_key: str,
         base_url: str,
         timeout: float,
-    ) -> Any:
+    ) -> dict[str, str | int | bool]:
         """Create a new client instance based on provider"""
         try:
             # Try to use OpenAI SDK
@@ -197,7 +197,7 @@ class AIClientFactory:
         api_key: str,
         base_url: str,
         timeout: float,
-    ) -> Any:
+    ) -> dict[str, str | int | bool]:
         """Create a simple HTTP-based fallback client"""
         if requests is None:
             logger.error("requests not available")
@@ -206,12 +206,12 @@ class AIClientFactory:
         return SimpleFallbackClient(api_key, base_url, timeout)
 
     @staticmethod
-    def _create_mock_client(reason: str) -> Any:
+    def _create_mock_client(reason: str) -> dict[str, str | int | bool]:
         """Create a mock client for testing/development"""
         return MockClient(reason)
 
     @staticmethod
-    def clear_cache():
+    def clear_cache() -> None:
         """Clear the client cache"""
         with _CLIENT_LOCK:
             _CLIENT_CACHE.clear()
@@ -358,7 +358,7 @@ def get_ai_client(
     base_url: str | None = None,
     timeout: float = 180.0,
     use_cache: bool = True,
-) -> Any:
+) -> dict[str, str | int | bool]:
     """
     Get an AI client instance.
 
@@ -384,7 +384,7 @@ def get_ai_client(
     )
 
 
-def clear_ai_client_cache():
+def clear_ai_client_cache() -> None:
     """Clear the AI client cache"""
     AIClientFactory.clear_cache()
 

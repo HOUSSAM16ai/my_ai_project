@@ -82,7 +82,7 @@ class CircuitBreaker:
         self._last_known_state = CoreCircuitState.CLOSED
         self._last_state_change_ts = datetime.now(UTC)
 
-    def call(self, func: Callable, *args, **kwargs) -> Any:
+    def call(self, func: Callable, *args, **kwargs) -> dict[str, str | int | bool]:
         """Execute function with circuit breaker protection"""
 
         # Check if allowed

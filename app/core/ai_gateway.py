@@ -96,13 +96,13 @@ class AIGatewayFacade:
             self._client = get_ai_client()
         return self._client
 
-    async def generate_text(self, prompt: str, **kwargs) -> Any:
+    async def generate_text(self, prompt: str, **kwargs) -> dict[str, str | int | bool]:
         return await self.client.generate_text(prompt, **kwargs)
 
-    async def forge_new_code(self, **kwargs) -> Any:
+    async def forge_new_code(self, **kwargs) -> dict[str, str | int | bool]:
         return await self.client.forge_new_code(**kwargs)
 
-    def __getattr__(self, name: str) -> Any:
+    def __getattr__(self, name: str) -> dict[str, str | int | bool]:
         return getattr(self.client, name)
 
 # Singleton instance

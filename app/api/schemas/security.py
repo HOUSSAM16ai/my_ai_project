@@ -43,7 +43,7 @@ class UserResponse(RobustBaseModel):
 
     @field_validator("name", mode="before")
     @classmethod
-    def map_full_name(cls, v: Any, _info: Any) -> str:
+    def map_full_name(cls, v: dict[str, str | int | bool], _info: dict[str, str | int | bool]) -> str:
         return v
 
 

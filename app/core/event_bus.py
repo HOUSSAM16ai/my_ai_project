@@ -39,7 +39,7 @@ class EventBus(Generic[T]):
             cls._instance._subscribers = {}
         return cls._instance
 
-    async def publish(self, channel: str, event: Any) -> None:
+    async def publish(self, channel: str, event: dict[str, str | int | bool]) -> None:
         """
         نشر حدث جديد في قناة معينة.
         يتم توزيع الحدث على جميع المشتركين الحاليين فوراً.

@@ -149,7 +149,7 @@ class AppSettings(BaseSettings):
 
     @field_validator("CODESPACES", mode="before")
     @classmethod
-    def detect_codespaces(cls, v: Any) -> bool:
+    def detect_codespaces(cls, v: dict[str, str | int | bool]) -> bool:
         """
         🕵️‍♂️ Environment Sensing Algorithm.
         يكتشف البيئة تلقائياً حتى لو لم يتم ضبط المتغير يدوياً.
@@ -216,7 +216,7 @@ class AppSettings(BaseSettings):
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Any) -> list[str]:
+    def assemble_cors_origins(cls, v: dict[str, str | int | bool]) -> list[str]:
         """
         🧩 CORS Assembly Algorithm.
         يقبل سلسلة نصية مفصولة بفواصل أو قائمة، ويعيد قائمة نظيفة.

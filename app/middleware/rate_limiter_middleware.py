@@ -138,7 +138,7 @@ def rate_limit(max_requests: int=100, window_seconds: int=60, limiter_key:
     Usage:
         @router.post("/api/chat")
         @rate_limit(max_requests=50, window_seconds=60)
-        async def chat_endpoint():
+        async def chat_endpoint() -> None:
             ...
 
     Args:

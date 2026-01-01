@@ -107,7 +107,7 @@ class BaseMetricsCollector(BaseProfiler):
         super().__init__(max_samples)
         self._total_count: int = 0
 
-    def record(self, value: Any) -> None:
+    def record(self, value: dict[str, str | int | bool]) -> None:
         """
         Record a metric value.
 

@@ -61,7 +61,7 @@ class AdaptiveCache:
 
     async def get_or_compute(
         self, key: str, coro_func: Callable[..., Any], ttl: float | None = None
-    ) -> Any:
+    ) -> dict[str, str | int | bool]:
         now = time.time()
 
         # 1. Cleanup expired

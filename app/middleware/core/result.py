@@ -120,7 +120,7 @@ class MiddlewareResult:
             error_code="INTERNAL_ERROR",
         )
 
-    def with_metadata(self, key: str, value: Any) -> "MiddlewareResult":
+    def with_metadata(self, key: str, value: dict[str, str | int | bool]) -> "MiddlewareResult":
         """Add metadata to result (chainable)"""
         self.metadata[key] = value
         return self
