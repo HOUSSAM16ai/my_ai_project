@@ -1,4 +1,6 @@
 # app/security/waf.py
+from typing import Any
+
 import contextlib
 import re
 

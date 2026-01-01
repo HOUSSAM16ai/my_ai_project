@@ -3,7 +3,7 @@ import random
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from app.core.protocols import StrategyProtocol as StrategyInterface
 

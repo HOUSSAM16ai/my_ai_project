@@ -1,4 +1,6 @@
 """Data Boundary Database - Database access layer."""
+from typing import Any
+
 from __future__ import annotations
 
 import logging

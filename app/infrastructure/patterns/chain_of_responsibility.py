@@ -1,7 +1,7 @@
 """Chain of Responsibility pattern for request processing."""
 
 from abc import ABC, abstractmethod
-from typing import TypeVar
+from typing import Any, TypeVar
 
 TRequest = TypeVar("TRequest")
 TResponse = TypeVar("TResponse")

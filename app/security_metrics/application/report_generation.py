@@ -1,5 +1,7 @@
 """Security report generation use case - Single Responsibility Principle."""
 
+from typing import Any
+
 from collections import defaultdict
 from datetime import datetime
 

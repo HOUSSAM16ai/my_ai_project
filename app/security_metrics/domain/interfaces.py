@@ -1,7 +1,7 @@
 """Domain interfaces - Contracts for implementations."""
 
 from abc import ABC, abstractmethod
-from typing import Protocol
+from typing import Any, Protocol
 
 from app.security_metrics.domain.entities import RiskScore, SecurityFinding, SecurityMetrics
 

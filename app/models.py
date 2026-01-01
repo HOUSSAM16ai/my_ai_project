@@ -19,7 +19,7 @@ from __future__ import annotations
 import enum
 import json
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from passlib.context import CryptContext
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text, TypeDecorator, func

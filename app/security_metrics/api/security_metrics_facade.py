@@ -1,5 +1,7 @@
 """Security Metrics Facade - Unified interface following Facade Pattern."""
 
+from typing import Any
+
 from app.security_metrics.application.developer_scoring import DeveloperSecurityScorer
 from app.security_metrics.application.report_generation import SecurityReportGenerator
 from app.security_metrics.application.risk_scoring import RiskScoreCalculator

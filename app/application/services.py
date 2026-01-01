@@ -3,6 +3,8 @@ Application Service Implementations
 Concrete implementations of application service interfaces.
 """
 
+from typing import Any
+
 from app.domain.repositories import DatabaseRepository, UserRepository
 
 class DefaultHealthCheckService:

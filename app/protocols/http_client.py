@@ -8,7 +8,7 @@ mocking in tests and flexibility in choosing HTTP clients.
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Protocol
+from typing import Any, Protocol
 
 import requests
 
