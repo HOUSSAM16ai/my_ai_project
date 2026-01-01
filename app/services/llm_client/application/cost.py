@@ -23,7 +23,7 @@ class CostManager:
 
     # Simplified pricing model (can be injected or config-based)
     # Price per 1k tokens
-    from typing import ClassVar
+from typing import ClassVar
 
     PRICING: ClassVar[dict[str, float]] = {
         "gpt-4": 0.03,
