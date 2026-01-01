@@ -299,6 +299,35 @@
         const { useState, useEffect, useRef, useCallback, memo } = React;
 
         // ══════════════════════════════════════════════════════════════════════
+        // GLOBAL ERROR HANDLING | معالجة الأخطاء العالمية
+        // ══════════════════════════════════════════════════════════════════════
+        
+        // Catch unhandled promise rejections (critical for Codespaces stability)
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            event.preventDefault(); // Prevent browser crash
+        });
+
+        // Catch general errors
+        window.addEventListener('error', (event) => {
+            console.error('Global error caught:', event.error);
+            event.preventDefault(); // Prevent browser crash
+        });
+
+        // Memory monitoring (Codespaces has limited resources)
+        if (performance.memory) {
+            setInterval(() => {
+                const usedMemory = performance.memory.usedJSHeapSize;
+                const totalMemory = performance.memory.jsHeapSizeLimit;
+                const percentUsed = (usedMemory / totalMemory) * 100;
+                
+                if (percentUsed > 90) {
+                    console.warn(`⚠️ High memory usage: ${percentUsed.toFixed(1)}%`);
+                }
+            }, 30000); // Check every 30 seconds
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
         // PERFORMANCE CONFIGURATION | تكوين الأداء
         // ══════════════════════════════════════════════════════════════════════
         
@@ -315,6 +344,10 @@
         
         // DOM SAFETY VALVE: Limit messages to prevent memory exhaustion
         const MAX_MESSAGES = 20;  // Increased from 15 for better UX
+        
+        // CODESPACES COMPATIBILITY: Reduced limits for cloud environments
+        const MAX_STREAM_CHUNK_SIZE = 1000; // Max chars per update cycle
+        const STREAM_UPDATE_THROTTLE = 250; // Increased from 200ms for stability
         
         // Performance monitoring
         const PERFORMANCE_MONITOR = {
@@ -434,16 +467,22 @@
                 localStorage.setItem('token', newToken);
                 setToken(newToken);
                 setUser(userData);
-                if (userData && userData.is_admin) {
-                     window.history.pushState({}, '', '/admin');
-                }
+                // Don't manipulate browser history - let React handle rendering
+                // The issue with pushState in Codespaces was causing browser crashes
             };
 
             const logout = () => {
-                localStorage.removeItem('token');
-                setToken(null);
-                setUser(null);
-                window.location.href = '/';
+                try {
+                    localStorage.removeItem('token');
+                    setToken(null);
+                    setUser(null);
+                    // Use replace instead of href to prevent browser history issues
+                    window.location.replace('/');
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    // Force reload as fallback
+                    window.location.reload();
+                }
             };
 
             if (isLoading) {
@@ -729,7 +768,15 @@
                             body: JSON.stringify(payload)
                         });
 
-                        if (!response.ok) throw new Error('Network response was not ok');
+                        if (!response.ok) {
+                            const errorText = await response.text().catch(() => 'Unknown error');
+                            throw new Error(`Server error: ${response.status} - ${errorText}`);
+                        }
+
+                        // SAFETY CHECK: Ensure response.body exists
+                        if (!response.body) {
+                            throw new Error('Response body is not available for streaming');
+                        }
 
                         const reader = response.body.getReader();
                         const decoder = new TextDecoder();
@@ -739,22 +786,24 @@
                         let assistantMsgId = generateId(); // Stable ID for the stream
                         let loopCount = 0;
 
-                        while (true) {
-                            const { value, done } = await reader.read();
-                            if (done) break;
+                        try {
+                            while (true) {
+                                const { value, done } = await reader.read();
+                                if (done) break;
 
-                            // BROWSER SAFETY VALVE: Prevent infinite loop crash
-                            loopCount++;
-                            if (loopCount > 10000) {
-                                console.error("⚠️ Emergency Brake: Stream loop limit reached.");
-                                break;
-                            }
+                                // BROWSER SAFETY VALVE: Prevent infinite loop crash
+                                loopCount++;
+                                if (loopCount > 10000) {
+                                    console.error("⚠️ Emergency Brake: Stream loop limit reached.");
+                                    break;
+                                }
 
-                            // Micro-delay to yield to the main thread
-                            await new Promise(resolve => setTimeout(resolve, 5));
+                                // CODESPACES OPTIMIZATION: Slightly longer delay for cloud environments
+                                // This prevents browser overload in resource-constrained environments
+                                await new Promise(resolve => setTimeout(resolve, 8));
 
-                            const chunk = decoder.decode(value, { stream: true });
-                            const lines = chunk.split('\n\n');
+                                const chunk = decoder.decode(value, { stream: true });
+                                const lines = chunk.split('\n\n');
 
                             lines.forEach(line => {
                                 if (line.startsWith('data: ')) {
@@ -791,9 +840,9 @@
                                                          console.warn("Stream truncated to prevent browser crash (50k limit reached)");
                                                      }
 
-                                                     // Throttled update: 200ms
+                                                     // Throttled update: Better for Codespaces
                                                      const now = Date.now();
-                                                     if (now - lastUpdateTimestamp > 200) {
+                                                     if (now - lastUpdateTimestamp > STREAM_UPDATE_THROTTLE) {
                                                          safeSetMessages(prev =>
                                                              prev.map(msg =>
                                                                  msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
@@ -814,7 +863,7 @@
                                              } else {
                                                  assistantMessage += parsed.content;
                                                  const now = Date.now();
-                                                 if (now - lastUpdateTimestamp > 200) {
+                                                 if (now - lastUpdateTimestamp > STREAM_UPDATE_THROTTLE) {
                                                      safeSetMessages(prev =>
                                                          prev.map(msg =>
                                                              msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
@@ -842,6 +891,22 @@
                                      msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
                                  )
                              );
+                        }
+
+                        } catch (streamError) {
+                            console.error('Stream reading error:', streamError);
+                            // Add error message to chat
+                            safeSetMessages(prev => [
+                                ...prev,
+                                { id: generateId(), role: 'assistant', content: `Stream error: ${streamError.message || 'Connection interrupted'}. Please try again.` }
+                            ]);
+                        } finally {
+                            // Always clean up the reader
+                            try {
+                                reader.releaseLock();
+                            } catch (e) {
+                                // Ignore cleanup errors
+                            }
                         }
 
                     } catch (error) {
