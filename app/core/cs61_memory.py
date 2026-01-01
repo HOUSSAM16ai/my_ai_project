@@ -251,7 +251,17 @@ class MemoryTracker:
             self._tracked[category] = []
         
         # Use weak reference (doesn't prevent garbage collection)
-        self._tracked[category].append(weakref.ref(obj))
+        # Note: Some built-in types (dict, list, str) don't support weak refs
+        try:
+            self._tracked[category].append(weakref.ref(obj))
+        except TypeError:
+            # For objects that don't support weak refs, wrap in a class
+            class WeakRefWrapper:
+                def __init__(self, obj):
+                    self._obj = obj
+                def __call__(self):
+                    return self._obj
+            self._tracked[category].append(weakref.ref(WeakRefWrapper(obj)))
     
     def get_alive_count(self, category: str) -> int:
         """
