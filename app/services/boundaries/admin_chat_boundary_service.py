@@ -11,11 +11,6 @@ import jwt
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.boundaries import (
-    CircuitBreakerConfig,
-    get_policy_boundary,
-    get_service_boundary,
-)
 from app.config.settings import get_settings
 from app.core.ai_gateway import AIClient
 from app.models import AdminConversation, MessageRole
@@ -26,21 +21,20 @@ logger = logging.getLogger(__name__)
 
 ALGORITHM = "HS256"
 
-# Service boundary configuration constant
-ADMIN_CHAT_SERVICE_NAME = "admin_chat"
-
 class AdminChatBoundaryService:
     """
-    خدمة حدود محادثة المسؤول (Admin Chat Boundary Service).
+    خدمة محادثة المسؤول (Admin Chat Service).
     ---------------------------------------------------------
-    تمثل هذه الخدمة "الواجهة الموحدة" (Facade) لجميع عمليات المحادثة الخاصة بالمسؤول.
+    تنسق جميع عمليات المحادثة الخاصة بالمسؤول.
     تطبق مبدأ فصل المسؤوليات (Separation of Concerns) عبر تفويض المهام
-    إلى مكونات متخصصة (Persistence, Streamer, Policy).
+    إلى مكونات متخصصة (Persistence, Streamer).
 
     المسؤوليات:
     1. **التنسيق (Orchestration)**: إدارة تدفق العملية من الطلب إلى الرد.
-    2. **الأمان (Security)**: التحقق من الهوية والصلاحيات عبر `PolicyBoundary`.
-    3. **المرونة (Resilience)**: تطبيق قواطع الدائرة (Circuit Breakers) لحماية النظام من فشل الخدمات الخارجية.
+    2. **الأمان (Security)**: التحقق من الهوية والصلاحيات.
+    3. **معالجة البيانات (Data Processing)**: تخزين واسترجاع المحادثات والرسائل.
+
+    ملاحظة: تم تبسيط هذه الخدمة بإزالة طبقة boundaries غير الضرورية.
     """
 
     def __init__(self, db: AsyncSession) -> None:
@@ -52,20 +46,10 @@ class AdminChatBoundaryService:
         """
         self.db = db
         self.settings = get_settings()
-        self.service_boundary = get_service_boundary(ADMIN_CHAT_SERVICE_NAME)
-        self.policy_boundary = get_policy_boundary()
 
         # التفويض للمكونات المتخصصة (Delegation)
         self.persistence = AdminChatPersistence(db)
         self.streamer = AdminChatStreamer(self.persistence)
-
-        # تكوين قاطع الدائرة لخدمة الذكاء الاصطناعي (Circuit Breaker Configuration)
-        self.service_boundary.get_or_create_circuit_breaker(
-            "ai_orchestration",
-            CircuitBreakerConfig(
-                failure_threshold=3, success_threshold=1, timeout_seconds=30.0, call_timeout=60.0
-            ),
-        )
 
     # TODO: Split this function (31 lines) - KISS principle
     def validate_auth_header(self, auth_header: str | None) -> int:
@@ -198,11 +182,11 @@ class AdminChatBoundaryService:
         session_factory_func: Callable[[], AsyncSession],
     ) -> AsyncGenerator[str, None]:
         """
-        تنسيق تدفق المحادثة الكامل (The Grand Orchestration):
-        1. الحصول على المحادثة (Data Boundary).
-        2. حفظ رسالة المستخدم (Data Boundary).
-        3. تجهيز السياق (Context Prep).
-        4. بث الرد (Service Boundary) مع الأمان.
+        تنسيق تدفق المحادثة الكامل:
+        1. الحصول على المحادثة أو إنشاء واحدة جديدة.
+        2. حفظ رسالة المستخدم.
+        3. تجهيز السياق (سجل المحادثة).
+        4. بث الرد مع معالجة الأخطاء.
         """
         # 1. Get or Create Conversation
         conversation = await self.get_or_create_conversation(user_id, question, conversation_id)
