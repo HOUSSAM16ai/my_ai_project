@@ -15,7 +15,7 @@ Features surpassing tech giants:
 """
 import logging
 import sys
-from typing import Any, Dict, Optional
+from typing import Any
 
 # Import from existing files
 from app.telemetry.events import EventTracker
