@@ -180,8 +180,11 @@ async def test_error_recovery():
             return True
         
         async def execute(self, context: SimpleContext) -> AsyncGenerator[str, None]:
+            # Intentionally raise error to test fallback mechanism
             raise RuntimeError("Intentional failure")
-            yield "Should not reach"
+            # Note: Code after raise is unreachable, but required for type signature
+            if False:  # pragma: no cover
+                yield "Should not reach"
         
         @property
         def priority(self) -> int:
