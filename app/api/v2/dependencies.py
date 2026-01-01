@@ -2,12 +2,13 @@
 FastAPI dependencies for dependency injection.
 """
 
+from app.core.ai_gateway import AIClient
+from app.services.agent_tools.registry import ToolRegistry, get_tool_registry
+from app.services.chat.orchestrator import ChatOrchestrator
+
 def get_ai_client() -> None:
     """Get AI client (placeholder)."""
     return
-
-from app.services.agent_tools.registry import ToolRegistry, get_tool_registry
-from app.services.chat.orchestrator import ChatOrchestrator
 
 async def get_current_user_id() -> int:
     """Get current authenticated user ID."""
