@@ -42,6 +42,7 @@ from app.core.abstraction.functional import (
 )
 from app.core.abstraction.imperative import (
     Effect,
+    EffectType,
     LogEffect,
     MetricEffect,
     NotificationEffect,
@@ -87,6 +88,7 @@ class StudentGrades:
     
     This is pure data - no behavior, just values.
     """
+    id: str  # Composite key: student_id:course_id
     student_id: str
     student_name: str
     course_id: str
@@ -160,6 +162,7 @@ def add_grade_pure(
     """
     new_grades = student_grades.grades + (new_grade,)
     return StudentGrades(
+        id=student_grades.id,
         student_id=student_grades.student_id,
         student_name=student_grades.student_name,
         course_id=student_grades.course_id,
@@ -557,9 +560,9 @@ async def demonstrate_cs51_principles():
         async def handle(self, effect: Effect) -> None:
             print(f"  [Effect] {effect.describe()}")
     
-    shell.register_handler(LogEffect.__name__, MockEffectHandler())
-    shell.register_handler(MetricEffect.__name__, MockEffectHandler())
-    shell.register_handler(NotificationEffect.__name__, MockEffectHandler())
+    shell.register_handler(EffectType.LOG, MockEffectHandler())
+    shell.register_handler(EffectType.METRIC, MockEffectHandler())
+    shell.register_handler(EffectType.NOTIFICATION, MockEffectHandler())
     
     # Create service
     service = GradeManagementService(
@@ -571,6 +574,7 @@ async def demonstrate_cs51_principles():
     
     # Create initial student records
     initial_grades = StudentGrades(
+        id="S001:CS51",
         student_id="S001",
         student_name="Alice Johnson",
         course_id="CS51",
