@@ -1,6 +1,8 @@
 """
 Chat context for intent handlers.
 """
+from typing import Any
+
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING

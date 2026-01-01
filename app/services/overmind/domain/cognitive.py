@@ -13,6 +13,8 @@
 - MIT 6.0001: التجريد والخوارزميات (Abstraction & Algorithms).
 """
 
+from typing import Any
+
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable

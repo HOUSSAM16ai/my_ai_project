@@ -2,6 +2,8 @@
 Composite resilience policy combining multiple patterns.
 """
 
+from typing import Any
+
 import logging
 from collections.abc import Callable
 from typing import TypeVar

@@ -10,6 +10,8 @@
 - توثيق "Legendary" باللغة العربية.
 """
 
+from typing import Any
+
 from app.core.protocols import CollaborationContext
 
 class InMemoryCollaborationContext(CollaborationContext):

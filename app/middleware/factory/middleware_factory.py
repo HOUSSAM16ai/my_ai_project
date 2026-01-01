@@ -8,6 +8,8 @@
 Factory for creating preconfigured middleware pipelines.
 """
 
+from typing import Any
+
 from app.middleware.core.pipeline import SmartPipeline
 from app.middleware.error_handling import ErrorHandlerMiddleware, RecoveryMiddleware
 from app.middleware.fastapi_observability import FastAPIObservabilityMiddleware

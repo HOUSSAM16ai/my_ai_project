@@ -8,6 +8,8 @@ Central registration and management of all plugins
 مبدأ البساطة: Singleton Pattern بسيط وواضح
 """
 
+from typing import Any
+
 from app.core.protocols import PluginProtocol as IPlugin
 
 class PluginRegistry:

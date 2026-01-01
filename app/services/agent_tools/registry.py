@@ -1,6 +1,8 @@
 """
 Tool registry with thread-safe operations.
 """
+from typing import Any
+
 import logging
 import threading
 

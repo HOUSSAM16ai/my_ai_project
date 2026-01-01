@@ -3,6 +3,8 @@
 OpenAI Client Factory and Infrastructure.
 """
 
+from typing import Any
+
 import threading
 from typing import Protocol
 

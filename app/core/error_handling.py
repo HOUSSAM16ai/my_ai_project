@@ -15,6 +15,8 @@
         return dangerous_call()
 """
 
+from typing import Any
+
 import functools
 import logging
 import traceback

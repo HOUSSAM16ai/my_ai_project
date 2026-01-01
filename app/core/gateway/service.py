@@ -1,3 +1,5 @@
+from typing import Any
+
 import logging
 import time
 from collections.abc import Callable

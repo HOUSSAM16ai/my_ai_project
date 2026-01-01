@@ -4,6 +4,8 @@ Command Pattern Implementation
 Encapsulates requests as objects for queuing, logging, and undo operations.
 """
 
+from typing import Any
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime

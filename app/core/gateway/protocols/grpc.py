@@ -1,4 +1,6 @@
 
+from typing import Any
+
 from fastapi import Request
 
 from .base import ProtocolAdapter

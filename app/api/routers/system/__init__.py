@@ -4,6 +4,8 @@
 يجمع كافة موجهات النظام الفرعية ويصدرها كواجهة موحدة.
 """
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, Response, status
 
 from app.api.routers.system.root import root_router

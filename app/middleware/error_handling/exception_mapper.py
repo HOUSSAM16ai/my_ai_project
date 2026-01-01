@@ -3,7 +3,7 @@
 
 Maps Python exceptions to appropriate HTTP status codes and error responses.
 """
-from typing import ClassVar
+from typing import Any, ClassVar
 
 class ExceptionMapper:
     """

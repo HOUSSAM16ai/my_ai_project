@@ -9,6 +9,8 @@
 - Fail-Fast: كشف الأخطاء مبكراً.
 """
 
+from typing import Any
+
 import logging
 from typing import Final
 

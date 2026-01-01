@@ -10,6 +10,8 @@
 - توثيق "Legendary" باللغة العربية.
 """
 
+from typing import Any
+
 import hashlib
 import json
 

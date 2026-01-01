@@ -6,6 +6,8 @@ This module provides the base DomainEvent class and core event types used across
 It decouples services from specific implementations and provides a standardized event structure.
 """
 
+from typing import Any
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum

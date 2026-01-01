@@ -5,6 +5,8 @@ Logic for managing deep structural maps and layer stats.
 Separated from tools to allow usage in other modules.
 """
 
+from typing import Any
+
 import hashlib
 import json
 import os

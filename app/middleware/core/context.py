@@ -12,6 +12,8 @@ Design Pattern: Context Object Pattern
 Architecture: Immutable data structure
 """
 
+from typing import Any
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import uuid4

@@ -2,6 +2,8 @@
 Bulkhead pattern for resource isolation.
 """
 
+from typing import Any
+
 import asyncio
 import logging
 from collections.abc import Callable

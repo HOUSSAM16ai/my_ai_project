@@ -6,6 +6,8 @@ Strictly focused on file operations.
 Uses `tool_model` for cleaner definition.
 """
 
+from typing import Any
+
 import os
 
 from app.services.agent_tools.tool_model import Tool, ToolConfig

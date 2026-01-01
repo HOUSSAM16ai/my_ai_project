@@ -18,6 +18,8 @@
 - Dependency Inversion: الاعتماد على البروتوكولات.
 """
 
+from typing import Any
+
 import logging
 from typing import TYPE_CHECKING
 

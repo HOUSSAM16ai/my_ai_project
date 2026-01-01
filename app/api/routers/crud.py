@@ -6,6 +6,8 @@ CRUD Router - عمليات البيانات العامة
 يعتمد على `CrudBoundaryService` لتنفيذ المنطق، مما يضمن فصل طبقة العرض عن طبقة البيانات.
 """
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 

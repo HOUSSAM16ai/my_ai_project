@@ -4,6 +4,8 @@
 Detailed performance profiling middleware that tracks latency,
 throughput, and identifies bottlenecks.
 """
+from typing import Any
+
 import time
 
 from app.middleware.core.base_middleware import BaseMiddleware

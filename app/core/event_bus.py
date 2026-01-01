@@ -13,6 +13,8 @@
 - Gap-Free Streaming: دعم الاشتراك المسبق لتجنب فقدان الأحداث (Race Conditions).
 """
 
+from typing import Any
+
 import asyncio
 from collections.abc import AsyncGenerator
 from typing import Generic, TypeVar
