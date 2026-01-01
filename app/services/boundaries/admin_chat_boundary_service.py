@@ -49,7 +49,7 @@ class AdminChatBoundaryService:
         """
         self.db = db
         self.settings = get_settings()
-        self.service_boundary = get_service_boundary()
+        self.service_boundary = get_service_boundary("admin_chat")
         self.policy_boundary = get_policy_boundary()
 
         # التفويض للمكونات المتخصصة (Delegation)
@@ -60,7 +60,7 @@ class AdminChatBoundaryService:
         self.service_boundary.get_or_create_circuit_breaker(
             "ai_orchestration",
             CircuitBreakerConfig(
-                failure_threshold=3, success_threshold=1, timeout=30.0, call_timeout=60.0
+                failure_threshold=3, success_threshold=1, timeout_seconds=30.0, call_timeout=60.0
             ),
         )
 

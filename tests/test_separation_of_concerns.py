@@ -563,8 +563,8 @@ class TestIntegration:
     def test_global_instances_singleton(self):
         """اختبار المثيلات العامة (Singleton)"""
         # الحصول على المثيلات مرتين
-        service1 = get_service_boundary()
-        service2 = get_service_boundary()
+        service1 = get_service_boundary("test_service")
+        service2 = get_service_boundary("test_service")
 
         data1 = get_data_boundary("test_service")
         data2 = get_data_boundary("test_service")
