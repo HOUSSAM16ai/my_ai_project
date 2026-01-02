@@ -15,7 +15,6 @@
 
 ### للمطورين
 - **[README.md](README.md)** - نظرة عامة على المشروع
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - مرجع سريع للأوامر
 - **[CODESPACES_TEST_GUIDE.md](CODESPACES_TEST_GUIDE.md)** - العمل على Codespaces
 
 ---
