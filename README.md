@@ -1,16 +1,18 @@
 # 🌟 CogniForge - منصة تعليمية ذكية
 
-> **نظام تعليمي مدعوم بالذكاء الاصطناعي - بسيط وقوي**
-> **AI-Powered Educational Platform - Simple & Powerful**
+> **نظام تعليمي مدعوم بالذكاء الاصطناعي - API-First Architecture**
+> **AI-Powered Educational Platform - 100% API-First**
 
 [![Code Quality](https://img.shields.io/badge/quality-90%2B%2F100-success)]()
 [![SOLID Compliance](https://img.shields.io/badge/SOLID-100%25-brightgreen)]()
 [![DRY Compliance](https://img.shields.io/badge/DRY-100%25-brightgreen)]()
 [![KISS Compliance](https://img.shields.io/badge/KISS-100%25-brightgreen)]()
+[![API-First](https://img.shields.io/badge/API--First-100%25-blue)]()
 [![Python](https://img.shields.io/badge/Python-3.12%2B-blue)]()
 [![Type Safety](https://img.shields.io/badge/types-100%25-blue)]()
 
-مشروع CogniForge هو منصة تعليمية متقدمة تعتمد على بنية برمجية حديثة ونظيفة. تم تصميم هذا المشروع ليكون مرجعاً للمطورين المبتدئين والمحترفين، مع التركيز على:
+مشروع CogniForge هو منصة تعليمية متقدمة تعتمد على بنية برمجية حديثة ونظيفة مع **تركيز كامل على API-First Architecture**. تم تصميم هذا المشروع ليكون مرجعاً للمطورين المبتدئين والمحترفين، مع التركيز على:
+- 🎯 **API-First** - النظام مصمم أولاً كـ API، Frontend اختياري
 - 🎯 **البساطة** - KISS Principle
 - 🏗️ **البنية النظيفة** - SOLID Principles  
 - ♻️ **لا تكرار** - DRY Principle
@@ -129,6 +131,24 @@ class UserService:
 ---
 
 ## 🏗️ المبادئ المطبقة | Applied Principles
+
+### ✅ API-First Architecture (100%)
+
+**المبدأ الأساسي:** النظام مصمم أولاً كـ API، والواجهة الأمامية اختيارية ومنفصلة.
+
+#### الفوائد:
+- **Independence**: API يعمل بشكل مستقل عن UI
+- **Flexibility**: يمكن استخدام أي frontend (Web, Mobile, Desktop)
+- **Integration**: سهولة التكامل مع أنظمة خارجية
+- **Performance**: يمكن تشغيل API-only mode (أخف وأسرع)
+
+#### التطبيق:
+- ✅ Kernel منفصل تماماً عن frontend
+- ✅ Static file serving في middleware اختياري
+- ✅ Business logic في Services، ليس في API layer
+- ✅ Zero coupling بين API و UI
+
+📖 **دليل كامل:** [`docs/API_FIRST_ARCHITECTURE.md`](docs/API_FIRST_ARCHITECTURE.md)
 
 ### ✅ SOLID Principles (100% Compliance)
 
