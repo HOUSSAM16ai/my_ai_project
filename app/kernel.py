@@ -1,13 +1,20 @@
 """
-نواة الواقع الإدراكي (Reality Kernel).
+نواة الواقع الإدراكي (Reality Kernel) - 100% API-First.
 
 هذا الملف يمثل القلب النابض للنظام (The Beating Heart) ومُنفذ (Evaluator) التطبيق.
 يعتمد منهجية SICP (جامعة بيركلي) في التركيب الوظيفي (Functional Composition) وفصل التجريد.
+
+المبدأ الأساسي: API-First Architecture
+- النواة تركز 100% على API endpoints
+- Frontend (static files) اختياري ومنفصل تماماً
+- يمكن تشغيل النظام بدون frontend (API-only mode)
+- Separation of Concerns: API Core لا يعرف شيئاً عن UI
 
 المعايير المطبقة (Standards Applied):
 - SICP: حواجز التجريد (Abstraction Barriers)، البيانات ككود (Code as Data).
 - CS50 2025: صرامة النوع والتوثيق (Type Strictness & Documentation).
 - SOLID: مبادئ التصميم القوي (Robust Design).
+- API-First: النظام يعمل بشكل مستقل عن UI.
 """
 
 import logging
@@ -26,11 +33,11 @@ from starlette.types import ASGIApp
 from app.api.routers import admin, crud, data_mesh, observability, overmind, security, system
 from app.config.settings import AppSettings
 from app.core.db_schema import validate_schema_on_startup
-from app.core.static_handler import setup_static_files
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
 from app.middleware.security.security_headers import SecurityHeadersMiddleware
+from app.middleware.static_files_middleware import StaticFilesConfig, setup_static_files_middleware
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +58,6 @@ type RouterSpec = tuple[APIRouter, str]
 # SICP: Functional Core (الجوهر الوظيفي)
 # ==============================================================================
 
-# TODO: Split this function (44 lines) - KISS principle
 def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
     """
     تكوين قائمة البرمجيات الوسيطة كبيانات وصفية (Declarative Data).
@@ -144,12 +150,19 @@ class RealityKernel:
     تطبيق دوال نقية على حالة النظام.
     """
 
-    def __init__(self, *, settings: AppSettings | dict[str, Any]) -> None:
+    def __init__(
+        self,
+        *,
+        settings: AppSettings | dict[str, Any],
+        enable_static_files: bool = True,
+    ) -> None:
         """
         تهيئة النواة.
 
         Args:
             settings (AppSettings | dict[str, Any]): الإعدادات.
+            enable_static_files (bool): تفعيل خدمة الملفات الثابتة (افتراضي: True).
+                                       يمكن تعطيله لوضع API-only.
         """
         if isinstance(settings, dict):
             self.settings_obj = AppSettings(**settings)
@@ -157,6 +170,8 @@ class RealityKernel:
         else:
             self.settings_obj = settings
             self.settings_dict = settings.model_dump()
+        
+        self.enable_static_files = enable_static_files
 
         # بناء التطبيق فور الإنشاء
         self.app: Final[FastAPI] = self._construct_app()
@@ -172,8 +187,8 @@ class RealityKernel:
         الخطوات:
         1. الحالة الأساسية (Base State)
         2. الحصول على المواصفات (Data Acquisition)
-        3. تحويل الحالة (Transformations)
-        4. إعداد الواجهة الأمامية (Side Effects)
+        3. تحويل الحالة (Transformations) - API Core فقط
+        4. إعداد الواجهة الأمامية (Optional - منفصل عن API)
         """
         # 1. Base State
         app = self._create_base_app_instance()
@@ -184,14 +199,22 @@ class RealityKernel:
         )
         router_registry = _get_router_registry()
 
-        # 3. Transformations
+        # 3. Transformations - API Core (100% API-First)
         app = _apply_middleware(app, middleware_stack)
         add_error_handlers(app)  # Legacy helper
         app = _mount_routers(app, router_registry)
 
-        # 4. Static Files (Frontend)
+        # 4. Static Files (Optional - Frontend Support)
+        # Principle: API-First - يمكن تشغيل API بدون frontend
         # يتم الإعداد أخيراً لضمان عدم تداخل المسارات مع API
-        setup_static_files(app)
+        if self.enable_static_files:
+            static_config = StaticFilesConfig(
+                enabled=True,
+                serve_spa=True,
+            )
+            setup_static_files_middleware(app, static_config)
+        else:
+            logger.info("🚀 Running in API-only mode (no static files)")
 
         return app
 

@@ -1,5 +1,28 @@
 """
-معالج الملفات الثابتة (Static File Handler).
+معالج الملفات الثابتة (Static File Handler) - DEPRECATED.
+
+⚠️ هذا الملف DEPRECATED وسيتم حذفه في الإصدار القادم.
+⚠️ استخدم app.middleware.static_files_middleware بدلاً منه.
+
+السبب: API-First Architecture
+- تم فصل static file serving عن API core
+- الآن static files اختياري ومنفصل تماماً
+- يمكن تشغيل API بدون frontend
+
+Migration:
+```python
+# القديم (Deprecated)
+from app.core.static_handler import setup_static_files
+setup_static_files(app)
+
+# الجديد (Recommended)
+from app.middleware.static_files_middleware import (
+    StaticFilesConfig,
+    setup_static_files_middleware
+)
+config = StaticFilesConfig(enabled=True)
+setup_static_files_middleware(app, config)
+```
 
 يتولى مسؤولية تقديم ملفات الواجهة الأمامية (Frontend) والتعامل مع توجيه SPA (Single Page Application).
 يطبق مبادئ CS50 (التوثيق) و SICP (فصل الاهتمامات).
@@ -24,6 +47,7 @@ logger = logging.getLogger(__name__)
 MOUNTABLE_FOLDERS: Final[list[str]] = ["css", "js", "src", "assets"]
 
 # TODO: Split this function (78 lines) - KISS principle
+# NOTE: This function is DEPRECATED. Use app.middleware.static_files_middleware instead.
 def setup_static_files(app: FastAPI, static_dir: str | None = None) -> None:
     """
     إعداد خدمة الملفات الثابتة واستراتيجية الرد (Fallback) لتطبيقات الصفحة الواحدة.

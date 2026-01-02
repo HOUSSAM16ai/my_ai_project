@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - 2026-01-02 - API-First Architecture
+
+### ⭐ API-First Architecture - Complete Transformation
+
+#### Added
+- ✨ **API-First Architecture 100%**: System now fully designed as API-First
+  - Created `app/middleware/static_files_middleware.py` - Separate static files serving
+  - Support for API-only mode (without frontend)
+  - Configuration to enable/disable static files
+  - Complete separation between API Core and Frontend
+- 📚 **Comprehensive Documentation**: Added `docs/API_FIRST_ARCHITECTURE.md`
+  - Full explanation of API-First principle
+  - Examples of correct and incorrect usage
+  - Migration guide for developers
+  - Compliance rules and testing guidelines
+
+#### Changed
+- 🔄 **Kernel Refactoring**: Updated `app/kernel.py`
+  - Added `enable_static_files` parameter to control Frontend
+  - Separated static file setup from API core
+  - Improved documentation to reflect API-First
+  - Removed completed TODO comments
+- 📝 **Documentation Updates**: Updated README.md
+  - Added API-First badge
+  - Clarified principle and benefits
+  - Link to comprehensive guide
+
+#### Deprecated
+- ⚠️ **static_handler.py**: Marked `app/core/static_handler.py` as Deprecated
+  - Added note to use `static_files_middleware` instead
+  - Will be removed in next major version
+  - Clear migration guide provided
+
+### Impact
+- ✅ **Zero Breaking Changes**: All API endpoints work as before
+- ✅ **Backward Compatible**: Static files still work by default
+- ✅ **Enhanced Flexibility**: Can now run in API-only mode
+- ✅ **Better Separation**: Clear separation between Presentation and Business Logic
+
+---
+
 ## [Unreleased]
 
 ### Added - Comprehensive Simplification Analysis (2026-01-02)
