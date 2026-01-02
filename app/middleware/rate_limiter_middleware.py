@@ -125,43 +125,81 @@ _rate_limiters: dict[str, TokenBucketRateLimiter] = {'default':
     TokenBucketRateLimiter(max_requests=20, window_seconds=60), 'lenient':
     TokenBucketRateLimiter(max_requests=300, window_seconds=60)}
 
-# TODO: Split this function (37 lines) - KISS principle
-def rate_limit(max_requests: int=100, window_seconds: int=60, limiter_key:
-    str='default') -> None:
+def _build_rate_limit_headers(limiter: TokenBucketRateLimiter, metadata: dict) -> dict:
     """
-    Decorator for rate limiting endpoints.
+    بناء ترويسات HTTP للرد على تجاوز الحد.
+    
+    Args:
+        limiter: مثيل rate limiter
+        metadata: معلومات العميل والحدود
+        
+    Returns:
+        dict: ترويسات HTTP
+    """
+    return {
+        'X-RateLimit-Limit': str(limiter.max_requests),
+        'X-RateLimit-Remaining': str(metadata['remaining']),
+        'X-RateLimit-Reset': str(metadata['reset_at']),
+        'Retry-After': str(metadata.get('retry_after', 60))
+    }
+
+
+def _get_or_create_limiter(limiter_key: str, max_requests: int, window_seconds: int) -> TokenBucketRateLimiter:
+    """
+    الحصول على أو إنشاء rate limiter.
+    
+    Args:
+        limiter_key: مفتاح rate limiter
+        max_requests: أقصى عدد طلبات
+        window_seconds: نافذة الوقت بالثواني
+        
+    Returns:
+        TokenBucketRateLimiter: مثيل rate limiter
+    """
+    if limiter_key not in _rate_limiters:
+        _rate_limiters[limiter_key] = TokenBucketRateLimiter(
+            max_requests=max_requests,
+            window_seconds=window_seconds
+        )
+    return _rate_limiters[limiter_key]
+
+
+def rate_limit(max_requests: int = 100, window_seconds: int = 60, limiter_key: str = 'default'):
+    """
+    مُزخرف لتحديد معدل الطلبات على endpoints.
 
     Usage:
         @router.post("/api/chat")
         @rate_limit(max_requests=50, window_seconds=60)
-        async def chat_endpoint() -> None:
+        async def chat_endpoint():
             ...
 
     Args:
-        max_requests: Maximum requests in time window
-        window_seconds: Time window in seconds
-        limiter_key: Key for shared rate limiter instance
+        max_requests: أقصى عدد طلبات في نافذة الوقت
+        window_seconds: نافذة الوقت بالثواني
+        limiter_key: مفتاح لمثيل rate limiter المشترك
     """
-    if limiter_key not in _rate_limiters:
-        _rate_limiters[limiter_key] = TokenBucketRateLimiter(max_requests=
-            max_requests, window_seconds=window_seconds)
-    limiter = _rate_limiters[limiter_key]
+    limiter = _get_or_create_limiter(limiter_key, max_requests, window_seconds)
 
-    def decorator(func: Callable) -> None:
-
+    def decorator(func: Callable):
         @wraps(func)
-        async def wrapper(request: Request, *args, **kwargs) -> None:
+        async def wrapper(request: Request, *args, **kwargs):
+            # فحص السماح بالطلب
             allowed, metadata = limiter.is_allowed(request)
+            
             if not allowed:
-                headers = {'X-RateLimit-Limit': str(limiter.max_requests),
-                    'X-RateLimit-Remaining': str(metadata['remaining']),
-                    'X-RateLimit-Reset': str(metadata['reset_at']),
-                    'Retry-After': str(metadata.get('retry_after', 60))}
-                raise HTTPException(status_code=429, detail=
-                    'Too many requests. Please try again later.', headers=
-                    headers)
+                # بناء الرد برفض الطلب
+                headers = _build_rate_limit_headers(limiter, metadata)
+                raise HTTPException(
+                    status_code=429,
+                    detail='Too many requests. Please try again later.',
+                    headers=headers
+                )
+            
+            # حفظ metadata للاستخدام في الطلب
             request.state.rate_limit_metadata = metadata
             return await func(request, *args, **kwargs)
+        
         return wrapper
     return decorator
 
