@@ -11,8 +11,8 @@ Usage:
 """
 
 from .application.metrics_calculator import ComprehensiveMetricsCalculator
-from .application.predictive_analytics import PredictiveAnalytics
-from .application.risk_calculator import RiskCalculator
+from .application.predictive_analytics import LinearRegressionPredictor
+from .application.risk_calculator import AdvancedRiskCalculator
 from .domain.models import (
     RiskPrediction,
     SecurityFinding,
@@ -21,15 +21,19 @@ from .domain.models import (
     TrendDirection,
 )
 
-# Backward compatibility alias
+# Backward compatibility aliases
 MetricsCalculator = ComprehensiveMetricsCalculator
+PredictiveAnalytics = LinearRegressionPredictor
+RiskCalculator = AdvancedRiskCalculator
 
 __all__ = [
     # Application Services (Direct Access - KISS)
     "ComprehensiveMetricsCalculator",
+    "LinearRegressionPredictor",
+    "AdvancedRiskCalculator",
     "MetricsCalculator",  # Backward compatibility
-    "PredictiveAnalytics",
-    "RiskCalculator",
+    "PredictiveAnalytics",  # Backward compatibility
+    "RiskCalculator",  # Backward compatibility
     # Domain Models
     "RiskPrediction",
     "SecurityFinding",
