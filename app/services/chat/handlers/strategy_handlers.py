@@ -12,6 +12,7 @@ from app.core.patterns.strategy import Strategy
 from app.models import Mission, MissionEvent, MissionEventType, MissionStatus
 from app.services.chat.context import ChatContext
 from app.services.overmind.factory import create_overmind
+from app.services.overmind.identity import OvermindIdentity
 
 logger = logging.getLogger(__name__)
 
@@ -283,14 +284,18 @@ class DefaultChatHandler(IntentHandler):
 
     def __init__(self):
         super().__init__("DEFAULT", priority=-1)
+        self._identity = OvermindIdentity()
 
     async def can_handle(self, context: ChatContext) -> bool:
         """Always can handle (fallback)."""
         return True
 
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
-        """Execute default chat."""
-        async for chunk in context.ai_client.stream_chat(context.history_messages):
+        """Execute default chat with identity context."""
+        # إضافة معلومات الهوية إلى رسائل المحادثة
+        enhanced_messages = self._add_identity_context(context.history_messages)
+        
+        async for chunk in context.ai_client.stream_chat(enhanced_messages):
             if isinstance(chunk, dict):
                 choices = chunk.get("choices", [])
                 if choices:
@@ -299,3 +304,43 @@ class DefaultChatHandler(IntentHandler):
                         yield content
             elif isinstance(chunk, str):
                 yield chunk
+    
+    def _add_identity_context(self, messages: list[dict[str, str]]) -> list[dict[str, str]]:
+        """
+        إضافة معلومات الهوية إلى سياق المحادثة.
+        
+        Args:
+            messages: قائمة الرسائل الأصلية
+            
+        Returns:
+            list: قائمة الرسائل مع معلومات الهوية
+        """
+        # الحصول على معلومات المؤسس
+        founder = self._identity.get_founder_info()
+        overmind = self._identity.get_overmind_info()
+        
+        # بناء رسالة النظام مع معلومات الهوية
+        identity_context = f"""أنت {overmind['name_ar']} (Overmind)، {overmind['role_ar']}.
+
+معلومات المؤسس (مهمة جداً):
+- الاسم الكامل: {founder['name_ar']} ({founder['name']})
+- الاسم الأول: {founder['first_name_ar']} ({founder['first_name']})
+- اللقب: {founder['last_name_ar']} ({founder['last_name']})
+- تاريخ الميلاد: {founder['birth_date']} (11 أغسطس 1997)
+- الدور: {founder['role_ar']} ({founder['role']})
+- GitHub: @{founder['github']}
+
+عندما يسأل أحد عن المؤسس أو مؤسس النظام أو من أنشأ Overmind، أجب بهذه المعلومات بدقة تامة.
+"""
+        
+        # إضافة رسالة النظام في البداية إذا لم تكن موجودة
+        if not messages or messages[0].get("role") != "system":
+            return [{"role": "system", "content": identity_context}] + messages
+        else:
+            # إضافة معلومات الهوية إلى رسالة النظام الموجودة
+            enhanced_messages = messages.copy()
+            enhanced_messages[0] = {
+                "role": "system",
+                "content": messages[0]["content"] + "\n\n" + identity_context
+            }
+            return enhanced_messages
