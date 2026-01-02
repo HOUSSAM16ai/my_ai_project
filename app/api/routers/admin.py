@@ -134,22 +134,11 @@ async def list_conversations(
 ) -> list[ConversationSummaryResponse]:
     """
     استرجاع قائمة بجميع محادثات المستخدم.
+    
+    الخدمة تعيد البيانات متوافقة مع Schema مباشرة.
     """
     results = await service.list_user_conversations(user_id)
-    # Mapping 'id' to 'conversation_id' is needed if not handled automatically
-    # Assuming service returns 'id', and schema has 'conversation_id'
-    # RobustBaseModel allows aliasing but we need to match data.
-    # We will rename keys here for safety or rely on model validation if aliases set.
-    # Let's clean the data for the model:
-    cleaned = []
-    for r in results:
-        # Map id to conversation_id explicitly if needed, or rely on AliasChoices if model had it.
-        # But schema has 'conversation_id', data has 'id'.
-        r_mapped = r.copy()
-        if "id" in r_mapped and "conversation_id" not in r_mapped:
-            r_mapped["conversation_id"] = r_mapped["id"]
-        cleaned.append(ConversationSummaryResponse.model_validate(r_mapped))
-    return cleaned
+    return [ConversationSummaryResponse.model_validate(r) for r in results]
 
 @router.get(
     "/api/conversations/{conversation_id}",

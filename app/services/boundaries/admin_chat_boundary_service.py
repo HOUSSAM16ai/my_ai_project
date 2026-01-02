@@ -232,6 +232,8 @@ class AdminChatBoundaryService:
     async def list_user_conversations(self, user_id: int) -> list[dict[str, Any]]:
         """
         سرد المحادثات للشريط الجانبي (Sidebar History).
+        
+        Returns data compatible with ConversationSummaryResponse schema.
         """
         conversations = await self.persistence.list_conversations(user_id)
         results = []
@@ -240,9 +242,12 @@ class AdminChatBoundaryService:
             u_at = c_at
             if hasattr(conv, "updated_at") and conv.updated_at:
                 u_at = conv.updated_at.isoformat()
-            results.append(
-                {"id": conv.id, "title": conv.title, "created_at": c_at, "updated_at": u_at}
-            )
+            results.append({
+                "conversation_id": conv.id,  # Use conversation_id to match schema
+                "title": conv.title,
+                "created_at": c_at,
+                "updated_at": u_at,
+            })
         return results
 
     async def get_conversation_details(self, user_id: int, conversation_id: int) -> dict[str, Any]:
