@@ -33,7 +33,11 @@ OVERMIND_OVERVIEW = """
 المؤسس:
 -------
 Houssam Benmerah (حسام بن مراح)
+الاسم الأول: Houssam (حسام)
+اللقب: Benmerah (بن مراح)
+تاريخ الميلاد: 11 أغسطس 1997 (1997-08-11)
 GitHub: @HOUSSAM16ai
+الدور: المؤسس والمهندس الرئيسي (Creator & Lead Architect)
 
 التراث الأكاديمي:
 -----------------
