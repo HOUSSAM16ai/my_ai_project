@@ -1,6 +1,6 @@
 """
 Neural Routing Mesh Module.
-Part of the Atomic Modularization Protocol.
+Simplified for reliability and performance.
 """
 
 import asyncio
@@ -26,8 +26,6 @@ from app.core.gateway.exceptions import (
     AIRateLimitError,
 )
 from app.core.gateway.node import NeuralNode
-from app.core.math.omni_router import get_omni_router
-from app.core.superhuman_performance_optimizer import get_performance_optimizer
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +37,6 @@ SAFETY_NET_MODEL_ID = "system/safety-net"
 MAX_RETRIES = 3
 CIRCUIT_FAILURE_THRESHOLD = 5
 CIRCUIT_RECOVERY_TIMEOUT = 30.0
-
-# Initialize global optimizer
-_performance_optimizer = get_performance_optimizer()
 
 @runtime_checkable
 class AIClient(Protocol):
@@ -59,8 +54,8 @@ class AIClient(Protocol):
 
 class NeuralRoutingMesh:
     """
-    The 'Superhuman' Router (V7.2).
-    Refactored for SRP and Modularity.
+    The 'Overmind' Router.
+    Refactored for Simplicity and Reliability.
     """
 
     def __init__(self, api_key: str):
@@ -74,8 +69,6 @@ class NeuralRoutingMesh:
         }
 
         self.nodes_map: dict[str, NeuralNode] = self._initialize_nodes()
-        self.omni_router = get_omni_router()
-        self._register_nodes_with_omni_router()
 
     def _initialize_nodes(self) -> dict[str, NeuralNode]:
         nodes = {}
@@ -107,39 +100,25 @@ class NeuralRoutingMesh:
         )
         return nodes
 
-    def _register_nodes_with_omni_router(self):
-        for mid in self.nodes_map:
-            if mid != SAFETY_NET_MODEL_ID:
-                self.omni_router.register_node(mid)
-
-    # TODO: Split this function (32 lines) - KISS principle
     def _get_prioritized_nodes(self, prompt: str) -> list[NeuralNode]:
         """
-        Returns a list of nodes sorted by their Omni-Cognitive Score.
+        Returns a list of nodes sorted by priority (Primary -> Fallback -> Safety Net).
         """
-        available_ids = []
+        final_nodes = []
         now = time.time()
 
-        for mid, node in self.nodes_map.items():
-            if mid == SAFETY_NET_MODEL_ID:
-                continue
+        # Check Primary
+        if PRIMARY_MODEL in self.nodes_map:
+            node = self.nodes_map[PRIMARY_MODEL]
+            if node.circuit_breaker.allow_request() and node.rate_limit_cooldown_until <= now:
+                final_nodes.append(node)
 
-            if not node.circuit_breaker.allow_request():
-                continue
-
-            if node.rate_limit_cooldown_until > now:
-                continue
-
-            available_ids.append(mid)
-
-        final_nodes = []
-        if available_ids:
-            ranked_ids = self.omni_router.get_ranked_nodes(available_ids, prompt)
-            for mid in ranked_ids:
-                if mid in self.nodes_map:
-                    node = self.nodes_map[mid]
-                    if node.rate_limit_cooldown_until <= now:
-                        final_nodes.append(node)
+        # Check Fallbacks
+        for model_id in FALLBACK_MODELS:
+            if model_id in self.nodes_map:
+                node = self.nodes_map[model_id]
+                if node.circuit_breaker.allow_request() and node.rate_limit_cooldown_until <= now:
+                    final_nodes.append(node)
 
         # Always append Safety Net at the end
         if SAFETY_NET_MODEL_ID in self.nodes_map:
@@ -147,49 +126,20 @@ class NeuralRoutingMesh:
 
         return final_nodes
 
-    def _calculate_quality_score(self, full_content: str) -> float:
-        if not full_content:
-            return 0.0
-
-        length_score = min(1.0, len(full_content) / 500)
-        words = full_content.split()
-        if not words:
-            return 0.0
-        unique_words = set(words)
-        density_score = len(unique_words) / len(words)
-
-        final_score = (0.4 * length_score) + (0.6 * density_score)
-        return max(0.0, min(1.0, final_score))
-
-    # TODO: Reduce parameters (8 params) - Use config object
     def _record_metrics(
         self,
         node: NeuralNode,
         prompt: str,
         duration_ms: float,
         success: bool,
-        full_content: str = "",
-        quality_score: float = 0.0,
-        empty_response: bool = False,
     ):
         if node.model_id == SAFETY_NET_MODEL_ID:
             return
 
-        self.omni_router.record_outcome(
-            model_id=node.model_id,
-            prompt=prompt,
-            success=success,
-            latency_ms=duration_ms,
-            quality_score=quality_score,
-        )
-
-        _performance_optimizer.record_request(
-            model_id=node.model_id,
-            success=success,
-            latency_ms=duration_ms,
-            tokens=len(full_content.split()) if success else 0,
-            quality_score=quality_score,
-            empty_response=empty_response,
+        # Simple logging instead of complex analytics
+        log_method = logger.info if success else logger.warning
+        log_method(
+            f"AI Request: {node.model_id} | Success: {success} | Latency: {duration_ms:.2f}ms"
         )
 
     async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
@@ -219,11 +169,10 @@ class NeuralRoutingMesh:
             if not node.circuit_breaker.allow_request():
                 continue
 
+            start_time = time.time()
             try:
                 # Use a dedicated processor/helper to stream from this node
                 full_response_chunks = []
-                # To prevent concatenated partial responses, we track if any data has been yielded.
-                # If so, we cannot failover safely.
                 chunks_yielded = 0
 
                 async for chunk in self._stream_from_node_with_retry(node, messages):
@@ -231,18 +180,9 @@ class NeuralRoutingMesh:
                     full_response_chunks.append(chunk)
                     chunks_yielded += 1
 
-                # Post-processing (Metrics & Caching)
-                full_content = "".join(
-                    chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
-                    for chunk in full_response_chunks
-                ).strip()
-
-                if not full_content and full_response_chunks:
-                     # It yielded chunks but empty content? Only if chunks were metadata?
-                     pass
-
-                quality_score = self._calculate_quality_score(full_content)
+                duration = (time.time() - start_time) * 1000
                 node.circuit_breaker.record_success()
+                self._record_metrics(node, prompt, duration, True)
 
                 if node.model_id != SAFETY_NET_MODEL_ID:
                      get_cognitive_engine().memorize(prompt, context_hash, full_response_chunks)
@@ -250,24 +190,23 @@ class NeuralRoutingMesh:
                 return
 
             except AIRateLimitError:
+                duration = (time.time() - start_time) * 1000
                 node.circuit_breaker.record_saturation()
-                self._record_metrics(node, prompt, 0, False)
+                self._record_metrics(node, prompt, duration, False)
                 errors.append(f"{node.model_id}: Rate Limited")
                 continue
 
             except (AIConnectionError, ValueError, Exception) as e:
+                duration = (time.time() - start_time) * 1000
                 # IMPORTANT FIX: If we have already yielded data, we CANNOT failover.
-                # It would result in a corrupted stream (e.g. half of Model A + full Model B).
                 if 'chunks_yielded' in locals() and chunks_yielded > 0:
                     logger.critical(f"Stream severed mid-transmission from {node.model_id}. Cannot failover safely.")
                     node.circuit_breaker.record_failure()
-                    self._record_metrics(node, prompt, 0, False)
-                    # We must raise the error to the client
+                    self._record_metrics(node, prompt, duration, False)
                     raise e
 
-                # Connection errors or "Empty response" errors
                 node.circuit_breaker.record_failure()
-                self._record_metrics(node, prompt, 0, False)
+                self._record_metrics(node, prompt, duration, False)
                 errors.append(f"{node.model_id}: {e!s}")
                 logger.warning(f"Node {node.model_id} failed: {e}")
                 continue
@@ -318,7 +257,7 @@ class NeuralRoutingMesh:
                         )
 
                     stream_started = True
-                    node.consecutive_rate_limits = 0 # Reset on connection success (even if stream fails later?)
+                    node.consecutive_rate_limits = 0
 
                     chunk_count = 0
                     async for line in response.aiter_lines():
@@ -339,19 +278,16 @@ class NeuralRoutingMesh:
                     return
 
             except AIRateLimitError:
-                raise # Propagate to main loop to trigger failover
+                raise
 
             except (httpx.ConnectError, httpx.ReadTimeout, httpx.HTTPStatusError, ValueError) as e:
                 if stream_started:
-                    # If we started streaming and failed, we can't retry cleanly without potentially duplicating content
-                    # or sending half-baked responses. Ideally we should raise to failover.
-                    # This exception is caught by the outer loop, which now checks for partial yields.
                     raise AIConnectionError("Stream severed") from e
 
                 if attempt > MAX_RETRIES:
                      raise AIConnectionError("Max retries exceeded") from e
 
-                await asyncio.sleep(0.5 * attempt) # Simple backoff for retries
+                await asyncio.sleep(0.5 * attempt)
 
     async def send_message(
         self,
@@ -361,16 +297,6 @@ class NeuralRoutingMesh:
     ) -> str:
         """
         دالة مساعدة لإرسال رسالة وتلقي رد كامل (غير متدفق).
-
-        تستخدم stream_chat داخلياً وتجمع كل الأجزاء في نص واحد.
-
-        Args:
-            system_prompt: رسالة النظام (السياق).
-            user_message: رسالة المستخدم.
-            temperature: درجة الإبداع (0.0 = دقيق، 1.0 = إبداعي).
-
-        Returns:
-            str: الرد الكامل من النموذج.
         """
         messages = [
             {"role": "system", "content": system_prompt},
