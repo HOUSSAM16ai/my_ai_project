@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS73 Art Example - Cyberpunk Style</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0D1B2A;
+            color: #00FF41;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 {
+            text-align: center;
+            color: #FF006E;
+            text-shadow: 0 0 10px #FF006E;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .viz {
+            margin: 30px 0;
+            background: rgba(0,255,65,0.05);
+            padding: 20px;
+            border: 2px solid #00FF41;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 CS73: Code as Art</h1>
+        <h2>Cyberpunk Style Visualization</h2>
+        
+        <div class="viz">
+            <h3>Code Complexity Landscape</h3>
+            <svg width="600" height="400" 
+                       xmlns="http://www.w3.org/2000/svg"
+                       style="background: #0D1B2A;">
+            
+            <!-- Title -->
+            <text x="300" y="30" 
+                  text-anchor="middle"
+                  fill="#00FF41"
+                  font-size="20"
+                  font-weight="bold">Code Complexity Landscape</text>
+            
+            <!-- Max Complexity Circle (Outer) -->
+            <circle cx="300" cy="200" 
+                    r="133" 
+                    fill="none"
+                    stroke="#FF006E"
+                    stroke-width="2"
+                    stroke-dasharray="5,5"
+                    opacity="0.3"/>
+            
+            <!-- Average Complexity Circle (Middle) -->
+            <circle cx="300" cy="200" 
+                    r="48" 
+                    fill="#8d715a"
+                    opacity="0.6"/>
+            
+            <!-- Center Point -->
+            <circle cx="300" cy="200" 
+                    r="5" 
+                    fill="#8338EC"/>
+            
+            <!-- Function Count Visualization -->
+            <text x="300" y="370" 
+                  text-anchor="middle"
+                  fill="#00FF41"
+                  font-size="14">
+                Functions: 127 | Avg: 6.5 | Max: 18
+            </text>
+            
+        </svg>
+        </div>
+    </div>
+</body>
+</html>
