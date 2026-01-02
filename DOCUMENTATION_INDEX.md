@@ -151,7 +151,7 @@
 ### أريد البدء بالمشروع
 1. اقرأ [README.md](README.md)
 2. اتبع [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md) أو [CODESPACES_TEST_GUIDE.md](CODESPACES_TEST_GUIDE.md)
-3. راجع [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
+3. راجع [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) للمزيد
 
 ### أريد فهم البنية
 1. اقرأ [PROJECT_HISTORY.md](PROJECT_HISTORY.md)

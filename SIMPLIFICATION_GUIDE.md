@@ -60,7 +60,10 @@ PROJECT_HISTORY.md         - تاريخ المشروع
 DOCUMENTATION_INDEX.md     - فهرس شامل
 BEGINNER_GUIDE.md          - للمبتدئين
 TESTING_GUIDE.md           - دليل الاختبارات
-QUICK_REFERENCE.md         - مرجع سريع
+SIMPLIFICATION_GUIDE.md    - دليل التبسيط
+CODESPACES_TEST_GUIDE.md   - اختبار Codespaces
+PROJECT_METRICS.md         - مقاييس المشروع
+AGENTS.md                  - وكلاء AI
 ```
 
 ### المستوى 2: docs/

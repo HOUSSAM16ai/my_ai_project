@@ -196,7 +196,6 @@ python3 scripts/apply_solid_dry_kiss.py
 
 ### 📖 للمبتدئين:
 - **[BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)** - دليل شامل من الصفر
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - مرجع سريع للأوامر
 - **[CODESPACES_TEST_GUIDE.md](CODESPACES_TEST_GUIDE.md)** - العمل على Codespaces
 - **[ZERO_TO_HERO_GUIDE_AR.md](docs/ZERO_TO_HERO_GUIDE_AR.md)** - من مبتدئ إلى محترف
 
