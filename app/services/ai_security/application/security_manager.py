@@ -6,6 +6,7 @@ Orchestrates threat detection, analysis, and response.
 مدير الأمان - خدمة التطبيق الرئيسية
 """
 
+from typing import Optional
 
 from ..domain.models import SecurityEvent, ThreatDetection
 from ..domain.ports import (
