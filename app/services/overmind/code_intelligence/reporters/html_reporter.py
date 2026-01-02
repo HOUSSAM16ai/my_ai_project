@@ -1,288 +1,129 @@
+"""
+مُنشئ تقارير HTML للخريطة الحرارية | HTML Heatmap Report Generator.
+
+هذا الملف مسؤول عن إنشاء تقارير تحليل الكود بصيغة HTML.
+تم تبسيطه وتقسيمه وفق مبادئ SOLID و KISS.
+"""
+
 from pathlib import Path
 
 from ..models import ProjectAnalysis
+from .html_templates import create_complete_html, create_file_row_html
 
-# TODO: Split this function (282 lines) - KISS principle
-def generate_heatmap_html(analysis: ProjectAnalysis, output_path: Path) -> None:
-    """Generate HTML heatmap"""
 
-    # Build file rows HTML
+def _extract_code_smells(file_metrics) -> str:
+    """
+    استخراج الروائح البنيوية من metrics الملف.
+    
+    Args:
+        file_metrics: كائن يحتوي على معلومات الملف
+        
+    Returns:
+        str: نص يصف الروائح البنيوية أو "لا توجد"
+        
+    ملاحظة: كل فاصلة (,) تفصل بين رائحة بنيوية واضحة
+    """
+    smells = []
+    
+    if file_metrics.is_god_class:
+        smells.append("God Class")
+        
+    if file_metrics.has_layer_mixing:
+        smells.append("Layer Mixing")
+        
+    if file_metrics.has_cross_layer_imports:
+        smells.append("Cross-Layer Imports")
+    
+    # الفاصلة (,) هنا تُستخدم لربط العناصر في نص واحد
+    # join() تجمع القائمة إلى string واحد
+    return ", ".join(smells) if smells else "لا توجد"
+
+
+def _build_file_rows(analysis: ProjectAnalysis, max_files: int = 50) -> str:
+    """
+    بناء HTML لصفوف الملفات في الخريطة الحرارية.
+    
+    Args:
+        analysis: نتائج تحليل المشروع
+        max_files: الحد الأقصى لعدد الملفات المعروضة
+        
+    Returns:
+        str: HTML كامل لجميع صفوف الملفات
+        
+    ملاحظة:
+        - القوس [] يُستخدم للوصول إلى slice من القائمة
+        - [:50] تعني أول 50 عنصر من القائمة
+        - القوس () يُستخدم لاستدعاء الدالة
+    """
     file_rows_html = []
-    for file_metrics in analysis.files[:50]:  # Top 50 files
-        tier_class = file_metrics.priority_tier.lower()
-        smells = []
-        if file_metrics.is_god_class:
-            smells.append("God Class")
-        if file_metrics.has_layer_mixing:
-            smells.append("Layer Mixing")
-        if file_metrics.has_cross_layer_imports:
-            smells.append("Cross-Layer Imports")
-
-        smells_html = ", ".join(smells) if smells else "لا توجد"
-
-        row_html = f"""
-            <div class="file-row {tier_class}">
-                <div class="file-name">
-                    <span class="badge {tier_class}">{file_metrics.priority_tier}</span>
-                    {file_metrics.relative_path}
-                </div>
-                <div class="file-metrics">
-                    <div class="metric">
-                        <span class="metric-label">درجة الخطورة:</span>
-                        <span class="metric-value">{file_metrics.hotspot_score:.4f}</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">التعقيد الكلي:</span>
-                        <span class="metric-value">{file_metrics.file_complexity}</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">أسطر الكود:</span>
-                        <span class="metric-value">{file_metrics.code_lines}</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">الدوال:</span>
-                        <span class="metric-value">{file_metrics.num_functions}</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">التعديلات (12 شهر):</span>
-                        <span class="metric-value">{file_metrics.commits_last_12months}</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">إصلاحات الأخطاء:</span>
-                        <span class="metric-value">{file_metrics.bugfix_commits}</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">الروائح البنيوية:</span>
-                        <span class="metric-value">{smells_html}</span>
-                    </div>
-                </div>
-            </div>"""
+    
+    # القوس المربع [:max_files] يحدد عدد الملفات
+    for file_metrics in analysis.files[:max_files]:
+        smells_html = _extract_code_smells(file_metrics)
+        
+        # القوس () يستدعي الدالة بالمعاملات
+        row_html = create_file_row_html(
+            relative_path=file_metrics.relative_path,
+            priority_tier=file_metrics.priority_tier,
+            hotspot_score=file_metrics.hotspot_score,
+            file_complexity=file_metrics.file_complexity,
+            code_lines=file_metrics.code_lines,
+            num_functions=file_metrics.num_functions,
+            commits_last_12months=file_metrics.commits_last_12months,
+            bugfix_commits=file_metrics.bugfix_commits,
+            smells_html=smells_html,
+        )
+        
+        # القوس () يستدعي method من الكائن list
         file_rows_html.append(row_html)
+    
+    # join() تجمع جميع صفوف HTML إلى string واحد
+    # الفاصلة "" تعني عدم وجود فاصل بين العناصر
+    return "".join(file_rows_html)
 
-    html_content = f"""<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>خريطة حرارية - التحليل البنيوي للكود</title>
-    <style>
-        body {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a1a;
-            color: #e0e0e0;
-            padding: 20px;
-            direction: rtl;
-        }}
-        .container {{
-            max-width: 1400px;
-            margin: 0 auto;
-        }}
-        h1 {{
-            color: #00d4ff;
-            text-align: center;
-            margin-bottom: 10px;
-        }}
-        .summary {{
-            background: #2a2a2a;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            border-left: 4px solid #00d4ff;
-        }}
-        .summary h2 {{
-            margin-top: 0;
-            color: #00d4ff;
-        }}
-        .stats {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }}
-        .stat {{
-            background: #1a1a1a;
-            padding: 15px;
-            border-radius: 6px;
-        }}
-        .stat-label {{
-            color: #888;
-            font-size: 0.9em;
-            margin-bottom: 5px;
-        }}
-        .stat-value {{
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #00d4ff;
-        }}
-        .heatmap {{
-            display: grid;
-            gap: 10px;
-        }}
-        .file-row {{
-            background: #2a2a2a;
-            padding: 15px;
-            border-radius: 6px;
-            border-right: 6px solid;
-            transition: transform 0.2s;
-        }}
-        .file-row:hover {{
-            transform: translateX(-5px);
-            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
-        }}
-        .file-row.critical {{
-            border-right-color: #ff4444;
-            background: linear-gradient(90deg, #2a2a2a 0%, #3a1a1a 100%);
-        }}
-        .file-row.high {{
-            border-right-color: #ff9944;
-            background: linear-gradient(90deg, #2a2a2a 0%, #3a2a1a 100%);
-        }}
-        .file-row.medium {{
-            border-right-color: #ffdd44;
-            background: linear-gradient(90deg, #2a2a2a 0%, #3a3a1a 100%);
-        }}
-        .file-row.low {{
-            border-right-color: #44ff44;
-            background: linear-gradient(90deg, #2a2a2a 0%, #1a3a1a 100%);
-        }}
-        .file-name {{
-            font-size: 1.1em;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #fff;
-        }}
-        .file-metrics {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            font-size: 0.9em;
-        }}
-        .metric {{
-            display: flex;
-            justify-content: space-between;
-        }}
-        .metric-label {{
-            color: #888;
-        }}
-        .metric-value {{
-            color: #00d4ff;
-            font-weight: bold;
-        }}
-        .badge {{
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            font-weight: bold;
-            margin-right: 8px;
-        }}
-        .badge.critical {{
-            background: #ff4444;
-            color: white;
-        }}
-        .badge.high {{
-            background: #ff9944;
-            color: white;
-        }}
-        .badge.medium {{
-            background: #ffdd44;
-            color: black;
-        }}
-        .badge.low {{
-            background: #44ff44;
-            color: black;
-        }}
-        .legend {{
-            background: #2a2a2a;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-        }}
-        .legend-items {{
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }}
-        .legend-item {{
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }}
-        .legend-color {{
-            width: 30px;
-            height: 20px;
-            border-radius: 4px;
-        }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🔥 خريطة حرارية - التحليل البنيوي للكود</h1>
-        <p style="text-align: center; color: #888;">تم الإنشاء: {analysis.timestamp}</p>
 
-        <div class="summary">
-            <h2>📊 ملخص المشروع</h2>
-            <div class="stats">
-                <div class="stat">
-                    <div class="stat-label">إجمالي الملفات</div>
-                    <div class="stat-value">{analysis.total_files}</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">أسطر الكود</div>
-                    <div class="stat-value">{analysis.total_code_lines:,}</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">إجمالي الدوال</div>
-                    <div class="stat-value">{analysis.total_functions}</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">إجمالي الكلاسات</div>
-                    <div class="stat-value">{analysis.total_classes}</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">متوسط التعقيد</div>
-                    <div class="stat-value">{analysis.avg_file_complexity:.1f}</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">أقصى تعقيد</div>
-                    <div class="stat-value">{analysis.max_file_complexity}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="legend">
-            <h3>دليل الألوان</h3>
-            <div class="legend-items">
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #ff4444;"></div>
-                    <span>حرج (≥0.7)</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #ff9944;"></div>
-                    <span>عالي (≥0.5)</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #ffdd44;"></div>
-                    <span>متوسط (≥0.3)</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #44ff44;"></div>
-                    <span>منخفض (&lt;0.3)</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="heatmap">
-            {"".join(file_rows_html)}
-        </div>
-    </div>
-</body>
-</html>"""
-
+def generate_heatmap_html(analysis: ProjectAnalysis, output_path: Path) -> None:
+    """
+    إنشاء تقرير HTML كامل للخريطة الحرارية.
+    
+    Args:
+        analysis: كائن ProjectAnalysis يحتوي على نتائج التحليل
+        output_path: مسار Path لحفظ ملف HTML
+        
+    Returns:
+        None: الدالة لا تُرجع قيمة، فقط تكتب الملف
+        
+    ملاحظة توضيحية لكل رمز:
+        - النقطة (.) تُستخدم للوصول إلى attributes أو methods
+        - القوس () يستدعي دالة أو method
+        - الفاصلة (,) تفصل بين المعاملات
+        - القوسان {} في f-string يُدرج قيمة المتغير
+        - الشرطة السفلية (_) تُشير إلى دالة خاصة (private)
+    """
+    # بناء HTML لجميع صفوف الملفات
+    # القوس () يستدعي الدالة والفاصلة تفصل المعاملات
+    file_rows_html = _build_file_rows(analysis, max_files=50)
+    
+    # إنشاء المستند HTML الكامل
+    # كل معامل له دور واضح ومحدد
+    html_content = create_complete_html(
+        timestamp=analysis.timestamp,                    # وقت الإنشاء
+        total_files=analysis.total_files,                # إجمالي الملفات
+        total_code_lines=analysis.total_code_lines,      # إجمالي الأسطر
+        total_functions=analysis.total_functions,        # إجمالي الدوال
+        total_classes=analysis.total_classes,            # إجمالي الكلاسات
+        avg_file_complexity=analysis.avg_file_complexity,  # متوسط التعقيد
+        max_file_complexity=analysis.max_file_complexity,  # أقصى تعقيد
+        file_rows_html=file_rows_html,                   # HTML للملفات
+    )
+    
+    # كتابة المحتوى إلى الملف
+    # with: يضمن إغلاق الملف تلقائياً
+    # "w": وضع الكتابة (write mode)
+    # encoding="utf-8": لدعم النصوص العربية
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
-
+    
+    # طباعة رسالة تأكيد
+    # f-string تُدرج قيمة output_path في النص
     print(f"💾 Heatmap HTML saved: {output_path}")
