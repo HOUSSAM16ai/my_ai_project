@@ -46,8 +46,13 @@ class OvermindIdentity:
         self._identity = {
             # معلومات المؤسس (Founder Information)
             "founder": {
+                "first_name": "Houssam",
+                "last_name": "Benmerah",
                 "name": "Houssam Benmerah",
+                "first_name_ar": "حسام",
+                "last_name_ar": "بن مراح",
                 "name_ar": "حسام بن مراح",
+                "birth_date": "1997-08-11",
                 "role": "Creator & Lead Architect",
                 "role_ar": "المؤسس والمهندس الرئيسي",
                 "github": "HOUSSAM16ai",
@@ -242,10 +247,14 @@ class OvermindIdentity:
         q = question.lower()
         
         # الأسئلة عن المؤسس
-        if "مؤسس" in q or "founder" in q or "creator" in q or "من أنشأ" in q:
+        if ("مؤسس" in q or "founder" in q or "creator" in q or "من أنشأ" in q or "من بنى" in q or 
+            "who is the" in q or "who founded" in q or "who created" in q):
             founder = self._identity["founder"]
             return (
                 f"مؤسس Overmind هو {founder['name_ar']} ({founder['name']}). "
+                f"الاسم: {founder['first_name_ar']} ({founder['first_name']}), "
+                f"اللقب: {founder['last_name_ar']} ({founder['last_name']}). "
+                f"تاريخ الميلاد: {founder['birth_date']} (11 أغسطس 1997). "
                 f"هو {founder['role_ar']} ({founder['role']}) للمشروع. "
                 f"يمكنك التواصل معه عبر GitHub: @{founder['github']}"
             )
@@ -298,7 +307,15 @@ class OvermindIdentity:
                 "المبادئ الأساسية:\n" + "\n".join(f"• {p}" for p in philosophy["principles"])
             )
         
-        # الأسئلة عن التاريخ
+        # الأسئلة عن التاريخ أو تاريخ الميلاد
+        elif "تاريخ ميلاد" in q or "birth date" in q or "متى ولد" in q or "when was" in q and ("born" in q or "birthday" in q):
+            founder = self._identity["founder"]
+            return (
+                f"تاريخ ميلاد المؤسس {founder['name_ar']} ({founder['name']}) "
+                f"هو {founder['birth_date']} (11 أغسطس 1997 / August 11, 1997)."
+            )
+        
+        # الأسئلة عن التاريخ العام
         elif "تاريخ" in q or "history" in q or "متى" in q or "when" in q:
             history = self._identity["history"]["milestones"]
             milestones = "\n".join(
