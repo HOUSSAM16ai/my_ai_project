@@ -8,6 +8,13 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 @dataclass
+class ToolResult:
+    """Standardized tool output."""
+    ok: bool
+    data: dict[str, Any] | None = None
+    error: str | None = None
+
+@dataclass
 class ToolConfig:
     """Tool configuration."""
 
@@ -78,3 +85,25 @@ class Tool:
             "errors": self.error_count,
             "disabled": self.is_disabled,
         }
+
+def tool(
+    name: str,
+    description: str,
+    category: str = "general",
+    capabilities: list[str] | None = None,
+    parameters: dict[str, Any] | None = None,
+    aliases: list[str] | None = None,
+):
+    """Decorator to register a function as a tool."""
+    def decorator(func):
+        func._tool_config = ToolConfig(
+            name=name,
+            description=description,
+            category=category,
+            capabilities=capabilities or [],
+            parameters=parameters or {},
+            aliases=aliases or [],
+            handler=func
+        )
+        return func
+    return decorator

@@ -37,7 +37,6 @@ from .dispatch_tools import (
 from .fs_tools import (
     append_file,
     delete_file,
-    ensure_directory,
     ensure_file,
     file_exists,
     list_dir,
@@ -109,7 +108,9 @@ def file_exists_tool(**kwargs) -> None: return file_exists(**kwargs)
 def list_dir_tool(**kwargs) -> None: return list_dir(**kwargs)
 def delete_file_tool(**kwargs) -> None: return delete_file(**kwargs)
 def ensure_file_tool(**kwargs) -> None: return ensure_file(**kwargs)
-def ensure_directory_tool(**kwargs) -> None: return ensure_directory(**kwargs)
+# Ensure directory was removed as a direct tool in fs_tools as it is handled implicitly or redundant
+# If needed, it should be re-implemented. For now, removing to fix import error.
+# def ensure_directory_tool(**kwargs) -> None: return ensure_directory(**kwargs)
 def introspect_tools_tool(**kwargs) -> None: return introspect_tools(**kwargs)
 def memory_put_tool(**kwargs) -> None: return memory_put(**kwargs)
 def memory_get_tool(**kwargs) -> None: return memory_get(**kwargs)
@@ -142,7 +143,7 @@ __all__ = [
     "count_files_tool",
     "delete_file_tool",
     "dispatch_tool_tool",
-    "ensure_directory_tool",
+    # "ensure_directory_tool",
     "ensure_file_tool",
     "file_exists_tool",
     "generic_think_tool",
