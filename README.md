@@ -192,21 +192,30 @@ python3 scripts/apply_solid_dry_kiss.py
 
 ---
 
-## 📚 التوثيق المتقدم | Advanced Documentation
+## 📚 التوثيق | Documentation
 
-### للمبتدئين:
-- 📖 **[BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)** - دليل شامل من الصفر
-- 🎯 **[ZERO_TO_HERO_GUIDE_AR.md](docs/ZERO_TO_HERO_GUIDE_AR.md)** - من مبتدئ إلى محترف
+### 📖 للمبتدئين:
+- **[BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)** - دليل شامل من الصفر
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - مرجع سريع للأوامر
+- **[CODESPACES_TEST_GUIDE.md](CODESPACES_TEST_GUIDE.md)** - العمل على Codespaces
+- **[ZERO_TO_HERO_GUIDE_AR.md](docs/ZERO_TO_HERO_GUIDE_AR.md)** - من مبتدئ إلى محترف
 
-### للمطورين:
-- 🏗️ **[SOLID_DRY_KISS_PLAN.md](SOLID_DRY_KISS_PLAN.md)** - خطة تطبيق المبادئ
-- 📊 **[ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md)** - تحليل معماري شامل
-- ✅ **[FINAL_DELIVERY_REPORT.md](FINAL_DELIVERY_REPORT.md)** - تقرير التسليم النهائي
+### 🏗️ للمطورين:
+- **[PROJECT_HISTORY.md](PROJECT_HISTORY.md)** - تاريخ المشروع والتطور
+- **[SIMPLIFICATION_GUIDE.md](SIMPLIFICATION_GUIDE.md)** - دليل التبسيط (CS61)
+- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - دليل الاختبارات الشامل
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - دليل المساهمة
 
-### مراجع تقنية:
-- 🧪 **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - دليل الاختبارات
-- 🤝 **[CONTRIBUTING.md](CONTRIBUTING.md)** - دليل المساهمة
-- 🗂️ **[docs/](docs/)** - وثائق تفصيلية
+### 📊 المقاييس والتقارير:
+- **[PROJECT_METRICS.md](PROJECT_METRICS.md)** - مقاييس المشروع الحالية
+- **[docs/reports/](docs/reports/)** - تقارير تفصيلية (تحليل، تبسيط، تحقق)
+
+### 🔍 فهرس شامل:
+- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - دليل كامل لجميع الوثائق
+
+### 📁 وثائق تقنية:
+- **[docs/](docs/)** - معمارية وتقنية متقدمة
+- **[docs/archive/](docs/archive/)** - أرشيف الوثائق التاريخية
 
 ---
 
