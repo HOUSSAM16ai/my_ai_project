@@ -28,6 +28,7 @@
 ### الوثائق التفصيلية
 في `/docs/`:
 - **[CS61_SYSTEMS_PROGRAMMING.md](docs/CS61_SYSTEMS_PROGRAMMING.md)** - مبادئ CS61
+- **[CS73_IMPLEMENTATION_GUIDE.md](docs/CS73_IMPLEMENTATION_GUIDE.md)** - 🎨 Harvard CS73: Code, Data, and Art
 - **[ARCHITECTURAL_EVOLUTION.md](docs/ARCHITECTURAL_EVOLUTION.md)** - تطور البنية
 - **[TYPE_SYSTEM.md](docs/TYPE_SYSTEM.md)** - نظام الأنواع
 
