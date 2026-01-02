@@ -1,0 +1,544 @@
+# app/services/overmind/art/generators.py
+"""
+🎨 CS73: Generative Art from Code
+==================================
+
+توليد فن إبداعي من البيانات البرمجية باستخدام الخوارزميات.
+
+CS73 Principles:
+- Algorithmic Art: الفن الخوارزمي
+- Computational Creativity: الإبداع الحاسوبي
+- Procedural Generation: التوليد الإجرائي
+- Emergence: الظهور من البساطة
+"""
+
+import math
+import random
+from typing import Any
+
+from app.services.overmind.art.styles import ArtStyle, VisualTheme
+
+
+class CodePatternArtist:
+    """
+    فنان أنماط الكود التوليدية.
+    
+    CS73: كل مشروع برمجي له بصمته الفنية الفريدة.
+    """
+    
+    def __init__(self, style: ArtStyle = ArtStyle.CYBERPUNK):
+        """تهيئة الفنان"""
+        self.style = style
+        self.palette = VisualTheme.get_palette(style)
+    
+    def generate_fractal_tree(
+        self,
+        complexity: int = 5,
+        seed: int | None = None
+    ) -> str:
+        """
+        توليد شجرة فركتالية تمثل بنية الكود.
+        
+        CS73: الفركتالات تمثل التكرار والتشابه الذاتي في البرمجة.
+        
+        Args:
+            complexity: مستوى العمق (عدد الفروع)
+            seed: بذرة عشوائية للتكرار
+            
+        Returns:
+            str: SVG fractal tree
+            
+        Complexity: O(2^n) where n is complexity level
+        """
+        if seed is not None:
+            random.seed(seed)
+        
+        width, height = 600, 600
+        start_x, start_y = width // 2, height - 50
+        
+        svg = f'''<svg width="{width}" height="{height}" 
+                       xmlns="http://www.w3.org/2000/svg"
+                       style="background: {self.palette.background};">
+        '''
+        
+        # رسم الشجرة الفركتالية
+        branches = self._draw_branch(
+            start_x, start_y,
+            -90,  # angle (up)
+            100,  # length
+            complexity,
+            self.palette.primary
+        )
+        svg += branches
+        
+        svg += '''
+            <text x="10" y="30" 
+                  fill="%s"
+                  font-size="16"
+                  font-weight="bold">Fractal Code Tree</text>
+        </svg>
+        ''' % self.palette.text
+        
+        return svg
+    
+    def _draw_branch(
+        self,
+        x: float,
+        y: float,
+        angle: float,
+        length: float,
+        depth: int,
+        color: str
+    ) -> str:
+        """
+        رسم فرع بشكل تكراري (Recursive Fractal).
+        
+        CS73: التكرار يخلق جمالاً من البساطة.
+        """
+        if depth <= 0 or length < 2:
+            return ""
+        
+        # حساب نقطة النهاية
+        angle_rad = math.radians(angle)
+        end_x = x + length * math.cos(angle_rad)
+        end_y = y + length * math.sin(angle_rad)
+        
+        # تدرج اللون حسب العمق
+        gradient = VisualTheme.create_gradient(
+            self.palette.primary,
+            self.palette.accent,
+            steps=10
+        )
+        color_index = min(10 - depth, len(gradient) - 1)
+        branch_color = gradient[color_index]
+        
+        # رسم الفرع
+        svg = f'''
+        <line x1="{x}" y1="{y}" 
+              x2="{end_x}" y2="{end_y}"
+              stroke="{branch_color}"
+              stroke-width="{depth}"
+              opacity="0.8"/>
+        '''
+        
+        # فروع فرعية (recursive branches)
+        new_length = length * 0.7
+        angle_variation = 25 + random.uniform(-10, 10)
+        
+        # فرع أيسر
+        svg += self._draw_branch(
+            end_x, end_y,
+            angle - angle_variation,
+            new_length,
+            depth - 1,
+            color
+        )
+        
+        # فرع أيمن
+        svg += self._draw_branch(
+            end_x, end_y,
+            angle + angle_variation,
+            new_length,
+            depth - 1,
+            color
+        )
+        
+        return svg
+    
+    def generate_spiral_code(
+        self,
+        iterations: int = 100,
+        data_seed: int = 42
+    ) -> str:
+        """
+        توليد حلزون يمثل تطور الكود.
+        
+        CS73: الحلزون يرمز للنمو والتطور المستمر.
+        
+        Args:
+            iterations: عدد التكرارات
+            data_seed: بذرة البيانات
+            
+        Returns:
+            str: SVG spiral art
+            
+        Complexity: O(n)
+        """
+        width, height = 600, 600
+        center_x, center_y = width // 2, height // 2
+        
+        svg = f'''<svg width="{width}" height="{height}" 
+                       xmlns="http://www.w3.org/2000/svg"
+                       style="background: {self.palette.background};">
+        '''
+        
+        # حساب نقاط الحلزون
+        points = []
+        for i in range(iterations):
+            angle = i * (360 / 16) * math.pi / 180
+            radius = 2 + i * 2
+            
+            x = center_x + radius * math.cos(angle)
+            y = center_y + radius * math.sin(angle)
+            points.append((x, y))
+        
+        # رسم خطوط متصلة
+        gradient = VisualTheme.create_gradient(
+            self.palette.primary,
+            self.palette.secondary,
+            steps=iterations
+        )
+        
+        for i in range(len(points) - 1):
+            x1, y1 = points[i]
+            x2, y2 = points[i + 1]
+            color = gradient[i]
+            
+            svg += f'''
+            <line x1="{x1}" y1="{y1}" 
+                  x2="{x2}" y2="{y2}"
+                  stroke="{color}"
+                  stroke-width="2"
+                  opacity="0.8"/>
+            '''
+        
+        svg += '''
+            <text x="10" y="30" 
+                  fill="%s"
+                  font-size="16"
+                  font-weight="bold">Code Evolution Spiral</text>
+        </svg>
+        ''' % self.palette.text
+        
+        return svg
+
+
+class MetricsArtist:
+    """
+    فنان تصور المقاييس البرمجية.
+    
+    CS73: الأرقام يمكن أن تكون جميلة.
+    """
+    
+    def __init__(self, style: ArtStyle = ArtStyle.NATURE):
+        """تهيئة الفنان"""
+        self.style = style
+        self.palette = VisualTheme.get_palette(style)
+    
+    def create_radial_chart(
+        self,
+        metrics: dict[str, float],
+        title: str = "Code Metrics"
+    ) -> str:
+        """
+        إنشاء رسم بياني دائري فني.
+        
+        CS73: الدوائر أكثر جاذبية من الأعمدة التقليدية.
+        
+        Args:
+            metrics: المقاييس المراد تصورها
+            title: عنوان الرسم
+            
+        Returns:
+            str: SVG radial chart
+            
+        Complexity: O(n) where n is number of metrics
+        """
+        width, height = 500, 500
+        center_x, center_y = width // 2, height // 2
+        max_radius = 180
+        
+        svg = f'''<svg width="{width}" height="{height}" 
+                       xmlns="http://www.w3.org/2000/svg"
+                       style="background: {self.palette.background};">
+            
+            <text x="{width//2}" y="30" 
+                  text-anchor="middle"
+                  fill="{self.palette.text}"
+                  font-size="20"
+                  font-weight="bold">{title}</text>
+        '''
+        
+        # رسم شبكة دائرية
+        for i in range(1, 5):
+            radius = (max_radius / 4) * i
+            svg += f'''
+            <circle cx="{center_x}" cy="{center_y}" 
+                    r="{radius}" 
+                    fill="none"
+                    stroke="{self.palette.secondary}"
+                    stroke-width="1"
+                    opacity="0.2"/>
+            '''
+        
+        # رسم المقاييس
+        if not metrics:
+            svg += '</svg>'
+            return svg
+        
+        num_metrics = len(metrics)
+        angle_step = 360 / num_metrics
+        max_value = max(metrics.values()) if metrics else 1
+        
+        gradient = VisualTheme.create_gradient(
+            self.palette.primary,
+            self.palette.accent,
+            steps=num_metrics
+        )
+        
+        points = []
+        for i, (key, value) in enumerate(metrics.items()):
+            angle = i * angle_step - 90  # start from top
+            angle_rad = math.radians(angle)
+            
+            # نسبة القيمة من الحد الأقصى
+            normalized = value / max_value if max_value > 0 else 0
+            radius = normalized * max_radius
+            
+            # حساب الموقع
+            x = center_x + radius * math.cos(angle_rad)
+            y = center_y + radius * math.sin(angle_rad)
+            points.append((x, y))
+            
+            # رسم خط من المركز
+            color = gradient[i]
+            svg += f'''
+            <line x1="{center_x}" y1="{center_y}" 
+                  x2="{x}" y2="{y}"
+                  stroke="{color}"
+                  stroke-width="2"
+                  opacity="0.6"/>
+            
+            <circle cx="{x}" cy="{y}" 
+                    r="6" 
+                    fill="{color}"/>
+            
+            <!-- Label -->
+            <text x="{x + 15}" y="{y}" 
+                  fill="{self.palette.text}"
+                  font-size="12">{key}: {value:.1f}</text>
+            '''
+        
+        # رسم مضلع يربط النقاط
+        if len(points) > 2:
+            polygon_points = " ".join([f"{x},{y}" for x, y in points])
+            svg += f'''
+            <polygon points="{polygon_points}"
+                     fill="{self.palette.primary}"
+                     opacity="0.2"
+                     stroke="{self.palette.primary}"
+                     stroke-width="2"/>
+            '''
+        
+        svg += '</svg>'
+        return svg
+    
+    def create_bar_art(
+        self,
+        data: dict[str, float],
+        title: str = "Artistic Bar Chart"
+    ) -> str:
+        """
+        رسم بياني عمودي فني.
+        
+        CS73: حتى الرسوم البيانية التقليدية يمكن أن تكون فنية.
+        
+        Args:
+            data: البيانات المراد عرضها
+            title: العنوان
+            
+        Returns:
+            str: SVG bar chart with artistic styling
+        """
+        width, height = 600, 400
+        margin = 50
+        chart_width = width - 2 * margin
+        chart_height = height - 2 * margin
+        
+        svg = f'''<svg width="{width}" height="{height}" 
+                       xmlns="http://www.w3.org/2000/svg"
+                       style="background: {self.palette.background};">
+            
+            <text x="{width//2}" y="30" 
+                  text-anchor="middle"
+                  fill="{self.palette.text}"
+                  font-size="20"
+                  font-weight="bold">{title}</text>
+        '''
+        
+        if not data:
+            svg += '</svg>'
+            return svg
+        
+        # حساب عرض كل عمود
+        num_bars = len(data)
+        bar_width = chart_width / (num_bars * 2)
+        spacing = bar_width
+        
+        max_value = max(data.values()) if data else 1
+        
+        # تدرج لوني
+        gradient = VisualTheme.create_gradient(
+            self.palette.primary,
+            self.palette.secondary,
+            steps=num_bars
+        )
+        
+        for i, (key, value) in enumerate(data.items()):
+            # حساب موقع وارتفاع العمود
+            x = margin + i * (bar_width + spacing)
+            normalized = value / max_value if max_value > 0 else 0
+            bar_height = normalized * chart_height
+            y = height - margin - bar_height
+            
+            color = gradient[i]
+            
+            # رسم العمود مع تأثير تدرج
+            svg += f'''
+            <rect x="{x}" y="{y}" 
+                  width="{bar_width}" 
+                  height="{bar_height}"
+                  fill="url(#grad{i})"
+                  rx="5"/>
+            
+            <defs>
+                <linearGradient id="grad{i}" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:{color};stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:{color};stop-opacity:0.5" />
+                </linearGradient>
+            </defs>
+            
+            <!-- Value Label -->
+            <text x="{x + bar_width/2}" y="{y - 5}" 
+                  text-anchor="middle"
+                  fill="{self.palette.text}"
+                  font-size="12"
+                  font-weight="bold">{value:.1f}</text>
+            
+            <!-- Key Label -->
+            <text x="{x + bar_width/2}" y="{height - margin + 20}" 
+                  text-anchor="middle"
+                  fill="{self.palette.text}"
+                  font-size="10"
+                  transform="rotate(-45 {x + bar_width/2} {height - margin + 20})">
+                {key}
+            </text>
+            '''
+        
+        svg += '</svg>'
+        return svg
+
+
+class NetworkArtist:
+    """
+    فنان تصور الشبكات والعلاقات.
+    
+    CS73: العلاقات البرمجية كشبكة عنكبوتية جميلة.
+    """
+    
+    def __init__(self, style: ArtStyle = ArtStyle.DARK):
+        """تهيئة الفنان"""
+        self.style = style
+        self.palette = VisualTheme.get_palette(style)
+    
+    def create_dependency_web(
+        self,
+        nodes: list[dict[str, Any]],
+        edges: list[tuple[str, str]],
+        title: str = "Code Dependencies"
+    ) -> str:
+        """
+        إنشاء شبكة فنية للتبعيات.
+        
+        CS73: التبعيات كشبكة حياة متصلة.
+        
+        Args:
+            nodes: قائمة العقد (modules, classes, etc.)
+            edges: قائمة الاتصالات (من, إلى)
+            title: العنوان
+            
+        Returns:
+            str: SVG network visualization
+            
+        Complexity: O(n + e) where n is nodes, e is edges
+        """
+        width, height = 700, 700
+        center_x, center_y = width // 2, height // 2
+        radius = 250
+        
+        svg = f'''<svg width="{width}" height="{height}" 
+                       xmlns="http://www.w3.org/2000/svg"
+                       style="background: {self.palette.background};">
+            
+            <text x="{width//2}" y="30" 
+                  text-anchor="middle"
+                  fill="{self.palette.text}"
+                  font-size="20"
+                  font-weight="bold">{title}</text>
+        '''
+        
+        # ترتيب العقد في دائرة
+        num_nodes = len(nodes)
+        if num_nodes == 0:
+            svg += '</svg>'
+            return svg
+        
+        angle_step = 360 / num_nodes
+        node_positions: dict[str, tuple[float, float]] = {}
+        
+        # حساب مواقع العقد
+        for i, node in enumerate(nodes):
+            angle = i * angle_step - 90
+            angle_rad = math.radians(angle)
+            
+            x = center_x + radius * math.cos(angle_rad)
+            y = center_y + radius * math.sin(angle_rad)
+            
+            node_id = node.get("id", f"node_{i}")
+            node_positions[node_id] = (x, y)
+        
+        # رسم الاتصالات (edges)
+        for source, target in edges:
+            if source in node_positions and target in node_positions:
+                x1, y1 = node_positions[source]
+                x2, y2 = node_positions[target]
+                
+                svg += f'''
+                <line x1="{x1}" y1="{y1}" 
+                      x2="{x2}" y2="{y2}"
+                      stroke="{self.palette.secondary}"
+                      stroke-width="1"
+                      opacity="0.3"/>
+                '''
+        
+        # رسم العقد
+        gradient = VisualTheme.create_gradient(
+            self.palette.primary,
+            self.palette.accent,
+            steps=num_nodes
+        )
+        
+        for i, node in enumerate(nodes):
+            node_id = node.get("id", f"node_{i}")
+            if node_id not in node_positions:
+                continue
+            
+            x, y = node_positions[node_id]
+            color = gradient[i]
+            label = node.get("label", node_id)
+            
+            svg += f'''
+            <circle cx="{x}" cy="{y}" 
+                    r="20" 
+                    fill="{color}"
+                    stroke="{self.palette.background}"
+                    stroke-width="3"/>
+            
+            <text x="{x}" y="{y + 35}" 
+                  text-anchor="middle"
+                  fill="{self.palette.text}"
+                  font-size="11">{label}</text>
+            '''
+        
+        svg += '</svg>'
+        return svg
