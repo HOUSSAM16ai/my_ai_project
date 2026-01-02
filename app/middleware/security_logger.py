@@ -16,86 +16,154 @@ Features:
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 
 security_logger = logging.getLogger('security')
 
+
+@dataclass
+class AuthAttemptEvent:
+    """
+    بيانات محاولة المصادقة (Authentication Attempt Event).
+    
+    يحل مشكلة المعاملات الكثيرة باستخدام dataclass.
+    """
+    user_id: str | None
+    username: str | None
+    success: bool
+    ip_address: str
+    user_agent: str | None = None
+    reason: str | None = None
+    
+    def to_dict(self) -> dict:
+        """تحويل إلى dictionary للتسجيل."""
+        return {
+            'event_type': 'auth_attempt',
+            'user_id': self.user_id,
+            'username': self.username,
+            'success': self.success,
+            'ip_address': self.ip_address,
+            'user_agent': self.user_agent,
+            'reason': self.reason,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+
+
+@dataclass
+class AccessDeniedEvent:
+    """
+    بيانات رفض الوصول (Access Denied Event).
+    
+    يحل مشكلة المعاملات الكثيرة باستخدام dataclass.
+    """
+    user_id: str
+    username: str
+    resource: str
+    action: str
+    ip_address: str
+    reason: str | None = None
+    
+    def to_dict(self) -> dict:
+        """تحويل إلى dictionary للتسجيل."""
+        return {
+            'event_type': 'access_denied',
+            'user_id': self.user_id,
+            'username': self.username,
+            'resource': self.resource,
+            'action': self.action,
+            'ip_address': self.ip_address,
+            'reason': self.reason,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+
+
 class SecurityEventLogger:
     """
-    Centralized security event logging.
+    مُسجل مركزي لأحداث الأمان (Centralized Security Event Logger).
 
-    All security-related events should be logged through this class
-    to maintain consistent audit trail.
+    جميع الأحداث الأمنية يجب تسجيلها عبر هذه الفئة للحفاظ على
+    مسار تدقيق متسق (consistent audit trail).
     """
 
     @staticmethod
-    # TODO: Reduce parameters (6 params) - Use config object
-    def log_auth_attempt(user_id: (str | None), username: (str | None),
-        success: bool, ip_address: str, user_agent: (str | None)=None,
-        reason: (str | None)=None):
+    def log_auth_attempt(event: AuthAttemptEvent) -> None:
         """
-        Log authentication attempt.
+        تسجيل محاولة مصادقة.
 
         Args:
-            user_id: User ID if available
-            username: Username attempted
-            success: Whether authentication succeeded
-            ip_address: Client IP address
-            user_agent: Browser/client user agent
-            reason: Failure reason if applicable
+            event: بيانات محاولة المصادقة
         """
-        event = {'event_type': 'auth_attempt', 'user_id': user_id,
-            'username': username, 'success': success, 'ip_address':
-            ip_address, 'user_agent': user_agent, 'reason': reason,
-            'timestamp': datetime.utcnow().isoformat()}
-        if success:
+        event_dict = event.to_dict()
+        
+        if event.success:
             security_logger.info(
-                f'Authentication successful: user={username}, ip={ip_address}',
-                extra=event)
+                f'Authentication successful: user={event.username}, ip={event.ip_address}',
+                extra=event_dict
+            )
         else:
             security_logger.warning(
-                f'Authentication failed: user={username}, ip={ip_address}, reason={reason}'
-                , extra=event)
+                f'Authentication failed: user={event.username}, ip={event.ip_address}, reason={event.reason}',
+                extra=event_dict
+            )
 
-    # TODO: Reduce parameters (6 params) - Use config object
     @staticmethod
-    def log_access_denied(user_id: str, username: str, resource: str,
-        action: str, ip_address: str, reason: (str | None)=None):
+    def log_access_denied(event: AccessDeniedEvent) -> None:
         """
-        Log access denial (authorization failure).
+        تسجيل رفض وصول (authorization failure).
 
         Args:
-            user_id: User ID attempting access
-            username: Username
-            resource: Resource being accessed
-            action: Action being attempted
-            ip_address: Client IP address
-            reason: Denial reason
+            event: بيانات رفض الوصول
         """
-        event = {'event_type': 'access_denied', 'user_id': user_id,
-            'username': username, 'resource': resource, 'action': action,
-            'ip_address': ip_address, 'reason': reason, 'timestamp':
-            datetime.utcnow().isoformat()}
+        event_dict = event.to_dict()
         security_logger.warning(
-            f'Access denied: user={username}, resource={resource}, action={action}'
-            , extra=event)
+            f'Access denied: user={event.username}, resource={event.resource}, action={event.action}',
+            extra=event_dict
+        )
 
-def log_login_success(username: str, ip: str, user_id: (str | None)=None):
-    """Log successful login."""
-    SecurityEventLogger.log_auth_attempt(user_id=user_id, username=username,
-        success=True, ip_address=ip)
 
-def log_login_failure(username: str, ip: str, reason: str='invalid_credentials'
-    ) -> None:
-    """Log failed login attempt."""
-    SecurityEventLogger.log_auth_attempt(user_id=None, username=username,
-        success=False, ip_address=ip, reason=reason)
+# Helper functions للتوافق مع الواجهة القديمة
+def log_login_success(username: str, ip: str, user_id: str | None = None) -> None:
+    """تسجيل تسجيل دخول ناجح."""
+    event = AuthAttemptEvent(
+        user_id=user_id,
+        username=username,
+        success=True,
+        ip_address=ip
+    )
+    SecurityEventLogger.log_auth_attempt(event)
+
+
+def log_login_failure(username: str, ip: str, reason: str = 'invalid_credentials') -> None:
+    """تسجيل محاولة تسجيل دخول فاشلة."""
+    event = AuthAttemptEvent(
+        user_id=None,
+        username=username,
+        success=False,
+        ip_address=ip,
+        reason=reason
+    )
+    SecurityEventLogger.log_auth_attempt(event)
+
 
 def log_unauthorized_access(user_id: str, resource: str, action: str, ip: str) -> None:
-    """Log unauthorized access attempt."""
-    SecurityEventLogger.log_access_denied(user_id=user_id, username=
-        f'user_{user_id}', resource=resource, action=action, ip_address=ip,
-        reason='insufficient_permissions')
+    """تسجيل محاولة وصول غير مصرح بها."""
+    event = AccessDeniedEvent(
+        user_id=user_id,
+        username=f'user_{user_id}',
+        resource=resource,
+        action=action,
+        ip_address=ip,
+        reason='insufficient_permissions'
+    )
+    SecurityEventLogger.log_access_denied(event)
 
-__all__ = ['SecurityEventLogger', 'log_login_failure', 'log_login_success',
-    'log_unauthorized_access']
+
+__all__ = [
+    'SecurityEventLogger',
+    'AuthAttemptEvent',
+    'AccessDeniedEvent',
+    'log_login_failure',
+    'log_login_success',
+    'log_unauthorized_access',
+]
