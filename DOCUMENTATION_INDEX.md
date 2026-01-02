@@ -81,7 +81,10 @@
 
 ---
 
-## 🔧 الأدلة التقنية | Technical Guides
+## 🔧 الأدوات التقنية | Technical Guides
+
+### Cleanup & Organization
+- **[SUPER_CLEANUP_GUIDE.md](docs/SUPER_CLEANUP_GUIDE.md)** - دليل التنظيف الشامل
 
 ### Core Systems
 في `/docs/core/`:
