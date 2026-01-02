@@ -69,6 +69,8 @@
 
 ### التقارير التفصيلية
 في `/docs/reports/`:
+- **[SIMPLIFICATION_ANALYSIS_2026.md](docs/reports/SIMPLIFICATION_ANALYSIS_2026.md)** - 🆕 تحليل شامل للتبسيط (2026-01-02)
+- **[GIT_HISTORY_REVIEW_2026.md](docs/reports/GIT_HISTORY_REVIEW_2026.md)** - مراجعة سجل Git
 - **[SIMPLIFICATION_PROGRESS_REPORT.md](docs/reports/SIMPLIFICATION_PROGRESS_REPORT.md)** - تقرير التبسيط
 - **[ARCHITECTURE_ANALYSIS.md](docs/reports/ARCHITECTURE_ANALYSIS.md)** - تحليل البنية
 - **[VERIFICATION_REPORT.md](docs/reports/VERIFICATION_REPORT.md)** - تقرير التحقق
