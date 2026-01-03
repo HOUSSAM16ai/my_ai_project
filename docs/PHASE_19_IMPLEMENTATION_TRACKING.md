@@ -8,12 +8,12 @@
 ## 📊 ملخص التقدم | Progress Summary
 
 ```
-✅ Functions Completed: 2/10 (20%)
+✅ Functions Completed: 3/10 (30%)
 🔄 In Progress: 1
-⏳ Pending: 7
-📉 Lines Reduced: 205 lines (143 + 62)
-📈 Helper Methods Created: 13 (6 + 7)
-⏱️  Time Elapsed: 4 hours
+⏳ Pending: 6
+📉 Lines Reduced: 283 lines (143 + 62 + 78)
+📈 Helper Methods Created: 18 (6 + 7 + 5)
+⏱️  Time Elapsed: 5 hours
 ```
 
 ---
@@ -102,17 +102,38 @@
 
 ---
 
-### ⏳ Function 4: knowledge.py::get_table_schema()
-**Status:** ⏳ Pending  
-**Lines:** 129  
-**Location:** `app/services/overmind/knowledge.py`
+### ✅ Function 4: knowledge.py::get_table_schema()
+**Status:** ✅ COMPLETE  
+**Date:** 2026-01-03  
+
+**قبل | Before:**
+- Lines: 129
+- Issue: Complex schema extraction with multiple SQL queries
+- Responsibility: Multiple (columns query, PK query, FK query, schema building, logging)
+
+**بعد | After:**
+- Main function: 51 lines (**60.5% reduction**)
+- Helper methods: 5
+  1. `_fetch_table_columns()` - 42 lines - Query column information
+  2. `_fetch_primary_keys()` - 28 lines - Query primary keys
+  3. `_fetch_foreign_keys()` - 43 lines - Query foreign keys
+  4. `_build_schema_object()` - 29 lines - Build schema dictionary
+  5. `_log_schema_info()` - 25 lines - Log schema information
+- Lines reduced: **78 lines**
+
+**الفوائد | Benefits:**
+- ✅ Clear separation by query type (SRP)
+- ✅ Each query in its own focused method
+- ✅ Easier to test individual queries
+- ✅ Better error isolation per query type
+- ✅ Reusable query methods
+- ✅ Zero breaking changes
 
 ---
 
 ### ⏳ Function 5: table_manager.py::get_table_details()
-**Status:** ⏳ Pending  
-**Lines:** 118  
-**Location:** `app/services/overmind/database_tools/table_manager.py`
+**Status:** 🔄 NEXT TARGET  
+**Priority:** High
 
 ---
 
