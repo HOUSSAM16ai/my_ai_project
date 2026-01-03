@@ -123,7 +123,6 @@ def code_index_project(
         },
         "required": ["query"],
     },
-# TODO: Split this function (80 lines) - KISS principle
 )
 def code_search_lexical(
     query: str,
@@ -132,68 +131,39 @@ def code_search_lexical(
     limit: int = CODE_SEARCH_MAX_RESULTS,
     context_radius: int = CODE_SEARCH_CONTEXT_RADIUS,
 ) -> ToolResult:
+    """
+    Perform lexical code search with substring or regex matching.
+    
+    البحث في الكود باستخدام نص فرعي أو تعبير نمطي.
+    
+    Args:
+        query: Search query string
+        root: Root directory to search
+        regex: Whether to use regex matching
+        limit: Maximum number of results
+        context_radius: Lines of context around match
+        
+    Returns:
+        ToolResult with search results
+    """
     try:
-        q = (query or "").strip()
-        if not q:
-            return ToolResult(ok=False, error="EMPTY_QUERY")
+        # Validate inputs
+        validation_result = _validate_search_inputs(query, root)
+        if not validation_result.ok:
+            return validation_result
+        
+        q = query.strip()
         root_abs = _safe_path(root)
-        if not os.path.isdir(root_abs):
-            return ToolResult(ok=False, error="NOT_A_DIRECTORY")
-        pattern = None
-        if regex:
-            try:
-                pattern = re.compile(q, re.IGNORECASE | re.MULTILINE)
-            except Exception as e:
-                return ToolResult(ok=False, error=f"REGEX_INVALID: {e}")
-        results = []
-        scanned = 0
-        for base, _dirs, files in os.walk(root_abs):
-            parts = base.replace("\\", "/").split("/")
-            if any(seg in CODE_INDEX_EXCLUDE_DIRS for seg in parts):
-                continue
-            for fname in files:
-                os.path.splitext(fname)[1].lower()
-                fpath = os.path.join(base, fname)
-                if os.path.getsize(fpath) > CODE_SEARCH_FILE_MAX_BYTES:
-                    continue
-                try:
-                    with open(fpath, encoding="utf-8", errors="replace") as f:
-                        lines = f.readlines()
-                except Exception:
-                    continue
-                scanned += 1
-                for idx, line in enumerate(lines):
-                    hit = False
-                    if regex:
-                        if pattern.search(line):
-                            hit = True
-                    elif q.lower() in line.lower():
-                        hit = True
-                    if hit:
-                        start = max(0, idx - context_radius)
-                        end = min(len(lines), idx + context_radius + 1)
-                        snippet_lines = lines[start:end]
-                        snippet = "".join(snippet_lines)[:1000]
-                        rel = os.path.relpath(fpath, root_abs)
-                        results.append(
-                            {
-                                "file": rel,
-                                "line": idx + 1,
-                                "snippet": snippet,
-                                "match_line_excerpt": line.strip()[:300],
-                            }
-                        )
-                        if len(results) >= limit:
-                            return ToolResult(
-                                ok=True,
-                                data={
-                                    "query": q,
-                                    "regex": regex,
-                                    "results": results,
-                                    "scanned_files": scanned,
-                                    "limit_reached": True,
-                                },
-                            )
+        
+        # Compile regex pattern if needed
+        pattern = _compile_regex_pattern(q, regex)
+        if pattern is None and regex:
+            return ToolResult(ok=False, error="REGEX_INVALID")
+        
+        # Perform search
+        results, scanned = _search_files(q, root_abs, pattern, regex, limit, context_radius)
+        
+        # Build result
         return ToolResult(
             ok=True,
             data={
@@ -201,11 +171,165 @@ def code_search_lexical(
                 "regex": regex,
                 "results": results,
                 "scanned_files": scanned,
-                "limit_reached": False,
+                "limit_reached": len(results) >= limit,
             },
         )
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
+
+
+def _validate_search_inputs(query: str, root: str) -> ToolResult:
+    """
+    Validate search input parameters.
+    
+    التحقق من صحة معاملات البحث.
+    """
+    q = (query or "").strip()
+    if not q:
+        return ToolResult(ok=False, error="EMPTY_QUERY")
+    
+    root_abs = _safe_path(root)
+    if not os.path.isdir(root_abs):
+        return ToolResult(ok=False, error="NOT_A_DIRECTORY")
+    
+    return ToolResult(ok=True)
+
+
+def _compile_regex_pattern(query: str, regex: bool) -> re.Pattern | None:
+    """
+    Compile regex pattern if regex mode is enabled.
+    
+    تجميع نمط التعبير النمطي إذا كان وضع regex مفعلاً.
+    """
+    if not regex:
+        return None
+    
+    try:
+        return re.compile(query, re.IGNORECASE | re.MULTILINE)
+    except Exception:
+        return None
+
+
+def _search_files(
+    query: str,
+    root_abs: str,
+    pattern: re.Pattern | None,
+    regex: bool,
+    limit: int,
+    context_radius: int,
+) -> tuple[list[dict], int]:
+    """
+    Search through files for matches.
+    
+    البحث في الملفات عن التطابقات.
+    
+    Returns:
+        Tuple of (results list, scanned files count)
+    """
+    results = []
+    scanned = 0
+    
+    for base, _dirs, files in os.walk(root_abs):
+        # Skip excluded directories
+        if _should_skip_directory(base):
+            continue
+        
+        for fname in files:
+            fpath = os.path.join(base, fname)
+            
+            # Skip large files
+            if os.path.getsize(fpath) > CODE_SEARCH_FILE_MAX_BYTES:
+                continue
+            
+            # Search file content
+            file_results = _search_file_content(
+                fpath, root_abs, query, pattern, regex, context_radius
+            )
+            
+            if file_results:
+                scanned += 1
+                results.extend(file_results)
+                
+                # Check if limit reached
+                if len(results) >= limit:
+                    return results[:limit], scanned
+    
+    return results, scanned
+
+
+def _should_skip_directory(base: str) -> bool:
+    """
+    Check if directory should be skipped.
+    
+    التحقق مما إذا كان يجب تخطي المجلد.
+    """
+    parts = base.replace("\\", "/").split("/")
+    return any(seg in CODE_INDEX_EXCLUDE_DIRS for seg in parts)
+
+
+def _search_file_content(
+    fpath: str,
+    root_abs: str,
+    query: str,
+    pattern: re.Pattern | None,
+    regex: bool,
+    context_radius: int,
+) -> list[dict]:
+    """
+    Search for query matches in a single file.
+    
+    البحث عن التطابقات في ملف واحد.
+    """
+    try:
+        with open(fpath, encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+    except Exception:
+        return []
+    
+    results = []
+    for idx, line in enumerate(lines):
+        if _line_matches(line, query, pattern, regex):
+            result = _build_search_result(fpath, root_abs, lines, idx, context_radius)
+            results.append(result)
+    
+    return results
+
+
+def _line_matches(line: str, query: str, pattern: re.Pattern | None, regex: bool) -> bool:
+    """
+    Check if line matches the search query.
+    
+    التحقق مما إذا كان السطر يطابق استعلام البحث.
+    """
+    if regex and pattern:
+        return bool(pattern.search(line))
+    return query.lower() in line.lower()
+
+
+def _build_search_result(
+    fpath: str,
+    root_abs: str,
+    lines: list[str],
+    idx: int,
+    context_radius: int,
+) -> dict:
+    """
+    Build a search result with context.
+    
+    بناء نتيجة بحث مع السياق.
+    """
+    start = max(0, idx - context_radius)
+    end = min(len(lines), idx + context_radius + 1)
+    snippet_lines = lines[start:end]
+    snippet = "".join(snippet_lines)[:1000]
+    rel = os.path.relpath(fpath, root_abs)
+    
+    return {
+        "file": rel,
+        "line": idx + 1,
+        "snippet": snippet,
+        "match_line_excerpt": lines[idx].strip()[:300],
+    }
 
 @tool(
     name="code_search_semantic",

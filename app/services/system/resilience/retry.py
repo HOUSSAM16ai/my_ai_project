@@ -139,7 +139,6 @@ class RetryManager:
         self.idempotency_store: dict[str, IdempotencyKey] = {}
         self._lock = threading.RLock()
 
-    # TODO: Split this function (90 lines) - KISS principle
     def execute_with_retry(
         self,
         func: Callable,
@@ -149,88 +148,164 @@ class RetryManager:
         **kwargs,
     ) -> dict[str, str | int | bool]:
         """
-        Execute function with retry logic
-
+        Execute function with advanced retry logic.
+        
+        تنفيذ دالة مع منطق إعادة محاولة متقدم.
+        
+        Features:
+        - Exponential backoff with jitter
+        - Retry budget management
+        - Idempotency support
+        - Conditional retry based on status codes
+        
         Args:
-            func: Function to execute
-            idempotency_key: Optional key for idempotent operations
-            retry_on_status: HTTP status codes that trigger retry (5xx by default)
+            func: Function to execute الدالة المراد تنفيذها
+            idempotency_key: Optional key for idempotent operations مفتاح اختياري
+            retry_on_status: HTTP status codes that trigger retry أكواد HTTP للإعادة
+        
+        Returns:
+            Function result نتيجة الدالة
         """
         # Check idempotency cache
         if idempotency_key:
             cached = self._get_cached_result(idempotency_key)
             if cached:
                 return cached
-
-        # Check retry budget (Fail Fast check)
-        if not self.retry_budget.can_retry():
-            raise RetryBudgetExhaustedError("Retry budget exhausted. Failing fast.")
-
-        attempts: list[RetryAttempt] = []
+        
+        # Validate retry budget
+        self._validate_retry_budget()
+        
+        # Execute with retry loop
+        attempts = []
         retry_on_status = retry_on_status or [500, 502, 503, 504]
-
+        
         for attempt in range(self.config.max_retries + 1):
-            # Track request for budget calculation
-            self.retry_budget.track_request()
-
-            try:
-                result = func(*args, **kwargs)
-
-                # Check if response has status code (for HTTP responses)
-                if hasattr(result, "status_code"):
-                    if result.status_code in retry_on_status:
-                        raise RetryableError(f"Status {result.status_code} - retrying")
-                    # 4xx errors should NOT be retried
-                    if 400 <= result.status_code < 500:
-                        return result
-
+            result = self._execute_attempt(
+                func, args, kwargs, attempt, retry_on_status, attempts
+            )
+            
+            if result is not None:
                 # Success - cache if idempotent
                 if idempotency_key:
                     self._cache_result(idempotency_key, result)
-
-                attempts.append(
-                    RetryAttempt(
-                        attempt_number=attempt,
-                        timestamp=datetime.now(UTC),
-                        delay_ms=0,
-                        success=True,
-                    )
-                )
                 return result
-
-            except Exception as e:
-                error_msg = str(e)
-                attempts.append(
-                    RetryAttempt(
-                        attempt_number=attempt,
-                        timestamp=datetime.now(UTC),
-                        delay_ms=0,
-                        error=error_msg,
-                        success=False,
-                    )
-                )
-
-                # Don't retry on last attempt
-                if attempt >= self.config.max_retries:
-                    raise
-
-                # Calculate delay with jitter
-                delay_ms = self._calculate_delay(attempt)
-                attempts[-1].delay_ms = delay_ms
-
-                # Track retry for budget
-                self.retry_budget.track_retry()
-
-                # Check budget again before sleeping (Double Check Pattern)
-                if not self.retry_budget.can_retry():
-                    raise RetryBudgetExhaustedError(
-                        "Retry budget exhausted during attempts."
-                    ) from None
-
-                # Wait before retry
-                time.sleep(delay_ms / 1000.0)
-
+            
+            # Retry logic (if not last attempt)
+            if attempt < self.config.max_retries:
+                self._handle_retry(attempt, attempts)
+        
         raise Exception(f"All {self.config.max_retries + 1} attempts failed")
+    
+    def _validate_retry_budget(self) -> None:
+        """
+        Validate that retry budget allows retries.
+        
+        التحقق من أن ميزانية إعادة المحاولة تسمح بالمحاولات.
+        """
+        if not self.retry_budget.can_retry():
+            raise RetryBudgetExhaustedError("Retry budget exhausted. Failing fast.")
+    
+    def _execute_attempt(
+        self,
+        func: Callable,
+        args: tuple,
+        kwargs: dict,
+        attempt: int,
+        retry_on_status: list[int],
+        attempts: list[RetryAttempt],
+    ) -> dict[str, str | int | bool] | None:
+        """
+        Execute a single attempt of the function.
+        
+        تنفيذ محاولة واحدة من الدالة.
+        
+        Returns:
+            Result if successful, None if should retry
+        """
+        # Track request for budget calculation
+        self.retry_budget.track_request()
+        
+        try:
+            result = func(*args, **kwargs)
+            
+            # Check if should retry based on status code
+            if self._should_retry_result(result, retry_on_status):
+                raise RetryableError(f"Status {result.status_code} - retrying")
+            
+            # Success
+            attempts.append(
+                RetryAttempt(
+                    attempt_number=attempt,
+                    timestamp=datetime.now(UTC),
+                    delay_ms=0,
+                    success=True,
+                )
+            )
+            return result
+            
+        except Exception as e:
+            # Record failed attempt
+            attempts.append(
+                RetryAttempt(
+                    attempt_number=attempt,
+                    timestamp=datetime.now(UTC),
+                    delay_ms=0,
+                    error=str(e),
+                    success=False,
+                )
+            )
+            
+            # Re-raise if last attempt
+            if attempt >= self.config.max_retries:
+                raise
+            
+            # Signal retry needed
+            return None
+    
+    def _should_retry_result(
+        self,
+        result,
+        retry_on_status: list[int],
+    ) -> bool:
+        """
+        Check if result should trigger a retry.
+        
+        التحقق مما إذا كانت النتيجة يجب أن تؤدي إلى إعادة محاولة.
+        """
+        if not hasattr(result, "status_code"):
+            return False
+        
+        # Retry on specific status codes
+        if result.status_code in retry_on_status:
+            return True
+        
+        # Don't retry on 4xx errors (client errors)
+        if 400 <= result.status_code < 500:
+            return False
+        
+        return False
+    
+    def _handle_retry(self, attempt: int, attempts: list[RetryAttempt]) -> None:
+        """
+        Handle retry logic including delay and budget checks.
+        
+        معالجة منطق إعادة المحاولة بما في ذلك التأخير وفحوصات الميزانية.
+        """
+        # Calculate delay with jitter
+        delay_ms = self._calculate_delay(attempt)
+        attempts[-1].delay_ms = delay_ms
+        
+        # Track retry for budget
+        self.retry_budget.track_retry()
+        
+        # Check budget again before sleeping (Double Check Pattern)
+        if not self.retry_budget.can_retry():
+            raise RetryBudgetExhaustedError(
+                "Retry budget exhausted during attempts."
+            ) from None
+        
+        # Wait before retry
+        time.sleep(delay_ms / 1000.0)
 
     def _calculate_delay(self, attempt: int) -> int:
         """Calculate delay with exponential backoff and jitter"""
