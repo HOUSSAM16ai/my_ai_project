@@ -47,13 +47,13 @@ class StructuralCodeIntelligence:
         # Must be in target paths
         return any(target in path_str for target in self.target_paths)
 
-    # TODO: Split this function (92 lines) - KISS principle
     def _count_lines(self, lines: list[str]) -> tuple[int, int, int]:
         """
         حساب أنواع الأسطر المختلفة.
+        Count different types of lines.
         
         Args:
-            lines: قائمة أسطر الملف
+            lines: قائمة أسطر الملف - List of file lines
             
         Returns:
             tuple: (code_lines, comment_lines, blank_lines)
