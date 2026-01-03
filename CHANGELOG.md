@@ -48,6 +48,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Documentation Simplification Phase 5 (2026-01-03)
+- **Converted `app/services/overmind/__index__.py` to proper Markdown documentation**
+- Created `docs/OVERMIND_ARCHITECTURE.md` - comprehensive Overmind system architecture guide
+  - Converted 612 lines of Python documentation to well-structured Markdown
+  - Bilingual documentation (Arabic/English) preserved
+  - Better organization with table of contents and sections
+  - Improved accessibility and readability
+- Removed `app/services/overmind/__index__.py` (612 lines)
+- **Impact**: Reduced codebase by 612 lines
+- **Result**: Documentation in proper format, easier to maintain and access
+- **Principle**: Separation of concerns - documentation should be in `.md`, not `.py`
+
 ### Removed - Code Cleanup (2026-01-03)
 - **Removed obsolete file `app/services/overmind/database_tools_old.py` (930 lines)**
   - This file was already refactored into modular components in `app/services/overmind/database_tools/`
