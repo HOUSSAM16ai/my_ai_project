@@ -150,80 +150,163 @@ class ProjectContextService:
         """🎯 KEY COMPONENTS IDENTIFICATION"""
         return self.component_analyzer.analyze()
 
-    # TODO: Split this function (72 lines) - KISS principle
     def generate_context_for_ai(self) -> str:
-        """Generate comprehensive context for the AI."""
-        now = datetime.now()
-        if (
-            self._cached_context
-            and self._cache_timestamp
-            and (now - self._cache_timestamp).seconds < self._cache_ttl_seconds
-        ):
-            return self._cached_context
+        """
+        توليد سياق شامل للذكاء الاصطناعي.
+        Generate comprehensive context for the AI.
+        
+        Returns:
+            str: السياق المنسق للمشروع بالكامل | Full formatted project context
+        """
+        if self._is_cache_valid():
+            return self._cached_context  # type: ignore
 
-        stats = self.get_code_statistics()
-        structure = self.get_project_structure()
-        models = self.get_models_info()
-        services = self.get_services_info()
-        routes = self.get_api_routes_info()
-        issues = self.get_recent_issues()
-        strengths = self.get_strengths()
-
-        context_parts = ["# 📊 REAL-TIME PROJECT ANALYSIS", ""]
-
-        context_parts.extend(
-            [
-                "",
-                "## Code Statistics:",
-                f"- Python Files: {stats.python_files}",
-                f"- Test Files: {stats.test_files}",
-                f"- Total Lines: {stats.total_lines:,}",
-                f"- App Code: {stats.app_lines:,} lines",
-                f"- Test Code: {stats.test_lines:,} lines",
-                "",
-                "## Project Structure:",
-            ]
-        )
-
-        for dir_info in structure.directories[:10]:
-            context_parts.append(f"- app/{dir_info['name']}/ ({dir_info['file_count']} files)")
-
-        context_parts.extend(
-            [
-                "",
-                "## Database Models:",
-                ", ".join(models[:15]) if models else "Unable to parse",
-                "",
-                "## Available Services:",
-                ", ".join(services[:10]) if services else "None found",
-                "",
-                "## API Routes:",
-                ", ".join(routes[:10]) if routes else "None found",
-                "",
-                "## 🔍 Current Issues:",
-            ]
-        )
-        context_parts.extend(issues)
-
-        context_parts.extend(
-            [
-                "",
-                "## 💪 Project Strengths:",
-            ]
-        )
-        context_parts.extend(strengths)
-
-        context_parts.extend(
-            [
-                "",
-                f"## ⏰ Analysis Time: {now.strftime('%Y-%m-%d %H:%M:%S')}",
-            ]
-        )
-
+        context_data = self._gather_project_data()
+        context_parts = self._build_context_sections(context_data)
+        
         self._cached_context = "\n".join(context_parts)
-        self._cache_timestamp = now
+        self._cache_timestamp = datetime.now()
 
         return self._cached_context
+
+    def _is_cache_valid(self) -> bool:
+        """
+        التحقق من صلاحية الذاكرة المؤقتة.
+        Check if cached context is still valid.
+        
+        Returns:
+            bool: True إذا كانت الذاكرة المؤقتة صالحة | if cache is valid
+        """
+        if not self._cached_context or not self._cache_timestamp:
+            return False
+        
+        elapsed = (datetime.now() - self._cache_timestamp).seconds
+        return elapsed < self._cache_ttl_seconds
+
+    def _gather_project_data(self) -> dict[str, Any]:
+        """
+        جمع جميع بيانات المشروع.
+        Gather all project data for context generation.
+        
+        Returns:
+            dict: بيانات المشروع الكاملة | Complete project data
+        """
+        return {
+            'stats': self.get_code_statistics(),
+            'structure': self.get_project_structure(),
+            'models': self.get_models_info(),
+            'services': self.get_services_info(),
+            'routes': self.get_api_routes_info(),
+            'issues': self.get_recent_issues(),
+            'strengths': self.get_strengths(),
+        }
+
+    def _build_context_sections(self, data: dict[str, Any]) -> list[str]:
+        """
+        بناء أقسام السياق من البيانات المجمعة.
+        Build context sections from gathered data.
+        
+        Args:
+            data: بيانات المشروع | Project data
+            
+        Returns:
+            list[str]: قائمة أسطر السياق | List of context lines
+        """
+        sections = ["# 📊 REAL-TIME PROJECT ANALYSIS", ""]
+        
+        sections.extend(self._build_statistics_section(data['stats']))
+        sections.extend(self._build_structure_section(data['structure']))
+        sections.extend(self._build_components_section(data['models'], data['services'], data['routes']))
+        sections.extend(self._build_analysis_section(data['issues'], data['strengths']))
+        sections.append(f"## ⏰ Analysis Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        return sections
+
+    def _build_statistics_section(self, stats: CodeStatistics) -> list[str]:
+        """
+        بناء قسم إحصائيات الكود.
+        Build code statistics section.
+        
+        Args:
+            stats: إحصائيات الكود | Code statistics
+            
+        Returns:
+            list[str]: أسطر قسم الإحصائيات | Statistics section lines
+        """
+        return [
+            "",
+            "## Code Statistics:",
+            f"- Python Files: {stats.python_files}",
+            f"- Test Files: {stats.test_files}",
+            f"- Total Lines: {stats.total_lines:,}",
+            f"- App Code: {stats.app_lines:,} lines",
+            f"- Test Code: {stats.test_lines:,} lines",
+        ]
+
+    def _build_structure_section(self, structure: ProjectStructure) -> list[str]:
+        """
+        بناء قسم بنية المشروع.
+        Build project structure section.
+        
+        Args:
+            structure: بنية المشروع | Project structure
+            
+        Returns:
+            list[str]: أسطر قسم البنية | Structure section lines
+        """
+        lines = ["", "## Project Structure:"]
+        for dir_info in structure.directories[:10]:
+            lines.append(f"- app/{dir_info['name']}/ ({dir_info['file_count']} files)")
+        return lines
+
+    def _build_components_section(
+        self, 
+        models: list[str], 
+        services: list[str], 
+        routes: list[str]
+    ) -> list[str]:
+        """
+        بناء قسم المكونات (نماذج، خدمات، مسارات).
+        Build components section (models, services, routes).
+        
+        Args:
+            models: قائمة النماذج | List of models
+            services: قائمة الخدمات | List of services
+            routes: قائمة المسارات | List of routes
+            
+        Returns:
+            list[str]: أسطر قسم المكونات | Components section lines
+        """
+        return [
+            "",
+            "## Database Models:",
+            ", ".join(models[:15]) if models else "Unable to parse",
+            "",
+            "## Available Services:",
+            ", ".join(services[:10]) if services else "None found",
+            "",
+            "## API Routes:",
+            ", ".join(routes[:10]) if routes else "None found",
+        ]
+
+    def _build_analysis_section(self, issues: list[str], strengths: list[str]) -> list[str]:
+        """
+        بناء قسم التحليل (المشاكل والنقاط القوية).
+        Build analysis section (issues and strengths).
+        
+        Args:
+            issues: قائمة المشاكل | List of issues
+            strengths: قائمة نقاط القوة | List of strengths
+            
+        Returns:
+            list[str]: أسطر قسم التحليل | Analysis section lines
+        """
+        lines = ["", "## 🔍 Current Issues:"]
+        lines.extend(issues)
+        lines.extend(["", "## 💪 Project Strengths:"])
+        lines.extend(strengths)
+        lines.append("")
+        return lines
 
     def invalidate_cache(self) -> None:
         """Force refresh of cached context."""
