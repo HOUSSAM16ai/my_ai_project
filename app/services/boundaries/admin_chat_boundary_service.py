@@ -51,39 +51,71 @@ class AdminChatBoundaryService:
         self.persistence = AdminChatPersistence(db)
         self.streamer = AdminChatStreamer(self.persistence)
 
-    # TODO: Split this function (31 lines) - KISS principle
     def validate_auth_header(self, auth_header: str | None) -> int:
         """
         التحقق من ترويسة المصادقة واستخراج معرف المستخدم.
+        Validate authentication header and extract user ID.
 
         Args:
-            auth_header: قيمة ترويسة Authorization.
+            auth_header: قيمة ترويسة Authorization | Authorization header value
 
         Returns:
-            int: معرف المستخدم (User ID).
+            int: معرف المستخدم | User ID
 
         Raises:
-            HTTPException: في حال فشل المصادقة (401).
+            HTTPException: في حال فشل المصادقة (401) | On authentication failure (401)
         """
-        if not auth_header:
-            raise HTTPException(status_code=401, detail="Authorization header missing")
+        # Validate header existence and format
+        token = _extract_bearer_token(auth_header)
+        
+        # Decode and validate token
+        return _decode_and_extract_user_id(token, self.settings.SECRET_KEY)
 
-        parts = auth_header.split(" ")
-        if len(parts) != 2 or parts[0].lower() != "bearer":
-            raise HTTPException(status_code=401, detail="Invalid Authorization header format")
 
-        token = parts[1]
+def _extract_bearer_token(auth_header: str | None) -> str:
+    """
+    Extract Bearer token from Authorization header.
+    
+    استخراج رمز Bearer من ترويسة التفويض.
+    
+    Raises:
+        HTTPException: If header is missing or malformed
+    """
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
 
-        try:
-            payload = jwt.decode(token, self.settings.SECRET_KEY, algorithms=[ALGORITHM])
-            user_id = payload.get("sub")
-            if not user_id:
-                raise HTTPException(status_code=401, detail="Invalid token payload")
-            return int(user_id)
-        except jwt.PyJWTError as e:
-            raise HTTPException(status_code=401, detail="Invalid token") from e
-        except ValueError as e:
-            raise HTTPException(status_code=401, detail="Invalid user ID in token") from e
+    parts = auth_header.split(" ")
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid Authorization header format")
+
+    return parts[1]
+
+
+def _decode_and_extract_user_id(token: str, secret_key: str) -> int:
+    """
+    Decode JWT token and extract user ID.
+    
+    فك تشفير رمز JWT واستخراج معرف المستخدم.
+    
+    Returns:
+        User ID as integer
+        
+    Raises:
+        HTTPException: If token is invalid or user ID is missing
+    """
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+        
+        return int(user_id)
+        
+    except jwt.PyJWTError as e:
+        raise HTTPException(status_code=401, detail="Invalid token") from e
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail="Invalid user ID in token") from e
 
     async def verify_conversation_access(
         self, user_id: int, conversation_id: int

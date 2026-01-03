@@ -68,10 +68,11 @@ class SmartTokenChunker:
     """
 
     @staticmethod
-    # TODO: Split this function (41 lines) - KISS principle
     def chunk_text(text: str, chunk_size: int = StreamingConfig.OPTIMAL_CHUNK_SIZE) -> list[str]:
         """
         Split text into optimal chunks for streaming while STRICTLY preserving whitespace.
+        
+        تقسيم النص إلى أجزاء مثالية للبث مع الحفاظ على المسافات.
 
         Args:
             text: Text to chunk
@@ -83,34 +84,65 @@ class SmartTokenChunker:
         if not text:
             return []
 
-        # Split into words while preserving delimiters (whitespace) using regex capture groups
-        # This returns [word, whitespace, word, whitespace, ...]
-        tokens = re.split(r"(\s+)", text)
-        chunks = []
-        current_chunk = []
-        current_word_count = 0
+        # Split into tokens (words and whitespace)
+        tokens = _split_into_tokens(text)
+        
+        # Build chunks from tokens
+        return _build_chunks_from_tokens(tokens, chunk_size)
 
-        for token in tokens:
-            if not token:
-                continue
 
-            current_chunk.append(token)
+def _split_into_tokens(text: str) -> list[str]:
+    """
+    Split text into words and whitespace tokens.
+    
+    تقسيم النص إلى كلمات ومسافات.
+    
+    Returns:
+        List of tokens (words and whitespace)
+    """
+    # Split using regex capture groups to preserve whitespace
+    # Returns [word, whitespace, word, whitespace, ...]
+    return re.split(r"(\s+)", text)
 
-            # Count words (non-whitespace)
-            if not token.isspace():
-                current_word_count += 1
 
-            # If we reached the chunk size, flush
-            if current_word_count >= chunk_size:
-                chunks.append("".join(current_chunk))
-                current_chunk = []
-                current_word_count = 0
+def _build_chunks_from_tokens(tokens: list[str], chunk_size: int) -> list[str]:
+    """
+    Build text chunks from tokens respecting word boundaries.
+    
+    بناء أجزاء النص من الرموز مع احترام حدود الكلمات.
+    
+    Args:
+        tokens: List of word/whitespace tokens
+        chunk_size: Number of words per chunk
+        
+    Returns:
+        List of text chunks
+    """
+    chunks = []
+    current_chunk = []
+    current_word_count = 0
 
-        # Flush remaining tokens
-        if current_chunk:
+    for token in tokens:
+        if not token:
+            continue
+
+        current_chunk.append(token)
+
+        # Count words (non-whitespace tokens)
+        if not token.isspace():
+            current_word_count += 1
+
+        # Flush chunk when size is reached
+        if current_word_count >= chunk_size:
             chunks.append("".join(current_chunk))
+            current_chunk = []
+            current_word_count = 0
 
-        return chunks
+    # Flush remaining tokens
+    if current_chunk:
+        chunks.append("".join(current_chunk))
+
+    return chunks
 
     @staticmethod
     def smart_chunk(text: str) -> Generator[str, None, None]:
