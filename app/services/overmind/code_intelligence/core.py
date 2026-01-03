@@ -48,100 +48,223 @@ class StructuralCodeIntelligence:
         return any(target in path_str for target in self.target_paths)
 
     # TODO: Split this function (92 lines) - KISS principle
+    def _count_lines(self, lines: list[str]) -> tuple[int, int, int]:
+        """
+        حساب أنواع الأسطر المختلفة.
+        
+        Args:
+            lines: قائمة أسطر الملف
+            
+        Returns:
+            tuple: (code_lines, comment_lines, blank_lines)
+        """
+        code_lines = 0
+        comment_lines = 0
+        blank_lines = 0
+
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                blank_lines += 1
+            elif stripped.startswith("#"):
+                comment_lines += 1
+            else:
+                code_lines += 1
+
+        return code_lines, comment_lines, blank_lines
+
+    def _calculate_complexity_stats(
+        self,
+        functions: list[dict]
+    ) -> tuple[float, int, str, float]:
+        """
+        حساب إحصائيات التعقيد.
+        
+        Args:
+            functions: قائمة معلومات الدوال
+            
+        Returns:
+            tuple: (avg_complexity, max_complexity, max_func_name, std_dev)
+        """
+        function_complexities = [f["complexity"] for f in functions]
+        
+        if not function_complexities:
+            return 0.0, 0, "", 0.0
+
+        avg_complexity = sum(function_complexities) / len(function_complexities)
+        max_complexity = max(function_complexities)
+        
+        # Find function with max complexity
+        max_func_name = ""
+        for f in functions:
+            if f["complexity"] == max_complexity:
+                max_func_name = f["name"]
+                break
+
+        # Calculate standard deviation
+        if len(function_complexities) > 1:
+            mean = avg_complexity
+            variance = sum((x - mean) ** 2 for x in function_complexities) / len(function_complexities)
+            std_dev = variance**0.5
+        else:
+            std_dev = 0.0
+
+        return avg_complexity, max_complexity, max_func_name, std_dev
+
+    def _calculate_nesting_stats(self, functions: list[dict]) -> float:
+        """
+        حساب إحصائيات التداخل.
+        
+        Args:
+            functions: قائمة معلومات الدوال
+            
+        Returns:
+            float: متوسط عمق التداخل
+        """
+        nesting_depths = [f["nesting_depth"] for f in functions]
+        return sum(nesting_depths) / len(nesting_depths) if nesting_depths else 0.0
+
+    def _create_base_metrics(
+        self,
+        file_path: Path,
+        lines: list[str],
+        code_lines: int,
+        comment_lines: int,
+        blank_lines: int,
+        analyzer: ComplexityAnalyzer,
+        avg_complexity: float,
+        max_complexity: int,
+        max_func_name: str,
+        std_dev: float,
+        avg_nesting: float
+    ) -> FileMetrics:
+        """
+        إنشاء كائن FileMetrics الأساسي.
+        
+        Args:
+            file_path: مسار الملف
+            lines: أسطر الملف
+            code_lines: عدد أسطر الكود
+            comment_lines: عدد أسطر التعليقات
+            blank_lines: عدد الأسطر الفارغة
+            analyzer: محلل التعقيد
+            avg_complexity: متوسط التعقيد
+            max_complexity: أقصى تعقيد
+            max_func_name: اسم الدالة الأكثر تعقيداً
+            std_dev: الانحراف المعياري
+            avg_nesting: متوسط التداخل
+            
+        Returns:
+            FileMetrics: كائن المقاييس الأساسية
+        """
+        relative_path = str(file_path.relative_to(self.repo_path))
+        
+        return FileMetrics(
+            file_path=str(file_path),
+            relative_path=relative_path,
+            total_lines=len(lines),
+            code_lines=code_lines,
+            comment_lines=comment_lines,
+            blank_lines=blank_lines,
+            num_classes=len(analyzer.classes),
+            num_functions=len(analyzer.functions),
+            num_public_functions=sum(1 for f in analyzer.functions if f["is_public"]),
+            file_complexity=analyzer.file_complexity,
+            avg_function_complexity=round(avg_complexity, 2),
+            max_function_complexity=max_complexity,
+            max_function_name=max_func_name,
+            complexity_std_dev=round(std_dev, 2),
+            max_nesting_depth=analyzer.max_nesting,
+            avg_nesting_depth=round(avg_nesting, 2),
+            num_imports=len(analyzer.imports),
+            function_details=analyzer.functions,
+        )
+
+    def _enrich_with_git_metrics(self, metrics: FileMetrics) -> None:
+        """
+        إثراء المقاييس بمعلومات Git.
+        
+        Args:
+            metrics: كائن المقاييس للإثراء
+        """
+        git_metrics = self.git_analyzer.analyze_file_history(metrics.relative_path)
+        metrics.total_commits = git_metrics["total_commits"]
+        metrics.commits_last_6months = git_metrics["commits_last_6months"]
+        metrics.commits_last_12months = git_metrics["commits_last_12months"]
+        metrics.num_authors = git_metrics["num_authors"]
+        metrics.bugfix_commits = git_metrics["bugfix_commits"]
+        metrics.branches_modified = git_metrics["branches_modified"]
+
+    def _enrich_with_smells(
+        self,
+        metrics: FileMetrics,
+        imports: list[dict]
+    ) -> None:
+        """
+        إثراء المقاييس بالروائح البنيوية.
+        
+        Args:
+            metrics: كائن المقاييس للإثراء
+            imports: قائمة الاستيرادات
+        """
+        smells = self.smell_detector.detect_smells(
+            metrics.relative_path,
+            metrics,
+            imports
+        )
+        metrics.is_god_class = smells["is_god_class"]
+        metrics.has_layer_mixing = smells["has_layer_mixing"]
+        metrics.has_cross_layer_imports = smells["has_cross_layer_imports"]
+
     def analyze_file(self, file_path: Path) -> FileMetrics | None:
-        """Comprehensive single file analysis"""
+        """
+        تحليل شامل لملف واحد.
+        
+        تم التحسين: تقسيم الدالة إلى helper methods حسب KISS principle
+        
+        Args:
+            file_path: مسار الملف للتحليل
+            
+        Returns:
+            FileMetrics أو None: مقاييس الملف أو None عند الفشل
+        """
         try:
-            # Read file
+            # قراءة الملف
             with open(file_path, encoding="utf-8") as f:
                 content = f.read()
                 lines = content.split("\n")
 
-            # Count lines
-            code_lines = 0
-            comment_lines = 0
-            blank_lines = 0
+            # حساب الأسطر
+            code_lines, comment_lines, blank_lines = self._count_lines(lines)
 
-            for line in lines:
-                stripped = line.strip()
-                if not stripped:
-                    blank_lines += 1
-                elif stripped.startswith("#"):
-                    comment_lines += 1
-                else:
-                    code_lines += 1
-
-            # Parse AST
+            # تحليل AST
             tree = ast.parse(content)
             analyzer = ComplexityAnalyzer()
             analyzer.visit(tree)
 
-            # Calculate statistics
-            function_complexities = [f["complexity"] for f in analyzer.functions]
-            avg_complexity = sum(function_complexities) / len(function_complexities) if function_complexities else 0
-            max_complexity = max(function_complexities) if function_complexities else 0
-            max_func_name = ""
-            if max_complexity > 0:
-                for f in analyzer.functions:
-                    if f["complexity"] == max_complexity:
-                        max_func_name = f["name"]
-                        break
+            # حساب الإحصائيات
+            avg_complexity, max_complexity, max_func_name, std_dev = \
+                self._calculate_complexity_stats(analyzer.functions)
+            avg_nesting = self._calculate_nesting_stats(analyzer.functions)
 
-            # Standard deviation
-            if len(function_complexities) > 1:
-                mean = avg_complexity
-                variance = sum((x - mean) ** 2 for x in function_complexities) / len(function_complexities)
-                std_dev = variance**0.5
-            else:
-                std_dev = 0.0
-
-            # Nesting statistics
-            nesting_depths = [f["nesting_depth"] for f in analyzer.functions]
-            avg_nesting = sum(nesting_depths) / len(nesting_depths) if nesting_depths else 0
-
-            # Create metrics object
-            relative_path = str(file_path.relative_to(self.repo_path))
-            metrics = FileMetrics(
-                file_path=str(file_path),
-                relative_path=relative_path,
-                total_lines=len(lines),
-                code_lines=code_lines,
-                comment_lines=comment_lines,
-                blank_lines=blank_lines,
-                num_classes=len(analyzer.classes),
-                num_functions=len(analyzer.functions),
-                num_public_functions=sum(1 for f in analyzer.functions if f["is_public"]),
-                file_complexity=analyzer.file_complexity,
-                avg_function_complexity=round(avg_complexity, 2),
-                max_function_complexity=max_complexity,
-                max_function_name=max_func_name,
-                complexity_std_dev=round(std_dev, 2),
-                max_nesting_depth=analyzer.max_nesting,
-                avg_nesting_depth=round(avg_nesting, 2),
-                num_imports=len(analyzer.imports),
-                function_details=analyzer.functions,
+            # إنشاء كائن المقاييس الأساسي
+            metrics = self._create_base_metrics(
+                file_path, lines, code_lines, comment_lines, blank_lines,
+                analyzer, avg_complexity, max_complexity, max_func_name,
+                std_dev, avg_nesting
             )
 
-            # Git analysis
-            git_metrics = self.git_analyzer.analyze_file_history(relative_path)
-            metrics.total_commits = git_metrics["total_commits"]
-            metrics.commits_last_6months = git_metrics["commits_last_6months"]
-            metrics.commits_last_12months = git_metrics["commits_last_12months"]
-            metrics.num_authors = git_metrics["num_authors"]
-            metrics.bugfix_commits = git_metrics["bugfix_commits"]
-            metrics.branches_modified = git_metrics["branches_modified"]
+            # إثراء بمقاييس Git
+            self._enrich_with_git_metrics(metrics)
 
-            # Structural smells
-            smells = self.smell_detector.detect_smells(relative_path, metrics, analyzer.imports)
-            metrics.is_god_class = smells["is_god_class"]
-            metrics.has_layer_mixing = smells["has_layer_mixing"]
-            metrics.has_cross_layer_imports = smells["has_cross_layer_imports"]
+            # إثراء بالروائح البنيوية
+            self._enrich_with_smells(metrics, analyzer.imports)
 
             return metrics
 
         except Exception:
-            # print(f"Error analyzing {file_path}: {e}", file=sys.stderr)
+            # التعامل مع الأخطاء بصمت
             return None
-# TODO: Split this function (44 lines) - KISS principle
 
     def calculate_hotspot_scores(self, all_metrics: list[FileMetrics]) -> None:
         """Calculate hotspot scores with normalization"""
