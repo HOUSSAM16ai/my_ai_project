@@ -2,7 +2,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AdminConversation, AdminMessage, User
+from app.core.domain.models import AdminConversation, AdminMessage, User
 
 # Use existing fixtures from conftest.py
 # 'test_app' fixture creates the app and sets up overrides

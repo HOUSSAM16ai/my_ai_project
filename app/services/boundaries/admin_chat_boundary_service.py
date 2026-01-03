@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import get_settings
 from app.core.ai_gateway import AIClient
-from app.models import AdminConversation, MessageRole
+from app.core.domain.models import AdminConversation, MessageRole
 from app.services.admin.chat_persistence import AdminChatPersistence
 from app.services.admin.chat_streamer import AdminChatStreamer
 

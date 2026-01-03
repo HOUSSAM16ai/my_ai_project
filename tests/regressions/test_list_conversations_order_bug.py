@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from app.models import AdminConversation
+from app.core.domain.models import AdminConversation
 
 
 @pytest.mark.asyncio

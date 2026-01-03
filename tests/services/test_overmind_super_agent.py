@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.models import Mission
+from app.core.domain.models import Mission
 from app.services.overmind.agents.architect import ArchitectAgent
 from app.services.overmind.agents.auditor import AuditorAgent
 from app.services.overmind.agents.operator import OperatorAgent

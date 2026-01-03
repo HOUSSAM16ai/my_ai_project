@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.models import Mission, MissionStatus
+from app.core.domain.models import Mission, MissionStatus
 from app.services.overmind.domain.cognitive import SuperBrain
 from app.services.overmind.executor import TaskExecutor
 from app.services.overmind.factory import create_overmind

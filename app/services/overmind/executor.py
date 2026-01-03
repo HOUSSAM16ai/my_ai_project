@@ -16,7 +16,7 @@ import logging
 from collections.abc import Awaitable, Callable
 
 from app.core.protocols import MissionStateManagerProtocol
-from app.models import Task
+from app.core.domain.models import Task
 
 logger = logging.getLogger(__name__)
 

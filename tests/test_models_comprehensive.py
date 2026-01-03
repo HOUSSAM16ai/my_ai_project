@@ -13,7 +13,7 @@ This module tests critical business logic including:
 
 from datetime import UTC, datetime
 
-from app.models import (
+from app.core.domain.models import (
     AdminConversation,
     AdminMessage,
     FlexibleEnum,

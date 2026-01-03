@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from app.models import AdminConversation, MessageRole
+from app.core.domain.models import AdminConversation, MessageRole
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 
 

@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.core.event_bus import event_bus
-from app.models import (
+from app.core.domain.models import (
     Mission,
     MissionEvent,
     MissionEventType,

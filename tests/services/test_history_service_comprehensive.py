@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.models import AdminConversation, AdminMessage
+from app.core.domain.models import AdminConversation, AdminMessage
 from app.services.users.history_service import get_recent_conversations, rate_message_in_db
 
 

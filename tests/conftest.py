@@ -39,7 +39,7 @@ def event_loop():
 # The test needing DB must request it explicitly
 @pytest.fixture(scope="session")
 async def init_db():
-    import app.models # noqa: F401
+    import app.core.domain.models # noqa: F401
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
     yield

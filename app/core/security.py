@@ -15,7 +15,7 @@ if not hasattr(bcrypt, '__about__'):
         bcrypt.__about__ = type('about', (object,), {'__version__': bcrypt.
             __version__})
 from app.config.settings import get_settings
-from app.models import pwd_context
+from app.core.domain.models import pwd_context
 
 settings = get_settings()
 

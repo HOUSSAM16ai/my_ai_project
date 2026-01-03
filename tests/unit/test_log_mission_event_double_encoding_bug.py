@@ -14,7 +14,7 @@ When read back, the payload would be a string instead of a dict.
 import pytest
 from sqlalchemy import select
 
-from app.models import (
+from app.core.domain.models import (
     Mission,
     MissionEvent,
     MissionEventType,

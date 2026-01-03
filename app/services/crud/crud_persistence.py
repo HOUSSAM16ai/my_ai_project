@@ -14,7 +14,7 @@ import logging
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Mission, Task, User
+from app.core.domain.models import Mission, Task, User
 
 logger = logging.getLogger(__name__)
 

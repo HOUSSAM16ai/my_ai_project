@@ -7,7 +7,7 @@ from passlib.context import CryptContext
 logger = logging.getLogger(__name__)
 
 # Setup password hashing context explicitly with bcrypt
-# This mirrors the setup in app/models.py but focuses on the problematic scheme
+# This mirrors the setup in app/core/domain/models.py but focuses on the problematic scheme
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",

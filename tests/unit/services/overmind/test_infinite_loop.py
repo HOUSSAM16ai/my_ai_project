@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.models import Mission
+from app.core.domain.models import Mission
 from app.services.overmind.agents.auditor import AuditorAgent
 from app.services.overmind.domain.cognitive import CognitiveState, SuperBrain
 from app.services.overmind.domain.exceptions import StalemateError

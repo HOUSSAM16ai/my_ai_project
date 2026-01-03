@@ -1,7 +1,7 @@
 
 import factory
 
-from app.models import Mission, User
+from app.core.domain.models import Mission, User
 
 
 class UserFactory(factory.Factory):
