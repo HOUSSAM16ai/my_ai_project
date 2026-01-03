@@ -256,103 +256,154 @@ class OvermindIdentity:
             "مؤسس Overmind هو حسام بن مراح (Houssam Benmerah)..."
             
         ملاحظة:
-            - .lower() تحول النص إلى أحرف صغيرة
-            - in operator يتحقق من وجود نص داخل نص آخر
-            - if/elif/else للتحقق من الشروط
+            - تم تقسيم هذه الدالة إلى helper methods لتطبيق KISS و SRP
+            - كل نوع سؤال له method خاص به
         """
-        # تحويل السؤال إلى أحرف صغيرة للمقارنة
         q = question.lower()
         
-        # الأسئلة عن المؤسس
-        if ("مؤسس" in q or "founder" in q or "creator" in q or "من أنشأ" in q or "من بنى" in q or 
-            "who is the" in q or "who founded" in q or "who created" in q):
-            founder = self._identity["founder"]
-            return (
-                f"مؤسس Overmind هو {founder['name_ar']} ({founder['name']}). "
-                f"الاسم: {founder['first_name_ar']} ({founder['first_name']}), "
-                f"اللقب: {founder['last_name_ar']} ({founder['last_name']}). "
-                f"تاريخ الميلاد: {founder['birth_date']} (11 أغسطس 1997). "
-                f"هو {founder['role_ar']} ({founder['role']}) للمشروع. "
-                f"يمكنك التواصل معه عبر GitHub: @{founder['github']}"
-            )
-        
-        # الأسئلة عن Overmind نفسه
-        elif "ما هو overmind" in q or "what is overmind" in q or "من أنت" in q or "who are you" in q:
-            overmind = self._identity["overmind"]
-            return (
-                f"أنا {overmind['name_ar']} (Overmind)، {overmind['role_ar']}. "
-                f"مهمتي هي {overmind['purpose']}. "
-                f"تم إنشائي في {overmind['birth_date']} وأنا حالياً في الإصدار {overmind['version']}."
-            )
-        
-        # الأسئلة عن الوكلاء
-        elif "وكلاء" in q or "agents" in q or "الفريق" in q:
-            agents = self._identity["agents"]
-            agents_list = []
-            for key, agent in agents.items():
-                agents_list.append(f"• {agent['name']}: {agent['role']}")
-            
-            return (
-                "أنا أعمل مع فريق من 4 وكلاء متخصصة:\n"
-                + "\n".join(agents_list)
-            )
-        
-        # الأسئلة عن القدرات
-        elif "قدرات" in q or "capabilities" in q or "ماذا تستطيع" in q or "what can you do" in q:
-            caps = self._identity["capabilities"]
-            response = "لدي قدرات واسعة وفائقة التطور:\n\n"
-            response += "📚 المعرفة:\n" + "\n".join(f"• {c}" for c in caps["knowledge"]) + "\n\n"
-            response += "⚡ الإجراءات:\n" + "\n".join(f"• {c}" for c in caps["actions"]) + "\n\n"
-            response += "🧠 الذكاء:\n" + "\n".join(f"• {c}" for c in caps["intelligence"]) + "\n\n"
-            response += "🛠️ الأدوات الخارقة (Super Tools):\n" + "\n".join(f"• {c}" for c in caps["super_tools"])
-            return response
-        
-        # الأسئلة عن المشروع
-        elif "مشروع" in q or "project" in q or "cogniforge" in q:
-            project = self._identity["project"]
-            return (
-                f"المشروع الذي أنتمي إليه هو {project['name']}. "
-                f"{project['description']}. "
-                f"يمكنك زيارة المستودع على: {project['repository']}"
-            )
-        
-        # الأسئلة عن الفلسفة
-        elif "فلسفة" in q or "philosophy" in q or "مبادئ" in q or "principles" in q:
-            philosophy = self._identity["philosophy"]
-            return (
-                f"أتبع فلسفة {philosophy['heritage']}. "
-                "المبادئ الأساسية:\n" + "\n".join(f"• {p}" for p in philosophy["principles"])
-            )
-        
-        # الأسئلة عن التاريخ أو تاريخ الميلاد
-        elif "تاريخ ميلاد" in q or "birth date" in q or "متى ولد" in q or "when was" in q and ("born" in q or "birthday" in q):
-            founder = self._identity["founder"]
-            return (
-                f"تاريخ ميلاد المؤسس {founder['name_ar']} ({founder['name']}) "
-                f"هو {founder['birth_date']} (11 أغسطس 1997 / August 11, 1997)."
-            )
-        
-        # الأسئلة عن التاريخ العام
-        elif "تاريخ" in q or "history" in q or "متى" in q or "when" in q:
-            history = self._identity["history"]["milestones"]
-            milestones = "\n".join(
-                f"• {m['date']}: {m['event']}"
-                for m in history
-            )
-            return f"أهم المعالم في تاريخي:\n{milestones}"
-        
-        # سؤال غير معروف
+        # التحقق من نوع السؤال وتوجيهه للـ handler المناسب
+        if self._is_founder_question(q):
+            return self._answer_founder_question()
+        elif self._is_overmind_question(q):
+            return self._answer_overmind_question()
+        elif self._is_agents_question(q):
+            return self._answer_agents_question()
+        elif self._is_capabilities_question(q):
+            return self._answer_capabilities_question()
+        elif self._is_project_question(q):
+            return self._answer_project_question()
+        elif self._is_philosophy_question(q):
+            return self._answer_philosophy_question()
+        elif self._is_birth_date_question(q):
+            return self._answer_birth_date_question()
+        elif self._is_history_question(q):
+            return self._answer_history_question()
         else:
-            return (
-                "عذراً، لم أفهم سؤالك تماماً. يمكنك سؤالي عن:\n"
-                "• المؤسس (من مؤسس overmind؟)\n"
-                "• نفسي (ما هو overmind؟)\n"
-                "• الوكلاء (من هم الوكلاء؟)\n"
-                "• القدرات (ماذا تستطيع أن تفعل؟)\n"
-                "• المشروع (ما هو المشروع؟)\n"
-                "• الفلسفة (ما هي الفلسفة؟)\n"
-                "• التاريخ (ما هو تاريخك؟)"
-            )
+            return self._answer_unknown_question()
+    
+    def _is_founder_question(self, q: str) -> bool:
+        """التحقق إذا كان السؤال عن المؤسس."""
+        keywords = ["مؤسس", "founder", "creator", "من أنشأ", "من بنى",
+                   "who is the", "who founded", "who created"]
+        return any(keyword in q for keyword in keywords)
+    
+    def _is_overmind_question(self, q: str) -> bool:
+        """التحقق إذا كان السؤال عن Overmind نفسه."""
+        keywords = ["ما هو overmind", "what is overmind", "من أنت", "who are you"]
+        return any(keyword in q for keyword in keywords)
+    
+    def _is_agents_question(self, q: str) -> bool:
+        """التحقق إذا كان السؤال عن الوكلاء."""
+        return any(keyword in q for keyword in ["وكلاء", "agents", "الفريق"])
+    
+    def _is_capabilities_question(self, q: str) -> bool:
+        """التحقق إذا كان السؤال عن القدرات."""
+        keywords = ["قدرات", "capabilities", "ماذا تستطيع", "what can you do"]
+        return any(keyword in q for keyword in keywords)
+    
+    def _is_project_question(self, q: str) -> bool:
+        """التحقق إذا كان السؤال عن المشروع."""
+        return any(keyword in q for keyword in ["مشروع", "project", "cogniforge"])
+    
+    def _is_philosophy_question(self, q: str) -> bool:
+        """التحقق إذا كان السؤال عن الفلسفة."""
+        return any(keyword in q for keyword in ["فلسفة", "philosophy", "مبادئ", "principles"])
+    
+    def _is_birth_date_question(self, q: str) -> bool:
+        """التحقق إذا كان السؤال عن تاريخ الميلاد."""
+        return ("تاريخ ميلاد" in q or "birth date" in q or "متى ولد" in q or 
+                ("when was" in q and ("born" in q or "birthday" in q)))
+    
+    def _is_history_question(self, q: str) -> bool:
+        """التحقق إذا كان السؤال عن التاريخ."""
+        return any(keyword in q for keyword in ["تاريخ", "history", "متى", "when"])
+    
+    def _answer_founder_question(self) -> str:
+        """الإجابة على أسئلة المؤسس."""
+        founder = self._identity["founder"]
+        return (
+            f"مؤسس Overmind هو {founder['name_ar']} ({founder['name']}). "
+            f"الاسم: {founder['first_name_ar']} ({founder['first_name']}), "
+            f"اللقب: {founder['last_name_ar']} ({founder['last_name']}). "
+            f"تاريخ الميلاد: {founder['birth_date']} (11 أغسطس 1997). "
+            f"هو {founder['role_ar']} ({founder['role']}) للمشروع. "
+            f"يمكنك التواصل معه عبر GitHub: @{founder['github']}"
+        )
+    
+    def _answer_overmind_question(self) -> str:
+        """الإجابة على أسئلة Overmind نفسه."""
+        overmind = self._identity["overmind"]
+        return (
+            f"أنا {overmind['name_ar']} (Overmind)، {overmind['role_ar']}. "
+            f"مهمتي هي {overmind['purpose']}. "
+            f"تم إنشائي في {overmind['birth_date']} وأنا حالياً في الإصدار {overmind['version']}."
+        )
+    
+    def _answer_agents_question(self) -> str:
+        """الإجابة على أسئلة الوكلاء."""
+        agents = self._identity["agents"]
+        agents_list = [f"• {agent['name']}: {agent['role']}" 
+                      for agent in agents.values()]
+        return "أنا أعمل مع فريق من 4 وكلاء متخصصة:\n" + "\n".join(agents_list)
+    
+    def _answer_capabilities_question(self) -> str:
+        """الإجابة على أسئلة القدرات."""
+        caps = self._identity["capabilities"]
+        sections = [
+            ("📚 المعرفة", caps["knowledge"]),
+            ("⚡ الإجراءات", caps["actions"]),
+            ("🧠 الذكاء", caps["intelligence"]),
+            ("🛠️ الأدوات الخارقة (Super Tools)", caps["super_tools"])
+        ]
+        
+        response = "لدي قدرات واسعة وفائقة التطور:\n\n"
+        response += "\n\n".join(
+            f"{title}:\n" + "\n".join(f"• {item}" for item in items)
+            for title, items in sections
+        )
+        return response
+    
+    def _answer_project_question(self) -> str:
+        """الإجابة على أسئلة المشروع."""
+        project = self._identity["project"]
+        return (
+            f"المشروع الذي أنتمي إليه هو {project['name']}. "
+            f"{project['description']}. "
+            f"يمكنك زيارة المستودع على: {project['repository']}"
+        )
+    
+    def _answer_philosophy_question(self) -> str:
+        """الإجابة على أسئلة الفلسفة."""
+        philosophy = self._identity["philosophy"]
+        principles = "\n".join(f"• {p}" for p in philosophy["principles"])
+        return f"أتبع فلسفة {philosophy['heritage']}. المبادئ الأساسية:\n{principles}"
+    
+    def _answer_birth_date_question(self) -> str:
+        """الإجابة على أسئلة تاريخ الميلاد."""
+        founder = self._identity["founder"]
+        return (
+            f"تاريخ ميلاد المؤسس {founder['name_ar']} ({founder['name']}) "
+            f"هو {founder['birth_date']} (11 أغسطس 1997 / August 11, 1997)."
+        )
+    
+    def _answer_history_question(self) -> str:
+        """الإجابة على أسئلة التاريخ."""
+        history = self._identity["history"]["milestones"]
+        milestones = "\n".join(f"• {m['date']}: {m['event']}" for m in history)
+        return f"أهم المعالم في تاريخي:\n{milestones}"
+    
+    def _answer_unknown_question(self) -> str:
+        """الإجابة على أسئلة غير معروفة."""
+        return (
+            "عذراً، لم أفهم سؤالك تماماً. يمكنك سؤالي عن:\n"
+            "• المؤسس (من مؤسس overmind؟)\n"
+            "• نفسي (ما هو overmind؟)\n"
+            "• الوكلاء (من هم الوكلاء؟)\n"
+            "• القدرات (ماذا تستطيع أن تفعل؟)\n"
+            "• المشروع (ما هو المشروع؟)\n"
+            "• الفلسفة (ما هي الفلسفة؟)\n"
+            "• التاريخ (ما هو تاريخك؟)"
+        )
     
     def get_full_identity(self) -> dict[str, Any]:
         """
