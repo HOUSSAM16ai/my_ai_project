@@ -267,62 +267,164 @@ class StructuralCodeIntelligence:
             return None
 
     def calculate_hotspot_scores(self, all_metrics: list[FileMetrics]) -> None:
-        """Calculate hotspot scores with normalization"""
+        """
+        حساب درجات النقاط الساخنة | Calculate hotspot scores with normalization
+        
+        يقوم بتطبيع القيم وحساب الدرجات الموزونة
+        Normalizes values and calculates weighted scores
+        
+        Args:
+            all_metrics: قائمة مقاييس الملفات | List of file metrics
+        """
         if not all_metrics:
             return
 
-        # Extract values for normalization
+        # Extract and normalize values
+        ranks = self._extract_and_normalize_metrics(all_metrics)
+        
+        # Calculate scores and assign priorities
+        self._calculate_weighted_scores(all_metrics, ranks)
+
+    def _extract_and_normalize_metrics(self, all_metrics: list[FileMetrics]) -> dict:
+        """
+        استخراج وتطبيع المقاييس | Extract and normalize metrics
+        
+        Args:
+            all_metrics: قائمة المقاييس | Metrics list
+            
+        Returns:
+            معجم القيم المطبعة | Dictionary of normalized values
+        """
+        # Extract values
         complexities = [m.file_complexity for m in all_metrics]
         volatilities = [m.commits_last_12months for m in all_metrics]
-        smells = [
-            (1 if m.is_god_class else 0) + (1 if m.has_layer_mixing else 0) + (1 if m.has_cross_layer_imports else 0)
-            for m in all_metrics
-        ]
+        smells = [self._count_smells(m) for m in all_metrics]
 
-        # Normalize to 0-1 range
-        def normalize(values: list[float]) -> list[float]:
-            if not values or max(values) == 0:
-                return [0.0] * len(values)
-            max_val = max(values)
-            return [v / max_val for v in values]
+        # Normalize
+        return {
+            'complexity': self._normalize_values(complexities),
+            'volatility': self._normalize_values(volatilities),
+            'smell': self._normalize_values(smells),
+        }
 
-        complexity_ranks = normalize(complexities)
-        volatility_ranks = normalize(volatilities)
-        smell_ranks = normalize(smells)
+    def _count_smells(self, metrics: FileMetrics) -> int:
+        """
+        عد الروائح البنيوية | Count structural smells
+        
+        Args:
+            metrics: مقاييس الملف | File metrics
+            
+        Returns:
+            عدد الروائح | Number of smells
+        """
+        return (
+            (1 if metrics.is_god_class else 0) +
+            (1 if metrics.has_layer_mixing else 0) +
+            (1 if metrics.has_cross_layer_imports else 0)
+        )
 
-        # Calculate weighted hotspot scores
-        # Score = 0.4 × Complexity + 0.4 × Volatility + 0.2 × Smells
+    def _normalize_values(self, values: list[float]) -> list[float]:
+        """
+        تطبيع القيم إلى نطاق 0-1 | Normalize values to 0-1 range
+        
+        Args:
+            values: قائمة القيم | List of values
+            
+        Returns:
+            قائمة القيم المطبعة | List of normalized values
+        """
+        if not values or max(values) == 0:
+            return [0.0] * len(values)
+        max_val = max(values)
+        return [v / max_val for v in values]
+
+    def _calculate_weighted_scores(
+        self,
+        all_metrics: list[FileMetrics],
+        ranks: dict
+    ) -> None:
+        """
+        حساب الدرجات الموزونة | Calculate weighted scores
+        
+        Args:
+            all_metrics: قائمة المقاييس | Metrics list
+            ranks: القيم المطبعة | Normalized ranks
+        """
+        # Weight configuration: Complexity + Volatility + Smells
         w1, w2, w3 = 0.4, 0.4, 0.2
 
         for i, metrics in enumerate(all_metrics):
-            metrics.complexity_rank = round(complexity_ranks[i], 4)
-            metrics.volatility_rank = round(volatility_ranks[i], 4)
-            metrics.smell_rank = round(smell_ranks[i], 4)
+            # Store individual ranks
+            metrics.complexity_rank = round(ranks['complexity'][i], 4)
+            metrics.volatility_rank = round(ranks['volatility'][i], 4)
+            metrics.smell_rank = round(ranks['smell'][i], 4)
 
-            score = w1 * complexity_ranks[i] + w2 * volatility_ranks[i] + w3 * smell_ranks[i]
+            # Calculate weighted hotspot score
+            score = (
+                w1 * ranks['complexity'][i] +
+                w2 * ranks['volatility'][i] +
+                w3 * ranks['smell'][i]
+            )
             metrics.hotspot_score = round(score, 4)
 
             # Assign priority tier
-            if score >= 0.7:
-                metrics.priority_tier = "CRITICAL"
-            elif score >= 0.5:
-                metrics.priority_tier = "HIGH"
-            elif score >= 0.3:
-                metrics.priority_tier = "MEDIUM"
-            else:
-                # TODO: Split this function (62 lines) - KISS principle
-                metrics.priority_tier = "LOW"
+            metrics.priority_tier = self._determine_priority_tier(score)
+
+    def _determine_priority_tier(self, score: float) -> str:
+        """
+        تحديد مستوى الأولوية | Determine priority tier
+        
+        Args:
+            score: درجة النقطة الساخنة | Hotspot score
+            
+        Returns:
+            مستوى الأولوية | Priority tier
+        """
+        if score >= 0.7:
+            return "CRITICAL"
+        elif score >= 0.5:
+            return "HIGH"
+        elif score >= 0.3:
+            return "MEDIUM"
+        else:
+            return "LOW"
 
     def analyze_project(self) -> ProjectAnalysis:
-        """Analyze entire project"""
+        """
+        تحليل المشروع بالكامل | Analyze entire project
+        
+        يقوم بتحليل جميع الملفات وحساب المقاييس
+        Analyzes all files and calculates metrics
+        
+        Returns:
+            تحليل المشروع | Project analysis
+        """
+        self._print_analysis_header()
+        all_metrics = self._collect_file_metrics()
+        self._calculate_and_sort_hotspots(all_metrics)
+        return self._build_project_analysis(all_metrics)
+
+    def _print_analysis_header(self) -> None:
+        """
+        طباعة رأس التحليل | Print analysis header
+        """
         print("🔍 Starting Structural Code Intelligence Analysis...")
         print(f"📁 Repository: {self.repo_path}")
         print(f"🎯 Target paths: {', '.join(self.target_paths)}")
         print()
 
+    def _collect_file_metrics(self) -> list:
+        """
+        جمع مقاييس الملفات | Collect file metrics
+        
+        يقوم بالعثور على جميع الملفات وتحليلها
+        Finds and analyzes all files
+        
+        Returns:
+            قائمة المقاييس | List of metrics
+        """
         all_metrics = []
-
-        # Find and analyze all files
+        
         for target in self.target_paths:
             target_path = self.repo_path / target
             if not target_path.exists():
@@ -330,49 +432,105 @@ class StructuralCodeIntelligence:
                 continue
 
             print(f"📂 Analyzing {target}...")
-            py_files = list(target_path.rglob("*.py"))
-            for py_file in py_files:
-                if self.should_analyze(py_file):
-                    metrics = self.analyze_file(py_file)
-                    if metrics:
-                        all_metrics.append(metrics)
-                        print(f"  ✓ {metrics.relative_path}")
+            self._analyze_target_path(target_path, all_metrics)
 
         print(f"\n✅ Analyzed {len(all_metrics)} files")
+        return all_metrics
 
-        # Calculate hotspot scores
+    def _analyze_target_path(self, target_path, all_metrics: list) -> None:
+        """
+        تحليل مسار مستهدف | Analyze target path
+        
+        Args:
+            target_path: المسار المستهدف | Target path
+            all_metrics: قائمة المقاييس | Metrics list
+        """
+        py_files = list(target_path.rglob("*.py"))
+        for py_file in py_files:
+            if self.should_analyze(py_file):
+                metrics = self.analyze_file(py_file)
+                if metrics:
+                    all_metrics.append(metrics)
+                    print(f"  ✓ {metrics.relative_path}")
+
+    def _calculate_and_sort_hotspots(self, all_metrics: list) -> None:
+        """
+        حساب وترتيب النقاط الساخنة | Calculate and sort hotspots
+        
+        Args:
+            all_metrics: قائمة المقاييس | Metrics list
+        """
         print("\n📊 Calculating hotspot scores...")
         self.calculate_hotspot_scores(all_metrics)
-
-        # Sort by hotspot score
         all_metrics.sort(key=lambda m: m.hotspot_score, reverse=True)
 
-        # Calculate project statistics
-        total_lines = sum(m.total_lines for m in all_metrics)
-        total_code = sum(m.code_lines for m in all_metrics)
-        total_functions = sum(m.num_functions for m in all_metrics)
-        total_classes = sum(m.num_classes for m in all_metrics)
-        avg_complexity = (
-            sum(m.file_complexity for m in all_metrics) / len(all_metrics) if all_metrics else 0
-        )
-        max_complexity = max((m.file_complexity for m in all_metrics), default=0)
-
-        # Identify hotspots
-        critical_hotspots = [m.relative_path for m in all_metrics[:20]]
-        high_hotspots = [m.relative_path for m in all_metrics[20:40]]
-
-        analysis = ProjectAnalysis(
+    def _build_project_analysis(self, all_metrics: list) -> ProjectAnalysis:
+        """
+        بناء تحليل المشروع | Build project analysis
+        
+        يحسب الإحصائيات الإجمالية ويحدد النقاط الساخنة
+        Calculates overall statistics and identifies hotspots
+        
+        Args:
+            all_metrics: قائمة المقاييس | Metrics list
+            
+        Returns:
+            تحليل المشروع | Project analysis
+        """
+        stats = self._calculate_project_statistics(all_metrics)
+        hotspots = self._identify_hotspots(all_metrics)
+        
+        return ProjectAnalysis(
             timestamp=datetime.now().isoformat(),
             total_files=len(all_metrics),
-            total_lines=total_lines,
-            total_code_lines=total_code,
-            total_functions=total_functions,
-            total_classes=total_classes,
-            avg_file_complexity=round(avg_complexity, 2),
-            max_file_complexity=max_complexity,
-            critical_hotspots=critical_hotspots,
-            high_hotspots=high_hotspots,
+            total_lines=stats['total_lines'],
+            total_code_lines=stats['total_code'],
+            total_functions=stats['total_functions'],
+            total_classes=stats['total_classes'],
+            avg_file_complexity=stats['avg_complexity'],
+            max_file_complexity=stats['max_complexity'],
+            critical_hotspots=hotspots['critical'],
+            high_hotspots=hotspots['high'],
             files=all_metrics,
         )
 
-        return analysis
+    def _calculate_project_statistics(self, all_metrics: list) -> dict:
+        """
+        حساب إحصائيات المشروع | Calculate project statistics
+        
+        Args:
+            all_metrics: قائمة المقاييس | Metrics list
+            
+        Returns:
+            معجم الإحصائيات | Statistics dictionary
+        """
+        return {
+            'total_lines': sum(m.total_lines for m in all_metrics),
+            'total_code': sum(m.code_lines for m in all_metrics),
+            'total_functions': sum(m.num_functions for m in all_metrics),
+            'total_classes': sum(m.num_classes for m in all_metrics),
+            'avg_complexity': round(
+                sum(m.file_complexity for m in all_metrics) / len(all_metrics)
+                if all_metrics else 0,
+                2
+            ),
+            'max_complexity': max(
+                (m.file_complexity for m in all_metrics),
+                default=0
+            ),
+        }
+
+    def _identify_hotspots(self, all_metrics: list) -> dict:
+        """
+        تحديد النقاط الساخنة | Identify hotspots
+        
+        Args:
+            all_metrics: قائمة المقاييس المرتبة | Sorted metrics list
+            
+        Returns:
+            معجم النقاط الساخنة | Hotspots dictionary
+        """
+        return {
+            'critical': [m.relative_path for m in all_metrics[:20]],
+            'high': [m.relative_path for m in all_metrics[20:40]],
+        }
