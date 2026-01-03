@@ -21,23 +21,73 @@ class PredictiveHealthMonitor:
         self.health_patterns = defaultdict(list)
         self.anomaly_threshold = 2.5  # Standard deviations
 
-    # TODO: Split this function (45 lines) - KISS principle
     def analyze_health(
         self, service_name: str, current_metrics: ServiceMetrics
     ) -> tuple[ServiceHealth, list[str]]:
         """
         تحليل صحة الخدمة والتنبؤ بالمشاكل
+        Analyze service health and predict issues
+        
+        Args:
+            service_name: اسم الخدمة | Service name
+            current_metrics: المقاييس الحالية | Current metrics
+            
+        Returns:
+            حالة الصحة وقائمة التحذيرات | Health status and warnings list
         """
         warnings = []
 
-        # Store metrics for pattern analysis
+        # Store and maintain metrics history
+        self._store_metrics_history(service_name, current_metrics)
+
+        # Check critical conditions
+        critical_warnings = self._check_critical_conditions(current_metrics)
+        if critical_warnings:
+            return ServiceHealth.CRITICAL, critical_warnings
+
+        # Check degraded conditions
+        degraded_warnings = self._check_degraded_conditions(current_metrics)
+        
+        # Check for anomalies
+        anomaly_warnings = self._detect_anomalies(service_name, current_metrics)
+        
+        # Combine all warnings
+        all_warnings = degraded_warnings + anomaly_warnings
+        if all_warnings:
+            return ServiceHealth.DEGRADED, all_warnings
+
+        return ServiceHealth.HEALTHY, []
+
+    def _store_metrics_history(
+        self, service_name: str, current_metrics: ServiceMetrics
+    ) -> None:
+        """
+        تخزين وصيانة تاريخ المقاييس | Store and maintain metrics history
+        
+        Args:
+            service_name: اسم الخدمة | Service name
+            current_metrics: المقاييس الحالية | Current metrics
+        """
         self.health_patterns[service_name].append(current_metrics)
 
-        # Keep only recent history
+        # Keep only recent history (last 1000 entries)
         if len(self.health_patterns[service_name]) > 1000:
             self.health_patterns[service_name] = self.health_patterns[service_name][-1000:]
 
-        # Critical checks
+    def _check_critical_conditions(
+        self, current_metrics: ServiceMetrics
+    ) -> list[str]:
+        """
+        فحص الظروف الحرجة | Check critical conditions
+        
+        Args:
+            current_metrics: المقاييس الحالية | Current metrics
+            
+        Returns:
+            قائمة التحذيرات الحرجة | Critical warnings list
+        """
+        warnings = []
+
         if current_metrics.cpu_usage > 95:
             warnings.append(f"CRITICAL: CPU usage at {current_metrics.cpu_usage:.1f}%")
         if current_metrics.memory_usage > 95:
@@ -45,10 +95,22 @@ class PredictiveHealthMonitor:
         if current_metrics.error_rate > 50:
             warnings.append(f"CRITICAL: Error rate at {current_metrics.error_rate:.1f}%")
 
-        if warnings:
-            return ServiceHealth.CRITICAL, warnings
+        return warnings
 
-        # Degraded checks
+    def _check_degraded_conditions(
+        self, current_metrics: ServiceMetrics
+    ) -> list[str]:
+        """
+        فحص ظروف التدهور | Check degraded conditions
+        
+        Args:
+            current_metrics: المقاييس الحالية | Current metrics
+            
+        Returns:
+            قائمة تحذيرات التدهور | Degraded warnings list
+        """
+        warnings = []
+
         if current_metrics.cpu_usage > 85:
             warnings.append(f"WARNING: High CPU usage {current_metrics.cpu_usage:.1f}%")
         if current_metrics.memory_usage > 85:
@@ -58,17 +120,7 @@ class PredictiveHealthMonitor:
         if current_metrics.latency_p99 > 2000:
             warnings.append(f"WARNING: High latency P99={current_metrics.latency_p99:.0f}ms")
 
-        if warnings:
-            return ServiceHealth.DEGRADED, warnings
-
-        # Anomaly detection
-        anomalies = self._detect_anomalies(service_name, current_metrics)
-        if anomalies:
-            warnings.extend(anomalies)
-            return ServiceHealth.DEGRADED, warnings
-
-        return ServiceHealth.HEALTHY, []
-# TODO: Split this function (37 lines) - KISS principle
+        return warnings
 
     def _detect_anomalies(self, service_name: str, current_metrics: ServiceMetrics) -> list[str]:
         """
@@ -107,7 +159,6 @@ class PredictiveHealthMonitor:
                         f"(mean={mean:.1f}, z-score={z_score:.1f})"
                     )
 
-        # TODO: Split this function (43 lines) - KISS principle
         return anomalies
 
     def predict_failure(

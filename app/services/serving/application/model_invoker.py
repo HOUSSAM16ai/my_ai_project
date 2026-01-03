@@ -35,8 +35,6 @@ class ModelInvoker:
         self._request_history: deque[ModelRequest] = deque(maxlen=10000)
         self._response_history: deque[ModelResponse] = deque(maxlen=10000)
 
-    # TODO: Split this function (45 lines) - KISS principle
-    # TODO: Reduce parameters (6 params) - Use config object
     def serve_request(
         self,
         model: ModelVersion,
