@@ -344,6 +344,64 @@ components:
                       type: object
                       description: Applied sorting
 
+  
+  responses:
+    UnauthorizedError:
+      description: Authentication required or token invalid/expired
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missing_token:
+              value:
+                status: "error"
+                error:
+                  code: "MISSING_TOKEN"
+                  message: "Authentication token is required"
+                timestamp: "2026-01-03T00:00:00Z"
+            invalid_token:
+              value:
+                status: "error"
+                error:
+                  code: "INVALID_TOKEN"
+                  message: "Authentication token is invalid or expired"
+                timestamp: "2026-01-03T00:00:00Z"
+    
+    BadRequestError:
+      description: Invalid request data
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            validation_error:
+              value:
+                status: "error"
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Request validation failed"
+                  details:
+                    field: "email"
+                    reason: "Invalid email format"
+                timestamp: "2026-01-03T00:00:00Z"
+    
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            not_found:
+              value:
+                status: "error"
+                error:
+                  code: "NOT_FOUND"
+                  message: "The requested resource was not found"
+                timestamp: "2026-01-03T00:00:00Z"
+
+
 paths:
   # ==============================================================================
   # Security Endpoints
@@ -777,102 +835,3 @@ paths:
                     type: string
                     enum: [healthy, degraded, unhealthy]
                     example: "healthy"
-                  components:
-                    type: object
-                    properties:
-                      database:
-                        type: object
-                        properties:
-                          status:
-                            type: string
-                            example: "up"
-                          latency_ms:
-                            type: number
-                            example: 5.3
-                      ai_service:
-                        type: object
-                        properties:
-                          status:
-                            type: string
-                            example: "up"
-                      cache:
-                        type: object
-                        properties:
-                          status:
-                            type: string
-                            example: "up"
-                  timestamp:
-                    type: string
-                    format: date-time
-        '503':
-          description: System is unhealthy
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "unhealthy"
-                  components:
-                    type: object
-                  timestamp:
-                    type: string
-                    format: date-time
-
-components:
-  responses:
-    UnauthorizedError:
-      description: Authentication required or token invalid/expired
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          examples:
-            missing_token:
-              value:
-                status: "error"
-                error:
-                  code: "MISSING_TOKEN"
-                  message: "Authentication token is required"
-                timestamp: "2026-01-03T00:00:00Z"
-            invalid_token:
-              value:
-                status: "error"
-                error:
-                  code: "INVALID_TOKEN"
-                  message: "Authentication token is invalid or expired"
-                timestamp: "2026-01-03T00:00:00Z"
-    
-    BadRequestError:
-      description: Invalid request data
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          examples:
-            validation_error:
-              value:
-                status: "error"
-                error:
-                  code: "VALIDATION_ERROR"
-                  message: "Request validation failed"
-                  details:
-                    field: "email"
-                    reason: "Invalid email format"
-                timestamp: "2026-01-03T00:00:00Z"
-    
-    NotFoundError:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          examples:
-            not_found:
-              value:
-                status: "error"
-                error:
-                  code: "NOT_FOUND"
-                  message: "The requested resource was not found"
-                timestamp: "2026-01-03T00:00:00Z"
