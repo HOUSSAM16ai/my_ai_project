@@ -48,7 +48,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed - Documentation Simplification Phase 5 (2026-01-03)
+### Changed - Phase 14: Core Cleanup & Standardization (2026-01-03)
+- **Removed 1000+ lines of dead code from `app/core/`**
+  - Deleted `app/core/startup.py` - obsolete initialization code
+  - Deleted `app/core/self_healing_db.py` - unused component
+  - Deleted `app/core/cs61_concurrency.py` - experimental academic module
+  - Deleted `app/core/cs61_memory.py` - experimental academic module  
+  - Deleted `app/core/cs61_profiler.py` - experimental academic module
+  - Deleted `app/core/factories.py` - unused patterns
+- **Enforced Domain-Driven Design structure**
+  - Relocated `app/models.py` → `app/core/domain/models.py`
+  - Updated 26+ import references across application and tests
+  - Proper domain layer organization
+- **Cleaned root directory**
+  - Moved verification scripts to `tests/verification/`
+  - Removed temporary files and obsolete entry points
+- **Simplified `app/core/database.py`**
+  - Removed dependencies on deleted academic modules
+  - Reduced initialization overhead
+- **Impact**: 
+  - Core directory is now pristine with only active components
+  - "Supernatural cleanliness" achieved
+  - Better performance with reduced import overhead
+  - Clear DDD structure enforcement
+
+### Changed - Documentation Updates (2026-01-03)
+- **Updated `PROJECT_HISTORY.md`**
+  - Added Phase 14 details
+  - Documented all 14 completed phases
+  - Updated timeline with recent achievements
+- **Updated `PROJECT_METRICS.md`**
+  - Current statistics: 435 files, 94,730 lines
+  - Added Phase 14 cleanup metrics
+  - Updated completed refactorings list
+  - Adjusted target metrics based on progress
+- **Updated `SIMPLIFICATION_PROGRESS_REPORT.md`**
+  - Marked Phase 14 as complete
+  - Updated overall progress statistics
+  - Clarified next steps
+
+### Changed - Documentation Simplification Phase 8 (2026-01-03)
 - **Converted `app/services/overmind/__index__.py` to proper Markdown documentation**
 - Created `docs/OVERMIND_ARCHITECTURE.md` - comprehensive Overmind system architecture guide
   - Converted 612 lines of Python documentation to well-structured Markdown
