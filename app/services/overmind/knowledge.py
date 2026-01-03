@@ -145,101 +145,189 @@ class DatabaseKnowledge:
             return {}
         
         try:
-            # استعلام معلومات الأعمدة
-            columns_query = text("""
-                SELECT 
-                    column_name,
-                    data_type,
-                    is_nullable,
-                    column_default,
-                    character_maximum_length
-                FROM information_schema.columns
-                WHERE table_schema = 'public' 
-                  AND table_name = :table_name
-                ORDER BY ordinal_position
-            """)
+            # جمع كل مكونات البنية
+            columns = await self._fetch_table_columns(table_name)
+            primary_keys = await self._fetch_primary_keys(table_name)
+            foreign_keys = await self._fetch_foreign_keys(table_name)
             
-            result = await self._session.execute(
-                columns_query,
-                {"table_name": table_name}
+            schema = self._build_schema_object(
+                table_name, columns, primary_keys, foreign_keys
             )
             
-            columns = []
-            for row in result:
-                columns.append({
-                    "name": row.column_name,
-                    "type": row.data_type,
-                    "nullable": row.is_nullable == "YES",
-                    "default": row.column_default,
-                    "max_length": row.character_maximum_length,
-                })
-            
-            # استعلام المفاتيح الأساسية
-            pk_query = text("""
-                SELECT a.attname
-                FROM pg_index i
-                JOIN pg_attribute a ON a.attrelid = i.indrelid 
-                                   AND a.attnum = ANY(i.indkey)
-                WHERE i.indrelid = :table_name::regclass
-                  AND i.indisprimary
-            """)
-            
-            pk_result = await self._session.execute(
-                pk_query,
-                {"table_name": table_name}
-            )
-            primary_keys = [row.attname for row in pk_result]
-            
-            # استعلام المفاتيح الأجنبية
-            fk_query = text("""
-                SELECT
-                    kcu.column_name,
-                    ccu.table_name AS foreign_table_name,
-                    ccu.column_name AS foreign_column_name
-                FROM information_schema.table_constraints AS tc
-                JOIN information_schema.key_column_usage AS kcu
-                  ON tc.constraint_name = kcu.constraint_name
-                  AND tc.table_schema = kcu.table_schema
-                JOIN information_schema.constraint_column_usage AS ccu
-                  ON ccu.constraint_name = tc.constraint_name
-                  AND ccu.table_schema = tc.table_schema
-                WHERE tc.constraint_type = 'FOREIGN KEY' 
-                  AND tc.table_name = :table_name
-            """)
-            
-            fk_result = await self._session.execute(
-                fk_query,
-                {"table_name": table_name}
-            )
-            
-            foreign_keys = []
-            for row in fk_result:
-                foreign_keys.append({
-                    "column": row.column_name,
-                    "references_table": row.foreign_table_name,
-                    "references_column": row.foreign_column_name,
-                })
-            
-            schema = {
-                "table_name": table_name,
-                "columns": columns,
-                "primary_keys": primary_keys,
-                "foreign_keys": foreign_keys,
-                "total_columns": len(columns),
-            }
-            
-            logger.info(
-                f"Retrieved schema for '{table_name}': "
-                f"{len(columns)} columns, "
-                f"{len(primary_keys)} PKs, "
-                f"{len(foreign_keys)} FKs"
-            )
+            self._log_schema_info(table_name, columns, primary_keys, foreign_keys)
             
             return schema
             
         except Exception as e:
             logger.error(f"Error getting schema for '{table_name}': {e}")
             return {}
+
+    async def _fetch_table_columns(self, table_name: str) -> list[dict[str, Any]]:
+        """
+        استعلام معلومات الأعمدة من قاعدة البيانات.
+        
+        Fetch column information from the database.
+        
+        Args:
+            table_name: اسم الجدول
+            
+        Returns:
+            قائمة بمعلومات الأعمدة
+        """
+        columns_query = text("""
+            SELECT 
+                column_name,
+                data_type,
+                is_nullable,
+                column_default,
+                character_maximum_length
+            FROM information_schema.columns
+            WHERE table_schema = 'public' 
+              AND table_name = :table_name
+            ORDER BY ordinal_position
+        """)
+        
+        result = await self._session.execute(
+            columns_query,
+            {"table_name": table_name}
+        )
+        
+        columns = []
+        for row in result:
+            columns.append({
+                "name": row.column_name,
+                "type": row.data_type,
+                "nullable": row.is_nullable == "YES",
+                "default": row.column_default,
+                "max_length": row.character_maximum_length,
+            })
+        
+        return columns
+
+    async def _fetch_primary_keys(self, table_name: str) -> list[str]:
+        """
+        استعلام المفاتيح الأساسية من قاعدة البيانات.
+        
+        Fetch primary keys from the database.
+        
+        Args:
+            table_name: اسم الجدول
+            
+        Returns:
+            قائمة بأسماء أعمدة المفاتيح الأساسية
+        """
+        pk_query = text("""
+            SELECT a.attname
+            FROM pg_index i
+            JOIN pg_attribute a ON a.attrelid = i.indrelid 
+                               AND a.attnum = ANY(i.indkey)
+            WHERE i.indrelid = :table_name::regclass
+              AND i.indisprimary
+        """)
+        
+        pk_result = await self._session.execute(
+            pk_query,
+            {"table_name": table_name}
+        )
+        
+        return [row.attname for row in pk_result]
+
+    async def _fetch_foreign_keys(self, table_name: str) -> list[dict[str, str]]:
+        """
+        استعلام المفاتيح الأجنبية من قاعدة البيانات.
+        
+        Fetch foreign keys from the database.
+        
+        Args:
+            table_name: اسم الجدول
+            
+        Returns:
+            قائمة بمعلومات المفاتيح الأجنبية
+        """
+        fk_query = text("""
+            SELECT
+                kcu.column_name,
+                ccu.table_name AS foreign_table_name,
+                ccu.column_name AS foreign_column_name
+            FROM information_schema.table_constraints AS tc
+            JOIN information_schema.key_column_usage AS kcu
+              ON tc.constraint_name = kcu.constraint_name
+              AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage AS ccu
+              ON ccu.constraint_name = tc.constraint_name
+              AND ccu.table_schema = tc.table_schema
+            WHERE tc.constraint_type = 'FOREIGN KEY' 
+              AND tc.table_name = :table_name
+        """)
+        
+        fk_result = await self._session.execute(
+            fk_query,
+            {"table_name": table_name}
+        )
+        
+        foreign_keys = []
+        for row in fk_result:
+            foreign_keys.append({
+                "column": row.column_name,
+                "references_table": row.foreign_table_name,
+                "references_column": row.foreign_column_name,
+            })
+        
+        return foreign_keys
+
+    def _build_schema_object(
+        self,
+        table_name: str,
+        columns: list[dict[str, Any]],
+        primary_keys: list[str],
+        foreign_keys: list[dict[str, str]]
+    ) -> dict[str, Any]:
+        """
+        بناء كائن البنية من المكونات المجمعة.
+        
+        Build schema object from collected components.
+        
+        Args:
+            table_name: اسم الجدول
+            columns: قائمة الأعمدة
+            primary_keys: قائمة المفاتيح الأساسية
+            foreign_keys: قائمة المفاتيح الأجنبية
+            
+        Returns:
+            كائن البنية الكامل
+        """
+        return {
+            "table_name": table_name,
+            "columns": columns,
+            "primary_keys": primary_keys,
+            "foreign_keys": foreign_keys,
+            "total_columns": len(columns),
+        }
+
+    def _log_schema_info(
+        self,
+        table_name: str,
+        columns: list[dict[str, Any]],
+        primary_keys: list[str],
+        foreign_keys: list[dict[str, str]]
+    ) -> None:
+        """
+        تسجيل معلومات البنية في السجل.
+        
+        Log schema information.
+        
+        Args:
+            table_name: اسم الجدول
+            columns: قائمة الأعمدة
+            primary_keys: قائمة المفاتيح الأساسية
+            foreign_keys: قائمة المفاتيح الأجنبية
+        """
+        logger.info(
+            f"Retrieved schema for '{table_name}': "
+            f"{len(columns)} columns, "
+            f"{len(primary_keys)} PKs, "
+            f"{len(foreign_keys)} FKs"
+        )
     
     async def get_table_count(self, table_name: str) -> int:
         """
