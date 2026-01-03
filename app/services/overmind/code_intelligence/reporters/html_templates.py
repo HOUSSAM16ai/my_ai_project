@@ -348,11 +348,16 @@ def create_complete_html(
     Returns:
         str: مستند HTML كامل
         
-    ملاحظة: كل قوس وفاصلة في f-string لها دور محدد
+    ملاحظة: تم تقسيم الدالة إلى helper methods لتطبيق KISS
     """
     styles = get_html_styles()
+    header = _create_html_header(timestamp)
+    summary = _create_summary_section(
+        total_files, total_code_lines, total_functions,
+        total_classes, avg_file_complexity, max_file_complexity
+    )
+    legend = _create_legend_section()
     
-    # بناء المستند HTML الكامل
     return f"""<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
@@ -363,64 +368,91 @@ def create_complete_html(
 </head>
 <body>
     <div class="container">
-        <h1>🔥 خريطة حرارية - التحليل البنيوي للكود</h1>
-        <p style="text-align: center; color: #888;">تم الإنشاء: {timestamp}</p>
-
-        <div class="summary">
-            <h2>📊 ملخص المشروع</h2>
-            <div class="stats">
-                <div class="stat">
-                    <div class="stat-label">إجمالي الملفات</div>
-                    <div class="stat-value">{total_files}</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">أسطر الكود</div>
-                    <div class="stat-value">{total_code_lines:,}</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">إجمالي الدوال</div>
-                    <div class="stat-value">{total_functions}</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">إجمالي الكلاسات</div>
-                    <div class="stat-value">{total_classes}</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">متوسط التعقيد</div>
-                    <div class="stat-value">{avg_file_complexity:.1f}</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">أقصى تعقيد</div>
-                    <div class="stat-value">{max_file_complexity}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="legend">
-            <h3>دليل الألوان</h3>
-            <div class="legend-items">
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #ff4444;"></div>
-                    <span>حرج (≥0.7)</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #ff9944;"></div>
-                    <span>عالي (≥0.5)</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #ffdd44;"></div>
-                    <span>متوسط (≥0.3)</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #44ff44;"></div>
-                    <span>منخفض (&lt;0.3)</span>
-                </div>
-            </div>
-        </div>
-
+        {header}
+        {summary}
+        {legend}
         <div class="heatmap">
             {file_rows_html}
         </div>
     </div>
 </body>
 </html>"""
+
+
+def _create_html_header(timestamp: str) -> str:
+    """إنشاء رأس الصفحة مع العنوان والتاريخ."""
+    return f"""<h1>🔥 خريطة حرارية - التحليل البنيوي للكود</h1>
+        <p style="text-align: center; color: #888;">تم الإنشاء: {timestamp}</p>"""
+
+
+def _create_summary_section(
+    total_files: int,
+    total_code_lines: int,
+    total_functions: int,
+    total_classes: int,
+    avg_file_complexity: float,
+    max_file_complexity: int,
+) -> str:
+    """إنشاء قسم الملخص مع الإحصائيات."""
+    stats = _create_stat_items(
+        total_files, total_code_lines, total_functions,
+        total_classes, avg_file_complexity, max_file_complexity
+    )
+    return f"""<div class="summary">
+            <h2>📊 ملخص المشروع</h2>
+            <div class="stats">
+                {stats}
+            </div>
+        </div>"""
+
+
+def _create_stat_items(
+    total_files: int,
+    total_code_lines: int,
+    total_functions: int,
+    total_classes: int,
+    avg_file_complexity: float,
+    max_file_complexity: int,
+) -> str:
+    """إنشاء عناصر الإحصائيات."""
+    stat_data = [
+        ("إجمالي الملفات", total_files),
+        ("أسطر الكود", f"{total_code_lines:,}"),
+        ("إجمالي الدوال", total_functions),
+        ("إجمالي الكلاسات", total_classes),
+        ("متوسط التعقيد", f"{avg_file_complexity:.1f}"),
+        ("أقصى تعقيد", max_file_complexity),
+    ]
+    
+    return "\n".join(
+        f"""<div class="stat">
+                    <div class="stat-label">{label}</div>
+                    <div class="stat-value">{value}</div>
+                </div>"""
+        for label, value in stat_data
+    )
+
+
+def _create_legend_section() -> str:
+    """إنشاء قسم دليل الألوان."""
+    legend_items = [
+        ("#ff4444", "حرج (≥0.7)"),
+        ("#ff9944", "عالي (≥0.5)"),
+        ("#ffdd44", "متوسط (≥0.3)"),
+        ("#44ff44", "منخفض (&lt;0.3)"),
+    ]
+    
+    items_html = "\n".join(
+        f"""<div class="legend-item">
+                    <div class="legend-color" style="background: {color};"></div>
+                    <span>{label}</span>
+                </div>"""
+        for color, label in legend_items
+    )
+    
+    return f"""<div class="legend">
+            <h3>دليل الألوان</h3>
+            <div class="legend-items">
+                {items_html}
+            </div>
+        </div>"""
