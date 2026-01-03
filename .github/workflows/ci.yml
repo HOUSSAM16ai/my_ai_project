@@ -300,11 +300,16 @@ jobs:
             exit 1
           fi
 
-          # Tests can have warnings but not hard failures
+          # Tests must run and succeed (not skipped)
           if [[ "${{ needs.test.result }}" == "skipped" ]]; then
-            echo "⚠️ Tests were skipped"
+            echo "❌ Tests were skipped - tests must run!"
+            exit 1
           elif [[ "${{ needs.test.result }}" == "cancelled" ]]; then
-            echo "⚠️ Tests were cancelled"
+            echo "❌ Tests were cancelled!"
+            exit 1
+          elif [[ "${{ needs.test.result }}" != "success" ]]; then
+            echo "❌ Tests failed!"
+            exit 1
           fi
 
           echo "✅ All required checks passed successfully!"
