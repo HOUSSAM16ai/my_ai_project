@@ -180,7 +180,7 @@ def _check_symlinks_in_path(abs_path: str) -> None:
     التحقق من الروابط الرمزية في مكونات المسار.
     """
     cur = PROJECT_ROOT
-    rel_parts = abs_path[len(PROJECT_ROOT):].lstrip(os.sep).split(os.sep)
+    rel_parts = abs_path[len(PROJECT_ROOT) :].lstrip(os.sep).split(os.sep)
     
     for part in rel_parts:
         if not part:
