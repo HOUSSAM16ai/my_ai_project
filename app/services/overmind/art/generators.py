@@ -397,13 +397,27 @@ class MetricsArtist:
             
         Returns:
             str: SVG bar chart with artistic styling
+            
+        Note: تم تقسيم الدالة إلى helper methods لتطبيق KISS
         """
         width, height = 600, 400
         margin = 50
         chart_width = width - 2 * margin
         chart_height = height - 2 * margin
         
-        svg = f'''<svg width="{width}" height="{height}" 
+        svg = self._create_bar_chart_header(width, height, title)
+        
+        if not data:
+            return svg + '</svg>'
+        
+        bar_config = self._calculate_bar_dimensions(data, chart_width, chart_height)
+        bars_svg = self._draw_bars(data, bar_config, margin, height, chart_height)
+        
+        return svg + bars_svg + '</svg>'
+    
+    def _create_bar_chart_header(self, width: int, height: int, title: str) -> str:
+        """إنشاء رأس الرسم البياني العمودي."""
+        return f'''<svg width="{width}" height="{height}" 
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
             
@@ -413,44 +427,84 @@ class MetricsArtist:
                   font-size="20"
                   font-weight="bold">{title}</text>
         '''
-        
-        if not data:
-            svg += '</svg>'
-            return svg
-        
-        # حساب عرض كل عمود
+    
+    def _calculate_bar_dimensions(
+        self,
+        data: dict[str, float],
+        chart_width: int,
+        chart_height: int
+    ) -> dict[str, Any]:
+        """حساب أبعاد الأعمدة والتباعد."""
         num_bars = len(data)
         bar_width = chart_width / (num_bars * 2)
         spacing = bar_width
-        
         max_value = max(data.values()) if data else 1
         
-        # تدرج لوني
         gradient = VisualTheme.create_gradient(
             self.palette.primary,
             self.palette.secondary,
             steps=num_bars
         )
         
+        return {
+            "num_bars": num_bars,
+            "bar_width": bar_width,
+            "spacing": spacing,
+            "max_value": max_value,
+            "gradient": gradient,
+        }
+    
+    def _draw_bars(
+        self,
+        data: dict[str, float],
+        config: dict[str, Any],
+        margin: int,
+        height: int,
+        chart_height: int
+    ) -> str:
+        """رسم جميع الأعمدة مع التسميات."""
+        svg = ""
+        bar_width = config["bar_width"]
+        spacing = config["spacing"]
+        max_value = config["max_value"]
+        gradient = config["gradient"]
+        
         for i, (key, value) in enumerate(data.items()):
-            # حساب موقع وارتفاع العمود
             x = margin + i * (bar_width + spacing)
             normalized = value / max_value if max_value > 0 else 0
             bar_height = normalized * chart_height
             y = height - margin - bar_height
-            
             color = gradient[i]
             
-            # رسم العمود مع تأثير تدرج
-            svg += f'''
+            svg += self._draw_single_bar(
+                i, x, y, bar_width, bar_height, color, value, key, height, margin
+            )
+        
+        return svg
+    
+    def _draw_single_bar(
+        self,
+        index: int,
+        x: float,
+        y: float,
+        bar_width: float,
+        bar_height: float,
+        color: str,
+        value: float,
+        key: str,
+        height: int,
+        margin: int
+    ) -> str:
+        """رسم عمود واحد مع التدرج والتسميات."""
+        return f'''
             <rect x="{x}" y="{y}" 
                   width="{bar_width}" 
                   height="{bar_height}"
-                  fill="url(#grad{i})"
+                  fill="url(#grad{index})"
                   rx="5"/>
             
             <defs>
-                <linearGradient id="grad{i}" x1="0%" y1="0%" x2="0%" y2="100%">
+                <linearGradient id="grad{index}" x1="0%" y1="0%" x2="0%" y2="100%">
                     <stop offset="0%" style="stop-color:{color};stop-opacity:1" />
                     <stop offset="100%" style="stop-color:{color};stop-opacity:0.5" />
                 </linearGradient>
@@ -471,10 +525,7 @@ class MetricsArtist:
                   transform="rotate(-45 {x + bar_width/2} {height - margin + 20})">
                 {key}
             </text>
-            '''
-        
-        svg += '</svg>'
-        return svg
+        '''
 
 
 class NetworkArtist:
