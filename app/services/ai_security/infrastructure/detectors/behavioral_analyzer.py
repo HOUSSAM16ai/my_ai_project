@@ -24,40 +24,75 @@ class SimpleBehavioralAnalyzer:
     Simple implementation of behavioral analysis.
     """
 
-    # TODO: Split this function (32 lines) - KISS principle
     def analyze_behavior(
         self, event: SecurityEvent, profile: UserBehaviorProfile
     ) -> list[ThreatDetection]:
         """
         Analyze event against user profile.
-
+        تحليل الحدث مقابل ملف المستخدم
+        
         Args:
-            event: Current security event
-            profile: User's behavioral profile
+            event: Current security event | الحدث الأمني الحالي
+            profile: User's behavioral profile | ملف السلوك للمستخدم
 
         Returns:
-            List of detected anomalies
+            List of detected anomalies | قائمة الشذوذات المكتشفة
         """
         threats = []
 
         # Check if endpoint is unusual
-        if profile.typical_endpoints and event.endpoint not in profile.typical_endpoints:
-            threats.append(
-                ThreatDetection(
-                    detection_id=str(uuid.uuid4()),
-                    threat_type=ThreatType.ANOMALOUS_BEHAVIOR,
-                    threat_level=ThreatLevel.MEDIUM,
-                    description=f"Unusual endpoint access: {event.endpoint}",
-                    source_ip=event.source_ip,
-                    user_id=event.user_id,
-                    confidence=0.70,
-                    evidence=[f"User typically accesses: {', '.join(profile.typical_endpoints[:3])}"],
-                    recommended_action="monitor",
-                    detected_at=datetime.now(),
-                )
-            )
+        if self._is_unusual_endpoint(event, profile):
+            threat = self._create_unusual_endpoint_threat(event, profile)
+            threats.append(threat)
 
         return threats
+
+    def _is_unusual_endpoint(
+        self, event: SecurityEvent, profile: UserBehaviorProfile
+    ) -> bool:
+        """
+        تحقق إذا كان نقطة النهاية غير معتادة | Check if endpoint is unusual
+        
+        Args:
+            event: الحدث الأمني | Security event
+            profile: ملف المستخدم | User profile
+            
+        Returns:
+            True إذا كان غير معتاد | True if unusual
+        """
+        return (
+            profile.typical_endpoints and
+            event.endpoint not in profile.typical_endpoints
+        )
+
+    def _create_unusual_endpoint_threat(
+        self, event: SecurityEvent, profile: UserBehaviorProfile
+    ) -> ThreatDetection:
+        """
+        إنشاء كشف تهديد لنقطة نهاية غير معتادة
+        Create threat detection for unusual endpoint
+        
+        Args:
+            event: الحدث الأمني | Security event
+            profile: ملف المستخدم | User profile
+            
+        Returns:
+            كشف التهديد | Threat detection
+        """
+        typical_endpoints_sample = ', '.join(profile.typical_endpoints[:3])
+        
+        return ThreatDetection(
+            detection_id=str(uuid.uuid4()),
+            threat_type=ThreatType.ANOMALOUS_BEHAVIOR,
+            threat_level=ThreatLevel.MEDIUM,
+            description=f"Unusual endpoint access: {event.endpoint}",
+            source_ip=event.source_ip,
+            user_id=event.user_id,
+            confidence=0.70,
+            evidence=[f"User typically accesses: {typical_endpoints_sample}"],
+            recommended_action="monitor",
+            detected_at=datetime.now(),
+        )
 
     def update_profile(self, event: SecurityEvent, profile: UserBehaviorProfile) -> None:
         """
