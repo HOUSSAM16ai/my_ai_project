@@ -94,12 +94,6 @@ class ZeroTrustMiddleware(ConditionalMiddleware):
         """Handle Zero Trust errors gracefully"""
         return MiddlewareResult.success().with_metadata("zero_trust_error", str(error))
 
-            return MiddlewareResult.success()
-
-        except Exception as e:
-            self.failed_count += 1
-            return MiddlewareResult.unauthorized(message=f"Zero Trust verification error: {e!s}")
-
     def get_statistics(self) -> dict:
         """Return Zero Trust statistics"""
         stats = super().get_statistics()
