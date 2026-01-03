@@ -13,14 +13,12 @@
 from typing import Any
 
 
-def get_html_styles() -> str:
+def _get_base_styles() -> str:
     """
-    الحصول على أنماط CSS للتقرير.
+    أنماط CSS الأساسية للصفحة (body, container, headings).
     
     Returns:
-        str: كود CSS كامل
-        
-    ملاحظة: كل قاعدة CSS موثقة لتوضيح الغرض منها
+        str: أنماط CSS الأساسية
     """
     return """
         body {
@@ -39,6 +37,17 @@ def get_html_styles() -> str:
             text-align: center;
             margin-bottom: 10px;
         }
+    """
+
+
+def _get_summary_styles() -> str:
+    """
+    أنماط CSS لمنطقة الملخص والإحصائيات.
+    
+    Returns:
+        str: أنماط CSS للملخص
+    """
+    return """
         .summary {
             background: #2a2a2a;  /* خلفية أفتح قليلاً */
             padding: 20px;
@@ -71,6 +80,17 @@ def get_html_styles() -> str:
             font-weight: bold;
             color: #00d4ff;       /* لون مميز للقيم */
         }
+    """
+
+
+def _get_heatmap_file_row_styles() -> str:
+    """
+    أنماط CSS لصفوف الملفات في الخريطة الحرارية.
+    
+    Returns:
+        str: أنماط CSS لصفوف الملفات
+    """
+    return """
         .heatmap {
             display: grid;
             gap: 10px;
@@ -85,23 +105,6 @@ def get_html_styles() -> str:
         .file-row:hover {
             transform: translateX(-5px);  /* حركة طفيفة عند المرور */
             box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);  /* ظل توضيحي */
-        }
-        /* ألوان حسب مستوى الخطورة */
-        .file-row.critical {
-            border-right-color: #ff4444;  /* أحمر للحرج */
-            background: linear-gradient(90deg, #2a2a2a 0%, #3a1a1a 100%);
-        }
-        .file-row.high {
-            border-right-color: #ff9944;  /* برتقالي للعالي */
-            background: linear-gradient(90deg, #2a2a2a 0%, #3a2a1a 100%);
-        }
-        .file-row.medium {
-            border-right-color: #ffdd44;  /* أصفر للمتوسط */
-            background: linear-gradient(90deg, #2a2a2a 0%, #3a3a1a 100%);
-        }
-        .file-row.low {
-            border-right-color: #44ff44;  /* أخضر للمنخفض */
-            background: linear-gradient(90deg, #2a2a2a 0%, #1a3a1a 100%);
         }
         .file-name {
             font-size: 1.1em;
@@ -126,6 +129,45 @@ def get_html_styles() -> str:
             color: #00d4ff;
             font-weight: bold;
         }
+    """
+
+
+def _get_severity_color_styles() -> str:
+    """
+    أنماط CSS لألوان مستويات الخطورة (critical, high, medium, low).
+    
+    Returns:
+        str: أنماط CSS لألوان الخطورة
+    """
+    return """
+        /* ألوان حسب مستوى الخطورة */
+        .file-row.critical {
+            border-right-color: #ff4444;  /* أحمر للحرج */
+            background: linear-gradient(90deg, #2a2a2a 0%, #3a1a1a 100%);
+        }
+        .file-row.high {
+            border-right-color: #ff9944;  /* برتقالي للعالي */
+            background: linear-gradient(90deg, #2a2a2a 0%, #3a2a1a 100%);
+        }
+        .file-row.medium {
+            border-right-color: #ffdd44;  /* أصفر للمتوسط */
+            background: linear-gradient(90deg, #2a2a2a 0%, #3a3a1a 100%);
+        }
+        .file-row.low {
+            border-right-color: #44ff44;  /* أخضر للمنخفض */
+            background: linear-gradient(90deg, #2a2a2a 0%, #1a3a1a 100%);
+        }
+    """
+
+
+def _get_badge_styles() -> str:
+    """
+    أنماط CSS للشارات (badges) حسب مستوى الخطورة.
+    
+    Returns:
+        str: أنماط CSS للشارات
+    """
+    return """
         .badge {
             display: inline-block;
             padding: 4px 12px;
@@ -150,6 +192,17 @@ def get_html_styles() -> str:
             background: #44ff44;
             color: black;
         }
+    """
+
+
+def _get_legend_styles() -> str:
+    """
+    أنماط CSS لدليل الألوان (legend).
+    
+    Returns:
+        str: أنماط CSS لدليل الألوان
+    """
+    return """
         .legend {
             background: #2a2a2a;
             padding: 15px;
@@ -175,6 +228,27 @@ def get_html_styles() -> str:
             border-radius: 4px;
         }
     """
+
+
+def get_html_styles() -> str:
+    """
+    الحصول على أنماط CSS الكاملة للتقرير.
+    
+    Returns:
+        str: كود CSS كامل مُجمّع من جميع helper methods
+        
+    ملاحظة:
+        تم تقسيم الأنماط إلى helper methods صغيرة لتطبيق مبدأ SRP (Single Responsibility).
+        كل helper method مسؤول عن مجموعة أنماط محددة فقط.
+    """
+    return (
+        _get_base_styles() +
+        _get_summary_styles() +
+        _get_heatmap_file_row_styles() +
+        _get_severity_color_styles() +
+        _get_badge_styles() +
+        _get_legend_styles()
+    )
 
 
 def create_file_row_html(
