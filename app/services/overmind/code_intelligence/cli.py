@@ -8,9 +8,28 @@ from .reporters.html_reporter import generate_heatmap_html
 from .reporters.json_reporter import save_json_report
 from .reporters.markdown_reporter import generate_markdown_report
 
-# TODO: Split this function (54 lines) - KISS principle
 def main() -> None:
-    """Main entry point"""
+    """
+    نقطة الدخول الرئيسية للتحليل.
+    Main entry point for structural analysis.
+    """
+    args = _parse_arguments()
+    _prepare_output_directory(args.output_dir)
+    
+    analysis = _run_analysis(args.repo_path, args.targets)
+    
+    _generate_all_reports(analysis, args.output_dir)
+    _print_summary(analysis, args.output_dir)
+
+
+def _parse_arguments() -> argparse.Namespace:
+    """
+    تحليل وسائط سطر الأوامر.
+    Parse command line arguments.
+    
+    Returns:
+        Parsed arguments namespace
+    """
     parser = argparse.ArgumentParser(
         description="المرحلة الأولى: التحليل الكمي البنيوي لقاعدة الشيفرة\nPhase 1: Structural Code Intelligence Analysis (Deconstructed)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -33,37 +52,102 @@ def main() -> None:
         default=["app/api", "app/services", "app/infrastructure", "app/application/use_cases"],
         help="Target paths for analysis",
     )
+    return parser.parse_args()
 
-    args = parser.parse_args()
 
-    # Create output directory
-    args.output_dir.mkdir(parents=True, exist_ok=True)
+def _prepare_output_directory(output_dir: Path) -> None:
+    """
+    تحضير دليل الإخراج.
+    Prepare output directory.
+    
+    Args:
+        output_dir: Output directory path
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Run analysis
-    analyzer = StructuralCodeIntelligence(args.repo_path, args.targets)
-    analysis = analyzer.analyze_project()
 
-    # Generate reports
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+def _run_analysis(repo_path: Path, targets: list[str]):
+    """
+    تنفيذ التحليل البنيوي.
+    Run structural analysis.
+    
+    Args:
+        repo_path: Repository path
+        targets: Target paths to analyze
+        
+    Returns:
+        Project analysis results
+    """
+    analyzer = StructuralCodeIntelligence(repo_path, targets)
+    return analyzer.analyze_project()
 
+
+def _generate_all_reports(analysis, output_dir: Path) -> None:
+    """
+    إنشاء جميع التقارير.
+    Generate all report formats.
+    
+    Args:
+        analysis: Analysis results
+        output_dir: Output directory
+    """
     print("\n📝 Generating reports...")
-    save_json_report(analysis, args.output_dir / f"structural_analysis_{timestamp}.json")
-    save_csv_report(analysis, args.output_dir / f"structural_analysis_{timestamp}.csv")
-    generate_heatmap_html(analysis, args.output_dir / f"heatmap_{timestamp}.html")
-    generate_markdown_report(analysis, args.output_dir / f"report_{timestamp}.md")
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    # Generate timestamped reports
+    _save_timestamped_reports(analysis, output_dir, timestamp)
+    
+    # Generate latest reports
+    _save_latest_reports(analysis, output_dir)
 
-    # Also save as latest
-    save_json_report(analysis, args.output_dir / "structural_analysis_latest.json")
-    save_csv_report(analysis, args.output_dir / "structural_analysis_latest.csv")
-    generate_heatmap_html(analysis, args.output_dir / "heatmap_latest.html")
-    generate_markdown_report(analysis, args.output_dir / "report_latest.md")
 
+def _save_timestamped_reports(analysis, output_dir: Path, timestamp: str) -> None:
+    """
+    حفظ تقارير بختم زمني.
+    Save timestamped reports.
+    
+    Args:
+        analysis: Analysis results
+        output_dir: Output directory
+        timestamp: Timestamp string
+    """
+    save_json_report(analysis, output_dir / f"structural_analysis_{timestamp}.json")
+    save_csv_report(analysis, output_dir / f"structural_analysis_{timestamp}.csv")
+    generate_heatmap_html(analysis, output_dir / f"heatmap_{timestamp}.html")
+    generate_markdown_report(analysis, output_dir / f"report_{timestamp}.md")
+
+
+def _save_latest_reports(analysis, output_dir: Path) -> None:
+    """
+    حفظ التقارير الأحدث.
+    Save latest reports.
+    
+    Args:
+        analysis: Analysis results
+        output_dir: Output directory
+    """
+    save_json_report(analysis, output_dir / "structural_analysis_latest.json")
+    save_csv_report(analysis, output_dir / "structural_analysis_latest.csv")
+    generate_heatmap_html(analysis, output_dir / "heatmap_latest.html")
+    generate_markdown_report(analysis, output_dir / "report_latest.md")
+
+
+def _print_summary(analysis, output_dir: Path) -> None:
+    """
+    طباعة ملخص التحليل.
+    Print analysis summary.
+    
+    Args:
+        analysis: Analysis results
+        output_dir: Output directory
+    """
     print("\n✅ Analysis complete!")
     print("\n📊 Summary:")
     print(f"  - Files analyzed: {analysis.total_files}")
     print(f"  - Critical hotspots: {len(analysis.critical_hotspots)}")
     print(f"  - High hotspots: {len(analysis.high_hotspots)}")
-    print(f"\n📁 Reports saved to: {args.output_dir}")
+    print(f"\n📁 Reports saved to: {output_dir}")
 
 if __name__ == "__main__":
     main()
