@@ -5,7 +5,7 @@
 ## 📊 الحالة الحالية | Current Status
 
 - **إجمالي الملفات المستهدفة:** 26 (High Priority)
-- **تم الانتهاء:** 3
+- **تم الانتهاء:** 6
 - **قيد العمل:** 0
 
 ## 📝 سجل التغييرات | Change Log
@@ -48,12 +48,51 @@
 - **After:** ~200 lines (Facade). Logic dispersed into single-responsibility modules.
 - **Status:** ✅ Complete. Tests passed (33/33).
 
+### Phase 11: UserKnowledge Service Refactoring (Completed)
+
+#### `app/services/overmind/user_knowledge.py`
+- **Before:** 554 lines. Monolithic class handling all user knowledge operations.
+- **Action:** Refactored into a clean package `app/services/overmind/user_knowledge/`.
+    - Created `basic_info.py` (107 lines) - Basic user information queries.
+    - Created `statistics.py` (110 lines) - User statistics and metrics.
+    - Created `performance.py` (103 lines) - Performance analytics.
+    - Created `relations.py` (81 lines) - User relations with entities.
+    - Created `search.py` (62 lines) - Search and listing functionality.
+    - Created `service.py` (229 lines) - Unified Facade pattern.
+    - Created `__init__.py` (24 lines) - Package entry point.
+- **After:** 716 lines (6 files). Logic dispersed into single-responsibility modules.
+- **Status:** ✅ Complete. Better organization and maintainability.
+
+### Phase 12: Capabilities Service Refactoring (Completed)
+
+#### `app/services/overmind/capabilities.py`
+- **Before:** 537 lines. Monolithic class handling file, shell, and git operations.
+- **Action:** Refactored into a clean package `app/services/overmind/capabilities/`.
+    - Created `file_operations.py` (191 lines) - Safe file and directory operations.
+    - Created `shell_operations.py` (114 lines) - Shell command execution with whitelist.
+    - Created `service.py` (99 lines) - Unified Facade with Git operations.
+    - Created `__init__.py` (27 lines) - Package entry point.
+- **After:** 431 lines (4 files). **20% reduction** with improved security and separation.
+- **Status:** ✅ Complete. Clear separation of concerns.
+
+### Phase 13: Domain Events Refactoring (Completed)
+
+#### `app/core/domain_events/__init__.py`
+- **Before:** 368 lines. All 27 event classes in one file.
+- **Action:** Refactored into organized modules by bounded context.
+    - Created `base.py` (90 lines) - Core classes, enums, and registry.
+    - Created `user_events.py` (67 lines) - 3 user management events.
+    - Created `mission_events.py` (183 lines) - 11 mission and task events.
+    - Created `system_events.py` (123 lines) - 8 system, API, and security events.
+    - Updated `__init__.py` (85 lines) - Clean imports by category.
+- **After:** 548 lines (5 files). Events grouped by domain context.
+- **Status:** ✅ Complete. Follows Domain-Driven Design principles.
+
 ## 🔜 الخطوات القادمة | Next Steps
 
-1. **Refactor `overmind/super_intelligence.py`**: A large file (699 lines, complexity 11) needing decomposition.
-2. **Refactor `overmind/user_knowledge.py`**: Large file (554 lines, complexity 22) needing simplification.
-3. **Refactor `overmind/capabilities.py`**: Large file (537 lines, complexity 20) needing decomposition.
-4. **Update `PROJECT_HISTORY.md`** with Phase 8 completion.
+1. **Update `PROJECT_HISTORY.md`** with new phases (11, 12, 13).
+2. **Update `PROJECT_METRICS.md`** with updated statistics.
+3. **Consider refactoring other large files** in the future iterations.
 
 ---
 **Last Updated:** 2026-01-03
