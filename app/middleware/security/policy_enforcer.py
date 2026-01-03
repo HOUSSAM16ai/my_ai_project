@@ -73,40 +73,60 @@ class PolicyEnforcer(BaseMiddleware):
                 return policy
         return None
 
-    # TODO: Split this function (32 lines) - KISS principle
-    def _check_policy(self, ctx: RequestContext, policy: dict[str, Any]
-        ) ->bool:
-        """
-        Check if request satisfies policy
+    def _check_policy(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
+        """Check if request satisfies policy - KISS principle applied"""
+        if not self._check_roles(ctx, policy):
+            return False
+        if not self._check_permissions(ctx, policy):
+            return False
+        if not self._check_authentication(ctx, policy):
+            return False
+        if not self._check_method(ctx, policy):
+            return False
+        if not self._check_ip_access(ctx, policy):
+            return False
+        return True
 
-        Args:
-            ctx: Request context
-            policy: Policy configuration
-
-        Returns:
-            True if policy is satisfied
-        """
+    def _check_roles(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
+        """Check if user has required roles"""
         required_roles = policy.get('required_roles', [])
-        if required_roles:
-            user_roles = ctx.get_metadata('user_roles', [])
-            if not any(role in user_roles for role in required_roles):
-                return False
+        if not required_roles:
+            return True
+        user_roles = ctx.get_metadata('user_roles', [])
+        return any(role in user_roles for role in required_roles)
+
+    def _check_permissions(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
+        """Check if user has required permissions"""
         required_permissions = policy.get('required_permissions', [])
-        if required_permissions:
-            user_permissions = ctx.get_metadata('user_permissions', [])
-            if not all(perm in user_permissions for perm in
-                required_permissions):
-                return False
-        if policy.get('require_authentication', False) and not ctx.user_id:
-            return False
+        if not required_permissions:
+            return True
+        user_permissions = ctx.get_metadata('user_permissions', [])
+        return all(perm in user_permissions for perm in required_permissions)
+
+    def _check_authentication(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
+        """Check if authentication is satisfied"""
+        if policy.get('require_authentication', False):
+            return bool(ctx.user_id)
+        return True
+
+    def _check_method(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
+        """Check if HTTP method is allowed"""
         allowed_methods = policy.get('allowed_methods', [])
-        if allowed_methods and ctx.method not in allowed_methods:
-            return False
+        if not allowed_methods:
+            return True
+        return ctx.method in allowed_methods
+
+    def _check_ip_access(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
+        """Check IP whitelist and blacklist"""
+        # Check whitelist first
         ip_whitelist = policy.get('ip_whitelist', [])
         if ip_whitelist and ctx.ip_address not in ip_whitelist:
             return False
+        # Check blacklist
         ip_blacklist = policy.get('ip_blacklist', [])
-        return not (ip_blacklist and ctx.ip_address in ip_blacklist)
+        if ip_blacklist and ctx.ip_address in ip_blacklist:
+            return False
+        return True
 
     def add_policy(self, path: str, policy: dict[str, Any]) -> None:
         """

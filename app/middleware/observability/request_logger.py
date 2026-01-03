@@ -33,40 +33,33 @@ class RequestLoggerMiddleware(BaseMiddleware):
         self.logger = StructuredLogger()
         self.logged_count = 0
 
-    # TODO: Split this function (32 lines) - KISS principle
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
-        """
-        Log request details
-
-        Args:
-            ctx: Request context
-
-        Returns:
-            Always succeeds
-        """
+        """Log request details - KISS principle applied"""
         self.logged_count += 1
-
-        # Determine log level based on path
         level = self._get_log_level(ctx.path)
-
-        # Log request
+        log_data = self._prepare_log_data(ctx)
+        
         self.logger.log(
             level=level,
             message=f"Incoming request: {ctx.method} {ctx.path}",
-            context={
-                "request_id": ctx.request_id,
-                "method": ctx.method,
-                "path": ctx.path,
-                "ip_address": ctx.ip_address,
-                "user_agent": ctx.user_agent,
-                "user_id": ctx.user_id,
-                "query_params": ctx.query_params,
-            },
+            context=log_data,
             trace_id=ctx.trace_id,
             span_id=ctx.span_id,
         )
 
         return MiddlewareResult.success()
+
+    def _prepare_log_data(self, ctx: RequestContext) -> dict:
+        """Prepare request data for logging"""
+        return {
+            "request_id": ctx.request_id,
+            "method": ctx.method,
+            "path": ctx.path,
+            "ip_address": ctx.ip_address,
+            "user_agent": ctx.user_agent,
+            "user_id": ctx.user_id,
+            "query_params": ctx.query_params,
+        }
 
     def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
         """

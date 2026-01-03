@@ -49,49 +49,54 @@ class AnomalyInspector(BaseMiddleware):
         ctx.add_metadata("anomaly_inspector_start", time.time())
         return MiddlewareResult.success()
 
-    # TODO: Split this function (41 lines) - KISS principle
     def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
-        """
-        Inspect for anomalies
-
-        Args:
-            ctx: Request context
-            result: Middleware result
-        """
+        """Inspect for anomalies - KISS principle applied"""
         self.inspected_count += 1
 
-        # Get duration
-        start_time = ctx.get_metadata("anomaly_inspector_start")
-        if not start_time:
+        duration_ms = self._get_request_duration(ctx)
+        if duration_ms is None:
             return
 
-        duration_ms = (time.time() - start_time) * 1000
+        self._check_and_handle_anomaly(ctx, duration_ms)
 
-        # Check for latency anomalies
+    def _get_request_duration(self, ctx: RequestContext) -> float:
+        """Calculate request duration in milliseconds"""
+        start_time = ctx.get_metadata("anomaly_inspector_start")
+        if not start_time:
+            return None
+        return (time.time() - start_time) * 1000
+
+    def _check_and_handle_anomaly(self, ctx: RequestContext, duration_ms: float) -> None:
+        """Check for anomalies and handle if detected"""
         metric_name = f"latency_{ctx.path}"
         is_anomaly, anomaly = self.detector.check_value(metric_name, duration_ms)
 
         if is_anomaly and anomaly:
-            self.anomalies_detected += 1
+            self._record_anomaly(ctx, metric_name, duration_ms, anomaly)
+            self._log_critical_anomaly(ctx, duration_ms, anomaly)
 
-            # Store anomaly info in context
-            ctx.add_metadata(
-                "anomaly_detected",
-                {
-                    "metric": metric_name,
-                    "value": duration_ms,
-                    "score": anomaly.score,
-                    "severity": anomaly.severity.value,
-                    "description": anomaly.description,
-                },
+    def _record_anomaly(self, ctx: RequestContext, metric_name: str, 
+                        duration_ms: float, anomaly) -> None:
+        """Record anomaly in context"""
+        self.anomalies_detected += 1
+        ctx.add_metadata(
+            "anomaly_detected",
+            {
+                "metric": metric_name,
+                "value": duration_ms,
+                "score": anomaly.score,
+                "severity": anomaly.severity.value,
+                "description": anomaly.description,
+            },
+        )
+
+    def _log_critical_anomaly(self, ctx: RequestContext, duration_ms: float, anomaly) -> None:
+        """Log high/critical severity anomalies"""
+        if anomaly.severity.value in ["high", "critical"]:
+            print(
+                f"⚠️  Anomaly detected: {ctx.path} - "
+                f"latency {duration_ms:.2f}ms (score: {anomaly.score:.2f})"
             )
-
-            # Log anomaly (would integrate with logging system)
-            if anomaly.severity.value in ["high", "critical"]:
-                print(
-                    f"⚠️  Anomaly detected: {ctx.path} - "
-                    f"latency {duration_ms:.2f}ms (score: {anomaly.score:.2f})"
-                )
 
     def get_statistics(self) -> dict:
         """Return anomaly inspector statistics"""

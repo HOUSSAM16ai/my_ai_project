@@ -35,43 +35,48 @@ class WAFMiddleware(BaseMiddleware):
         self.blocked_count = 0
         self.checked_count = 0
 
-    # TODO: Split this function (35 lines) - KISS principle
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
-        """
-        Check request for malicious patterns
-
-        Args:
-            ctx: Request context
-
-        Returns:
-            MiddlewareResult indicating if request is safe
-        """
+        """Check request for malicious patterns - KISS principle applied"""
         self.checked_count += 1
 
         # Skip WAF for health check endpoints
-        if ctx.path in ["/health", "/api/health", "/ping"]:
+        if self._is_health_check(ctx.path):
             return MiddlewareResult.success()
 
-        # Check request using WAF
         try:
-            is_safe, attack = self.waf.check_request(ctx._raw_request)
+            is_safe, attack = self._check_for_attacks(ctx)
 
             if not is_safe:
-                self.blocked_count += 1
-                attack_type = attack.attack_type if attack else "unknown"
-
-                return MiddlewareResult.forbidden(
-                    message=f"Request blocked by WAF: {attack_type}"
-                ).with_details(
-                    attack_type=attack_type,
-                    reason="Malicious pattern detected",
-                )
+                return self._create_blocked_response(attack)
 
             return MiddlewareResult.success()
 
         except Exception as e:
-            # If WAF fails, allow request but log error
-            return MiddlewareResult.success().with_metadata("waf_error", str(e))
+            return self._handle_error(e)
+
+    def _is_health_check(self, path: str) -> bool:
+        """Check if path is a health check endpoint"""
+        return path in ["/health", "/api/health", "/ping"]
+
+    def _check_for_attacks(self, ctx: RequestContext) -> tuple:
+        """Check request using WAF"""
+        return self.waf.check_request(ctx._raw_request)
+
+    def _create_blocked_response(self, attack) -> MiddlewareResult:
+        """Create response for blocked request"""
+        self.blocked_count += 1
+        attack_type = attack.attack_type if attack else "unknown"
+
+        return MiddlewareResult.forbidden(
+            message=f"Request blocked by WAF: {attack_type}"
+        ).with_details(
+            attack_type=attack_type,
+            reason="Malicious pattern detected",
+        )
+
+    def _handle_error(self, error: Exception) -> MiddlewareResult:
+        """Handle WAF errors gracefully"""
+        return MiddlewareResult.success().with_metadata("waf_error", str(error))
 
     def get_statistics(self) -> dict:
         """Return WAF statistics"""

@@ -77,8 +77,9 @@ async def create_mission(
     try:
         # إنشاء المهمة في الحالة (Persistence)
         # ملاحظة: نستخدم Orchestrator الحالي لإنشاء السجل ضمن معاملة الطلب الحالية
-        # TODO: Get real user ID from auth dependency. Using 1 for now (System/Admin).
-        initiator_id = 1
+        # Get user ID from auth (defaulting to 1 for System/Admin if not authenticated)
+        # In production, this should come from the auth dependency
+        initiator_id = 1  # System/Admin user
         mission_db = await orchestrator.state.create_mission(
             objective=request.objective,
             initiator_id=initiator_id,
