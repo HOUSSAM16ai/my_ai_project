@@ -1,0 +1,878 @@
+openapi: 3.0.3
+info:
+  title: CogniForge Core API
+  description: |
+    # CogniForge API-First Architecture
+    
+    منصة تعليمية ذكية مدعومة بالذكاء الاصطناعي مع معمارية API-First كاملة.
+    
+    ## المبادئ الأساسية
+    - **API-First**: النظام مصمم أولاً كـ API
+    - **Platform Independent**: يعمل على أي منصة (Web, Mobile, Desktop)
+    - **Language Agnostic**: يمكن استخدامه من أي لغة برمجة
+    - **Stateless**: كل طلب مستقل
+    
+    ## المصادقة
+    يستخدم النظام JWT (JSON Web Tokens) للمصادقة.
+    ```
+    Authorization: Bearer <token>
+    ```
+    
+    ## معدلات الطلبات
+    - **معدل عام**: 100 طلب/دقيقة
+    - **نقاط النهاية الحساسة**: 10 طلبات/دقيقة
+    
+    ## Versioning
+    - **الإصدار الحالي**: v1
+    - **Base URL**: `/api/v1`
+  version: "1.0.0"
+  contact:
+    name: CogniForge Support
+    email: support@cogniforge.ai
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.cogniforge.ai/api/v1
+    description: Production Server
+  - url: https://staging-api.cogniforge.ai/api/v1
+    description: Staging Server
+  - url: http://localhost:8000/api/v1
+    description: Local Development
+
+tags:
+  - name: Security
+    description: Authentication & Authorization endpoints
+  - name: Users
+    description: User management operations
+  - name: CRUD
+    description: Generic CRUD operations for resources
+  - name: Admin
+    description: Administrative operations
+  - name: Observability
+    description: Monitoring, metrics, and health checks
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /api/security/login
+  
+  schemas:
+    # ==============================================================================
+    # Common Schemas
+    # ==============================================================================
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - error
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [error, fail]
+          description: Status of the response
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code
+              example: "INVALID_CREDENTIALS"
+            message:
+              type: string
+              description: Human-readable error message
+              example: "Invalid email or password"
+            details:
+              type: object
+              description: Additional error details
+              additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp
+          example: "2026-01-03T00:00:00Z"
+        request_id:
+          type: string
+          description: Unique request identifier for tracing
+          example: "req_abc123xyz"
+    
+    SuccessResponse:
+      type: object
+      required:
+        - status
+        - data
+      properties:
+        status:
+          type: string
+          enum: [success]
+          description: Status of the response
+        data:
+          type: object
+          description: Response payload
+          additionalProperties: true
+        meta:
+          type: object
+          description: Metadata about the response
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+            request_id:
+              type: string
+        links:
+          type: object
+          description: HATEOAS links for related resources
+          additionalProperties:
+            type: string
+            format: uri
+    
+    PaginationMeta:
+      type: object
+      required:
+        - page
+        - per_page
+        - total
+        - total_pages
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          description: Current page number
+          example: 1
+        per_page:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Items per page
+          example: 20
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of items
+          example: 157
+        total_pages:
+          type: integer
+          minimum: 0
+          description: Total number of pages
+          example: 8
+        has_next:
+          type: boolean
+          description: Whether there is a next page
+        has_prev:
+          type: boolean
+          description: Whether there is a previous page
+    
+    # ==============================================================================
+    # Security Schemas
+    # ==============================================================================
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: User password
+          example: "SecurePass123!"
+    
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - full_name
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: "newuser@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: User password (must be at least 8 characters)
+          example: "SecurePass123!"
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: User's full name
+          example: "John Doe"
+    
+    AuthResponse:
+      type: object
+      required:
+        - status
+        - data
+      properties:
+        status:
+          type: string
+          enum: [success]
+        data:
+          type: object
+          required:
+            - access_token
+            - token_type
+            - user
+          properties:
+            access_token:
+              type: string
+              description: JWT access token
+              example: "eyJhbGciOiJIUzI1NiIs..."
+            refresh_token:
+              type: string
+              description: Refresh token for obtaining new access tokens
+              example: "refresh_abc123..."
+            token_type:
+              type: string
+              enum: [Bearer]
+              description: Token type
+              example: "Bearer"
+            expires_in:
+              type: integer
+              description: Token expiration time in seconds
+              example: 3600
+            user:
+              $ref: '#/components/schemas/UserObject'
+    
+    UserObject:
+      type: object
+      required:
+        - id
+        - email
+        - full_name
+        - is_admin
+        - created_at
+      properties:
+        id:
+          type: integer
+          description: Unique user identifier
+          example: 42
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: "user@example.com"
+        full_name:
+          type: string
+          description: User's full name
+          example: "John Doe"
+        is_admin:
+          type: boolean
+          description: Whether user has admin privileges
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+          example: "2026-01-01T00:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2026-01-03T00:00:00Z"
+    
+    # ==============================================================================
+    # Resource Schemas
+    # ==============================================================================
+    GenericResource:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: string
+          description: Resource unique identifier
+          example: "res_123abc"
+        type:
+          type: string
+          description: Resource type
+          example: "mission"
+        attributes:
+          type: object
+          description: Resource attributes
+          additionalProperties: true
+        relationships:
+          type: object
+          description: Related resources
+          additionalProperties: true
+        links:
+          type: object
+          description: HATEOAS links
+          properties:
+            self:
+              type: string
+              format: uri
+              example: "/api/v1/resources/mission/res_123abc"
+    
+    PaginatedResourceResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/GenericResource'
+            meta:
+              allOf:
+                - $ref: '#/components/schemas/PaginationMeta'
+                - type: object
+                  properties:
+                    filters:
+                      type: object
+                      description: Applied filters
+                    sort:
+                      type: object
+                      description: Applied sorting
+
+paths:
+  # ==============================================================================
+  # Security Endpoints
+  # ==============================================================================
+  /api/security/health:
+    get:
+      tags:
+        - Security
+      summary: Security Health Check
+      description: Check if security services are operational
+      operationId: securityHealthCheck
+      responses:
+        '200':
+          description: Security services are healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: "healthy"
+                      features:
+                        type: array
+                        items:
+                          type: string
+                        example: ["jwt", "argon2"]
+  
+  /api/security/register:
+    post:
+      tags:
+        - Security
+      summary: Register New User
+      description: Create a new user account in the system
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              basic:
+                summary: Basic registration
+                value:
+                  email: "newuser@example.com"
+                  password: "SecurePass123!"
+                  full_name: "Jane Smith"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "User registered successfully"
+                      user:
+                        $ref: '#/components/schemas/UserObject'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                validation_error:
+                  value:
+                    status: "error"
+                    error:
+                      code: "VALIDATION_ERROR"
+                      message: "Invalid email format"
+                    timestamp: "2026-01-03T00:00:00Z"
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicate_email:
+                  value:
+                    status: "error"
+                    error:
+                      code: "DUPLICATE_EMAIL"
+                      message: "User with this email already exists"
+                    timestamp: "2026-01-03T00:00:00Z"
+  
+  /api/security/login:
+    post:
+      tags:
+        - Security
+      summary: Authenticate User
+      description: |
+        Authenticate user with email and password and receive a JWT token.
+        
+        **Rate Limiting**: 10 requests per minute per IP
+        
+        **Security**: Protected by Chrono-Kinetic Defense Shield
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              admin_login:
+                summary: Admin login
+                value:
+                  email: "admin@example.com"
+                  password: "AdminPass123!"
+              user_login:
+                summary: Regular user login
+                value:
+                  email: "user@example.com"
+                  password: "UserPass123!"
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              examples:
+                successful_login:
+                  value:
+                    status: "success"
+                    data:
+                      access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      refresh_token: "refresh_abc123xyz..."
+                      token_type: "Bearer"
+                      expires_in: 3600
+                      user:
+                        id: 1
+                        email: "user@example.com"
+                        full_name: "John Doe"
+                        is_admin: false
+                        created_at: "2026-01-01T00:00:00Z"
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_credentials:
+                  value:
+                    status: "error"
+                    error:
+                      code: "INVALID_CREDENTIALS"
+                      message: "Invalid email or password"
+                    timestamp: "2026-01-03T00:00:00Z"
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rate_limit:
+                  value:
+                    status: "error"
+                    error:
+                      code: "RATE_LIMIT_EXCEEDED"
+                      message: "Too many login attempts. Please try again later."
+                    timestamp: "2026-01-03T00:00:00Z"
+  
+  # ==============================================================================
+  # CRUD Endpoints
+  # ==============================================================================
+  /api/v1/resources/{resource_type}:
+    get:
+      tags:
+        - CRUD
+      summary: List Resources
+      description: |
+        Retrieve a paginated list of resources of a specific type.
+        
+        Supports filtering, sorting, and searching.
+      operationId: listResources
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: resource_type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [missions, tasks, users, conversations]
+          description: Type of resource to list
+          example: "missions"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Items per page
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+          description: Field to sort by
+          example: "created_at"
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+          description: Sort order
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search query
+          example: "AI project"
+      responses:
+        '200':
+          description: Resources retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResourceResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Resource type not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      tags:
+        - CRUD
+      summary: Create Resource
+      description: Create a new resource of the specified type
+      operationId: createResource
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: resource_type
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Type of resource to create
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GenericResource'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  
+  /api/v1/resources/{resource_type}/{item_id}:
+    get:
+      tags:
+        - CRUD
+      summary: Get Resource
+      description: Retrieve a specific resource by ID
+      operationId: getResource
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: resource_type
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Type of resource
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Resource ID
+      responses:
+        '200':
+          description: Resource retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GenericResource'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    
+    put:
+      tags:
+        - CRUD
+      summary: Update Resource
+      description: Update an existing resource
+      operationId: updateResource
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: resource_type
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Resource updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GenericResource'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    
+    delete:
+      tags:
+        - CRUD
+      summary: Delete Resource
+      description: Delete a specific resource
+      operationId: deleteResource
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: resource_type
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Resource deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==============================================================================
+  # Observability Endpoints
+  # ==============================================================================
+  /api/observability/health:
+    get:
+      tags:
+        - Observability
+      summary: System Health Check
+      description: |
+        Comprehensive health check of all system components.
+        
+        Returns status of:
+        - Database connection
+        - External services
+        - Cache
+        - Message queues
+      operationId: systemHealthCheck
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded, unhealthy]
+                    example: "healthy"
+                  components:
+                    type: object
+                    properties:
+                      database:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            example: "up"
+                          latency_ms:
+                            type: number
+                            example: 5.3
+                      ai_service:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            example: "up"
+                      cache:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            example: "up"
+                  timestamp:
+                    type: string
+                    format: date-time
+        '503':
+          description: System is unhealthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "unhealthy"
+                  components:
+                    type: object
+                  timestamp:
+                    type: string
+                    format: date-time
+
+components:
+  responses:
+    UnauthorizedError:
+      description: Authentication required or token invalid/expired
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missing_token:
+              value:
+                status: "error"
+                error:
+                  code: "MISSING_TOKEN"
+                  message: "Authentication token is required"
+                timestamp: "2026-01-03T00:00:00Z"
+            invalid_token:
+              value:
+                status: "error"
+                error:
+                  code: "INVALID_TOKEN"
+                  message: "Authentication token is invalid or expired"
+                timestamp: "2026-01-03T00:00:00Z"
+    
+    BadRequestError:
+      description: Invalid request data
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            validation_error:
+              value:
+                status: "error"
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Request validation failed"
+                  details:
+                    field: "email"
+                    reason: "Invalid email format"
+                timestamp: "2026-01-03T00:00:00Z"
+    
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            not_found:
+              value:
+                status: "error"
+                error:
+                  code: "NOT_FOUND"
+                  message: "The requested resource was not found"
+                timestamp: "2026-01-03T00:00:00Z"
