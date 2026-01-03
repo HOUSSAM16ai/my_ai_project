@@ -36,48 +36,71 @@ class RateLimitMiddleware(BaseMiddleware):
         self.rate_limited_count = 0
         self.checked_count = 0
 
-    # TODO: Split this function (49 lines) - KISS principle
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
-        """
-        Check if request should be rate limited
-
-        Args:
-            ctx: Request context
-
-        Returns:
-            MiddlewareResult indicating if request is allowed
-        """
+        """Check if request should be rate limited - KISS principle applied"""
         self.checked_count += 1
 
         # Skip rate limiting for health checks
-        if ctx.path in ["/health", "/api/health", "/ping"]:
+        if self._is_health_check(ctx.path):
             return MiddlewareResult.success()
 
-        # Determine user tier
         user_tier = self._get_user_tier(ctx)
-        user_id = ctx.user_id
-
+        
         try:
-            # Check rate limit
-            is_allowed, info = self.rate_limiter.check_rate_limit(
-                ctx._raw_request,
-                user_id=user_id,
-                tier=user_tier,
-            )
-
+            is_allowed, info = self._check_rate_limit(ctx, user_tier)
+            
             if not is_allowed:
-                self.rate_limited_count += 1
-                reset_time = info.get("reset_time", 60)
+                return self._create_rate_limit_response(info, user_tier)
 
-                return MiddlewareResult.rate_limited(
-                    message="Rate limit exceeded",
-                    retry_after=reset_time,
-                ).with_details(
-                    limit=info.get("limit"),
-                    remaining=info.get("remaining", 0),
-                    reset_time=reset_time,
-                    tier=user_tier.value,
-                )
+            # Add rate limit info to context
+            self._add_rate_limit_headers(ctx, info, user_tier)
+            return MiddlewareResult.success()
+
+        except Exception as e:
+            return self._handle_error(e)
+
+    def _is_health_check(self, path: str) -> bool:
+        """Check if path is a health check endpoint"""
+        return path in ["/health", "/api/health", "/ping"]
+
+    def _check_rate_limit(self, ctx: RequestContext, user_tier) -> tuple:
+        """Check rate limit for the request"""
+        return self.rate_limiter.check_rate_limit(
+            ctx._raw_request,
+            user_id=ctx.user_id,
+            tier=user_tier,
+        )
+
+    def _create_rate_limit_response(self, info: dict, user_tier) -> MiddlewareResult:
+        """Create rate limited response"""
+        self.rate_limited_count += 1
+        reset_time = info.get("reset_time", 60)
+
+        return MiddlewareResult.rate_limited(
+            message="Rate limit exceeded",
+            retry_after=reset_time,
+        ).with_details(
+            limit=info.get("limit"),
+            remaining=info.get("remaining", 0),
+            reset_time=reset_time,
+            tier=user_tier.value,
+        )
+
+    def _add_rate_limit_headers(self, ctx: RequestContext, info: dict, user_tier) -> None:
+        """Add rate limit information to response headers"""
+        ctx.add_metadata(
+            "rate_limit_info",
+            {
+                "limit": info.get("limit"),
+                "remaining": info.get("remaining"),
+                "reset_time": info.get("reset_time"),
+                "tier": user_tier.value,
+            },
+        )
+
+    def _handle_error(self, error: Exception) -> MiddlewareResult:
+        """Handle rate limiter errors gracefully"""
+        return MiddlewareResult.success().with_metadata("rate_limit_error", str(error))
 
             # Store rate limit info in context for response headers
             ctx.add_metadata("rate_limit_info", info)

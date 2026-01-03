@@ -32,10 +32,17 @@ class SecurityHeadersMiddleware(BaseMiddleware):
     name = "SecurityHeaders"
     order = 100  # Execute last, add headers to response
 
-    # TODO: Split this function (47 lines) - KISS principle
     def _setup(self):
-        """Initialize security headers configuration"""
-        self.headers = {
+        """Initialize security headers configuration - KISS principle applied"""
+        self.headers = self._get_default_headers()
+        self._add_hsts_header()
+        self._add_csp_header()
+        self._add_custom_headers()
+        self._apply_preview_guard()
+
+    def _get_default_headers(self) -> dict:
+        """Get default security headers"""
+        return {
             "X-Content-Type-Options": "nosniff",
             "X-Frame-Options": self.config.get("x_frame_options", "DENY"),
             "X-XSS-Protection": "1; mode=block",
@@ -43,23 +50,25 @@ class SecurityHeadersMiddleware(BaseMiddleware):
             "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
         }
 
-        # Add HSTS if enabled
+    def _add_hsts_header(self) -> None:
+        """Add HSTS header if enabled"""
         if self.config.get("enable_hsts", True):
             max_age = self.config.get("hsts_max_age", 31536000)  # 1 year
             self.headers["Strict-Transport-Security"] = f"max-age={max_age}; includeSubDomains"
 
-        # Add CSP if provided
+    def _add_csp_header(self) -> None:
+        """Add Content Security Policy if provided"""
         csp = self.config.get("content_security_policy")
         if csp:
             self.headers["Content-Security-Policy"] = csp
 
-        # Add custom headers
+    def _add_custom_headers(self) -> None:
+        """Add custom headers from configuration"""
         custom_headers = self.config.get("custom_headers", {})
         self.headers.update(custom_headers)
 
-        # --- PREVIEW GUARD ---
-        # Allow embedding in GitHub Codespaces Preview when in development mode
-        # This fixes the "White Page" issue in VS Code Preview
+    def _apply_preview_guard(self) -> None:
+        """Allow embedding in GitHub Codespaces Preview (development only)"""
         env = os.environ.get("ENVIRONMENT", "production")
         if env == "development":
             # Remove X-Frame-Options to allow framing
@@ -68,11 +77,6 @@ class SecurityHeadersMiddleware(BaseMiddleware):
 
             # Update CSP to allow GitHub domains
             csp = self.headers.get("Content-Security-Policy", "")
-            # If no CSP is present, we don't need to add one, but if frame-ancestors is in it, we modify it.
-            # If frame-ancestors is NOT present, but CSP IS, it defaults to allowed (unless default-src 'none').
-            # The issue usually comes when a restrictive CSP is set.
-            # However, looking at diagnostics, we saw:
-            # content-security-policy: default-src 'self'; ... frame-ancestors 'none';
             # So CSP IS present and RESTRICTIVE.
             if csp:
                 allowed_ancestors = "frame-ancestors 'self' https://*.github.dev https://*.github.com http://localhost:* http://127.0.0.1:*"
