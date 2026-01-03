@@ -20,11 +20,7 @@ def mock_settings():
 @pytest.fixture
 def service(mock_settings):
     db_session = AsyncMock()
-    with (
-        patch("app.services.boundaries.admin_chat_boundary_service.get_settings", return_value=mock_settings),
-        patch("app.services.boundaries.admin_chat_boundary_service.get_service_boundary"),
-        patch("app.services.boundaries.admin_chat_boundary_service.get_policy_boundary"),
-    ):
+    with patch("app.services.boundaries.admin_chat_boundary_service.get_settings", return_value=mock_settings):
         service = AdminChatBoundaryService(db_session)
         service.settings = mock_settings  # Ensure settings are set
         return service
@@ -145,8 +141,8 @@ async def test_get_or_create_conversation_invalid_id(service):
     with pytest.raises(HTTPException) as exc:
         await service.get_or_create_conversation(user_id=1, question="Q", conversation_id="invalid")
 
-    assert exc.value.status_code == 404
-    assert exc.value.detail == "Invalid conversation ID"
+    assert exc.value.status_code == 400
+    assert exc.value.detail == "Invalid conversation ID format"
 
 
 @pytest.mark.asyncio
