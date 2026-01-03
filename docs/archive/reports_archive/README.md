@@ -57,7 +57,7 @@ This folder contains previous Git review reports that have been consolidated int
 
 All information from these reports has been consolidated into:
 
-**📄 [`docs/reports/GIT_REVIEW_COMPREHENSIVE_2026.md`](../reports/GIT_REVIEW_COMPREHENSIVE_2026.md)**
+**📄 [`GIT_HISTORY_SIMPLIFICATION_SUMMARY.md`](../../../GIT_HISTORY_SIMPLIFICATION_SUMMARY.md)** (في الجذر | in root)
 
 هذا التقرير الموحد يحتوي على:
 - ✅ جميع المراحل المكتملة (14 phases)
@@ -103,9 +103,9 @@ This unified report contains:
 For historical review, you can reference these reports to understand the project's evolution.
 
 ### للمعلومات الحالية
-استخدم التقرير الموحد: `docs/reports/GIT_REVIEW_COMPREHENSIVE_2026.md`
+استخدم التقرير الموحد: `GIT_HISTORY_SIMPLIFICATION_SUMMARY.md` (في الجذر)
 
-For current information, use the unified report: `docs/reports/GIT_REVIEW_COMPREHENSIVE_2026.md`
+For current information, use the unified report: `GIT_HISTORY_SIMPLIFICATION_SUMMARY.md` (in root)
 
 ---
 
