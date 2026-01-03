@@ -52,38 +52,101 @@ class ShadowDeploymentManager:
             self._shadow_deployments[shadow_id] = deployment
         return shadow_id
 
-    # TODO: Split this function (33 lines) - KISS principle
-    def get_shadow_deployment_stats(self, shadow_id: str) ->(dict[str, Any] |
-        None):
+    def get_shadow_deployment_stats(self, shadow_id: str) -> dict[str, Any] | None:
         """
         الحصول على إحصائيات النشر الخفي
-
+        Get shadow deployment statistics
+        
         Args:
-            shadow_id: معرف النشر الخفي
-
+            shadow_id: معرف النشر الخفي | Shadow deployment ID
+            
         Returns:
-            إحصائيات النشر أو None
+            إحصائيات النشر أو None | Deployment statistics or None
         """
         deployment = self._shadow_deployments.get(shadow_id)
         if not deployment:
             return None
-        with self._lock:
-            comparisons = deployment.comparison_results.copy()
+        
+        # Get comparison results
+        comparisons = self._get_deployment_comparisons(deployment)
+        
         if not comparisons:
-            return {'shadow_id': shadow_id, 'total_comparisons': 0,
-                'message': 'No comparisons yet'}
+            return self._create_empty_stats_response(shadow_id)
+        
+        # Calculate statistics
+        return self._calculate_deployment_statistics(shadow_id, deployment, comparisons)
+
+    def _get_deployment_comparisons(self, deployment: ShadowDeployment) -> list[dict[str, Any]]:
+        """
+        الحصول على نتائج المقارنة | Get comparison results
+        
+        Args:
+            deployment: النشر الخفي | Shadow deployment
+            
+        Returns:
+            قائمة نتائج المقارنة | Comparison results list
+        """
+        with self._lock:
+            return deployment.comparison_results.copy()
+
+    def _create_empty_stats_response(self, shadow_id: str) -> dict[str, Any]:
+        """
+        إنشاء استجابة فارغة للإحصائيات | Create empty stats response
+        
+        Args:
+            shadow_id: معرف النشر | Deployment ID
+            
+        Returns:
+            استجابة فارغة | Empty response
+        """
+        return {
+            'shadow_id': shadow_id,
+            'total_comparisons': 0,
+            'message': 'No comparisons yet'
+        }
+
+    def _calculate_deployment_statistics(
+        self,
+        shadow_id: str,
+        deployment: ShadowDeployment,
+        comparisons: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """
+        حساب إحصائيات النشر | Calculate deployment statistics
+        
+        Args:
+            shadow_id: معرف النشر | Deployment ID
+            deployment: النشر الخفي | Shadow deployment
+            comparisons: نتائج المقارنة | Comparison results
+            
+        Returns:
+            الإحصائيات المحسوبة | Calculated statistics
+        """
         total = len(comparisons)
-        primary_faster = sum(1 for c in comparisons if c['primary_latency'] <
-            c['shadow_latency'])
+        
+        # Calculate speed comparison
+        primary_faster = sum(
+            1 for c in comparisons
+            if c['primary_latency'] < c['shadow_latency']
+        )
         shadow_faster = total - primary_faster
-        primary_success_rate = sum(1 for c in comparisons if c[
-            'primary_success']) / total * 100
-        shadow_success_rate = sum(1 for c in comparisons if c['shadow_success']
-            ) / total * 100
-        return {'shadow_id': shadow_id, 'primary_model_id': deployment.
-            primary_model_id, 'shadow_model_id': deployment.shadow_model_id,
-            'total_comparisons': total, 'primary_faster_count':
-            primary_faster, 'shadow_faster_count': shadow_faster,
+        
+        # Calculate success rates
+        primary_success_rate = (
+            sum(1 for c in comparisons if c['primary_success']) / total * 100
+        )
+        shadow_success_rate = (
+            sum(1 for c in comparisons if c['shadow_success']) / total * 100
+        )
+        
+        return {
+            'shadow_id': shadow_id,
+            'primary_model_id': deployment.primary_model_id,
+            'shadow_model_id': deployment.shadow_model_id,
+            'total_comparisons': total,
+            'primary_faster_count': primary_faster,
+            'shadow_faster_count': shadow_faster,
             'primary_success_rate': primary_success_rate,
-            'shadow_success_rate': shadow_success_rate, 'started_at':
-            deployment.started_at.isoformat()}
+            'shadow_success_rate': shadow_success_rate,
+            'started_at': deployment.started_at.isoformat()
+        }

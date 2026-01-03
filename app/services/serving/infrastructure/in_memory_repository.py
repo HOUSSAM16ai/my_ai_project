@@ -96,36 +96,89 @@ class InMemoryMetricsRepository:
             all_metrics = list(self._metrics.get(version_id, []))
             return all_metrics[-limit:] if all_metrics else []
 
-    # TODO: Split this function (31 lines) - KISS principle
     def get_summary(self, version_id: str) -> dict[str, Any]:
-        """Get aggregated metrics summary"""
+        """
+        Get aggregated metrics summary
+        الحصول على ملخص المقاييس المجمعة
+        
+        Args:
+            version_id: معرف نسخة النموذج | Model version ID
+            
+        Returns:
+            ملخص المقاييس | Metrics summary
+        """
         with self._lock:
             metrics_list = list(self._metrics.get(version_id, []))
 
             if not metrics_list:
-                return {
-                    "total_requests": 0,
-                    "avg_latency": 0.0,
-                    "total_cost": 0.0,
-                    "success_rate": 0.0,
-                }
+                return self._create_empty_summary()
 
-            total_requests = sum(m.total_requests for m in metrics_list)
-            successful_requests = sum(m.successful_requests for m in metrics_list)
-            avg_latency = (
-                sum(m.avg_latency_ms for m in metrics_list) / len(metrics_list)
-                if metrics_list else 0.0
-            )
-            total_cost = sum(m.cost_usd for m in metrics_list)
-            success_rate = (
-                successful_requests / total_requests * 100
-                if total_requests > 0 else 0.0
-            )
+            return self._calculate_metrics_summary(metrics_list)
 
-            return {
-                "total_requests": total_requests,
-                "successful_requests": successful_requests,
-                "avg_latency": avg_latency,
-                "total_cost": total_cost,
-                "success_rate": success_rate,
-            }
+    def _create_empty_summary(self) -> dict[str, Any]:
+        """
+        إنشاء ملخص فارغ | Create empty summary
+        
+        Returns:
+            ملخص فارغ | Empty summary
+        """
+        return {
+            "total_requests": 0,
+            "avg_latency": 0.0,
+            "total_cost": 0.0,
+            "success_rate": 0.0,
+        }
+
+    def _calculate_metrics_summary(self, metrics_list: list[ModelMetrics]) -> dict[str, Any]:
+        """
+        حساب ملخص المقاييس | Calculate metrics summary
+        
+        Args:
+            metrics_list: قائمة المقاييس | Metrics list
+            
+        Returns:
+            الملخص المحسوب | Calculated summary
+        """
+        total_requests = sum(m.total_requests for m in metrics_list)
+        successful_requests = sum(m.successful_requests for m in metrics_list)
+        
+        avg_latency = self._calculate_average_latency(metrics_list)
+        total_cost = sum(m.cost_usd for m in metrics_list)
+        success_rate = self._calculate_success_rate(total_requests, successful_requests)
+
+        return {
+            "total_requests": total_requests,
+            "successful_requests": successful_requests,
+            "avg_latency": avg_latency,
+            "total_cost": total_cost,
+            "success_rate": success_rate,
+        }
+
+    def _calculate_average_latency(self, metrics_list: list[ModelMetrics]) -> float:
+        """
+        حساب متوسط زمن الاستجابة | Calculate average latency
+        
+        Args:
+            metrics_list: قائمة المقاييس | Metrics list
+            
+        Returns:
+            متوسط زمن الاستجابة | Average latency
+        """
+        if not metrics_list:
+            return 0.0
+        return sum(m.avg_latency_ms for m in metrics_list) / len(metrics_list)
+
+    def _calculate_success_rate(self, total_requests: int, successful_requests: int) -> float:
+        """
+        حساب معدل النجاح | Calculate success rate
+        
+        Args:
+            total_requests: إجمالي الطلبات | Total requests
+            successful_requests: الطلبات الناجحة | Successful requests
+            
+        Returns:
+            معدل النجاح | Success rate
+        """
+        if total_requests == 0:
+            return 0.0
+        return successful_requests / total_requests * 100
