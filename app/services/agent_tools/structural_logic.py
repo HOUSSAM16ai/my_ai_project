@@ -32,40 +32,119 @@ def _touch_layer(layer: str, op: str):
             d[op] += 1
         d["last_ts"] = _now()
 
-# TODO: Split this function (32 lines) - KISS principle
 def _load_deep_struct_map_logic(force: bool = False) -> bool:
+    """
+    Load deep structure map from file with caching.
+    
+    تحميل خريطة البنية العميقة من الملف مع التخزين المؤقت.
+    
+    Args:
+        force: Force reload even if cached
+        
+    Returns:
+        True if map was loaded/reloaded, False if using cache
+    """
     if not DEEP_MAP_PATH or not os.path.isfile(DEEP_MAP_PATH):
         return False
+    
     with g._DEEP_LOCK:
-        if (
-            not force
-            and DEEP_MAP_TTL > 0
-            and (_now() - g._DEEP_STRUCT_LOADED_AT) < DEEP_MAP_TTL
-            and g._DEEP_STRUCT_MAP is not None
-        ):
+        # Check if cache is still valid
+        if _should_use_cached_map(force):
             return False
-        try:
-            with open(DEEP_MAP_PATH, encoding="utf-8") as f:
-                raw = f.read()
-            new_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
-            if new_hash == g._DEEP_STRUCT_HASH and g._DEEP_STRUCT_MAP is not None and not force:
-                g._DEEP_STRUCT_LOADED_AT = _now()
-                return False
-            data = json.loads(raw)
-            files = data.get("files") or {}
-            norm_files = {}
-            for k, v in files.items():
-                if isinstance(k, str):
-                    norm_files[os.path.abspath(k).lower()] = v
-            data["files"] = norm_files
-            g._DEEP_STRUCT_MAP = data
-            g._DEEP_STRUCT_HASH = new_hash
+        
+        # Load and parse file
+        return _load_and_update_map(force)
+
+
+def _should_use_cached_map(force: bool) -> bool:
+    """
+    Check if cached map is still valid.
+    
+    التحقق مما إذا كانت الخريطة المخزنة مؤقتاً لا تزال صالحة.
+    """
+    if force:
+        return False
+    
+    if DEEP_MAP_TTL <= 0:
+        return False
+    
+    time_since_load = _now() - g._DEEP_STRUCT_LOADED_AT
+    if time_since_load >= DEEP_MAP_TTL:
+        return False
+    
+    if g._DEEP_STRUCT_MAP is None:
+        return False
+    
+    return True
+
+
+def _load_and_update_map(force: bool) -> bool:
+    """
+    Load map file and update global state.
+    
+    تحميل ملف الخريطة وتحديث الحالة العامة.
+    """
+    try:
+        # Read and hash file content
+        with open(DEEP_MAP_PATH, encoding="utf-8") as f:
+            raw = f.read()
+        new_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+        
+        # Check if content has changed
+        if _is_same_content(new_hash, force):
             g._DEEP_STRUCT_LOADED_AT = _now()
-            _dbg(f"[deep_struct_map] loaded entries={len(norm_files)} hash={new_hash[:10]}")
-            return True
-        except Exception as e:
-            _dbg(f"[deep_struct_map] load failed: {e}")
             return False
+        
+        # Parse and normalize data
+        data = json.loads(raw)
+        norm_files = _normalize_file_paths(data.get("files") or {})
+        data["files"] = norm_files
+        
+        # Update global state
+        _update_global_map_state(data, new_hash, len(norm_files))
+        return True
+        
+    except Exception as e:
+        _dbg(f"[deep_struct_map] load failed: {e}")
+        return False
+
+
+def _is_same_content(new_hash: str, force: bool) -> bool:
+    """
+    Check if content hash matches cached version.
+    
+    التحقق مما إذا كان تجزئة المحتوى يطابق النسخة المخزنة مؤقتاً.
+    """
+    if force:
+        return False
+    
+    return (new_hash == g._DEEP_STRUCT_HASH and 
+            g._DEEP_STRUCT_MAP is not None)
+
+
+def _normalize_file_paths(files: dict) -> dict:
+    """
+    Normalize file paths to absolute lowercase.
+    
+    تطبيع مسارات الملفات إلى مسارات مطلقة بأحرف صغيرة.
+    """
+    norm_files = {}
+    for k, v in files.items():
+        if isinstance(k, str):
+            norm_files[os.path.abspath(k).lower()] = v
+    return norm_files
+
+
+def _update_global_map_state(data: dict, new_hash: str, file_count: int) -> None:
+    """
+    Update global map state with new data.
+    
+    تحديث حالة الخريطة العامة بالبيانات الجديدة.
+    """
+    g._DEEP_STRUCT_MAP = data
+    g._DEEP_STRUCT_HASH = new_hash
+    g._DEEP_STRUCT_LOADED_AT = _now()
+    _dbg(f"[deep_struct_map] loaded entries={file_count} hash={new_hash[:10]}")
 
 def _maybe_reload_struct_map():
     if not DEEP_MAP_PATH:
