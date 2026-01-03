@@ -168,3 +168,7 @@ app/static/build/
 actionlint*
 .coverage.*
 *.backup
+
+# Auto-generated documentation
+docs/generated/
+
