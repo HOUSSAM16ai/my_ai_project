@@ -31,6 +31,7 @@
 - **[CS73_IMPLEMENTATION_GUIDE.md](docs/CS73_IMPLEMENTATION_GUIDE.md)** - 🎨 Harvard CS73: Code, Data, and Art
 - **[ARCHITECTURAL_EVOLUTION.md](docs/ARCHITECTURAL_EVOLUTION.md)** - تطور البنية
 - **[TYPE_SYSTEM.md](docs/TYPE_SYSTEM.md)** - نظام الأنواع
+- **[OVERMIND_ARCHITECTURE.md](docs/OVERMIND_ARCHITECTURE.md)** - 🧠 بنية نظام Overmind الشاملة
 
 ### البنية المعمارية
 في `/docs/architecture/`:
