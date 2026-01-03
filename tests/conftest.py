@@ -57,6 +57,15 @@ def client():
         yield test_client
 
 @pytest.fixture
+def test_app():
+    """
+    Fixture that returns the FastAPI app instance for testing.
+    This allows tests to override dependencies and configure the app.
+    """
+    import app.main
+    return app.main.app
+
+@pytest.fixture
 async def async_client(init_db):
     """
     Async client fixture for async API testing.
