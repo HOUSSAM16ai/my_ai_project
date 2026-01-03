@@ -79,95 +79,17 @@ class TableManager:
                 - row_count: عدد الصفوف
         """
         try:
-            details = {
-                "table_name": table_name,
-                "columns": [],
-                "primary_keys": [],
-                "foreign_keys": [],
-                "indexes": [],
-                "constraints": [],
-                "row_count": 0,
-            }
+            # جمع جميع التفاصيل
+            columns = await self._get_columns(table_name)
+            primary_keys = await self._get_primary_keys(table_name)
+            foreign_keys = await self._get_foreign_keys(table_name)
+            indexes = await self._get_indexes(table_name)
+            row_count = await self._get_row_count(table_name)
             
-            # الأعمدة
-            columns_query = text(f"""
-                SELECT 
-                    column_name, 
-                    data_type, 
-                    is_nullable,
-                    column_default
-                FROM information_schema.columns
-                WHERE table_name = :table_name
-                ORDER BY ordinal_position
-            """)
-            
-            result = await self._session.execute(
-                columns_query, {"table_name": table_name}
+            details = self._build_table_details(
+                table_name, columns, primary_keys, 
+                foreign_keys, indexes, row_count
             )
-            for row in result:
-                details["columns"].append({
-                    "name": row[0],
-                    "type": row[1],
-                    "nullable": row[2] == "YES",
-                    "default": row[3],
-                })
-            
-            # المفاتيح الأساسية
-            pk_query = text(f"""
-                SELECT kcu.column_name
-                FROM information_schema.table_constraints tc
-                JOIN information_schema.key_column_usage kcu
-                    ON tc.constraint_name = kcu.constraint_name
-                WHERE tc.table_name = :table_name
-                    AND tc.constraint_type = 'PRIMARY KEY'
-            """)
-            
-            result = await self._session.execute(pk_query, {"table_name": table_name})
-            details["primary_keys"] = [row[0] for row in result]
-            
-            # المفاتيح الأجنبية
-            fk_query = text(f"""
-                SELECT 
-                    kcu.column_name,
-                    ccu.table_name AS foreign_table,
-                    ccu.column_name AS foreign_column
-                FROM information_schema.table_constraints tc
-                JOIN information_schema.key_column_usage kcu
-                    ON tc.constraint_name = kcu.constraint_name
-                JOIN information_schema.constraint_column_usage ccu
-                    ON ccu.constraint_name = tc.constraint_name
-                WHERE tc.table_name = :table_name
-                    AND tc.constraint_type = 'FOREIGN KEY'
-            """)
-            
-            result = await self._session.execute(fk_query, {"table_name": table_name})
-            for row in result:
-                details["foreign_keys"].append({
-                    "column": row[0],
-                    "references_table": row[1],
-                    "references_column": row[2],
-                })
-            
-            # الفهارس
-            idx_query = text(f"""
-                SELECT 
-                    indexname,
-                    indexdef
-                FROM pg_indexes
-                WHERE tablename = :table_name
-            """)
-            
-            result = await self._session.execute(idx_query, {"table_name": table_name})
-            for row in result:
-                details["indexes"].append({
-                    "name": row[0],
-                    "definition": row[1],
-                })
-            
-            # عدد الصفوف
-            count_query = text(f'SELECT COUNT(*) FROM "{table_name}"')
-            result = await self._session.execute(count_query)
-            details["row_count"] = result.scalar()
             
             self._logger.log_operation("get_table_details", {"table": table_name})
             return details
@@ -180,6 +102,188 @@ class TableManager:
                 success=False,
             )
             return {}
+
+    async def _get_columns(self, table_name: str) -> list[dict[str, Any]]:
+        """
+        استعلام معلومات الأعمدة.
+        
+        Query column information.
+        
+        Args:
+            table_name: اسم الجدول
+            
+        Returns:
+            قائمة بمعلومات الأعمدة
+        """
+        columns_query = text(f"""
+            SELECT 
+                column_name, 
+                data_type, 
+                is_nullable,
+                column_default
+            FROM information_schema.columns
+            WHERE table_name = :table_name
+            ORDER BY ordinal_position
+        """)
+        
+        result = await self._session.execute(
+            columns_query, {"table_name": table_name}
+        )
+        
+        columns = []
+        for row in result:
+            columns.append({
+                "name": row[0],
+                "type": row[1],
+                "nullable": row[2] == "YES",
+                "default": row[3],
+            })
+        
+        return columns
+
+    async def _get_primary_keys(self, table_name: str) -> list[str]:
+        """
+        استعلام المفاتيح الأساسية.
+        
+        Query primary keys.
+        
+        Args:
+            table_name: اسم الجدول
+            
+        Returns:
+            قائمة بأسماء أعمدة المفاتيح الأساسية
+        """
+        pk_query = text(f"""
+            SELECT kcu.column_name
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.key_column_usage kcu
+                ON tc.constraint_name = kcu.constraint_name
+            WHERE tc.table_name = :table_name
+                AND tc.constraint_type = 'PRIMARY KEY'
+        """)
+        
+        result = await self._session.execute(pk_query, {"table_name": table_name})
+        return [row[0] for row in result]
+
+    async def _get_foreign_keys(self, table_name: str) -> list[dict[str, str]]:
+        """
+        استعلام المفاتيح الأجنبية.
+        
+        Query foreign keys.
+        
+        Args:
+            table_name: اسم الجدول
+            
+        Returns:
+            قائمة بمعلومات المفاتيح الأجنبية
+        """
+        fk_query = text(f"""
+            SELECT 
+                kcu.column_name,
+                ccu.table_name AS foreign_table,
+                ccu.column_name AS foreign_column
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.key_column_usage kcu
+                ON tc.constraint_name = kcu.constraint_name
+            JOIN information_schema.constraint_column_usage ccu
+                ON ccu.constraint_name = tc.constraint_name
+            WHERE tc.table_name = :table_name
+                AND tc.constraint_type = 'FOREIGN KEY'
+        """)
+        
+        result = await self._session.execute(fk_query, {"table_name": table_name})
+        
+        foreign_keys = []
+        for row in result:
+            foreign_keys.append({
+                "column": row[0],
+                "references_table": row[1],
+                "references_column": row[2],
+            })
+        
+        return foreign_keys
+
+    async def _get_indexes(self, table_name: str) -> list[dict[str, str]]:
+        """
+        استعلام الفهارس.
+        
+        Query indexes.
+        
+        Args:
+            table_name: اسم الجدول
+            
+        Returns:
+            قائمة بمعلومات الفهارس
+        """
+        idx_query = text(f"""
+            SELECT 
+                indexname,
+                indexdef
+            FROM pg_indexes
+            WHERE tablename = :table_name
+        """)
+        
+        result = await self._session.execute(idx_query, {"table_name": table_name})
+        
+        indexes = []
+        for row in result:
+            indexes.append({
+                "name": row[0],
+                "definition": row[1],
+            })
+        
+        return indexes
+
+    async def _get_row_count(self, table_name: str) -> int:
+        """
+        حساب عدد الصفوف في الجدول.
+        
+        Count table rows.
+        
+        Args:
+            table_name: اسم الجدول
+            
+        Returns:
+            عدد الصفوف
+        """
+        count_query = text(f'SELECT COUNT(*) FROM "{table_name}"')
+        result = await self._session.execute(count_query)
+        return result.scalar()
+
+    def _build_table_details(
+        self,
+        table_name: str,
+        columns: list[dict[str, Any]],
+        primary_keys: list[str],
+        foreign_keys: list[dict[str, str]],
+        indexes: list[dict[str, str]],
+        row_count: int
+    ) -> dict[str, Any]:
+        """
+        بناء كائن التفاصيل من المكونات المجمعة.
+        
+        Build details object from collected components.
+        
+        Args:
+            table_name: اسم الجدول
+            columns: قائمة الأعمدة
+            primary_keys: قائمة المفاتيح الأساسية
+            foreign_keys: قائمة المفاتيح الأجنبية
+            indexes: قائمة الفهارس
+            row_count: عدد الصفوف
+            
+        Returns:
+            كائن التفاصيل الكامل
+        """
+        return {
+            "table_name": table_name,
+            "columns": columns,
+            "primary_keys": primary_keys,
+            "foreign_keys": foreign_keys,
+            "indexes": indexes,
+            "constraints": [],  # Reserved for future use
+            "row_count": row_count,
+        }
     
     async def create_table(
         self,
