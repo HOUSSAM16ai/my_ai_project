@@ -259,8 +259,8 @@ class AdminAIService:
                 # معالجة الاستجابات الفارغة
                 empty_result = self._handle_empty_response(response_data, attempt, max_retries)
                 if empty_result is not None:
-                    if empty_result.get("status") == "error" and "tool_calls" not in empty_result.get("error_type", ""):
-                        # محاولة أخرى إذا كانت استجابة فارغة بدون tool calls
+                    # إذا كانت استجابة فارغة بدون tool calls وليست آخر محاولة، نعيد المحاولة
+                    if empty_result.get("error_type") == "empty_response":
                         continue
                     return empty_result
 
@@ -281,6 +281,8 @@ class AdminAIService:
             "status": "error",
             "answer": "Unexpected execution flow in AI service.",
             "error_type": "unknown",
+            "tokens_used": 0,
+            "model_used": "unknown",
         }
 
 admin_ai_service = AdminAIService()
