@@ -102,15 +102,6 @@ class RateLimitMiddleware(BaseMiddleware):
         """Handle rate limiter errors gracefully"""
         return MiddlewareResult.success().with_metadata("rate_limit_error", str(error))
 
-            # Store rate limit info in context for response headers
-            ctx.add_metadata("rate_limit_info", info)
-
-            return MiddlewareResult.success()
-
-        except Exception as e:
-            # If rate limiter fails, allow request but log error
-            return MiddlewareResult.success().with_metadata("rate_limit_error", str(e))
-
     def _get_user_tier(self, ctx: RequestContext) -> UserTier:
         """
         Determine user tier from context
