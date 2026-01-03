@@ -1,40 +1,40 @@
 # تقرير تحليل المشروع الشامل | Comprehensive Project Analysis
 
-**تاريخ التحليل:** 2026-01-03 06:09
+**تاريخ التحليل:** 2026-01-03 12:39
 
 ## 📊 الإحصائيات العامة | General Statistics
 
-- **عدد الملفات الكلي:** 422
-- **إجمالي الأسطر:** 48,954
-- **إجمالي الدوال:** 1,792
-- **إجمالي الفئات:** 770
-- **ملفات بدون اختبارات:** 421 (99.8%)
+- **عدد الملفات الكلي:** 435
+- **إجمالي الأسطر:** 47,365
+- **إجمالي الدوال:** 1,700
+- **إجمالي الفئات:** 748
+- **ملفات بدون اختبارات:** 435 (100.0%)
 
 ## 📏 الملفات الكبيرة | Large Files
 
-الملفات الأكبر من 300 سطر: **32** ملف
+الملفات الأكبر من 300 سطر: **24** ملف
 
 | الملف | الأسطر | الدوال | الفئات | اختبارات |
 |-------|--------|--------|--------|----------|
-| `app/services/overmind/super_intelligence.py` | 699 | 5 | 5 | ❌ |
 | `app/core/patterns/strategy.py` | 656 | 5 | 2 | ❌ |
-| `app/core/cs61_concurrency.py` | 574 | 26 | 8 | ❌ |
-| `app/services/overmind/user_knowledge.py` | 554 | 1 | 1 | ❌ |
 | `app/services/overmind/art/generators.py` | 544 | 9 | 3 | ❌ |
-| `app/services/overmind/capabilities.py` | 537 | 5 | 3 | ❌ |
-| `app/models.py` | 521 | 13 | 17 | ✅ |
+| `app/core/domain/models.py` | 521 | 13 | 17 | ❌ |
 | `app/services/overmind/art/visualizer.py` | 469 | 12 | 3 | ❌ |
 | `app/services/observability/aiops/service.py` | 457 | 18 | 1 | ❌ |
 | `app/services/overmind/knowledge.py` | 438 | 4 | 2 | ❌ |
 | `app/core/ai_client_factory.py` | 399 | 32 | 11 | ❌ |
 | `app/core/resilience/circuit_breaker.py` | 390 | 22 | 5 | ❌ |
 | `app/services/overmind/database_tools/facade.py` | 386 | 3 | 1 | ❌ |
-| `app/core/cs61_memory.py` | 381 | 32 | 5 | ❌ |
 | `app/security/owasp_validator.py` | 374 | 9 | 4 | ❌ |
+| `app/core/error_handling.py` | 372 | 17 | 1 | ❌ |
+| `app/services/overmind/identity.py` | 364 | 10 | 1 | ❌ |
+| `app/api/exceptions.py` | 361 | 19 | 19 | ❌ |
+| `app/services/overmind/art/integration.py` | 359 | 7 | 1 | ❌ |
+| `app/services/agent_tools/core.py` | 353 | 21 | 0 | ❌ |
 
 ## 🔥 الملفات المعقدة | Complex Files
 
-الملفات ذات التعقيد العالي (>10): **65** ملف
+الملفات ذات التعقيد العالي (>10): **59** ملف
 
 | الملف | التعقيد | الأسطر |
 |-------|---------|--------|
@@ -46,36 +46,36 @@
 | `app/services/observability/aiops/service.py` | 27 | 457 |
 | `app/services/chat/handlers/mission_handler.py` | 27 | 283 |
 | `app/security/owasp_validator.py` | 26 | 374 |
-| `app/core/self_healing_db.py` | 26 | 330 |
 | `app/services/agent_tools/utils.py` | 26 | 130 |
 | `app/services/admin/streaming/service.py` | 24 | 346 |
 | `app/services/data_mesh/application/mesh_manager.py` | 24 | 331 |
 | `app/boundaries/policy_boundaries.py` | 23 | 324 |
 | `app/services/adaptive/application/health_monitor.py` | 23 | 156 |
 | `app/services/chat/handlers/strategy_handlers.py` | 23 | 346 |
+| `app/services/overmind/code_intelligence/core.py` | 22 | 255 |
 
 ## 🧪 الملفات بدون اختبارات | Files Without Tests
 
-عدد الملفات: **421** ملف
+عدد الملفات: **435** ملف
 
 ## 🎯 أولويات التحسين | Improvement Priorities
 
 ### أولوية عالية جداً (High Priority)
-- **24 ملف** كبير، معقد، وبدون اختبارات
+- **18 ملف** كبير، معقد، وبدون اختبارات
 
-  - `app/services/overmind/super_intelligence.py` (699 سطر، تعقيد 11)
-  - `app/core/cs61_concurrency.py` (574 سطر، تعقيد 17)
-  - `app/services/overmind/user_knowledge.py` (554 سطر، تعقيد 22)
   - `app/services/overmind/art/generators.py` (544 سطر، تعقيد 16)
-  - `app/services/overmind/capabilities.py` (537 سطر، تعقيد 20)
+  - `app/core/domain/models.py` (521 سطر، تعقيد 17)
   - `app/services/observability/aiops/service.py` (457 سطر، تعقيد 27)
   - `app/services/overmind/knowledge.py` (438 سطر، تعقيد 15)
   - `app/core/ai_client_factory.py` (399 سطر، تعقيد 12)
   - `app/core/resilience/circuit_breaker.py` (390 سطر، تعقيد 21)
   - `app/services/overmind/database_tools/facade.py` (386 سطر، تعقيد 16)
+  - `app/security/owasp_validator.py` (374 سطر، تعقيد 26)
+  - `app/core/error_handling.py` (372 سطر، تعقيد 19)
+  - `app/services/overmind/art/integration.py` (359 سطر، تعقيد 14)
 
 ### أولوية عالية (Medium Priority)
-- **71 ملف** كبير أو معقد بدون اختبارات
+- **65 ملف** كبير أو معقد بدون اختبارات
 
 ## 💡 التوصيات | Recommendations
 
@@ -88,5 +88,5 @@
 - استخدم Strategy Pattern للتعقيد الشرطي
 
 ### 3. إضافة اختبارات شاملة
-- أضف اختبارات لـ 421 ملف
+- أضف اختبارات لـ 435 ملف
 - الهدف: تغطية 100%

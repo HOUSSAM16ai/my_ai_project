@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy.exc import SAWarning
 from sqlalchemy.orm import configure_mappers
 
-from app.models import Mission
+from app.core.domain.models import Mission
 
 
 def test_circular_dependency_drop():

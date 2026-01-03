@@ -17,7 +17,7 @@ import json
 
 from app.core.di import get_logger
 from app.core.protocols import AgentExecutor, CollaborationContext
-from app.models import Task, TaskStatus
+from app.core.domain.models import Task, TaskStatus
 from app.services.overmind.executor import TaskExecutor
 
 logger = get_logger(__name__)

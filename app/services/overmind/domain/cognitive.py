@@ -23,7 +23,7 @@ from typing import Protocol, TypeVar
 from pydantic import BaseModel, Field
 
 from app.core.protocols import AgentArchitect, AgentExecutor, AgentPlanner, AgentReflector
-from app.models import Mission
+from app.core.domain.models import Mission
 from app.services.overmind.domain.context import InMemoryCollaborationContext
 from app.services.overmind.domain.enums import CognitiveEvent, CognitivePhase, OvermindMessage
 from app.services.overmind.domain.exceptions import StalemateError

@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from app.models import CaseInsensitiveEnum, FlexibleEnum
+from app.core.domain.models import CaseInsensitiveEnum, FlexibleEnum
 
 # Define test models inline to avoid affecting the main app models
 Base = declarative_base()

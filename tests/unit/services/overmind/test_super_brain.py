@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from app.core.protocols import AgentArchitect, AgentExecutor, AgentPlanner, AgentReflector
-from app.models import Mission
+from app.core.domain.models import Mission
 from app.services.overmind.domain.cognitive import SuperBrain
 from app.services.overmind.domain.context import InMemoryCollaborationContext
 

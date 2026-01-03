@@ -19,7 +19,7 @@ from typing import Any
 from collections.abc import AsyncGenerator
 from typing import Protocol, runtime_checkable
 
-from app.models import Mission, MissionEvent, MissionEventType, MissionStatus, Task
+from app.core.domain.models import Mission, MissionEvent, MissionEventType, MissionStatus, Task
 
 @runtime_checkable
 class LifecycleProtocol(Protocol):

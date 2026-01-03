@@ -28,7 +28,7 @@ async def get_recent_conversations(user_id: int, limit: int = 5) -> None:
     Returns:
         List of AdminConversation objects, or empty list on error.
     """
-    from app.models import AdminConversation as Conversation
+    from app.core.domain.models import AdminConversation as Conversation
 
     try:
         async with async_session_factory() as session:
@@ -58,7 +58,7 @@ async def rate_message_in_db(message_id: int, rating: str, user_id: int) -> None
     Returns:
         Dict with 'status' and 'message' keys indicating success or error.
     """
-    from app.models import AdminMessage as Message
+    from app.core.domain.models import AdminMessage as Message
 
     if rating not in ["good", "bad", "neutral"]:
         return {"status": "error", "message": "Invalid rating value provided."}

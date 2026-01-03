@@ -263,7 +263,7 @@ async def test_password_verification_uses_secure_comparison(async_client: AsyncC
     Test 9: Verify password hashing and verification is secure
     التحقق من أن تشفير كلمة المرور آمن
     """
-    from app.models import User
+    from app.core.domain.models import User
     
     # Test password hashing directly
     user = User(full_name="Hash Test", email="hash@test.com", is_admin=False)

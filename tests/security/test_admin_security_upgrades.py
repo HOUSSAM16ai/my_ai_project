@@ -3,7 +3,7 @@ from httpx import AsyncClient
 from sqlalchemy import select
 
 from app.core.security import generate_service_token
-from app.models import AdminConversation, User
+from app.core.domain.models import AdminConversation, User
 
 
 @pytest.mark.asyncio

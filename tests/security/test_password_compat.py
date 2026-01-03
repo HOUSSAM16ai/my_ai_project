@@ -1,6 +1,6 @@
 from passlib.context import CryptContext
 
-from app.models import pwd_context
+from app.core.domain.models import pwd_context
 
 
 def test_legacy_hash_support():

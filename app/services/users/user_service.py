@@ -27,7 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import AppSettings, get_settings
 from app.core.database import async_session_factory
-from app.models import User
+from app.core.domain.models import User
 
 logger = logging.getLogger(__name__)
 

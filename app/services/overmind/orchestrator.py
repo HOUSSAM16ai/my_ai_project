@@ -24,7 +24,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from app.core.protocols import MissionStateManagerProtocol, TaskExecutorProtocol
-from app.models import Mission, MissionEventType, MissionStatus
+from app.core.domain.models import Mission, MissionEventType, MissionStatus
 from app.services.overmind.domain.enums import OvermindMessage
 
 if TYPE_CHECKING:

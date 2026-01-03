@@ -4,7 +4,7 @@ import logging
 from sqlalchemy.orm import Session
 
 from app.core.ai_gateway import get_ai_client
-from app.models import AdminConversation, AdminMessage, User
+from app.core.domain.models import AdminConversation, AdminMessage, User
 
 logger = logging.getLogger(__name__)
 

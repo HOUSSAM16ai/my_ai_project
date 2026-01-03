@@ -23,8 +23,6 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app.config.settings import get_settings
-from app.core.cs61_profiler import profile_async
-from app.core.cs61_memory import BoundedDict
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +31,6 @@ __all__ = [
     "engine",
     "get_db",
 ]
-
-# CS61: Query result cache with bounded memory (LRU eviction)
-_query_cache: BoundedDict[str] = BoundedDict(maxsize=100)
 
 # TODO: Split this function (53 lines) - KISS principle
 def _create_engine() -> AsyncEngine:
@@ -106,17 +101,11 @@ async_session_factory: Final[async_sessionmaker[AsyncSession]] = async_sessionma
 )
 
 # 3. حاقن التبعية (Dependency Injection)
-@profile_async  # CS61: Profile database session creation
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     مزود جلسات قاعدة البيانات (Database Session Provider).
 
     يستخدم هذا التابع في موجهات FastAPI (Routers) للحصول على اتصال آمن بقاعدة البيانات.
-    
-    CS61 Enhancements:
-    - Profiled for performance monitoring
-    - Automatic rollback on errors
-    - Connection pooling via SQLAlchemy engine
     """
     async with async_session_factory() as session:
         try:
@@ -127,36 +116,3 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
-
-
-# ==============================================================================
-# CS61: Database Performance Utilities
-# ==============================================================================
-
-def get_pool_status() -> dict[str, int]:
-    """
-    الحصول على حالة تجمع الاتصالات (Get connection pool status).
-    
-    CS61 Principle: Monitor resource usage to prevent exhaustion.
-    
-    Returns:
-        Dictionary with pool statistics
-    """
-    pool = engine.pool
-    return {
-        'size': pool.size(),
-        'checked_in': pool.checkedin(),
-        'checked_out': pool.checkedout(),
-        'overflow': pool.overflow(),
-        'total': pool.size() + pool.overflow(),
-    }
-
-
-def clear_query_cache() -> None:
-    """
-    مسح ذاكرة التخزين المؤقت للاستعلامات (Clear query cache).
-    
-    CS61 Principle: Manual cache invalidation when needed.
-    """
-    _query_cache.clear()
-    logger.info("Query cache cleared")

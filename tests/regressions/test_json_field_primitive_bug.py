@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import select
 
-from app.models import Mission, Task, User
+from app.core.domain.models import Mission, Task, User
 
 
 @pytest.mark.asyncio

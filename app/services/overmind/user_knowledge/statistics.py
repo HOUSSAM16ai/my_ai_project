@@ -15,7 +15,7 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.di import get_logger
-from app.models import ChatMessage, Mission, Task
+from app.core.domain.models import ChatMessage, Mission, Task
 
 logger = get_logger(__name__)
 

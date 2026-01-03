@@ -9,7 +9,7 @@ from collections.abc import AsyncGenerator
 from sqlalchemy import select
 
 from app.core.patterns.strategy import Strategy
-from app.models import Mission, MissionEvent, MissionEventType, MissionStatus
+from app.core.domain.models import Mission, MissionEvent, MissionEventType, MissionStatus
 from app.services.chat.context import ChatContext
 from app.services.overmind.factory import create_overmind
 from app.services.overmind.identity import OvermindIdentity

@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from app.models import MessageRole, MissionStatus, utc_now
+from app.core.domain.models import MessageRole, MissionStatus, utc_now
 
 
 class TestUtcNow:
