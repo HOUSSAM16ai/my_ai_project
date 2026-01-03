@@ -33,6 +33,16 @@ class PerformanceCategory(Enum):
     ACCEPTABLE = 'acceptable'
     SLOW = 'slow'
 
+
+class ABTestVariant(Enum):
+    """A/B testing variants"""
+    STREAMING_ENABLED = 'streaming_enabled'
+    STREAMING_DISABLED = 'streaming_disabled'
+    CHUNK_SIZE_3 = 'chunk_size_3'
+    CHUNK_SIZE_5 = 'chunk_size_5'
+    CHUNK_SIZE_1 = 'chunk_size_1'
+
+
 @dataclass
 class PerformanceMetric:
     """Individual performance metric"""
@@ -67,14 +77,6 @@ class MetricRecordConfig:
     model_used: str
     user_id: int | None = None
     variant: ABTestVariant | None = None
-
-class ABTestVariant(Enum):
-    """A/B testing variants"""
-    STREAMING_ENABLED = 'streaming_enabled'
-    STREAMING_DISABLED = 'streaming_disabled'
-    CHUNK_SIZE_3 = 'chunk_size_3'
-    CHUNK_SIZE_5 = 'chunk_size_5'
-    CHUNK_SIZE_1 = 'chunk_size_1'
 
 @dataclass
 class ABTestResult:
