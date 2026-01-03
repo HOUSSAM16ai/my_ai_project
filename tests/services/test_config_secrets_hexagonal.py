@@ -1,7 +1,7 @@
 
 import pytest
 
-from app.services.api.api_config_secrets_service import (
+from app.services.api_config_secrets.service import (
     ConfigSecretsService,
     Environment,
     SecretType,
