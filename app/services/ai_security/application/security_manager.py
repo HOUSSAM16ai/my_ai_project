@@ -49,52 +49,100 @@ class SecurityManager:
         self.profile_repo = profile_repo
         self.threat_logger = threat_logger
 
-    # TODO: Split this function (44 lines) - KISS principle
     def analyze_event(self, event: SecurityEvent) -> list[ThreatDetection]:
         """
+        تحليل حدث الأمان للكشف عن التهديدات.
         Analyze security event for threats.
 
         Performs:
-        1. Pattern-based threat detection
-        2. Behavioral anomaly detection
-        3. Automated response if needed
-        4. Threat logging
+        1. Pattern-based threat detection | كشف التهديدات بناءً على الأنماط
+        2. Behavioral anomaly detection | كشف الشذوذ السلوكي
+        3. Automated response if needed | استجابة تلقائية عند الحاجة
+        4. Threat logging | تسجيل التهديدات
 
         Args:
-            event: Security event to analyze
+            event: حدث الأمان للتحليل | Security event to analyze
 
         Returns:
-            List of detected threats
+            list[ThreatDetection]: قائمة التهديدات المكتشفة | List of detected threats
         """
         all_threats: list[ThreatDetection] = []
 
-        # Step 1: Pattern-based threat detection
+        self._detect_pattern_threats(event, all_threats)
+        self._analyze_user_behavior(event, all_threats)
+        self._process_threats_response(all_threats)
+
+        return all_threats
+
+    def _detect_pattern_threats(self, event: SecurityEvent, all_threats: list) -> None:
+        """
+        كشف التهديدات بناءً على الأنماط.
+        Detect pattern-based threats.
+        
+        Args:
+            event: حدث الأمان | Security event
+            all_threats: قائمة التهديدات للتحديث | Threats list to update
+        """
         pattern_threats = self.threat_detector.detect_threats(event)
         all_threats.extend(pattern_threats)
 
-        # Step 2: Behavioral analysis (if user identified)
-        if event.user_id:
-            profile = self.profile_repo.get_profile(event.user_id)
-            if profile:
-                behavioral_threats = self.behavioral_analyzer.analyze_behavior(
-                    event, profile
-                )
-                all_threats.extend(behavioral_threats)
+    def _analyze_user_behavior(self, event: SecurityEvent, all_threats: list) -> None:
+        """
+        تحليل سلوك المستخدم.
+        Analyze user behavior.
+        
+        Args:
+            event: حدث الأمان | Security event
+            all_threats: قائمة التهديدات للتحديث | Threats list to update
+        """
+        if not event.user_id:
+            return
+            
+        profile = self.profile_repo.get_profile(event.user_id)
+        if not profile:
+            return
 
-                # Update profile with new data
-                self.behavioral_analyzer.update_profile(event, profile)
-                self.profile_repo.save_profile(profile)
+        behavioral_threats = self.behavioral_analyzer.analyze_behavior(event, profile)
+        all_threats.extend(behavioral_threats)
+        
+        self._update_user_profile(event, profile)
 
-        # Step 3: Execute automated response for critical threats
+    def _update_user_profile(self, event: SecurityEvent, profile) -> None:
+        """
+        تحديث ملف المستخدم.
+        Update user profile.
+        
+        Args:
+            event: حدث الأمان | Security event
+            profile: ملف المستخدم | User profile
+        """
+        self.behavioral_analyzer.update_profile(event, profile)
+        self.profile_repo.save_profile(profile)
+
+    def _process_threats_response(self, all_threats: list[ThreatDetection]) -> None:
+        """
+        معالجة الاستجابة للتهديدات.
+        Process threats response.
+        
+        Args:
+            all_threats: قائمة التهديدات | Threats list
+        """
         for threat in all_threats:
-            if self.response_system.should_auto_block(threat):
-                self.response_system.execute_response(threat)
-                threat.auto_blocked = True
+            self._handle_single_threat(threat)
 
-            # Log all threats
-            self.threat_logger.log_threat(threat)
+    def _handle_single_threat(self, threat: ThreatDetection) -> None:
+        """
+        معالجة تهديد واحد.
+        Handle single threat.
+        
+        Args:
+            threat: التهديد | Threat
+        """
+        if self.response_system.should_auto_block(threat):
+            self.response_system.execute_response(threat)
+            threat.auto_blocked = True
 
-        return all_threats
+        self.threat_logger.log_threat(threat)
 
     def get_recent_threats(self, limit: int = 100) -> list[ThreatDetection]:
         """

@@ -40,56 +40,109 @@ class DeepLearningThreatDetector:
             r"<object",
         ]
 
-    # TODO: Split this function (48 lines) - KISS principle
     def detect_threats(self, event: SecurityEvent) -> list[ThreatDetection]:
         """
+        كشف التهديدات في حدث الأمان.
         Detect threats in security event.
 
         Args:
-            event: Security event to analyze
+            event: حدث الأمان للتحليل | Security event to analyze
 
         Returns:
-            List of detected threats
+            list[ThreatDetection]: قائمة التهديدات المكتشفة | List of detected threats
         """
         threats = []
-
-        # Check payload for SQL injection
-        sql_issues = self._check_sql_injection(event.payload)
-        if sql_issues:
-            threats.append(
-                ThreatDetection(
-                    detection_id=str(uuid.uuid4()),
-                    threat_type=ThreatType.SQL_INJECTION,
-                    threat_level=ThreatLevel.CRITICAL,
-                    description="SQL injection attempt detected",
-                    source_ip=event.source_ip,
-                    user_id=event.user_id,
-                    confidence=0.95,
-                    evidence=sql_issues,
-                    recommended_action="block_immediately",
-                    detected_at=datetime.now(),
-                )
-            )
-
-        # Check for XSS attacks
-        xss_issues = self._check_xss_attack(event.payload)
-        if xss_issues:
-            threats.append(
-                ThreatDetection(
-                    detection_id=str(uuid.uuid4()),
-                    threat_type=ThreatType.XSS_ATTACK,
-                    threat_level=ThreatLevel.HIGH,
-                    description="XSS attack attempt detected",
-                    source_ip=event.source_ip,
-                    user_id=event.user_id,
-                    confidence=0.90,
-                    evidence=xss_issues,
-                    recommended_action="sanitize_and_block",
-                    detected_at=datetime.now(),
-                )
-            )
+        
+        self._detect_sql_injection_threat(event, threats)
+        self._detect_xss_threat(event, threats)
 
         return threats
+
+    def _detect_sql_injection_threat(self, event: SecurityEvent, threats: list) -> None:
+        """
+        كشف تهديد حقن SQL.
+        Detect SQL injection threat.
+        
+        Args:
+            event: حدث الأمان | Security event
+            threats: قائمة التهديدات للتحديث | Threats list to update
+        """
+        sql_issues = self._check_sql_injection(event.payload)
+        if sql_issues:
+            threat = self._create_sql_injection_detection(event, sql_issues)
+            threats.append(threat)
+
+    def _detect_xss_threat(self, event: SecurityEvent, threats: list) -> None:
+        """
+        كشف تهديد XSS.
+        Detect XSS threat.
+        
+        Args:
+            event: حدث الأمان | Security event
+            threats: قائمة التهديدات للتحديث | Threats list to update
+        """
+        xss_issues = self._check_xss_attack(event.payload)
+        if xss_issues:
+            threat = self._create_xss_detection(event, xss_issues)
+            threats.append(threat)
+
+    def _create_sql_injection_detection(
+        self, 
+        event: SecurityEvent, 
+        evidence: list[str]
+    ) -> ThreatDetection:
+        """
+        إنشاء كشف حقن SQL.
+        Create SQL injection detection.
+        
+        Args:
+            event: حدث الأمان | Security event
+            evidence: الأدلة المكتشفة | Detected evidence
+            
+        Returns:
+            ThreatDetection: كشف التهديد | Threat detection
+        """
+        return ThreatDetection(
+            detection_id=str(uuid.uuid4()),
+            threat_type=ThreatType.SQL_INJECTION,
+            threat_level=ThreatLevel.CRITICAL,
+            description="SQL injection attempt detected",
+            source_ip=event.source_ip,
+            user_id=event.user_id,
+            confidence=0.95,
+            evidence=evidence,
+            recommended_action="block_immediately",
+            detected_at=datetime.now(),
+        )
+
+    def _create_xss_detection(
+        self, 
+        event: SecurityEvent, 
+        evidence: list[str]
+    ) -> ThreatDetection:
+        """
+        إنشاء كشف XSS.
+        Create XSS detection.
+        
+        Args:
+            event: حدث الأمان | Security event
+            evidence: الأدلة المكتشفة | Detected evidence
+            
+        Returns:
+            ThreatDetection: كشف التهديد | Threat detection
+        """
+        return ThreatDetection(
+            detection_id=str(uuid.uuid4()),
+            threat_type=ThreatType.XSS_ATTACK,
+            threat_level=ThreatLevel.HIGH,
+            description="XSS attack attempt detected",
+            source_ip=event.source_ip,
+            user_id=event.user_id,
+            confidence=0.90,
+            evidence=evidence,
+            recommended_action="sanitize_and_block",
+            detected_at=datetime.now(),
+        )
 
     def analyze_payload(self, payload: dict) -> list[str]:
         """

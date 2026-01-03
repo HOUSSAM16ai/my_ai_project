@@ -69,8 +69,6 @@ class ExperimentManager:
     # A/B TESTING
     # ======================================================================================
 
-    # TODO: Split this function (49 lines) - KISS principle
-    # TODO: Reduce parameters (6 params) - Use config object
     def start_ab_test(
         self,
         model_a_id: str,
@@ -80,21 +78,55 @@ class ExperimentManager:
         success_metric: str = "latency",
     ) -> str:
         """
+        بدء اختبار A/B بين نموذجين.
         Start an A/B test between two models.
 
         Args:
-            model_a_id: Model A version ID
-            model_b_id: Model B version ID
-            split_percentage: Traffic percentage for model A (0-100)
-            duration_hours: Test duration in hours
-            success_metric: Metric to optimize (latency, cost, accuracy)
+            model_a_id: معرف النموذج A | Model A version ID
+            model_b_id: معرف النموذج B | Model B version ID
+            split_percentage: نسبة الحركة للنموذج A (0-100) | Traffic percentage for model A
+            duration_hours: مدة الاختبار بالساعات | Test duration in hours
+            success_metric: المقياس للتحسين | Metric to optimize (latency, cost, accuracy)
 
         Returns:
-            Test ID
+            str: معرف الاختبار | Test ID
         """
         test_id = str(uuid.uuid4())
+        config = self._create_ab_test_config(
+            test_id, model_a_id, model_b_id, split_percentage, duration_hours, success_metric
+        )
+        
+        self._register_ab_test(test_id, config)
+        self._log_ab_test_start(test_id, model_a_id, model_b_id, split_percentage)
+        self._schedule_auto_end(test_id, duration_hours)
 
-        config = ABTestConfig(
+        return test_id
+
+    def _create_ab_test_config(
+        self,
+        test_id: str,
+        model_a_id: str,
+        model_b_id: str,
+        split_percentage: float,
+        duration_hours: int,
+        success_metric: str,
+    ) -> ABTestConfig:
+        """
+        إنشاء تكوين اختبار A/B.
+        Create A/B test configuration.
+        
+        Args:
+            test_id: معرف الاختبار | Test ID
+            model_a_id: معرف النموذج A | Model A ID
+            model_b_id: معرف النموذج B | Model B ID
+            split_percentage: نسبة الحركة | Traffic percentage
+            duration_hours: مدة الاختبار | Test duration
+            success_metric: مقياس النجاح | Success metric
+            
+        Returns:
+            ABTestConfig: تكوين الاختبار | Test configuration
+        """
+        return ABTestConfig(
             test_id=test_id,
             model_a_id=model_a_id,
             model_b_id=model_b_id,
@@ -104,24 +136,55 @@ class ExperimentManager:
             success_metric=success_metric,
         )
 
+    def _register_ab_test(self, test_id: str, config: ABTestConfig) -> None:
+        """
+        تسجيل اختبار A/B.
+        Register A/B test.
+        
+        Args:
+            test_id: معرف الاختبار | Test ID
+            config: تكوين الاختبار | Test configuration
+        """
         with self._lock:
             self._ab_tests[test_id] = config
 
+    def _log_ab_test_start(
+        self, 
+        test_id: str, 
+        model_a_id: str, 
+        model_b_id: str, 
+        split_percentage: float
+    ) -> None:
+        """
+        تسجيل بدء اختبار A/B.
+        Log A/B test start.
+        
+        Args:
+            test_id: معرف الاختبار | Test ID
+            model_a_id: معرف النموذج A | Model A ID
+            model_b_id: معرف النموذج B | Model B ID
+            split_percentage: نسبة الحركة | Traffic percentage
+        """
         _LOG.info(
             f"Started A/B test {test_id}: "
             f"{model_a_id} ({split_percentage}%) vs "
             f"{model_b_id} ({100-split_percentage}%)"
         )
 
-        # Schedule automatic test end
+    def _schedule_auto_end(self, test_id: str, duration_hours: int) -> None:
+        """
+        جدولة إنهاء تلقائي للاختبار.
+        Schedule automatic test end.
+        
+        Args:
+            test_id: معرف الاختبار | Test ID
+            duration_hours: مدة الاختبار بالساعات | Test duration in hours
+        """
         threading.Thread(
             target=self._auto_end_test,
             args=(test_id, duration_hours),
             daemon=True,
         ).start()
-
-        return test_id
-# TODO: Split this function (39 lines) - KISS principle
 
     def serve_ab_test_request(
         self,
@@ -130,40 +193,82 @@ class ExperimentManager:
         parameters: dict | None = None,
     ) -> ModelResponse:
         """
+        تقديم طلب ضمن اختبار A/B.
         Serve request within an A/B test.
 
         Randomly routes to model A or B based on configured percentages.
 
         Args:
-            test_id: A/B test ID
-            input_data: Input data
-            parameters: Optional parameters
+            test_id: معرف اختبار A/B | A/B test ID
+            input_data: بيانات الإدخال | Input data
+            parameters: معاملات اختيارية | Optional parameters
 
         Returns:
-            Model response
+            ModelResponse: استجابة النموذج | Model response
         """
-        config = self._ab_tests.get(test_id)
-        if not config:
-            raise ValueError(f"A/B test {test_id} not found")
-
-        # Select model based on percentage
-        if random.uniform(0, 100) < config.model_a_percentage:
-            version_id = config.model_a_id
-        else:
-            version_id = config.model_b_id
-
-        # Get model and route request
-        model = self._registry.get_model(version_id)
-        if not model:
-            raise ValueError(f"Model {version_id} not found")
-
+        config = self._get_ab_test_config(test_id)
+        version_id = self._select_model_for_ab_test(config)
+        model = self._get_model_by_version(version_id)
+        
         return self._router.serve_request(
             model.model_name,
             input_data,
             version_id=version_id,
             parameters=parameters,
-        # TODO: Split this function (40 lines) - KISS principle
         )
+
+    def _get_ab_test_config(self, test_id: str) -> ABTestConfig:
+        """
+        الحصول على تكوين اختبار A/B.
+        Get A/B test configuration.
+        
+        Args:
+            test_id: معرف الاختبار | Test ID
+            
+        Returns:
+            ABTestConfig: تكوين الاختبار | Test configuration
+            
+        Raises:
+            ValueError: إذا لم يُعثر على الاختبار | If test not found
+        """
+        config = self._ab_tests.get(test_id)
+        if not config:
+            raise ValueError(f"A/B test {test_id} not found")
+        return config
+
+    def _select_model_for_ab_test(self, config: ABTestConfig) -> str:
+        """
+        اختيار نموذج بناءً على نسبة الحركة.
+        Select model based on traffic percentage.
+        
+        Args:
+            config: تكوين اختبار A/B | A/B test config
+            
+        Returns:
+            str: معرف النموذج المختار | Selected model version ID
+        """
+        if random.uniform(0, 100) < config.model_a_percentage:
+            return config.model_a_id
+        return config.model_b_id
+
+    def _get_model_by_version(self, version_id: str):
+        """
+        الحصول على نموذج بواسطة معرف الإصدار.
+        Get model by version ID.
+        
+        Args:
+            version_id: معرف الإصدار | Version ID
+            
+        Returns:
+            Model: كائن النموذج | Model object
+            
+        Raises:
+            ValueError: إذا لم يُعثر على النموذج | If model not found
+        """
+        model = self._registry.get_model(version_id)
+        if not model:
+            raise ValueError(f"Model {version_id} not found")
+        return model
 
     def analyze_ab_test(self, test_id: str) -> dict[str, Any]:
         """
@@ -231,7 +336,6 @@ class ExperimentManager:
             _LOG.error(f"Failed to auto-end test {test_id}: {e}")
 
     # ======================================================================================
-    # TODO: Split this function (34 lines) - KISS principle
     # SHADOW DEPLOYMENT
     # ======================================================================================
 
@@ -242,34 +346,85 @@ class ExperimentManager:
         traffic_percentage: float = 100.0,
     ) -> str:
         """
+        بدء نشر ظل لاختبار نموذج جديد.
         Start shadow deployment for testing new model.
 
         Args:
-            primary_model_id: Production model ID
-            shadow_model_id: Shadow model ID (being tested)
-            traffic_percentage: % of requests to shadow (0-100)
+            primary_model_id: معرف نموذج الإنتاج | Production model ID
+            shadow_model_id: معرف نموذج الظل (قيد الاختبار) | Shadow model ID (being tested)
+            traffic_percentage: نسبة الطلبات للظل (0-100) | % of requests to shadow
 
         Returns:
-            Shadow deployment ID
+            str: معرف نشر الظل | Shadow deployment ID
         """
         shadow_id = str(uuid.uuid4())
+        deployment = self._create_shadow_deployment(
+            shadow_id, primary_model_id, shadow_model_id, traffic_percentage
+        )
+        
+        self._register_shadow_deployment(shadow_id, deployment)
+        self._log_shadow_deployment_start(shadow_id, shadow_model_id, primary_model_id)
 
-        deployment = ShadowDeployment(
+        return shadow_id
+
+    def _create_shadow_deployment(
+        self,
+        shadow_id: str,
+        primary_model_id: str,
+        shadow_model_id: str,
+        traffic_percentage: float,
+    ) -> ShadowDeployment:
+        """
+        إنشاء نشر ظل.
+        Create shadow deployment.
+        
+        Args:
+            shadow_id: معرف الظل | Shadow ID
+            primary_model_id: معرف النموذج الأساسي | Primary model ID
+            shadow_model_id: معرف نموذج الظل | Shadow model ID
+            traffic_percentage: نسبة الحركة | Traffic percentage
+            
+        Returns:
+            ShadowDeployment: نشر الظل | Shadow deployment
+        """
+        return ShadowDeployment(
             shadow_id=shadow_id,
             primary_model_id=primary_model_id,
             shadow_model_id=shadow_model_id,
             traffic_percentage=traffic_percentage,
         )
 
+    def _register_shadow_deployment(self, shadow_id: str, deployment: ShadowDeployment) -> None:
+        """
+        تسجيل نشر الظل.
+        Register shadow deployment.
+        
+        Args:
+            shadow_id: معرف الظل | Shadow ID
+            deployment: نشر الظل | Shadow deployment
+        """
         with self._lock:
             self._shadow_deployments[shadow_id] = deployment
 
+    def _log_shadow_deployment_start(
+        self, 
+        shadow_id: str, 
+        shadow_model_id: str, 
+        primary_model_id: str
+    ) -> None:
+        """
+        تسجيل بدء نشر الظل.
+        Log shadow deployment start.
+        
+        Args:
+            shadow_id: معرف الظل | Shadow ID
+            shadow_model_id: معرف نموذج الظل | Shadow model ID
+            primary_model_id: معرف النموذج الأساسي | Primary model ID
+        """
         _LOG.info(
             f"Started shadow deployment {shadow_id}: "
             f"{shadow_model_id} shadowing {primary_model_id}"
         )
-
-        return shadow_id
 
     def get_ab_test(self, test_id: str) -> ABTestConfig | None:
         """Get A/B test configuration"""
