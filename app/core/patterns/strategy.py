@@ -537,69 +537,177 @@ class StrategyRegistry(Generic[TInput, TOutput]):
             try:
                 # التحقق من قدرة الاستراتيجية على المعالجة
                 if await strategy.can_handle(context):
-                    logger.debug(
-                        f"تنفيذ الاستراتيجية: {strategy.__class__.__name__}",
-                        extra={
-                            "strategy_class": strategy.__class__.__name__,
-                            "priority": strategy.priority
-                        }
-                    )
-                    
-                    # تنفيذ الاستراتيجية
-                    # CRITICAL: لا نستخدم await هنا لأن النتيجة قد تكون async generator
-                    # استخدام await على async generator يسبب TypeError
-                    result = strategy.execute(context)
-                    
-                    # معالجة أنواع النتائج المختلفة
-                    
-                    # 1. Async Generator - إرجاع مباشر للبث التدريجي
-                    # IMPORTANT: Async generators are NOT awaited, they're iterated with 'async for'
-                    if inspect.isasyncgen(result):
-                        logger.debug(
-                            f"✅ Returning async generator from {strategy.__class__.__name__}"
-                        )
-                        return result
-                    
-                    # 2. Coroutine - انتظار النتيجة ثم التحقق مرة أخرى
-                    # The coroutine might return an async generator when awaited
-                    if inspect.iscoroutine(result):
-                        logger.debug(
-                            f"⏳ Awaiting coroutine from {strategy.__class__.__name__}"
-                        )
-                        result = await result
-                        
-                        # Check again if the awaited result is an async generator
-                        if inspect.isasyncgen(result):
-                            logger.debug(
-                                f"✅ Coroutine returned async generator from {strategy.__class__.__name__}"
-                            )
-                            return result
-                    
-                    # 3. قيمة عادية - إرجاع مباشر
-                    logger.info(
-                        f"✅ نجح تنفيذ: {strategy.__class__.__name__}",
-                        extra={
-                            "strategy_class": strategy.__class__.__name__,
-                            "result_type": type(result).__name__
-                        }
-                    )
-                    return result
+                    return await self._execute_strategy(strategy, context)
                     
             except Exception as e:
-                # تسجيل الخطأ والاستمرار في المحاولة
-                logger.error(
-                    f"❌ فشلت الاستراتيجية {strategy.__class__.__name__}: {e}",
-                    exc_info=True,
-                    extra={
-                        "strategy_class": strategy.__class__.__name__,
-                        "error_type": type(e).__name__,
-                        "error_message": str(e)
-                    }
-                )
-                # الاستمرار للاستراتيجية التالية
+                self._log_strategy_error(strategy, e)
                 continue
 
         # لم تنجح أي استراتيجية
+        self._log_no_strategy_found(context)
+        return None
+
+    async def _execute_strategy(
+        self, 
+        strategy: Strategy[TInput, TOutput], 
+        context: TInput
+    ) -> TOutput:
+        """
+        تنفيذ استراتيجية معينة ومعالجة نتيجتها.
+        
+        Execute a specific strategy and handle its result.
+        
+        Args:
+            strategy: الاستراتيجية المراد تنفيذها
+            context: سياق المدخلات
+            
+        Returns:
+            نتيجة تنفيذ الاستراتيجية
+        """
+        self._log_strategy_execution(strategy)
+        
+        # تنفيذ الاستراتيجية
+        # CRITICAL: لا نستخدم await هنا لأن النتيجة قد تكون async generator
+        result = strategy.execute(context)
+        
+        # معالجة أنواع النتائج المختلفة
+        processed_result = await self._process_strategy_result(strategy, result)
+        
+        self._log_strategy_success(strategy, processed_result)
+        return processed_result
+
+    async def _process_strategy_result(
+        self,
+        strategy: Strategy[TInput, TOutput],
+        result: TOutput
+    ) -> TOutput:
+        """
+        معالجة نتيجة الاستراتيجية حسب نوعها.
+        
+        Process strategy result based on its type.
+        
+        Args:
+            strategy: الاستراتيجية التي أُنتجت النتيجة
+            result: النتيجة المراد معالجتها
+            
+        Returns:
+            النتيجة بعد المعالجة
+        """
+        # 1. Async Generator - إرجاع مباشر للبث التدريجي
+        if inspect.isasyncgen(result):
+            logger.debug(
+                f"✅ Returning async generator from {strategy.__class__.__name__}"
+            )
+            return result
+        
+        # 2. Coroutine - انتظار النتيجة ثم التحقق مرة أخرى
+        if inspect.iscoroutine(result):
+            result = await self._await_coroutine_result(strategy, result)
+        
+        return result
+
+    async def _await_coroutine_result(
+        self,
+        strategy: Strategy[TInput, TOutput],
+        result: TOutput
+    ) -> TOutput:
+        """
+        انتظار نتيجة coroutine والتحقق من نوعها.
+        
+        Await coroutine result and check its type.
+        
+        Args:
+            strategy: الاستراتيجية التي أُنتجت ال coroutine
+            result: ال coroutine المراد انتظاره
+            
+        Returns:
+            النتيجة بعد await
+        """
+        logger.debug(
+            f"⏳ Awaiting coroutine from {strategy.__class__.__name__}"
+        )
+        awaited_result = await result
+        
+        # التحقق مرة أخرى إذا كانت النتيجة async generator
+        if inspect.isasyncgen(awaited_result):
+            logger.debug(
+                f"✅ Coroutine returned async generator from {strategy.__class__.__name__}"
+            )
+        
+        return awaited_result
+
+    def _log_strategy_execution(self, strategy: Strategy[TInput, TOutput]) -> None:
+        """
+        تسجيل بداية تنفيذ استراتيجية.
+        
+        Log the start of strategy execution.
+        
+        Args:
+            strategy: الاستراتيجية المراد تسجيلها
+        """
+        logger.debug(
+            f"تنفيذ الاستراتيجية: {strategy.__class__.__name__}",
+            extra={
+                "strategy_class": strategy.__class__.__name__,
+                "priority": strategy.priority
+            }
+        )
+
+    def _log_strategy_success(
+        self, 
+        strategy: Strategy[TInput, TOutput],
+        result: TOutput
+    ) -> None:
+        """
+        تسجيل نجاح تنفيذ استراتيجية.
+        
+        Log successful strategy execution.
+        
+        Args:
+            strategy: الاستراتيجية الناجحة
+            result: نتيجة التنفيذ
+        """
+        logger.info(
+            f"✅ نجح تنفيذ: {strategy.__class__.__name__}",
+            extra={
+                "strategy_class": strategy.__class__.__name__,
+                "result_type": type(result).__name__
+            }
+        )
+
+    def _log_strategy_error(
+        self,
+        strategy: Strategy[TInput, TOutput],
+        error: Exception
+    ) -> None:
+        """
+        تسجيل فشل تنفيذ استراتيجية.
+        
+        Log strategy execution failure.
+        
+        Args:
+            strategy: الاستراتيجية التي فشلت
+            error: الخطأ الذي حدث
+        """
+        logger.error(
+            f"❌ فشلت الاستراتيجية {strategy.__class__.__name__}: {error}",
+            exc_info=True,
+            extra={
+                "strategy_class": strategy.__class__.__name__,
+                "error_type": type(error).__name__,
+                "error_message": str(error)
+            }
+        )
+
+    def _log_no_strategy_found(self, context: TInput) -> None:
+        """
+        تسجيل عدم العثور على استراتيجية مناسبة.
+        
+        Log when no suitable strategy is found.
+        
+        Args:
+            context: السياق الذي فشلت معالجته
+        """
         logger.warning(
             f"⚠️ لم يتم العثور على استراتيجية لمعالجة السياق: {context}",
             extra={
@@ -607,7 +715,6 @@ class StrategyRegistry(Generic[TInput, TOutput]):
                 "total_strategies_tried": len(self._strategies)
             }
         )
-        return None
 
     def get_strategies(self) -> list[Strategy[TInput, TOutput]]:
         """
