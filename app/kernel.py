@@ -20,7 +20,7 @@
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, Final
+from typing import Final
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -153,14 +153,14 @@ class RealityKernel:
     def __init__(
         self,
         *,
-        settings: AppSettings | dict[str, Any],
+        settings: AppSettings | dict[str, object],
         enable_static_files: bool = True,
     ) -> None:
         """
         تهيئة النواة.
 
         Args:
-            settings (AppSettings | dict[str, Any]): الإعدادات.
+            settings (AppSettings | dict[str, object]): الإعدادات.
             enable_static_files (bool): تفعيل خدمة الملفات الثابتة (افتراضي: True).
                                        يمكن تعطيله لوضع API-only.
         """
