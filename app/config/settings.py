@@ -72,6 +72,12 @@ class AppSettings(BaseSettings):
     ALLOWED_HOSTS: list[str] = Field(
         default=["*"], description="قائمة المضيفين الموثوقين (Trusted Hosts)"
     )
+    
+    # API-First Security Settings
+    API_STRICT_MODE: bool = Field(
+        default=True, 
+        description="تفعيل الوضع الصارم للـ API (يحذر من استخدام * في CORS)"
+    )
 
     FRONTEND_URL: str = Field(default="http://localhost:3000", description="رابط الواجهة الأمامية")
 
@@ -143,6 +149,23 @@ class AppSettings(BaseSettings):
             # Check for overly permissive hosts
             if self.ALLOWED_HOSTS == ["*"]:
                  raise ValueError("❌ SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production.")
+            
+            # Check for overly permissive CORS (API-First best practice)
+            if self.BACKEND_CORS_ORIGINS == ["*"]:
+                 raise ValueError("❌ SECURITY RISK: BACKEND_CORS_ORIGINS cannot be '*' in production. Please specify allowed origins explicitly.")
+        
+        # API Strict Mode warnings for development
+        if self.API_STRICT_MODE and self.ENVIRONMENT == "development":
+            if self.BACKEND_CORS_ORIGINS == ["*"]:
+                logger.warning(
+                    "⚠️  API Strict Mode: CORS is set to '*'. "
+                    "For production deployment, please specify allowed origins explicitly."
+                )
+            if self.ALLOWED_HOSTS == ["*"]:
+                logger.warning(
+                    "⚠️  API Strict Mode: ALLOWED_HOSTS is set to '*'. "
+                    "For production deployment, please specify trusted hosts explicitly."
+                )
 
         return self
 
