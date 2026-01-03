@@ -113,18 +113,84 @@ class ConfigSecretsManager:
         rotation_policy: RotationPolicy = RotationPolicy.NEVER,
         accessed_by: str = "system",
     ) -> str:
-        """Create a new secret"""
-        secret_id = hashlib.sha256(
+        """
+        إنشاء سر جديد | Create a new secret
+        
+        يقوم بإنشاء سر جديد وتخزينه في الخزينة
+        Creates a new secret and stores it in the vault
+        
+        Args:
+            name: اسم السر | Secret name
+            value: قيمة السر | Secret value
+            secret_type: نوع السر | Secret type
+            environment: البيئة | Environment
+            rotation_policy: سياسة التدوير | Rotation policy
+            accessed_by: المستخدم | User accessing
+            
+        Returns:
+            معرف السر | Secret ID
+        """
+        secret_id = self._generate_secret_id(name, environment)
+        self._store_in_vault(secret_id, value)
+        secret = self._create_secret_metadata(
+            secret_id, name, secret_type, environment, rotation_policy
+        )
+        self.secret_repo.save_secret_metadata(secret)
+        self._log_access(secret_id, accessed_by, "write", True)
+        
+        return secret_id
+
+    def _generate_secret_id(self, name: str, environment: Environment) -> str:
+        """
+        توليد معرف السر | Generate secret ID
+        
+        Args:
+            name: اسم السر | Secret name
+            environment: البيئة | Environment
+            
+        Returns:
+            معرف السر | Secret ID
+        """
+        return hashlib.sha256(
             f"{name}{environment.value}{datetime.now(UTC)}".encode()
         ).hexdigest()[:16]
 
-        # Store in vault
+    def _store_in_vault(self, secret_id: str, value: str) -> None:
+        """
+        التخزين في الخزينة | Store in vault
+        
+        Args:
+            secret_id: معرف السر | Secret ID
+            value: قيمة السر | Secret value
+            
+        Raises:
+            RuntimeError: إذا فشل التخزين | If storage fails
+        """
         success = self.vault.write_secret(secret_id, value)
-
         if not success:
             raise RuntimeError(f"Failed to write secret to vault: {secret_id}")
 
-        # Create secret metadata
+    def _create_secret_metadata(
+        self,
+        secret_id: str,
+        name: str,
+        secret_type: SecretType,
+        environment: Environment,
+        rotation_policy: RotationPolicy
+    ) -> Secret:
+        """
+        إنشاء بيانات وصفية للسر | Create secret metadata
+        
+        Args:
+            secret_id: معرف السر | Secret ID
+            name: اسم السر | Secret name
+            secret_type: نوع السر | Secret type
+            environment: البيئة | Environment
+            rotation_policy: سياسة التدوير | Rotation policy
+            
+        Returns:
+            كائن السر | Secret object
+        """
         now = datetime.now(UTC)
         secret = Secret(
             secret_id=secret_id,
@@ -137,16 +203,11 @@ class ConfigSecretsManager:
             rotation_policy=rotation_policy,
         )
 
-        # Calculate next rotation
+        # Calculate next rotation if needed
         if rotation_policy != RotationPolicy.NEVER:
             secret.next_rotation = self._calculate_next_rotation(now, rotation_policy)
 
-        self.secret_repo.save_secret_metadata(secret)
-
-        # Log access
-        self._log_access(secret_id, accessed_by, "write", True)
-
-        return secret_id
+        return secret
 
     def get_secret(self, secret_id: str, accessed_by: str = "system") -> str | None:
         """Get secret value from vault"""
