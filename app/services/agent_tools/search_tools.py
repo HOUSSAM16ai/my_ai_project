@@ -37,75 +37,189 @@ from .utils import _safe_path
         },
     },
 )
-# TODO: Split this function (67 lines) - KISS principle
 def code_index_project(
     root: str = ".",
     max_files: int = CODE_INDEX_MAX_FILES,
     include_exts: str = ",".join(CODE_INDEX_INCLUDE_EXTS),
 ) -> ToolResult:
+    """
+    Index project files with complexity heuristics.
+    
+    فهرسة ملفات المشروع مع مقاييس التعقيد.
+    
+    Args:
+        root: Root directory to index
+        max_files: Maximum number of files to index
+        include_exts: Comma-separated file extensions to include
+        
+    Returns:
+        ToolResult with indexed files and hotspots
+    """
     try:
+        # Validate inputs
         root_abs = _safe_path(root)
         if not os.path.isdir(root_abs):
             return ToolResult(ok=False, error="NOT_A_DIRECTORY")
-        exts = {e.strip().lower() for e in include_exts.split(",") if e.strip().startswith(".")}
-        files_meta = []
-        count = 0
+        
+        # Parse extensions
+        exts = _parse_extensions(include_exts)
+        
+        # Index files
         start = time.perf_counter()
-        for base, _dirs, files in os.walk(root_abs):
-            # prune excluded dirs
-            parts = base.replace("\\", "/").split("/")
-            if any(seg in CODE_INDEX_EXCLUDE_DIRS for seg in parts):
-                continue
-            for fname in files:
-                if count >= max_files:
-                    break
-                ext = os.path.splitext(fname)[1].lower()
-                if exts and ext not in exts:
-                    continue
-                fpath = os.path.join(base, fname)
-                try:
-                    st = os.stat(fpath)
-                    if st.st_size > CODE_INDEX_MAX_FILE_BYTES:
-                        continue
-                    with open(fpath, encoding="utf-8", errors="replace") as f:
-                        lines = f.readlines()
-                    line_count = len(lines)
-                    non_empty = sum(1 for line in lines if line.strip())
-                    avg_len = sum(len(line) for line in lines) / line_count if line_count else 0
-                    complexity_score = round(
-                        (line_count * 0.4) + (non_empty * 0.6) + (avg_len * 0.05), 2
-                    )
-                    files_meta.append(
-                        {
-                            "path": os.path.relpath(fpath, root_abs),
-                            "lines": line_count,
-                            "non_empty": non_empty,
-                            "avg_line_len": round(avg_len, 2),
-                            "size": st.st_size,
-                            "complexity_score": complexity_score,
-                        }
-                    )
-                    count += 1
-                except Exception:
-                    continue
-            if count >= max_files:
-                break
+        files_meta, count = _index_files(root_abs, max_files, exts)
         elapsed_ms = int((time.perf_counter() - start) * 1000)
-        files_meta.sort(key=lambda x: x["complexity_score"], reverse=True)
-        top_hotspots = files_meta[: min(20, len(files_meta))]
-        return ToolResult(
-            ok=True,
-            data={
-                "root": root_abs,
-                "indexed_files": len(files_meta),
-                "hotspots_top20": top_hotspots,
-                "elapsed_ms": elapsed_ms,
-                "exts": sorted(exts),
-                "limit_reached": count >= max_files,
-            },
-        )
+        
+        # Build result
+        return _build_index_result(files_meta, count, max_files, root_abs, exts, elapsed_ms)
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
+
+def _parse_extensions(include_exts: str) -> set[str]:
+    """
+    Parse comma-separated extension string.
+    
+    تحليل سلسلة الامتدادات المفصولة بفواصل.
+    
+    Args:
+        include_exts: Comma-separated list of file extensions
+        
+    Returns:
+        Set of lowercase extensions
+    """
+    return {e.strip().lower() for e in include_exts.split(",") if e.strip().startswith(".")}
+
+
+def _index_files(
+    root_abs: str,
+    max_files: int,
+    exts: set[str],
+) -> tuple[list[dict], int]:
+    """
+    Walk directory tree and index matching files.
+    
+    المرور عبر شجرة المجلدات وفهرسة الملفات المطابقة.
+    
+    Returns:
+        Tuple of (files metadata list, count of indexed files)
+    """
+    files_meta = []
+    count = 0
+    
+    for base, _dirs, files in os.walk(root_abs):
+        # Skip excluded directories
+        if _should_skip_directory(base):
+            continue
+        
+        for fname in files:
+            if count >= max_files:
+                break
+            
+            # Check extension
+            ext = os.path.splitext(fname)[1].lower()
+            if exts and ext not in exts:
+                continue
+            
+            # Process file
+            fpath = os.path.join(base, fname)
+            file_meta = _process_file_for_index(fpath, root_abs)
+            
+            if file_meta:
+                files_meta.append(file_meta)
+                count += 1
+        
+        if count >= max_files:
+            break
+    
+    return files_meta, count
+
+
+def _process_file_for_index(fpath: str, root_abs: str) -> dict | None:
+    """
+    Process a single file for indexing.
+    
+    معالجة ملف واحد للفهرسة.
+    
+    Returns:
+        File metadata dict or None if file should be skipped
+    """
+    try:
+        st = os.stat(fpath)
+        if st.st_size > CODE_INDEX_MAX_FILE_BYTES:
+            return None
+        
+        with open(fpath, encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+        
+        # Calculate metrics
+        metrics = _calculate_file_metrics(lines)
+        
+        return {
+            "path": os.path.relpath(fpath, root_abs),
+            "lines": metrics["line_count"],
+            "non_empty": metrics["non_empty"],
+            "avg_line_len": metrics["avg_len"],
+            "size": st.st_size,
+            "complexity_score": metrics["complexity_score"],
+        }
+    except Exception:
+        return None
+
+
+def _calculate_file_metrics(lines: list[str]) -> dict:
+    """
+    Calculate file metrics for complexity scoring.
+    
+    حساب مقاييس الملف لتقييم التعقيد.
+    
+    Returns:
+        Dict with line_count, non_empty, avg_len, complexity_score
+    """
+    line_count = len(lines)
+    non_empty = sum(1 for line in lines if line.strip())
+    avg_len = sum(len(line) for line in lines) / line_count if line_count else 0
+    
+    # Complexity heuristic: weighted by lines, non-empty, and length
+    complexity_score = round(
+        (line_count * 0.4) + (non_empty * 0.6) + (avg_len * 0.05), 2
+    )
+    
+    return {
+        "line_count": line_count,
+        "non_empty": non_empty,
+        "avg_len": round(avg_len, 2),
+        "complexity_score": complexity_score,
+    }
+
+
+def _build_index_result(
+    files_meta: list[dict],
+    count: int,
+    max_files: int,
+    root_abs: str,
+    exts: set[str],
+    elapsed_ms: int,
+) -> ToolResult:
+    """
+    Build final index result with hotspots.
+    
+    بناء نتيجة الفهرسة النهائية مع النقاط الحرجة.
+    """
+    # Sort by complexity and get top hotspots
+    files_meta.sort(key=lambda x: x["complexity_score"], reverse=True)
+    top_hotspots = files_meta[: min(20, len(files_meta))]
+    
+    return ToolResult(
+        ok=True,
+        data={
+            "root": root_abs,
+            "indexed_files": len(files_meta),
+            "hotspots_top20": top_hotspots,
+            "elapsed_ms": elapsed_ms,
+            "exts": sorted(exts),
+            "limit_reached": count >= max_files,
+        },
+    )
+
 
 @tool(
     name="code_search_lexical",

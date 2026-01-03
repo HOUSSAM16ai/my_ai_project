@@ -47,6 +47,95 @@ def _record_invocation(name: str, elapsed_ms: float, ok: bool, error: str | None
         st["last_error"] = (error or "")[:300]
 
 # ======================================================================================
+# Helper Functions for Tool Registration
+# ======================================================================================
+def _validate_tool_names(name: str, aliases: list[str]) -> None:
+    """
+    Validate that tool and alias names are unique.
+    
+    التحقق من أن أسماء الأداة والأسماء البديلة فريدة.
+    """
+    if name in _TOOL_REGISTRY:
+        raise ValueError(f"Tool '{name}' already registered.")
+    for a in aliases:
+        if a in _TOOL_REGISTRY or a in _ALIAS_INDEX:
+            raise ValueError(f"Alias '{a}' already registered.")
+
+
+def _create_tool_metadata(
+    name: str,
+    description: str,
+    parameters: dict[str, Any],
+    category: str,
+    aliases: list[str],
+    allow_disable: bool,
+    is_alias: bool = False,
+) -> dict:
+    """
+    Create tool metadata dictionary.
+    
+    إنشاء معجم بيانات الأداة الوصفية.
+    """
+    return {
+        "name": name,
+        "description": description,
+        "parameters": parameters,
+        "handler": None,
+        "category": category,
+        "canonical": name if not is_alias else None,
+        "is_alias": is_alias,
+        "aliases": aliases if not is_alias else [],
+        "disabled": (allow_disable and name in DISABLED),
+    }
+
+
+def _register_main_tool(
+    name: str,
+    description: str,
+    parameters: dict[str, Any],
+    category: str,
+    aliases: list[str],
+    allow_disable: bool,
+    capabilities: list[str],
+) -> None:
+    """
+    Register the main tool in registry.
+    
+    تسجيل الأداة الرئيسية في السجل.
+    """
+    meta = _create_tool_metadata(name, description, parameters, category, aliases, allow_disable)
+    meta["canonical"] = name
+    _TOOL_REGISTRY[name] = meta
+    _CAPABILITIES[name] = capabilities
+    _init_tool_stats(name)
+
+
+def _register_tool_aliases(
+    name: str,
+    description: str,
+    parameters: dict[str, Any],
+    category: str,
+    aliases: list[str],
+    allow_disable: bool,
+    capabilities: list[str],
+) -> None:
+    """
+    Register tool aliases in registry.
+    
+    تسجيل الأسماء البديلة للأداة في السجل.
+    """
+    for a in aliases:
+        _ALIAS_INDEX[a] = name
+        alias_meta = _create_tool_metadata(
+            a, f"[alias of {name}] {description}",
+            parameters, category, [], allow_disable, is_alias=True
+        )
+        alias_meta["canonical"] = name
+        _TOOL_REGISTRY[a] = alias_meta
+        _CAPABILITIES[a] = capabilities
+        _init_tool_stats(a)
+
+# ======================================================================================
 # Policy Hooks (stubs)
 # ======================================================================================
 def policy_can_execute(tool_name: str, args: dict[str, Any]) -> bool:
@@ -149,8 +238,6 @@ def list_tools(include_aliases: bool = False) -> list[dict[str, Any]]:
 # ======================================================================================
 # Helper Functions for Tool Decorator
 # ======================================================================================
-# TODO: Split this function (45 lines) - KISS principle
-# TODO: Reduce parameters (7 params) - Use config object
 def _register_tool_metadata(
     name: str,
     description: str,
@@ -160,43 +247,28 @@ def _register_tool_metadata(
     allow_disable: bool,
     capabilities: list[str],
 ):
-    """Register tool and its aliases in the registry."""
-    if name in _TOOL_REGISTRY:
-        raise ValueError(f"Tool '{name}' already registered.")
-    for a in aliases:
-        if a in _TOOL_REGISTRY or a in _ALIAS_INDEX:
-            raise ValueError(f"Alias '{a}' already registered.")
-
-    meta = {
-        "name": name,
-        "description": description,
-        "parameters": parameters,
-        "handler": None,
-        "category": category,
-        "canonical": name,
-        "is_alias": False,
-        "aliases": aliases,
-        "disabled": (allow_disable and name in DISABLED),
-    }
-    _TOOL_REGISTRY[name] = meta
-    _CAPABILITIES[name] = capabilities
-    _init_tool_stats(name)
-
-    for a in aliases:
-        _ALIAS_INDEX[a] = name
-        _TOOL_REGISTRY[a] = {
-            "name": a,
-            "description": f"[alias of {name}] {description}",
-            "parameters": parameters,
-            "handler": None,
-            "category": category,
-            "canonical": name,
-            "is_alias": True,
-            "aliases": [],
-            "disabled": (allow_disable and name in DISABLED),
-        }
-        _CAPABILITIES[a] = capabilities
-        _init_tool_stats(a)
+    """
+    Register tool and its aliases in the registry.
+    
+    تسجيل الأداة والأسماء البديلة في السجل.
+    
+    Args:
+        name: Tool name
+        description: Tool description
+        parameters: Tool parameters schema
+        category: Tool category
+        aliases: List of alias names
+        allow_disable: Whether tool can be disabled
+        capabilities: List of tool capabilities
+    """
+    # Validate unique names
+    _validate_tool_names(name, aliases)
+    
+    # Register main tool
+    _register_main_tool(name, description, parameters, category, aliases, allow_disable, capabilities)
+    
+    # Register aliases
+    _register_tool_aliases(name, description, parameters, category, aliases, allow_disable, capabilities)
 
 def _apply_autofill(kwargs: dict[str, Any], canonical_name: str, trace_id: str):
     """Apply autofill logic for write operations."""
@@ -252,12 +324,41 @@ def _enrich_result_metadata(
     meta_entry: dict[str, Any],
     trace_id: str,
 ):
-    """Add metadata to tool result."""
+    """
+    Add metadata to tool result.
+    
+    إضافة البيانات الوصفية إلى نتيجة الأداة.
+    """
     stats = _TOOL_STATS[reg_name]
     if result.meta is None:
         result.meta = {}
 
-    result.meta.update({
+    # Build metadata
+    metadata = _build_result_metadata(
+        reg_name, canonical_name, elapsed_ms,
+        category, capabilities, stats, meta_entry
+    )
+    
+    # Update result
+    result.meta.update(metadata)
+    result.trace_id = trace_id
+
+
+def _build_result_metadata(
+    reg_name: str,
+    canonical_name: str,
+    elapsed_ms: float,
+    category: str,
+    capabilities: list[str],
+    stats: dict,
+    meta_entry: dict[str, Any],
+) -> dict:
+    """
+    Build metadata dictionary for tool result.
+    
+    بناء معجم البيانات الوصفية لنتيجة الأداة.
+    """
+    return {
         "tool": reg_name,
         "canonical": canonical_name,
         "elapsed_ms": round(elapsed_ms, 2),
@@ -274,12 +375,10 @@ def _enrich_result_metadata(
         "is_alias": meta_entry.get("is_alias", False),
         "disabled": meta_entry.get("disabled", False),
         "last_error": stats["last_error"],
-    })
-    result.trace_id = trace_id
+    }
 
 # ======================================================================================
-# TODO: Split this function (47 lines) - KISS principle
-# Decorator
+# Tool Decorator
 # ======================================================================================
 def tool(
     name: str,
@@ -291,8 +390,21 @@ def tool(
     allow_disable: bool = True,
     capabilities: list[str] | None = None,
 ) -> None:
+    """
+    Decorator for registering tools in the tool registry.
+    
+    محدد لتسجيل الأدوات في سجل الأدوات.
+    
+    Args:
+        name: Tool name
+        description: Tool description
+        parameters: JSON schema for tool parameters
+        category: Tool category
+        aliases: List of alternative names
+        allow_disable: Whether tool can be disabled
+        capabilities: List of tool capabilities
+    """
     parameters = parameters or {"type": "object", "properties": {}}
-    # TODO: Split this function (31 lines) - KISS principle
     aliases = aliases or []
     capabilities = capabilities or []
 
@@ -304,18 +416,18 @@ def tool(
             )
 
             def wrapper(**kwargs) -> None:
+                # Initialize execution context
                 trace_id = _generate_trace_id()
                 start = time.perf_counter()
                 meta_entry = _TOOL_REGISTRY[name]
                 canonical_name = meta_entry["canonical"]
 
-                try:
-                    result = _execute_tool(func, kwargs, meta_entry, trace_id)
-                except Exception as e:
-                    _dbg(f"Tool '{name}' exception: {e}")
-                    _dbg("Traceback:\n" + traceback.format_exc())
-                    result = ToolResult(ok=False, error=str(e))
+                # Execute tool with error handling
+                result = _execute_tool_with_error_handling(
+                    func, kwargs, meta_entry, trace_id, name
+                )
 
+                # Record metrics and enrich result
                 elapsed_ms = (time.perf_counter() - start) * 1000.0
                 _record_invocation(name, elapsed_ms, result.ok, result.error)
                 _enrich_result_metadata(
@@ -324,12 +436,33 @@ def tool(
                 )
                 return result
 
+            # Register handler for main name and all aliases
             _TOOL_REGISTRY[name]["handler"] = wrapper
             for a in aliases:
                 _TOOL_REGISTRY[a]["handler"] = wrapper
         return wrapper
 
     return decorator
+
+
+def _execute_tool_with_error_handling(
+    func: Callable[..., Any],
+    kwargs: dict[str, Any],
+    meta_entry: dict[str, Any],
+    trace_id: str,
+    name: str,
+) -> ToolResult:
+    """
+    Execute tool with comprehensive error handling.
+    
+    تنفيذ الأداة مع معالجة شاملة للأخطاء.
+    """
+    try:
+        return _execute_tool(func, kwargs, meta_entry, trace_id)
+    except Exception as e:
+        _dbg(f"Tool '{name}' exception: {e}")
+        _dbg("Traceback:\n" + traceback.format_exc())
+        return ToolResult(ok=False, error=str(e))
 
 def get_tools_schema(include_disabled: bool = False) -> list[dict[str, Any]]:
     schema: list[dict[str, Any]] = []
