@@ -119,7 +119,21 @@ pytest tests/test_api_first_platform.py --cov=app/services/api_first_platform_se
 # ========================= 26 passed in 1.01s =========================
 ```
 
-### 4. استخدام الخدمة (Use the Service)
+### 4. توليد التوثيق (Generate Documentation)
+
+```bash
+# توليد التوثيق من العقود
+python scripts/generate_docs.py
+
+# أو استخدم Make
+make docs
+
+# عرض التوثيق في المتصفح
+make docs-serve
+# ثم افتح: http://localhost:8000
+```
+
+### 5. استخدام الخدمة (Use the Service)
 
 ```python
 from app.services.api_first_platform_service import (

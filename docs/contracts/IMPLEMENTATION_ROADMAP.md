@@ -42,7 +42,7 @@
 - [x] إعداد Spectral لـ linting العقود
 - [x] تكوين قواعد كشف التغييرات المكسّرة
 - [x] إنشاء pipeline للتحقق التلقائي
-- [ ] إعداد Schema Registry للأحداث
+- [x] إعداد Schema Registry للأحداث
 
 **الأدوات:**
 ```yaml
@@ -53,10 +53,10 @@ Schema Registry: Confluent/Apicurio
 ```
 
 #### 📝 يوم 5-7: التوثيق الأساسي
-- [ ] إعداد Swagger UI/Redoc
-- [ ] توليد Documentation من OpenAPI
-- [ ] إنشاء Getting Started Guide
-- [ ] إعداد Changelog Template
+- [x] إعداد Swagger UI/Redoc
+- [x] توليد Documentation من OpenAPI
+- [x] إنشاء Getting Started Guide
+- [x] إعداد Changelog Template
 
 ### الأسبوع الثاني (الأيام 8-14)
 

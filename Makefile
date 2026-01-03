@@ -187,12 +187,24 @@ coverage:
 # =============================================================================
 docs:
 	@echo "$(BLUE)📚 Generating documentation...$(NC)"
-	cd docs && make html
-	@echo "$(GREEN)✅ Documentation generated!$(NC)"
+	@python scripts/generate_docs.py --format both
+	@echo "$(GREEN)✅ API documentation generated!$(NC)"
 
 docs-serve:
 	@echo "$(BLUE)📚 Serving documentation...$(NC)"
-	cd docs/_build/html && python -m http.server 8000
+	@cd docs/generated && python -m http.server 8000
+
+docs-validate:
+	@echo "$(BLUE)🔍 Validating API contracts...$(NC)"
+	@for file in docs/contracts/openapi/*.yaml; do \
+		echo "Validating $$file..."; \
+		npx @stoplight/spectral-cli lint "$$file" --ruleset docs/contracts/policies/.spectral.yaml || true; \
+	done
+	@for file in docs/contracts/asyncapi/*.yaml; do \
+		echo "Validating $$file..."; \
+		npx @stoplight/spectral-cli lint "$$file" --ruleset docs/contracts/policies/.spectral.yaml || true; \
+	done
+	@echo "$(GREEN)✅ Contract validation complete!$(NC)"
 
 # =============================================================================
 # RUNNING

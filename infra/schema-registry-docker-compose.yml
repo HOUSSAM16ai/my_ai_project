@@ -1,0 +1,125 @@
+# Schema Registry Configuration
+# Confluent/Apicurio Schema Registry Setup
+# تكوين سجل المخططات
+
+version: '3.8'
+
+services:
+  # Schema Registry Service
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.3
+    hostname: schema-registry
+    container_name: schema-registry
+    depends_on:
+      - kafka
+    ports:
+      - "8081:8081"
+    environment:
+      # Kafka Configuration
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'kafka:9092'
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      
+      # Schema Registry Configuration
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
+      SCHEMA_REGISTRY_SCHEMA_COMPATIBILITY_LEVEL: backward
+      
+      # Authentication (if needed)
+      # SCHEMA_REGISTRY_AUTHENTICATION_METHOD: BASIC
+      # SCHEMA_REGISTRY_AUTHENTICATION_REALM: SchemaRegistry
+      # SCHEMA_REGISTRY_AUTHENTICATION_ROLES: admin,developer,readonly
+      
+      # HTTPS/TLS Configuration (production)
+      # SCHEMA_REGISTRY_SSL_KEYSTORE_LOCATION: /etc/schema-registry/secrets/schema-registry.keystore.jks
+      # SCHEMA_REGISTRY_SSL_KEYSTORE_PASSWORD: changeit
+      # SCHEMA_REGISTRY_SSL_KEY_PASSWORD: changeit
+      
+      # Monitoring
+      SCHEMA_REGISTRY_JMX_PORT: 9999
+      SCHEMA_REGISTRY_JMX_HOSTNAME: schema-registry
+    
+    volumes:
+      - schema-registry-secrets:/etc/schema-registry/secrets
+    
+    networks:
+      - cogniforge-network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    restart: unless-stopped
+
+  # Schema Registry UI (Optional - for visualization)
+  schema-registry-ui:
+    image: landoop/schema-registry-ui:latest
+    hostname: schema-registry-ui
+    container_name: schema-registry-ui
+    depends_on:
+      - schema-registry
+    ports:
+      - "8082:8000"
+    environment:
+      SCHEMAREGISTRY_URL: http://schema-registry:8081
+      PROXY: "true"
+    networks:
+      - cogniforge-network
+    restart: unless-stopped
+
+  # Kafka (Required for Schema Registry)
+  kafka:
+    image: confluentinc/cp-kafka:7.5.3
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: kafka
+    depends_on:
+      - zookeeper
+    networks:
+      - cogniforge-network
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    restart: unless-stopped
+
+  # Zookeeper (Required for Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.3
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - cogniforge-network
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+    restart: unless-stopped
+
+networks:
+  cogniforge-network:
+    driver: bridge
+
+volumes:
+  schema-registry-secrets:
+  kafka-data:
+  zookeeper-data:
+  zookeeper-logs:
