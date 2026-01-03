@@ -243,12 +243,31 @@ class MetricsArtist:
             str: SVG radial chart
             
         Complexity: O(n) where n is number of metrics
+        Note: تم تقسيم الدالة إلى helper methods لتطبيق KISS و SRP
         """
         width, height = 500, 500
         center_x, center_y = width // 2, height // 2
         max_radius = 180
         
-        svg = f'''<svg width="{width}" height="{height}" 
+        # بناء الـ SVG من المكونات
+        svg = self._create_svg_header(width, height, title)
+        svg += self._create_circular_grid(center_x, center_y, max_radius)
+        
+        if not metrics:
+            return svg + '</svg>'
+        
+        points, metrics_svg = self._create_metric_points(
+            metrics, center_x, center_y, max_radius
+        )
+        svg += metrics_svg
+        svg += self._create_connecting_polygon(points)
+        svg += '</svg>'
+        
+        return svg
+    
+    def _create_svg_header(self, width: int, height: int, title: str) -> str:
+        """إنشاء رأس SVG مع العنوان."""
+        return f'''<svg width="{width}" height="{height}" 
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
             
@@ -258,11 +277,15 @@ class MetricsArtist:
                   font-size="20"
                   font-weight="bold">{title}</text>
         '''
-        
-        # رسم شبكة دائرية
+    
+    def _create_circular_grid(
+        self, center_x: int, center_y: int, max_radius: int
+    ) -> str:
+        """إنشاء الشبكة الدائرية للخلفية."""
+        grid_svg = ""
         for i in range(1, 5):
             radius = (max_radius / 4) * i
-            svg += f'''
+            grid_svg += f'''
             <circle cx="{center_x}" cy="{center_y}" 
                     r="{radius}" 
                     fill="none"
@@ -270,12 +293,16 @@ class MetricsArtist:
                     stroke-width="1"
                     opacity="0.2"/>
             '''
-        
-        # رسم المقاييس
-        if not metrics:
-            svg += '</svg>'
-            return svg
-        
+        return grid_svg
+    
+    def _create_metric_points(
+        self,
+        metrics: dict[str, float],
+        center_x: int,
+        center_y: int,
+        max_radius: int
+    ) -> tuple[list[tuple[float, float]], str]:
+        """إنشاء نقاط المقاييس وعناصر SVG الخاصة بها."""
         num_metrics = len(metrics)
         angle_step = 360 / num_metrics
         max_value = max(metrics.values()) if metrics else 1
@@ -287,22 +314,41 @@ class MetricsArtist:
         )
         
         points = []
+        svg = ""
+        
         for i, (key, value) in enumerate(metrics.items()):
-            angle = i * angle_step - 90  # start from top
-            angle_rad = math.radians(angle)
-            
-            # نسبة القيمة من الحد الأقصى
-            normalized = value / max_value if max_value > 0 else 0
-            radius = normalized * max_radius
-            
-            # حساب الموقع
-            x = center_x + radius * math.cos(angle_rad)
-            y = center_y + radius * math.sin(angle_rad)
-            points.append((x, y))
-            
-            # رسم خط من المركز
-            color = gradient[i]
-            svg += f'''
+            point, point_svg = self._create_single_metric_point(
+                i, key, value, angle_step, max_value, max_radius,
+                center_x, center_y, gradient[i]
+            )
+            points.append(point)
+            svg += point_svg
+        
+        return points, svg
+    
+    def _create_single_metric_point(
+        self,
+        index: int,
+        key: str,
+        value: float,
+        angle_step: float,
+        max_value: float,
+        max_radius: int,
+        center_x: int,
+        center_y: int,
+        color: str
+    ) -> tuple[tuple[float, float], str]:
+        """إنشاء نقطة مقياس واحدة مع عناصر SVG."""
+        angle = index * angle_step - 90  # البداية من الأعلى
+        angle_rad = math.radians(angle)
+        
+        normalized = value / max_value if max_value > 0 else 0
+        radius = normalized * max_radius
+        
+        x = center_x + radius * math.cos(angle_rad)
+        y = center_y + radius * math.sin(angle_rad)
+        
+        svg = f'''
             <line x1="{center_x}" y1="{center_y}" 
                   x2="{x}" y2="{y}"
                   stroke="{color}"
@@ -317,21 +363,23 @@ class MetricsArtist:
             <text x="{x + 15}" y="{y}" 
                   fill="{self.palette.text}"
                   font-size="12">{key}: {value:.1f}</text>
-            '''
+        '''
         
-        # رسم مضلع يربط النقاط
-        if len(points) > 2:
-            polygon_points = " ".join([f"{x},{y}" for x, y in points])
-            svg += f'''
+        return (x, y), svg
+    
+    def _create_connecting_polygon(self, points: list[tuple[float, float]]) -> str:
+        """إنشاء المضلع الذي يربط النقاط."""
+        if len(points) <= 2:
+            return ""
+        
+        polygon_points = " ".join([f"{x},{y}" for x, y in points])
+        return f'''
             <polygon points="{polygon_points}"
                      fill="{self.palette.primary}"
                      opacity="0.2"
                      stroke="{self.palette.primary}"
                      stroke-width="2"/>
-            '''
-        
-        svg += '</svg>'
-        return svg
+        '''
     
     def create_bar_art(
         self,
