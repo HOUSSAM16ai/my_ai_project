@@ -76,7 +76,7 @@ DIRECTORY_STRUCTURE = {
             "knowledge.py": "📚 معرفة المشروع - قاعدة البيانات والبنية",
             "identity.py": "🆔 المعرفة الذاتية - من أنا؟ من المؤسس؟",
             "capabilities.py": "⚡ القدرات - التعديل على الملفات",
-            "github_integration.py": "🐙 تكامل GitHub - تحكم 100%",
+            "github_integration/": "🐙 تكامل GitHub - تحكم 100% (Refactored)",
             "user_knowledge.py": "👥 معرفة المستخدمين - كل التفاصيل",
             
             # التخطيط والتنظيم (Planning & Organization)
@@ -269,7 +269,7 @@ ADVANCED_SYSTEMS = {
     },
     
     "GitHubIntegration": {
-        "file": "github_integration.py",
+        "file": "github_integration/service.py",
         "description": "🐙 تكامل GitHub الكامل - تحكم 100%",
         "features": [
             "Branches Management (إدارة الفروع)",
