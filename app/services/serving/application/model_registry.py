@@ -79,7 +79,6 @@ class ModelRegistry:
 
             return True
 
-    # TODO: Split this function (31 lines) - KISS principle
     def unload_model(self, version_id: str) -> bool:
         """
         Unload a model (graceful shutdown).
@@ -93,25 +92,44 @@ class ModelRegistry:
             True if unload initiated, False if model not found
         """
         with self._lock:
+            # Validate model exists
             model = self._repository.get(version_id)
             if not model:
                 _LOG.warning(f"Model {version_id} not found for unload")
                 return False
 
-            # Set draining status
-            model.status = ModelStatus.DRAINING
-            self._repository.update(model)
-
-            _LOG.info(f"Draining model {version_id}")
-
-            # Start async draining process
-            threading.Thread(
-                target=self._drain_and_stop,
-                args=(version_id,),
-                daemon=True,
-            ).start()
+            # Initiate draining process
+            self._initiate_draining(model)
+            
+            # Start async draining and stopping
+            self._start_async_drain_and_stop(version_id)
 
             return True
+
+    def _initiate_draining(self, model: ModelVersion) -> None:
+        """
+        بدء عملية التفريغ | Initiate draining process
+        
+        Args:
+            model: نسخة النموذج | Model version
+        """
+        model.status = ModelStatus.DRAINING
+        self._repository.update(model)
+        _LOG.info(f"Draining model {model.version_id}")
+
+    def _start_async_drain_and_stop(self, version_id: str) -> None:
+        """
+        بدء عملية التفريغ والإيقاف بشكل غير متزامن
+        Start async draining and stopping process
+        
+        Args:
+            version_id: معرف نسخة النموذج | Model version ID
+        """
+        threading.Thread(
+            target=self._drain_and_stop,
+            args=(version_id,),
+            daemon=True,
+        ).start()
 
     def get_model(self, version_id: str) -> ModelVersion | None:
         """Get model by version ID"""

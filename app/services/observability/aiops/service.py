@@ -135,40 +135,90 @@ class AIOpsService:
                 self._record_anomaly(anomaly)
                 self._trigger_healing(anomaly)
 
-    # TODO: Split this function (32 lines) - KISS principle
     def _detect_zscore_anomaly(
         self, data: TelemetryData, baseline: dict[str, float]
     ) -> AnomalyDetection | None:
-        """Detect anomaly using Z-score"""
+        """
+        كشف الشذوذ باستخدام Z-score | Detect anomaly using Z-score
+        
+        Args:
+            data: بيانات القياس | Telemetry data
+            baseline: القيم الأساسية | Baseline metrics
+            
+        Returns:
+            كشف الشذوذ أو None | Anomaly detection or None
+        """
         mean = baseline["mean"]
         stdev = baseline["stdev"]
 
         if stdev == 0:
             return None
 
+        # Calculate Z-score
         zscore = abs((data.value - mean) / stdev)
         threshold = self.anomaly_thresholds.get(data.metric_type, {}).get("zscore", 3.0)
 
+        # Check if anomaly detected
         if zscore > threshold:
-            severity = AnomalySeverity.CRITICAL if zscore > 5 else AnomalySeverity.HIGH
-
-            return AnomalyDetection(
-                anomaly_id=str(uuid.uuid4()),
-                service_name=data.service_name,
-                anomaly_type=(
-                    AnomalyType.LATENCY_SPIKE
-                    if data.metric_type == MetricType.LATENCY
-                    else AnomalyType.TRAFFIC_ANOMALY
-                ),
-                severity=severity,
-                detected_at=datetime.now(UTC),
-                metric_value=data.value,
-                expected_value=mean,
-                confidence=min(0.95, zscore / 10),
-                description=f"{data.metric_type.value} anomaly: {data.value:.2f} (z-score: {zscore:.2f})",
-            )
+            return self._create_zscore_anomaly(data, mean, zscore)
 
         return None
+
+    def _create_zscore_anomaly(
+        self, data: TelemetryData, mean: float, zscore: float
+    ) -> AnomalyDetection:
+        """
+        إنشاء كائن كشف الشذوذ | Create anomaly detection object
+        
+        Args:
+            data: بيانات القياس | Telemetry data
+            mean: المتوسط | Mean value
+            zscore: قيمة Z-score | Z-score value
+            
+        Returns:
+            كائن كشف الشذوذ | Anomaly detection object
+        """
+        severity = self._determine_anomaly_severity(zscore)
+        anomaly_type = self._determine_anomaly_type(data.metric_type)
+
+        return AnomalyDetection(
+            anomaly_id=str(uuid.uuid4()),
+            service_name=data.service_name,
+            anomaly_type=anomaly_type,
+            severity=severity,
+            detected_at=datetime.now(UTC),
+            metric_value=data.value,
+            expected_value=mean,
+            confidence=min(0.95, zscore / 10),
+            description=f"{data.metric_type.value} anomaly: {data.value:.2f} (z-score: {zscore:.2f})",
+        )
+
+    def _determine_anomaly_severity(self, zscore: float) -> AnomalySeverity:
+        """
+        تحديد شدة الشذوذ | Determine anomaly severity
+        
+        Args:
+            zscore: قيمة Z-score | Z-score value
+            
+        Returns:
+            شدة الشذوذ | Anomaly severity
+        """
+        return AnomalySeverity.CRITICAL if zscore > 5 else AnomalySeverity.HIGH
+
+    def _determine_anomaly_type(self, metric_type: MetricType) -> AnomalyType:
+        """
+        تحديد نوع الشذوذ | Determine anomaly type
+        
+        Args:
+            metric_type: نوع المقياس | Metric type
+            
+        Returns:
+            نوع الشذوذ | Anomaly type
+        """
+        if metric_type == MetricType.LATENCY:
+            return AnomalyType.LATENCY_SPIKE
+        else:
+            return AnomalyType.TRAFFIC_ANOMALY
 
     def _record_anomaly(self, anomaly: AnomalyDetection):
         """Record detected anomaly"""
