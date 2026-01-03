@@ -118,8 +118,10 @@ def _is_same_content(new_hash: str, force: bool) -> bool:
     if force:
         return False
     
-    return (new_hash == g._DEEP_STRUCT_HASH and 
-            g._DEEP_STRUCT_MAP is not None)
+    return (
+        new_hash == g._DEEP_STRUCT_HASH
+        and g._DEEP_STRUCT_MAP is not None
+    )
 
 
 def _normalize_file_paths(files: dict) -> dict:
