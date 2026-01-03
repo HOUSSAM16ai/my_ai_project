@@ -70,12 +70,17 @@
 
 ### التقارير التفصيلية
 في `/docs/reports/`:
-- **[SIMPLIFICATION_ANALYSIS_2026.md](docs/reports/SIMPLIFICATION_ANALYSIS_2026.md)** - 🆕 تحليل شامل للتبسيط (2026-01-02)
-- **[GIT_HISTORY_REVIEW_2026.md](docs/reports/GIT_HISTORY_REVIEW_2026.md)** - مراجعة سجل Git
+- **[GIT_REVIEW_COMPREHENSIVE_2026.md](docs/reports/GIT_REVIEW_COMPREHENSIVE_2026.md)** - 🆕 مراجعة Git الشاملة (موحد - 2026-01-03)
+- **[SIMPLIFICATION_ANALYSIS_2026.md](docs/reports/SIMPLIFICATION_ANALYSIS_2026.md)** - تحليل شامل للتبسيط
 - **[SIMPLIFICATION_PROGRESS_REPORT.md](docs/reports/SIMPLIFICATION_PROGRESS_REPORT.md)** - تقرير التبسيط
+- **[PHASE9_SUPER_INTELLIGENCE_REFACTORING_PLAN.md](docs/reports/PHASE9_SUPER_INTELLIGENCE_REFACTORING_PLAN.md)** - خطة Phase 9
+- **[CODE_DEEP_ANALYSIS_2026.md](docs/reports/CODE_DEEP_ANALYSIS_2026.md)** - تحليل الكود العميق
 - **[ARCHITECTURE_ANALYSIS.md](docs/reports/ARCHITECTURE_ANALYSIS.md)** - تحليل البنية
 - **[VERIFICATION_REPORT.md](docs/reports/VERIFICATION_REPORT.md)** - تقرير التحقق
 - **[PROJECT_ANALYSIS_REPORT.md](docs/reports/PROJECT_ANALYSIS_REPORT.md)** - تحليل المشروع
+
+### التقارير المؤرشفة
+- **[docs/archive/reports_archive/](docs/archive/reports_archive/)** - تقارير Git القديمة المدمجة
 
 ---
 
