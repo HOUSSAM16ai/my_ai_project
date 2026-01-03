@@ -344,3 +344,12 @@ python3 -m py_compile app/services/boundaries/admin_chat_boundary_service.py
 
 **Built with ❤️ following strict principles**
 **تم البناء باتباع المبادئ الصارمة**
+
+### Phase 16: Legacy Cleanup - 2026-01-03
+- **Action:** Removed legacy `app/services/llm_client` service.
+  - **Reason:** Redundant duplicate of `app/core/ai_gateway.py`.
+  - **Impact:** Removed blocking synchronous code and potential confusion sources.
+- **Action:** Removed legacy `app/services/api` wrapper/facade layer.
+  - **Reason:** Contained unused shims/adapters (api_event_driven, api_governance, etc.)
+  - **Refactor:** Moved `ConfigSecretsService` to `app/services/api_config_secrets/service.py`.
+- **Status:** ✅ Completed.
