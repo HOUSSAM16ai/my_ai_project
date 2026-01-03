@@ -509,12 +509,29 @@ class NetworkArtist:
             str: SVG network visualization
             
         Complexity: O(n + e) where n is nodes, e is edges
+        Note: تم تقسيم الدالة إلى helper methods لتطبيق KISS
         """
         width, height = 700, 700
         center_x, center_y = width // 2, height // 2
         radius = 250
         
-        svg = f'''<svg width="{width}" height="{height}" 
+        svg = self._create_network_header(width, height, title)
+        
+        if not nodes:
+            return svg + '</svg>'
+        
+        node_positions = self._calculate_node_positions(
+            nodes, center_x, center_y, radius
+        )
+        svg += self._draw_edges(edges, node_positions)
+        svg += self._draw_nodes(nodes, node_positions)
+        svg += '</svg>'
+        
+        return svg
+    
+    def _create_network_header(self, width: int, height: int, title: str) -> str:
+        """إنشاء رأس الشبكة."""
+        return f'''<svg width="{width}" height="{height}" 
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
             
@@ -524,17 +541,19 @@ class NetworkArtist:
                   font-size="20"
                   font-weight="bold">{title}</text>
         '''
-        
-        # ترتيب العقد في دائرة
+    
+    def _calculate_node_positions(
+        self,
+        nodes: list[dict[str, Any]],
+        center_x: int,
+        center_y: int,
+        radius: int
+    ) -> dict[str, tuple[float, float]]:
+        """حساب مواقع العقد في دائرة."""
         num_nodes = len(nodes)
-        if num_nodes == 0:
-            svg += '</svg>'
-            return svg
-        
         angle_step = 360 / num_nodes
         node_positions: dict[str, tuple[float, float]] = {}
         
-        # حساب مواقع العقد
         for i, node in enumerate(nodes):
             angle = i * angle_step - 90
             angle_rad = math.radians(angle)
@@ -545,7 +564,15 @@ class NetworkArtist:
             node_id = node.get("id", f"node_{i}")
             node_positions[node_id] = (x, y)
         
-        # رسم الاتصالات (edges)
+        return node_positions
+    
+    def _draw_edges(
+        self,
+        edges: list[tuple[str, str]],
+        node_positions: dict[str, tuple[float, float]]
+    ) -> str:
+        """رسم الاتصالات بين العقد."""
+        svg = ""
         for source, target in edges:
             if source in node_positions and target in node_positions:
                 x1, y1 = node_positions[source]
@@ -558,14 +585,22 @@ class NetworkArtist:
                       stroke-width="1"
                       opacity="0.3"/>
                 '''
-        
-        # رسم العقد
+        return svg
+    
+    def _draw_nodes(
+        self,
+        nodes: list[dict[str, Any]],
+        node_positions: dict[str, tuple[float, float]]
+    ) -> str:
+        """رسم العقد مع التسميات."""
+        num_nodes = len(nodes)
         gradient = VisualTheme.create_gradient(
             self.palette.primary,
             self.palette.accent,
             steps=num_nodes
         )
         
+        svg = ""
         for i, node in enumerate(nodes):
             node_id = node.get("id", f"node_{i}")
             if node_id not in node_positions:
@@ -588,5 +623,4 @@ class NetworkArtist:
                   font-size="11">{label}</text>
             '''
         
-        svg += '</svg>'
         return svg
