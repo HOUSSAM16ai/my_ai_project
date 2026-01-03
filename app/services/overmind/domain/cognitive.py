@@ -86,6 +86,199 @@ class SuperBrain:
         self.operator = operator
         self.auditor = auditor
 
+    async def _create_safe_logger(
+        self,
+        log_event: Callable[[str, dict[str, Any]], Awaitable[None]] | None
+    ) -> Callable[[str, dict[str, Any]], Awaitable[None]]:
+        """
+        إنشاء دالة تسجيل آمنة.
+        
+        Args:
+            log_event: دالة التسجيل الاختيارية
+            
+        Returns:
+            دالة تسجيل آمنة
+        """
+        async def safe_log(evt_type: str, data: dict[str, Any]) -> None:
+            if log_event:
+                await log_event(evt_type, data)
+        return safe_log
+
+    async def _handle_planning_phase(
+        self,
+        state: CognitiveState,
+        collab_context: InMemoryCollaborationContext,
+        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]]
+    ) -> CognitiveCritique:
+        """
+        معالجة مرحلة التخطيط والمراجعة.
+        
+        Args:
+            state: حالة المهمة المعرفية
+            collab_context: سياق التعاون
+            safe_log: دالة التسجيل الآمنة
+            
+        Returns:
+            نتيجة المراجعة
+            
+        Raises:
+            RuntimeError: في حال مشاكل في خدمة الذكاء الاصطناعي
+        """
+        # طلب خطة جديدة
+        state.plan = await self._execute_phase(
+            phase_name=CognitivePhase.PLANNING,
+            agent_name="Strategist",
+            action=lambda: self.strategist.create_plan(state.objective, collab_context),
+            timeout=120.0,
+            log_func=safe_log
+        )
+
+        # الكشف عن الحلقات المفرغة (Loop Detection)
+        await self._detect_and_handle_stalemate(state, collab_context, safe_log)
+
+        # مراجعة الخطة (Auditor)
+        raw_critique = await self._execute_phase(
+            phase_name=CognitivePhase.REVIEW_PLAN,
+            agent_name="Auditor",
+            action=lambda: self.auditor.review_work(
+                state.plan, 
+                f"Plan for: {state.objective}", 
+                collab_context
+            ),
+            timeout=60.0,
+            log_func=safe_log
+        )
+
+        critique = CognitiveCritique(
+            approved=raw_critique.get("approved", False),
+            feedback=raw_critique.get("feedback", "No feedback provided"),
+            score=raw_critique.get("score", 0.0)
+        )
+
+        if not critique.approved:
+            await safe_log(CognitiveEvent.PLAN_REJECTED, {"critique": critique.model_dump()})
+            # التحقق من أخطاء التكوين
+            if "OPENROUTER_API_KEY" in critique.feedback:
+                raise RuntimeError(OvermindMessage.AI_SERVICE_UNAVAILABLE)
+        else:
+            await safe_log(CognitiveEvent.PLAN_APPROVED, {"critique": critique.model_dump()})
+
+        return critique
+
+    async def _detect_and_handle_stalemate(
+        self,
+        state: CognitiveState,
+        collab_context: InMemoryCollaborationContext,
+        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]]
+    ) -> None:
+        """
+        الكشف عن الحلقات المفرغة ومعالجتها.
+        
+        Args:
+            state: حالة المهمة المعرفية
+            collab_context: سياق التعاون
+            safe_log: دالة التسجيل الآمنة
+            
+        Raises:
+            StalemateError: عند اكتشاف حلقة مفرغة
+        """
+        try:
+            if hasattr(self.auditor, "detect_loop"):
+                self.auditor.detect_loop(state.history_hashes, state.plan)
+
+            # إضافة بصمة الخطة الحالية للتاريخ
+            if hasattr(self.auditor, "_compute_hash"):
+                state.history_hashes.append(self.auditor._compute_hash(state.plan))
+
+        except StalemateError as e:
+            logger.warning(f"Stalemate detected: {e}")
+            await safe_log("stalemate_detected", {"reason": str(e)})
+
+            # استراتيجية كسر الجمود
+            collab_context.update(
+                "system_override",
+                "Warning: You are repeating failed plans. CHANGE STRATEGY IMMEDIATELY. "
+                "Do not use the same tools or logic."
+            )
+            # إعادة رفع الخطأ للمعالجة في المستوى الأعلى
+            raise
+
+    async def _execute_design_phase(
+        self,
+        state: CognitiveState,
+        collab_context: InMemoryCollaborationContext,
+        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]]
+    ) -> None:
+        """
+        تنفيذ مرحلة التصميم.
+        
+        Args:
+            state: حالة المهمة المعرفية
+            collab_context: سياق التعاون
+            safe_log: دالة التسجيل الآمنة
+        """
+        state.design = await self._execute_phase(
+            phase_name=CognitivePhase.DESIGN,
+            agent_name="Architect",
+            action=lambda: self.architect.design_solution(state.plan, collab_context),
+            timeout=120.0,
+            log_func=safe_log
+        )
+
+    async def _execute_execution_phase(
+        self,
+        state: CognitiveState,
+        collab_context: InMemoryCollaborationContext,
+        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]]
+    ) -> None:
+        """
+        تنفيذ مرحلة التنفيذ.
+        
+        Args:
+            state: حالة المهمة المعرفية
+            collab_context: سياق التعاون
+            safe_log: دالة التسجيل الآمنة
+        """
+        state.execution_result = await self._execute_phase(
+            phase_name=CognitivePhase.EXECUTION,
+            agent_name="Operator",
+            action=lambda: self.operator.execute_tasks(state.design, collab_context),
+            timeout=300.0,
+            log_func=safe_log
+        )
+
+    async def _execute_reflection_phase(
+        self,
+        state: CognitiveState,
+        collab_context: InMemoryCollaborationContext,
+        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]]
+    ) -> None:
+        """
+        تنفيذ مرحلة الانعكاس والمراجعة النهائية.
+        
+        Args:
+            state: حالة المهمة المعرفية
+            collab_context: سياق التعاون
+            safe_log: دالة التسجيل الآمنة
+        """
+        raw_final_critique = await self._execute_phase(
+            phase_name=CognitivePhase.REFLECTION,
+            agent_name="Auditor",
+            action=lambda: self.auditor.review_work(
+                state.execution_result, 
+                state.objective, 
+                collab_context
+            ),
+            timeout=60.0,
+            log_func=safe_log
+        )
+        
+        state.critique = CognitiveCritique(
+            approved=raw_final_critique.get("approved", False),
+            feedback=raw_final_critique.get("feedback", "No feedback provided"),
+            score=raw_final_critique.get("score", 0.0)
+        )
+
     async def process_mission(
         self,
         mission: Mission,
@@ -109,11 +302,7 @@ class SuperBrain:
         """
         state = CognitiveState(mission_id=mission.id, objective=mission.objective)
         collab_context = InMemoryCollaborationContext(context)
-
-        # دالة مساعدة للتسجيل الآمن
-        async def safe_log(evt_type: str, data: dict[str, Any]) -> None:
-            if log_event:
-                await log_event(evt_type, data)
+        safe_log = await self._create_safe_logger(log_event)
 
         while state.iteration_count < state.max_iterations:
             state.iteration_count += 1
@@ -122,111 +311,46 @@ class SuperBrain:
             try:
                 # --- المرحلة 1: التخطيط (Strategist) ---
                 if not state.plan or state.current_phase == CognitivePhase.RE_PLANNING:
-
-                    # طلب خطة جديدة
-                    state.plan = await self._execute_phase(
-                        phase_name=CognitivePhase.PLANNING,
-                        agent_name="Strategist",
-                        action=lambda: self.strategist.create_plan(state.objective, collab_context),
-                        timeout=120.0,
-                        log_func=safe_log
-                    )
-
-                    # [New Feature] الكشف عن الحلقات المفرغة (Loop Detection)
-                    # يستخدم المدقق لفحص ما إذا كانت هذه الخطة تكراراً لخطط فاشلة سابقة
                     try:
-                        if hasattr(self.auditor, "detect_loop"):
-                            self.auditor.detect_loop(state.history_hashes, state.plan)
-
-                        # إضافة بصمة الخطة الحالية للتاريخ
-                        if hasattr(self.auditor, "_compute_hash"):
-                            state.history_hashes.append(self.auditor._compute_hash(state.plan))
-
-                    except StalemateError as e:
-                        logger.warning(f"Stalemate detected: {e}")
-                        await safe_log("stalemate_detected", {"reason": str(e)})
-
-                        # استراتيجية كسر الجمود (Breakthrough Strategy)
-                        # نضيف توجيهاً صارماً للسياق لتغيير النهج
-                        collab_context.update("system_override", "Warning: You are repeating failed plans. CHANGE STRATEGY IMMEDIATELY. Do not use the same tools or logic.")
-
-                        # نرفع الخطأ لنعيد المحاولة مع التوجيه الجديد في الدورة القادمة
-                        # (أو ننتقل للمعالجة في catch block إذا أردنا)
-                        # هنا سنقوم بإعادة التخطيط فوراً
+                        critique = await self._handle_planning_phase(state, collab_context, safe_log)
+                        
+                        if not critique.approved:
+                            state.current_phase = CognitivePhase.RE_PLANNING
+                            collab_context.update("feedback_from_previous_attempt", critique.feedback)
+                            continue  # إعادة المحاولة
+                    
+                    except StalemateError:
+                        # استراتيجية كسر الجمود - إعادة التخطيط فوراً
                         state.current_phase = CognitivePhase.RE_PLANNING
                         continue
 
-                    # مراجعة الخطة (Auditor)
-                    raw_critique = await self._execute_phase(
-                        phase_name=CognitivePhase.REVIEW_PLAN,
-                        agent_name="Auditor",
-                        action=lambda: self.auditor.review_work(state.plan, f"Plan for: {state.objective}", collab_context),
-                        timeout=60.0,
-                        log_func=safe_log
-                    )
-
-                    critique = CognitiveCritique(
-                        approved=raw_critique.get("approved", False),
-                        feedback=raw_critique.get("feedback", "No feedback provided"),
-                        score=raw_critique.get("score", 0.0)
-                    )
-
-                    if not critique.approved:
-                        await safe_log(CognitiveEvent.PLAN_REJECTED, {"critique": critique.model_dump()})
-                        # التحقق من أخطاء التكوين
-                        if "OPENROUTER_API_KEY" in critique.feedback:
-                            raise RuntimeError(OvermindMessage.AI_SERVICE_UNAVAILABLE)
-
-                        state.current_phase = CognitivePhase.RE_PLANNING
-                        collab_context.update("feedback_from_previous_attempt", critique.feedback)
-                        continue # إعادة المحاولة
-
-                    await safe_log(CognitiveEvent.PLAN_APPROVED, {"critique": critique.model_dump()})
-
                 # --- المرحلة 2: التصميم (Architect) ---
-                state.design = await self._execute_phase(
-                    phase_name=CognitivePhase.DESIGN,
-                    agent_name="Architect",
-                    action=lambda: self.architect.design_solution(state.plan, collab_context),
-                    timeout=120.0,
-                    log_func=safe_log
-                )
+                await self._execute_design_phase(state, collab_context, safe_log)
 
                 # --- المرحلة 3: التنفيذ (Operator) ---
-                state.execution_result = await self._execute_phase(
-                    phase_name=CognitivePhase.EXECUTION,
-                    agent_name="Operator",
-                    action=lambda: self.operator.execute_tasks(state.design, collab_context),
-                    timeout=300.0,
-                    log_func=safe_log
-                )
+                await self._execute_execution_phase(state, collab_context, safe_log)
 
                 # --- المرحلة 4: الانعكاس والمراجعة النهائية (Auditor) ---
-                raw_final_critique = await self._execute_phase(
-                    phase_name=CognitivePhase.REFLECTION,
-                    agent_name="Auditor",
-                    action=lambda: self.auditor.review_work(state.execution_result, state.objective, collab_context),
-                    timeout=60.0,
-                    log_func=safe_log
-                )
-                state.critique = CognitiveCritique(
-                    approved=raw_final_critique.get("approved", False),
-                    feedback=raw_final_critique.get("feedback", "No feedback provided"),
-                    score=raw_final_critique.get("score", 0.0)
-                )
+                await self._execute_reflection_phase(state, collab_context, safe_log)
 
                 if state.critique.approved:
                     await safe_log(CognitiveEvent.MISSION_SUCCESS, {"result": state.execution_result})
                     return state.execution_result or {}
 
-                await safe_log(CognitiveEvent.MISSION_CRITIQUE_FAILED, {"critique": state.critique.model_dump()})
+                await safe_log(
+                    CognitiveEvent.MISSION_CRITIQUE_FAILED, 
+                    {"critique": state.critique.model_dump()}
+                )
                 state.current_phase = CognitivePhase.RE_PLANNING
                 collab_context.update("feedback_from_execution", state.critique.feedback)
 
             except StalemateError as se:
-                # معالجة خاصة للجمود إذا وصل إلى هنا
+                # معالجة خاصة للجمود
                 logger.error(f"Stalemate trapped in main loop: {se}")
-                collab_context.update("system_override", "CRITICAL: INFINITE LOOP DETECTED. TRY SOMETHING DRASTICALLY DIFFERENT.")
+                collab_context.update(
+                    "system_override",
+                    "CRITICAL: INFINITE LOOP DETECTED. TRY SOMETHING DRASTICALLY DIFFERENT."
+                )
                 state.current_phase = CognitivePhase.RE_PLANNING
 
             except Exception as e:
