@@ -9,7 +9,7 @@ import json
 import logging
 import time
 from collections.abc import AsyncGenerator
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 import httpx
 
@@ -24,6 +24,7 @@ from app.core.gateway.exceptions import (
     AIAllModelsExhaustedError,
     AIConnectionError,
     AIRateLimitError,
+    StreamInterruptedError,
 )
 from app.core.gateway.node import NeuralNode
 
@@ -40,7 +41,7 @@ CIRCUIT_RECOVERY_TIMEOUT = 30.0
 
 @runtime_checkable
 class AIClient(Protocol):
-    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]: ...
+    def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]: ...
 
     async def send_message(
         self,
@@ -69,6 +70,10 @@ class NeuralRoutingMesh:
         }
 
         self.nodes_map: dict[str, NeuralNode] = self._initialize_nodes()
+
+    async def __aiter__(self):
+        """Allow the client to be used as an async iterator context if needed."""
+        return self
 
     def _initialize_nodes(self) -> dict[str, NeuralNode]:
         nodes = {}
@@ -147,71 +152,110 @@ class NeuralRoutingMesh:
             raise ValueError("Messages list cannot be empty")
 
         prompt = messages[-1].get("content", "")
-        context_str = json.dumps(list(messages[:-1]), sort_keys=True)
-        context_hash = hashlib.sha256(context_str.encode()).hexdigest()
+        context_hash = self._get_context_hash(messages)
 
-        # Check Cache
+        # 1. Check Cache
         if messages[-1].get("role") == "user":
             cached_memory = get_cognitive_engine().recall(prompt, context_hash)
             if cached_memory:
-                logger.info(f"⚡️ Cognitive Recall: Serving cached response for '{prompt[:20]}...'")
-                for chunk in cached_memory:
+                async for chunk in self._yield_cached_response(cached_memory, prompt):
                     yield chunk
                 return
 
+        # 2. Get Prioritized Nodes
         priority_nodes = self._get_prioritized_nodes(prompt)
         if not priority_nodes:
             raise AIAllModelsExhaustedError("All circuits are open, no models available.")
 
+        # 3. Attempt Nodes
         errors = []
-
         for node in priority_nodes:
             if not node.circuit_breaker.allow_request():
                 continue
 
-            start_time = time.time()
             try:
-                # Use a dedicated processor/helper to stream from this node
-                full_response_chunks = []
-                chunks_yielded = 0
-
-                async for chunk in self._stream_from_node_with_retry(node, messages):
+                # We need to yield from the generator, so we can't easily put this in a separate function
+                # that yields, unless we iterate over it.
+                async for chunk in self._attempt_node_stream(node, messages, prompt, context_hash):
                     yield chunk
-                    full_response_chunks.append(chunk)
-                    chunks_yielded += 1
-
-                duration = (time.time() - start_time) * 1000
-                node.circuit_breaker.record_success()
-                self._record_metrics(node, prompt, duration, True)
-
-                if node.model_id != SAFETY_NET_MODEL_ID:
-                     get_cognitive_engine().memorize(prompt, context_hash, full_response_chunks)
-
                 return
-
-            except AIRateLimitError:
-                duration = (time.time() - start_time) * 1000
-                node.circuit_breaker.record_saturation()
-                self._record_metrics(node, prompt, duration, False)
-                errors.append(f"{node.model_id}: Rate Limited")
-                continue
-
-            except (AIConnectionError, ValueError, Exception) as e:
-                duration = (time.time() - start_time) * 1000
-                # IMPORTANT FIX: If we have already yielded data, we CANNOT failover.
-                if 'chunks_yielded' in locals() and chunks_yielded > 0:
-                    logger.critical(f"Stream severed mid-transmission from {node.model_id}. Cannot failover safely.")
-                    node.circuit_breaker.record_failure()
-                    self._record_metrics(node, prompt, duration, False)
-                    raise e
-
-                node.circuit_breaker.record_failure()
-                self._record_metrics(node, prompt, duration, False)
+            except StreamInterruptedError:
+                # CRITICAL: Stream failed mid-transmission.
+                # Do NOT failover to another node, as this would result in duplicate/corrupted output.
+                # Re-raise immediately.
+                logger.critical(f"Stream interrupted for {node.model_id}. Aborting without failover.")
+                raise
+            except (AIConnectionError, ValueError, AIRateLimitError, Exception) as e:
+                # Error handling is now inside _attempt_node_stream mostly, but it re-raises
+                # for the loop to continue or stop.
                 errors.append(f"{node.model_id}: {e!s}")
-                logger.warning(f"Node {node.model_id} failed: {e}")
+                # Rate limits are handled inside _attempt_node_stream logging
+                # Connection errors are handled inside _attempt_node_stream logging
+                # Critical failures (partial stream) raise through and stop everything
                 continue
 
         raise AIAllModelsExhaustedError(f"All models failed. Errors: {errors}")
+
+    def _get_context_hash(self, messages: list[dict]) -> str:
+        """Calculate hash of the conversation context"""
+        context_str = json.dumps(list(messages[:-1]), sort_keys=True)
+        return hashlib.sha256(context_str.encode()).hexdigest()
+
+    async def _yield_cached_response(self, cached_memory: list[Any], prompt: str) -> AsyncGenerator[dict, None]:
+        """Yield cached response chunks"""
+        logger.info(f"⚡️ Cognitive Recall: Serving cached response for '{prompt[:20]}...'")
+        for chunk in cached_memory:
+            yield chunk
+
+    async def _attempt_node_stream(
+        self,
+        node: NeuralNode,
+        messages: list[dict],
+        prompt: str,
+        context_hash: str
+    ) -> AsyncGenerator[dict, None]:
+        """
+        Attempt to stream from a specific node.
+        Handles success recording and error recording/raising.
+        """
+        start_time = time.time()
+        full_response_chunks = []
+        chunks_yielded = 0
+
+        try:
+            async for chunk in self._stream_from_node_with_retry(node, messages):
+                yield chunk
+                full_response_chunks.append(chunk)
+                chunks_yielded += 1
+
+            duration = (time.time() - start_time) * 1000
+            node.circuit_breaker.record_success()
+            self._record_metrics(node, prompt, duration, True)
+
+            if node.model_id != SAFETY_NET_MODEL_ID:
+                get_cognitive_engine().memorize(prompt, context_hash, full_response_chunks)
+
+        except AIRateLimitError as e:
+            duration = (time.time() - start_time) * 1000
+            node.circuit_breaker.record_saturation()
+            self._record_metrics(node, prompt, duration, False)
+            raise e
+
+        except (AIConnectionError, ValueError, Exception) as e:
+            duration = (time.time() - start_time) * 1000
+
+            # CRITICAL: Check if we have already yielded data
+            if chunks_yielded > 0:
+                logger.critical(f"Stream severed mid-transmission from {node.model_id}. Cannot failover safely.")
+                node.circuit_breaker.record_failure()
+                self._record_metrics(node, prompt, duration, False)
+                # Raise specific error to stop the mesh from retrying
+                raise StreamInterruptedError(f"Stream severed from {node.model_id}") from e
+
+            node.circuit_breaker.record_failure()
+            self._record_metrics(node, prompt, duration, False)
+            logger.warning(f"Node {node.model_id} failed: {e}")
+            raise e
 
     async def _stream_from_node_with_retry(
         self, node: NeuralNode, messages: list[dict]
@@ -219,13 +263,9 @@ class NeuralRoutingMesh:
         """
         Streams from a node with retry logic.
         """
-        # Safety Net Implementation
         if node.model_id == SAFETY_NET_MODEL_ID:
-            logger.warning("⚠️ Engaging Safety Net Protocol.")
-            safety_msg = "⚠️ System Alert: Unable to reach external intelligence providers."
-            for word in safety_msg.split(" "):
-                yield {"choices": [{"delta": {"content": word + " "}}]}
-                await asyncio.sleep(0.05)
+            async for chunk in self._stream_safety_net():
+                yield chunk
             return
 
         client = ConnectionManager.get_client()
@@ -234,60 +274,85 @@ class NeuralRoutingMesh:
         while attempt <= MAX_RETRIES:
             attempt += 1
             try:
-                stream_started = False
-                async with client.stream(
-                    "POST",
-                    f"{self.base_url}/chat/completions",
-                    headers=self.headers,
-                    json={"model": node.model_id, "messages": messages, "stream": True},
-                    timeout=httpx.Timeout(BASE_TIMEOUT, connect=10.0),
-                ) as response:
-
-                    if response.status_code == 429:
-                        # Adaptive Cooldown Logic
-                        node.consecutive_rate_limits += 1
-                        backoff = min(6, node.consecutive_rate_limits)
-                        cooldown = 60.0 * (2 ** (backoff - 1))
-                        node.rate_limit_cooldown_until = time.time() + cooldown
-                        raise AIRateLimitError(f"Rate limit 429 on {node.model_id}")
-
-                    if response.status_code >= 400:
-                        raise httpx.HTTPStatusError(
-                            f"HTTP {response.status_code}", request=response.request, response=response
-                        )
-
-                    stream_started = True
-                    node.consecutive_rate_limits = 0
-
-                    chunk_count = 0
-                    async for line in response.aiter_lines():
-                        if line.startswith("data: "):
-                            data_str = line[6:]
-                            if data_str.strip() == "[DONE]":
-                                break
-                            try:
-                                chunk = json.loads(data_str)
-                                chunk_count += 1
-                                yield chunk
-                            except json.JSONDecodeError:
-                                continue
-
-                    if chunk_count == 0:
-                        raise ValueError("Empty response from provider")
-
-                    return
+                async for chunk in self._execute_stream_request(client, node, messages):
+                    yield chunk
+                return
 
             except AIRateLimitError:
-                raise
+                raise # Propagate rate limit immediately (handled in outer loop)
 
             except (httpx.ConnectError, httpx.ReadTimeout, httpx.HTTPStatusError, ValueError) as e:
-                if stream_started:
-                    raise AIConnectionError("Stream severed") from e
-
+                # _execute_stream_request raises AIConnectionError if stream started then failed
+                # Here we catch initial connection errors
                 if attempt > MAX_RETRIES:
                      raise AIConnectionError("Max retries exceeded") from e
 
                 await asyncio.sleep(0.5 * attempt)
+
+    async def _stream_safety_net(self) -> AsyncGenerator[dict, None]:
+        """Stream safety net response"""
+        logger.warning("⚠️ Engaging Safety Net Protocol.")
+        safety_msg = "⚠️ System Alert: Unable to reach external intelligence providers."
+        for word in safety_msg.split(" "):
+            yield {"choices": [{"delta": {"content": word + " "}}]}
+            await asyncio.sleep(0.05)
+
+    async def _execute_stream_request(
+        self,
+        client: httpx.AsyncClient,
+        node: NeuralNode,
+        messages: list[dict]
+    ) -> AsyncGenerator[dict, None]:
+        """Execute the HTTP request and yield chunks"""
+        stream_started = False
+        try:
+            async with client.stream(
+                "POST",
+                f"{self.base_url}/chat/completions",
+                headers=self.headers,
+                json={"model": node.model_id, "messages": messages, "stream": True},
+                timeout=httpx.Timeout(BASE_TIMEOUT, connect=10.0),
+            ) as response:
+
+                if response.status_code == 429:
+                    self._handle_rate_limit(node)
+                    raise AIRateLimitError(f"Rate limit 429 on {node.model_id}")
+
+                if response.status_code >= 400:
+                    raise httpx.HTTPStatusError(
+                        f"HTTP {response.status_code}", request=response.request, response=response
+                    )
+
+                stream_started = True
+                node.consecutive_rate_limits = 0
+
+                chunk_count = 0
+                async for line in response.aiter_lines():
+                    if line.startswith("data: "):
+                        data_str = line[6:]
+                        if data_str.strip() == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data_str)
+                            chunk_count += 1
+                            yield chunk
+                        except json.JSONDecodeError:
+                            continue
+
+                if chunk_count == 0:
+                    raise ValueError("Empty response from provider")
+
+        except (httpx.ConnectError, httpx.ReadTimeout, httpx.HTTPStatusError, ValueError) as e:
+            if stream_started:
+                raise AIConnectionError("Stream severed") from e
+            raise e
+
+    def _handle_rate_limit(self, node: NeuralNode):
+        """Handle rate limit backoff calculation"""
+        node.consecutive_rate_limits += 1
+        backoff = min(6, node.consecutive_rate_limits)
+        cooldown = 60.0 * (2 ** (backoff - 1))
+        node.rate_limit_cooldown_until = time.time() + cooldown
 
     async def send_message(
         self,

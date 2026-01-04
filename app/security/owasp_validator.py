@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, ClassVar
 
+
 class SecuritySeverity(Enum):
     """Security issue severity levels"""
     CRITICAL = 'critical'
@@ -96,252 +97,360 @@ class OWASPValidator:
         self._id_generation_pattern = (
             'hashlib\\.(md5|sha1)\\([^)]*\\)\\.hexdigest\\(\\)\\[:?\\d*\\]')
 
-    # TODO: Split this function (42 lines) - KISS principle
-    def validate_authentication_code(self, code: str, file_path: str=''
-        ) ->list[SecurityIssue]:
+    def validate_authentication_code(self, code: str, file_path: str = '') -> list[SecurityIssue]:
         """
         Validate authentication implementation
         (A07:2021 - Identification and Authentication Failures)
         """
-        issues = []
-        password_related_keywords = ['password', 'passwd', 'pwd',
-            'credential', 'auth']
-        has_password_context = any(keyword in code.lower() for keyword in
-            password_related_keywords)
-        if has_password_context and ('md5' in code.lower() or 'sha1' in
-            code.lower()):
-            has_use_for_security_false = ('usedforsecurity=False' in code or
-                'usedforsecurity = False' in code)
-            is_id_generation = re.search(self._id_generation_pattern, code
-                ) is not None
-            if not has_use_for_security_false and not is_id_generation:
-                issues.append(SecurityIssue(category=OWASPCategory.
-                    A02_CRYPTOGRAPHIC_FAILURES, severity=SecuritySeverity.
-                    CRITICAL, title='Weak Password Hashing Algorithm',
-                    description=
-                    'Using MD5 or SHA1 for password hashing is insecure',
-                    file_path=file_path, recommendation=
-                    'Use bcrypt, scrypt, or Argon2 for password hashing',
-                    cwe_id='CWE-327'))
-        if re.search('password\\s*=\\s*request', code, re.IGNORECASE
-            ) and 'hash' not in code.lower():
-            issues.append(SecurityIssue(category=OWASPCategory.
-                A02_CRYPTOGRAPHIC_FAILURES, severity=SecuritySeverity.
-                CRITICAL, title='Potential Plain Text Password Storage',
-                description='Password appears to be stored without hashing',
-                file_path=file_path, recommendation=
-                'Always hash passwords before storing', cwe_id='CWE-256'))
-        if 'login' in code.lower() and 'rate_limit' not in code.lower():
-            issues.append(SecurityIssue(category=OWASPCategory.
-                A07_AUTH_FAILURES, severity=SecuritySeverity.HIGH, title=
-                'Missing Rate Limiting on Authentication', description=
-                'Login endpoint should implement rate limiting', file_path=
-                file_path, recommendation=
-                'Add rate limiting to prevent brute force attacks', cwe_id=
-                'CWE-307'))
+        issues: list[SecurityIssue] = []
+        issues.extend(self._check_weak_password_hashing(code, file_path))
+        issues.extend(self._check_plaintext_password_storage(code, file_path))
+        issues.extend(self._check_authentication_rate_limiting(code, file_path))
         return issues
-# TODO: Split this function (33 lines) - KISS principle
 
-    def validate_access_control(self, code: str, file_path: str='') ->list[
-        SecurityIssue]:
+    def _check_weak_password_hashing(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check for weak password hashing algorithms"""
+        password_keywords = ['password', 'passwd', 'pwd', 'credential', 'auth']
+        has_password_context = any(kw in code.lower() for kw in password_keywords)
+
+        if not has_password_context:
+            return []
+
+        if 'md5' not in code.lower() and 'sha1' not in code.lower():
+            return []
+
+        if 'usedforsecurity=False' in code or 'usedforsecurity = False' in code:
+            return []
+
+        if re.search(self._id_generation_pattern, code):
+            return []
+
+        return [SecurityIssue(
+            category=OWASPCategory.A02_CRYPTOGRAPHIC_FAILURES,
+            severity=SecuritySeverity.CRITICAL,
+            title='Weak Password Hashing Algorithm',
+            description='Using MD5 or SHA1 for password hashing is insecure',
+            file_path=file_path,
+            recommendation='Use bcrypt, scrypt, or Argon2 for password hashing',
+            cwe_id='CWE-327'
+        )]
+
+    def _check_plaintext_password_storage(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check for potential plaintext password storage"""
+        if re.search('password\\s*=\\s*request', code, re.IGNORECASE) and 'hash' not in code.lower():
+            return [SecurityIssue(
+                category=OWASPCategory.A02_CRYPTOGRAPHIC_FAILURES,
+                severity=SecuritySeverity.CRITICAL,
+                title='Potential Plain Text Password Storage',
+                description='Password appears to be stored without hashing',
+                file_path=file_path,
+                recommendation='Always hash passwords before storing',
+                cwe_id='CWE-256'
+            )]
+        return []
+
+    def _check_authentication_rate_limiting(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check for missing rate limiting on authentication"""
+        if 'login' in code.lower() and 'rate_limit' not in code.lower():
+            return [SecurityIssue(
+                category=OWASPCategory.A07_AUTH_FAILURES,
+                severity=SecuritySeverity.HIGH,
+                title='Missing Rate Limiting on Authentication',
+                description='Login endpoint should implement rate limiting',
+                file_path=file_path,
+                recommendation='Add rate limiting to prevent brute force attacks',
+                cwe_id='CWE-307'
+            )]
+        return []
+
+    def validate_access_control(self, code: str, file_path: str = '') -> list[SecurityIssue]:
         """
         Validate access control implementation
         (A01:2021 - Broken Access Control)
         """
-        issues = []
-        if re.search('role\\s*=\\s*request\\.(json|form|args)', code):
-            issues.append(SecurityIssue(category=OWASPCategory.
-                A01_BROKEN_ACCESS_CONTROL, severity=SecuritySeverity.
-                CRITICAL, title='Privilege Escalation Vulnerability',
-                description=
-                'User role is being set directly from user input',
-                file_path=file_path, recommendation=
-                'Never allow users to set their own roles. Use server-side logic.'
-                , cwe_id='CWE-269'))
-        if re.search('is_admin\\s*=\\s*request\\.(json|form|args)', code):
-            issues.append(SecurityIssue(category=OWASPCategory.
-                A01_BROKEN_ACCESS_CONTROL, severity=SecuritySeverity.
-                CRITICAL, title='Admin Privilege Escalation', description=
-                'Admin flag is being set from user input', file_path=
-                file_path, recommendation=
-                'Admin status must be controlled server-side only', cwe_id=
-                'CWE-269'))
-        if re.search('@app\\.route.*<int:user_id>', code
-            ) and '@login_required' not in code and '@require_auth' not in code:
-            issues.append(SecurityIssue(category=OWASPCategory.
-                A01_BROKEN_ACCESS_CONTROL, severity=SecuritySeverity.HIGH,
-                title='Missing Authorization Check', description=
-                'Endpoint with user_id parameter lacks authorization',
-                file_path=file_path, recommendation=
-                'Add @login_required and verify user owns the resource',
-                cwe_id='CWE-862'))
-        # TODO: Split this function (32 lines) - KISS principle
+        issues: list[SecurityIssue] = []
+        issues.extend(self._check_role_escalation(code, file_path))
+        issues.extend(self._check_admin_escalation(code, file_path))
+        issues.extend(self._check_missing_auth_checks(code, file_path))
         return issues
 
-    def validate_injection_prevention(self, code: str, file_path: str=''
-        ) ->list[SecurityIssue]:
+    def _check_role_escalation(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check for potential role escalation"""
+        if re.search('role\\s*=\\s*request\\.(json|form|args)', code):
+            return [SecurityIssue(
+                category=OWASPCategory.A01_BROKEN_ACCESS_CONTROL,
+                severity=SecuritySeverity.CRITICAL,
+                title='Privilege Escalation Vulnerability',
+                description='User role is being set directly from user input',
+                file_path=file_path,
+                recommendation='Never allow users to set their own roles. Use server-side logic.',
+                cwe_id='CWE-269'
+            )]
+        return []
+
+    def _check_admin_escalation(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check for potential admin privilege escalation"""
+        if re.search('is_admin\\s*=\\s*request\\.(json|form|args)', code):
+            return [SecurityIssue(
+                category=OWASPCategory.A01_BROKEN_ACCESS_CONTROL,
+                severity=SecuritySeverity.CRITICAL,
+                title='Admin Privilege Escalation',
+                description='Admin flag is being set from user input',
+                file_path=file_path,
+                recommendation='Admin status must be controlled server-side only',
+                cwe_id='CWE-269'
+            )]
+        return []
+
+    def _check_missing_auth_checks(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check for missing authorization checks on sensitive endpoints"""
+        if re.search('@app\\.route.*<int:user_id>', code) and '@login_required' not in code and '@require_auth' not in code:
+            return [SecurityIssue(
+                category=OWASPCategory.A01_BROKEN_ACCESS_CONTROL,
+                severity=SecuritySeverity.HIGH,
+                title='Missing Authorization Check',
+                description='Endpoint with user_id parameter lacks authorization',
+                file_path=file_path,
+                recommendation='Add @login_required and verify user owns the resource',
+                cwe_id='CWE-862'
+            )]
+        return []
+
+    def validate_injection_prevention(self, code: str, file_path: str = '') -> list[SecurityIssue]:
         """
         Validate injection vulnerability prevention
         (A03:2021 - Injection)
         """
+        issues: list[SecurityIssue] = []
+        issues.extend(self._check_sql_injection(code, file_path))
+        issues.extend(self._check_command_injection(code, file_path))
+        issues.extend(self._check_xss_vulnerabilities(code, file_path))
+        return issues
+
+    def _check_sql_injection(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check for SQL injection patterns"""
         issues = []
         for pattern in self.sql_injection_patterns:
             if re.search(pattern, code):
-                issues.append(SecurityIssue(category=OWASPCategory.
-                    A03_INJECTION, severity=SecuritySeverity.CRITICAL,
-                    title='Potential SQL Injection', description=
-                    'SQL query uses string formatting or concatenation',
-                    file_path=file_path, recommendation=
-                    'Use parameterized queries or ORM methods', cwe_id=
-                    'CWE-89'))
-        if re.search('os\\.system\\(|subprocess\\.call\\(.*shell=True', code):
-            issues.append(SecurityIssue(category=OWASPCategory.
-                A03_INJECTION, severity=SecuritySeverity.CRITICAL, title=
-                'Potential Command Injection', description=
-                'Command execution with shell=True or os.system', file_path
-                =file_path, recommendation=
-                'Use subprocess with shell=False and validate all inputs',
-                cwe_id='CWE-78'))
-        for pattern in self.xss_patterns:
-            if re.search(pattern, code):
-                issues.append(SecurityIssue(category=OWASPCategory.
-                    A03_INJECTION, severity=SecuritySeverity.HIGH, title=
-                    'Potential Cross-Site Scripting (XSS)', description=
-                    'Direct HTML manipulation detected', file_path=
-                    file_path, recommendation=
-                    # TODO: Split this function (46 lines) - KISS principle
-                    'Use proper escaping and sanitization', cwe_id='CWE-79'))
+                issues.append(SecurityIssue(
+                    category=OWASPCategory.A03_INJECTION,
+                    severity=SecuritySeverity.CRITICAL,
+                    title='Potential SQL Injection',
+                    description='SQL query uses string formatting or concatenation',
+                    file_path=file_path,
+                    recommendation='Use parameterized queries or ORM methods',
+                    cwe_id='CWE-89'
+                ))
         return issues
 
-    def validate_cryptography(self, code: str, file_path: str='') ->list[
-        SecurityIssue]:
+    def _check_command_injection(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check for command injection patterns"""
+        if re.search('os\\.system\\(|subprocess\\.call\\(.*shell=True', code):
+            return [SecurityIssue(
+                category=OWASPCategory.A03_INJECTION,
+                severity=SecuritySeverity.CRITICAL,
+                title='Potential Command Injection',
+                description='Command execution with shell=True or os.system',
+                file_path=file_path,
+                recommendation='Use subprocess with shell=False and validate all inputs',
+                cwe_id='CWE-78'
+            )]
+        return []
+
+    def _check_xss_vulnerabilities(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check for Cross-Site Scripting (XSS) patterns"""
+        issues = []
+        for pattern in self.xss_patterns:
+            if re.search(pattern, code):
+                issues.append(SecurityIssue(
+                    category=OWASPCategory.A03_INJECTION,
+                    severity=SecuritySeverity.HIGH,
+                    title='Potential Cross-Site Scripting (XSS)',
+                    description='Direct HTML manipulation detected',
+                    file_path=file_path,
+                    recommendation='Use proper escaping and sanitization',
+                    cwe_id='CWE-79'
+                ))
+        return issues
+
+    def validate_cryptography(self, code: str, file_path: str = '') -> list[SecurityIssue]:
         """
         Validate cryptographic implementations
         (A02:2021 - Cryptographic Failures)
         """
+        issues: list[SecurityIssue] = []
+        issues.extend(self._check_weak_crypto_algorithms(code, file_path))
+        issues.extend(self._check_hardcoded_secrets(code, file_path))
+        return issues
+
+    def _check_weak_crypto_algorithms(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check for weak cryptographic algorithms"""
         issues = []
         for pattern in self.insecure_crypto_patterns:
             matches = list(re.finditer(pattern, code))
             for match in matches:
-                start = max(0, match.start() - self._CONTEXT_BEFORE)
-                end = min(len(code), match.end() + self._CONTEXT_AFTER)
-                context = code[start:end]
-                if ('usedforsecurity=False' in context or
-                    'usedforsecurity = False' in context):
+                if self._is_false_positive_crypto(code, match):
                     continue
-                if 'import hashlib' in context:
-                    continue
-                issues.append(SecurityIssue(category=OWASPCategory.
-                    A02_CRYPTOGRAPHIC_FAILURES, severity=SecuritySeverity.
-                    MEDIUM, title='Weak Cryptographic Algorithm',
-                    description=
-                    'Using weak hashing algorithm (MD5, SHA1, random)',
-                    file_path=file_path, recommendation=
-                    'Use SHA-256 or better, secrets.token_* for random values, or add usedforsecurity=False for non-cryptographic uses'
-                    , cwe_id='CWE-327'))
+
+                issues.append(SecurityIssue(
+                    category=OWASPCategory.A02_CRYPTOGRAPHIC_FAILURES,
+                    severity=SecuritySeverity.MEDIUM,
+                    title='Weak Cryptographic Algorithm',
+                    description='Using weak hashing algorithm (MD5, SHA1, random)',
+                    file_path=file_path,
+                    recommendation='Use SHA-256 or better, secrets.token_* for random values, or add usedforsecurity=False for non-cryptographic uses',
+                    cwe_id='CWE-327'
+                ))
+        return issues
+
+    def _is_false_positive_crypto(self, code: str, match: re.Match) -> bool:
+        """Check if a crypto match is a false positive"""
+        start = max(0, match.start() - self._CONTEXT_BEFORE)
+        end = min(len(code), match.end() + self._CONTEXT_AFTER)
+        context = code[start:end]
+
+        if 'usedforsecurity=False' in context or 'usedforsecurity = False' in context:
+            return True
+        return 'import hashlib' in context
+
+    def _check_hardcoded_secrets(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check for hardcoded secrets"""
+        issues = []
         for pattern in self.hardcoded_secrets_patterns:
             matches = list(re.finditer(pattern, code, re.IGNORECASE))
             for match in matches:
-                start = max(0, match.start() - self._CONTEXT_BEFORE)
-                end = min(len(code), match.end() + self._CONTEXT_AFTER)
-                context = code[start:end]
-                if any(env_pat in context for env_pat in self._ENV_VAR_PATTERNS
-                    ) or any(safe_pat in context for safe_pat in self.
-                    _SAFE_SECRET_PATTERNS) or 'test_' in file_path.lower(
-                    ) or context.strip().startswith('#') or context.strip(
-                    ).startswith('//'):
+                if self._is_false_positive_secret(code, match, file_path):
                     continue
-                issues.append(SecurityIssue(category=OWASPCategory.
-                    A05_SECURITY_MISCONFIGURATION, severity=
-                    SecuritySeverity.CRITICAL, title='Hardcoded Secret',
-                    description=
-                    'Secret or credential appears to be hardcoded',
-                    file_path=file_path, recommendation=
-                    'Use environment variables or secret management',
-                    cwe_id='CWE-798'))
+
+                issues.append(SecurityIssue(
+                    category=OWASPCategory.A05_SECURITY_MISCONFIGURATION,
+                    severity=SecuritySeverity.CRITICAL,
+                    title='Hardcoded Secret',
+                    description='Secret or credential appears to be hardcoded',
+                    file_path=file_path,
+                    recommendation='Use environment variables or secret management',
+                    cwe_id='CWE-798'
+                ))
         return issues
 
-    def validate_session_management(self, code: str, file_path: str='') ->list[
-        SecurityIssue]:
+    def _is_false_positive_secret(self, code: str, match: re.Match, file_path: str) -> bool:
+        """Check if a secret match is a false positive"""
+        start = max(0, match.start() - self._CONTEXT_BEFORE)
+        end = min(len(code), match.end() + self._CONTEXT_AFTER)
+        context = code[start:end]
+
+        if any(env_pat in context for env_pat in self._ENV_VAR_PATTERNS):
+            return True
+        if any(safe_pat in context for safe_pat in self._SAFE_SECRET_PATTERNS):
+            return True
+        if 'test_' in file_path.lower():
+            return True
+        return bool(context.strip().startswith('#') or context.strip().startswith('//'))
+
+    def validate_session_management(self, code: str, file_path: str = '') -> list[SecurityIssue]:
         """
         Validate session management
         (A07:2021 - Identification and Authentication Failures)
         """
-        issues = []
-        if 'SESSION_COOKIE_SECURE = False' in code:
-            issues.append(SecurityIssue(category=OWASPCategory.
-                A05_SECURITY_MISCONFIGURATION, severity=SecuritySeverity.
-                HIGH, title='Insecure Session Cookie', description=
-                'Session cookies not marked as secure', file_path=file_path,
-                recommendation='Set SESSION_COOKIE_SECURE = True for HTTPS',
-                cwe_id='CWE-614'))
-        if 'SESSION_COOKIE_HTTPONLY = False' in code:
-            issues.append(SecurityIssue(category=OWASPCategory.
-                A05_SECURITY_MISCONFIGURATION, severity=SecuritySeverity.
-                HIGH, title='Session Cookie Accessible to JavaScript',
-                description='Session cookies not marked as HttpOnly',
-                file_path=file_path, recommendation=
-                'Set SESSION_COOKIE_HTTPONLY = True', cwe_id='CWE-1004'))
+        issues: list[SecurityIssue] = []
+        issues.extend(self._check_secure_cookie_flag(code, file_path))
+        issues.extend(self._check_httponly_cookie_flag(code, file_path))
         return issues
 
-    def validate_logging_monitoring(self, code: str, file_path: str='') ->list[
-        SecurityIssue]:
+    def _check_secure_cookie_flag(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check if SESSION_COOKIE_SECURE is set"""
+        if 'SESSION_COOKIE_SECURE = False' in code:
+            return [SecurityIssue(
+                category=OWASPCategory.A05_SECURITY_MISCONFIGURATION,
+                severity=SecuritySeverity.HIGH,
+                title='Insecure Session Cookie',
+                description='Session cookies not marked as secure',
+                file_path=file_path,
+                recommendation='Set SESSION_COOKIE_SECURE = True for HTTPS',
+                cwe_id='CWE-614'
+            )]
+        return []
+
+    def _check_httponly_cookie_flag(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check if SESSION_COOKIE_HTTPONLY is set"""
+        if 'SESSION_COOKIE_HTTPONLY = False' in code:
+            return [SecurityIssue(
+                category=OWASPCategory.A05_SECURITY_MISCONFIGURATION,
+                severity=SecuritySeverity.HIGH,
+                title='Session Cookie Accessible to JavaScript',
+                description='Session cookies not marked as HttpOnly',
+                file_path=file_path,
+                recommendation='Set SESSION_COOKIE_HTTPONLY = True',
+                cwe_id='CWE-1004'
+            )]
+        return []
+
+    def validate_logging_monitoring(self, code: str, file_path: str = '') -> list[SecurityIssue]:
         """
         Validate logging and monitoring
         (A09:2021 - Security Logging and Monitoring Failures)
         """
-        issues = []
-        if ('login' in code.lower() or 'authenticate' in code.lower()
-            ) and 'log' not in code.lower() and 'audit' not in code.lower():
-            issues.append(SecurityIssue(category=OWASPCategory.
-                A09_LOGGING_FAILURES, severity=SecuritySeverity.MEDIUM,
-                title='Missing Security Event Logging', description=
-                'Authentication events should be logged', file_path=
-                file_path, recommendation=
-                'Log all authentication attempts with timestamp, IP, result',
-                cwe_id='CWE-778'))
-        if re.search('log.*password|log.*token|log.*secret', code, re.
-            IGNORECASE):
-            issues.append(SecurityIssue(category=OWASPCategory.
-                A09_LOGGING_FAILURES, severity=SecuritySeverity.HIGH, title
-                ='Sensitive Data in Logs', description=
-                'Logging potentially sensitive information', file_path=
-                file_path, recommendation=
-                'Never log passwords, tokens, or secrets', cwe_id='CWE-532'))
+        issues: list[SecurityIssue] = []
+        issues.extend(self._check_missing_auth_logging(code, file_path))
+        issues.extend(self._check_sensitive_logging(code, file_path))
         return issues
 
-    def validate_file(self, file_path: str) ->list[SecurityIssue]:
+    def _check_missing_auth_logging(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check for missing logging on authentication events"""
+        if ('login' in code.lower() or 'authenticate' in code.lower()) and \
+           'log' not in code.lower() and 'audit' not in code.lower():
+            return [SecurityIssue(
+                category=OWASPCategory.A09_LOGGING_FAILURES,
+                severity=SecuritySeverity.MEDIUM,
+                title='Missing Security Event Logging',
+                description='Authentication events should be logged',
+                file_path=file_path,
+                recommendation='Log all authentication attempts with timestamp, IP, result',
+                cwe_id='CWE-778'
+            )]
+        return []
+
+    def _check_sensitive_logging(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """Check for logging of sensitive data"""
+        if re.search('log.*password|log.*token|log.*secret', code, re.IGNORECASE):
+            return [SecurityIssue(
+                category=OWASPCategory.A09_LOGGING_FAILURES,
+                severity=SecuritySeverity.HIGH,
+                title='Sensitive Data in Logs',
+                description='Logging potentially sensitive information',
+                file_path=file_path,
+                recommendation='Never log passwords, tokens, or secrets',
+                cwe_id='CWE-532'
+            )]
+        return []
+
+    def validate_file(self, file_path: str) -> list[SecurityIssue]:
         """
         Validate a single file for OWASP Top 10 issues
-
-        Args:
-            file_path: Path to file to validate
-
-        Returns:
-            List of security issues found
         """
         try:
             with open(file_path, encoding='utf-8') as f:
                 code = f.read()
+
             all_issues = []
-            all_issues.extend(self.validate_authentication_code(code,
-                file_path))
+            all_issues.extend(self.validate_authentication_code(code, file_path))
             all_issues.extend(self.validate_access_control(code, file_path))
-            all_issues.extend(self.validate_injection_prevention(code,
-                file_path))
+            all_issues.extend(self.validate_injection_prevention(code, file_path))
             all_issues.extend(self.validate_cryptography(code, file_path))
-            all_issues.extend(self.validate_session_management(code, file_path)
-                )
-            all_issues.extend(self.validate_logging_monitoring(code, file_path)
-                )
+            all_issues.extend(self.validate_session_management(code, file_path))
+            all_issues.extend(self.validate_logging_monitoring(code, file_path))
+
             return all_issues
         except Exception as e:
-            return [SecurityIssue(category=OWASPCategory.
-                A05_SECURITY_MISCONFIGURATION, severity=SecuritySeverity.
-                INFO, title='File Validation Error', description=
-                f'Could not validate file: {e!s}', file_path=file_path)]
+            return [SecurityIssue(
+                category=OWASPCategory.A05_SECURITY_MISCONFIGURATION,
+                severity=SecuritySeverity.INFO,
+                title='File Validation Error',
+                description=f'Could not validate file: {e!s}',
+                file_path=file_path
+            )]
 
-    def generate_report(self, issues: list[SecurityIssue]) ->dict[str, Any]:
+    def generate_report(self, issues: list[SecurityIssue]) -> dict[str, Any]:
         """
         Generate security report
 
@@ -354,21 +463,43 @@ class OWASPValidator:
         severity_counts = dict.fromkeys(SecuritySeverity, 0)
         for issue in issues:
             severity_counts[issue.severity] += 1
+
         category_counts: dict[OWASPCategory, int] = {}
         for issue in issues:
-            category_counts[issue.category] = category_counts.get(issue.
-                category, 0) + 1
-        risk_score = min(100, severity_counts[SecuritySeverity.CRITICAL] *
-            20 + severity_counts[SecuritySeverity.HIGH] * 10 +
-            severity_counts[SecuritySeverity.MEDIUM] * 5 + severity_counts[
-            SecuritySeverity.LOW] * 2)
-        return {'total_issues': len(issues), 'risk_score': risk_score,
-            'severity_breakdown': {severity.value: count for severity,
-            count in severity_counts.items()}, 'category_breakdown': {
-            category.value: count for category, count in category_counts.
-            items()}, 'critical_issues': [{'title': issue.title, 'category':
-            issue.category.value, 'file': issue.file_path, 'line': issue.
-            line_number, 'recommendation': issue.recommendation} for issue in
-            issues if issue.severity == SecuritySeverity.CRITICAL],
-            'compliance_status': {'OWASP_Top_10': risk_score < 20,
-            'PCI_DSS': risk_score < 10, 'SOC2': risk_score < 15}}
+            category_counts[issue.category] = category_counts.get(issue.category, 0) + 1
+
+        risk_score = min(100,
+            severity_counts[SecuritySeverity.CRITICAL] * 20 +
+            severity_counts[SecuritySeverity.HIGH] * 10 +
+            severity_counts[SecuritySeverity.MEDIUM] * 5 +
+            severity_counts[SecuritySeverity.LOW] * 2
+        )
+
+        return {
+            'total_issues': len(issues),
+            'risk_score': risk_score,
+            'severity_breakdown': {
+                severity.value: count
+                for severity, count in severity_counts.items()
+            },
+            'category_breakdown': {
+                category.value: count
+                for category, count in category_counts.items()
+            },
+            'critical_issues': [
+                {
+                    'title': issue.title,
+                    'category': issue.category.value,
+                    'file': issue.file_path,
+                    'line': issue.line_number,
+                    'recommendation': issue.recommendation
+                }
+                for issue in issues
+                if issue.severity == SecuritySeverity.CRITICAL
+            ],
+            'compliance_status': {
+                'OWASP_Top_10': risk_score < 20,
+                'PCI_DSS': risk_score < 10,
+                'SOC2': risk_score < 15
+            }
+        }
