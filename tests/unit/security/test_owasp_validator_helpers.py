@@ -34,6 +34,13 @@ def test_check_weak_password_hashing_skips_non_security_usage() -> None:
     assert issues == []
 
 
+def test_check_weak_password_hashing_ignores_non_password_context() -> None:
+    validator = OWASPValidator()
+    code = "identifier = hashlib.md5(customer.id.encode()).hexdigest()"
+
+    assert validator._check_weak_password_hashing(code, "ids.py") == []
+
+
 def test_check_hardcoded_secrets_filters_safe_sources() -> None:
     validator = OWASPValidator()
     env_configured = (
@@ -54,6 +61,13 @@ def test_check_hardcoded_secrets_ignores_comments() -> None:
     issues = validator._check_hardcoded_secrets(commented_secret, "config.py")
 
     assert issues == []
+
+
+def test_check_hardcoded_secrets_skips_enum_markers() -> None:
+    validator = OWASPValidator()
+    code = "class SecretKeys(Enum):\n    API_KEY = 'placeholder'"
+
+    assert validator._check_hardcoded_secrets(code, "constants.py") == []
 
 
 def test_check_hardcoded_secrets_skips_test_files() -> None:

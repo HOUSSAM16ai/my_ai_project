@@ -43,6 +43,15 @@ def test_find_balanced_json_block_returns_none_when_unbalanced() -> None:
     assert parsers._find_balanced_json_block(text, 0) is None
 
 
+def test_find_balanced_json_block_handles_nested_objects() -> None:
+    text = "prefix {\"outer\": {\"inner\": {\"deep\": true}}} suffix"
+    start = text.find("{")
+
+    result = parsers._find_balanced_json_block(text, start)
+
+    assert result == '{"outer": {"inner": {"deep": true}}}'
+
+
 def test_strip_markdown_fences_trims_language_hint() -> None:
     fenced = "```python\nprint('hi')\n```"
 
@@ -69,3 +78,9 @@ def test_strip_markdown_fences_trims_whitespace_after_markers() -> None:
     fenced = "```\n{\n  \"ok\": true\n}\n```   \n"
 
     assert parsers.strip_markdown_fences(fenced) == '{\n  "ok": true\n}'
+
+
+def test_strip_markdown_fences_handles_missing_closing_marker() -> None:
+    text = "```json\n{\"value\": 1}"
+
+    assert parsers.strip_markdown_fences(text) == '{"value": 1}'
