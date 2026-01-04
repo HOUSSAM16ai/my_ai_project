@@ -47,6 +47,24 @@ def test_check_hardcoded_secrets_filters_safe_sources() -> None:
     assert safe_issues == []
 
 
+def test_check_hardcoded_secrets_ignores_comments() -> None:
+    validator = OWASPValidator()
+    commented_secret = "# password = 'should_not_trigger'"
+
+    issues = validator._check_hardcoded_secrets(commented_secret, "config.py")
+
+    assert issues == []
+
+
+def test_check_hardcoded_secrets_skips_test_files() -> None:
+    validator = OWASPValidator()
+    code = "token = 'fixture-secret'"
+
+    issues = validator._check_hardcoded_secrets(code, "test_helpers.py")
+
+    assert issues == []
+
+
 def test_check_hardcoded_secrets_detects_literal_credentials() -> None:
     validator = OWASPValidator()
     code = """

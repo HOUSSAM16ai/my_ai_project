@@ -1,6 +1,5 @@
-"""اختبارات مساعدة لوحدة parsers للتأكد من سلامة استخراج JSON وتنظيف Markdown."""
+"""اختبارات مساعدة لوحدة parsers لضمان سلامة استخراج JSON وتنظيف Markdown."""
 from app.core import parsers
-
 
 def test_strip_markdown_fences_removes_code_block() -> None:
     content = "```json\n{\n  \"value\": 42\n}\n```"
@@ -56,3 +55,17 @@ def test_remove_markdown_markers_returns_original_when_missing() -> None:
 
 def test_extract_first_json_object_returns_none_without_braces() -> None:
     assert parsers.extract_first_json_object("no json here") is None
+
+
+def test_find_balanced_json_block_handles_escaped_quotes() -> None:
+    text = '{"message": "line with \"escaped quotes\"", "flag": true}'
+
+    result = parsers._find_balanced_json_block(text, 0)
+
+    assert result == text
+
+
+def test_strip_markdown_fences_trims_whitespace_after_markers() -> None:
+    fenced = "```\n{\n  \"ok\": true\n}\n```   \n"
+
+    assert parsers.strip_markdown_fences(fenced) == '{\n  "ok": true\n}'
