@@ -1,6 +1,5 @@
 from collections import defaultdict
 from datetime import datetime, UTC
-from typing import Any
 
 from app.telemetry.models import UnifiedTrace, UnifiedSpan
 from app.telemetry.metrics import MetricsManager
@@ -28,7 +27,7 @@ class TelemetryAggregator:
         self.logging = logging_manager
         self.service_name = service_name
 
-    def get_trace_with_correlation(self, trace_id: str) -> dict[str, Any] | None:
+    def get_trace_with_correlation(self, trace_id: str) -> dict[str, object] | None:
         """
         استرجاع تتبع كامل مع السجلات والمقاييس المرتبطة به.
 
@@ -68,7 +67,7 @@ class TelemetryAggregator:
         has_errors: bool | None = None,
         operation_name: str | None = None,
         limit: int = 100
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, object]]:
         """
         البحث عن التتبعات بناءً على معايير محددة.
 
@@ -120,7 +119,7 @@ class TelemetryAggregator:
                     return t
         return None
 
-    def _get_correlated_logs(self, trace_id: str) -> list[dict[str, Any]]:
+    def _get_correlated_logs(self, trace_id: str) -> list[dict[str, object]]:
         logs = []
         with self.logging.lock:
             trace_logs = self.logging.trace_logs.get(trace_id, [])
@@ -135,7 +134,7 @@ class TelemetryAggregator:
                 })
         return logs
 
-    def _get_correlated_metrics(self, trace_id: str) -> list[dict[str, Any]]:
+    def _get_correlated_metrics(self, trace_id: str) -> list[dict[str, object]]:
         metrics = []
         with self.metrics.lock:
             trace_metrics = self.metrics.trace_metrics.get(trace_id, [])
@@ -162,7 +161,7 @@ class TelemetryAggregator:
             return False
         return True
 
-    def _summarize_trace(self, trace: UnifiedTrace) -> dict[str, Any]:
+    def _summarize_trace(self, trace: UnifiedTrace) -> dict[str, object]:
         return {
             'trace_id': trace.trace_id,
             'operation': trace.root_span.operation_name,
@@ -189,7 +188,7 @@ class TelemetryAggregator:
                     dependencies[parent_svc] = set()
                 dependencies[parent_svc].add(child_svc)
 
-    def _span_to_dict(self, span: UnifiedSpan) -> dict[str, Any]:
+    def _span_to_dict(self, span: UnifiedSpan) -> dict[str, object]:
         return {
             'span_id': span.span_id,
             'parent_span_id': span.parent_span_id,

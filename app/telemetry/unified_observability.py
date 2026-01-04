@@ -1,4 +1,3 @@
-from typing import Any
 import threading
 from collections import deque
 
@@ -68,7 +67,7 @@ class UnifiedObservabilityService:
         return self.tracing.completed_traces
 
     def start_trace(self, operation_name: str, parent_context: TraceContext | None = None,
-                    tags: dict[str, Any] | None = None, request: Request | None = None) -> TraceContext:
+                    tags: dict[str, object] | None = None, request: Request | None = None) -> TraceContext:
         """بدء تتبع جديد"""
         return self.tracing.start_trace(operation_name, parent_context, tags, request)
 
@@ -79,7 +78,7 @@ class UnifiedObservabilityService:
         # منطق الارتباط (Correlation) يتم الآن ضمنياً عبر المعرفات المشتركة
         # لا حاجة لاستدعاء _correlate_trace يدوياً هنا
 
-    def add_span_event(self, span_id: str, event_name: str, attributes: dict[str, Any] | None = None) -> None:
+    def add_span_event(self, span_id: str, event_name: str, attributes: dict[str, object] | None = None) -> None:
         """إضافة حدث إلى نطاق تتبع"""
         self.tracing.add_span_event(span_id, event_name, attributes)
 
@@ -136,7 +135,7 @@ class UnifiedObservabilityService:
     def trace_logs(self) -> dict[str, list[CorrelatedLog]]:
         return self.logging.trace_logs
 
-    def log(self, level: str, message: str, context: dict[str, Any] | None = None,
+    def log(self, level: str, message: str, context: dict[str, object] | None = None,
             exception: Exception | None = None, trace_id: str | None = None,
             span_id: str | None = None) -> None:
         """تسجيل رسالة سجل مترابطة"""
@@ -144,14 +143,14 @@ class UnifiedObservabilityService:
 
     # --- Aggregation Delegates (via Aggregator) ---
 
-    def get_trace_with_correlation(self, trace_id: str) -> dict[str, Any] | None:
+    def get_trace_with_correlation(self, trace_id: str) -> dict[str, object] | None:
         """استرجاع تتبع كامل مع البيانات المترابطة"""
         return self.aggregator.get_trace_with_correlation(trace_id)
 
     def find_traces_by_criteria(self, min_duration_ms: float | None = None,
                                 has_errors: bool | None = None,
                                 operation_name: str | None = None,
-                                limit: int = 100) -> list[dict[str, Any]]:
+                                limit: int = 100) -> list[dict[str, object]]:
         """البحث عن التتبعات"""
         return self.aggregator.find_traces_by_criteria(min_duration_ms, has_errors, operation_name, limit)
 
@@ -161,11 +160,11 @@ class UnifiedObservabilityService:
 
     # --- Analysis Delegates (via Analyzer) ---
 
-    def get_golden_signals(self, time_window_seconds: int = 300) -> dict[str, Any]:
+    def get_golden_signals(self, time_window_seconds: int = 300) -> dict[str, object]:
         """حساب الإشارات الذهبية"""
         return self.analyzer.get_golden_signals(time_window_seconds)
 
-    def detect_anomalies(self) -> list[dict[str, Any]]:
+    def detect_anomalies(self) -> list[dict[str, object]]:
         """اكتشاف الشذوذ"""
         return self.analyzer.detect_anomalies()
 
@@ -182,7 +181,7 @@ class UnifiedObservabilityService:
         """للتيوافق مع الكود القديم الذي يصل للخاصية مباشرة"""
         return self.analyzer.anomaly_alerts
 
-    def get_statistics(self) -> dict[str, Any]:
+    def get_statistics(self) -> dict[str, object]:
         """إحصائيات مجمعة للنظام"""
         with self.lock, self.tracing.lock, self.metrics.lock, self.logging.lock:
              return {
