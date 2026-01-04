@@ -9,9 +9,8 @@
 - Robustness: التعامل مع مدخلات غير متوقعة.
 """
 
-__all__ = ["strip_markdown_fences", "extract_first_json_object"]
+__all__ = ["extract_first_json_object", "strip_markdown_fences"]
 
-# TODO: Split this function (33 lines) - KISS principle
 def strip_markdown_fences(text: str | None) -> str:
     """
     إزالة علامات Markdown (```) من النص.
@@ -24,30 +23,30 @@ def strip_markdown_fences(text: str | None) -> str:
 
     Returns:
         str: النص بعد إزالة العلامات، أو نص فارغ إذا كان المدخل None.
-
-    Example:
-        >>> strip_markdown_fences("```json\\n{\\"key\\": \\"val\\"}\\n```")
-        '{"key": "val"}'
     """
     if not text:
         return ""
 
     t = text.strip()
+    return _remove_markdown_markers(t)
 
-    # التحقق من وجود العلامات في البداية
-    if t.startswith("```"):
-        # البحث عن نهاية السطر الأول (اللغة)
-        nl = t.find("\n")
-        if nl != -1:
-            t = t[nl + 1 :]
+def _remove_markdown_markers(text: str) -> str:
+    """
+    إزالة علامات Markdown من بداية ونهاية النص.
+    """
+    if not text.startswith("```"):
+        return text
 
-        # إزالة العلامات من النهاية
-        if t.endswith("```"):
-            t = t[:-3].strip()
+    # Remove opening block
+    nl = text.find("\n")
+    if nl != -1:
+        text = text[nl + 1 :]
 
-    return t
+    # Remove closing block
+    if text.endswith("```"):
+        text = text[:-3].strip()
 
-# TODO: Split this function (56 lines) - KISS principle
+    return text
 
 def extract_first_json_object(text: str | None) -> str | None:
     """
@@ -61,10 +60,6 @@ def extract_first_json_object(text: str | None) -> str | None:
 
     Returns:
         str | None: كائن JSON المستخرج كسلسلة نصية، أو None إذا لم يتم العثور عليه.
-
-    Example:
-        >>> extract_first_json_object('Here is the json: {"id": 1} ...')
-        '{"id": 1}'
     """
     if not text:
         return None
@@ -72,37 +67,41 @@ def extract_first_json_object(text: str | None) -> str | None:
     # تنظيف النص أولاً من علامات Markdown
     t = strip_markdown_fences(text)
 
-    start = t.find("{")
-    if start == -1:
+    start_index = t.find("{")
+    if start_index == -1:
         return None
 
-    # تتبع توازن الأقواس
+    return _find_balanced_json_block(t, start_index)
+
+def _find_balanced_json_block(text: str, start_index: int) -> str | None:
+    """
+    العثور على كتلة JSON متوازنة الأقواس بدءاً من مؤشر معين.
+    """
     level = 0
     in_string = False
     escape_next = False
 
-    for i in range(start, len(t)):
-        c = t[i]
+    for i in range(start_index, len(text)):
+        char = text[i]
 
         if escape_next:
             escape_next = False
             continue
 
-        if c == "\\":
+        if char == "\\":
             escape_next = True
             continue
 
-        if c == '"' and not escape_next:
+        if char == '"' and not escape_next:
             in_string = not in_string
             continue
 
         if not in_string:
-            if c == "{":
+            if char == "{":
                 level += 1
-            elif c == "}":
+            elif char == "}":
                 level -= 1
                 if level == 0:
-                    # تم العثور على الكائن الكامل
-                    return t[start : i + 1]
+                    return text[start_index : i + 1]
 
     return None

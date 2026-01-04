@@ -20,3 +20,6 @@ class AIAllModelsExhaustedError(AIError):
 
 class AIRateLimitError(AIConnectionError):
     """Specific error for rate limits (429) to trigger distinct handling."""
+
+class StreamInterruptedError(AIError):
+    """Stream severed mid-transmission; safe failover is impossible."""
