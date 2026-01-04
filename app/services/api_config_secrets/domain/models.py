@@ -1,5 +1,3 @@
-from typing import Any
-
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
@@ -47,14 +45,14 @@ class Secret:
     version: int = 1
     rotation_policy: RotationPolicy = RotationPolicy.NEVER
     next_rotation: datetime | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
 @dataclass
 class ConfigEntry:
     """Configuration entry"""
 
     key: str
-    value: Any
+    value: object
     environment: Environment
     description: str
     is_sensitive: bool = False
@@ -79,8 +77,8 @@ class EnvironmentConfig:
     """Environment-specific configuration"""
 
     environment: Environment
-    config: dict[str, Any]
+    config: dict[str, object]
     secrets: dict[str, str]  # Secret references, not values
     feature_flags: dict[str, bool]
-    resource_limits: dict[str, Any]
-    deployment_metadata: dict[str, Any]
+    resource_limits: dict[str, object]
+    deployment_metadata: dict[str, object]

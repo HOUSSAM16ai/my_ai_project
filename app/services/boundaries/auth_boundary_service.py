@@ -12,9 +12,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
-
 import datetime
 import logging
 
@@ -53,7 +50,7 @@ class AuthBoundaryService:
 
     async def register_user(
         self, full_name: str, email: str, password: str
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         تسجيل مستخدم جديد في النظام.
 
@@ -68,7 +65,7 @@ class AuthBoundaryService:
             password (str): كلمة المرور (سيتم تجزئتها).
 
         Returns:
-            dict[str, Any]: تفاصيل العملية والمستخدم المسجل.
+            dict[str, object]: تفاصيل العملية والمستخدم المسجل.
 
         Raises:
             HTTPException: في حال وجود البريد الإلكتروني مسبقاً (400).
@@ -98,7 +95,7 @@ class AuthBoundaryService:
 
     async def authenticate_user(
         self, email: str, password: str, request: Request
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         المصادقة على المستخدم وإصدار رمز الدخول (JWT).
 
@@ -110,7 +107,7 @@ class AuthBoundaryService:
             request (Request): كائن الطلب الحالي (لأغراض التتبع الأمني).
 
         Returns:
-            dict[str, Any]: رمز الدخول (Access Token) وتفاصيل المستخدم.
+            dict[str, object]: رمز الدخول (Access Token) وتفاصيل المستخدم.
 
         Raises:
             HTTPException: عند فشل المصادقة (401).
@@ -167,7 +164,7 @@ class AuthBoundaryService:
             "status": "success",
         }
 
-    async def get_current_user(self, token: str) -> dict[str, Any]:
+    async def get_current_user(self, token: str) -> dict[str, object]:
         """
         جلب بيانات المستخدم الحالي من رمز JWT.
 
@@ -175,7 +172,7 @@ class AuthBoundaryService:
             token (str): رمز JWT الخام.
 
         Returns:
-            dict[str, Any]: تفاصيل المستخدم.
+            dict[str, object]: تفاصيل المستخدم.
 
         Raises:
             HTTPException: إذا كان الرمز غير صالح أو المستخدم غير موجود.

@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
-
 import json
 import logging
 from collections.abc import AsyncGenerator, Callable
@@ -112,7 +109,7 @@ class AdminChatBoundaryService:
         """حفظ رسالة في قاعدة البيانات."""
         return await self.persistence.save_message(conversation_id, role, content)
 
-    async def get_chat_history(self, conversation_id: int, limit: int = 20) -> list[dict[str, Any]]:
+    async def get_chat_history(self, conversation_id: int, limit: int = 20) -> list[dict[str, object]]:
         """استرجاع سجل المحادثة."""
         return await self.persistence.get_chat_history(conversation_id, limit)
 
@@ -121,7 +118,7 @@ class AdminChatBoundaryService:
         user_id: int,
         conversation: AdminConversation,
         question: str,
-        history: list[dict[str, Any]],
+        history: list[dict[str, object]],
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
     ) -> AsyncGenerator[str, None]:
@@ -138,7 +135,7 @@ class AdminChatBoundaryService:
         user_id: int,
         conversation: AdminConversation,
         question: str,
-        history: list[dict[str, Any]],
+        history: list[dict[str, object]],
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
     ) -> AsyncGenerator[str, None]:
@@ -191,7 +188,7 @@ class AdminChatBoundaryService:
 
     # --- طرق استرجاع البيانات (Data Retrieval Methods) ---
 
-    async def get_latest_conversation_details(self, user_id: int) -> dict[str, Any] | None:
+    async def get_latest_conversation_details(self, user_id: int) -> dict[str, object] | None:
         """
         استرجاع تفاصيل آخر محادثة للوحة التحكم.
         يفرض حداً أقصى صارماً للرسائل (20) لمنع انهيار المتصفح وتجميد التطبيق.
@@ -215,7 +212,7 @@ class AdminChatBoundaryService:
             ],
         }
 
-    async def list_user_conversations(self, user_id: int) -> list[dict[str, Any]]:
+    async def list_user_conversations(self, user_id: int) -> list[dict[str, object]]:
         """
         سرد المحادثات للشريط الجانبي (Sidebar History).
         
@@ -236,7 +233,7 @@ class AdminChatBoundaryService:
             })
         return results
 
-    async def get_conversation_details(self, user_id: int, conversation_id: int) -> dict[str, Any]:
+    async def get_conversation_details(self, user_id: int, conversation_id: int) -> dict[str, object]:
         """
         استرجاع التفاصيل الكاملة لمحادثة محددة.
         يفرض حداً أقصى صارماً للرسائل (20) لمنع انهيار المتصفح وتجميد التطبيق.
