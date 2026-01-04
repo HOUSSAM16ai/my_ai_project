@@ -36,6 +36,19 @@ from .utils import _coerce_to_tool_result, _dbg, _generate_trace_id, _lower
 # Metrics Helpers
 # ======================================================================================
 @dataclass
+class ToolExecutionContext:
+    """
+    Configuration object for tool execution.
+    Encapsulates all necessary parameters for executing a tool.
+    """
+    name: str
+    trace_id: str
+    meta_entry: dict[str, Any]
+    func: Callable[..., Any]
+    kwargs: dict[str, Any]
+
+
+@dataclass
 class ToolExecutionInfo:
     """
     Configuration object for tool execution metadata enrichment.
@@ -300,23 +313,19 @@ def _apply_autofill(kwargs: dict[str, Any], canonical_name: str, trace_id: str):
     if not isinstance(kwargs.get("content"), str) or not kwargs["content"].strip():
         kwargs["content"] = "Auto-generated content placeholder."
 
-def _execute_tool(
-    func: Callable[..., Any],
-    kwargs: dict[str, Any],
-    meta_entry: dict[str, Any],
-    trace_id: str,
-) -> ToolResult:
-    """Execute tool with validation and error handling."""
-    canonical_name = meta_entry["canonical"]
 
-    if meta_entry.get("disabled"):
+def _execute_tool(ctx: ToolExecutionContext) -> ToolResult:
+    """Execute tool with validation and error handling using context object."""
+    canonical_name = ctx.meta_entry["canonical"]
+
+    if ctx.meta_entry.get("disabled"):
         raise PermissionError("TOOL_DISABLED")
 
-    schema = meta_entry.get("parameters") or {}
-    _apply_autofill(kwargs, canonical_name, trace_id)
+    schema = ctx.meta_entry.get("parameters") or {}
+    _apply_autofill(ctx.kwargs, canonical_name, ctx.trace_id)
 
     try:
-        validated = _validate_arguments(schema, kwargs)
+        validated = _validate_arguments(schema, ctx.kwargs)
     except Exception as ve:
         raise ValueError(f"Argument validation failed: {ve}") from ve
 
@@ -324,11 +333,9 @@ def _execute_tool(
         raise PermissionError("POLICY_DENIED")
 
     transformed = transform_arguments(canonical_name, validated)
-    raw = func(**transformed)
+    raw = ctx.func(**transformed)
     return _coerce_to_tool_result(raw)
 
-# TODO: Split this function (33 lines) - KISS principle
-# TODO: Reduce parameters (8 params) - Use config object
 
 def _enrich_result_metadata(
     result: ToolResult,
@@ -425,9 +432,14 @@ def tool(
                 canonical_name = meta_entry["canonical"]
 
                 # Execute tool with error handling
-                result = _execute_tool_with_error_handling(
-                    func, kwargs, meta_entry, trace_id, name
+                exec_ctx = ToolExecutionContext(
+                    name=name,
+                    trace_id=trace_id,
+                    meta_entry=meta_entry,
+                    func=func,
+                    kwargs=kwargs,
                 )
+                result = _execute_tool_with_error_handling(exec_ctx)
 
                 # Record metrics and enrich result
                 elapsed_ms = (time.perf_counter() - start) * 1000.0
@@ -454,22 +466,16 @@ def tool(
     return decorator
 
 
-def _execute_tool_with_error_handling(
-    func: Callable[..., Any],
-    kwargs: dict[str, Any],
-    meta_entry: dict[str, Any],
-    trace_id: str,
-    name: str,
-) -> ToolResult:
+def _execute_tool_with_error_handling(ctx: ToolExecutionContext) -> ToolResult:
     """
     Execute tool with comprehensive error handling.
     
     تنفيذ الأداة مع معالجة شاملة للأخطاء.
     """
     try:
-        return _execute_tool(func, kwargs, meta_entry, trace_id)
+        return _execute_tool(ctx)
     except Exception as e:
-        _dbg(f"Tool '{name}' exception: {e}")
+        _dbg(f"Tool '{ctx.name}' exception: {e}")
         _dbg("Traceback:\n" + traceback.format_exc())
         return ToolResult(ok=False, error=str(e))
 
