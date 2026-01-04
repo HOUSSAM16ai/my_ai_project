@@ -1,11 +1,9 @@
 """
 Chat context for intent handlers.
 """
-from typing import Any
-
+from typing import TYPE_CHECKING
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,12 +20,12 @@ class ChatContext:
     history_messages: list[dict[str, str]]
     intent: str
     confidence: float
-    params: dict[str, Any] = field(default_factory=dict)
-    metadata: dict[str, Any] = field(default_factory=dict)
+    params: dict[str, object] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
     # Factory to create new DB sessions for background tasks
     session_factory: Callable[[], AsyncSession] | None = None
 
-    def get_param(self, key: str, default: dict[str, str | int | bool]=None) -> dict[str, str | int | bool]:
+    def get_param(self, key: str, default: object = None) -> object:
         """Get parameter with default."""
         return self.params.get(key, default)
