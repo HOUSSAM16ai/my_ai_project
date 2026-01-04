@@ -44,9 +44,12 @@ class DataMeshManager:
 
         self._initialize_governance()
 
-    # TODO: Split this function (31 lines) - KISS principle
     def _initialize_governance(self):
         """Initialize default governance policies"""
+        self._create_quality_standard_policy()
+        self._create_schema_compatibility_policy()
+
+    def _create_quality_standard_policy(self):
         self.add_governance_policy(
             GovernancePolicy(
                 policy_id="quality-standard",
@@ -63,6 +66,7 @@ class DataMeshManager:
             )
         )
 
+    def _create_schema_compatibility_policy(self):
         self.add_governance_policy(
             GovernancePolicy(
                 policy_id="schema-compatibility",
