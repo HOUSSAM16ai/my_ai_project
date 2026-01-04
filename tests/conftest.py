@@ -1,6 +1,9 @@
 # tests/conftest.py
 import asyncio
 import os
+import sys
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
@@ -8,6 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel
+
+# Ensure repository root is prioritized in import resolution
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 # Set environment variables for testing
 os.environ["ENVIRONMENT"] = "testing"
