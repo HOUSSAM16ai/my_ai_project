@@ -1,5 +1,3 @@
-from typing import Any
-
 import hashlib
 from datetime import UTC, datetime, timedelta
 
@@ -347,7 +345,7 @@ class ConfigSecretsManager:
 
     def get_audit_report(
         self, secret_id: str | None = None, accessed_by: str | None = None, limit: int = 1000
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, object]]:
         """Get audit logs for secret access"""
         logs = self.audit_logger.get_logs(secret_id, accessed_by, limit)
 

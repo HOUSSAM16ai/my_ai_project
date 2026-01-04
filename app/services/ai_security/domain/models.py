@@ -6,8 +6,6 @@ Pure business entities with zero external dependencies.
 نماذج المجال الأمني - كيانات نقية بدون تبعيات خارجية
 """
 
-from typing import Any
-
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -50,12 +48,12 @@ class SecurityEvent:
     event_type: str
     endpoint: str
     method: str
-    payload: dict[str, Any]
+    payload: dict[str, object]
     headers: dict[str, str]
     response_code: int
     response_time: float
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         """Convert to dictionary representation"""
         return {
             "event_id": self.event_id,
@@ -89,7 +87,7 @@ class ThreatDetection:
     auto_blocked: bool = False
     detected_at: datetime = field(default_factory=datetime.now)
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         """Convert to dictionary representation"""
         return {
             "detection_id": self.detection_id,

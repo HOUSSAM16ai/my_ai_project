@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
-
 import logging
 import threading
 from collections import defaultdict
@@ -60,8 +57,8 @@ class APISpec:
     service_id: str
     spec_type: str
     version: str
-    spec_content: dict[str, Any]
-    endpoints: list[dict[str, Any]]
+    spec_content: dict[str, object]
+    endpoints: list[dict[str, object]]
     created_at: datetime = field(default_factory=lambda : datetime.now(UTC))
 
 @dataclass
@@ -73,7 +70,7 @@ class ServiceTemplate:
     service_type: ServiceType
     tech_stack: list[str]
     files: dict[str, str]
-    parameters: dict[str, Any]
+    parameters: dict[str, object]
     created_at: datetime = field(default_factory=lambda : datetime.now(UTC))
 
 @dataclass
@@ -84,7 +81,7 @@ class ServiceHealth:
     uptime_percentage: float
     last_checked: datetime
     metrics: dict[str, float]
-    incidents: list[dict[str, Any]] = field(default_factory=list)
+    incidents: list[dict[str, object]] = field(default_factory=list)
 
 class ServiceCatalogService:
     """
@@ -187,7 +184,7 @@ RUN pip install -r requirements.txt"""
         """Get service health"""
         return self.health_status.get(service_id)
 
-    def get_dependency_graph(self) ->dict[str, Any]:
+    def get_dependency_graph(self) ->dict[str, object]:
         """Get service dependency graph"""
         graph = {'nodes': [], 'edges': []}
         for service in self.services.values():
@@ -198,7 +195,7 @@ RUN pip install -r requirements.txt"""
                     dep_id})
         return graph
 
-    def get_catalog_metrics(self) ->dict[str, Any]:
+    def get_catalog_metrics(self) ->dict[str, object]:
         """Get catalog metrics"""
         return {'total_services': len(self.services), 'services_by_type': {
             st.value: len([s for s in self.services.values() if s.

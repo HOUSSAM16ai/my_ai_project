@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
-
 import logging
 
 from app.services.observability.aiops.service import AIOpsService, get_aiops_service
@@ -27,7 +24,7 @@ class ObservabilityBoundaryService:
         self.telemetry = telemetry_service or get_unified_observability()
         self.logger = logging.getLogger(__name__)
 
-    async def get_system_health(self) -> dict[str, Any]:
+    async def get_system_health(self) -> dict[str, object]:
         """
         Aggregates system health from multiple sources.
         """
@@ -37,31 +34,31 @@ class ObservabilityBoundaryService:
             "timestamp": self.telemetry.get_golden_signals()["timestamp"],
         }
 
-    async def get_golden_signals(self) -> dict[str, Any]:
+    async def get_golden_signals(self) -> dict[str, object]:
         """
         Retrieves SRE Golden Signals (Latency, Traffic, Errors, Saturation).
         """
         return self.telemetry.get_golden_signals()
 
-    async def get_aiops_metrics(self) -> dict[str, Any]:
+    async def get_aiops_metrics(self) -> dict[str, object]:
         """
         Retrieves AIOps specific metrics (Anomalies, Healing Decisions).
         """
         return self.aiops.get_aiops_metrics()
 
-    async def get_performance_snapshot(self) -> dict[str, Any]:
+    async def get_performance_snapshot(self) -> dict[str, object]:
         """
         Get a comprehensive snapshot of performance statistics.
         """
         return self.telemetry.get_statistics()
 
-    async def get_endpoint_analytics(self, path: str) -> list[dict[str, Any]]:
+    async def get_endpoint_analytics(self, path: str) -> list[dict[str, object]]:
         """
         Analyzes traces for a specific endpoint path.
         """
         return self.telemetry.find_traces_by_criteria(operation_name=path)
 
-    async def get_active_alerts(self) -> list[Any]:
+    async def get_active_alerts(self) -> list[object]:
         """
         Retrieves active anomaly alerts from the system.
         """

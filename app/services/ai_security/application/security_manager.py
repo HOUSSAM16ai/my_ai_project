@@ -6,9 +6,9 @@ Orchestrates threat detection, analysis, and response.
 مدير الأمان - خدمة التطبيق الرئيسية
 """
 
-from typing import Optional
+from typing import Any
 
-from ..domain.models import SecurityEvent, ThreatDetection
+from ..domain.models import SecurityEvent, ThreatDetection, UserBehaviorProfile
 from ..domain.ports import (
     BehavioralAnalyzerPort,
     ProfileRepositoryPort,
@@ -74,7 +74,7 @@ class SecurityManager:
 
         return all_threats
 
-    def _detect_pattern_threats(self, event: SecurityEvent, all_threats: list) -> None:
+    def _detect_pattern_threats(self, event: SecurityEvent, all_threats: list[ThreatDetection]) -> None:
         """
         كشف التهديدات بناءً على الأنماط.
         Detect pattern-based threats.
@@ -86,7 +86,7 @@ class SecurityManager:
         pattern_threats = self.threat_detector.detect_threats(event)
         all_threats.extend(pattern_threats)
 
-    def _analyze_user_behavior(self, event: SecurityEvent, all_threats: list) -> None:
+    def _analyze_user_behavior(self, event: SecurityEvent, all_threats: list[ThreatDetection]) -> None:
         """
         تحليل سلوك المستخدم.
         Analyze user behavior.
@@ -107,7 +107,7 @@ class SecurityManager:
         
         self._update_user_profile(event, profile)
 
-    def _update_user_profile(self, event: SecurityEvent, profile) -> None:
+    def _update_user_profile(self, event: SecurityEvent, profile: UserBehaviorProfile) -> None:
         """
         تحديث ملف المستخدم.
         Update user profile.
@@ -156,7 +156,7 @@ class SecurityManager:
         """
         return self.threat_logger.get_recent_threats(limit)
 
-    def get_user_profile(self, user_id: str) -> Optional:
+    def get_user_profile(self, user_id: str) -> UserBehaviorProfile | None:
         """
         Get user behavioral profile.
 
