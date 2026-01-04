@@ -1,16 +1,24 @@
 # app/services/serving/application/inference_router.py
 """
-Inference Router Service
-=========================
-Routes inference requests to appropriate models.
+خدمة موجه الاستدلال (Inference Router Service).
 
-Single Responsibility: Request routing and execution orchestration.
+تقوم بتوجيه طلبات الاستدلال إلى نماذج الذكاء الاصطناعي المناسبة وتنفيذها.
+
+المسؤوليات:
+- توجيه الطلبات إلى إصدار النموذج الصحيح.
+- تنفيذ الاستدلال عبر `ModelInvoker`.
+- تتبع الاستجابات والمقاييس.
+
+المعايير:
+- Strict Typing (Python 3.12+).
+- Arabic Docstrings.
 """
 
 from __future__ import annotations
 
 import logging
 import uuid
+from typing import TYPE_CHECKING
 
 from app.services.serving.application.model_registry import ModelRegistry
 from app.services.serving.domain.models import (
@@ -23,22 +31,14 @@ from app.services.serving.infrastructure.in_memory_repository import (
 )
 from app.services.serving.infrastructure.mock_model_invoker import MockModelInvoker
 
+if TYPE_CHECKING:
+    from app.services.serving.domain.models import AIModel
+
 _LOG = logging.getLogger(__name__)
 
 class InferenceRouter:
     """
-    Routes and executes inference requests.
-
-    Responsibilities:
-    - Route requests to appropriate model versions
-    - Execute inference via model invoker
-    - Track request/response history
-    - Update metrics
-
-    Does NOT handle:
-    - Model lifecycle (ModelRegistry)
-    - A/B testing logic (ExperimentManager)
-    - Cost calculation (CostCalculator)
+    تدير وتوجه طلبات الاستدلال.
     """
 
     def __init__(
@@ -46,14 +46,14 @@ class InferenceRouter:
         registry: ModelRegistry,
         invoker: MockModelInvoker | None = None,
         metrics_repo: InMemoryMetricsRepository | None = None,
-    ):
+    ) -> None:
         """
-        Initialize inference router.
+        تهيئة موجه الاستدلال.
 
         Args:
-            registry: Model registry for model lookup
-            invoker: Model invoker for actual inference
-            metrics_repo: Metrics repository for tracking
+            registry: سجل النماذج للبحث.
+            invoker: منفذ الاستدلال (الفعلي أو الوهمي).
+            metrics_repo: مستودع المقاييس للتتبع.
         """
         self._registry = registry
         self._invoker = invoker or MockModelInvoker()
@@ -62,47 +62,49 @@ class InferenceRouter:
     def serve_request(
         self,
         model_name: str,
-        input_data: dict,
+        input_data: dict[str, object],
         version_id: str | None = None,
-        parameters: dict | None = None,
+        parameters: dict[str, object] | None = None,
     ) -> ModelResponse:
         """
-        خدمة طلب استدلال | Serve an inference request.
+        خدمة طلب استدلال.
         
-        توجيه الطلب إلى النموذج المناسب وتنفيذ الاستدلال
-        Routes request to appropriate model and executes inference
+        تقوم بتوجيه الطلب إلى النموذج المناسب وتنفيذ الاستدلال.
 
         Args:
-            model_name: اسم النموذج | Name of the model
-            input_data: بيانات الإدخال | Input data for inference
-            version_id: معرف الإصدار الاختياري | Optional specific version ID
-            parameters: معاملات الطلب الاختيارية | Optional request parameters
+            model_name: اسم النموذج.
+            input_data: بيانات الإدخال.
+            version_id: معرف الإصدار الاختياري.
+            parameters: معاملات الطلب الاختيارية.
 
         Returns:
-            استجابة النموذج | Model response with results or error
+            ModelResponse: استجابة النموذج مع النتائج أو الخطأ.
         """
         request_id = str(uuid.uuid4())
         
-        # Select and validate model
+        # 1. Select and validate model
         model = self._select_model(model_name, version_id)
         error_response = self._validate_model(model, model_name, version_id, request_id)
         if error_response:
             return error_response
         
-        # Create and execute request
+        # Ensure model is not None (validated above)
+        assert model is not None
+
+        # 2. Create and execute request
         request = self._create_request(request_id, model, input_data, parameters)
         return self._execute_inference(request, model, request_id)
 
-    def _select_model(self, model_name: str, version_id: str | None):
+    def _select_model(self, model_name: str, version_id: str | None) -> AIModel | None:
         """
-        اختيار إصدار النموذج | Select model version
+        اختيار إصدار النموذج المناسب.
         
         Args:
-            model_name: اسم النموذج | Model name
-            version_id: معرف الإصدار | Version ID
+            model_name: اسم النموذج.
+            version_id: معرف الإصدار (اختياري).
             
         Returns:
-            النموذج المحدد أو None | Selected model or None
+            AIModel | None: النموذج المحدد أو None.
         """
         if version_id:
             return self._registry.get_model(version_id)
@@ -110,22 +112,22 @@ class InferenceRouter:
 
     def _validate_model(
         self,
-        model,
+        model: AIModel | None,
         model_name: str,
         version_id: str | None,
         request_id: str
     ) -> ModelResponse | None:
         """
-        التحقق من توفر النموذج | Validate model availability
+        التحقق من توفر وحالة النموذج.
         
         Args:
-            model: النموذج للتحقق | Model to validate
-            model_name: اسم النموذج | Model name
-            version_id: معرف الإصدار | Version ID
-            request_id: معرف الطلب | Request ID
+            model: النموذج للتحقق منه.
+            model_name: اسم النموذج.
+            version_id: معرف الإصدار.
+            request_id: معرف الطلب.
             
         Returns:
-            استجابة خطأ أو None | Error response or None if valid
+            ModelResponse | None: استجابة خطأ أو None إذا كان صالحاً.
         """
         if not model:
             return self._create_error_response(
@@ -153,16 +155,16 @@ class InferenceRouter:
         error: str
     ) -> ModelResponse:
         """
-        إنشاء استجابة خطأ | Create error response
+        إنشاء استجابة خطأ معيارية.
         
         Args:
-            request_id: معرف الطلب | Request ID
-            model_id: معرف النموذج | Model ID
-            version_id: معرف الإصدار | Version ID
-            error: رسالة الخطأ | Error message
+            request_id: معرف الطلب.
+            model_id: معرف النموذج.
+            version_id: معرف الإصدار.
+            error: رسالة الخطأ.
             
         Returns:
-            استجابة الخطأ | Error response
+            ModelResponse: استجابة الخطأ.
         """
         return ModelResponse(
             request_id=request_id,
@@ -177,21 +179,21 @@ class InferenceRouter:
     def _create_request(
         self,
         request_id: str,
-        model,
-        input_data: dict,
-        parameters: dict | None
+        model: AIModel,
+        input_data: dict[str, object],
+        parameters: dict[str, object] | None
     ) -> ModelRequest:
         """
-        إنشاء كائن الطلب | Create request object
+        إنشاء كائن الطلب.
         
         Args:
-            request_id: معرف الطلب | Request ID
-            model: النموذج | Model
-            input_data: بيانات الإدخال | Input data
-            parameters: المعاملات | Parameters
+            request_id: معرف الطلب.
+            model: النموذج.
+            input_data: بيانات الإدخال.
+            parameters: المعاملات.
             
         Returns:
-            كائن الطلب | Request object
+            ModelRequest: كائن الطلب.
         """
         return ModelRequest(
             request_id=request_id,
@@ -204,19 +206,19 @@ class InferenceRouter:
     def _execute_inference(
         self,
         request: ModelRequest,
-        model,
+        model: AIModel,
         request_id: str
     ) -> ModelResponse:
         """
-        تنفيذ الاستدلال | Execute inference
+        تنفيذ عملية الاستدلال.
         
         Args:
-            request: كائن الطلب | Request object
-            model: النموذج | Model
-            request_id: معرف الطلب | Request ID
+            request: كائن الطلب.
+            model: النموذج.
+            request_id: معرف الطلب.
             
         Returns:
-            استجابة النموذج | Model response
+            ModelResponse: استجابة النموذج.
         """
         try:
             response = self._invoker.invoke(model, request)
@@ -233,11 +235,11 @@ class InferenceRouter:
 
     def _log_inference_result(self, request_id: str, response: ModelResponse) -> None:
         """
-        تسجيل نتيجة الاستدلال | Log inference result
+        تسجيل نتيجة الاستدلال.
         
         Args:
-            request_id: معرف الطلب | Request ID
-            response: استجابة النموذج | Model response
+            request_id: معرف الطلب.
+            response: استجابة النموذج.
         """
         if response.success:
             _LOG.debug(

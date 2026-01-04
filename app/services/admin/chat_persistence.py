@@ -1,7 +1,15 @@
+"""
+طبقة البيانات للمحادثات الإدارية (Admin Chat Persistence).
+
+تدير هذه الطبقة جميع عمليات الوصول إلى قاعدة البيانات المتعلقة بمحادثات المسؤول،
+مع ضمان العزل التام لمنطق التخزين عن منطق الأعمال (Separation of Concerns).
+
+المبادئ المعمارية:
+- **Repository Pattern**: تغليف عمليات قاعدة البيانات.
+- **Strict Typing**: استخدام أنواع محددة وتجنب `Any`.
+- **Fail Fast**: التحقق المبكر من صحة البيانات والصلاحيات.
+"""
 from __future__ import annotations
-
-from typing import Any
-
 
 import logging
 
@@ -15,16 +23,31 @@ logger = logging.getLogger(__name__)
 
 class AdminChatPersistence:
     """
-    Encapsulates all Data Access Logic for Admin Chat.
-    Part of the "Evolutionary Logic Distillation" - separating persistence from orchestration.
+    تدير عمليات التخزين والاسترجاع لمحادثات المسؤول.
     """
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession) -> None:
+        """
+        تهيئة مستودع المحادثات.
+
+        Args:
+            db: جلسة قاعدة البيانات.
+        """
         self.db = db
 
     async def verify_access(self, user_id: int, conversation_id: int) -> AdminConversation:
         """
-        Verifies access: Admins see all, Users see their own.
+        التحقق من صلاحية وصول المستخدم للمحادثة.
+
+        Args:
+            user_id: معرف المستخدم.
+            conversation_id: معرف المحادثة.
+
+        Returns:
+            AdminConversation: كائن المحادثة في حال نجاح التحقق.
+
+        Raises:
+            ValueError: في حال عدم وجود المستخدم، المحادثة، أو عدم امتلاك الصلاحية.
         """
         user = await self.db.get(User, user_id)
         if not user:
@@ -45,15 +68,23 @@ class AdminChatPersistence:
     async def get_or_create_conversation(
         self, user_id: int, title_hint: str, conversation_id: str | int | None = None
     ) -> AdminConversation:
-        conversation = None
+        """
+        استرجاع محادثة موجودة أو إنشاء واحدة جديدة.
+
+        Args:
+            user_id: معرف المستخدم.
+            title_hint: عنوان مقترح للمحادثة الجديدة.
+            conversation_id: معرف المحادثة (اختياري).
+
+        Returns:
+            AdminConversation: كائن المحادثة.
+        """
+        conversation: AdminConversation | None = None
         if conversation_id:
             try:
                 conversation = await self.verify_access(user_id, int(conversation_id))
             except (ValueError, TypeError):
-                # Fallback to create new if invalid ID?
-                # Or re-raise? Original service raised 404.
-                # For now, we mimic original behavior which raised 404 via the boundary service logic.
-                # But here we just return None to let the caller decide, or re-raise.
+                # في حال عدم الصلاحية أو عدم الوجود، نرفع الخطأ
                 raise
 
         if not conversation:
@@ -67,12 +98,33 @@ class AdminChatPersistence:
     async def save_message(
         self, conversation_id: int, role: MessageRole, content: str
     ) -> AdminMessage:
+        """
+        حفظ رسالة جديدة في المحادثة.
+
+        Args:
+            conversation_id: معرف المحادثة.
+            role: دور المرسل.
+            content: محتوى الرسالة.
+
+        Returns:
+            AdminMessage: كائن الرسالة المحفوظة.
+        """
         message = AdminMessage(conversation_id=conversation_id, role=role, content=content)
         self.db.add(message)
         await self.db.commit()
         return message
 
-    async def get_chat_history(self, conversation_id: int, limit: int = 20) -> list[dict[str, Any]]:
+    async def get_chat_history(self, conversation_id: int, limit: int = 20) -> list[dict[str, object]]:
+        """
+        استرجاع تاريخ المحادثة بتنسيق جاهز للنموذج (LLM).
+
+        Args:
+            conversation_id: معرف المحادثة.
+            limit: الحد الأقصى للرسائل المسترجعة.
+
+        Returns:
+            list[dict[str, object]]: قائمة الرسائل بتنسيق القاموس.
+        """
         stmt = (
             select(AdminMessage)
             .where(AdminMessage.conversation_id == conversation_id)
@@ -83,7 +135,7 @@ class AdminChatPersistence:
         history_messages = list(result.scalars().all())
         history_messages.reverse()
 
-        messages = [{"role": "system", "content": await get_system_prompt()}]
+        messages: list[dict[str, object]] = [{"role": "system", "content": await get_system_prompt()}]
         for msg in history_messages:
             messages.append({"role": msg.role.value, "content": msg.content})
 
@@ -91,7 +143,13 @@ class AdminChatPersistence:
 
     async def get_latest_conversation(self, user_id: int) -> AdminConversation | None:
         """
-        Retrieves the latest conversation for a user.
+        استرجاع آخر محادثة للمستخدم.
+
+        Args:
+            user_id: معرف المستخدم.
+
+        Returns:
+            AdminConversation | None: كائن المحادثة أو None.
         """
         stmt = (
             select(AdminConversation)
@@ -104,7 +162,13 @@ class AdminChatPersistence:
 
     async def list_conversations(self, user_id: int) -> list[AdminConversation]:
         """
-        Lists all conversations for a user.
+        سرد جميع محادثات المستخدم.
+
+        Args:
+            user_id: معرف المستخدم.
+
+        Returns:
+            list[AdminConversation]: قائمة المحادثات.
         """
         stmt = (
             select(AdminConversation)
@@ -118,8 +182,14 @@ class AdminChatPersistence:
         self, conversation_id: int, limit: int = 1000
     ) -> list[AdminMessage]:
         """
-        Retrieves messages for a specific conversation with a strict limit.
-        Implements the 'Safety Valve' pattern to prevent browser crashes on large histories.
+        استرجاع رسائل محادثة محددة.
+
+        Args:
+            conversation_id: معرف المحادثة.
+            limit: الحد الأقصى للرسائل.
+
+        Returns:
+            list[AdminMessage]: قائمة الرسائل.
         """
         stmt = (
             select(AdminMessage)
@@ -129,6 +199,6 @@ class AdminChatPersistence:
         )
         result = await self.db.execute(stmt)
         messages = list(result.scalars().all())
-        # Re-order to chronological order for display
+        # إعادة الترتيب زمنياً للعرض
         messages.reverse()
         return messages
