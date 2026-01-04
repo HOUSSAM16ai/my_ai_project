@@ -48,13 +48,13 @@ class MockModelInvoker:
         self.max_latency_ms = max_latency_ms
         self.error_rate = error_rate
 
-    # TODO: Split this function (60 lines) - KISS principle
     def invoke(
         self,
         model: ModelVersion,
         request: ModelRequest,
     ) -> ModelResponse:
         """
+        محاكاة استدعاء النموذج
         Simulate model inference.
 
         Returns a mock response with simulated processing time.
@@ -63,43 +63,73 @@ class MockModelInvoker:
 
         # Check if model is ready
         if model.status != ModelStatus.READY:
-            return ModelResponse(
-                request_id=request.request_id,
-                model_id=model.model_name,
-                version_id=model.version_id,
-                output_data=None,
-                latency_ms=0.0,
-                success=False,
-                error=f"Model not ready (status: {model.status.value})",
-            )
+            return self._create_not_ready_response(model, request)
 
         # Simulate latency
-        if self.simulate_latency:
-            latency_ms = random.uniform(self.min_latency_ms, self.max_latency_ms)
-            time.sleep(latency_ms / 1000.0)
+        self._simulate_processing_delay()
 
         # Simulate random errors
         if random.random() < self.error_rate:
-            actual_latency = (time.time() - start_time) * 1000
-            return ModelResponse(
-                request_id=request.request_id,
-                model_id=model.model_name,
-                version_id=model.version_id,
-                output_data=None,
-                latency_ms=actual_latency,
-                success=False,
-                error="Simulated random error",
-            )
+            return self._create_error_response(model, request, start_time)
 
-        # Generate mock output
+        # Generate successful response
+        return self._create_success_response(model, request, start_time)
+    
+    def _create_not_ready_response(
+        self, model: ModelVersion, request: ModelRequest
+    ) -> ModelResponse:
+        """
+        إنشاء استجابة لنموذج غير جاهز
+        Create response for model not ready.
+        """
+        return ModelResponse(
+            request_id=request.request_id,
+            model_id=model.model_name,
+            version_id=model.version_id,
+            output_data=None,
+            latency_ms=0.0,
+            success=False,
+            error=f"Model not ready (status: {model.status.value})",
+        )
+    
+    def _simulate_processing_delay(self) -> None:
+        """
+        محاكاة وقت المعالجة
+        Simulate processing latency.
+        """
+        if self.simulate_latency:
+            latency_ms = random.uniform(self.min_latency_ms, self.max_latency_ms)
+            time.sleep(latency_ms / 1000.0)
+    
+    def _create_error_response(
+        self, model: ModelVersion, request: ModelRequest, start_time: float
+    ) -> ModelResponse:
+        """
+        إنشاء استجابة خطأ محاكاة
+        Create simulated error response.
+        """
+        actual_latency = (time.time() - start_time) * 1000
+        return ModelResponse(
+            request_id=request.request_id,
+            model_id=model.model_name,
+            version_id=model.version_id,
+            output_data=None,
+            latency_ms=actual_latency,
+            success=False,
+            error="Simulated random error",
+        )
+    
+    def _create_success_response(
+        self, model: ModelVersion, request: ModelRequest, start_time: float
+    ) -> ModelResponse:
+        """
+        إنشاء استجابة نجاح
+        Create successful response.
+        """
         output_data = self._generate_mock_output(model, request)
         actual_latency = (time.time() - start_time) * 1000
-
-        # Estimate tokens (simplified)
-        input_tokens = len(str(request.input_data)) // 4
-        output_tokens = len(str(output_data)) // 4
-        total_tokens = input_tokens + output_tokens
-
+        total_tokens = self._calculate_token_usage(request, output_data)
+        
         return ModelResponse(
             request_id=request.request_id,
             model_id=model.model_name,
@@ -110,45 +140,90 @@ class MockModelInvoker:
             cost_usd=self._estimate_cost(model, total_tokens),
             success=True,
         )
-
+    
+    def _calculate_token_usage(
+        self, request: ModelRequest, output_data: dict
+    ) -> int:
+        """
+        حساب استخدام الرموز
+        Calculate token usage (simplified estimation).
+        """
+        input_tokens = len(str(request.input_data)) // 4
+        output_tokens = len(str(output_data)) // 4
+        return input_tokens + output_tokens
+    
     def health_check(self, model: ModelVersion) -> bool:
-        """Check if model is healthy"""
+        """
+        فحص صحة النموذج
+        Check if model is healthy.
+        """
         return model.status in (ModelStatus.READY, ModelStatus.SERVING)
-# TODO: Split this function (36 lines) - KISS principle
 
     def _generate_mock_output(
         self,
         model: ModelVersion,
         request: ModelRequest,
     ) -> dict[str, any]:
-        """Generate realistic mock output based on model type"""
+        """
+        إنشاء مخرجات محاكاة واقعية
+        Generate realistic mock output based on model type.
+        """
         from app.services.serving.domain.models import ModelType
 
         if model.model_type == ModelType.LANGUAGE_MODEL:
-            # Simulate language model response
-            input_text = str(request.input_data.get("prompt", ""))
-            return {
-                "text": f"Mock response for: {input_text[:50]}...",
-                "finish_reason": "stop",
-                "model": model.model_name,
-            }
+            return self._generate_language_model_output(model, request)
         if model.model_type == ModelType.EMBEDDING_MODEL:
-            # Simulate embedding response
-            return {
-                "embedding": [random.random() for _ in range(384)],
-                "model": model.model_name,
-            }
+            return self._generate_embedding_output(model)
         if model.model_type == ModelType.VISION_MODEL:
-            # Simulate vision model response
-            return {
-                "labels": [
-                    {"label": "cat", "confidence": 0.92},
-                    {"label": "dog", "confidence": 0.05},
-                    {"label": "bird", "confidence": 0.03},
-                ],
-                "model": model.model_name,
-            }
-        # Generic response
+            return self._generate_vision_output(model)
+        
+        return self._generate_generic_output(model, request)
+    
+    def _generate_language_model_output(
+        self, model: ModelVersion, request: ModelRequest
+    ) -> dict[str, any]:
+        """
+        إنشاء استجابة نموذج لغوي
+        Generate language model response.
+        """
+        input_text = str(request.input_data.get("prompt", ""))
+        return {
+            "text": f"Mock response for: {input_text[:50]}...",
+            "finish_reason": "stop",
+            "model": model.model_name,
+        }
+    
+    def _generate_embedding_output(self, model: ModelVersion) -> dict[str, any]:
+        """
+        إنشاء استجابة تضمين
+        Generate embedding response.
+        """
+        return {
+            "embedding": [random.random() for _ in range(384)],
+            "model": model.model_name,
+        }
+    
+    def _generate_vision_output(self, model: ModelVersion) -> dict[str, any]:
+        """
+        إنشاء استجابة نموذج رؤية
+        Generate vision model response.
+        """
+        return {
+            "labels": [
+                {"label": "cat", "confidence": 0.92},
+                {"label": "dog", "confidence": 0.05},
+                {"label": "bird", "confidence": 0.03},
+            ],
+            "model": model.model_name,
+        }
+    
+    def _generate_generic_output(
+        self, model: ModelVersion, request: ModelRequest
+    ) -> dict[str, any]:
+        """
+        إنشاء استجابة عامة
+        Generate generic response.
+        """
         return {
             "result": f"Processed by {model.model_name}",
             "request_id": request.request_id,
