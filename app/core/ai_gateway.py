@@ -14,8 +14,6 @@
     response = await client.generate("prompt")
 """
 
-from typing import Any
-
 import logging
 
 from app.core.gateway.circuit_breaker import CircuitBreaker, CircuitState
@@ -57,7 +55,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 _performance_optimizer = get_performance_optimizer()
 
-def get_performance_report() -> dict[str, "Any"]:
+def get_performance_report() -> dict[str, object]:
     """
     الحصول على تقرير أداء شامل من محسن الأداء.
 
@@ -84,10 +82,12 @@ def get_recommended_model(available_models: list[str], context: str = "") -> str
     return _performance_optimizer.get_recommended_model(available_models, context)
 
 class AIGatewayFacade:
-    """Facade for AI Gateway operations."""
+    """
+    واجهة موحدة لعمليات بوابة الذكاء الاصطناعي (AI Gateway Facade).
+    """
 
-    def __init__(self):
-        self._client = None
+    def __init__(self) -> None:
+        self._client: AIClient | None = None
 
     @property
     def client(self) -> AIClient:
@@ -101,7 +101,7 @@ class AIGatewayFacade:
     async def forge_new_code(self, **kwargs) -> dict[str, str | int | bool]:
         return await self.client.forge_new_code(**kwargs)
 
-    def __getattr__(self, name: str) -> dict[str, str | int | bool]:
+    def __getattr__(self, name: str) -> object:
         return getattr(self.client, name)
 
 # Singleton instance
