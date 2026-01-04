@@ -54,44 +54,103 @@ class HealthChecker:
         self.last_healthy_time: datetime | None = None
         self._lock = threading.RLock()
 
-    # TODO: Split this function (36 lines) - KISS principle
     def check(self, check_func: Callable) -> HealthCheckResult:
-        """Execute health check"""
+        """
+        تنفيذ فحص الصحة | Execute health check
+        
+        يفحص صحة الخدمة مع قياس الأداء
+        Checks service health with performance monitoring
+        """
         start = time.time()
         try:
             result = check_func()
             latency_ms = (time.time() - start) * 1000
 
-            # Check timeout
-            if latency_ms > self.config.timeout_seconds * 1000:
-                raise TimeoutError(f"Health check timeout: {latency_ms}ms")
+            self._validate_latency(latency_ms)
+            self._update_success_state()
 
-            # Success
-            with self._lock:
-                self.consecutive_failures = 0
-                self.last_healthy_time = datetime.now(UTC)
-
-            return HealthCheckResult(
-                check_type=self.config.check_type,
-                healthy=True,
-                timestamp=datetime.now(UTC),
-                latency_ms=latency_ms,
-                details=result if isinstance(result, dict) else {},
-            )
+            return self._create_success_result(latency_ms, result)
 
         except Exception as e:
             latency_ms = (time.time() - start) * 1000
+            self._update_failure_state()
+            return self._create_failure_result(latency_ms, e)
 
-            with self._lock:
-                self.consecutive_failures += 1
+    def _validate_latency(self, latency_ms: float) -> None:
+        """
+        التحقق من زمن الاستجابة | Validate latency
+        
+        Args:
+            latency_ms: زمن الاستجابة بالميلي ثانية | Latency in milliseconds
+            
+        Raises:
+            TimeoutError: إذا تجاوز الوقت المحدد | If timeout exceeded
+        """
+        if latency_ms > self.config.timeout_seconds * 1000:
+            raise TimeoutError(f"Health check timeout: {latency_ms}ms")
 
-            return HealthCheckResult(
-                check_type=self.config.check_type,
-                healthy=False,
-                timestamp=datetime.now(UTC),
-                latency_ms=latency_ms,
-                error=str(e),
-            )
+    def _update_success_state(self) -> None:
+        """
+        تحديث حالة النجاح | Update success state
+        
+        يعيد تعيين عداد الفشل ويسجل وقت النجاح
+        Resets failure counter and records success time
+        """
+        with self._lock:
+            self.consecutive_failures = 0
+            self.last_healthy_time = datetime.now(UTC)
+
+    def _update_failure_state(self) -> None:
+        """
+        تحديث حالة الفشل | Update failure state
+        
+        يزيد عداد الفشل المتتالي
+        Increments consecutive failure counter
+        """
+        with self._lock:
+            self.consecutive_failures += 1
+
+    def _create_success_result(
+        self, latency_ms: float, result: Any
+    ) -> HealthCheckResult:
+        """
+        إنشاء نتيجة نجاح | Create success result
+        
+        Args:
+            latency_ms: زمن الاستجابة | Latency
+            result: نتيجة الفحص | Check result
+            
+        Returns:
+            نتيجة فحص صحة ناجحة | Successful health check result
+        """
+        return HealthCheckResult(
+            check_type=self.config.check_type,
+            healthy=True,
+            timestamp=datetime.now(UTC),
+            latency_ms=latency_ms,
+            details=result if isinstance(result, dict) else {},
+        )
+
+    def _create_failure_result(
+        self, latency_ms: float, error: Exception
+    ) -> HealthCheckResult:
+        """
+        إنشاء نتيجة فشل | Create failure result
+        
+        Args:
+            latency_ms: زمن الاستجابة | Latency
+            error: الخطأ المحدث | Error encountered
+            
+        Returns:
+            نتيجة فحص صحة فاشلة | Failed health check result
+        """
+        return HealthCheckResult(
+            check_type=self.config.check_type,
+            healthy=False,
+            timestamp=datetime.now(UTC),
+            latency_ms=latency_ms,
+            error=str(error),
+        )
 
     def is_healthy(self) -> bool:
         """Check if service is healthy (with grace period)"""
