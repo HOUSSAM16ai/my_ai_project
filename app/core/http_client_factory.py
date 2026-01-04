@@ -29,7 +29,7 @@ DOES NOT:
 from __future__ import annotations
 
 from typing import Any
-
+from dataclasses import dataclass, field
 
 import logging
 import threading
@@ -40,6 +40,26 @@ logger = logging.getLogger(__name__)
 _CLIENT_LOCK = threading.Lock()
 _HTTP_CLIENTS: dict[str, Any] = {}
 
+
+@dataclass
+class HTTPClientConfig:
+    """
+    HTTP Client Configuration Object.
+    تكوين عميل HTTP - يتبع Config Object Pattern.
+    
+    Replaces 6 parameters with a single config object (KISS + SOLID).
+    """
+    name: str = "default"
+    timeout: float = 30.0
+    max_connections: int = 100
+    max_keepalive_connections: int = 20
+    keepalive_expiry: float = 30.0
+    use_cache: bool = True
+    
+    def get_cache_key(self) -> str:
+        """Generate cache key for this config."""
+        return f"{self.name}:{self.timeout}:{self.max_connections}"
+
 class HTTPClientFactory:
     """
     Factory for creating and managing HTTP clients.
@@ -48,73 +68,97 @@ class HTTPClientFactory:
     """
 
     @staticmethod
-    # TODO: Split this function (64 lines) - KISS principle
-    # TODO: Reduce parameters (6 params) - Use config object
-    def create_client(
-        name: str = "default",
-        timeout: float = 30.0,
-        max_connections: int = 100,
-        max_keepalive_connections: int = 20,
-        keepalive_expiry: float = 30.0,
-        use_cache: bool = True,
-    ) -> dict[str, str | int | bool]:
+    def create_client(config: HTTPClientConfig | None = None, **kwargs) -> dict[str, str | int | bool]:
         """
         Create or retrieve an HTTP client.
+        إنشاء أو استرجاع عميل HTTP.
 
         Args:
-            name: Unique name for the client (for caching)
-            timeout: Request timeout in seconds
-            max_connections: Maximum number of connections
-            max_keepalive_connections: Maximum keepalive connections
-            keepalive_expiry: Keepalive expiry time in seconds
-            use_cache: Whether to use cached client
+            config: HTTP client configuration object
+            **kwargs: Individual parameters (for backward compatibility)
 
         Returns:
             HTTP client instance (httpx.AsyncClient)
         """
-        cache_key = f"{name}:{timeout}:{max_connections}"
+        # Create config from kwargs if not provided
+        if config is None:
+            config = HTTPClientConfig(**kwargs) if kwargs else HTTPClientConfig()
+        
+        cache_key = config.get_cache_key()
 
-        # Check cache
-        if use_cache and cache_key in _HTTP_CLIENTS:
-            logger.debug(f"Returning cached HTTP client '{name}'")
+        # Check cache first
+        cached_client = HTTPClientFactory._get_cached_client(cache_key, config)
+        if cached_client is not None:
+            return cached_client
+
+        # Create new client with thread safety
+        return HTTPClientFactory._create_new_client(config, cache_key)
+
+    @staticmethod
+    def _get_cached_client(cache_key: str, config: HTTPClientConfig) -> Any | None:
+        """
+        Get cached HTTP client if available and caching is enabled.
+        استرجاع عميل HTTP من الذاكرة المؤقتة.
+        """
+        if config.use_cache and cache_key in _HTTP_CLIENTS:
+            logger.debug(f"Returning cached HTTP client '{config.name}'")
             return _HTTP_CLIENTS[cache_key]
+        return None
 
-        # Thread-safe client creation
+    @staticmethod
+    def _create_new_client(config: HTTPClientConfig, cache_key: str) -> Any:
+        """
+        Create a new HTTP client with thread-safe locking.
+        إنشاء عميل HTTP جديد بأمان.
+        """
         with _CLIENT_LOCK:
             # Double-check after acquiring lock
-            if use_cache and cache_key in _HTTP_CLIENTS:
-                return _HTTP_CLIENTS[cache_key]
+            cached = HTTPClientFactory._get_cached_client(cache_key, config)
+            if cached is not None:
+                return cached
 
-            # Create new client
-            try:
-                import httpx
+            # Create and configure client
+            client = HTTPClientFactory._build_http_client(config)
+            
+            # Cache if enabled
+            if config.use_cache:
+                _HTTP_CLIENTS[cache_key] = client
 
-                limits = httpx.Limits(
-                    max_connections=max_connections,
-                    max_keepalive_connections=max_keepalive_connections,
-                    keepalive_expiry=keepalive_expiry,
-                )
+            HTTPClientFactory._log_client_creation(config)
+            return client
 
-                client = httpx.AsyncClient(
-                    timeout=httpx.Timeout(timeout),
-                    limits=limits,
-                    follow_redirects=True,
-                )
+    @staticmethod
+    def _build_http_client(config: HTTPClientConfig) -> Any:
+        """
+        Build httpx client with configuration.
+        بناء عميل httpx بالإعدادات المحددة.
+        """
+        try:
+            import httpx
 
-                # Cache the client
-                if use_cache:
-                    _HTTP_CLIENTS[cache_key] = client
+            limits = httpx.Limits(
+                max_connections=config.max_connections,
+                max_keepalive_connections=config.max_keepalive_connections,
+                keepalive_expiry=config.keepalive_expiry,
+            )
 
-                logger.info(
-                    f"Created HTTP client '{name}' with timeout={timeout}s, "
-                    f"max_connections={max_connections}"
-                )
-                return client
+            return httpx.AsyncClient(
+                timeout=httpx.Timeout(config.timeout),
+                limits=limits,
+                follow_redirects=True,
+            )
 
-            except ImportError:
-                logger.error("httpx not available, cannot create HTTP client")
-                # Return a mock client for development/testing
-                return HTTPClientFactory._create_mock_http_client(name)
+        except ImportError:
+            logger.error("httpx not available, cannot create HTTP client")
+            return HTTPClientFactory._create_mock_http_client(config.name)
+
+    @staticmethod
+    def _log_client_creation(config: HTTPClientConfig) -> None:
+        """Log HTTP client creation."""
+        logger.info(
+            f"Created HTTP client '{config.name}' with timeout={config.timeout}s, "
+            f"max_connections={config.max_connections}"
+        )
 
     @staticmethod
     async def close_client(name: str = "default") -> None:
@@ -184,41 +228,39 @@ class HTTPClientFactory:
 # PUBLIC API
 # =============================================================================
 
-# TODO: Split this function (32 lines) - KISS principle
-# TODO: Reduce parameters (6 params) - Use config object
 def get_http_client(
-    name: str = "default",
-    timeout: float = 30.0,
-    max_connections: int = 100,
-    max_keepalive_connections: int = 20,
-    keepalive_expiry: float = 30.0,
-    use_cache: bool = True,
+    config: HTTPClientConfig | None = None,
+    **kwargs
 ) -> dict[str, str | int | bool]:
     """
     Get an HTTP client instance.
+    الحصول على عميل HTTP.
 
     This is the primary function to use for obtaining HTTP clients
     throughout the application.
 
     Args:
-        name: Unique name for the client
-        timeout: Request timeout in seconds
-        max_connections: Maximum number of connections
-        max_keepalive_connections: Maximum keepalive connections
-        keepalive_expiry: Keepalive expiry time in seconds
-        use_cache: Whether to use cached client
+        config: HTTP client configuration object (recommended)
+        **kwargs: Individual parameters (for backward compatibility):
+            - name: Unique name for the client
+            - timeout: Request timeout in seconds
+            - max_connections: Maximum number of connections
+            - max_keepalive_connections: Maximum keepalive connections
+            - keepalive_expiry: Keepalive expiry time in seconds
+            - use_cache: Whether to use cached client
 
     Returns:
         HTTP client instance
+        
+    Examples:
+        # New pattern (recommended):
+        config = HTTPClientConfig(name="api", timeout=60.0)
+        client = get_http_client(config)
+        
+        # Old pattern (still supported):
+        client = get_http_client(name="api", timeout=60.0)
     """
-    return HTTPClientFactory.create_client(
-        name=name,
-        timeout=timeout,
-        max_connections=max_connections,
-        max_keepalive_connections=max_keepalive_connections,
-        keepalive_expiry=keepalive_expiry,
-        use_cache=use_cache,
-    )
+    return HTTPClientFactory.create_client(config=config, **kwargs)
 
 async def close_http_client(name: str = "default") -> None:
     """Close a specific HTTP client"""
@@ -233,7 +275,10 @@ def get_http_client_stats() -> dict[str, Any]:
     return HTTPClientFactory.get_cached_clients()
 
 __all__ = [
+    # Classes
     "HTTPClientFactory",
+    "HTTPClientConfig",
+    # Functions
     "close_all_http_clients",
     "close_http_client",
     "get_http_client",

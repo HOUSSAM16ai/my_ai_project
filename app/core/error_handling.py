@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 # ==================== DECORATORS ====================
 
-# TODO: Split this function (38 lines) - KISS principle
 def safe_execute(
     default_return: dict[str, str | int | bool] = None,
     log_error: bool = True,
@@ -41,6 +40,7 @@ def safe_execute(
 ) -> None:
     """
     Decorator for safe function execution with automatic error handling.
+    ديكوريتور لتنفيذ آمن للدوال مع معالجة تلقائية للأخطاء.
 
     Eliminates the need for repetitive try-except blocks.
 
@@ -62,18 +62,33 @@ def safe_execute(
             try:
                 return func(*args, **kwargs)
             except Exception as e:
-                if log_error:
-                    msg = error_message or f"Error in {func.__name__}"
-                    logger.error(f"{msg}: {e}", exc_info=True)
-                if raise_on_error:
-                    raise
-                return default_return
+                return _handle_safe_execute_error(
+                    e, func, error_message, log_error, raise_on_error, default_return
+                )
 
         return cast(F, wrapper)
 
     return decorator
 
-# TODO: Split this function (53 lines) - KISS principle
+
+def _handle_safe_execute_error(
+    error: Exception,
+    func: Callable,
+    error_message: str | None,
+    log_error: bool,
+    raise_on_error: bool,
+    default_return: Any,
+) -> Any:
+    """
+    Handle error in safe_execute decorator.
+    معالجة الأخطاء في ديكوريتور safe_execute.
+    """
+    if log_error:
+        msg = error_message or f"Error in {func.__name__}"
+        logger.error(f"{msg}: {error}", exc_info=True)
+    if raise_on_error:
+        raise
+    return default_return
 
 def retry_on_failure(
     max_retries: int = 3,
@@ -84,6 +99,7 @@ def retry_on_failure(
 ):
     """
     Decorator to retry function on failure with exponential backoff.
+    ديكوريتور لإعادة محاولة الدالة عند الفشل مع تأخير تصاعدي.
 
     Args:
         max_retries: Maximum number of retry attempts
@@ -101,34 +117,61 @@ def retry_on_failure(
     def decorator(func: F) -> F:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> None:
-            import time
-
-            current_delay = delay
-            last_exception = None
-
-            for attempt in range(max_retries + 1):
-                try:
-                    return func(*args, **kwargs)
-                except exceptions as e:
-                    last_exception = e
-                    if attempt < max_retries:
-                        if log_retry:
-                            logger.warning(
-                                f"Retry {attempt + 1}/{max_retries} for {func.__name__}: {e}"
-                            )
-                        time.sleep(current_delay)
-                        current_delay *= backoff
-                    elif log_retry:
-                        logger.error(f"Failed after {max_retries} retries: {func.__name__}")
-
-            # All retries exhausted
-            if last_exception:
-                raise last_exception
-            return None
+            return _execute_with_retry(
+                func, args, kwargs, max_retries, delay, backoff, exceptions, log_retry
+            )
 
         return cast(F, wrapper)
 
     return decorator
+
+
+def _execute_with_retry(
+    func: Callable,
+    args: tuple,
+    kwargs: dict,
+    max_retries: int,
+    delay: float,
+    backoff: float,
+    exceptions: tuple[type[Exception], ...],
+    log_retry: bool,
+) -> Any:
+    """
+    Execute function with retry logic.
+    تنفيذ الدالة مع منطق إعادة المحاولة.
+    """
+    import time
+
+    current_delay = delay
+    last_exception = None
+
+    for attempt in range(max_retries + 1):
+        try:
+            return func(*args, **kwargs)
+        except exceptions as e:
+            last_exception = e
+            if attempt < max_retries:
+                _log_retry_attempt(func, attempt, max_retries, e, log_retry)
+                time.sleep(current_delay)
+                current_delay *= backoff
+            elif log_retry:
+                logger.error(f"Failed after {max_retries} retries: {func.__name__}")
+
+    # All retries exhausted
+    if last_exception:
+        raise last_exception
+    return None
+
+
+def _log_retry_attempt(
+    func: Callable, attempt: int, max_retries: int, error: Exception, log_retry: bool
+) -> None:
+    """
+    Log retry attempt.
+    تسجيل محاولة إعادة المحاولة.
+    """
+    if log_retry:
+        logger.warning(f"Retry {attempt + 1}/{max_retries} for {func.__name__}: {error}")
 
 def suppress_errors(*exceptions: type[Exception], log_error: bool = False) -> None:
     """
