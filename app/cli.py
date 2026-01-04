@@ -1,43 +1,49 @@
-# app/cli.py
-"""CLI - Command-line interface for application management."""
+"""واجهة أوامر موحدة لإدارة التطبيق وفق مبادئ KISS وSOLID."""
+
+from __future__ import annotations
+
 import os
+from collections.abc import Callable
 
 import click
 
+from app.cli_handlers.context import CLIContext
 from app.cli_handlers.db_cli import register_db_commands
 from app.cli_handlers.maintenance_cli import register_maintenance_commands
 from app.cli_handlers.migrate_cli import register_migrate_commands
 from app.core.di import get_logger, get_session, get_settings
 
+CommandRegistrar = Callable[[click.Group], None]
+COMMAND_REGISTRARS: tuple[CommandRegistrar, ...] = (
+    register_db_commands,
+    register_migrate_commands,
+    register_maintenance_commands,
+)
+
+
 @click.group()
-@click.option("--env", default=None, help="Optional env file or label")
+@click.option("--env", default=None, help="ملف أو وسم بيئة اختياري")
 @click.pass_context
-def cli(ctx, env) -> None:
-    """A CLI tool for CogniForge."""
-    # Handle env file override if provided
+def cli(ctx: click.Context, env: str | None) -> None:
+    """يمهد سياق CLI ويضبط البيئة قبل تسجيل الأوامر."""
+
     if env:
         os.environ["ENV_FILE"] = env
-        # Note: Since settings might be cached or already loaded in di,
-        # this might not be perfect without reloading,
-        # but standardizing on get_settings() no-arg is the immediate fix for the crash.
 
-    # Initialize settings
-    # Fixed: get_settings() takes no arguments in the current DI implementation
     settings = get_settings()
-
-    # Initialize logger
-    # Fixed: get_logger() requires a name argument
     logger = get_logger("cli")
-
     ctx.obj = {
-        "settings": settings,
-        "logger": logger,
-        "get_session": get_session,
+        "context": CLIContext(
+            settings=settings,
+            logger=logger,
+            session_provider=get_session,
+        )
     }
 
-register_db_commands(cli)
-register_migrate_commands(cli)
-register_maintenance_commands(cli)
+
+for registrar in COMMAND_REGISTRARS:
+    registrar(cli)
+
 
 if __name__ == "__main__":
     cli()
