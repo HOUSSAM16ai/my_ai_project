@@ -269,3 +269,52 @@ class StrategistAgent(AgentPlanner):
         elif "```" in text:
             text = text.split("```")[1].split("```")[0]
         return text.strip()
+
+    async def consult(self, situation: str, analysis: dict[str, Any]) -> dict[str, Any]:
+        """
+        تقديم استشارة استراتيجية.
+        Provide strategic consultation on the situation.
+
+        Args:
+            situation: وصف الموقف
+            analysis: تحليل الموقف
+
+        Returns:
+            dict: التوصية والثقة
+        """
+        logger.info("Strategist is being consulted...")
+
+        system_prompt = """
+        أنت "الاستراتيجي" (The Strategist).
+        دورك هو تحليل الموقف من منظور استراتيجي بعيد المدى.
+
+        النقاط الأساسية:
+        1. التوافق مع الأهداف العليا.
+        2. تحليل الفرص والتهديدات الاستراتيجية.
+        3. اقتراح نهج عام للحل.
+
+        قدم توصية موجزة ومباشرة.
+        الرد يجب أن يكون JSON فقط:
+        {
+            "recommendation": "string (english)",
+            "confidence": float (0-100)
+        }
+        """
+
+        user_message = f"Situation: {situation}\nAnalysis: {json.dumps(analysis, default=str)}"
+
+        try:
+            response_text = await self.ai.send_message(
+                system_prompt=system_prompt,
+                user_message=user_message,
+                temperature=0.3
+            )
+
+            clean_json = self._clean_json_block(response_text)
+            return json.loads(clean_json)
+        except Exception as e:
+            logger.warning(f"Strategist consultation failed: {e}")
+            return {
+                "recommendation": "Adopt a cautious strategic approach (AI consultation failed).",
+                "confidence": 50.0
+            }

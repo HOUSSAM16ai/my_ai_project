@@ -143,3 +143,60 @@ class AuditorAgent(AgentReflector):
                 "feedback": f"فشل نظام التدقيق الذكي. يرجى إعادة المحاولة. الخطأ: {e!s}",
                 "confidence": 0.0
             }
+
+    async def consult(self, situation: str, analysis: dict[str, Any]) -> dict[str, Any]:
+        """
+        تقديم استشارة رقابية.
+        Provide audit and safety consultation.
+
+        Args:
+            situation: وصف الموقف
+            analysis: تحليل الموقف
+
+        Returns:
+            dict: التوصية والثقة
+        """
+        logger.info("Auditor is being consulted...")
+
+        system_prompt = """
+        أنت "المدقق" (The Auditor).
+        دورك هو تحليل الموقف من منظور الأمان والجودة والمخاطر.
+
+        النقاط الأساسية:
+        1. المخاطر الأمنية (Security Risks).
+        2. معايير الجودة (Quality Standards).
+        3. الامتثال للسياسات (Compliance).
+
+        قدم توصية موجزة ومباشرة.
+        الرد يجب أن يكون JSON فقط:
+        {
+            "recommendation": "string (english)",
+            "confidence": float (0-100)
+        }
+        """
+
+        user_message = f"Situation: {situation}\nAnalysis: {json.dumps(analysis, default=str)}"
+
+        try:
+            response_text = await self.ai.send_message(
+                system_prompt=system_prompt,
+                user_message=user_message,
+                temperature=0.3
+            )
+
+            clean_json = self._clean_json_block(response_text)
+            return json.loads(clean_json)
+        except Exception as e:
+            logger.warning(f"Auditor consultation failed: {e}")
+            return {
+                "recommendation": "Maintain high safety standards and verify risks (AI consultation failed).",
+                "confidence": 50.0
+            }
+
+    def _clean_json_block(self, text: str) -> str:
+        """استخراج JSON من نص قد يحتوي على Markdown code blocks."""
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0]
+        elif "```" in text:
+            text = text.split("```")[1].split("```")[0]
+        return text.strip()

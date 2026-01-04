@@ -140,7 +140,7 @@ async def create_agent_council(
     # كل سطر يُنشئ كائن وكيل جديد
     strategist = StrategistAgent(ai_client)  # يحتاج AI لإنشاء الخطط
     architect = ArchitectAgent(ai_client)    # يحتاج AI لتصميم المهام
-    operator = OperatorAgent(task_executor)  # يحتاج executor لتنفيذ المهام
+    operator = OperatorAgent(task_executor, ai_client)  # يحتاج executor و AI للاستشارة
     auditor = AuditorAgent(ai_client)        # يحتاج AI لمراجعة النتائج
     
     # إرجاع المجلس كـ NamedTuple

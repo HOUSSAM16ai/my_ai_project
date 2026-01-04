@@ -171,3 +171,52 @@ class ArchitectAgent(AgentArchitect):
         elif "```" in text:
             text = text.split("```")[1].split("```")[0]
         return text.strip()
+
+    async def consult(self, situation: str, analysis: dict[str, Any]) -> dict[str, Any]:
+        """
+        تقديم استشارة معمارية وتقنية.
+        Provide architectural and technical consultation.
+
+        Args:
+            situation: وصف الموقف
+            analysis: تحليل الموقف
+
+        Returns:
+            dict: التوصية والثقة
+        """
+        logger.info("Architect is being consulted...")
+
+        system_prompt = """
+        أنت "المعماري" (The Architect).
+        دورك هو تحليل الموقف من منظور تقني ومعماري.
+
+        النقاط الأساسية:
+        1. الجدوى التقنية (Feasibility).
+        2. قابلية التوسع (Scalability) والأداء.
+        3. الأدوات والتقنيات المناسبة.
+
+        قدم توصية موجزة ومباشرة.
+        الرد يجب أن يكون JSON فقط:
+        {
+            "recommendation": "string (english)",
+            "confidence": float (0-100)
+        }
+        """
+
+        user_message = f"Situation: {situation}\nAnalysis: {json.dumps(analysis, default=str)}"
+
+        try:
+            response_text = await self.ai.send_message(
+                system_prompt=system_prompt,
+                user_message=user_message,
+                temperature=0.3
+            )
+
+            clean_json = self._clean_json_block(response_text)
+            return json.loads(clean_json)
+        except Exception as e:
+            logger.warning(f"Architect consultation failed: {e}")
+            return {
+                "recommendation": "Ensure technical feasibility and scalability (AI consultation failed).",
+                "confidence": 50.0
+            }
