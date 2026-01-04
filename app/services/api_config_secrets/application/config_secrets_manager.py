@@ -38,11 +38,24 @@ class ConfigSecretsManager:
 
         self._initialize_environments()
 
-    # TODO: Split this function (33 lines) - KISS principle
     def _initialize_environments(self):
-        """Initialize default configurations for each environment"""
+        """
+        تهيئة البيئات الافتراضية | Initialize default configurations for each environment
+        
+        يقوم بتهيئة إعدادات البيئات الثلاث (تطوير، اختبار، إنتاج)
+        Initializes settings for three environments (development, staging, production)
+        """
+        self._initialize_development_config()
+        self._initialize_staging_config()
+        self._initialize_production_config()
 
-        # Development environment
+    def _initialize_development_config(self) -> None:
+        """
+        تهيئة بيئة التطوير | Initialize development environment
+        
+        تفعيل وضع التطوير وتعطيل القيود للتطوير السريع
+        Enable development mode and disable restrictions for rapid development
+        """
         self.set_config(
             Environment.DEVELOPMENT, "debug_mode", True, "Enable debug mode and verbose logging"
         )
@@ -53,7 +66,13 @@ class ConfigSecretsManager:
             "Disable rate limiting for easier development",
         )
 
-        # Staging environment
+    def _initialize_staging_config(self) -> None:
+        """
+        تهيئة بيئة الاختبار | Initialize staging environment
+        
+        إعدادات مشابهة للإنتاج للاختبار الواقعي
+        Production-like settings for realistic testing
+        """
         self.set_config(Environment.STAGING, "debug_mode", False, "Disable debug mode in staging")
         self.set_config(
             Environment.STAGING,
@@ -62,7 +81,13 @@ class ConfigSecretsManager:
             "Enable rate limiting to match production",
         )
 
-        # Production environment
+    def _initialize_production_config(self) -> None:
+        """
+        تهيئة بيئة الإنتاج | Initialize production environment
+        
+        أعلى مستوى من الأمان والموثوقية
+        Highest level of security and reliability
+        """
         self.set_config(
             Environment.PRODUCTION, "debug_mode", False, "Debug mode always off in production"
         )
@@ -101,8 +126,6 @@ class ConfigSecretsManager:
         if entry:
             return entry.value
         return default
-# TODO: Split this function (42 lines) - KISS principle
-# TODO: Reduce parameters (7 params) - Use config object
 
     def create_secret(
         self,
