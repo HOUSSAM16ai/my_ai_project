@@ -39,20 +39,11 @@ class ToolRateLimiter:
         cutoff = now - self.config.window_seconds
         self._calls[key] = [t for t in self._calls[key] if t > cutoff]
 
-    # TODO: Split this function (34 lines) - KISS principle
-    def _periodic_cleanup(self, now: float):
-        """Periodic cleanup to prevent memory leaks from abandoned keys."""
-        # Only run cleanup every 5 minutes
-        if now - self._last_cleanup < 300:
-            return
-
-        self._last_cleanup = now
+    def _cleanup_expired_keys(self, now: float) -> None:
+        """Remove keys with no recent calls."""
         cutoff = now - self.config.window_seconds
-
-        # Remove keys with no recent calls
         keys_to_remove = []
         for key, calls in list(self._calls.items()):
-            # Remove old timestamps
             fresh_calls = [t for t in calls if t > cutoff]
             if not fresh_calls:
                 keys_to_remove.append(key)
@@ -62,19 +53,36 @@ class ToolRateLimiter:
         for key in keys_to_remove:
             self._calls.pop(key, None)
 
-        # Remove expired cooldowns
+    def _cleanup_expired_cooldowns(self, now: float) -> None:
+        """Remove expired cooldowns."""
         for key in list(self._cooldowns.keys()):
             if self._cooldowns[key] < now:
                 self._cooldowns.pop(key, None)
 
-        # If still too many keys, remove oldest ones (LRU-style)
-        if len(self._calls) > self._MAX_KEYS:
-            # Sort by most recent call and keep only the newest
-            sorted_keys = sorted(
-                self._calls.keys(), key=lambda k: max(self._calls[k]) if self._calls[k] else 0
-            )
-            for key in sorted_keys[: len(sorted_keys) - self._MAX_KEYS]:
-                self._calls.pop(key, None)
+    def _enforce_max_keys_limit(self) -> None:
+        """Ensure the number of keys does not exceed the maximum allowed."""
+        if len(self._calls) <= self._MAX_KEYS:
+            return
+
+        # Sort by most recent call and keep only the newest
+        sorted_keys = sorted(
+            self._calls.keys(),
+            key=lambda k: max(self._calls[k]) if self._calls[k] else 0,
+        )
+        keys_to_remove = sorted_keys[: len(sorted_keys) - self._MAX_KEYS]
+        for key in keys_to_remove:
+            self._calls.pop(key, None)
+
+    def _periodic_cleanup(self, now: float) -> None:
+        """Periodic cleanup to prevent memory leaks from abandoned keys."""
+        # Only run cleanup every 5 minutes
+        if now - self._last_cleanup < 300:
+            return
+
+        self._last_cleanup = now
+        self._cleanup_expired_keys(now)
+        self._cleanup_expired_cooldowns(now)
+        self._enforce_max_keys_limit()
 
     def _is_cooling_down(self, key: str, now: float) -> tuple[bool, str]:
         """Check if the key is currently in cooldown."""
