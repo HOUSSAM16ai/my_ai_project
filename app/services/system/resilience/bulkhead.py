@@ -51,43 +51,95 @@ class Bulkhead:
         self.rejected_calls = 0
         self._lock = threading.RLock()
 
-    # TODO: Split this function (35 lines) - KISS principle
     def execute(
         self, func: Callable, priority: PriorityLevel = PriorityLevel.NORMAL, *args, **kwargs
     ) -> dict[str, str | int | bool]:
-        """Execute function with bulkhead protection"""
-        # Try to acquire semaphore
-        acquired = self.semaphore.acquire(blocking=False)
-
+        """
+        تنفيذ دالة مع حماية الحاجز المائي | Execute function with bulkhead protection
+        
+        يطبق حدود التزامن وإدارة قائمة الانتظار
+        Applies concurrency limits and queue management
+        """
+        acquired = self._try_acquire_semaphore()
+        
         if not acquired:
-            # Queue is full - reject immediately
-            with self._lock:
-                self.rejected_calls += 1
-            raise BulkheadFullError(
-                f"Bulkhead '{self.name}' is full. "
-                f"Active: {self.active_calls}, "
-                f"Max: {self.config.max_concurrent_calls}"
+            self._handle_bulkhead_full()
+        
+        try:
+            self._increment_active_calls()
+            return self._execute_with_timeout(func, args, kwargs)
+        finally:
+            self._release_resources()
+
+    def _try_acquire_semaphore(self) -> bool:
+        """
+        محاولة الحصول على semaphore | Try to acquire semaphore
+        
+        Returns:
+            True إذا نجح، False إذا فشل | True if successful, False if failed
+        """
+        return self.semaphore.acquire(blocking=False)
+
+    def _handle_bulkhead_full(self) -> None:
+        """
+        معالجة حالة امتلاء الحاجز | Handle bulkhead full scenario
+        
+        Raises:
+            BulkheadFullError: عند امتلاء الحاجز | When bulkhead is full
+        """
+        with self._lock:
+            self.rejected_calls += 1
+        raise BulkheadFullError(
+            f"Bulkhead '{self.name}' is full. "
+            f"Active: {self.active_calls}, "
+            f"Max: {self.config.max_concurrent_calls}"
+        )
+
+    def _increment_active_calls(self) -> None:
+        """
+        زيادة عداد الاستدعاءات النشطة | Increment active calls counter
+        """
+        with self._lock:
+            self.active_calls += 1
+
+    def _execute_with_timeout(
+        self, func: Callable, args: tuple, kwargs: dict
+    ) -> Any:
+        """
+        تنفيذ الدالة مع مهلة زمنية | Execute function with timeout
+        
+        Args:
+            func: الدالة المراد تنفيذها | Function to execute
+            args: معاملات الدالة | Function arguments
+            kwargs: معاملات مسماة | Named arguments
+            
+        Returns:
+            نتيجة تنفيذ الدالة | Function execution result
+            
+        Raises:
+            TimeoutError: إذا تجاوز وقت التنفيذ | If execution timeout exceeded
+        """
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        elapsed_ms = (time.time() - start_time) * 1000
+
+        if elapsed_ms > self.config.timeout_ms:
+            raise TimeoutError(
+                f"Operation exceeded timeout: {elapsed_ms}ms > {self.config.timeout_ms}ms"
             )
 
-        try:
-            with self._lock:
-                self.active_calls += 1
+        return result
 
-            # Execute function with timeout
-            start_time = time.time()
-            result = func(*args, **kwargs)
-            elapsed_ms = (time.time() - start_time) * 1000
-
-            if elapsed_ms > self.config.timeout_ms:
-                raise TimeoutError(
-                    f"Operation exceeded timeout: {elapsed_ms}ms > {self.config.timeout_ms}ms"
-                )
-
-            return result
-        finally:
-            with self._lock:
-                self.active_calls -= 1
-            self.semaphore.release()
+    def _release_resources(self) -> None:
+        """
+        تحرير موارد الحاجز | Release bulkhead resources
+        
+        يقلل عدد الاستدعاءات النشطة ويحرر semaphore
+        Decrements active calls and releases semaphore
+        """
+        with self._lock:
+            self.active_calls -= 1
+        self.semaphore.release()
 
     def get_stats(self) -> dict:
         """Get bulkhead statistics"""
