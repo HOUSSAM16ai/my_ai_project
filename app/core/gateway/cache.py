@@ -53,10 +53,7 @@ class IntelligentCache:
 
                 # Check if expired
                 if datetime.now(UTC) > entry["expires_at"]:
-                    # CRITICAL FIX: Decrement size before deletion to prevent memory leak
-                    self.current_size_bytes -= entry["size_bytes"]
-                    del self.cache[key]
-                    del self.access_times[key]
+                    self._remove_entry(key)
                     self.miss_count += 1
                     return None
 
@@ -68,7 +65,6 @@ class IntelligentCache:
             self.miss_count += 1
             return None
 
-    # TODO: Split this function (57 lines) - KISS principle
     def put(
         self, request_data: dict[str, Any], response_data: dict[str, Any], ttl_seconds: int = 300
     ) -> None:
@@ -89,35 +85,12 @@ class IntelligentCache:
             if data_size > max_size_bytes:
                 return
 
-            # If overwriting, remove old size first
+            # If overwriting, remove old entry first to avoid edge cases and correct size calc
             if key in self.cache:
-                self.current_size_bytes -= self.cache[key]["size_bytes"]
-                # We also want to remove it from eviction candidates temporarily so we don't pick it as LRU
-                # while we are updating it, although re-setting access_times later handles the LRU logic.
+                self._remove_entry(key)
 
             # Evict if needed
-            while (self.current_size_bytes + data_size) > max_size_bytes:
-                # Safety check: if cache is empty but we still can't fit it, break
-                # (This shouldn't happen due to the check above, but good for robustness)
-                if not self.cache:
-                    break
-
-                # IMPORTANT: If the LRU item is the key we are about to update (and we just subtracted its size),
-                # we should skip evicting it because we are replacing it anyway.
-                # However, since we already subtracted its size above, 'current_size_bytes' reflects the state
-                # without this key. So checking (current + new) > max is correct.
-                # If we are overwriting, the key is still in self.cache but not contributing to current_size_bytes.
-
-                # To avoid complex edge cases, if we are overwriting, we can just delete the old entry fully first.
-                if key in self.cache:
-                    # We already subtracted size, now remove from dicts to be clean
-                    del self.cache[key]
-                    if key in self.access_times:
-                        del self.access_times[key]
-                    # Loop continues, now 'key' is treated as a new insertion
-                    continue
-
-                self._evict_lru()
+            self._ensure_capacity(data_size, max_size_bytes)
 
             # Store
             self.cache[key] = {
@@ -128,6 +101,21 @@ class IntelligentCache:
             self.access_times[key] = datetime.now(UTC)
             self.current_size_bytes += data_size
 
+    def _remove_entry(self, key: str) -> None:
+        """Remove entry from cache and update stats"""
+        if key in self.cache:
+            self.current_size_bytes -= self.cache[key]["size_bytes"]
+            del self.cache[key]
+        if key in self.access_times:
+            del self.access_times[key]
+
+    def _ensure_capacity(self, required_size: int, max_size_bytes: float) -> None:
+        """Ensure there is enough space in the cache"""
+        while (self.current_size_bytes + required_size) > max_size_bytes:
+            if not self.cache:
+                break
+            self._evict_lru()
+
     def _evict_lru(self):
         """Evict least recently used entry"""
         if not self.access_times:
@@ -135,12 +123,7 @@ class IntelligentCache:
 
         # Find LRU key
         lru_key = min(self.access_times.items(), key=lambda x: x[1])[0]
-
-        # Remove
-        if lru_key in self.cache:
-            self.current_size_bytes -= self.cache[lru_key]["size_bytes"]
-            del self.cache[lru_key]
-        del self.access_times[lru_key]
+        self._remove_entry(lru_key)
 
     def get_stats(self) -> dict[str, Any]:
         """Get cache statistics"""
