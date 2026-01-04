@@ -75,7 +75,28 @@ class ToolRateLimiter:
             )
             for key in sorted_keys[: len(sorted_keys) - self._MAX_KEYS]:
                 self._calls.pop(key, None)
-# TODO: Split this function (35 lines) - KISS principle
+
+    def _is_cooling_down(self, key: str, now: float) -> tuple[bool, str]:
+        """Check if the key is currently in cooldown."""
+        if key in self._cooldowns:
+            cooldown_end = self._cooldowns[key]
+            if now < cooldown_end:
+                remaining = int(cooldown_end - now)
+                return True, f"Rate limited. Try again in {remaining}s"
+            del self._cooldowns[key]
+        return False, ""
+
+    def _check_rate_limit(self, key: str, now: float) -> tuple[bool, str]:
+        """Check if the call limit has been reached."""
+        self._cleanup_old_calls(key, now)
+
+        if len(self._calls[key]) >= self.config.max_calls:
+            self._cooldowns[key] = now + self.config.cooldown_seconds
+            return (
+                False,
+                f"Too many requests. Limit: {self.config.max_calls}/{self.config.window_seconds}s",
+            )
+        return True, "ok"
 
     def check(self, user_id: int, tool_name: str) -> tuple[bool, str]:
         """
@@ -91,24 +112,13 @@ class ToolRateLimiter:
             # Run periodic cleanup to prevent memory leaks
             self._periodic_cleanup(now)
 
-            # Check cooldown
-            if key in self._cooldowns:
-                cooldown_end = self._cooldowns[key]
-                if now < cooldown_end:
-                    remaining = int(cooldown_end - now)
-                    return False, f"Rate limited. Try again in {remaining}s"
-                del self._cooldowns[key]
+            is_cooling, reason = self._is_cooling_down(key, now)
+            if is_cooling:
+                return False, reason
 
-            # Cleanup and check limit
-            self._cleanup_old_calls(key, now)
-
-            if len(self._calls[key]) >= self.config.max_calls:
-                # Set cooldown
-                self._cooldowns[key] = now + self.config.cooldown_seconds
-                return (
-                    False,
-                    f"Too many requests. Limit: {self.config.max_calls}/{self.config.window_seconds}s",
-                )
+            allowed, reason = self._check_rate_limit(key, now)
+            if not allowed:
+                return False, reason
 
             # Record call
             self._calls[key].append(now)
