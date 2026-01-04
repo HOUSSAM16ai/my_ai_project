@@ -37,7 +37,7 @@ import logging
 import os
 from typing import Final
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -45,8 +45,9 @@ logger = logging.getLogger(__name__)
 
 # المجلدات المسموح بتقديمها مباشرة
 MOUNTABLE_FOLDERS: Final[list[str]] = ["css", "js", "src", "assets"]
+DEFAULT_STATIC_DIR: Final[str] = os.path.join(os.getcwd(), "app/static")
 
-# TODO: Split this function (78 lines) - KISS principle
+
 # NOTE: This function is DEPRECATED. Use app.middleware.static_files_middleware instead.
 def setup_static_files(app: FastAPI, static_dir: str | None = None) -> None:
     """
@@ -58,8 +59,8 @@ def setup_static_files(app: FastAPI, static_dir: str | None = None) -> None:
         static_dir: مسار مجلد الملفات الثابتة (اختياري)
     """
     # 1. تحديد وتحقق من مسار الملفات | Determine and validate path
-    base_static_dir = static_dir or os.path.join(os.getcwd(), "app/static")
-    
+    base_static_dir = static_dir or DEFAULT_STATIC_DIR
+
     if not _validate_static_directory(base_static_dir):
         return
 
@@ -73,6 +74,45 @@ def setup_static_files(app: FastAPI, static_dir: str | None = None) -> None:
 
     # 4. معالج SPA Fallback | Setup SPA fallback handler
     _setup_spa_fallback(app, base_static_dir)
+
+
+async def serve_static(request: Request, file_path: str, static_dir: str | None = None) -> Response | None:
+    """
+    Serve static file with proper headers and caching.
+
+    يخدم ملف ثابت مع الترويسات والتخزين المؤقت المناسب.
+
+    Args:
+        request: Request object طلب HTTP
+        file_path: Relative path to the file مسار الملف النسبي
+        static_dir: Optional override for static directory.
+
+    Returns:
+        Response | None: FileResponse if found, else None
+
+    Raises:
+        HTTPException: For path traversal (404) or invalid method (405).
+    """
+    base_static_dir = static_dir or DEFAULT_STATIC_DIR
+
+    full_path = os.path.join(base_static_dir, file_path)
+    full_path = os.path.normpath(full_path)
+
+    # Security: Path Traversal Check
+    if not full_path.startswith(base_static_dir):
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    if not os.path.exists(full_path):
+        return None
+
+    if not os.path.isfile(full_path):
+        return None
+
+    # Check method
+    if request.method not in ["GET", "HEAD"]:
+        raise HTTPException(status_code=405, detail="Method Not Allowed")
+
+    return FileResponse(full_path)
 
 
 def _validate_static_directory(directory: str) -> bool:
@@ -125,11 +165,9 @@ def _setup_spa_fallback(app: FastAPI, base_static_dir: str) -> None:
         Handle non-existent paths with SPA fallback logic.
         """
         # 1. التحقق من ملف فعلي | Check for physical file
-        physical_file = _try_serve_physical_file(
-            base_static_dir, full_path, request.method
-        )
-        if physical_file:
-            return physical_file
+        physical_response = await serve_static(request, full_path, static_dir=base_static_dir)
+        if physical_response:
+            return physical_response # type: ignore
 
         # 2. حماية مسارات API | Protect API routes
         if _is_api_route(full_path):
@@ -147,32 +185,6 @@ def _setup_spa_fallback(app: FastAPI, base_static_dir: str) -> None:
         spa_fallback,
         methods=["GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     )
-
-
-def _try_serve_physical_file(
-    base_static_dir: str, full_path: str, method: str
-) -> FileResponse | None:
-    """
-    محاولة خدمة ملف فعلي إذا كان موجوداً.
-    Try to serve physical file if it exists.
-    
-    Returns:
-        FileResponse | None: استجابة الملف أو None
-    """
-    # تطبيع المسار | Normalize path
-    potential_path = os.path.normpath(os.path.join(base_static_dir, full_path))
-
-    # Security: منع Path Traversal
-    if not potential_path.startswith(base_static_dir):
-        raise HTTPException(status_code=404, detail="Not Found")
-
-    # التحقق من وجود الملف | Check file exists
-    if os.path.isfile(potential_path):
-        if method not in ["GET", "HEAD"]:
-            raise HTTPException(status_code=405, detail="Method Not Allowed")
-        return FileResponse(potential_path)
-
-    return None
 
 
 def _is_api_route(path: str) -> bool:
