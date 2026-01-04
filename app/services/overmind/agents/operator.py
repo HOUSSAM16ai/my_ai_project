@@ -44,17 +44,46 @@ class OperatorAgent(AgentExecutor):
     async def execute_tasks(self, design: dict[str, Any], context: CollaborationContext) -> dict[str, Any]:
         """
         تنفيذ المهام الواردة في التصميم.
+        Execute tasks from the design plan.
 
         Args:
-            design (dict): التصميم التقني المحتوي على قائمة المهام.
-            context (CollaborationContext): السياق المشترك.
+            design: التصميم التقني المحتوي على قائمة المهام
+            context: السياق المشترك
 
         Returns:
-            dict: تقرير التنفيذ الشامل.
+            dict: تقرير التنفيذ الشامل
         """
         logger.info("Operator is starting execution...")
 
-        # التحقق من وجود أخطاء في التصميم
+        # 1. التحقق من صحة التصميم | Validate design
+        validation_result = self._validate_design(design)
+        if validation_result:
+            return validation_result
+
+        # 2. استخراج المهام | Extract tasks
+        tasks_data = design.get("tasks", [])
+        if not tasks_data:
+            return self._create_empty_tasks_report()
+
+        # 3. تنفيذ المهام | Execute tasks
+        logger.info(f"Operator: Executing {len(tasks_data)} tasks")
+        results, overall_status = await self._execute_task_list(
+            tasks_data, context
+        )
+
+        # 4. إنشاء التقرير النهائي | Create final report
+        report = self._create_execution_report(overall_status, results)
+        context.update("last_execution_report", report)
+        return report
+
+    def _validate_design(self, design: dict[str, Any]) -> dict[str, Any] | None:
+        """
+        التحقق من صحة التصميم.
+        Validate design for errors.
+        
+        Returns:
+            dict | None: تقرير خطأ إذا كان التصميم غير صالح، None إذا كان صالحاً
+        """
         if "error" in design:
             logger.error(f"Operator received failed design: {design.get('error')}")
             return {
@@ -63,82 +92,134 @@ class OperatorAgent(AgentExecutor):
                 "results": [],
                 "error": f"Design failed: {design.get('error')}"
             }
+        return None
 
-        tasks_data = design.get("tasks", [])
+    def _create_empty_tasks_report(self) -> dict[str, Any]:
+        """
+        إنشاء تقرير للتصميم بدون مهام.
+        Create report for design with no tasks.
+        """
+        logger.warning("Operator received design with no tasks")
+        return {
+            "status": "success",
+            "tasks_executed": 0,
+            "results": [],
+            "note": "No tasks to execute"
+        }
 
-        if not tasks_data:
-            logger.warning("Operator received design with no tasks")
-            return {
-                "status": "success",
-                "tasks_executed": 0,
-                "results": [],
-                "note": "No tasks to execute"
-            }
-
-        logger.info(f"Operator: Executing {len(tasks_data)} tasks")
+    async def _execute_task_list(
+        self, tasks_data: list[dict[str, Any]], context: CollaborationContext
+    ) -> tuple[list[dict[str, Any]], str]:
+        """
+        تنفيذ قائمة المهام.
+        Execute list of tasks sequentially.
+        
+        Returns:
+            tuple: (النتائج، الحالة الإجمالية)
+        """
         results = []
         overall_status = "success"
 
         for i, task_def in enumerate(tasks_data):
-            task_name = task_def.get("name", f"Task-{i}")
-            tool_name = task_def.get("tool_name")
-            tool_args = task_def.get("tool_args", {})
+            result = await self._execute_single_task(
+                i, task_def, tasks_data, context
+            )
+            results.append(result)
 
-            if not tool_name:
-                logger.warning(f"Skipping task '{task_name}': No tool_name provided.")
-                results.append({"name": task_name, "status": "skipped", "reason": "no_tool_name"})
+            if result.get("status") == "skipped":
                 continue
 
-            logger.info(f"Executing Task [{i+1}/{len(tasks_data)}]: {task_name} using {tool_name}")
-
-            # إنشاء كائن مهمة مؤقت (Ephemeral Task Object)
-            # لأن TaskExecutor يتوقع كائن Task.
-            # في المستقبل قد نحدث TaskExecutor لقبول dict مباشرة.
-            # ملاحظة: Task يحتاج mission_id، هنا نستخدم 0 كقيمة مؤقتة لأننا لا نملك ID المهمة مباشرة هنا
-            # إلا إذا أخذناه من context.
-            mission_id = context.shared_memory.get("mission_id", 0) if hasattr(context, "shared_memory") else 0
-
-            # تحويل args إلى JSON string لأن النموذج يتوقع ذلك
-            args_json = json.dumps(tool_args) if isinstance(tool_args, dict) else str(tool_args)
-
-            temp_task = Task(
-                mission_id=mission_id,
-                name=task_name,
-                tool_name=tool_name,
-                tool_args_json=args_json,
-                status=TaskStatus.PENDING
-            )
-
-            # تنفيذ المهمة
-            try:
-                exec_result = await self.executor.execute_task(temp_task)
-                logger.info(f"Task '{task_name}' completed with status: {exec_result.get('status', 'unknown')}")
-            except Exception as e:
-                logger.exception(f"Task '{task_name}' raised exception: {e}")
-                exec_result = {
-                    "status": "failed",
-                    "error": f"{type(e).__name__}: {e!s}"
-                }
-
-            # تسجيل النتيجة
-            results.append({
-                "name": task_name,
-                "tool": tool_name,
-                "result": exec_result
-            })
-
-            if exec_result.get("status") == "failed":
+            if result["result"].get("status") == "failed":
                 overall_status = "partial_failure"
-                logger.warning(f"Task '{task_name}' failed: {exec_result.get('error', 'unknown error')}")
-                # يمكننا هنا اتخاذ قرار بالتوقف أو الاستمرار (Fail Fast vs Continue)
-                # سنستمر حالياً ولكن نسجل الفشل.
 
-        report = {
+        return results, overall_status
+
+    async def _execute_single_task(
+        self,
+        index: int,
+        task_def: dict[str, Any],
+        tasks_data: list[dict[str, Any]],
+        context: CollaborationContext,
+    ) -> dict[str, Any]:
+        """
+        تنفيذ مهمة واحدة.
+        Execute a single task.
+        """
+        task_name = task_def.get("name", f"Task-{index}")
+        tool_name = task_def.get("tool_name")
+
+        # التحقق من وجود أداة | Validate tool
+        if not tool_name:
+            logger.warning(f"Skipping task '{task_name}': No tool_name provided.")
+            return {"name": task_name, "status": "skipped", "reason": "no_tool_name"}
+
+        logger.info(f"Executing Task [{index+1}/{len(tasks_data)}]: {task_name} using {tool_name}")
+
+        # إنشاء المهمة وتنفيذها | Create and execute task
+        temp_task = self._create_task_object(task_def, context)
+        exec_result = await self._execute_task_safely(temp_task, task_name)
+
+        return {
+            "name": task_name,
+            "tool": tool_name,
+            "result": exec_result
+        }
+
+    def _create_task_object(
+        self, task_def: dict[str, Any], context: CollaborationContext
+    ) -> Task:
+        """
+        إنشاء كائن مهمة مؤقت.
+        Create ephemeral task object for execution.
+        """
+        mission_id = self._extract_mission_id(context)
+        tool_args = task_def.get("tool_args", {})
+        args_json = json.dumps(tool_args) if isinstance(tool_args, dict) else str(tool_args)
+
+        return Task(
+            mission_id=mission_id,
+            name=task_def.get("name", "Unnamed Task"),
+            tool_name=task_def.get("tool_name"),
+            tool_args_json=args_json,
+            status=TaskStatus.PENDING
+        )
+
+    def _extract_mission_id(self, context: CollaborationContext) -> int:
+        """
+        استخراج معرف المهمة من السياق.
+        Extract mission ID from context.
+        """
+        if hasattr(context, "shared_memory"):
+            return context.shared_memory.get("mission_id", 0)
+        return 0
+
+    async def _execute_task_safely(
+        self, task: Task, task_name: str
+    ) -> dict[str, Any]:
+        """
+        تنفيذ المهمة مع معالجة الأخطاء.
+        Execute task with error handling.
+        """
+        try:
+            exec_result = await self.executor.execute_task(task)
+            logger.info(f"Task '{task_name}' completed with status: {exec_result.get('status', 'unknown')}")
+            return exec_result
+        except Exception as e:
+            logger.exception(f"Task '{task_name}' raised exception: {e}")
+            return {
+                "status": "failed",
+                "error": f"{type(e).__name__}: {e!s}"
+            }
+
+    def _create_execution_report(
+        self, overall_status: str, results: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """
+        إنشاء تقرير التنفيذ النهائي.
+        Create final execution report.
+        """
+        return {
             "status": overall_status,
             "tasks_executed": len(results),
             "results": results
         }
-
-        # تخزين النتائج في السياق
-        context.update("last_execution_report", report)
-        return report

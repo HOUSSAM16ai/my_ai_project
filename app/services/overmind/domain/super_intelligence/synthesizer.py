@@ -30,6 +30,7 @@ class DecisionSynthesizer:
     ) -> Decision:
         """
         تركيب القرار النهائي من آراء الوكلاء.
+        Synthesize final decision from agent consultations.
 
         Args:
             situation: الموقف
@@ -41,27 +42,83 @@ class DecisionSynthesizer:
         """
         logger.info("Synthesizing final decision from consultations...")
 
+        # 1. استخراج المعلومات الأساسية | Extract basic info
         agents_involved = list(consultations.keys())
+        avg_confidence = DecisionSynthesizer._calculate_average_confidence(consultations)
 
-        # حساب متوسط الثقة
-        avg_confidence = sum(
-            c["confidence"] for c in consultations.values()
-        ) / max(len(consultations), 1)
+        # 2. تحديد الأولوية والتأثير | Determine priority and impact
+        priority = DecisionSynthesizer._determine_priority(analysis)
+        impact = DecisionSynthesizer._determine_impact(analysis)
 
-        # تحديد الأولويات والتأثير
-        priority = DecisionPriority.MEDIUM
-        if analysis.get("urgency") == "high":
-            priority = DecisionPriority.CRITICAL
+        # 3. إنشاء القرار الأساسي | Create base decision
+        decision = DecisionSynthesizer._create_base_decision(
+            situation, analysis, avg_confidence, priority, impact, agents_involved
+        )
 
+        # 4. إضافة البيانات التفصيلية | Populate detailed data
+        DecisionSynthesizer._populate_decision_details(decision)
+
+        # 5. حساب الثقة النهائية | Calculate final confidence
+        decision.calculate_confidence()
+
+        logger.info(
+            f"Decision synthesized: {decision.title} "
+            f"(confidence: {decision.confidence_score:.1f}%)"
+        )
+
+        return decision
+
+    @staticmethod
+    def _calculate_average_confidence(consultations: dict[str, Any]) -> float:
+        """
+        حساب متوسط الثقة من الاستشارات.
+        Calculate average confidence from consultations.
+        """
+        if not consultations:
+            return 0.0
+        return sum(c["confidence"] for c in consultations.values()) / len(consultations)
+
+    @staticmethod
+    def _determine_priority(analysis: dict[str, Any]) -> DecisionPriority:
+        """
+        تحديد أولوية القرار.
+        Determine decision priority based on urgency.
+        """
+        urgency = analysis.get("urgency")
+        if urgency == "high":
+            return DecisionPriority.CRITICAL
+        return DecisionPriority.MEDIUM
+
+    @staticmethod
+    def _determine_impact(analysis: dict[str, Any]) -> DecisionImpact:
+        """
+        تحديد تأثير القرار.
+        Determine decision impact based on complexity.
+        """
         complexity = analysis.get("complexity_level", "medium")
-        impact = DecisionImpact.MEDIUM_TERM
         if complexity == "high":
-            impact = DecisionImpact.LONG_TERM
+            return DecisionImpact.LONG_TERM
         elif complexity == "low":
-            impact = DecisionImpact.SHORT_TERM
+            return DecisionImpact.SHORT_TERM
+        return DecisionImpact.MEDIUM_TERM
 
-        # إنشاء القرار
-        decision = Decision(
+    @staticmethod
+    def _create_base_decision(
+        situation: str,
+        analysis: dict[str, Any],
+        avg_confidence: float,
+        priority: DecisionPriority,
+        impact: DecisionImpact,
+        agents_involved: list[str],
+    ) -> Decision:
+        """
+        إنشاء القرار الأساسي.
+        Create base decision object with core information.
+        """
+        complexity = analysis.get("complexity_level", "medium")
+        urgency = analysis.get("urgency", "normal")
+
+        return Decision(
             category=DecisionCategory.STRATEGIC,
             priority=priority,
             impact=impact,
@@ -71,14 +128,31 @@ class DecisionSynthesizer:
                 "بعد استشارة جميع الوكلاء وتحليل الموقف بشكل شامل، "
                 "تم التوصل إلى هذا القرار بناءً على الحكمة الجماعية. "
                 f"مستوى التعقيد: {complexity}, "
-                f"الإلحاح: {analysis.get('urgency', 'normal')}, "
+                f"الإلحاح: {urgency}, "
                 f"متوسط ثقة الوكلاء: {avg_confidence:.1f}%"
             ),
             agents_involved=agents_involved,
         )
 
-        # إضافة البيانات الافتراضية للقرار (يمكن تحسينها لاحقاً لتكون ديناميكية)
-        decision.alternatives_considered = [
+    @staticmethod
+    def _populate_decision_details(decision: Decision) -> None:
+        """
+        ملء تفاصيل القرار الإضافية.
+        Populate additional decision details (alternatives, outcomes, risks).
+        """
+        decision.alternatives_considered = DecisionSynthesizer._get_default_alternatives()
+        decision.expected_outcomes = DecisionSynthesizer._get_default_outcomes()
+        decision.risks = DecisionSynthesizer._get_default_risks()
+        decision.mitigation_strategies = DecisionSynthesizer._get_default_mitigations()
+        decision.success_criteria = DecisionSynthesizer._get_default_success_criteria()
+
+    @staticmethod
+    def _get_default_alternatives() -> list[dict[str, Any]]:
+        """
+        الحصول على البدائل الافتراضية.
+        Get default alternatives for decision.
+        """
+        return [
             {
                 "option": "Do nothing",
                 "pros": ["No resource consumption", "No risk"],
@@ -93,32 +167,46 @@ class DecisionSynthesizer:
             },
         ]
 
-        decision.expected_outcomes = [
+    @staticmethod
+    def _get_default_outcomes() -> list[str]:
+        """
+        الحصول على النتائج المتوقعة الافتراضية.
+        Get default expected outcomes.
+        """
+        return [
             "Improved system performance",
             "Enhanced user experience",
             "Better long-term sustainability",
         ]
 
-        decision.risks = [
+    @staticmethod
+    def _get_default_risks() -> list[dict[str, str]]:
+        """
+        الحصول على المخاطر الافتراضية.
+        Get default risks.
+        """
+        return [
             {"risk": "Unexpected side effects", "probability": "low", "impact": "medium"},
         ]
 
-        decision.mitigation_strategies = [
+    @staticmethod
+    def _get_default_mitigations() -> list[str]:
+        """
+        الحصول على استراتيجيات التخفيف الافتراضية.
+        Get default mitigation strategies.
+        """
+        return [
             "Implement gradual rollout",
             "Monitor metrics closely",
         ]
 
-        decision.success_criteria = [
+    @staticmethod
+    def _get_default_success_criteria() -> list[str]:
+        """
+        الحصول على معايير النجاح الافتراضية.
+        Get default success criteria.
+        """
+        return [
             "System stability maintained",
             "Performance metrics improved",
         ]
-
-        # حساب الثقة النهائية
-        decision.calculate_confidence()
-
-        logger.info(
-            f"Decision synthesized: {decision.title} "
-            f"(confidence: {decision.confidence_score:.1f}%)"
-        )
-
-        return decision
