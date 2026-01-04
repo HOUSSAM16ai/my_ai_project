@@ -14,6 +14,7 @@ from app.services.data_mesh.domain.models import (
     DataContract,
     DataDomainType,
     DataProduct,
+    DataProductStatus,
     DataQualityMetrics,
     GovernanceLevel,
     GovernancePolicy,
@@ -120,8 +121,39 @@ class DataMeshManager:
             )
 
             return True
-# TODO: Split this function (42 lines) - KISS principle
 
+    def register_product(self, product_def: dict[str, Any], owner_id: str) -> DataProduct:
+        """
+        تسجيل منتج بيانات جديد.
+        """
+        self._validate_product_ownership(owner_id)
+        product = self._create_product_entity(product_def, owner_id)
+
+        if not self.register_data_product(product):
+            raise ValueError(f"Product {product.product_id} already exists")
+
+        return product
+
+    def _validate_product_ownership(self, owner_id: str) -> None:
+        # In a real system, this would check against an identity service
+        if not owner_id:
+            raise ValueError("Owner ID is required")
+
+    def _create_product_entity(self, product_def: dict[str, Any], owner_id: str) -> DataProduct:
+        return DataProduct(
+            product_id=product_def["product_id"],
+            name=product_def["name"],
+            domain=DataDomainType(product_def["domain"]),
+            description=product_def.get("description", ""),
+            owner_team=owner_id,
+            contracts=[],
+            quality_metrics={},
+            access_patterns=[],
+            lineage={},
+            status=DataProductStatus.ACTIVE
+        )
+
+    # TODO: Split this function (42 lines) - KISS principle
     def evolve_contract_schema(
         self,
         contract_id: str,
