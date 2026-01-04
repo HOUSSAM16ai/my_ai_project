@@ -166,7 +166,6 @@ api_gateway_service = APIGatewayService()
 # DECORATOR FOR GATEWAY PROCESSING
 # ======================================================================================
 
-# TODO: Split this function (36 lines) - KISS principle
 def gateway_process(protocol: ProtocolType = ProtocolType.REST, _cacheable: bool = False) -> None:
     """
     Decorator to process requests through API Gateway (FastAPI Dependency Injection Friendly)
@@ -182,28 +181,39 @@ def gateway_process(protocol: ProtocolType = ProtocolType.REST, _cacheable: bool
     # This is a simplified adaptation.
     def decorator(f: Callable) -> Callable:
         @wraps(f)
-        async def decorated_function(request: Request, *args, **kwargs) -> None:
-            gateway = api_gateway_service
+        async def decorated_function(request: Request, *args, **kwargs) -> Any:
+            gateway_response = await _process_gateway_request(request, protocol)
+            if gateway_response:
+                return gateway_response
 
-            # Process through gateway
-            response_data, status_code = await gateway.process_request(request, protocol=protocol)
-
-            if status_code != 200:
-                return JSONResponse(content=response_data, status_code=status_code)
-
-            # Call original function
-            try:
-                result = await f(request, *args, **kwargs)
-                return result
-            except Exception as e:
-                logger.error(f"Endpoint error: {e}", exc_info=True)
-                return JSONResponse(
-                    content={"error": "Internal error", "message": str(e)}, status_code=500
-                )
+            return await _execute_endpoint(f, request, *args, **kwargs)
 
         return decorated_function
 
     return decorator
+
+
+async def _process_gateway_request(
+    request: Request, protocol: ProtocolType
+) -> JSONResponse | None:
+    """Process request through the gateway service. Returns JSONResponse on failure."""
+    gateway = api_gateway_service
+    response_data, status_code = await gateway.process_request(request, protocol=protocol)
+
+    if status_code != 200:
+        return JSONResponse(content=response_data, status_code=status_code)
+    return None
+
+
+async def _execute_endpoint(f: Callable, request: Request, *args, **kwargs) -> Any:
+    """Execute the original endpoint function safely."""
+    try:
+        return await f(request, *args, **kwargs)
+    except Exception as e:
+        logger.error(f"Endpoint error: {e}", exc_info=True)
+        return JSONResponse(
+            content={"error": "Internal error", "message": str(e)}, status_code=500
+        )
 
 def get_gateway_service() -> APIGatewayService:
     """Get the singleton instance of APIGatewayService"""
