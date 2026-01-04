@@ -181,6 +181,18 @@ Interfaces صغيرة ومحددة (<5 methods).
 
 ## 🔧 الأوامر المهمة | Important Commands
 
+### 🛡️ فحص البنية والجودة (CRITICAL)
+```bash
+# فحص بنية الكلاسات والطرق (يمنع الكوارث!)
+python scripts/validate_structure.py
+
+# اختبارات التكامل للمحادثات
+pytest tests/integration/test_chat_e2e.py::TestServiceMethodsAccessibility -v
+```
+
+> **⚠️ مهم جداً:** شغّل هذه الأوامر قبل كل commit لتجنب أخطاء البنية!  
+> راجع [`PREVENTION_GUIDE.md`](PREVENTION_GUIDE.md) للمزيد من التفاصيل.
+
 ### تشغيل الاختبارات
 ```bash
 python3 -m pytest
