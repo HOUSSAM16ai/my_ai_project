@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
-
+from dataclasses import dataclass
 
 import logging
 import statistics
@@ -35,6 +35,15 @@ from .repositories import (
     InMemoryTelemetryRepository,
 )
 
+@dataclass
+class AIOpsConfig:
+    """Configuration for AIOps Service dependencies"""
+    telemetry_repo: TelemetryRepository | None = None
+    anomaly_repo: AnomalyRepository | None = None
+    healing_repo: HealingDecisionRepository | None = None
+    forecast_repo: ForecastRepository | None = None
+    capacity_repo: CapacityPlanRepository | None = None
+
 class AIOpsService:
     """
     خدمة AIOps الخارقة - World-class AIOps and self-healing
@@ -44,18 +53,16 @@ class AIOpsService:
     # TODO: Reduce parameters (6 params) - Use config object
     def __init__(
         self,
-        telemetry_repo: TelemetryRepository = None,
-        anomaly_repo: AnomalyRepository = None,
-        healing_repo: HealingDecisionRepository = None,
-        forecast_repo: ForecastRepository = None,
-        capacity_repo: CapacityPlanRepository = None,
+        config: AIOpsConfig | None = None,
     ):
-        # Default to in-memory repositories if not provided
-        self.telemetry_repo = telemetry_repo or InMemoryTelemetryRepository()
-        self.anomaly_repo = anomaly_repo or InMemoryAnomalyRepository()
-        self.healing_repo = healing_repo or InMemoryHealingDecisionRepository()
-        self.forecast_repo = forecast_repo or InMemoryForecastRepository()
-        self.capacity_repo = capacity_repo or InMemoryCapacityPlanRepository()
+        config = config or AIOpsConfig()
+
+        # Default to in-memory repositories if not provided in config
+        self.telemetry_repo = config.telemetry_repo or InMemoryTelemetryRepository()
+        self.anomaly_repo = config.anomaly_repo or InMemoryAnomalyRepository()
+        self.healing_repo = config.healing_repo or InMemoryHealingDecisionRepository()
+        self.forecast_repo = config.forecast_repo or InMemoryForecastRepository()
+        self.capacity_repo = config.capacity_repo or InMemoryCapacityPlanRepository()
 
         self.baseline_metrics: dict[str, dict[str, float]] = {}
         self.lock = threading.RLock()
