@@ -131,15 +131,40 @@ async def handle_deep_analysis(
 ) -> AsyncGenerator[str, None]:
     """
     Handle deep analytical questions using Overmind's deep understanding.
-    This uses Master Agent with project indexing for comprehensive analysis.
+    معالجة الأسئلة التحليلية العميقة باستخدام Overmind.
     """
     start_time = time.time()
 
     yield "🧠 **تحليل عميق باستخدام Overmind Master Agent**\n\n"
 
-    # Step 1: Build project index for context
-    yield "📊 جارٍ فهرسة المشروع للحصول على سياق عميق...\n"
+    # 1. بناء فهرس المشروع | Build project index
+    summary = await _build_project_index_with_feedback()
+    async for feedback in summary["feedback"]:
+        yield feedback
 
+    # 2. إنشاء التوجيه المحسّن | Create enhanced prompt
+    messages = _create_deep_analysis_messages(question, summary["data"])
+
+    # 3. بث الاستجابة | Stream AI response
+    yield "💡 **التحليل:**\n\n"
+
+    async for chunk in _stream_ai_analysis(ai_client, messages):
+        yield chunk
+
+    logger.debug(f"Deep analysis completed in {(time.time() - start_time) * 1000:.2f}ms")
+
+
+async def _build_project_index_with_feedback() -> dict[str, Any]:
+    """
+    بناء فهرس المشروع مع تغذية راجعة للمستخدم.
+    Build project index with user feedback.
+    
+    Returns:
+        dict: {'data': summary or None, 'feedback': generator of feedback messages}
+    """
+    feedback_messages = []
+    feedback_messages.append("📊 جارٍ فهرسة المشروع للحصول على سياق عميق...\n")
+    
     try:
         from app.services.overmind.planning.deep_indexer import build_index, summarize_for_prompt
 
@@ -148,16 +173,34 @@ async def handle_deep_analysis(
 
         index = await asyncio.wait_for(_build_index_async(), timeout=30.0)
         summary = summarize_for_prompt(index, max_len=3000)
-        yield "✅ تم بناء فهرس المشروع\n\n"
+        feedback_messages.append("✅ تم بناء فهرس المشروع\n\n")
+        
+        return {"data": summary, "feedback": _async_generator_from_list(feedback_messages)}
+        
     except TimeoutError:
-        yield "⚠️ انتهت مهلة الفهرسة، سأستخدم معرفتي الحالية\n\n"
-        summary = None
+        feedback_messages.append("⚠️ انتهت مهلة الفهرسة، سأستخدم معرفتي الحالية\n\n")
+        return {"data": None, "feedback": _async_generator_from_list(feedback_messages)}
+        
     except Exception as e:
         logger.warning(f"Failed to build index for deep analysis: {e}")
-        yield "⚠️ لم أتمكن من فهرسة المشروع بالكامل\n\n"
-        summary = None
+        feedback_messages.append("⚠️ لم أتمكن من فهرسة المشروع بالكامل\n\n")
+        return {"data": None, "feedback": _async_generator_from_list(feedback_messages)}
 
-    # Step 2: Build enhanced prompt with deep context
+
+async def _async_generator_from_list(items: list[str]) -> AsyncGenerator[str, None]:
+    """
+    تحويل قائمة إلى مولد غير متزامن.
+    Convert list to async generator.
+    """
+    for item in items:
+        yield item
+
+
+def _create_deep_analysis_messages(question: str, summary: str | None) -> list[dict[str, str]]:
+    """
+    إنشاء رسائل التحليل العميق.
+    Create messages for deep analysis with context.
+    """
     system_prompt = """أنت Overmind Master Agent - نظام ذكاء اصطناعي متقدم متخصص في التحليل العميق للمشاريع البرمجية.
 
 لديك قدرات خاصة:
@@ -185,23 +228,37 @@ async def handle_deep_analysis(
     else:
         messages.append({"role": "user", "content": question})
 
-    # Step 3: Stream response from AI with enhanced context
-    yield "💡 **التحليل:**\n\n"
+    return messages
 
+
+async def _stream_ai_analysis(
+    ai_client: AIClient, messages: list[dict[str, str]]
+) -> AsyncGenerator[str, None]:
+    """
+    بث تحليل AI.
+    Stream AI analysis response with error handling.
+    """
     try:
         async for chunk in ai_client.stream_chat(messages):
             if isinstance(chunk, dict):
-                choices = chunk.get("choices", [])
-                if choices:
-                    content = choices[0].get("delta", {}).get("content", "")
-                    if content:
-                        yield content
+                content = _extract_content_from_chunk(chunk)
+                if content:
+                    yield content
             elif isinstance(chunk, str):
                 yield chunk
     except Exception as e:
         yield f"\n\n❌ خطأ في التحليل: {ErrorSanitizer.sanitize(str(e))}\n"
 
-    logger.debug(f"Deep analysis completed in {(time.time() - start_time) * 1000:.2f}ms")
+
+def _extract_content_from_chunk(chunk: dict) -> str:
+    """
+    استخراج المحتوى من قطعة الاستجابة.
+    Extract content from response chunk.
+    """
+    choices = chunk.get("choices", [])
+    if choices:
+        return choices[0].get("delta", {}).get("content", "")
+    return ""
 
 async def handle_mission(
     context: ChatContext,
