@@ -137,7 +137,48 @@ class IntelligentRouter:
                 logger.warning(f"Error evaluating provider {provider_name}: {e}")
                 continue
         return candidates
-# TODO: Split this function (55 lines) - KISS principle
+    def _apply_strategy_and_select_best(
+        self, candidates: list[dict[str, Any]], strategy: RoutingStrategy
+    ) -> dict[str, Any]:
+        """Apply the routing strategy and select the best candidate."""
+        strategy_impl = get_strategy(strategy)
+        strategy_impl.calculate_scores(candidates)
+        return max(candidates, key=lambda x: x["score"])
+
+    def _create_routing_decision(
+        self,
+        best_candidate: dict[str, Any],
+        strategy: RoutingStrategy,
+        candidate_count: int,
+    ) -> RoutingDecision:
+        """Create a RoutingDecision object from the best candidate."""
+        return RoutingDecision(
+            service_id=str(best_candidate["provider"]),
+            base_url=f"https://api.{best_candidate['provider']}.com",  # Placeholder
+            protocol=ProtocolType.REST,
+            estimated_latency_ms=float(best_candidate["latency"]),
+            estimated_cost=float(best_candidate["cost"]),
+            confidence_score=float(best_candidate["score"]),
+            reasoning=f"Selected {best_candidate['provider']} based on {strategy.value} strategy",
+            metadata={"all_candidates": candidate_count},
+        )
+
+    def _record_decision(
+        self,
+        decision: RoutingDecision,
+        model_type: str,
+        estimated_tokens: int,
+    ) -> None:
+        """Record the routing decision in history."""
+        with self.lock:
+            self.routing_history.append(
+                {
+                    "timestamp": datetime.now(UTC),
+                    "decision": decision,
+                    "model_type": model_type,
+                    "tokens": estimated_tokens,
+                }
+            )
 
     def route_request(
         self,
@@ -159,40 +200,14 @@ class IntelligentRouter:
             RoutingDecision with selected provider and reasoning
         """
         constraints = constraints or {}
-
         candidates = self._evaluate_candidates(model_type, estimated_tokens, constraints)
 
         if not candidates:
             raise ValueError("No suitable provider found for routing (or all circuits open)")
 
-        # Apply Strategy Pattern
-        strategy_impl = get_strategy(strategy)
-        strategy_impl.calculate_scores(candidates)
-
-        # Select best candidate
-        best = max(candidates, key=lambda x: x["score"])
-
-        decision = RoutingDecision(
-            service_id=str(best["provider"]),
-            base_url=f"https://api.{best['provider']}.com",  # Placeholder
-            protocol=ProtocolType.REST,
-            estimated_latency_ms=float(best["latency"]),
-            estimated_cost=float(best["cost"]),
-            confidence_score=float(best["score"]),
-            reasoning=f"Selected {best['provider']} based on {strategy.value} strategy",
-            metadata={"all_candidates": len(candidates)},
-        )
-
-        # Record routing decision
-        with self.lock:
-            self.routing_history.append(
-                {
-                    "timestamp": datetime.now(UTC),
-                    "decision": decision,
-                    "model_type": model_type,
-                    "tokens": estimated_tokens,
-                }
-            )
+        best_candidate = self._apply_strategy_and_select_best(candidates, strategy)
+        decision = self._create_routing_decision(best_candidate, strategy, len(candidates))
+        self._record_decision(decision, model_type, estimated_tokens)
 
         return decision
 
