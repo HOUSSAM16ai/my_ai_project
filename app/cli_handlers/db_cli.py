@@ -1,102 +1,138 @@
-# app/cli_handlers/db_cli.py
-"""Database CLI - Database management commands."""
+"""أوامر إدارة قاعدة البيانات مع التزام واضح بمبادئ KISS وDRY."""
+
+from __future__ import annotations
+
 import asyncio
 import os
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
+from logging import Logger
 
 import click
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
-from app import models  # Import models to register them
-from app.core.database import async_session_factory, engine
+from app import models
+from app.cli_handlers.context import CLIContext, get_cli_context
+from app.config.settings import AppSettings
+from app.core.database import engine
 
-# NOTE: We now import engine and factory from app.core.database,
-# which are powered by the Unified Engine Factory.
+SessionFactory = Callable[[], AsyncGenerator[AsyncSession, None]]
 
-# TODO: Split this function (63 lines) - KISS principle
-def register_db_commands(root) -> None:
+
+@dataclass(frozen=True)
+class AdminSeedPlan:
+    """يصف سيناريو تهيئة حساب المشرف بشكل بيانات قابلة للاختبار."""
+
+    email: str
+    password: str
+    promote_to_admin: bool = True
+
+
+def register_db_commands(root: click.Group) -> None:
+    """يسجل أوامر قاعدة البيانات ضمن مجموعة CLI الرئيسية."""
+
     @root.group("db")
     def db_group() -> None:
-        "Database utilities"
-        pass
+        """حزمة الأوامر الخاصة بإدارة قاعدة البيانات."""
 
     @db_group.command("create-all")
     @click.pass_context
-    def create_all(ctx) -> None:
-        """Creates all database tables."""
-        logger = ctx.obj["logger"]
-        logger.info("Creating all database tables...")
+    def create_all(ctx: click.Context) -> None:
+        """ينشئ جميع الجداول المعرّفة في نماذج النظام."""
 
-        async def _create():
-            async with engine.begin() as conn:
-                await conn.run_sync(SQLModel.metadata.create_all)
-
-        asyncio.run(_create())
-        logger.info("All database tables created.")
+        context = get_cli_context(ctx)
+        _run_create_all_tables(context.logger)
 
     @db_group.command("seed")
-    @click.option("--confirm", is_flag=True, default=False)
-    @click.option("--dry-run", is_flag=True, default=False)
-    # TODO: Split this function (39 lines) - KISS principle
+    @click.option("--confirm", is_flag=True, default=False, help="تأكيد تنفيذ التهيئة")
+    @click.option("--dry-run", is_flag=True, default=False, help="تنفيذ تجريبي دون حفظ")
     @click.pass_context
-    def seed(ctx, confirm, dry_run) -> None:
-        logger = ctx.obj["logger"]
-        admin_email = os.getenv("ADMIN_EMAIL", "admin@cogniforge.com")
-        admin_password = os.getenv("ADMIN_PASSWORD", "admin")
+    def seed(ctx: click.Context, confirm: bool, dry_run: bool) -> None:
+        """يهيئ حساب المشرف الافتراضي مع دعم وضع التجربة."""
 
-        if not admin_email:
-            logger.error("ADMIN_EMAIL environment variable not set.")
-            raise click.UsageError("ADMIN_EMAIL must be set in the environment.")
+        context = get_cli_context(ctx)
+        plan = _build_admin_seed_plan(context.settings)
+        _validate_seed_flags(confirm, dry_run)
+        _run_seed_plan(plan, context, dry_run)
 
-        if not confirm and not dry_run:
-            logger.warning("Seeding requires --confirm")
-            raise click.UsageError("Add --confirm to proceed")
 
-        async def _seed():
-            # Use factory to get session
-            async with transactional_session(
-                async_session_factory, logger, dry_run=dry_run
-            ) as session:
-                result = await session.execute(select(models.User).filter_by(email=admin_email))
-                user = result.scalar()
+def _run_create_all_tables(logger: Logger) -> None:
+    """يشغّل مهمة إنشاء الجداول باستخدام حدث واحد مترابط."""
 
-                if not user:
-                    user = models.User(email=admin_email, is_admin=True, full_name="Admin User")
-                    user.set_password(admin_password)
-                    session.add(user)
-                    logger.info(f"User with email {admin_email} created.")
-                else:
-                    logger.info(
-                        f"User with email {admin_email} already exists. Updating password..."
-                    )
-                    user.set_password(admin_password)
-                    if not user.is_admin:
-                        user.is_admin = True
-                        logger.info("Promoted user to admin.")
-                    session.add(user)
-                    logger.info("Password updated to match current ADMIN_PASSWORD.")
+    async def _create() -> None:
+        async with engine.begin() as conn:
+            await conn.run_sync(SQLModel.metadata.create_all)
 
-                logger.info("seed: completed")
+    logger.info("إنشاء جميع جداول قاعدة البيانات...")
+    asyncio.run(_create())
+    logger.info("تم إنشاء الجداول بنجاح.")
 
-        asyncio.run(_seed())
+
+def _run_seed_plan(plan: AdminSeedPlan, context: CLIContext, dry_run: bool) -> None:
+    """ينفّذ خطة تهيئة المشرف مع دعم التراجع التجريبي."""
+
+    async def _seed() -> None:
+        async with transactional_session(context.session_provider, context.logger, dry_run=dry_run) as session:
+            await _ensure_admin_user(session, context.logger, plan)
+
+    asyncio.run(_seed())
+
+
+def _validate_seed_flags(confirm: bool, dry_run: bool) -> None:
+    """يتحقق من سلامة خيارات التنفيذ لتجنب الحذف غير المقصود."""
+
+    if not confirm and not dry_run:
+        raise click.UsageError("إضافة --confirm مطلوبة للتنفيذ الفعلي (أو استخدم --dry-run للتجربة).")
+
+
+def _build_admin_seed_plan(settings: AppSettings) -> AdminSeedPlan:
+    """ينشئ خطة بيانات لتهيئة حساب المشرف مع أخذ المتغيرات البيئية بعين الاعتبار."""
+
+    email = os.getenv("ADMIN_EMAIL", settings.ADMIN_EMAIL) or settings.ADMIN_EMAIL
+    password = os.getenv("ADMIN_PASSWORD", settings.ADMIN_PASSWORD) or settings.ADMIN_PASSWORD
+    return AdminSeedPlan(email=email, password=password)
+
+
+async def _ensure_admin_user(session: AsyncSession, logger: Logger, plan: AdminSeedPlan) -> None:
+    """يضمن وجود مستخدم مشرف واحد على الأقل وفق الخطة المحددة."""
+
+    result = await session.execute(select(models.User).filter_by(email=plan.email))
+    user = result.scalar()
+
+    if user is None:
+        user = models.User(email=plan.email, is_admin=plan.promote_to_admin, full_name="Admin User")
+        user.set_password(plan.password)
+        session.add(user)
+        logger.info("تم إنشاء مستخدم المشرف الافتراضي.")
+        return
+
+    user.set_password(plan.password)
+    if plan.promote_to_admin and not user.is_admin:
+        user.is_admin = True
+        logger.info("تم ترقية المستخدم الموجود إلى مشرف.")
+    session.add(user)
+    logger.info("تم تحديث كلمة مرور حساب المشرف الحالي.")
+
 
 @asynccontextmanager
 async def transactional_session(
-    SessionFactory, logger, dry_run: bool = False
+    session_factory: SessionFactory, logger: Logger, *, dry_run: bool = False
 ) -> AsyncGenerator[AsyncSession, None]:
-    async with SessionFactory() as session:
+    """يدير دورة حياة جلسة قاعدة البيانات مع خيار التراجع التجريبي."""
+
+    async with session_factory() as session:
         try:
             yield session
             if dry_run:
-                logger.info("dry-run: rolling back.")
+                logger.info("تشغيل تجريبي: سيتم التراجع عن التغييرات.")
                 await session.rollback()
             else:
                 await session.commit()
-                logger.info("committed transaction.")
+                logger.info("تم اعتماد المعاملة بنجاح.")
         except Exception:
-            logger.exception("exception during CLI operation; rolling back.")
+            logger.exception("خطأ أثناء تنفيذ أمر CLI؛ سيتم التراجع عن المعاملة.")
             await session.rollback()
             raise

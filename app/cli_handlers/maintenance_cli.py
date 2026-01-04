@@ -1,15 +1,26 @@
-# app/cli_handlers/maintenance_cli.py
-"""Maintenance CLI - System maintenance commands."""
+"""أوامر الصيانة العامة لضبط صحة النظام واستدامته."""
+
+from __future__ import annotations
+
 import click
 
-def register_maintenance_commands(root) -> None:
+from app.cli_handlers.context import get_cli_context
+
+
+def register_maintenance_commands(root: click.Group) -> None:
+    """يسجل مجموعة أوامر الصيانة ضمن واجهة CLI."""
+
     @root.group("maintenance")
-    def maintenance_group() -> None:
-        "Maintenance commands"
-        pass
+    @click.pass_context
+    def maintenance_group(ctx: click.Context) -> None:
+        """حزمة أوامر الصيانة (محدودة حالياً)"""
+
+        get_cli_context(ctx)  # يتحقق من توافر السياق حتى للأوامر المستقبلية
 
     @maintenance_group.command("placeholder")
     @click.pass_context
-    def placeholder(ctx) -> None:
-        logger = ctx.obj["logger"]
-        logger.info("This is a placeholder for future maintenance commands.")
+    def placeholder(ctx: click.Context) -> None:
+        """يؤكد جاهزية خط أوامر الصيانة لإضافة مهام مستقبلية."""
+
+        logger = get_cli_context(ctx).logger
+        logger.info("واجهة الصيانة جاهزة لإضافة مهام جديدة.")
