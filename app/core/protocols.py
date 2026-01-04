@@ -14,7 +14,6 @@
         def __init__(self, repo: RepositoryProtocol):
             self.repo = repo  # يعمل مع أي تطبيق للبروتوكول
 """
-from typing import Any
 
 from collections.abc import AsyncGenerator
 from typing import Protocol, runtime_checkable
@@ -51,7 +50,7 @@ class BaseService(LifecycleProtocol, Protocol):
         """Service version"""
         ...
 
-    async def health_check(self) -> dict[str, Any]:
+    async def health_check(self) -> dict[str, object]:
         """Check service health"""
         ...
 
@@ -72,7 +71,7 @@ class PluginProtocol(BaseService, Protocol):
         """List of required dependencies"""
         ...
 
-    def configure(self, config: dict[str, Any]) -> None:
+    def configure(self, config: dict[str, object]) -> None:
         """Configure the plugin"""
         ...
 
@@ -86,13 +85,13 @@ class PlannerProtocol(Protocol):
     def generate_plan(
         self,
         objective: str,
-        context: dict[str, Any] | None = None,
+        context: dict[str, object] | None = None,
         max_tasks: int | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """Generate a plan for the given objective."""
         ...
 
-    def validate_plan(self, plan: dict[str, Any]) -> bool:
+    def validate_plan(self, plan: dict[str, object]) -> bool:
         """Validate a generated plan."""
         ...
 
@@ -115,7 +114,7 @@ class StrategyProtocol[TInput, TOutput](Protocol):
         """Get strategy name."""
         ...
 
-    def is_applicable(self, context: dict[str, Any]) -> bool:
+    def is_applicable(self, context: dict[str, object]) -> bool:
         """Check if strategy is applicable in given context."""
         ...
 
@@ -135,7 +134,7 @@ class RepositoryProtocol[T](Protocol):
         """Find entity by ID."""
         ...
 
-    def find_all(self, filters: dict[str, Any] | None = None) -> list[T]:
+    def find_all(self, filters: dict[str, object] | None = None) -> list[T]:
         """Find all entities matching filters."""
         ...
 
@@ -143,7 +142,7 @@ class RepositoryProtocol[T](Protocol):
         """Delete entity by ID."""
         ...
 
-    def update(self, entity_id: str, updates: dict[str, Any]) -> T | None:
+    def update(self, entity_id: str, updates: dict[str, object]) -> T | None:
         """Update entity fields."""
         ...
 
@@ -155,12 +154,12 @@ class CollaborationContext(Protocol):
     يوفر آلية آمنة للخيوط (thread-safe) لتخزين واسترجاع السياق المشترك
     بين الوكلاء المختلفين في النظام.
     """
-    shared_memory: dict[str, Any]
+    shared_memory: dict[str, object]
 
     def update(self, key: str, value: dict[str, str | int | bool]) -> None:
         ...
 
-    def get(self, key: str) -> Any | None:
+    def get(self, key: str) -> object | None:
         ...
 
 @runtime_checkable
@@ -168,7 +167,7 @@ class AgentPlanner(Protocol):
     """
     بروتوكول وكيل التخطيط الاستراتيجي (Strategist Agent).
     """
-    async def create_plan(self, objective: str, context: CollaborationContext) -> dict[str, Any]:
+    async def create_plan(self, objective: str, context: CollaborationContext) -> dict[str, object]:
         ...
 
 @runtime_checkable
@@ -176,7 +175,7 @@ class AgentArchitect(Protocol):
     """
     بروتوكول وكيل التصميم المعماري (Architect Agent).
     """
-    async def design_solution(self, plan: dict[str, Any], context: CollaborationContext) -> dict[str, Any]:
+    async def design_solution(self, plan: dict[str, object], context: CollaborationContext) -> dict[str, object]:
         ...
 
 @runtime_checkable
@@ -184,7 +183,7 @@ class AgentExecutor(Protocol):
     """
     بروتوكول وكيل التنفيذ (Operator Agent).
     """
-    async def execute_tasks(self, design: dict[str, Any], context: CollaborationContext) -> dict[str, Any]:
+    async def execute_tasks(self, design: dict[str, object], context: CollaborationContext) -> dict[str, object]:
         ...
 
 @runtime_checkable
@@ -194,10 +193,10 @@ class AgentReflector(Protocol):
     """
     async def review_work(
         self,
-        result: dict[str, Any],
+        result: dict[str, object],
         original_objective: str,
         context: CollaborationContext
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         ...
 
 @runtime_checkable
@@ -218,7 +217,7 @@ class MissionStateManagerProtocol(Protocol):
         ...
 
     async def log_event(
-        self, mission_id: int, event_type: MissionEventType, payload: dict[str, Any]
+        self, mission_id: int, event_type: MissionEventType, payload: dict[str, object]
     ) -> None:
         """تسجيل حدث للمهمة."""
         ...
@@ -227,7 +226,7 @@ class MissionStateManagerProtocol(Protocol):
         """تحديث حالة المهمة إلى قيد التشغيل."""
         ...
 
-    async def mark_task_complete(self, task_id: int, result_text: str, meta: dict | None = None) -> None:
+    async def mark_task_complete(self, task_id: int, result_text: str, meta: dict[str, object] | None = None) -> None:
         """تحديث حالة المهمة إلى مكتملة."""
         ...
 
@@ -246,7 +245,7 @@ class TaskExecutorProtocol(Protocol):
     """
     بروتوكول منفذ المهام (Task Executor Protocol).
     """
-    async def execute_task(self, task: Task) -> dict[str, Any]:
+    async def execute_task(self, task: Task) -> dict[str, object]:
         """تنفيذ مهمة واحدة."""
         ...
 
@@ -264,9 +263,9 @@ class AIClientProtocol(Protocol):
 @runtime_checkable
 class HealthCheckService(Protocol):
     """بروتوكول خدمة فحص الصحة."""
-    async def check_health(self) -> dict[str, Any]: ...
+    async def check_health(self) -> dict[str, object]: ...
 
 @runtime_checkable
 class SystemService(Protocol):
     """بروتوكول خدمة النظام."""
-    async def get_system_info(self) -> dict[str, Any]: ...
+    async def get_system_info(self) -> dict[str, object]: ...

@@ -1,8 +1,13 @@
 """
-Core security-related utilities for the application.
-This includes functions for handling JWTs, passwords, and other
-cryptographic operations. All functions in this module are designed
-to be pure and framework-agnostic.
+أدوات الأمان الأساسية (Core Security Utilities).
+
+يتضمن هذا الملف دوال للتعامل مع رموز JWT، كلمات المرور، وعمليات التشفير الأخرى.
+جميع الدوال في هذا النموذج مصممة لتكون نقية (Pure) ومستقلة عن إطار العمل.
+
+المبادئ (Principles):
+- Security First: تطبيق أفضل الممارسات الأمنية (HS256, Bcrypt/Argon2).
+- Framework Agnostic: يمكن استخدامه في أي جزء من التطبيق.
+- CS50 2025: توثيق عربي واضح.
 """
 from datetime import UTC, datetime, timedelta
 
@@ -21,17 +26,16 @@ settings = get_settings()
 
 def generate_service_token(user_id: str) -> str:
     """
-    Generates a short-lived JWT for authenticating with internal services.
+    توليد رمز JWT قصير الأجل للمصادقة مع الخدمات الداخلية.
 
-    This function creates a token with a very short expiration time (5 minutes)
-    intended for service-to-service communication where low latency and high
-    security are prioritized.
+    تقوم هذه الدالة بإنشاء رمز مميز بوقت انتهاء صلاحية قصير جداً (5 دقائق)
+    مخصص للاتصال بين الخدمات حيث تكون الأولوية لزمن الاستجابة المنخفض والأمان العالي.
 
     Args:
-        user_id (str): The unique identifier for the user or service principal invoking the request.
+        user_id (str): المعرف الفريد للمستخدم أو الخدمة التي تطلب الرمز.
 
     Returns:
-        str: A signed JWT string encoded with HS256 algorithm.
+        str: رمز JWT موقع ومشفر باستخدام خوارزمية HS256.
     """
     payload = {
         'exp': datetime.now(UTC) + timedelta(minutes=5),
@@ -42,16 +46,16 @@ def generate_service_token(user_id: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verifies a password against a hash using the globally configured password context.
+    التحقق من كلمة المرور مقابل التجزئة (Hash) باستخدام سياق كلمة المرور المكون عالمياً.
 
-    This abstraction ensures consistent password verification logic across the application,
-    leveraging library best practices for timing attack prevention.
+    يضمن هذا التجريد منطق تحقق متسق لكلمات المرور عبر التطبيق،
+    مع الاستفادة من أفضل الممارسات لمنع هجمات التوقيت (Timing Attacks).
 
     Args:
-        plain_password (str): The plain text password provided by the user.
-        hashed_password (str): The bcrypt/argon2 hash stored in the database.
+        plain_password (str): كلمة المرور النصية التي قدمها المستخدم.
+        hashed_password (str): تجزئة bcrypt/argon2 المخزنة في قاعدة البيانات.
 
     Returns:
-        bool: True if the password matches the hash, False otherwise.
+        bool: True إذا كانت كلمة المرور تطابق التجزئة، وإلا False.
     """
     return pwd_context.verify(plain_password, hashed_password)

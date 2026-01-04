@@ -3,7 +3,7 @@ import sys
 
 def setup_logging(level: str = "INFO") -> None:
     """
-    Setup basic logging configuration.
+    إعداد تكوين التسجيل الأساسي (Basic Logging Configuration).
     """
     logging.basicConfig(
         level=level,
@@ -13,7 +13,7 @@ def setup_logging(level: str = "INFO") -> None:
 
 def get_logger(name: str, level: str | None = None) -> logging.Logger:
     """
-    Get a logger instance with the specified name.
+    الحصول على مثيل المسجل (Logger Instance) بالاسم المحدد.
     """
     logger = logging.getLogger(name)
     if level:

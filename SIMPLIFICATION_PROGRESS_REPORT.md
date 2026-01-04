@@ -29,6 +29,20 @@
   - تشغيل 21 اختبار وحدة لـ `UnifiedObservabilityService` ومكوناتها.
   - النجاح بنسبة 100% في الاختبارات بعد التحديث.
 
+**Phase 29: مواصلة تنفيذ الخطط المسطرة (Batch 6B - Core)**
+
+- ✅ **تحديث Type Hints في حزمة Core** - الانتقال إلى Python 3.12+
+  - استبدال `typing.Any` بـ `object` أو `dict[str, object]` في `protocols.py`, `ai_client_factory.py`, `ai_gateway.py`.
+  - تصحيح أنواع الإرجاع (Return Types) في `ai_client_factory.py`.
+  - استخدام `Callable[[...], R]` بدلاً من `Any` في `error_handling.py`.
+  - تحديث `logging/spine.py` و `cli_logging.py` بتوثيق عربي.
+
+- ✅ **التوثيق العربي (Legendary Arabic Docs)**
+  - ترجمة التوثيق في `app/core/security.py`.
+  - ترجمة التوثيق في `app/core/ai_client_factory.py`.
+  - ترجمة التوثيق في `app/core/error_handling.py`.
+  - ترجمة التوثيق في `app/core/logging/spine.py`.
+
 #### النتيجة | Result
 - **تحسين Type Safety**: كود أكثر أماناً وحداثة.
 - **تحسين Readability**: إزالة الضوضاء الناتجة عن استيرادات typing القديمة.
@@ -530,8 +544,9 @@ def detect_anomalies(self) -> list[dict[str, object]]: ...
 
 ### أولوية عالية | High Priority
 1. [x] تقسيم `UnifiedObservabilityService` (تم التحقق: نظيف بالفعل)
-2. [ ] مواصلة تحديث typing القديم في 150+ ملف (Batch 6B: Core)
-3. [ ] تشغيل الاختبارات للتحقق من عدم كسر الوظائف
+2. [x] مواصلة تحديث typing القديم في 150+ ملف (Batch 6B: Core - Done)
+3. [ ] مواصلة تحديث typing القديم في الخدمات (Batch 6C: Services)
+4. [ ] تشغيل الاختبارات للتحقق من عدم كسر الوظائف
 
 ### أولوية متوسطة | Medium Priority
 4. [ ] تقسيم باقي الدوال الكبيرة في middleware

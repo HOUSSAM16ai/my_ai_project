@@ -1,10 +1,17 @@
-# app/core/logging.py
-"""CLI Logging - Logging configuration for CLI commands."""
+"""
+CLI Logging - تكوين التسجيل لأوامر سطر الأوامر.
+"""
 import logging
 import sys
+from typing import TYPE_CHECKING
 
-def create_logger(settings) -> None:
-    """Creates a logger."""
+if TYPE_CHECKING:
+    from app.config.settings import AppSettings
+
+def create_logger(settings: "AppSettings") -> logging.Logger:
+    """
+    إنشاء مسجل (Logger) للاستخدام في سطر الأوامر.
+    """
     logger = logging.getLogger("cogniforge.cli")
     logger.setLevel(settings.LOG_LEVEL)
     handler = logging.StreamHandler(sys.stdout)
