@@ -81,16 +81,32 @@ class SuperCollectiveIntelligence:
         analysis: dict[str, Any],
     ) -> dict[str, Any]:
         """
-        استشارة الوكلاء (محاكاة حالياً، يجب ربطها بالوكلاء الحقيقيين لاحقاً).
+        استشارة الوكلاء بشكل فعلي.
+        Actual consultation with agents.
         """
         logger.info("Consulting agents...")
-        # TODO: Replace with actual calls to self.council.agents
+
+        # استخدام الوكلاء الحقيقيين (Actual Agents Consultation)
+        # ملاحظة: نستخدم getattr أو نثق بأن الوكلاء يمتلكون الدالة consult التي أضفناها
+        # (Duck Typing).
+
+        # 1. الاستراتيجي
+        strategist_res = await self.council.strategist.consult(situation, analysis) # type: ignore
+
+        # 2. المعماري
+        architect_res = await self.council.architect.consult(situation, analysis) # type: ignore
+
+        # 3. المشغل
+        operator_res = await self.council.operator.consult(situation, analysis) # type: ignore
+
+        # 4. المدقق
+        auditor_res = await self.council.auditor.consult(situation, analysis) # type: ignore
 
         consultations = {
-            "strategist": {"recommendation": "Strategic approach needed", "confidence": random.uniform(80, 95)},
-            "architect": {"recommendation": "Ensure scalability", "confidence": random.uniform(75, 90)},
-            "operator": {"recommendation": "Check resources", "confidence": random.uniform(70, 85)},
-            "auditor": {"recommendation": "Verify safety", "confidence": random.uniform(85, 98)},
+            "strategist": strategist_res,
+            "architect": architect_res,
+            "operator": operator_res,
+            "auditor": auditor_res,
         }
 
         if self.hub:
