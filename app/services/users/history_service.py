@@ -1,12 +1,13 @@
-# app/services/history_service.py - The Akashic Records Ministry
 """
-History Service - Async-compatible service for conversation history operations.
+خدمة سجل المحادثات (History Service).
 
-This service was migrated from Flask to FastAPI and now properly uses
-async database sessions via SQLAlchemy's async engine.
+هذه الخدمة مسؤولة عن استرجاع وإدارة سجلات المحادثات وتقييمات الرسائل.
+تم تحديثها لتدعم العمليات غير المتزامنة (Async) بالكامل باستخدام SQLAlchemy Async.
 """
+from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from sqlalchemy import exc as sqlalchemy_exc
 from sqlalchemy import select
@@ -14,20 +15,26 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import async_session_factory
 
+if TYPE_CHECKING:
+    from app.core.domain.models import AdminConversation, AdminMessage
+
 logger = logging.getLogger(__name__)
 
-async def get_recent_conversations(user_id: int, limit: int = 5) -> None:
+
+async def get_recent_conversations(user_id: int, limit: int = 5) -> list[AdminConversation]:
     """
-    Retrieves the most recent conversation objects for the current user.
-    This is a pure data retrieval function using async database session.
+    استرجاع أحدث المحادثات للمستخدم الحالي.
+
+    هذه دالة لاسترجاع البيانات فقط (Pure Retrieval) باستخدام جلسة قاعدة بيانات غير متزامنة.
 
     Args:
-        user_id: The ID of the user whose conversations to retrieve.
-        limit: Maximum number of conversations to return (default: 5).
+        user_id: معرف المستخدم الذي سيتم استرجاع محادثاته.
+        limit: الحد الأقصى لعدد المحادثات المسترجعة (الافتراضي: 5).
 
     Returns:
-        List of AdminConversation objects, or empty list on error.
+        list[AdminConversation]: قائمة كائنات المحادثات، أو قائمة فارغة في حال حدوث خطأ.
     """
+    # استيراد النماذج داخل الدالة لتجنب التبعيات الدائرية (Lazy Import)
     from app.core.domain.models import AdminConversation as Conversation
 
     try:
@@ -42,21 +49,27 @@ async def get_recent_conversations(user_id: int, limit: int = 5) -> None:
             conversations = result.scalars().all()
             return list(conversations)
     except Exception as e:
-        logger.error(f"Failed to fetch recent conversations for user {user_id}: {e}", exc_info=True)
+        logger.error(
+            f"فشل في استرجاع المحادثات الأخيرة للمستخدم {user_id}: {e}", exc_info=True
+        )
         return []
 
-async def rate_message_in_db(message_id: int, rating: str, user_id: int) -> None:
+
+async def rate_message_in_db(
+    message_id: int, rating: str, user_id: int
+) -> dict[str, object]:
     """
-    Finds a specific message by its ID and updates its rating.
-    This is the core function for the AI's learning feedback loop.
+    تقييم رسالة محددة في قاعدة البيانات.
+
+    تعتبر هذه الدالة النواة الأساسية لحلقة التغذية الراجعة (Feedback Loop) لتعلم الذكاء الاصطناعي.
 
     Args:
-        message_id: The ID of the message to rate.
-        rating: The rating value ('good', 'bad', or 'neutral').
-        user_id: The ID of the user making the rating.
+        message_id: معرف الرسالة المراد تقييمها.
+        rating: قيمة التقييم ('good', 'bad', أو 'neutral').
+        user_id: معرف المستخدم الذي يقوم بالتقييم (لأغراض الأمان والتحقق من الملكية).
 
     Returns:
-        Dict with 'status' and 'message' keys indicating success or error.
+        dict[str, object]: قاموس يحتوي على حالة العملية والرسالة الوصفية.
     """
     from app.core.domain.models import AdminMessage as Message
 
@@ -65,7 +78,7 @@ async def rate_message_in_db(message_id: int, rating: str, user_id: int) -> None
 
     try:
         async with async_session_factory() as session:
-            # Fetch message with its conversation eagerly loaded for ownership check
+            # استرجاع الرسالة مع تحميل المحادثة المرتبطة (Eager Loading) للتحقق من الملكية
             stmt = (
                 select(Message)
                 .options(selectinload(Message.conversation))
@@ -75,13 +88,21 @@ async def rate_message_in_db(message_id: int, rating: str, user_id: int) -> None
             message_to_rate = result.scalar_one_or_none()
 
             if not message_to_rate:
-                return {"status": "error", "message": f"Message with ID {message_id} not found."}
+                return {
+                    "status": "error",
+                    "message": f"Message with ID {message_id} not found.",
+                }
 
-            # --- [SECURITY PROTOCOL] ---
-            # Ensure the user can only rate messages from their own conversations.
-            if message_to_rate.conversation.user_id != user_id:
+            # --- [بروتوكول الأمان] ---
+            # التحقق من أن المستخدم يملك المحادثة التي تحتوي الرسالة
+            # ملاحظة: message_to_rate.conversation لا يمكن أن يكون None بسبب العلاقة الإلزامية،
+            # ولكن قد نحتاج للتحقق الدفاعي إذا كان الـ Schema يسمح بـ NULL.
+            if (
+                not message_to_rate.conversation
+                or message_to_rate.conversation.user_id != user_id
+            ):
                 logger.warning(
-                    f"SECURITY ALERT: User {user_id} tried to rate message {message_id} belonging to another user."
+                    f"تنبيه أمني: حاول المستخدم {user_id} تقييم الرسالة {message_id} التي لا يملكها."
                 )
                 return {
                     "status": "error",
@@ -92,17 +113,17 @@ async def rate_message_in_db(message_id: int, rating: str, user_id: int) -> None
                 message_to_rate.rating = rating
                 await session.commit()
             else:
-                logger.warning("Message model has no rating field. Skipping update.")
+                logger.warning("نموذج الرسالة لا يحتوي على حقل 'rating'. تخطي التحديث.")
 
-            logger.info(f"User {user_id} rated message {message_id} as '{rating}'.")
+            logger.info(f"قام المستخدم {user_id} بتقييم الرسالة {message_id} بـ '{rating}'.")
             return {
                 "status": "success",
                 "message": f"Message {message_id} has been rated as '{rating}'.",
             }
 
     except sqlalchemy_exc.SQLAlchemyError as e:
-        logger.error(f"Database error while rating message {message_id}: {e}", exc_info=True)
+        logger.error(f"خطأ في قاعدة البيانات أثناء تقييم الرسالة {message_id}: {e}", exc_info=True)
         return {"status": "error", "message": "A database error occurred."}
     except Exception as e:
-        logger.error(f"Unexpected error while rating message {message_id}: {e}", exc_info=True)
+        logger.error(f"خطأ غير متوقع أثناء تقييم الرسالة {message_id}: {e}", exc_info=True)
         return {"status": "error", "message": "An unexpected error occurred."}
