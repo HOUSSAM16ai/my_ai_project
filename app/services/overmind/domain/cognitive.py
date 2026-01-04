@@ -288,17 +288,18 @@ class SuperBrain:
     ) -> dict[str, Any]:
         """
         تنفيذ الحلقة المعرفية الكاملة للمهمة.
+        Execute complete cognitive loop for mission.
 
         Args:
-            mission: كائن المهمة.
-            context: سياق إضافي.
-            log_event: دالة استدعاء لتسجيل الأحداث في الذاكرة.
+            mission: كائن المهمة
+            context: سياق إضافي
+            log_event: دالة استدعاء لتسجيل الأحداث
 
         Returns:
-            dict: النتيجة النهائية للمهمة.
+            dict: النتيجة النهائية للمهمة
 
         Raises:
-            RuntimeError: في حال فشل المهمة بعد استنفاد المحاولات.
+            RuntimeError: في حال فشل المهمة بعد استنفاد المحاولات
         """
         state = CognitiveState(mission_id=mission.id, objective=mission.objective)
         collab_context = InMemoryCollaborationContext(context)
@@ -309,59 +310,137 @@ class SuperBrain:
             await safe_log(CognitiveEvent.LOOP_START, {"iteration": state.iteration_count})
 
             try:
-                # --- المرحلة 1: التخطيط (Strategist) ---
-                if not state.plan or state.current_phase == CognitivePhase.RE_PLANNING:
-                    try:
-                        critique = await self._handle_planning_phase(state, collab_context, safe_log)
-                        
-                        if not critique.approved:
-                            state.current_phase = CognitivePhase.RE_PLANNING
-                            collab_context.update("feedback_from_previous_attempt", critique.feedback)
-                            continue  # إعادة المحاولة
-                    
-                    except StalemateError:
-                        # استراتيجية كسر الجمود - إعادة التخطيط فوراً
-                        state.current_phase = CognitivePhase.RE_PLANNING
-                        continue
-
-                # --- المرحلة 2: التصميم (Architect) ---
-                await self._execute_design_phase(state, collab_context, safe_log)
-
-                # --- المرحلة 3: التنفيذ (Operator) ---
-                await self._execute_execution_phase(state, collab_context, safe_log)
-
-                # --- المرحلة 4: الانعكاس والمراجعة النهائية (Auditor) ---
-                await self._execute_reflection_phase(state, collab_context, safe_log)
-
-                if state.critique.approved:
-                    await safe_log(CognitiveEvent.MISSION_SUCCESS, {"result": state.execution_result})
-                    return state.execution_result or {}
-
-                await safe_log(
-                    CognitiveEvent.MISSION_CRITIQUE_FAILED, 
-                    {"critique": state.critique.model_dump()}
-                )
-                state.current_phase = CognitivePhase.RE_PLANNING
-                collab_context.update("feedback_from_execution", state.critique.feedback)
+                # محاولة تنفيذ دورة معرفية كاملة | Try complete cognitive cycle
+                result = await self._execute_cognitive_cycle(state, collab_context, safe_log)
+                
+                if result is not None:
+                    return result
 
             except StalemateError as se:
-                # معالجة خاصة للجمود
-                logger.error(f"Stalemate trapped in main loop: {se}")
-                collab_context.update(
-                    "system_override",
-                    "CRITICAL: INFINITE LOOP DETECTED. TRY SOMETHING DRASTICALLY DIFFERENT."
-                )
-                state.current_phase = CognitivePhase.RE_PLANNING
+                self._handle_stalemate(se, state, collab_context, safe_log)
 
             except Exception as e:
-                logger.error(f"Error in phase {state.current_phase}: {e}")
-                await safe_log(CognitiveEvent.PHASE_ERROR, {"phase": state.current_phase, "error": str(e)})
-                if isinstance(e, RuntimeError) and "timeout" in str(e).lower():
-                    pass
-                # continue the loop to retry
+                await self._handle_phase_error(e, state, safe_log)
 
-        # فشل نهائي
+        # فشل نهائي | Final failure
         raise RuntimeError(f"Mission failed after {state.max_iterations} iterations.")
+
+    async def _execute_cognitive_cycle(
+        self,
+        state: CognitiveState,
+        collab_context: InMemoryCollaborationContext,
+        safe_log,
+    ) -> dict[str, Any] | None:
+        """
+        تنفيذ دورة معرفية كاملة.
+        Execute one complete cognitive cycle (plan → design → execute → review).
+        
+        Returns:
+            dict | None: النتيجة إذا نجحت، None إذا تحتاج إعادة المحاولة
+        """
+        # المرحلة 1: التخطيط | Planning phase
+        if not state.plan or state.current_phase == CognitivePhase.RE_PLANNING:
+            planning_success = await self._try_planning_phase(state, collab_context, safe_log)
+            if not planning_success:
+                return None  # إعادة المحاولة
+
+        # المرحلة 2: التصميم | Design phase
+        await self._execute_design_phase(state, collab_context, safe_log)
+
+        # المرحلة 3: التنفيذ | Execution phase
+        await self._execute_execution_phase(state, collab_context, safe_log)
+
+        # المرحلة 4: المراجعة | Review phase
+        await self._execute_reflection_phase(state, collab_context, safe_log)
+
+        # التحقق من النجاح | Check success
+        if state.critique.approved:
+            await safe_log(CognitiveEvent.MISSION_SUCCESS, {"result": state.execution_result})
+            return state.execution_result or {}
+
+        # إعداد للإعادة | Prepare for retry
+        await self._prepare_for_retry(state, collab_context, safe_log)
+        return None
+
+    async def _try_planning_phase(
+        self,
+        state: CognitiveState,
+        collab_context: InMemoryCollaborationContext,
+        safe_log,
+    ) -> bool:
+        """
+        محاولة تنفيذ مرحلة التخطيط.
+        Try executing planning phase with stalemate handling.
+        
+        Returns:
+            bool: True إذا نجح، False إذا يحتاج إعادة
+        """
+        try:
+            critique = await self._handle_planning_phase(state, collab_context, safe_log)
+            
+            if not critique.approved:
+                state.current_phase = CognitivePhase.RE_PLANNING
+                collab_context.update("feedback_from_previous_attempt", critique.feedback)
+                return False
+            
+            return True
+        
+        except StalemateError:
+            # استراتيجية كسر الجمود - إعادة التخطيط فوراً
+            state.current_phase = CognitivePhase.RE_PLANNING
+            return False
+
+    async def _prepare_for_retry(
+        self,
+        state: CognitiveState,
+        collab_context: InMemoryCollaborationContext,
+        safe_log,
+    ) -> None:
+        """
+        إعداد الحالة لإعادة المحاولة.
+        Prepare state for retry after failed critique.
+        """
+        await safe_log(
+            CognitiveEvent.MISSION_CRITIQUE_FAILED, 
+            {"critique": state.critique.model_dump()}
+        )
+        state.current_phase = CognitivePhase.RE_PLANNING
+        collab_context.update("feedback_from_execution", state.critique.feedback)
+
+    def _handle_stalemate(
+        self,
+        error: StalemateError,
+        state: CognitiveState,
+        collab_context: InMemoryCollaborationContext,
+        safe_log,
+    ) -> None:
+        """
+        معالجة حالة الجمود.
+        Handle stalemate situation by resetting context.
+        """
+        logger.error(f"Stalemate trapped in main loop: {error}")
+        collab_context.update(
+            "system_override",
+            "CRITICAL: INFINITE LOOP DETECTED. TRY SOMETHING DRASTICALLY DIFFERENT."
+        )
+        state.current_phase = CognitivePhase.RE_PLANNING
+
+    async def _handle_phase_error(
+        self,
+        error: Exception,
+        state: CognitiveState,
+        safe_log,
+    ) -> None:
+        """
+        معالجة الأخطاء في المراحل.
+        Handle errors during phase execution.
+        """
+        logger.error(f"Error in phase {state.current_phase}: {error}")
+        await safe_log(CognitiveEvent.PHASE_ERROR, {
+            "phase": state.current_phase,
+            "error": str(error)
+        })
+        # Continue the loop to retry
 
     async def _execute_phase(
         self,

@@ -37,17 +37,42 @@ class ArchitectAgent(AgentArchitect):
     async def design_solution(self, plan: dict[str, Any], context: CollaborationContext) -> dict[str, Any]:
         """
         تحويل الخطة الاستراتيجية إلى تصميم تقني.
+        Convert strategic plan to technical design.
 
         Args:
-            plan (dict): الخطة الناتجة عن الاستراتيجي (Strategist).
-            context (CollaborationContext): السياق المشترك.
+            plan: الخطة الناتجة عن الاستراتيجي (Strategist)
+            context: السياق المشترك
 
         Returns:
-            dict: تصميم يحتوي على قائمة المهام الجاهزة للتنفيذ.
+            dict: تصميم يحتوي على قائمة المهام الجاهزة للتنفيذ
         """
         logger.info("Architect is designing the technical solution...")
 
-        system_prompt = """
+        # 1. إعداد السياق والطلب | Prepare context and request
+        system_prompt = self._create_architect_system_prompt()
+        user_content = self._format_plan_for_design(plan)
+
+        # 2. استدعاء AI للتصميم | Call AI for design
+        try:
+            design_data = await self._generate_design_with_ai(
+                system_prompt, user_content
+            )
+            
+            # 3. تخزين في السياق | Store in context
+            context.update("last_design", design_data)
+            return design_data
+
+        except json.JSONDecodeError as e:
+            return self._create_json_error_design(e)
+        except Exception as e:
+            return self._create_general_error_design(e)
+
+    def _create_architect_system_prompt(self) -> str:
+        """
+        إنشاء توجيه النظام للمعماري.
+        Create system prompt for the Architect agent.
+        """
+        return """
         أنت "المعماري" (The Architect)، خبير تقني ضمن منظومة Overmind.
 
         مهمتك:
@@ -81,45 +106,63 @@ class ArchitectAgent(AgentArchitect):
         }
         """
 
+    def _format_plan_for_design(self, plan: dict[str, Any]) -> str:
+        """
+        تنسيق الخطة للإرسال إلى AI.
+        Format plan for sending to AI.
+        """
         plan_str = json.dumps(plan, default=str)
-        user_content = f"Plan: {plan_str}\nConvert this into executable tasks."
+        return f"Plan: {plan_str}\nConvert this into executable tasks."
 
-        try:
-            logger.info("Architect: Calling AI for design generation...")
-            response_text = await self.ai.send_message(
-                system_prompt=system_prompt,
-                user_message=user_content,
-                temperature=0.1  # دقة قصوى
-            )
-            logger.info(f"Architect: Received AI response ({len(response_text)} chars)")
+    async def _generate_design_with_ai(
+        self, system_prompt: str, user_content: str
+    ) -> dict[str, Any]:
+        """
+        توليد التصميم باستخدام AI.
+        Generate design using AI with error handling.
+        """
+        logger.info("Architect: Calling AI for design generation...")
+        response_text = await self.ai.send_message(
+            system_prompt=system_prompt,
+            user_message=user_content,
+            temperature=0.1  # دقة قصوى
+        )
+        logger.info(f"Architect: Received AI response ({len(response_text)} chars)")
 
-            cleaned_response = self._clean_json_block(response_text)
-            design_data = json.loads(cleaned_response)
+        # تنظيف وتحليل الاستجابة | Clean and parse response
+        cleaned_response = self._clean_json_block(response_text)
+        design_data = json.loads(cleaned_response)
 
-            if "tasks" not in design_data:
-                raise ValueError("Design missing 'tasks' field")
+        # التحقق من الصحة | Validate
+        if "tasks" not in design_data:
+            raise ValueError("Design missing 'tasks' field")
 
-            logger.info(f"Architect: Design created with {len(design_data.get('tasks', []))} tasks")
-            # تخزين التصميم في الذاكرة المشتركة
-            context.update("last_design", design_data)
-            return design_data
+        logger.info(f"Architect: Design created with {len(design_data.get('tasks', []))} tasks")
+        return design_data
 
-        except json.JSONDecodeError as e:
-            logger.error(f"Architect JSON parsing error: {e}")
-            logger.error(f"Raw response: {response_text[:500] if 'response_text' in locals() else 'N/A'}")
-            return {
-                "design_name": "Failed Design - JSON Error",
-                "error": f"JSON parsing failed: {e}",
-                "tasks": []
-            }
-        except Exception as e:
-            logger.exception(f"Architect failed to design: {e}")
-            # في حال الفشل، نعيد تصميم فارغ أو خطأ
-            return {
-                "design_name": "Failed Design",
-                "error": f"{type(e).__name__}: {e!s}",
-                "tasks": []
-            }
+    def _create_json_error_design(self, error: json.JSONDecodeError) -> dict[str, Any]:
+        """
+        إنشاء تصميم خطأ JSON.
+        Create error design for JSON parsing failures.
+        """
+        logger.error(f"Architect JSON parsing error: {error}")
+        return {
+            "design_name": "Failed Design - JSON Error",
+            "error": f"JSON parsing failed: {error}",
+            "tasks": []
+        }
+
+    def _create_general_error_design(self, error: Exception) -> dict[str, Any]:
+        """
+        إنشاء تصميم خطأ عام.
+        Create general error design.
+        """
+        logger.exception(f"Architect failed to design: {error}")
+        return {
+            "design_name": "Failed Design",
+            "error": f"{type(error).__name__}: {error!s}",
+            "tasks": []
+        }
 
     def _clean_json_block(self, text: str) -> str:
         """استخراج JSON من نص قد يحتوي على Markdown code blocks."""

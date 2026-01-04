@@ -51,79 +51,133 @@ MOUNTABLE_FOLDERS: Final[list[str]] = ["css", "js", "src", "assets"]
 def setup_static_files(app: FastAPI, static_dir: str | None = None) -> None:
     """
     إعداد خدمة الملفات الثابتة واستراتيجية الرد (Fallback) لتطبيقات الصفحة الواحدة.
-
-    هذه الدالة تقوم بـ:
-    1. ربط المجلدات الفرعية (css, js) مباشرة لسرعة الوصول.
-    2. إعداد نقطة الجذر (Root) لخدمة index.html.
-    3. إعداد معالج SPA Fallback لخدمة index.html للمسارات غير الموجودة (ما عدا API).
+    Setup static files serving and SPA fallback strategy.
 
     Args:
-        app: تطبيق FastAPI.
-        static_dir: مسار مجلد الملفات الثابتة (اختياري).
+        app: تطبيق FastAPI
+        static_dir: مسار مجلد الملفات الثابتة (اختياري)
     """
-    # تحديد مسار الملفات الثابتة (الافتراضي: app/static)
+    # 1. تحديد وتحقق من مسار الملفات | Determine and validate path
     base_static_dir = static_dir or os.path.join(os.getcwd(), "app/static")
-
-    if not os.path.exists(base_static_dir):
-        logger.warning(
-            f"⚠️ Static files directory not found: {base_static_dir}. Frontend will not be served."
-        )
+    
+    if not _validate_static_directory(base_static_dir):
         return
 
     logger.info(f"📂 Mounting static files from: {base_static_dir}")
 
-    # 1. ربط المجلدات المحددة (Mount Specific Folders)
+    # 2. ربط المجلدات المحددة | Mount specific folders
+    _mount_static_folders(app, base_static_dir)
+
+    # 3. خدمة الصفحة الرئيسية | Serve root index
+    _setup_root_route(app, base_static_dir)
+
+    # 4. معالج SPA Fallback | Setup SPA fallback handler
+    _setup_spa_fallback(app, base_static_dir)
+
+
+def _validate_static_directory(directory: str) -> bool:
+    """
+    التحقق من وجود مجلد الملفات الثابتة.
+    Validate static directory exists.
+    
+    Returns:
+        bool: True إذا كان المجلد موجوداً
+    """
+    if not os.path.exists(directory):
+        logger.warning(
+            f"⚠️ Static files directory not found: {directory}. Frontend will not be served."
+        )
+        return False
+    return True
+
+
+def _mount_static_folders(app: FastAPI, base_static_dir: str) -> None:
+    """
+    ربط المجلدات الفرعية المحددة.
+    Mount specific static subfolders (css, js, etc.).
+    """
     for folder in MOUNTABLE_FOLDERS:
         folder_path = os.path.join(base_static_dir, folder)
         if os.path.isdir(folder_path):
             app.mount(f"/{folder}", StaticFiles(directory=folder_path), name=folder)
 
-    # 2. خدمة الصفحة الرئيسية (Serve Index)
+
+def _setup_root_route(app: FastAPI, base_static_dir: str) -> None:
+    """
+    إعداد مسار الجذر لخدمة index.html.
+    Setup root route to serve index.html.
+    """
     async def serve_root() -> FileResponse:
         """يخدم ملف index.html عند طلب الجذر."""
         return FileResponse(os.path.join(base_static_dir, "index.html"))
 
     app.add_api_route("/", serve_root, methods=["GET", "HEAD"])
 
-    # 3. معالج SPA Fallback (SPA Catch-all)
+
+def _setup_spa_fallback(app: FastAPI, base_static_dir: str) -> None:
+    """
+    إعداد معالج SPA Fallback.
+    Setup SPA fallback handler for client-side routing.
+    """
     async def spa_fallback(request: Request, full_path: str) -> FileResponse:
         """
-        يتعامل مع المسارات غير الموجودة.
-
-        الخوارزمية:
-        1. التحقق من وجود ملف فعلي آمن (Physical File Check).
-        2. رفض طلبات API غير الموجودة (404).
-        3. رفض الطرق غير الآمنة (Non-GET).
-        4. خدمة index.html كحل أخير (SPA Routing).
+        معالج المسارات غير الموجودة.
+        Handle non-existent paths with SPA fallback logic.
         """
-        # 1. تطبيع المسار وفحص الأمان
-        potential_path = os.path.normpath(os.path.join(base_static_dir, full_path))
+        # 1. التحقق من ملف فعلي | Check for physical file
+        physical_file = _try_serve_physical_file(
+            base_static_dir, full_path, request.method
+        )
+        if physical_file:
+            return physical_file
 
-        # Security: منع Path Traversal
-        if not potential_path.startswith(base_static_dir):
+        # 2. حماية مسارات API | Protect API routes
+        if _is_api_route(full_path):
             raise HTTPException(status_code=404, detail="Not Found")
 
-        # إذا كان الملف موجوداً، نخدمه
-        if os.path.isfile(potential_path):
-            if request.method not in ["GET", "HEAD"]:
-                raise HTTPException(status_code=405, detail="Method Not Allowed")
-            return FileResponse(potential_path)
-
-        # 2. حماية مسارات API
-        # أي طلب يبدأ بـ api أو يحتوي عليه لا يجب أن يعيد HTML
-        if full_path.startswith("api") or "/api/" in full_path or full_path.endswith("/api"):
-            raise HTTPException(status_code=404, detail="Not Found")
-
-        # 3. التحقق من الطريقة
+        # 3. التحقق من الطريقة | Validate HTTP method
         if request.method not in ["GET", "HEAD"]:
             raise HTTPException(status_code=404, detail="Not Found")
 
-        # 4. التوجيه إلى SPA
+        # 4. التوجيه إلى SPA | Fallback to SPA
         return FileResponse(os.path.join(base_static_dir, "index.html"))
 
-    # تسجيل المسار العام
     app.add_api_route(
         "/{full_path:path}",
         spa_fallback,
         methods=["GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     )
+
+
+def _try_serve_physical_file(
+    base_static_dir: str, full_path: str, method: str
+) -> FileResponse | None:
+    """
+    محاولة خدمة ملف فعلي إذا كان موجوداً.
+    Try to serve physical file if it exists.
+    
+    Returns:
+        FileResponse | None: استجابة الملف أو None
+    """
+    # تطبيع المسار | Normalize path
+    potential_path = os.path.normpath(os.path.join(base_static_dir, full_path))
+
+    # Security: منع Path Traversal
+    if not potential_path.startswith(base_static_dir):
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    # التحقق من وجود الملف | Check file exists
+    if os.path.isfile(potential_path):
+        if method not in ["GET", "HEAD"]:
+            raise HTTPException(status_code=405, detail="Method Not Allowed")
+        return FileResponse(potential_path)
+
+    return None
+
+
+def _is_api_route(path: str) -> bool:
+    """
+    التحقق من كون المسار مسار API.
+    Check if path is an API route.
+    """
+    return path.startswith("api") or "/api/" in path or path.endswith("/api")
