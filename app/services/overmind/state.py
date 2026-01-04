@@ -4,8 +4,7 @@
 # Version: 11.2.0-pacelc-gapless
 # =================================================================================================
 
-from typing import Any
-
+import logging
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 
@@ -25,7 +24,9 @@ from app.core.domain.models import (
     TaskStatus,
 )
 
-def utc_now() -> None:
+logger = logging.getLogger(__name__)
+
+def utc_now() -> datetime:
     return datetime.now(UTC)
 
 class MissionStateManager:
@@ -36,11 +37,11 @@ class MissionStateManager:
     while maintaining Database Consistency (C).
     """
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
     async def create_mission(
-        self, objective: str, initiator_id: int, context: dict[str, Any] | None = None
+        self, objective: str, initiator_id: int, context: dict[str, object] | None = None
     ) -> Mission:
         # Context is not currently stored in the Mission model (DB schema).
         # We might want to add it to the model later, but for now we'll accept it
@@ -94,7 +95,7 @@ class MissionStateManager:
             await self.session.commit()
 
     async def log_event(
-        self, mission_id: int, event_type: MissionEventType, payload: dict[str, Any]
+        self, mission_id: int, event_type: MissionEventType, payload: dict[str, object]
     ) -> None:
         event = MissionEvent(
             mission_id=mission_id,
@@ -113,7 +114,7 @@ class MissionStateManager:
         self,
         mission_id: int,
         planner_name: str,
-        plan_schema: dict[str, str | int | bool],  # MissionPlanSchema
+        plan_schema: object,  # MissionPlanSchema - using object to avoid circular import if schema is elsewhere
         score: float,
         rationale: str,
     ) -> MissionPlan:
@@ -123,9 +124,13 @@ class MissionStateManager:
         current_max = result.scalar() or 0
         version = current_max + 1
 
+        # Safe access to attributes using getattr
+        objective = getattr(plan_schema, "objective", "")
+        tasks = getattr(plan_schema, "tasks", [])
+
         raw_data = {
-            "objective": getattr(plan_schema, "objective", ""),
-            "tasks_count": len(getattr(plan_schema, "tasks", [])),
+            "objective": str(objective),
+            "tasks_count": len(list(tasks)), # Ensure it's iterable
         }
 
         mp = MissionPlan(
@@ -150,20 +155,19 @@ class MissionStateManager:
         mission.active_plan_id = mp.id
 
         # Create Tasks
-        tasks_schema = getattr(plan_schema, "tasks", [])
-        for t in tasks_schema:
+        for t in tasks:
             task_row = Task(
                 mission_id=mission_id,
                 plan_id=mp.id,
-                task_key=t.task_id,
-                description=t.description,
-                tool_name=t.tool_name,
-                tool_args_json=t.tool_args,
+                task_key=getattr(t, "task_id", ""),
+                description=getattr(t, "description", ""),
+                tool_name=getattr(t, "tool_name", ""),
+                tool_args_json=getattr(t, "tool_args", {}),
                 status=TaskStatus.PENDING,
                 attempt_count=0,
                 max_attempts=3,  # Default
                 priority=getattr(t, "priority", 0),
-                depends_on_json=t.dependencies,
+                depends_on_json=getattr(t, "dependencies", []),
                 created_at=utc_now(),
                 updated_at=utc_now(),
             )
@@ -187,7 +191,7 @@ class MissionStateManager:
         await self.session.flush()
         await self.session.commit()
 
-    async def mark_task_complete(self, task_id: int, result_text: str, meta: dict | None = None) -> None:
+    async def mark_task_complete(self, task_id: int, result_text: str, meta: dict[str, object] | None = None) -> None:
         if meta is None:
             meta = {}
         stmt = select(Task).where(Task.id == task_id)
