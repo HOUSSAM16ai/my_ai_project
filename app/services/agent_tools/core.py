@@ -5,6 +5,7 @@ The central nervous system of the toolset.
 """
 
 from typing import Any
+from dataclasses import dataclass
 
 import time
 import traceback
@@ -34,6 +35,21 @@ from .utils import _coerce_to_tool_result, _dbg, _generate_trace_id, _lower
 # ======================================================================================
 # Metrics Helpers
 # ======================================================================================
+@dataclass
+class ToolExecutionInfo:
+    """
+    Configuration object for tool execution metadata enrichment.
+    Encapsulates all necessary context parameters.
+    """
+    reg_name: str
+    canonical_name: str
+    elapsed_ms: float
+    category: str
+    capabilities: list[str]
+    meta_entry: dict[str, Any]
+    trace_id: str
+
+
 def _init_tool_stats(name: str):
     if name not in _TOOL_STATS:
         _TOOL_STATS[name] = {"invocations": 0, "errors": 0, "total_ms": 0.0, "last_error": None}
@@ -316,42 +332,28 @@ def _execute_tool(
 
 def _enrich_result_metadata(
     result: ToolResult,
-    reg_name: str,
-    canonical_name: str,
-    elapsed_ms: float,
-    category: str,
-    capabilities: list[str],
-    meta_entry: dict[str, Any],
-    trace_id: str,
+    info: ToolExecutionInfo,
 ):
     """
-    Add metadata to tool result.
+    Add metadata to tool result using configuration object.
     
-    إضافة البيانات الوصفية إلى نتيجة الأداة.
+    إضافة البيانات الوصفية إلى نتيجة الأداة باستخدام كائن التكوين.
     """
-    stats = _TOOL_STATS[reg_name]
+    stats = _TOOL_STATS[info.reg_name]
     if result.meta is None:
         result.meta = {}
 
     # Build metadata
-    metadata = _build_result_metadata(
-        reg_name, canonical_name, elapsed_ms,
-        category, capabilities, stats, meta_entry
-    )
+    metadata = _build_result_metadata(info, stats)
     
     # Update result
     result.meta.update(metadata)
-    result.trace_id = trace_id
+    result.trace_id = info.trace_id
 
 
 def _build_result_metadata(
-    reg_name: str,
-    canonical_name: str,
-    elapsed_ms: float,
-    category: str,
-    capabilities: list[str],
+    info: ToolExecutionInfo,
     stats: dict,
-    meta_entry: dict[str, Any],
 ) -> dict:
     """
     Build metadata dictionary for tool result.
@@ -359,9 +361,9 @@ def _build_result_metadata(
     بناء معجم البيانات الوصفية لنتيجة الأداة.
     """
     return {
-        "tool": reg_name,
-        "canonical": canonical_name,
-        "elapsed_ms": round(elapsed_ms, 2),
+        "tool": info.reg_name,
+        "canonical": info.canonical_name,
+        "elapsed_ms": round(info.elapsed_ms, 2),
         "invocations": stats["invocations"],
         "errors": stats["errors"],
         "avg_ms": (
@@ -370,10 +372,10 @@ def _build_result_metadata(
             else 0.0
         ),
         "version": __version__,
-        "category": category,
-        "capabilities": capabilities,
-        "is_alias": meta_entry.get("is_alias", False),
-        "disabled": meta_entry.get("disabled", False),
+        "category": info.category,
+        "capabilities": info.capabilities,
+        "is_alias": info.meta_entry.get("is_alias", False),
+        "disabled": info.meta_entry.get("disabled", False),
         "last_error": stats["last_error"],
     }
 
@@ -430,10 +432,17 @@ def tool(
                 # Record metrics and enrich result
                 elapsed_ms = (time.perf_counter() - start) * 1000.0
                 _record_invocation(name, elapsed_ms, result.ok, result.error)
-                _enrich_result_metadata(
-                    result, name, canonical_name, elapsed_ms,
-                    category, capabilities, meta_entry, trace_id
+
+                exec_info = ToolExecutionInfo(
+                    reg_name=name,
+                    canonical_name=canonical_name,
+                    elapsed_ms=elapsed_ms,
+                    category=category,
+                    capabilities=capabilities,
+                    meta_entry=meta_entry,
+                    trace_id=trace_id
                 )
+                _enrich_result_metadata(result, exec_info)
                 return result
 
             # Register handler for main name and all aliases
