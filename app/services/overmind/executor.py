@@ -8,8 +8,6 @@
 - SICP: Abstraction Barriers (لا يعرف تفاصيل التسجيل، فقط يستقبله).
 """
 
-from typing import Any
-
 import asyncio
 import json
 import logging
@@ -23,7 +21,8 @@ logger = logging.getLogger(__name__)
 __all__ = ["TaskExecutor"]
 
 # تعريف نوع السجل: قاموس يربط الاسم بدالة (متزامنة أو غير متزامنة)
-type ToolRegistry = dict[str, Callable[..., Awaitable[Any] | Any]]
+# نستخدم object بدلاً من Any للدلالة على أن النتيجة يمكن أن تكون أي شيء
+type ToolRegistry = dict[str, Callable[..., Awaitable[object] | object]]
 
 class TaskExecutor:
     """
@@ -50,7 +49,7 @@ class TaskExecutor:
         if not self.registry:
             logger.warning("TaskExecutor initialized with empty registry.")
 
-    async def execute_task(self, task: Task) -> dict[str, Any]:
+    async def execute_task(self, task: Task) -> dict[str, object]:
         """
         تنفيذ مهمة واحدة باستخدام الأداة المحددة.
 
@@ -58,7 +57,7 @@ class TaskExecutor:
             task (Task): كائن المهمة.
 
         Returns:
-            dict[str, Any]: نتيجة التنفيذ (status, result_text, meta, error).
+            dict[str, object]: نتيجة التنفيذ (status, result_text, meta, error).
         """
         tool_name = task.tool_name
         tool_args = self._parse_args(task.tool_args_json)
@@ -80,7 +79,7 @@ class TaskExecutor:
                 result = await tool_func(**tool_args)
             else:
                 loop = asyncio.get_running_loop()
-                result = await loop.run_in_executor(None, lambda: tool_func(**tool_args))
+                result = await loop.run_in_executor(None, lambda: tool_func(**tool_args)) # type: ignore
 
             # 4. تنسيق النتيجة
             result_text = str(result)
@@ -93,7 +92,7 @@ class TaskExecutor:
             logger.error(f"Task Execution Error ({tool_name}): {e}", exc_info=True)
             return {"status": "failed", "error": str(e)}
 
-    def _parse_args(self, args_json: str | dict | None) -> dict[str, Any]:
+    def _parse_args(self, args_json: str | dict[str, object] | None) -> dict[str, object]:
         """
         تحليل وسائط الأداة بشكل آمن.
 
@@ -108,7 +107,10 @@ class TaskExecutor:
         if isinstance(args_json, dict):
             return args_json
         try:
-            return json.loads(args_json)
+            parsed = json.loads(args_json)
+            if isinstance(parsed, dict):
+                return parsed
+            return {}
         except json.JSONDecodeError:
             logger.warning("Failed to decode tool arguments JSON.")
             return {}

@@ -16,9 +16,6 @@
 """
 from __future__ import annotations
 
-from typing import Any
-
-
 import logging
 from collections.abc import Sequence
 
@@ -66,7 +63,7 @@ class UserService:
 
     async def create_new_user(
         self, full_name: str, email: str, password: str, is_admin: bool = False
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         إنشاء مستخدم جديد في النظام.
 
@@ -77,7 +74,7 @@ class UserService:
             is_admin: صلاحية المسؤول.
 
         Returns:
-            dict[str, Any]: نتيجة العملية (status, message).
+            dict[str, object]: نتيجة العملية (status, message).
         """
         # تسوية البريد الإلكتروني (Normalization)
         email = email.lower().strip()
@@ -110,13 +107,13 @@ class UserService:
             logger.error(f"فشل في إنشاء المستخدم: {operation_error}", exc_info=True)
             return {"status": "error", "message": str(operation_error)}
 
-    async def ensure_admin_user_exists(self) -> dict[str, Any]:
+    async def ensure_admin_user_exists(self) -> dict[str, object]:
         """
         ضمان وجود مستخدم بصلاحيات مسؤول (Admin) وفقاً لمتغيرات البيئة.
         تستخدم هذه الوظيفة عادة عند بدء تشغيل النظام.
 
         Returns:
-            dict[str, Any]: نتيجة العملية.
+            dict[str, object]: نتيجة العملية.
         """
         admin_email = self.settings.ADMIN_EMAIL
         admin_password = self.settings.ADMIN_PASSWORD
@@ -186,7 +183,7 @@ async def get_all_users_async() -> list[User]:
 
 async def create_new_user_async(
     full_name: str, email: str, password: str, is_admin: bool = False
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """
     واجهة غير متزامنة لإنشاء مستخدم جديد (للاستخدام في CLI/Scripts).
     تقوم بإنشاء جلسة قاعدة بيانات مؤقتة لهذه العملية فقط.

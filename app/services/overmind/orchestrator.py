@@ -18,8 +18,6 @@
 - Dependency Inversion: الاعتماد على البروتوكولات.
 """
 
-from typing import Any
-
 import logging
 from typing import TYPE_CHECKING
 
@@ -100,7 +98,7 @@ class OvermindOrchestrator:
             mission.id, MissionStatus.RUNNING, OvermindMessage.CONVENING_COUNCIL
         )
 
-        async def _log_bridge(evt_type: str, payload: dict[str, Any]) -> None:
+        async def _log_bridge(evt_type: str, payload: dict[str, object]) -> None:
             """
             جسر (Bridge) للربط بين أحداث العقل ومدير الحالة.
             """
