@@ -1,5 +1,3 @@
-from typing import Any
-
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
@@ -70,8 +68,8 @@ class UnifiedSpan:
     start_time: float
     end_time: float | None = None
     duration_ms: float | None = None
-    tags: dict[str, Any] = field(default_factory=dict)
-    events: list[dict[str, Any]] = field(default_factory=list)
+    tags: dict[str, object] = field(default_factory=dict)
+    events: list[dict[str, object]] = field(default_factory=list)
     status: str = 'OK'
     error_message: str | None = None
     metrics: dict[str, float] = field(default_factory=dict)
@@ -120,8 +118,8 @@ class CorrelatedLog:
     message: str
     trace_id: str | None = None
     span_id: str | None = None
-    context: dict[str, Any] = field(default_factory=dict)
-    exception: dict[str, Any] | None = None
+    context: dict[str, object] = field(default_factory=dict)
+    exception: dict[str, object] | None = None
 
 @dataclass
 class AnomalyAlert:
@@ -130,7 +128,7 @@ class AnomalyAlert:
     severity: AlertSeverity
     anomaly_type: str
     description: str
-    metrics: dict[str, Any]
+    metrics: dict[str, object]
     trace_ids: list[str] = field(default_factory=list)
     recommended_action: str = ''
     resolved: bool = False

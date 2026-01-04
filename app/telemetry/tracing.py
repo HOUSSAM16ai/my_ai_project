@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 import logging
 import threading
 import time
@@ -29,7 +27,7 @@ class TracingManager:
         self.service_dependencies: dict[str, set[str]] = {} # Will be re-computed or updated
 
     def start_trace(self, operation_name: str, parent_context: TraceContext | None = None,
-                    tags: dict[str, Any] | None = None, request: Request | None = None) -> TraceContext:
+                    tags: dict[str, object] | None = None, request: Request | None = None) -> TraceContext:
         """
         Start a new trace or child span.
         بدء تتبع جديد أو span فرعي.
@@ -54,7 +52,7 @@ class TracingManager:
 
     def _initialize_trace_params(
         self, parent_context: TraceContext | None
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         Initialize trace parameters from parent context or create new.
         تهيئة معاملات التتبع من السياق الأصلي أو إنشاء جديدة.
@@ -74,7 +72,7 @@ class TracingManager:
         }
 
     def _create_span(
-        self, operation_name: str, trace_params: dict[str, Any], tags: dict[str, Any]
+        self, operation_name: str, trace_params: dict[str, object], tags: dict[str, object]
     ) -> UnifiedSpan:
         """
         Create a new span with given parameters.
@@ -93,7 +91,7 @@ class TracingManager:
         )
 
     def _register_span_and_trace(
-        self, span: UnifiedSpan, trace_params: dict[str, Any]
+        self, span: UnifiedSpan, trace_params: dict[str, object]
     ) -> None:
         """
         Register span and trace in active collections.
@@ -119,7 +117,7 @@ class TracingManager:
             self.stats['spans_created'] += 1
 
     def _create_trace_context(
-        self, trace_params: dict[str, Any], span: UnifiedSpan
+        self, trace_params: dict[str, object], span: UnifiedSpan
     ) -> TraceContext:
         """
         Create trace context object.
@@ -223,7 +221,7 @@ class TracingManager:
         del self.active_traces[trace.trace_id]
         return completed_trace
 
-    def add_span_event(self, span_id: str, event_name: str, attributes: dict[str, Any] | None = None) -> None:
+    def add_span_event(self, span_id: str, event_name: str, attributes: dict[str, object] | None = None) -> None:
         with self.lock:
             if span_id in self.active_spans:
                 event = {

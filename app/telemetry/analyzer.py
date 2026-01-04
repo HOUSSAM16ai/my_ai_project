@@ -5,9 +5,7 @@ import threading
 from dataclasses import asdict
 from collections import deque
 from datetime import datetime, UTC
-from typing import Any
-
-from app.telemetry.models import AlertSeverity, AnomalyAlert, TraceContext, UnifiedTrace
+from app.telemetry.models import AlertSeverity, AnomalyAlert, UnifiedTrace
 from app.telemetry.metrics import MetricsManager
 from app.telemetry.tracing import TracingManager
 
@@ -38,7 +36,7 @@ class TelemetryAnalyzer:
         self.lock = threading.RLock()
         self.anomalies_detected_count = 0
 
-    def get_golden_signals(self, time_window_seconds: int = 300) -> dict[str, Any]:
+    def get_golden_signals(self, time_window_seconds: int = 300) -> dict[str, object]:
         """
         حساب الإشارات الذهبية الأربعة (Latency, Traffic, Errors, Saturation).
 
@@ -72,7 +70,7 @@ class TelemetryAnalyzer:
             'sla_compliance': self._check_sla_compliance(latency, errors)
         }
 
-    def detect_anomalies(self) -> list[dict[str, Any]]:
+    def detect_anomalies(self) -> list[dict[str, object]]:
         """
         اكتشاف الشذوذ في البيانات التشخيصية بناءً على خط الأساس التاريخي.
 
@@ -98,7 +96,7 @@ class TelemetryAnalyzer:
 
     # --- Helper Methods (Private) ---
 
-    def _get_empty_signals(self) -> dict[str, Any]:
+    def _get_empty_signals(self) -> dict[str, object]:
         return {
             'latency': {'p50': 0, 'p95': 0, 'p99': 0, 'p99.9': 0, 'avg': 0},
             'traffic': {'requests_per_second': 0, 'total_requests': 0},
@@ -121,7 +119,7 @@ class TelemetryAnalyzer:
             'avg': statistics.mean(durations)
         }
 
-    def _calculate_traffic(self, traces: list[UnifiedTrace], window: int) -> dict[str, Any]:
+    def _calculate_traffic(self, traces: list[UnifiedTrace], window: int) -> dict[str, object]:
         total = len(traces)
         rps = total / window if window > 0 else 0
         return {
@@ -130,7 +128,7 @@ class TelemetryAnalyzer:
             'time_window_seconds': window
         }
 
-    def _calculate_errors(self, traces: list[UnifiedTrace], total: int) -> dict[str, Any]:
+    def _calculate_errors(self, traces: list[UnifiedTrace], total: int) -> dict[str, object]:
         error_count = sum(1 for t in traces if t.error_count > 0)
         error_rate = (error_count / total * 100) if total > 0 else 0
         return {
@@ -151,7 +149,7 @@ class TelemetryAnalyzer:
             'resource_utilization': 0
         }
 
-    def _check_sla_compliance(self, latency: dict, errors: dict) -> dict[str, Any]:
+    def _check_sla_compliance(self, latency: dict[str, float], errors: dict[str, float]) -> dict[str, object]:
         """التحقق من الامتثال لاتفاقية مستوى الخدمة"""
         p99_compliant = latency['p99'] <= self.latency_p99_target
         error_rate_compliant = errors['error_rate'] <= self.error_rate_target
@@ -199,7 +197,7 @@ class TelemetryAnalyzer:
         current = self.baselines.get(key, value)
         self.baselines[key] = alpha * value + (1 - alpha) * current
 
-    def _create_anomaly_alert(self, severity: AlertSeverity, anomaly_type: str, description: str, metrics: dict[str, Any]) -> AnomalyAlert:
+    def _create_anomaly_alert(self, severity: AlertSeverity, anomaly_type: str, description: str, metrics: dict[str, object]) -> AnomalyAlert:
         alert = AnomalyAlert(
             alert_id=str(uuid.uuid4())[:12],
             timestamp=time.time(),
