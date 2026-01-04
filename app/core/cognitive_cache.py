@@ -101,16 +101,12 @@ class CognitiveResonanceEngine:
 
         return final_score
 
-    # TODO: Split this function (39 lines) - KISS principle
-    def recall(self, prompt: str, context_hash: str) -> list[dict] | None:
+    def _find_best_match(
+        self, input_tokens: set[str], prompt: str, context_hash: str
+    ) -> tuple[SemanticEngram | None, float]:
         """
-        Attempts to recall a memory that resonates with the input prompt.
-        Must match context_hash exactly (Safety First!) but allows fuzzy match on prompt.
+        Scans memory for the most resonant engram.
         """
-        input_tokens = self._normalize(prompt)
-        if not input_tokens:
-            return None
-
         best_engram = None
         best_score = 0.0
 
@@ -132,9 +128,23 @@ class CognitiveResonanceEngine:
                 best_score = score
                 best_engram = engram
 
+        return best_engram, best_score
+
+    def recall(self, prompt: str, context_hash: str) -> list[dict] | None:
+        """
+        Attempts to recall a memory that resonates with the input prompt.
+        Must match context_hash exactly (Safety First!) but allows fuzzy match on prompt.
+        """
+        input_tokens = self._normalize(prompt)
+        if not input_tokens:
+            return None
+
+        best_engram, best_score = self._find_best_match(input_tokens, prompt, context_hash)
+
         if best_score >= RESONANCE_THRESHOLD and best_engram:
             logger.info(
-                f"Cognitive Resonance Detected! Score: {best_score:.4f} | Query: '{prompt}' matches '{best_engram.original_prompt}'"
+                f"Cognitive Resonance Detected! Score: {best_score:.4f} | "
+                f"Query: '{prompt}' matches '{best_engram.original_prompt}'"
             )
             best_engram.access_count += 1
             self._stats["hits"] += 1
