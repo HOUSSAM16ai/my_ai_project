@@ -177,46 +177,85 @@ class TaskGenerator:
             ),
         ]
 
-    # TODO: Split this function (38 lines) - KISS principle
     def _generate_complex_tasks(self, objective: str) -> list[Task]:
-        """Generate tasks for complex objectives."""
-        return [
-            Task(
-                task_id="task_1",
-                description="Deep analysis",
-                tool_name="deep_analyze",
-                tool_args={"objective": objective},
-                dependencies=[],
-            ),
-            Task(
-                task_id="task_2",
-                description="Break down objective",
-                tool_name="decompose",
-                tool_args={},
-                dependencies=["task_1"],
-            ),
-            Task(
-                task_id="task_3",
-                description="Execute sub-tasks",
-                tool_name="execute_parallel",
-                tool_args={},
-                dependencies=["task_2"],
-            ),
-            Task(
-                task_id="task_4",
-                description="Integrate results",
-                tool_name="integrate",
-                tool_args={},
-                dependencies=["task_3"],
-            ),
-            Task(
-                task_id="task_5",
-                description="Verify and validate",
-                tool_name="verify",
-                tool_args={},
-                dependencies=["task_4"],
-            ),
-        ]
+        """
+        إنشاء مهام للأهداف المعقدة
+        Generate tasks for complex objectives.
+        
+        Creates a 5-stage pipeline: analysis → decomposition → execution → integration → validation
+        """
+        tasks = []
+        tasks.append(self._create_analysis_task(objective))
+        tasks.append(self._create_decomposition_task())
+        tasks.append(self._create_execution_task())
+        tasks.append(self._create_integration_task())
+        tasks.append(self._create_validation_task())
+        return tasks
+    
+    def _create_analysis_task(self, objective: str) -> Task:
+        """
+        إنشاء مهمة التحليل العميق
+        Create deep analysis task.
+        """
+        return Task(
+            task_id="task_1",
+            description="Deep analysis",
+            tool_name="deep_analyze",
+            tool_args={"objective": objective},
+            dependencies=[],
+        )
+    
+    def _create_decomposition_task(self) -> Task:
+        """
+        إنشاء مهمة تفكيك الهدف
+        Create objective breakdown task.
+        """
+        return Task(
+            task_id="task_2",
+            description="Break down objective",
+            tool_name="decompose",
+            tool_args={},
+            dependencies=["task_1"],
+        )
+    
+    def _create_execution_task(self) -> Task:
+        """
+        إنشاء مهمة التنفيذ المتوازي
+        Create parallel execution task.
+        """
+        return Task(
+            task_id="task_3",
+            description="Execute sub-tasks",
+            tool_name="execute_parallel",
+            tool_args={},
+            dependencies=["task_2"],
+        )
+    
+    def _create_integration_task(self) -> Task:
+        """
+        إنشاء مهمة دمج النتائج
+        Create results integration task.
+        """
+        return Task(
+            task_id="task_4",
+            description="Integrate results",
+            tool_name="integrate",
+            tool_args={},
+            dependencies=["task_3"],
+        )
+    
+    def _create_validation_task(self) -> Task:
+        """
+        إنشاء مهمة التحقق والتحقيق
+        Create verification and validation task.
+        """
+        return Task(
+            task_id="task_5",
+            description="Verify and validate",
+            tool_name="verify",
+            tool_args={},
+            dependencies=["task_4"],
+        )
 
 class RefactoredPlanner(PlannerInterface):
     """Clean, maintainable planner implementation."""
