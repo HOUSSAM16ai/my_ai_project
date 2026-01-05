@@ -1,27 +1,56 @@
 """
-CRUD Persistence Layer
-Encapsulates all Data Access Logic for CRUD operations.
-Part of the "Evolutionary Logic Distillation" - separating persistence from orchestration.
+طبقة الاستمرارية لعمليات CRUD.
+
+تفصل هذه الوحدة منطق الوصول للبيانات عن التنسيق الأعلى وتلتزم بعقود
+صريحة مكتوبة بالعربية مع إزالة الاستخدامات العامة للنوع `Any`.
 """
 
 from __future__ import annotations
 
-from typing import Any
-
-
 import logging
+from typing import TypedDict
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.domain.models import Mission, Task, User
 
+
+class PaginationMeta(TypedDict):
+    """
+    بيانات التعويض الخاصة بالصفحات.
+
+    Attributes:
+        page: رقم الصفحة الحالية.
+        per_page: عدد العناصر في الصفحة.
+        total_items: إجمالي عدد السجلات.
+        total_pages: عدد الصفحات الكلي.
+        has_next: هل توجد صفحة تالية.
+        has_prev: هل توجد صفحة سابقة.
+    """
+
+    page: int
+    per_page: int
+    total_items: int
+    total_pages: int
+    has_next: bool
+    has_prev: bool
+
+
+class UsersPage(TypedDict):
+    """نتيجة إرجاع المستخدمين مع بيانات التعويض."""
+
+    items: list[User]
+    pagination: PaginationMeta
+
 logger = logging.getLogger(__name__)
 
 class CrudPersistence:
     """
-    Encapsulates all Data Access Logic for CRUD operations.
-    Handles database queries for Users, Missions, and Tasks.
+    يحوي جميع استعلامات قاعدة البيانات الخاصة بعمليات CRUD.
+
+    يهدف إلى عزل منطق الوصول للبيانات عن التنسيق الأعلى مع الحفاظ على
+    الصرامة النوعية والتوثيق العربي لتحقيق انسجام مع النهج API-first.
     """
 
     def __init__(self, db: AsyncSession):
@@ -34,9 +63,9 @@ class CrudPersistence:
         email: str | None = None,
         sort_by: str | None = None,
         sort_order: str = "asc",
-    ) -> dict[str, Any]:
+    ) -> UsersPage:
         """
-        Retrieve users with pagination and filtering.
+        يجلب المستخدمين مع دعم التصفية والتقسيم إلى صفحات.
         """
         query = select(User)
 
@@ -85,15 +114,11 @@ class CrudPersistence:
         }
 
     async def get_user_by_id(self, user_id: int) -> User | None:
-        """
-        Retrieve a single user by ID.
-        """
+        """يجلب مستخدمًا واحدًا بالمعرّف الأساسي."""
         return await self.db.get(User, user_id)
 
     async def get_missions(self, status: str | None = None) -> list[Mission]:
-        """
-        Retrieve missions with optional status filter.
-        """
+        """يجلب المهمات مع خيار تصفية الحالة."""
         query = select(Mission)
 
         if status:
@@ -103,15 +128,11 @@ class CrudPersistence:
         return list(result.scalars().all())
 
     async def get_mission_by_id(self, mission_id: int) -> Mission | None:
-        """
-        Retrieve a single mission by ID.
-        """
+        """يجلب مهمة مفردة بالمعرّف الأساسي."""
         return await self.db.get(Mission, mission_id)
 
     async def get_tasks(self, mission_id: int | None = None) -> list[Task]:
-        """
-        Retrieve tasks with optional mission filter.
-        """
+        """يجلب المهام مع إمكانية التصفية على مهمة محددة."""
         query = select(Task)
 
         if mission_id:
@@ -121,7 +142,5 @@ class CrudPersistence:
         return list(result.scalars().all())
 
     async def get_task_by_id(self, task_id: int) -> Task | None:
-        """
-        Retrieve a single task by ID.
-        """
+        """يجلب مهمةً مفردةً بالمعرّف الأساسي."""
         return await self.db.get(Task, task_id)

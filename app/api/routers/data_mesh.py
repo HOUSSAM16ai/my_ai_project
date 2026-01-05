@@ -1,11 +1,12 @@
 # app/api/routers/data_mesh.py
 """
-Data Mesh Router - Data Contract Management
-Provides endpoints for data mesh operations and metrics.
-Follows Clean Architecture by using Boundary Services.
+موجه شبكة البيانات (Data Mesh Router).
+---------------------------------------
+يوفر نقاط نهاية لإدارة عقود البيانات ومقاييس الشبكة بطريقة معمارية نظيفة
+تعتمد بالكامل على خدمات الحدود (Boundary Services) لفصل الطبقات والمنطق.
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.schemas.data_mesh import (
     DataContractRequest,
@@ -17,7 +18,7 @@ from app.services.data_mesh.service import DataMeshBoundaryService
 router = APIRouter(tags=["Data Mesh"])
 
 def get_data_mesh_service() -> DataMeshBoundaryService:
-    """Dependency to get the Data Mesh Boundary Service."""
+    """تبعية للحصول على خدمة شبكة البيانات الحدية (Data Mesh Boundary Service)."""
     return DataMeshBoundaryService()
 
 @router.post(
@@ -30,10 +31,13 @@ async def create_data_contract(
     service: DataMeshBoundaryService = Depends(get_data_mesh_service),
 ) -> DataContractResponse:
     """
-    Register a new Data Contract within the Data Mesh.
-    Delegates to DataMeshBoundaryService.
+    تسجيل عقد بيانات جديد داخل شبكة البيانات.
+    يتم تفويض كل المنطق إلى خدمة الحدود لضمان عزل طبقة العرض.
     """
-    result = await service.create_data_contract(contract.model_dump())
+    try:
+        result = await service.create_data_contract(contract.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return DataContractResponse.model_validate(result)
 
 @router.get(
@@ -45,8 +49,8 @@ async def get_data_mesh_metrics(
     service: DataMeshBoundaryService = Depends(get_data_mesh_service),
 ) -> DataMeshMetricsResponse:
     """
-    Retrieve operational metrics for the Data Mesh.
-    Delegates to DataMeshBoundaryService.
+    استرجاع المقاييس التشغيلية لشبكة البيانات.
+    يتم التفويض لخدمة الحدود لضمان فصل المسؤوليات.
     """
     result = await service.get_mesh_metrics()
     return DataMeshMetricsResponse.model_validate(result)

@@ -238,7 +238,7 @@ class ProjectContextService:
         """بناء قسم بنية المشروع."""
         lines = ["", "## Project Structure:"]
         for dir_info in structure.directories[:10]:
-            lines.append(f"- app/{dir_info['name']}/ ({dir_info['file_count']} files)")
+            lines.append(f"- app/{dir_info.name}/ ({dir_info.file_count} files)")
         return lines
 
     def _build_components_section(

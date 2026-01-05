@@ -1,5 +1,3 @@
-from typing import Any
-
 from pydantic import AliasChoices, Field, ValidationInfo, field_validator
 
 from app.core.schemas import RobustBaseModel
@@ -72,11 +70,11 @@ class RegisterResponse(RobustBaseModel):
 
 class HealthResponse(RobustBaseModel):
     status: str
-    data: dict[str, Any]
+    data: dict[str, object]
 
 class TokenVerifyResponse(RobustBaseModel):
     status: str
-    data: dict[str, Any]
+    data: dict[str, object]
 
 class TokenGenerateResponse(RobustBaseModel):
     """

@@ -14,15 +14,11 @@
 
 from collections.abc import Callable
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.schemas.admin import (
-    ConversationDetailsResponse,
-    ConversationSummaryResponse,
-)
-from app.api.v2.schemas import ChatRequest
+from app.api.schemas.admin import ChatRequest, ConversationDetailsResponse, ConversationSummaryResponse
 from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
@@ -81,14 +77,10 @@ async def chat_stream(
     Returns:
         StreamingResponse: تدفق أحداث الخادم (SSE).
     """
-    question = chat_request.question
-    if not question or not question.strip():
-        raise HTTPException(status_code=400, detail="Question is required.")
-
     # تنسيق تدفق المحادثة بالكامل عبر خدمة الحدود
     stream_generator = service.orchestrate_chat_stream(
         user_id,
-        question,
+        chat_request.question,
         chat_request.conversation_id,
         ai_client,
         session_factory,

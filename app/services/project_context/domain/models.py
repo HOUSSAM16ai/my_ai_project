@@ -1,20 +1,26 @@
 # app/services/project_context/domain/models.py
 """
-Project Context Domain Models
-=============================
-Pure business logic - no external dependencies
+نماذج نطاق سياق المشروع.
+
+تقدم هذه الوحدة بيانات مكتوبة بدقة لنتائج التحليل الهيكلية والصحية،
+مع الحفاظ على استقلالية الأعمال عن أي تبعيات خارجية.
 """
 
 from __future__ import annotations
 
-from typing import Any
-
-
 from dataclasses import dataclass, field
+
+
+@dataclass
+class DirectorySummary:
+    """ملخص دليل رئيسي داخل مجلد التطبيق."""
+
+    name: str
+    file_count: int
 
 @dataclass
 class ProjectHealth:
-    """Real-time project health metrics."""
+    """مؤشرات صحة المشروع في الزمن الحقيقي."""
 
     total_files: int = 0
     python_files: int = 0
@@ -29,7 +35,7 @@ class ProjectHealth:
 
 @dataclass
 class CodeStatistics:
-    """Code statistics for the project."""
+    """إحصائيات الكود للمشروع."""
 
     python_files: int = 0
     test_files: int = 0
@@ -39,15 +45,15 @@ class CodeStatistics:
 
 @dataclass
 class ProjectStructure:
-    """Project directory structure."""
+    """تمثيل هيكل دليل المشروع."""
 
-    directories: list[dict[str, Any]] = field(default_factory=list)
+    directories: list[DirectorySummary] = field(default_factory=list)
     key_files: list[str] = field(default_factory=list)
     app_modules: list[str] = field(default_factory=list)
 
 @dataclass
 class FileAnalysis:
-    """Deep file analysis results."""
+    """نتائج التحليل العميق للملفات."""
 
     total_classes: int = 0
     total_functions: int = 0
@@ -58,7 +64,7 @@ class FileAnalysis:
 
 @dataclass
 class KeyComponent:
-    """Key component information."""
+    """معلومات المكونات الرئيسية."""
 
     name: str
     path: str
@@ -68,6 +74,7 @@ class KeyComponent:
 __all__ = [
     "CodeStatistics",
     "FileAnalysis",
+    "DirectorySummary",
     "KeyComponent",
     "ProjectHealth",
     "ProjectStructure",

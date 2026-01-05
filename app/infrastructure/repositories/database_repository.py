@@ -1,21 +1,26 @@
 """
-SQLAlchemy Database Repository Implementation
-Implements DatabaseRepository interface from domain layer.
+تنفيذ مستودع قاعدة البيانات باستخدام SQLAlchemy.
+
+يطبق عقد `DatabaseRepository` مع التزام توثيق عربي ومؤشرات نوعية واضحة
+تسهل التحقق الآلي من سلامة الاتصال.
 """
+
+from __future__ import annotations
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+
 class SQLAlchemyDatabaseRepository:
-    """SQLAlchemy implementation of DatabaseRepository."""
+    """تطبيق SQLAlchemy لواجهة `DatabaseRepository`."""
 
     def __init__(self, session: AsyncSession):
         self._session = session
 
     async def check_connection(self) -> bool:
-        """Check if database connection is alive."""
+        """يتحقق من سلامة اتصال قاعدة البيانات عبر استعلام خفيف الوزن."""
         try:
             await self._session.execute(text("SELECT 1"))
             return True
-        except Exception:
+        except Exception:  # pragma: no cover - الدفاع ضد حالات تعطل الاتصال
             return False

@@ -18,7 +18,7 @@
 import functools
 import logging
 import traceback
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from typing import TypeVar, cast, overload
 
@@ -191,7 +191,7 @@ def safe_context(
     default_return: object | None = None,
     log_error: bool = True,
     raise_on_error: bool = False,
-) -> Any: # Generator type is hard to hint perfectly here without generic generator
+) -> Generator[None, None, None]:
     """
     مدير سياق (Context Manager) لكتل التنفيذ الآمن.
 
@@ -211,7 +211,7 @@ def safe_context(
         # Don't yield again, just pass
 
 @contextmanager
-def capture_errors(error_list: list[Exception] | None = None) -> Any:
+def capture_errors(error_list: list[Exception] | None = None) -> Generator[None, None, None]:
     """
     مدير سياق لالتقاط الأخطاء دون تعطل البرنامج.
 
@@ -270,9 +270,7 @@ class ErrorHandler:
             try:
                 return func(*args, **kwargs)
             except Exception as e:
-                # We need to cast kwargs to dict[str, object] for the handle method
-                # In Python runtime, kwargs is dict[str, Any].
-                ctx: dict[str, object] = {"args": args, "kwargs": kwargs} # type: ignore
+                ctx: dict[str, object] = {"args": args, "kwargs": kwargs}
                 self.handle(e, context=ctx)
                 return default_return
 

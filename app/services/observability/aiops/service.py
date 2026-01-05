@@ -271,27 +271,61 @@ class AIOpsService:
     # ==================================================================================
     # PREDICTIVE ANALYTICS
     # ==================================================================================
-# TODO: Split this function (31 lines) - KISS principle
-
     def forecast_load(
         self, service_name: str, metric_type: MetricType, hours_ahead: int = 24
     ) -> LoadForecast | None:
-        """توقّع الحمل المستقبلي للخدمة بناءً على بيانات القياس التاريخية."""
-        data_points = self.telemetry_repo.get_by_service(service_name, metric_type)
+        """توقّع الحمل المستقبلي للخدمة مع خطوات واضحة وقابلة للاختبار."""
+        values = self._get_recent_metric_values(service_name, metric_type)
 
-        if len(data_points) < 100:
+        if not self._has_minimum_history(values):
             return None
 
-        values = [d.value for d in data_points[-168:]]
         trend = self._calculate_trend(values)
-
         forecast_timestamp = datetime.now(UTC) + timedelta(hours=hours_ahead)
-        predicted_load = values[-1] + (trend * hours_ahead)
+        predicted_load = self._predict_load(values[-1], trend, hours_ahead)
+        confidence_interval = self._build_confidence_interval(values, predicted_load)
 
-        stdev = statistics.stdev(values) if len(values) > 1 else 0
-        confidence_interval = (predicted_load - 2 * stdev, predicted_load + 2 * stdev)
+        forecast = self._compose_forecast_record(
+            service_name, forecast_timestamp, predicted_load, confidence_interval
+        )
+        self._store_forecast(service_name, forecast)
 
-        forecast = LoadForecast(
+        return forecast
+
+    def _get_recent_metric_values(
+        self, service_name: str, metric_type: MetricType
+    ) -> list[float]:
+        """جلب آخر قيم المقياس للخدمة بهدف بناء التوقعات."""
+        data_points = self.telemetry_repo.get_by_service(service_name, metric_type)
+        return [d.value for d in data_points[-168:]]
+
+    @staticmethod
+    def _has_minimum_history(values: list[float]) -> bool:
+        """التحقق من توفر حد أدنى من التاريخ لضمان توقع موثوق."""
+        return len(values) >= 100
+
+    @staticmethod
+    def _predict_load(last_value: float, trend: float, hours_ahead: int) -> float:
+        """حساب الحمل المتوقع بناءً على القيمة الأخيرة والاتجاه الزمني."""
+        return last_value + (trend * hours_ahead)
+
+    @staticmethod
+    def _build_confidence_interval(
+        values: list[float], predicted_load: float
+    ) -> tuple[float, float]:
+        """تكوين مجال الثقة المحيط بالتوقع بطريقة قابلة للتتبع."""
+        stdev = statistics.stdev(values) if len(values) > 1 else 0.0
+        return predicted_load - 2 * stdev, predicted_load + 2 * stdev
+
+    @staticmethod
+    def _compose_forecast_record(
+        service_name: str,
+        forecast_timestamp: datetime,
+        predicted_load: float,
+        confidence_interval: tuple[float, float],
+    ) -> LoadForecast:
+        """إنشاء سجل التوقع مع قيم محددة وواضحة."""
+        return LoadForecast(
             forecast_id=str(uuid.uuid4()),
             service_name=service_name,
             forecast_timestamp=forecast_timestamp,
@@ -301,10 +335,10 @@ class AIOpsService:
             generated_at=datetime.now(UTC),
         )
 
+    def _store_forecast(self, service_name: str, forecast: LoadForecast) -> None:
+        """حفظ التوقع داخل المخزن مع حماية تزامنية."""
         with self.lock:
             self.forecast_repo.add(service_name, forecast)
-
-        return forecast
 
     @staticmethod
     def _calculate_trend(values: list[float]) -> float:

@@ -1,24 +1,25 @@
-"""Chain of Responsibility pattern for request processing."""
+"""سلسلة المسؤوليات لمعالجة الطلبات بأسلوب قابل للتوسعة."""
 
 from abc import ABC, abstractmethod
-from typing import Any, TypeVar
+from typing import TypeVar
 
 TRequest = TypeVar("TRequest")
 TResponse = TypeVar("TResponse")
 
+
 class Handler[TRequest, TResponse](ABC):
-    """Abstract handler in chain of responsibility."""
+    """معالج تجريدي يمثل حلقة في سلسلة المسؤوليات."""
 
     def __init__(self):
         self._next_handler: Handler[TRequest, TResponse] | None = None
 
     def set_next(self, handler: "Handler[TRequest, TResponse]") -> "Handler[TRequest, TResponse]":
-        """Set next handler in chain."""
+        """يضبط الحلقة التالية في السلسلة ويعيدها للسماح بالتسلسل."""
         self._next_handler = handler
         return handler
 
     def handle(self, request: TRequest) -> TResponse | None:
-        """Handle request or pass to next handler."""
+        """يعالج الطلب أو يمرره إلى الحلقة التالية عند غياب نتيجة."""
         result = self._process(request)
 
         if result is not None:
@@ -31,34 +32,36 @@ class Handler[TRequest, TResponse](ABC):
 
     @abstractmethod
     def _process(self, request: TRequest) -> TResponse | None:
-        """Process request. Return None to pass to next handler."""
+        """ينفذ منطق الحلقة. إرجاع None يسمح بتمرير الطلب."""
+
 
 class RequestContext:
-    """Request context for handlers."""
+    """حاوية بيانات الطلب ومسار التحقق عبر السلسلة."""
 
-    def __init__(self, data: dict[str, Any] | None = None):
-        self.data = data or {}
-        self.metadata: dict[str, Any] = {}
+    def __init__(self, data: dict[str, object] | None = None):
+        self.data: dict[str, object] = data or {}
+        self.metadata: dict[str, object] = {}
         self.errors: list[str] = []
         self.stopped = False
 
     def stop_chain(self) -> None:
-        """Stop chain execution."""
+        """يوقف تنفيذ بقية السلسلة بشكل صريح."""
         self.stopped = True
 
     def add_error(self, error: str) -> None:
-        """Add error to context."""
+        """يسجل خطأ في السياق للمراجعة أو الاستجابة."""
         self.errors.append(error)
 
     def has_errors(self) -> bool:
-        """Check if context has errors."""
+        """يتحقق من وجود أخطاء متراكمة في السياق."""
         return len(self.errors) > 0
 
+
 class AuthenticationHandler(Handler[RequestContext, RequestContext]):
-    """Authentication handler."""
+    """حلقة مصادقة تتحقق من صلاحية رمز الوصول."""
 
     def _process(self, request: RequestContext) -> RequestContext | None:
-        """Authenticate request."""
+        """يتأكد من وجود رمز مصادقة صالح قبل متابعة السلسلة."""
         token = request.data.get("auth_token")
 
         if not token:
@@ -66,7 +69,7 @@ class AuthenticationHandler(Handler[RequestContext, RequestContext]):
             request.stop_chain()
             return request
 
-        if not self._validate_token(token):
+        if not self._validate_token(str(token)):
             request.add_error("Invalid authentication token")
             request.stop_chain()
             return request
@@ -75,23 +78,29 @@ class AuthenticationHandler(Handler[RequestContext, RequestContext]):
         return None
 
     def _validate_token(self, token: str) -> bool:
-        """Validate authentication token."""
+        """يتحقق من سلامة رمز المصادقة."""
         return len(token) > 0
 
+
 class AuthorizationHandler(Handler[RequestContext, RequestContext]):
-    """Authorization handler."""
+    """حلقة تفويض تتحقق من امتلاك الصلاحيات المناسبة."""
 
     def _process(self, request: RequestContext) -> RequestContext | None:
-        """Authorize request."""
-        if not request.metadata.get("authenticated"):
+        """يتحقق من توفر الصلاحيات بعد نجاح المصادقة."""
+        if not bool(request.metadata.get("authenticated")):
             request.add_error("Not authenticated")
             request.stop_chain()
             return request
 
         required_permission = request.data.get("required_permission")
-        user_permissions = request.data.get("user_permissions", [])
+        user_permissions_raw = request.data.get("user_permissions", [])
+        user_permissions = (
+            user_permissions_raw
+            if isinstance(user_permissions_raw, list)
+            else []
+        )
 
-        if required_permission and required_permission not in user_permissions:
+        if isinstance(required_permission, str) and required_permission not in user_permissions:
             request.add_error(f"Missing permission: {required_permission}")
             request.stop_chain()
             return request
@@ -99,8 +108,9 @@ class AuthorizationHandler(Handler[RequestContext, RequestContext]):
         request.metadata["authorized"] = True
         return None
 
+
 class RateLimitHandler(Handler[RequestContext, RequestContext]):
-    """Rate limiting handler."""
+    """حلقة تحديد المعدل لضبط عدد الطلبات المسموح به."""
 
     def __init__(self, max_requests: int = 100):
         super().__init__()
@@ -108,8 +118,9 @@ class RateLimitHandler(Handler[RequestContext, RequestContext]):
         self._request_counts: dict[str, int] = {}
 
     def _process(self, request: RequestContext) -> RequestContext | None:
-        """Check rate limit."""
-        user_id = request.data.get("user_id", "anonymous")
+        """يتابع عدد الطلبات لكل مستخدم لضمان عدم تجاوز الحد."""
+        user_id_raw = request.data.get("user_id", "anonymous")
+        user_id = user_id_raw if isinstance(user_id_raw, str) else "anonymous"
         count = self._request_counts.get(user_id, 0)
 
         if count >= self.max_requests:
@@ -121,15 +132,16 @@ class RateLimitHandler(Handler[RequestContext, RequestContext]):
         request.metadata["rate_limit_remaining"] = self.max_requests - count - 1
         return None
 
+
 class ValidationHandler(Handler[RequestContext, RequestContext]):
-    """Request validation handler."""
+    """حلقة تحقق من اكتمال بيانات الطلب."""
 
     def __init__(self, required_fields: list[str] | None = None):
         super().__init__()
         self.required_fields = required_fields or []
 
     def _process(self, request: RequestContext) -> RequestContext | None:
-        """Validate request data."""
+        """يتحقق من توفر الحقول المطلوبة ويوقف السلسلة عند النقص."""
         for field in self.required_fields:
             if field not in request.data:
                 request.add_error(f"Missing required field: {field}")
@@ -141,11 +153,12 @@ class ValidationHandler(Handler[RequestContext, RequestContext]):
         request.metadata["validated"] = True
         return None
 
+
 class LoggingHandler(Handler[RequestContext, RequestContext]):
-    """Logging handler."""
+    """حلقة تسجيل لمتابعة معرّفات الطلبات."""
 
     def _process(self, request: RequestContext) -> RequestContext | None:
-        """Log request."""
+        """يسجل الطلب الحالي ثم يسمح بمتابعة السلسلة."""
         import logging
 
         logger = logging.getLogger(__name__)
@@ -153,16 +166,18 @@ class LoggingHandler(Handler[RequestContext, RequestContext]):
 
         return None
 
+
 class CachingHandler(Handler[RequestContext, RequestContext]):
-    """Caching handler."""
+    """حلقة تخزين مؤقت لتجنب المعالجة المكررة للطلبات."""
 
     def __init__(self):
         super().__init__()
-        self._cache: dict[str, Any] = {}
+        self._cache: dict[str, dict[str, str | int | bool]] = {}
 
     def _process(self, request: RequestContext) -> RequestContext | None:
-        """Check cache for response."""
-        cache_key = request.data.get("cache_key")
+        """يتحقق من وجود استجابة مخزنة مسبقًا قبل متابعة السلسلة."""
+        cache_key_raw = request.data.get("cache_key")
+        cache_key = cache_key_raw if isinstance(cache_key_raw, str) else None
 
         if cache_key and cache_key in self._cache:
             request.data["cached_response"] = self._cache[cache_key]
@@ -172,11 +187,12 @@ class CachingHandler(Handler[RequestContext, RequestContext]):
         return None
 
     def cache_response(self, key: str, response: dict[str, str | int | bool]) -> None:
-        """Cache response."""
+        """يخزن استجابة صالحة لإعادة استخدامها لاحقًا."""
         self._cache[key] = response
 
+
 def build_request_pipeline() -> Handler[RequestContext, RequestContext]:
-    """Build standard request processing pipeline."""
+    """ينشئ سلسلة المعالجة القياسية للطلبات من مصادقة إلى تسجيل."""
     auth = AuthenticationHandler()
     authz = AuthorizationHandler()
     rate_limit = RateLimitHandler()
