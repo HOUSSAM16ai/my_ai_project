@@ -24,7 +24,6 @@
    - app/core/common_imports.py: 8 استيرادات ميتة
    - app/core/protocols.py: 4 متغيرات غير مستخدمة
    - app/boundaries/policy_boundaries.py: 1 متغير
-   - app/core/base_repository.py: 1 متغير
 ```
 
 ---
@@ -217,7 +216,6 @@
    # app/core/common_imports.py - حذف 8 استيرادات
    # app/core/protocols.py - حذف 4 متغيرات
    # app/boundaries/policy_boundaries.py - حذف 1 متغير
-   # app/core/base_repository.py - حذف 1 متغير
    ```
 
 ---
@@ -294,7 +292,6 @@
 
 # 3. Others
 - app/boundaries/policy_boundaries.py: location
-- app/core/base_repository.py: criteria
 ```
 
 #### خطة الحذف الآمن

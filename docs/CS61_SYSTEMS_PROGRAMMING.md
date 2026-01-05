@@ -321,28 +321,14 @@ class RateLimiter:
 
 ### Performance Optimization
 
-#### 1. Profiling Decorator (app/core/base_profiler.py)
-```python
-def profile(func):
-    """Profile function execution time."""
-    @wraps(func)
-    async def wrapper(*args, **kwargs):
-        start = time.perf_counter()
-        result = await func(*args, **kwargs)
-        elapsed = time.perf_counter() - start
-        logger.info(f"{func.__name__}: {elapsed*1000:.2f}ms")
-        return result
-    return wrapper
-```
-
-#### 2. Lazy Loading (app/models.py)
+#### 1. Lazy Loading (app/models.py)
 ```python
 # Lazy load relationships (avoid N+1 queries)
 class User(Base):
     missions = relationship("Mission", lazy="selectin")
 ```
 
-#### 3. Bulk Operations
+#### 2. Bulk Operations
 ```python
 # SLOW: Insert one by one
 for user in users:
