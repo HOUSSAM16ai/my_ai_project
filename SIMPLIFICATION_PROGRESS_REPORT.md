@@ -41,15 +41,13 @@
 **Phase 29: مواصلة تنفيذ الخطط المسطرة (Batch 6B - Core)**
 
 - ✅ **تحديث Type Hints في حزمة Core** - الانتقال إلى Python 3.12+
-  - استبدال `typing.Any` بـ `object` أو `dict[str, object]` في `protocols.py`, `ai_client_factory.py`, `ai_gateway.py`.
-  - تصحيح أنواع الإرجاع (Return Types) في `ai_client_factory.py`.
-  - استخدام `Callable[[...], R]` بدلاً من `Any` في `error_handling.py`.
+  - استبدال `typing.Any` بـ `object` أو `dict[str, object]` في `protocols.py` و `ai_gateway.py`.
+  - تنظيف الحزمة بإزالة الوحدات الميتة `ai_client_factory.py` و `error_handling.py` بالكامل.
   - تحديث `logging/spine.py` و `cli_logging.py` بتوثيق عربي.
 
 - ✅ **التوثيق العربي (Legendary Arabic Docs)**
   - ترجمة التوثيق في `app/core/security.py`.
-  - ترجمة التوثيق في `app/core/ai_client_factory.py`.
-  - ترجمة التوثيق في `app/core/error_handling.py`.
+  - تنظيف الإشارات إلى الملفات المحذوفة لضمان دقة التوثيق.
   - ترجمة التوثيق في `app/core/logging/spine.py`.
 
 #### النتيجة | Result

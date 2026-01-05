@@ -230,8 +230,7 @@ payment_service.register_strategy(CryptoStrategy())  # جديد!
 6. [ ] `app/core/gateway/mesh.py` (407 سطر)
    - تقسيم إلى: routing.py, load_balancer.py, health.py
    
-7. [ ] `app/core/ai_client_factory.py` (399 سطر)
-   - تقسيم إلى: factory.py, clients.py, protocols.py
+7. [x] `app/core/ai_client_factory.py` (399 سطر) — تمت إزالته بالكامل ضمن حملة التنظيف.
    
 8. [ ] `app/core/resilience/circuit_breaker.py` (390 سطر)
    - تقسيم إلى: breaker.py, state_machine.py, metrics.py

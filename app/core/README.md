@@ -77,7 +77,6 @@ is_valid = verify_password("user_password", hashed)
 ### 3. AI Gateway | بوابة الذكاء الاصطناعي
 **الملفات:**
 - `ai_gateway.py` - OpenRouter integration
-- `ai_client_factory.py` - AI client factory pattern
 - `prompts/` - Prompt templates and management
 
 **الاستخدام:**
@@ -123,21 +122,21 @@ logger.info("Application started")
 
 ### 5. Error Handling | معالجة الأخطاء
 **الملفات:**
-- `error_handling.py` - Exception handling utilities
 - `resilience/` - Resilience patterns (Circuit Breaker, Retry)
 
 **الاستخدام:**
 ```python
-from app.core.error_handling import handle_service_error
+from app.core.resilience.circuit_breaker import CircuitBreaker
 
-@handle_service_error
+breaker = CircuitBreaker(failure_threshold=3)
+
+@breaker
 async def risky_operation():
-    """Auto-wrapped with error handling."""
+    """Auto-wrapped with circuit breaker protection."""
     return await external_api_call()
 ```
 
 **المسؤوليات:**
-- ✅ Exception handling decorators
 - ✅ Circuit breaker pattern
 - ✅ Retry logic with exponential backoff
 - ✅ Graceful degradation
@@ -211,9 +210,7 @@ app/core/
 ├── database.py              # Database session management
 ├── security.py              # Authentication & security
 ├── ai_gateway.py            # AI/LLM integration
-├── ai_client_factory.py     # AI client factory
 ├── di.py                    # Dependency injection
-├── error_handling.py        # Error handling utilities
 │
 ├── resilience/              # Resilience patterns
 │   ├── circuit_breaker.py   # Circuit breaker

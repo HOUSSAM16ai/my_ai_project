@@ -151,32 +151,9 @@ curl -X POST http://localhost:8000/api/security/login \
 5. **docs/contracts/API_STYLE_GUIDE.md** (موجود مسبقاً)
    - دليل الأسلوب الكامل
 
-### ✅ معالجة الأخطاء الاحترافية (15+ نوع)
+### ✅ معالجة الأخطاء الاحترافية (مبسطة)
 
-```python
-# app/api/exceptions.py
-✅ APIException (Base)
-✅ ValidationError
-✅ AuthenticationError + 4 فروع
-✅ AuthorizationError + 1 فرع
-✅ ResourceNotFoundError
-✅ ResourceConflictError + 1 فرع
-✅ RateLimitExceededError
-✅ InternalServerError + 2 فروع
-✅ ServiceUnavailableError
-
-# استجابة خطأ موحدة:
-{
-  "status": "error",
-  "error": {
-    "code": "INVALID_CREDENTIALS",
-    "message": "Invalid email or password",
-    "details": {"hint": "Please check your credentials"}
-  },
-  "timestamp": "2026-01-03T00:00:00Z",
-  "request_id": "req_abc123"
-}
-```
+تم حذف الوحدة القديمة `app/api/exceptions.py` لأنها لم تعد مستخدمة داخل نظام الموجهات. يعتمد النظام حالياً على مسجلات الأخطاء الموجودة في `app/middleware/fastapi_error_handlers.py` لإرجاع استجابات JSON موحَّدة بدون تضخيم غير ضروري للسطح البرمجي.
 
 ### ✅ أمان محسّن
 

@@ -228,17 +228,12 @@ type MiddlewareSpec = tuple[
 ]
 ```
 
-**Priority 2: `app/api/exceptions.py:14`**
-```python
-# Replace Any with specific exception types or BaseException
-```
-
-**Priority 3: `app/application/services.py:6`**
+**Priority 2: `app/application/services.py:6`**
 ```python
 # Replace Any with Protocol or specific service types
 ```
 
-**Priority 4: `app/protocols/http_client.py:11`**
+**Priority 3: `app/protocols/http_client.py:11`**
 ```python
 # Replace Any with specific request/response types
 ```

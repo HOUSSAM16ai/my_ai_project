@@ -389,11 +389,10 @@ The temporary increase (208→215) is due to the analyzer counting our 46 new he
 
 ### Type Safety Improvements (Next Priority)
 
-Replace 'Any' usage in 4 locations:
+Replace 'Any' usage in 3 locations:
 1. `app/kernel.py:23` - Middleware specification
-2. `app/api/exceptions.py:14` - Exception types
-3. `app/application/services.py:6` - Service types
-4. `app/protocols/http_client.py:11` - HTTP types
+2. `app/application/services.py:6` - Service types
+3. `app/protocols/http_client.py:11` - HTTP types
 
 **Estimated Time:** 2-3 hours
 

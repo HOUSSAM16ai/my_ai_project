@@ -22,11 +22,9 @@
 | `app/services/overmind/art/visualizer.py` | 469 | 12 | 3 | ❌ |
 | `app/services/observability/aiops/service.py` | 457 | 18 | 1 | ❌ |
 | `app/services/overmind/knowledge.py` | 438 | 4 | 2 | ❌ |
-| `app/core/ai_client_factory.py` | 399 | 32 | 11 | ❌ |
 | `app/core/resilience/circuit_breaker.py` | 390 | 22 | 5 | ❌ |
 | `app/services/overmind/database_tools/facade.py` | 386 | 3 | 1 | ❌ |
 | `app/security/owasp_validator.py` | 374 | 9 | 4 | ❌ |
-| `app/core/error_handling.py` | 372 | 17 | 1 | ❌ |
 | `app/services/overmind/identity.py` | 364 | 10 | 1 | ❌ |
 | `app/api/exceptions.py` | 361 | 19 | 19 | ❌ |
 | `app/services/overmind/art/integration.py` | 359 | 7 | 1 | ❌ |
@@ -67,11 +65,9 @@
   - `app/core/domain/models.py` (521 سطر، تعقيد 17)
   - `app/services/observability/aiops/service.py` (457 سطر، تعقيد 27)
   - `app/services/overmind/knowledge.py` (438 سطر، تعقيد 15)
-  - `app/core/ai_client_factory.py` (399 سطر، تعقيد 12)
   - `app/core/resilience/circuit_breaker.py` (390 سطر، تعقيد 21)
   - `app/services/overmind/database_tools/facade.py` (386 سطر، تعقيد 16)
   - `app/security/owasp_validator.py` (374 سطر، تعقيد 26)
-  - `app/core/error_handling.py` (372 سطر، تعقيد 19)
   - `app/services/overmind/art/integration.py` (359 سطر، تعقيد 14)
 
 ### أولوية عالية (Medium Priority)
