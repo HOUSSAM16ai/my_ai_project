@@ -84,3 +84,15 @@ def test_strip_markdown_fences_handles_missing_closing_marker() -> None:
     text = "```json\n{\"value\": 1}"
 
     assert parsers.strip_markdown_fences(text) == '{"value": 1}'
+
+
+def test_remove_markdown_markers_strips_language_and_padding() -> None:
+    text = "```python\nprint('hi')\n```"
+
+    assert parsers._remove_markdown_markers(text) == "print('hi')"
+
+
+def test_find_balanced_json_block_handles_escaped_backslashes() -> None:
+    text = '{"message": "path \\\\server\\share", "ok": true} trailing data'
+
+    assert parsers._find_balanced_json_block(text, 0) == '{"message": "path \\\\server\\share", "ok": true}'

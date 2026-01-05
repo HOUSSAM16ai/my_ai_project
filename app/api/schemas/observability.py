@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from app.core.schemas import RobustBaseModel
 
@@ -15,14 +15,49 @@ class HealthResponse(RobustBaseModel):
     status: str = Field(..., description="الحالة العامة للنظام")
     components: dict[str, HealthComponent] | None = Field(None, description="حالة المكونات الفرعية")
 
+class LatencyMetrics(RobustBaseModel):
+    """مقاييس زمن الاستجابة للمسارات الساخنة."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    p50: float = Field(..., description="الوسيط")
+    p95: float = Field(..., description="النسبة المئوية 95")
+    p99: float = Field(..., description="النسبة المئوية 99")
+    p99_9: float = Field(..., alias="p99.9", description="النسبة المئوية 99.9")
+    avg: float = Field(..., description="المتوسط العام")
+
+
+class TrafficMetrics(RobustBaseModel):
+    """إحصاءات حركة المرور على مستوى الخدمة."""
+
+    requests_per_second: float = Field(..., description="عدد الطلبات في الثانية")
+    total_requests: int = Field(..., description="إجمالي الطلبات في النافذة الزمنية")
+
+
+class ErrorMetrics(RobustBaseModel):
+    """مقاييس الأخطاء ونسبة فشل الطلبات."""
+
+    error_rate: float = Field(..., description="معدل الأخطاء بالنسبة المئوية")
+    error_count: int = Field(..., description="عدد الأخطاء الملاحظة")
+
+
+class SaturationMetrics(RobustBaseModel):
+    """مؤشرات التشبع واستهلاك الموارد."""
+
+    active_requests: int = Field(..., description="عدد الطلبات النشطة")
+    queue_depth: int = Field(..., description="عمق طابور التنفيذ")
+    active_spans: int | None = Field(None, description="عدد المقاطع التتبعية الفعّالة")
+    resource_utilization: float | None = Field(None, description="نسبة استهلاك الموارد")
+
+
 class GoldenSignalsResponse(RobustBaseModel):
     """
     نموذج الإشارات الذهبية (SRE Golden Signals).
     """
-    latency: float = Field(..., description="زمن الاستجابة (ms)")
-    traffic: float = Field(..., description="معدل الطلبات (req/s)")
-    errors: float = Field(..., description="معدل الأخطاء (%)")
-    saturation: float = Field(..., description="درجة التشبع (%)")
+    latency: LatencyMetrics = Field(..., description="مقاييس زمن الاستجابة")
+    traffic: TrafficMetrics = Field(..., description="حركة المرور")
+    errors: ErrorMetrics = Field(..., description="نسبة الأخطاء")
+    saturation: SaturationMetrics = Field(..., description="مؤشرات التشبع")
 
 class AIOpsMetricsResponse(RobustBaseModel):
     """

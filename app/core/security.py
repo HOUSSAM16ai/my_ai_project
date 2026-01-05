@@ -22,8 +22,6 @@ if not hasattr(bcrypt, '__about__'):
 from app.config.settings import get_settings
 from app.core.domain.models import pwd_context
 
-settings = get_settings()
-
 def generate_service_token(user_id: str) -> str:
     """
     توليد رمز JWT قصير الأجل للمصادقة مع الخدمات الداخلية.
@@ -42,7 +40,8 @@ def generate_service_token(user_id: str) -> str:
         'iat': datetime.now(UTC),
         'sub': user_id
     }
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    current_settings = get_settings()
+    return jwt.encode(payload, current_settings.SECRET_KEY, algorithm='HS256')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """

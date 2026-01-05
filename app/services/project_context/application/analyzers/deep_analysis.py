@@ -118,6 +118,3 @@ class DeepFileAnalyzer:
         for keyword, pattern_name in pattern_checks:
             if keyword in content and pattern_name not in analysis.design_patterns:
                 analysis.design_patterns.append(pattern_name)
-                # Break after finding Singleton pattern to avoid duplicates
-                if pattern_name == "Singleton Pattern" and "Singleton" in keyword:
-                    break

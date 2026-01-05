@@ -2,6 +2,9 @@
 import logging
 import os
 
+import logging
+import os
+
 import pytest
 from click.testing import CliRunner
 

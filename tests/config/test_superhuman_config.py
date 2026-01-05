@@ -21,7 +21,8 @@ class TestSuperhumanConfiguration:
             "OPENAI_API_KEY": "sk-123456789",
             "ENVIRONMENT": "production",
             "DEBUG": "False", # Strict validation requires False in prod
-            "ALLOWED_HOSTS": '["api.cogniforge.com", "admin.cogniforge.com"]' # Must not be * in prod
+            "ALLOWED_HOSTS": '["api.cogniforge.com", "admin.cogniforge.com"]', # Must not be * in prod
+            "BACKEND_CORS_ORIGINS": '["https://legendary-codespace.github.dev"]'
         }
         with patch.dict(os.environ, env_vars, clear=True):
             yield

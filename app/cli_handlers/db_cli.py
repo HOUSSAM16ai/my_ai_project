@@ -123,11 +123,20 @@ async def transactional_session(
 ) -> AsyncGenerator[AsyncSession, None]:
     """يدير دورة حياة جلسة قاعدة البيانات مع خيار التراجع التجريبي."""
 
-    async with session_factory() as session:
+    candidate = session_factory()
+
+    @asynccontextmanager
+    async def _wrap_generator() -> AsyncGenerator[AsyncSession, None]:
+        async for session in candidate:
+            yield session
+
+    manager = candidate if hasattr(candidate, "__aenter__") else _wrap_generator()
+
+    async with manager as session:
         try:
             yield session
             if dry_run:
-                logger.info("تشغيل تجريبي: سيتم التراجع عن التغييرات.")
+                logger.info("تشغيل تجريبي: سيتم التراجع عن التغييرات (dry-run: rolling back).")
                 await session.rollback()
             else:
                 await session.commit()

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from app.core.schemas import RobustBaseModel
 
@@ -18,11 +18,24 @@ class ConversationSummaryResponse(RobustBaseModel):
     """
     نموذج ملخص المحادثة للقوائم.
     """
-    conversation_id: int | str = Field(..., description="معرف المحادثة")
+
+    id: int | str = Field(..., description="معرف المحادثة الموحد")
+    conversation_id: int | str | None = Field(
+        None, description="معرف المحادثة (للتوافق مع العملاء القدامى)"
+    )
     title: str | None = Field(None, description="عنوان المحادثة")
     created_at: datetime | None = Field(None, description="تاريخ الإنشاء")
     updated_at: datetime | None = Field(None, description="تاريخ آخر تحديث")
     message_count: int = Field(0, description="عدد الرسائل")
+
+    @model_validator(mode="after")
+    def _sync_identifiers(self) -> "ConversationSummaryResponse":
+        """ضمان تساوي معرفي المحادثة بين الحقلين id و conversation_id."""
+
+        normalized_id = self.conversation_id or self.id
+        self.id = normalized_id
+        self.conversation_id = normalized_id
+        return self
 
 class ConversationDetailsResponse(RobustBaseModel):
     """

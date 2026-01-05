@@ -1,4 +1,6 @@
 """اختبارات وحدات لوظائف OWASP Validator المساعدة."""
+import re
+
 from app.security.owasp_validator import (
     OWASPValidator,
     OWASPCategory,
@@ -249,3 +251,37 @@ def test_logging_validations_for_missing_and_sensitive_events() -> None:
     assert len(missing_issues) == 1
     assert len(sensitive_issues) == 1
     assert instrumented_issues == []
+
+
+def test_is_false_positive_crypto_respects_context_markers() -> None:
+    validator = OWASPValidator()
+    non_security = "token = hashlib.md5(b'data', usedforsecurity=False).hexdigest()"
+    import_only = "import hashlib\nvalue = hashlib.sha1(b'data').hexdigest()"
+    actual_issue = "hashlib.sha1(b'secret').hexdigest()"
+
+    non_security_match = re.search(validator.insecure_crypto_patterns[0], non_security)
+    import_match = re.search(validator.insecure_crypto_patterns[1], import_only)
+    actual_match = re.search(validator.insecure_crypto_patterns[1], actual_issue)
+
+    assert non_security_match is not None
+    assert import_match is not None
+    assert actual_match is not None
+
+    assert validator._is_false_positive_crypto(non_security, non_security_match) is True
+    assert validator._is_false_positive_crypto(import_only, import_match) is True
+    assert validator._is_false_positive_crypto(actual_issue, actual_match) is False
+
+
+def test_is_false_positive_secret_detects_env_and_real_literals() -> None:
+    validator = OWASPValidator()
+    env_configured = "password = 'placeholder'\npassword = os.getenv('DB_PASSWORD', password)"
+    literal_secret = "api_key = 'sk_live_123'"
+
+    env_match = re.search(validator.hardcoded_secrets_patterns[0], env_configured, re.IGNORECASE)
+    literal_match = re.search(validator.hardcoded_secrets_patterns[1], literal_secret, re.IGNORECASE)
+
+    assert env_match is not None
+    assert literal_match is not None
+
+    assert validator._is_false_positive_secret(env_configured, env_match, "settings.py") is True
+    assert validator._is_false_positive_secret(literal_secret, literal_match, "service.py") is False

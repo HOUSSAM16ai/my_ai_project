@@ -537,8 +537,24 @@ class StrategyRegistry(Generic[TInput, TOutput]):
             try:
                 # التحقق من قدرة الاستراتيجية على المعالجة
                 if await strategy.can_handle(context):
-                    return await self._execute_strategy(strategy, context)
-                    
+                    try:
+                        result = await self._execute_strategy(strategy, context)
+                        if inspect.isasyncgen(result):
+                            try:
+                                first_chunk = await anext(result)
+                            except StopAsyncIteration:
+                                return result
+                            except Exception as stream_error:  # noqa: PERF203
+                                self._log_strategy_error(strategy, stream_error)
+                                continue
+
+                            return self._prepend_async_chunk(first_chunk, result)
+
+                        return result
+                    except Exception as execution_error:  # noqa: PERF203
+                        self._log_strategy_error(strategy, execution_error)
+                        continue
+
             except Exception as e:
                 self._log_strategy_error(strategy, e)
                 continue
@@ -548,8 +564,8 @@ class StrategyRegistry(Generic[TInput, TOutput]):
         return None
 
     async def _execute_strategy(
-        self, 
-        strategy: Strategy[TInput, TOutput], 
+        self,
+        strategy: Strategy[TInput, TOutput],
         context: TInput
     ) -> TOutput:
         """
@@ -575,6 +591,16 @@ class StrategyRegistry(Generic[TInput, TOutput]):
         
         self._log_strategy_success(strategy, processed_result)
         return processed_result
+
+    @staticmethod
+    async def _prepend_async_chunk(
+        first_chunk: TOutput, remaining: AsyncGenerator[TOutput, None]
+    ) -> AsyncGenerator[TOutput, None]:
+        """إرجاع مولد غير متزامن يبدأ بالجزء الأول الذي تم استرداده مسبقاً."""
+
+        yield first_chunk
+        async for chunk in remaining:
+            yield chunk
 
     async def _process_strategy_result(
         self,
