@@ -6,6 +6,7 @@ Orchestrates threat detection, analysis, and response.
 مدير الأمان - خدمة التطبيق الرئيسية
 """
 
+from dataclasses import dataclass
 from typing import Any
 
 from ..domain.models import SecurityEvent, ThreatDetection, UserBehaviorProfile
@@ -17,6 +18,19 @@ from ..domain.ports import (
     ThreatLoggerPort,
 )
 
+@dataclass
+class SecurityManagerConfig:
+    """
+    إعدادات مدير الأمان - Security Manager Configuration
+
+    Holds all dependencies required by the Security Manager.
+    """
+    threat_detector: ThreatDetectorPort
+    behavioral_analyzer: BehavioralAnalyzerPort
+    response_system: ResponseSystemPort
+    profile_repo: ProfileRepositoryPort
+    threat_logger: ThreatLoggerPort
+
 class SecurityManager:
     """
     مدير الأمان الرئيسي - Main security orchestrator
@@ -24,30 +38,18 @@ class SecurityManager:
     Coordinates threat detection, behavioral analysis, and automated response.
     """
 
-    # TODO: Reduce parameters (6 params) - Use config object
-    def __init__(
-        self,
-        threat_detector: ThreatDetectorPort,
-        behavioral_analyzer: BehavioralAnalyzerPort,
-        response_system: ResponseSystemPort,
-        profile_repo: ProfileRepositoryPort,
-        threat_logger: ThreatLoggerPort,
-    ):
+    def __init__(self, config: SecurityManagerConfig):
         """
-        Initialize security manager with dependencies.
+        Initialize security manager with configuration.
 
         Args:
-            threat_detector: Threat detection implementation
-            behavioral_analyzer: Behavioral analysis implementation
-            response_system: Automated response implementation
-            profile_repo: User profile storage
-            threat_logger: Threat logging implementation
+            config: Security manager configuration object
         """
-        self.threat_detector = threat_detector
-        self.behavioral_analyzer = behavioral_analyzer
-        self.response_system = response_system
-        self.profile_repo = profile_repo
-        self.threat_logger = threat_logger
+        self.threat_detector = config.threat_detector
+        self.behavioral_analyzer = config.behavioral_analyzer
+        self.response_system = config.response_system
+        self.profile_repo = config.profile_repo
+        self.threat_logger = config.threat_logger
 
     def analyze_event(self, event: SecurityEvent) -> list[ThreatDetection]:
         """
@@ -168,4 +170,4 @@ class SecurityManager:
         """
         return self.profile_repo.get_profile(user_id)
 
-__all__ = ["SecurityManager"]
+__all__ = ["SecurityManager", "SecurityManagerConfig"]

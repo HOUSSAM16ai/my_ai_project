@@ -17,7 +17,7 @@ Usage:
     threats = security.analyze_event(event)
 """
 
-from .application.security_manager import SecurityManager
+from .application.security_manager import SecurityManager, SecurityManagerConfig
 from .domain import (
     SecurityEvent,
     ThreatDetection,
@@ -46,13 +46,15 @@ def get_security_manager() -> SecurityManager:
             SimpleResponseSystem,
         )
 
-        _manager_instance = SecurityManager(
+        config = SecurityManagerConfig(
             threat_detector=DeepLearningThreatDetector(),
             behavioral_analyzer=SimpleBehavioralAnalyzer(),
             response_system=SimpleResponseSystem(),
             profile_repo=InMemoryProfileRepository(),
             threat_logger=InMemoryThreatLogger(),
         )
+
+        _manager_instance = SecurityManager(config)
     return _manager_instance
 
 # Backward compatibility
