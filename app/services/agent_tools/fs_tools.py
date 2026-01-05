@@ -12,7 +12,7 @@ from app.services.agent_tools.tool_model import Tool, ToolResult, tool
 from app.services.agent_tools.domain.filesystem.handlers.read_handlers import read_file_logic, read_bulk_files_logic
 from app.services.agent_tools.domain.filesystem.handlers.write_handlers import (
     write_file_logic, write_file_if_changed_logic, append_file_logic,
-    delete_file_logic, ensure_file_logic
+    delete_file_logic, ensure_file_logic, ensure_directory_logic
 )
 from app.services.agent_tools.domain.filesystem.handlers.meta_handlers import file_exists_logic, list_dir_logic
 
@@ -174,6 +174,23 @@ def ensure_file(
     enforce_ext: str | None = None,
 ) -> ToolResult:
     return ensure_file_logic(path, max_bytes, initial_content, force_create, allow_create, enforce_ext)
+
+
+@tool(
+    name="ensure_directory",
+    description="Ensure a directory exists.",
+    category="fs",
+    capabilities=["fs", "ensure"],
+    parameters={
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"},
+        },
+        "required": ["path"],
+    },
+)
+def ensure_directory(path: str) -> ToolResult:
+    return ensure_directory_logic(path)
 
 
 @tool(

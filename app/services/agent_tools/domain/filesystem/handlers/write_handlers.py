@@ -194,3 +194,18 @@ def ensure_file_logic(
 
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
+
+def ensure_directory_logic(path: str) -> ToolResult:
+    """Ensures a directory exists."""
+    try:
+        abs_path = validate_path(path, allow_missing=True)
+
+        if os.path.exists(abs_path):
+            if not os.path.isdir(abs_path):
+                return ToolResult(ok=False, error="IS_FILE")
+            return ToolResult(ok=True, data={"path": abs_path, "created": False, "exists": True})
+
+        os.makedirs(abs_path, exist_ok=True)
+        return ToolResult(ok=True, data={"path": abs_path, "created": True, "exists": True})
+    except Exception as e:
+        return ToolResult(ok=False, error=str(e))
