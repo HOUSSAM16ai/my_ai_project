@@ -1,35 +1,13 @@
 #!/usr/bin/env python3
-import click
+"""واجهة تشغيل موحدة لإعادة استخدام أوامر CLI دون تكرار المنطق."""
 
-from app.cli_handlers.db_cli import register_db_commands
-from app.cli_handlers.maintenance_cli import register_maintenance_commands
-from app.cli_handlers.migrate_cli import register_migrate_commands
-from app.core.di import get_logger, get_session, get_settings
+from __future__ import annotations
 
+from app.cli import cli as app_cli
 
-@click.group()
-@click.option("--env", default=None, help="Optional env file or label")
-@click.pass_context
-def cli(ctx, env):
-    """A CLI tool for CogniForge."""
-    # Initialize settings
-    # The 'env' parameter from click is not used by get_settings,
-    # as it automatically loads from the .env file.
-    settings = get_settings()
+# نعيد تصدير كائن CLI المزود من التطبيق لضمان سلوك موحد وبسيط للمستخدمين الجدد.
+cli = app_cli
 
-    # Initialize logger - get_logger() in app/core/di.py does NOT accept arguments
-    logger = get_logger("cogniforge.cli")
-
-    ctx.obj = {
-        "settings": settings,
-        "logger": logger,
-        "get_session": get_session,
-    }
-
-
-register_db_commands(cli)
-register_migrate_commands(cli)
-register_maintenance_commands(cli)
 
 if __name__ == "__main__":
     cli()

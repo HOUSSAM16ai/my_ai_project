@@ -1,19 +1,21 @@
 # app/protocols/http_client.py
-"""
-Defines a protocol for HTTP clients to decouple the application from
-concrete HTTP libraries like requests or aiohttp. This allows for easier
-mocking in tests and flexibility in choosing HTTP clients.
-"""
+"""يوضح واجهة عميل HTTP بفصل صريح عن المكتبات الخارجية لضمان سهولة الاختبار والتبديل."""
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-from typing import Any, Protocol
+from collections.abc import Callable, Iterator, Mapping
+from datetime import datetime
+from importlib import import_module
+from typing import Protocol
 
-import requests
+JsonPrimitive = str | int | float | bool | None | datetime
+JsonObject = dict[str, JsonPrimitive | dict[str, JsonPrimitive] | list[JsonPrimitive | dict[str, JsonPrimitive]]]
+JsonValue = JsonPrimitive | JsonObject | list[JsonPrimitive | JsonObject]
+JsonPayload = Mapping[str, JsonValue]
+
 
 class ResponseLike(Protocol):
-    """A protocol for what a response object should look like."""
+    """يمثل شكل الاستجابة المتوقع من أي عميل HTTP متوافق."""
 
     @property
     def status_code(self) -> int: ...
@@ -22,34 +24,41 @@ class ResponseLike(Protocol):
 
     def iter_lines(self) -> Iterator[bytes]: ...
 
-    def json(self) -> dict[str, str | int | bool]: ...
+    def json(self) -> dict[str, JsonValue]: ...
+
 
 class HttpClient(Protocol):
-    """A protocol for an HTTP client."""
+    """بروتوكول موحد لعملاء HTTP يسمح بالتبديل والاختبار بسهولة."""
 
     def post(
         self,
         url: str,
         *,
-        headers: dict[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
+        json: JsonPayload | None = None,
         stream: bool = False,
         timeout: int | None = None,
     ) -> ResponseLike: ...
 
+
 class RequestsAdapter:
-    """An adapter for the requests library that conforms to the HttpClient protocol."""
+    """محوّل بسيط لدمج مكتبة :mod:`requests` ضمن بروتوكول :class:`HttpClient`."""
+
+    def __init__(self, requester: Callable[..., ResponseLike] | None = None) -> None:
+        """يسمح بحقن دالة طلب بديلة لتسهيل الاختبار أو الاستبدال."""
+
+        self._requester = requester
 
     def post(
         self,
         url: str,
         *,
-        headers: dict[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
+        json: JsonPayload | None = None,
         stream: bool = False,
         timeout: int | None = None,
-    ) -> requests.Response:
-        """
-        Performs a POST request using the requests library.
-        """
-        return requests.post(url, headers=headers, json=json, stream=stream, timeout=timeout)
+    ) -> ResponseLike:
+        """ينفّذ طلب POST باستخدام الدالة المحقونة أو دالة :mod:`requests` الأصلية."""
+
+        requester = self._requester or import_module("requests").post
+        return requester(url, headers=headers, json=json, stream=stream, timeout=timeout)

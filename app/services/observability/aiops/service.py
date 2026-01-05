@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
 from dataclasses import dataclass
 
 import logging
@@ -16,6 +15,7 @@ from .models import (
     CapacityPlan,
     HealingAction,
     HealingDecision,
+    JsonValue,
     LoadForecast,
     MetricType,
     TelemetryData,
@@ -37,7 +37,7 @@ from .repositories import (
 
 @dataclass
 class AIOpsConfig:
-    """Configuration for AIOps Service dependencies"""
+    """تهيئة اعتماديات خدمة AIOps بطريقة واضحة للمبتدئين."""
     telemetry_repo: TelemetryRepository | None = None
     anomaly_repo: AnomalyRepository | None = None
     healing_repo: HealingDecisionRepository | None = None
@@ -45,12 +45,7 @@ class AIOpsConfig:
     capacity_repo: CapacityPlanRepository | None = None
 
 class AIOpsService:
-    """
-    خدمة AIOps الخارقة - World-class AIOps and self-healing
-    Refactored to Simplified Architecture
-    """
-
-    # TODO: Reduce parameters (6 params) - Use config object
+    """خدمة AIOps خارقة بمعمارية مبسطة وتوثيق عربي للممارسين الجدد."""
     def __init__(
         self,
         config: AIOpsConfig | None = None,
@@ -67,7 +62,7 @@ class AIOpsService:
         self.baseline_metrics: dict[str, dict[str, float]] = {}
         self.lock = threading.RLock()
 
-        self.anomaly_thresholds = {
+        self.anomaly_thresholds: dict[MetricType, dict[str, float]] = {
             MetricType.LATENCY: {"zscore": 3.0, "percentile_95": 1.5},
             MetricType.ERROR_RATE: {"threshold": 0.05},
             MetricType.REQUEST_RATE: {"zscore": 2.5},
@@ -80,14 +75,14 @@ class AIOpsService:
     # ==================================================================================
 
     def collect_telemetry(self, data: TelemetryData) -> None:
-        """Collect telemetry data point"""
+        """جمع نقطة قياس تشغيلية وتحديث خطوط الأساس واكتشاف الشذوذ."""
         with self.lock:
             self.telemetry_repo.add(data)
             self._update_baseline(data)
             self._detect_anomalies(data)
 
-    def _update_baseline(self, data: TelemetryData):
-        """Update baseline metrics"""
+    def _update_baseline(self, data: TelemetryData) -> None:
+        """تحديث خطوط الأساس الإحصائية للمقاييس لمقارنة الانحرافات."""
         values = [d.value for d in self.telemetry_repo.get_by_service(data.service_name, data.metric_type)]
         key = f"{data.service_name}:{data.metric_type.value}"
 
@@ -102,7 +97,7 @@ class AIOpsService:
 
     @staticmethod
     def _percentile(values: list[float], percentile: int) -> float:
-        """Calculate percentile"""
+        """حساب النسبة المئوية المطلوبة لقائمة قيم."""
         sorted_values = sorted(values)
         index = int(len(sorted_values) * percentile / 100)
         return sorted_values[min(index, len(sorted_values) - 1)]
@@ -111,8 +106,8 @@ class AIOpsService:
     # ANOMALY DETECTION
     # ==================================================================================
 
-    def _detect_anomalies(self, data: TelemetryData):
-        """Detect anomalies using ML algorithms"""
+    def _detect_anomalies(self, data: TelemetryData) -> None:
+        """كشف الشذوذ بالاعتماد على خطوط الأساس والإعدادات الافتراضية."""
         key = f"{data.service_name}:{data.metric_type.value}"
         baseline = self.baseline_metrics.get(key)
 
@@ -145,16 +140,7 @@ class AIOpsService:
     def _detect_zscore_anomaly(
         self, data: TelemetryData, baseline: dict[str, float]
     ) -> AnomalyDetection | None:
-        """
-        كشف الشذوذ باستخدام Z-score | Detect anomaly using Z-score
-        
-        Args:
-            data: بيانات القياس | Telemetry data
-            baseline: القيم الأساسية | Baseline metrics
-            
-        Returns:
-            كشف الشذوذ أو None | Anomaly detection or None
-        """
+        """كشف الشذوذ باستخدام Z-score مع توثيق عربي مبسط."""
         mean = baseline["mean"]
         stdev = baseline["stdev"]
 
@@ -174,17 +160,7 @@ class AIOpsService:
     def _create_zscore_anomaly(
         self, data: TelemetryData, mean: float, zscore: float
     ) -> AnomalyDetection:
-        """
-        إنشاء كائن كشف الشذوذ | Create anomaly detection object
-        
-        Args:
-            data: بيانات القياس | Telemetry data
-            mean: المتوسط | Mean value
-            zscore: قيمة Z-score | Z-score value
-            
-        Returns:
-            كائن كشف الشذوذ | Anomaly detection object
-        """
+        """إنشاء سجل كشف الشذوذ بطريقة واضحة للقراءة."""
         severity = self._determine_anomaly_severity(zscore)
         anomaly_type = self._determine_anomaly_type(data.metric_type)
 
@@ -201,34 +177,18 @@ class AIOpsService:
         )
 
     def _determine_anomaly_severity(self, zscore: float) -> AnomalySeverity:
-        """
-        تحديد شدة الشذوذ | Determine anomaly severity
-        
-        Args:
-            zscore: قيمة Z-score | Z-score value
-            
-        Returns:
-            شدة الشذوذ | Anomaly severity
-        """
+        """تحديد شدة الشذوذ بناءً على قيمة Z-score لتوجيه القرارات."""
         return AnomalySeverity.CRITICAL if zscore > 5 else AnomalySeverity.HIGH
 
     def _determine_anomaly_type(self, metric_type: MetricType) -> AnomalyType:
-        """
-        تحديد نوع الشذوذ | Determine anomaly type
-        
-        Args:
-            metric_type: نوع المقياس | Metric type
-            
-        Returns:
-            نوع الشذوذ | Anomaly type
-        """
+        """تحديد نوع الشذوذ حسب نوع المقياس لتبسيط التفسير."""
         if metric_type == MetricType.LATENCY:
             return AnomalyType.LATENCY_SPIKE
         else:
             return AnomalyType.TRAFFIC_ANOMALY
 
-    def _record_anomaly(self, anomaly: AnomalyDetection):
-        """Record detected anomaly"""
+    def _record_anomaly(self, anomaly: AnomalyDetection) -> None:
+        """تسجيل الشذوذ المكتشف وتحديث التخزين المؤقت بأمان."""
         with self.lock:
             self.anomaly_repo.add(anomaly)
             logging.getLogger(__name__).warning(
@@ -239,20 +199,20 @@ class AIOpsService:
     # SELF-HEALING
     # ==================================================================================
 
-    def _trigger_healing(self, anomaly: AnomalyDetection):
-        """Trigger self-healing action"""
-        action = self._determine_healing_action(anomaly)
+    def _trigger_healing(self, anomaly: AnomalyDetection) -> None:
+        """تشغيل إجراءات المعالجة الذاتية بالاعتماد على خطة واضحة."""
+        plan = self._determine_healing_action(anomaly)
 
-        if not action:
+        if not plan:
             return
 
         decision = HealingDecision(
             decision_id=str(uuid.uuid4()),
             anomaly_id=anomaly.anomaly_id,
             service_name=anomaly.service_name,
-            action=action["action"],
-            reason=action["reason"],
-            parameters=action["parameters"],
+            action=plan.action,
+            reason=plan.reason,
+            parameters=plan.parameters,
         )
 
         with self.lock:
@@ -260,36 +220,36 @@ class AIOpsService:
 
         self._execute_healing(decision)
 
-    def _determine_healing_action(self, anomaly: AnomalyDetection) -> dict[str, Any] | None:
-        """Determine appropriate healing action"""
+    def _determine_healing_action(self, anomaly: AnomalyDetection) -> "HealingPlan" | None:
+        """اختيار خطة المعالجة الذاتية المناسبة بناءً على نوع الشذوذ."""
         if anomaly.anomaly_type == AnomalyType.LATENCY_SPIKE:
-            return {
-                "action": HealingAction.SCALE_UP,
-                "reason": "High latency detected, scaling up to handle load",
-                "parameters": {"scale_factor": 1.5, "max_instances": 10},
-            }
+            return HealingPlan(
+                action=HealingAction.SCALE_UP,
+                reason="High latency detected, scaling up to handle load",
+                parameters={"scale_factor": 1.5, "max_instances": 10},
+            )
 
         if anomaly.anomaly_type == AnomalyType.ERROR_RATE_INCREASE:
-            return {
-                "action": HealingAction.ENABLE_CIRCUIT_BREAKER,
-                "reason": "High error rate, enabling circuit breaker",
-                "parameters": {"threshold": 0.5, "timeout_seconds": 30},
-            }
+            return HealingPlan(
+                action=HealingAction.ENABLE_CIRCUIT_BREAKER,
+                reason="High error rate, enabling circuit breaker",
+                parameters={"threshold": 0.5, "timeout_seconds": 30},
+            )
 
         if (
             anomaly.anomaly_type == AnomalyType.TRAFFIC_ANOMALY
             and anomaly.metric_value > anomaly.expected_value
         ):
-            return {
-                "action": HealingAction.SCALE_UP,
-                "reason": "Traffic spike detected, scaling up",
-                "parameters": {"scale_factor": 2.0, "max_instances": 20},
-            }
+            return HealingPlan(
+                action=HealingAction.SCALE_UP,
+                reason="Traffic spike detected, scaling up",
+                parameters={"scale_factor": 2.0, "max_instances": 20},
+            )
 
         return None
 
-    def _execute_healing(self, decision: HealingDecision):
-        """Execute healing action"""
+    def _execute_healing(self, decision: HealingDecision) -> None:
+        """تنفيذ إجراء المعالجة الذاتية مع تحديث أثر القرار."""
         logging.getLogger(__name__).info(
             f"Executing healing: {decision.action.value} for {decision.service_name}"
         )
@@ -316,7 +276,7 @@ class AIOpsService:
     def forecast_load(
         self, service_name: str, metric_type: MetricType, hours_ahead: int = 24
     ) -> LoadForecast | None:
-        """Forecast future load using ML"""
+        """توقّع الحمل المستقبلي للخدمة بناءً على بيانات القياس التاريخية."""
         data_points = self.telemetry_repo.get_by_service(service_name, metric_type)
 
         if len(data_points) < 100:
@@ -348,7 +308,7 @@ class AIOpsService:
 
     @staticmethod
     def _calculate_trend(values: list[float]) -> float:
-        """Calculate trend using simple linear regression"""
+        """حساب الاتجاه العام للقيم باستخدام انحدار خطي مبسط."""
         n = len(values)
         if n < 2:
             return 0.0
@@ -369,7 +329,7 @@ class AIOpsService:
     def generate_capacity_plan(
         self, service_name: str, forecast_horizon_hours: int = 72
     ) -> CapacityPlan | None:
-        """Generate capacity planning recommendation"""
+        """إنشاء توصية تخطيط سعة مبنية على التوقعات الحديثة."""
         forecast = self.forecast_load(service_name, MetricType.REQUEST_RATE, forecast_horizon_hours)
 
         if not forecast:
@@ -400,7 +360,7 @@ class AIOpsService:
     # ==================================================================================
 
     def analyze_root_cause(self, anomaly_id: str) -> list[str]:
-        """Analyze root cause of anomaly using AI"""
+        """تحليل السبب الجذري للشذوذ باستخدام قواعد مبسطة."""
         anomaly = self.anomaly_repo.get(anomaly_id)
         if not anomaly:
             return []
@@ -429,7 +389,7 @@ class AIOpsService:
         return root_causes
 
     def _get_service_metrics(self, service_name: str, minutes: int = 30) -> list[TelemetryData]:
-        """Get service metrics for time window"""
+        """جلب مقاييس خدمة خلال نافذة زمنية محددة بالدقائق."""
         cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
         all_metrics = self.telemetry_repo.get_all()
         metrics = []
@@ -444,8 +404,8 @@ class AIOpsService:
     # METRICS & MONITORING
     # ==================================================================================
 
-    def get_aiops_metrics(self) -> dict[str, Any]:
-        """Get AIOps service metrics"""
+    def get_aiops_metrics(self) -> dict[str, JsonValue]:
+        """الحصول على إحصاءات خدمة AIOps بصيغة جاهزة للعرض أو التتبع."""
         all_anomalies = self.anomaly_repo.get_all()
         total_anomalies = len(all_anomalies)
         resolved_anomalies = len([a for a in all_anomalies.values() if a.resolved])
@@ -470,8 +430,8 @@ class AIOpsService:
             "services_monitored": len({a.service_name for a in all_anomalies.values()}),
         }
 
-    def get_service_health(self, service_name: str) -> dict[str, Any]:
-        """Get service health status"""
+    def get_service_health(self, service_name: str) -> dict[str, JsonValue]:
+        """الحصول على ملخص صحة الخدمة مع آخر التوقعات وخطط السعة."""
         all_anomalies = self.anomaly_repo.get_all()
         recent_anomalies = [
             a for a in all_anomalies.values() if a.service_name == service_name and not a.resolved
@@ -495,11 +455,37 @@ class AIOpsService:
                 else None
             ),
             "capacity_plan": (
-                self.capacity_repo.get(service_name).__dict__
+                self._serialize_capacity_plan(self.capacity_repo.get(service_name))
                 if self.capacity_repo.get(service_name)
                 else None
             ),
         }
+
+    @staticmethod
+    def _serialize_capacity_plan(plan: CapacityPlan | None) -> dict[str, JsonValue] | None:
+        """تحويل خطة السعة إلى حمولة صديقة للواجهات البرمجية."""
+        if plan is None:
+            return None
+
+        return {
+            "plan_id": plan.plan_id,
+            "service_name": plan.service_name,
+            "current_capacity": plan.current_capacity,
+            "recommended_capacity": plan.recommended_capacity,
+            "forecast_horizon_hours": plan.forecast_horizon_hours,
+            "expected_peak_load": plan.expected_peak_load,
+            "confidence": plan.confidence,
+            "created_at": plan.created_at.isoformat(),
+        }
+
+
+@dataclass(frozen=True)
+class HealingPlan:
+    """خطة معالجة ذاتية مهيكلة بدون استخدام أنواع عامة."""
+
+    action: HealingAction
+    reason: str
+    parameters: dict[str, float | int]
 
 # Singleton Instance
 _aiops_instance: AIOpsService | None = None

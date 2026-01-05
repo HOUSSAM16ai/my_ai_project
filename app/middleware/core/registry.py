@@ -1,150 +1,118 @@
 """
 سجل الوسيط - Middleware Registry
 
-Dynamic middleware registration and discovery system.
-Enables plugin-based architecture with runtime registration.
-
-Design Pattern: Registry Pattern + Service Locator
+نظام تسجيل ديناميكي يتيح اكتشاف وربط الوسطاء في وقت التشغيل مع دعم بيانات
+تعريفية منظمة. يعتمد على مبدأ «السجل» لضمان مركزية إدارة الوسطاء وإعادة
+استخدامهم بكفاءة.
 """
 
-from typing import Any
+from starlette.types import ASGIApp
 
 from .base_middleware import BaseMiddleware
 
+
+Metadata = dict[str, object]
+
+
 class MiddlewareRegistry:
-    """
-    Global registry for middleware components
+    """إدارة عالمية للوسطاء مع توثيق عربي موجز ومهني."""
 
-    Allows middleware to be registered, discovered, and instantiated
-    dynamically at runtime. Supports plugin architectures and
-    feature flags.
-    """
+    def __init__(self) -> None:
+        """يهيئ سجلاً فارغاً للوسطاء مع مخزن للحالات والبيانات التعريفية."""
 
-    def __init__(self):
-        """Initialize empty registry"""
         self._registry: dict[str, type[BaseMiddleware]] = {}
         self._instances: dict[str, BaseMiddleware] = {}
-        self._metadata: dict[str, dict[str, Any]] = {}
+        self._metadata: dict[str, Metadata] = {}
 
-    def register(self, name: str, middleware_class: type[BaseMiddleware],
-        metadata: (dict[str, Any] | None)=None):
-        """
-        Register a middleware class
+    def register(
+        self,
+        name: str,
+        middleware_class: type[BaseMiddleware],
+        metadata: Metadata | None = None,
+    ) -> None:
+        """يسجل وسيطاً جديداً ويمنع التكرار لضمان تناسق التكوين."""
 
-        Args:
-            name: Unique name for the middleware
-            middleware_class: The middleware class (not instance)
-            metadata: Optional metadata about the middleware
-        """
         if name in self._registry:
             raise ValueError(f"Middleware '{name}' is already registered")
+
         self._registry[name] = middleware_class
         self._metadata[name] = metadata or {}
 
-    def unregister(self, name: str) ->bool:
-        """
-        Unregister a middleware
+    def unregister(self, name: str) -> bool:
+        """يحذف الوسيط المسجل ويزيل حالته وبياناته التعريفية إن وجدت."""
 
-        Args:
-            name: Name of middleware to unregister
+        if name not in self._registry:
+            return False
 
-        Returns:
-            True if unregistered, False if not found
-        """
-        if name in self._registry:
-            del self._registry[name]
-            if name in self._instances:
-                del self._instances[name]
-            if name in self._metadata:
-                del self._metadata[name]
-            return True
-        return False
+        del self._registry[name]
+        self._instances.pop(name, None)
+        self._metadata.pop(name, None)
+        return True
 
-    def create_instance(self, name: str, config: (dict[str, Any] | None)=
-        None, cache: bool=True) ->(BaseMiddleware | None):
-        """
-        Create or retrieve middleware instance
+    def create_instance(
+        self,
+        name: str,
+        app: ASGIApp,
+        config: dict[str, object] | None = None,
+        cache: bool = True,
+    ) -> BaseMiddleware | None:
+        """ينشئ مثيلاً للوسيط أو يعيده من الذاكرة المؤقتة عند التفعيل."""
 
-        Args:
-            name: Middleware name
-            config: Configuration for the middleware
-            cache: Whether to cache the instance for reuse
-
-        Returns:
-            Middleware instance or None if not found
-        """
         if cache and name in self._instances:
             return self._instances[name]
+
         middleware_class = self._registry.get(name)
-        if not middleware_class:
+        if middleware_class is None:
             return None
-        instance = middleware_class(config=config)
+
+        instance = middleware_class(app, config=config)
         if cache:
             self._instances[name] = instance
+
         return instance
 
-    def get_instance(self, name: str) ->(BaseMiddleware | None):
-        """
-        Get cached middleware instance
+    def get_instance(self, name: str) -> BaseMiddleware | None:
+        """يعيد مثيل الوسيط المخزن أو `None` إذا لم يوجد."""
 
-        Args:
-            name: Middleware name
-
-        Returns:
-            Cached instance or None
-        """
         return self._instances.get(name)
 
-    def get_metadata(self, name: str) ->dict[str, Any]:
-        """
-        Get metadata for a middleware
+    def get_metadata(self, name: str) -> Metadata:
+        """يسترجع البيانات التعريفية للوسيط بشكل آمن دون استثناءات."""
 
-        Args:
-            name: Middleware name
-
-        Returns:
-            Metadata dictionary
-        """
         return self._metadata.get(name, {})
 
     def clear(self) -> None:
-        """Clear all registered middleware"""
+        """يفرغ السجل بالكامل بما يشمل الحالات والبيانات التعريفية."""
+
         self._registry.clear()
         self._instances.clear()
         self._metadata.clear()
 
-    def __contains__(self, name: str) ->bool:
-        """Check if middleware is registered"""
+    def __contains__(self, name: str) -> bool:
+        """يسمح بالتحقق السريع من تسجيل وسيط معين."""
+
         return name in self._registry
 
-    def __len__(self) ->int:
-        """Get count of registered middleware"""
+    def __len__(self) -> int:
+        """يعيد عدد الوسطاء المسجلين حالياً."""
+
         return len(self._registry)
+
 
 _global_registry = MiddlewareRegistry()
 
-def register_middleware(name: str, middleware_class: type[BaseMiddleware],
-    metadata: (dict[str, Any] | None)=None):
-    """
-    Register middleware in global registry
 
-    Args:
-        name: Unique middleware name
-        middleware_class: Middleware class
-        metadata: Optional metadata
-    """
+def register_middleware(
+    name: str, middleware_class: type[BaseMiddleware], metadata: Metadata | None = None
+) -> None:
+    """واجهة سهلة لتسجيل وسيط على السجل العالمي."""
+
     _global_registry.register(name, middleware_class, metadata)
 
-def create_middleware(name: str, config: (dict[str, Any] | None)=None) ->(
-    BaseMiddleware | None):
-    """
-    Create middleware instance from global registry
 
-    Args:
-        name: Middleware name
-        config: Configuration
+def create_middleware(
+    name: str, app: ASGIApp, config: dict[str, object] | None = None
+) -> BaseMiddleware | None:
+    """ينشئ وسيطاً من السجل العالمي مع دعم التكوين والذاكرة المؤقتة."""
 
-    Returns:
-        Middleware instance or None
-    """
-    return _global_registry.create_instance(name, config)
+    return _global_registry.create_instance(name, app, config)

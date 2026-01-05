@@ -1,4 +1,5 @@
 import hashlib
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from app.services.api_config_secrets.domain.models import (
@@ -17,10 +18,44 @@ from app.services.api_config_secrets.domain.ports import (
     VaultBackend,
 )
 
+
+@dataclass(slots=True)
+class ConfigSetting:
+    """تعريف إعداد تكوين مبسط يساعد المبتدئين على رؤية الحقول المطلوبة بوضوح."""
+
+    environment: Environment
+    key: str
+    value: object
+    description: str
+    is_sensitive: bool = False
+    updated_by: str | None = None
+
+    def to_entry(self) -> ConfigEntry:
+        """إنشاء كائن تخزين معياري يمر بسلاسة عبر منافذ التخزين."""
+
+        return ConfigEntry(
+            key=self.key,
+            value=self.value,
+            environment=self.environment,
+            description=self.description,
+            is_sensitive=self.is_sensitive,
+            updated_by=self.updated_by,
+        )
+
+
+@dataclass(slots=True)
+class SecretRequest:
+    """طلب إنشاء سر جديد بحقول موحّدة تسهّل التدقيق والتوثيق."""
+
+    name: str
+    value: str
+    secret_type: SecretType
+    environment: Environment
+    rotation_policy: RotationPolicy = RotationPolicy.NEVER
+    accessed_by: str = "system"
+
 class ConfigSecretsManager:
-    """
-    Application service that orchestrates configuration and secrets management.
-    """
+    """خدمة تطبيقية تنظّم ضبط الإعدادات وإدارة الأسرار بواجهات واضحة."""
 
     def __init__(
         self,
@@ -36,157 +71,119 @@ class ConfigSecretsManager:
 
         self._initialize_environments()
 
-    def _initialize_environments(self):
-        """
-        تهيئة البيئات الافتراضية | Initialize default configurations for each environment
-        
-        يقوم بتهيئة إعدادات البيئات الثلاث (تطوير، اختبار، إنتاج)
-        Initializes settings for three environments (development, staging, production)
-        """
+    def _initialize_environments(self) -> None:
+        """تهيئة إعدادات افتراضية للبيئات لضمان تشغيل فوري قابل للفهم."""
         self._initialize_development_config()
         self._initialize_staging_config()
         self._initialize_production_config()
 
     def _initialize_development_config(self) -> None:
-        """
-        تهيئة بيئة التطوير | Initialize development environment
-        
-        تفعيل وضع التطوير وتعطيل القيود للتطوير السريع
-        Enable development mode and disable restrictions for rapid development
-        """
+        """تهيئة إعدادات التطوير بوضوح لتسريع عمل المبتدئين."""
+
         self.set_config(
-            Environment.DEVELOPMENT, "debug_mode", True, "Enable debug mode and verbose logging"
+            ConfigSetting(
+                environment=Environment.DEVELOPMENT,
+                key="debug_mode",
+                value=True,
+                description="تمكين نمط التصحيح والسجلات التفصيلية",
+            )
         )
         self.set_config(
-            Environment.DEVELOPMENT,
-            "rate_limit_enabled",
-            False,
-            "Disable rate limiting for easier development",
+            ConfigSetting(
+                environment=Environment.DEVELOPMENT,
+                key="rate_limit_enabled",
+                value=False,
+                description="تعطيل ضبط المعدل لتجارب تطوير أسرع",
+            )
         )
 
     def _initialize_staging_config(self) -> None:
-        """
-        تهيئة بيئة الاختبار | Initialize staging environment
-        
-        إعدادات مشابهة للإنتاج للاختبار الواقعي
-        Production-like settings for realistic testing
-        """
-        self.set_config(Environment.STAGING, "debug_mode", False, "Disable debug mode in staging")
+        """تهيئة بيئة الاختبار بإعدادات قريبة من الإنتاج للموثوقية."""
+
         self.set_config(
-            Environment.STAGING,
-            "rate_limit_enabled",
-            True,
-            "Enable rate limiting to match production",
+            ConfigSetting(
+                environment=Environment.STAGING,
+                key="debug_mode",
+                value=False,
+                description="إيقاف نمط التصحيح في بيئة الاختبار",
+            )
+        )
+        self.set_config(
+            ConfigSetting(
+                environment=Environment.STAGING,
+                key="rate_limit_enabled",
+                value=True,
+                description="تفعيل ضبط المعدل لمضاهاة بيئة الإنتاج",
+            )
         )
 
     def _initialize_production_config(self) -> None:
-        """
-        تهيئة بيئة الإنتاج | Initialize production environment
-        
-        أعلى مستوى من الأمان والموثوقية
-        Highest level of security and reliability
-        """
-        self.set_config(
-            Environment.PRODUCTION, "debug_mode", False, "Debug mode always off in production"
-        )
-        self.set_config(
-            Environment.PRODUCTION,
-            "rate_limit_enabled",
-            True,
-            "Rate limiting mandatory in production",
-        )
-        self.set_config(Environment.PRODUCTION, "strict_ssl", True, "Enforce SSL/TLS in production")
+        """تهيئة الإنتاج بأعلى معايير الأمان والتقييد."""
 
-    # TODO: Reduce parameters (7 params) - Use config object
-    def set_config(
-        self,
-        environment: Environment,
-        key: str,
-        value: dict[str, str | int | bool],
-        description: str,
-        is_sensitive: bool = False,
-        updated_by: str | None = None,
-    ) -> None:
-        """Set configuration value for an environment"""
-        entry = ConfigEntry(
-            key=key,
-            value=value,
-            environment=environment,
-            description=description,
-            is_sensitive=is_sensitive,
-            updated_by=updated_by,
+        self.set_config(
+            ConfigSetting(
+                environment=Environment.PRODUCTION,
+                key="debug_mode",
+                value=False,
+                description="حظر نمط التصحيح تماماً في الإنتاج",
+            )
         )
-        self.config_repo.set_config(entry)
+        self.set_config(
+            ConfigSetting(
+                environment=Environment.PRODUCTION,
+                key="rate_limit_enabled",
+                value=True,
+                description="فرض ضبط المعدل في الإنتاج",
+            )
+        )
+        self.set_config(
+            ConfigSetting(
+                environment=Environment.PRODUCTION,
+                key="strict_ssl",
+                value=True,
+                description="فرض تشفير SSL/TLS في جميع الاتصالات",
+            )
+        )
 
-    def get_config(self, environment: Environment, key: str, default: dict[str, str | int | bool] = None) -> dict[str, str | int | bool]:
-        """Get configuration value for an environment"""
+    def set_config(self, setting: ConfigSetting) -> None:
+        """تطبيق إعداد تكوين موحّد على بيئة محددة بطريقة قابلة للتدقيق."""
+
+        self.config_repo.set_config(setting.to_entry())
+
+    def get_config(
+        self, environment: Environment, key: str, default: object | None = None
+    ) -> object | None:
+        """الحصول على قيمة إعداد مع دعم قيمة افتراضية واضحة."""
         entry = self.config_repo.get_config(environment, key)
         if entry:
             return entry.value
         return default
 
-    def create_secret(
-        self,
-        name: str,
-        value: str,
-        secret_type: SecretType,
-        environment: Environment,
-        rotation_policy: RotationPolicy = RotationPolicy.NEVER,
-        accessed_by: str = "system",
-    ) -> str:
-        """
-        إنشاء سر جديد | Create a new secret
-        
-        يقوم بإنشاء سر جديد وتخزينه في الخزينة
-        Creates a new secret and stores it in the vault
-        
-        Args:
-            name: اسم السر | Secret name
-            value: قيمة السر | Secret value
-            secret_type: نوع السر | Secret type
-            environment: البيئة | Environment
-            rotation_policy: سياسة التدوير | Rotation policy
-            accessed_by: المستخدم | User accessing
-            
-        Returns:
-            معرف السر | Secret ID
-        """
-        secret_id = self._generate_secret_id(name, environment)
-        self._store_in_vault(secret_id, value)
+    def create_secret(self, request: SecretRequest) -> str:
+        """إنشاء سر جديد من طلب موحّد وتخزينه مع تسجيل كامل."""
+
+        secret_id = self._generate_secret_id(request.name, request.environment)
+        self._store_in_vault(secret_id, request.value)
         secret = self._create_secret_metadata(
-            secret_id, name, secret_type, environment, rotation_policy
+            secret_id,
+            request.name,
+            request.secret_type,
+            request.environment,
+            request.rotation_policy,
         )
         self.secret_repo.save_secret_metadata(secret)
-        self._log_access(secret_id, accessed_by, "write", True)
-        
+        self._log_access(secret_id, request.accessed_by, "write", True)
+
         return secret_id
 
     def _generate_secret_id(self, name: str, environment: Environment) -> str:
-        """
-        توليد معرف السر | Generate secret ID
-        
-        Args:
-            name: اسم السر | Secret name
-            environment: البيئة | Environment
-            
-        Returns:
-            معرف السر | Secret ID
-        """
+        """توليد معرف سر قصير ثابت الطول اعتماداً على الاسم والبيئة والزمن."""
         return hashlib.sha256(
             f"{name}{environment.value}{datetime.now(UTC)}".encode()
         ).hexdigest()[:16]
 
     def _store_in_vault(self, secret_id: str, value: str) -> None:
-        """
-        التخزين في الخزينة | Store in vault
-        
-        Args:
-            secret_id: معرف السر | Secret ID
-            value: قيمة السر | Secret value
-            
-        Raises:
-            RuntimeError: إذا فشل التخزين | If storage fails
-        """
+        """حفظ السر في الخزينة مع رفع خطأ واضح عند الفشل."""
         success = self.vault.write_secret(secret_id, value)
         if not success:
             raise RuntimeError(f"Failed to write secret to vault: {secret_id}")
@@ -199,19 +196,7 @@ class ConfigSecretsManager:
         environment: Environment,
         rotation_policy: RotationPolicy
     ) -> Secret:
-        """
-        إنشاء بيانات وصفية للسر | Create secret metadata
-        
-        Args:
-            secret_id: معرف السر | Secret ID
-            name: اسم السر | Secret name
-            secret_type: نوع السر | Secret type
-            environment: البيئة | Environment
-            rotation_policy: سياسة التدوير | Rotation policy
-            
-        Returns:
-            كائن السر | Secret object
-        """
+        """بناء وصف السر المخزن دون الاحتفاظ بالقيمة النصية في الذاكرة."""
         now = datetime.now(UTC)
         secret = Secret(
             secret_id=secret_id,
@@ -231,7 +216,7 @@ class ConfigSecretsManager:
         return secret
 
     def get_secret(self, secret_id: str, accessed_by: str = "system") -> str | None:
-        """Get secret value from vault"""
+        """استرجاع السر من الخزينة مع تسجيل الوصول."""
         secret_meta = self.secret_repo.get_secret_metadata(secret_id)
         if not secret_meta:
             self._log_access(secret_id, accessed_by, "read", False, "Secret not found")
@@ -246,7 +231,7 @@ class ConfigSecretsManager:
         return value
 
     def rotate_secret(self, secret_id: str, new_value: str, accessed_by: str = "system") -> bool:
-        """Rotate a secret to a new value"""
+        """تدوير السر إلى قيمة جديدة مع تحديث بيانات التدوير."""
         secret_meta = self.secret_repo.get_secret_metadata(secret_id)
         if not secret_meta:
             return False
@@ -272,7 +257,7 @@ class ConfigSecretsManager:
         return success
 
     def check_rotation_needed(self) -> list[str]:
-        """Check which secrets need rotation"""
+        """تحديد الأسرار التي حان موعد تدويرها بناءً على السياسة المعلنة."""
         now = datetime.now(UTC)
         all_secrets = self.secret_repo.get_all_secrets()
         return [
@@ -282,7 +267,7 @@ class ConfigSecretsManager:
         ]
 
     def _calculate_next_rotation(self, from_date: datetime, policy: RotationPolicy) -> datetime:
-        """Calculate next rotation date based on policy"""
+        """حساب تاريخ التدوير القادم بالاعتماد على سياسة معرّفة بوضوح."""
         if policy == RotationPolicy.DAILY:
             return from_date + timedelta(days=1)
         if policy == RotationPolicy.WEEKLY:
@@ -291,7 +276,6 @@ class ConfigSecretsManager:
             return from_date + timedelta(days=30)
         if policy == RotationPolicy.QUARTERLY:
             return from_date + timedelta(days=90)
-        # TODO: Reduce parameters (6 params) - Use config object
         return from_date + timedelta(days=365)  # Default to yearly
 
     def _log_access(
@@ -302,7 +286,7 @@ class ConfigSecretsManager:
         success: bool,
         reason: str | None = None,
     ):
-        """Log secret access for audit trail"""
+        """تسجيل الوصول للأسرار لأغراض التتبع والتدقيق الأمني."""
         log = SecretAccessLog(
             log_id=hashlib.sha256(
                 f"{secret_id}{accessed_by}{datetime.now(UTC)}".encode()
@@ -318,7 +302,7 @@ class ConfigSecretsManager:
         self.audit_logger.log_access(log)
 
     def get_environment_config(self, environment: Environment) -> EnvironmentConfig:
-        """Get complete configuration for an environment"""
+        """تجميع التكوين الكامل والربط بالأسرار لبيئة محددة."""
         config_entries = self.config_repo.get_all_config(environment)
 
         config = {
@@ -346,7 +330,7 @@ class ConfigSecretsManager:
     def get_audit_report(
         self, secret_id: str | None = None, accessed_by: str | None = None, limit: int = 1000
     ) -> list[dict[str, object]]:
-        """Get audit logs for secret access"""
+        """استخراج تقرير تدقيق للوصول إلى الأسرار مع إمكانية التصفية."""
         logs = self.audit_logger.get_logs(secret_id, accessed_by, limit)
 
         return [

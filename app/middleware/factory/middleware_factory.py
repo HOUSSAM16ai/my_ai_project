@@ -2,13 +2,7 @@
 # ======================================================================================
 # ==                    MIDDLEWARE FACTORY (v∞)                                     ==
 # ======================================================================================
-"""
-مصنع الوسيط - Middleware Factory
-
-Factory for creating preconfigured middleware pipelines.
-"""
-
-from typing import Any
+"""مصنع وسيط يبني خطوط أنابيب جاهزة بتوثيق واضح للمبتدئين."""
 
 from app.middleware.core.pipeline import SmartPipeline
 from app.middleware.error_handling import ErrorHandlerMiddleware, RecoveryMiddleware
@@ -24,23 +18,13 @@ from app.middleware.security import (
 )
 
 class MiddlewareFactory:
-    """
-    Middleware Factory
-
-    Creates preconfigured middleware pipelines for common scenarios.
-    """
+    """يبني خطوط أنابيب جاهزة للاستخدام بحسب سياق البيئة."""
 
     @staticmethod
-    def create_production_pipeline(config: dict[str, Any] | None = None) -> SmartPipeline:
-        """
-        Create production-ready middleware pipeline
-
-        Args:
-            config: Configuration dictionary
-
-        Returns:
-            Configured SmartPipeline
-        """
+    def create_production_pipeline(
+        config: dict[str, object] | None = None,
+    ) -> SmartPipeline:
+        """ينشئ خطاً متكاملاً للإنتاج مع ضبط أمن ومراقبة شامل."""
         config = config or {}
 
         middlewares = [
@@ -60,16 +44,10 @@ class MiddlewareFactory:
         return SmartPipeline(middlewares)
 
     @staticmethod
-    def create_development_pipeline(config: dict[str, Any] | None = None) -> SmartPipeline:
-        """
-        Create development middleware pipeline (minimal security)
-
-        Args:
-            config: Configuration dictionary
-
-        Returns:
-            Configured SmartPipeline
-        """
+    def create_development_pipeline(
+        config: dict[str, object] | None = None,
+    ) -> SmartPipeline:
+        """يوفر خط تطوير مبسطاً يركز على المراقبة وسهولة التجريب."""
         config = config or {}
 
         middlewares = [
@@ -82,10 +60,5 @@ class MiddlewareFactory:
 
     @staticmethod
     def create_minimal_pipeline() -> SmartPipeline:
-        """
-        Create minimal middleware pipeline
-
-        Returns:
-            Minimal SmartPipeline
-        """
+        """يبني أصغر خط أنابيب ممكن مع معالج أخطاء افتراضي."""
         return SmartPipeline([ErrorHandlerMiddleware()])

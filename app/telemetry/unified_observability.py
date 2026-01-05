@@ -3,8 +3,8 @@ from collections import deque
 
 from fastapi import Request
 
-from app.telemetry.metrics import MetricsManager
-from app.telemetry.structured_logging import LoggingManager
+from app.telemetry.metrics import MetricRecord, MetricsManager
+from app.telemetry.structured_logging import LogRecord, LoggingManager
 from app.telemetry.tracing import TracingManager
 from app.telemetry.models import (
     MetricSample,
@@ -107,7 +107,15 @@ class UnifiedObservabilityService:
     def record_metric(self, name: str, value: float, labels: dict[str, str] | None = None,
                       trace_id: str | None = None, span_id: str | None = None) -> None:
         """تسجيل مقياس جديد"""
-        self.metrics.record_metric(name, value, labels, trace_id, span_id)
+        self.metrics.record_metric(
+            MetricRecord(
+                name=name,
+                value=value,
+                labels=labels or {},
+                trace_id=trace_id,
+                span_id=span_id,
+            )
+        )
 
     def increment_counter(self, name: str, amount: float = 1.0, labels: dict[str, str] | None = None) -> None:
         """زيادة عداد"""
@@ -139,7 +147,16 @@ class UnifiedObservabilityService:
             exception: Exception | None = None, trace_id: str | None = None,
             span_id: str | None = None) -> None:
         """تسجيل رسالة سجل مترابطة"""
-        self.logging.log(level, message, context, exception, trace_id, span_id)
+        self.logging.log(
+            LogRecord(
+                level=level,
+                message=message,
+                context=context or {},
+                exception=exception,
+                trace_id=trace_id,
+                span_id=span_id,
+            )
+        )
 
     # --- Aggregation Delegates (via Aggregator) ---
 

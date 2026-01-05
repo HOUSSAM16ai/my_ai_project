@@ -1,109 +1,129 @@
-"""
-مُحلل الأداء - Performance Profiler
+"""وسيط مُحلل الأداء - يتتبع زمن الاستجابة والتدفق بوضوح تام."""
 
-Detailed performance profiling middleware that tracks latency,
-throughput, and identifies bottlenecks.
-"""
-from typing import Any
-
+from dataclasses import dataclass
 import time
 
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 
-class PerformanceProfiler(BaseMiddleware):
-    """
-    Performance Profiler Middleware
 
-    Features:
-    - P50/P95/P99 latency tracking
-    - Throughput measurement
-    - Bottleneck identification
-    - Resource utilization tracking
-    """
-    name = 'PerformanceProfiler'
+@dataclass
+class EndpointProfile:
+    """حاوية مبسطة لمقاييس نقطة نهاية واحدة قابلة للتجميع."""
+
+    count: int = 0
+    total_duration: float = 0.0
+    min_duration: float = float("inf")
+    max_duration: float = 0.0
+
+    def record(self, duration_ms: float) -> None:
+        """يحدث المقاييس عند تسجيل مدة جديدة بالميلي ثانية."""
+
+        self.count += 1
+        self.total_duration += duration_ms
+        self.min_duration = min(self.min_duration, duration_ms)
+        self.max_duration = max(self.max_duration, duration_ms)
+
+    def average(self) -> float:
+        """يعيد المتوسط الحسابي للمدة أو صفر عند غياب البيانات."""
+
+        if self.count == 0:
+            return 0.0
+
+        return self.total_duration / self.count
+
+    def to_dict(self) -> dict[str, float]:
+        """يصدر المقاييس بصيغة سهلة للعرض أو الاختبار."""
+
+        return {
+            "count": float(self.count),
+            "total_duration": self.total_duration,
+            "min_duration": 0.0 if self.count == 0 else self.min_duration,
+            "max_duration": self.max_duration,
+            "average_duration": self.average(),
+        }
+
+
+class PerformanceProfiler(BaseMiddleware):
+    """وسيط يلتقط مؤشرات الأداء الرئيسية لكل طلب ونقطة نهاية."""
+
+    name = "PerformanceProfiler"
     order = 1
 
-    def _setup(self):
-        """Initialize profiler"""
+    def _setup(self) -> None:
+        """يهيئ مصفوفة القيم الزمنية وبنية تجميع لكل نقطة نهاية."""
+
         self.latencies: list[float] = []
-        self.max_latencies = self.config.get('max_latencies', 10000)
-        self.profiled_count = 0
-        self.total_duration = 0.0
-        self.endpoint_stats: dict[str, dict[str, Any]] = {}
+        self.max_latencies: int = int(self.config.get("max_latencies", 10000))
+        self.profiled_count: int = 0
+        self.total_duration: float = 0.0
+        self.endpoint_stats: dict[str, EndpointProfile] = {}
 
-    def process_request(self, ctx: RequestContext) ->MiddlewareResult:
-        """
-        Start performance profiling
+    def process_request(self, ctx: RequestContext) -> MiddlewareResult:
+        """يسجل زمن البدء فور دخول الطلب لاحتساب زمن المعالجة لاحقاً."""
 
-        Args:
-            ctx: Request context
-
-        Returns:
-            Always succeeds
-        """
-        ctx.add_metadata('profiler_start', time.time())
+        ctx.add_metadata("profiler_start", time.time())
         return MiddlewareResult.success()
 
     def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
-        """
-        Record performance metrics
+        """يحدّث المدة الكلية والمؤشرات المئوية بعد إتمام الطلب."""
 
-        Args:
-            ctx: Request context
-            result: Middleware result
-        """
-        start_time = ctx.get_metadata('profiler_start')
-        if not start_time:
+        start_time_raw = ctx.get_metadata("profiler_start")
+        start_time = float(start_time_raw) if isinstance(start_time_raw, (int, float)) else None
+        if start_time is None:
             return
-        duration = time.time() - start_time
-        duration_ms = duration * 1000
+
+        duration_ms = (time.time() - start_time) * 1000
         self.profiled_count += 1
-        self.total_duration += duration
+        self.total_duration += duration_ms / 1000
+        self._record_latency(duration_ms)
+        profile = self.endpoint_stats.setdefault(ctx.path, EndpointProfile())
+        profile.record(duration_ms)
+
+        ctx.add_metadata(
+            "performance_profile",
+            {"duration_ms": duration_ms, "endpoint": ctx.path},
+        )
+
+    def _record_latency(self, duration_ms: float) -> None:
+        """يحافظ على قائمة زمنية محددة الطول لضمان ثبات الذاكرة."""
+
         self.latencies.append(duration_ms)
         if len(self.latencies) > self.max_latencies:
-            self.latencies = self.latencies[-self.max_latencies:]
-        endpoint = ctx.path
-        if endpoint not in self.endpoint_stats:
-            self.endpoint_stats[endpoint] = {'count': 0, 'total_duration':
-                0.0, 'min_duration': float('inf'), 'max_duration': 0.0}
-        stats = self.endpoint_stats[endpoint]
-        stats['count'] += 1
-        stats['total_duration'] += duration_ms
-        stats['min_duration'] = min(stats['min_duration'], duration_ms)
-        stats['max_duration'] = max(stats['max_duration'], duration_ms)
-        ctx.add_metadata('performance_profile', {'duration_ms': duration_ms,
-            'endpoint': endpoint})
+            self.latencies = self.latencies[-self.max_latencies :]
 
-    def get_percentile(self, percentile: float) ->float:
-        """
-        Calculate latency percentile
+    def get_percentile(self, percentile: float) -> float:
+        """يحسب قيمة زمنية عند النسبة المئوية المطلوبة أو صفر لغياب البيانات."""
 
-        Args:
-            percentile: Percentile to calculate (0-100)
-
-        Returns:
-            Latency value at percentile
-        """
         if not self.latencies:
             return 0.0
+
         sorted_latencies = sorted(self.latencies)
         index = int(len(sorted_latencies) * (percentile / 100))
         return sorted_latencies[min(index, len(sorted_latencies) - 1)]
 
-    def get_statistics(self) ->dict:
-        """Return performance profiler statistics"""
+    def get_statistics(self) -> dict[str, object]:
+        """يقدّم ملخصاً واضحاً للمبتدئ عن أداء المنظومة."""
+
         stats = super().get_statistics()
         p50 = self.get_percentile(50)
         p95 = self.get_percentile(95)
         p99 = self.get_percentile(99)
-        stats.update({'profiled_count': self.profiled_count,
-            'total_duration_seconds': self.total_duration,
-            'average_duration_ms': self.total_duration * 1000 / self.
-            profiled_count if self.profiled_count > 0 else 0.0,
-            'p50_latency_ms': p50, 'p95_latency_ms': p95, 'p99_latency_ms':
-            p99, 'throughput_rps': self.profiled_count / self.
-            total_duration if self.total_duration > 0 else 0.0,
-            'tracked_endpoints': len(self.endpoint_stats)})
+        average_ms = self.total_duration * 1000 / self.profiled_count if self.profiled_count > 0 else 0.0
+        throughput = self.profiled_count / self.total_duration if self.total_duration > 0 else 0.0
+        endpoint_profiles = {path: profile.to_dict() for path, profile in self.endpoint_stats.items()}
+
+        stats.update(
+            {
+                "profiled_count": self.profiled_count,
+                "total_duration_seconds": self.total_duration,
+                "average_duration_ms": average_ms,
+                "p50_latency_ms": p50,
+                "p95_latency_ms": p95,
+                "p99_latency_ms": p99,
+                "throughput_rps": throughput,
+                "tracked_endpoints": endpoint_profiles,
+            }
+        )
         return stats

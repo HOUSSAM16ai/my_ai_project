@@ -66,6 +66,10 @@ def test_extract_first_json_object_returns_none_without_braces() -> None:
     assert parsers.extract_first_json_object("no json here") is None
 
 
+def test_extract_first_json_object_returns_none_for_none_input() -> None:
+    assert parsers.extract_first_json_object(None) is None
+
+
 def test_find_balanced_json_block_handles_escaped_quotes() -> None:
     text = '{"message": "line with \"escaped quotes\"", "flag": true}'
 
@@ -84,6 +88,17 @@ def test_strip_markdown_fences_handles_missing_closing_marker() -> None:
     text = "```json\n{\"value\": 1}"
 
     assert parsers.strip_markdown_fences(text) == '{"value": 1}'
+
+
+def test_extract_first_json_object_respects_braces_inside_strings() -> None:
+    text = (
+        "prefix {\"meta\": \"{should stay in string}\","
+        " \"payload\": {\"value\": 5}} suffix"
+    )
+
+    extracted = parsers.extract_first_json_object(text)
+
+    assert extracted == '{"meta": "{should stay in string}", "payload": {"value": 5}}'
 
 
 def test_remove_markdown_markers_strips_language_and_padding() -> None:

@@ -4,13 +4,36 @@ import logging
 import threading
 import time
 from collections import defaultdict, deque
+from dataclasses import dataclass, field
 
 from app.telemetry.models import MetricSample
 
 logger = logging.getLogger(__name__)
 
+
+@dataclass(slots=True)
+class MetricRecord:
+    """يمثل حمولة تسجيل مقياس واحدة بشكل منظم وواضح للمبتدئين."""
+
+    name: str
+    value: float
+    labels: dict[str, str] = field(default_factory=dict)
+    trace_id: str | None = None
+    span_id: str | None = None
+
+    def metric_key(self) -> str:
+        """يبني مفتاحاً متناسقاً للمقاييس يعتمد على الاسم والوسوم المرفقة."""
+
+        if not self.labels:
+            return self.name
+        label_str = ','.join(f'{k}={v}' for k, v in sorted(self.labels.items()))
+        return f'{self.name}{{{label_str}}}'
+
+
 class MetricsManager:
-    def __init__(self):
+    """مدير المقاييس المركزي مع واجهة عربية مبسطة ودون معلمات متفرقة."""
+
+    def __init__(self) -> None:
         self.metrics_buffer: deque[MetricSample] = deque(maxlen=100000)
         self.counters: dict[str, float] = defaultdict(float)
         self.gauges: dict[str, float] = {}
@@ -19,22 +42,47 @@ class MetricsManager:
         self.lock = threading.RLock()
         self.stats = {'metrics_recorded': 0}
 
-    # TODO: Reduce parameters (6 params) - Use config object
-    def record_metric(self, name: str, value: float, labels: dict[str, str] | None = None,
-                      trace_id: str | None = None, span_id: str | None = None) -> None:
+    def record_metric(self, record: MetricRecord) -> None:
+        """
+        يسجل مقياساً واحداً باستخدام كائن تكوين واضح يحوي جميع الحقول اللازمة.
+
+        هذا التصميم يشجع المطورين الجدد على إنشاء حمولة واحدة متماسكة بدلاً من
+        تمرير عدة معلمات متفرقة، ويضمن أيضاً تخزين بيانات التتبع عند توفرها.
+        """
+
         sample = MetricSample(
-            value=value,
+            value=record.value,
             timestamp=time.time(),
-            labels=labels or {},
-            exemplar_trace_id=trace_id,
-            exemplar_span_id=span_id
+            labels=record.labels,
+            exemplar_trace_id=record.trace_id,
+            exemplar_span_id=record.span_id,
         )
         with self.lock:
             self.metrics_buffer.append(sample)
             self.stats['metrics_recorded'] += 1
-            self.histograms[name].append(value)
-            if trace_id:
-                self.trace_metrics[trace_id].append(sample)
+            self.histograms[record.name].append(record.value)
+            if record.trace_id:
+                self.trace_metrics[record.trace_id].append(sample)
+
+    def record_named_metric(
+        self,
+        name: str,
+        value: float,
+        labels: dict[str, str] | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+    ) -> None:
+        """غلاف توافق يسهّل الانتقال إلى واجهة الكائنات المهيكلة."""
+
+        self.record_metric(
+            MetricRecord(
+                name=name,
+                value=value,
+                labels=labels or {},
+                trace_id=trace_id,
+                span_id=span_id,
+            )
+        )
 
     def increment_counter(self, name: str, amount: float = 1.0, labels: dict[str, str] | None = None) -> None:
         key = self._metric_key(name, labels)
@@ -59,7 +107,7 @@ class MetricsManager:
             'p90': self._percentile(sorted_values, 90),
             'p95': self._percentile(sorted_values, 95),
             'p99': self._percentile(sorted_values, 99),
-            'p99.9': self._percentile(sorted_values, 99.9)
+            'p99.9': self._percentile(sorted_values, 99.9),
         }
 
     def _metric_key(self, name: str, labels: dict[str, str] | None) -> str:
@@ -79,7 +127,7 @@ class MetricsManager:
         return sorted_data[lower]
 
     def export_prometheus_metrics(self) -> str:
-        lines = []
+        lines: list[str] = []
         with self.lock:
             for key, value in self.counters.items():
                 lines.append(f'{key} {value}')

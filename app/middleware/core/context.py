@@ -3,16 +3,11 @@
 # ==                    UNIFIED REQUEST CONTEXT (FASTAPI EDITION)                   ==
 # ======================================================================================
 """
-Unified Request Context
+سياق الطلب الموحد - Unified Request Context
 
-A standardized container for request data and metadata, optimized for FastAPI.
-Refactored to remove Flask/Django support.
-
-Design Pattern: Context Object Pattern
-Architecture: Immutable data structure
+حاوية معيارية لبيانات الطلب وبياناته التعريفية مصممة خصيصاً لـ FastAPI، مع
+تركيز على البساطة للمبتدئين وقابلية التوسعة للأنظمة الكبيرة.
 """
-
-from typing import Any
 
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -20,27 +15,12 @@ from uuid import uuid4
 
 from fastapi import Request
 
+
+Primitive = str | int | float | bool | None
+
 @dataclass
 class RequestContext:
-    """
-    Unified request context for FastAPI applications.
-
-    Attributes:
-        request_id: Unique identifier for this request
-        method: HTTP method (GET, POST, PUT, DELETE, etc.)
-        path: Request path/endpoint
-        headers: Request headers as dict
-        query_params: Query string parameters
-        body: Request body (parsed or raw)
-        ip_address: Client IP address
-        user_agent: Client user agent string
-        timestamp: Request start timestamp
-        metadata: Additional context-specific data
-        trace_id: Distributed tracing ID (W3C Trace Context)
-        span_id: Current span ID for tracing
-        user_id: Authenticated user ID (if any)
-        session_id: Session identifier
-    """
+    """حاوية بيانات موحّدة لطلبات FastAPI تسهّل مشاركة المعلومات بين الوسطاء."""
 
     # Request identification
     request_id: str = field(default_factory=lambda: str(uuid4()))
@@ -49,8 +29,8 @@ class RequestContext:
 
     # Request data
     headers: dict[str, str] = field(default_factory=dict)
-    query_params: dict[str, Any] = field(default_factory=dict)
-    body: dict[str, str | int | bool] = None
+    query_params: dict[str, Primitive] = field(default_factory=dict)
+    body: dict[str, Primitive] | None = None
 
     # Client information
     ip_address: str = "unknown"
@@ -60,7 +40,7 @@ class RequestContext:
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
     # Extensibility
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
     # Observability
     trace_id: str | None = None
@@ -75,15 +55,7 @@ class RequestContext:
 
     @classmethod
     async def from_fastapi_request(cls, request: Request) -> "RequestContext":
-        """
-        Create context from FastAPI request object
-
-        Args:
-            request: FastAPI request object
-
-        Returns:
-            RequestContext instance
-        """
+        """ينشئ سياقاً جاهزاً من كائن طلب FastAPI دون استهلاك جسم الطلب."""
         # Attempt to read body if possible, but usually middleware consumes it carefully
         # For now we default body to None to avoid consuming stream unless necessary
 
@@ -98,33 +70,35 @@ class RequestContext:
         )
 
     def set_trace_context(self, trace_id: str, span_id: str) -> None:
-        """Set distributed tracing context"""
+        """يضبط معرفات التتبع الموزعة لضمان ترابط السجلات."""
         self.trace_id = trace_id
         self.span_id = span_id
 
     def set_user_context(self, user_id: str, session_id: str | None = None) -> None:
-        """Set authenticated user context"""
+        """يحفظ هوية المستخدم المتحقق منها ومعرّف الجلسة إن وجد."""
         self.user_id = user_id
         self.session_id = session_id
 
-    def add_metadata(self, key: str, value: dict[str, str | int | bool]) -> None:
-        """Add arbitrary metadata to context"""
+    def add_metadata(self, key: str, value: object) -> None:
+        """يضيف بيانات تعريفية مهيكلة يمكن استهلاكها من الوسطاء اللاحقة."""
+
         self.metadata[key] = value
 
-    def get_metadata(self, key: str, default: dict[str, str | int | bool] = None) -> dict[str, str | int | bool]:
-        """Retrieve metadata from context"""
+    def get_metadata(self, key: str, default: object | None = None) -> object | None:
+        """يعيد بيانات تعريفية محفوظة أو القيمة الافتراضية عند غيابها."""
+
         return self.metadata.get(key, default)
 
     def get_header(self, name: str, default: str = "") -> str:
-        """Get header value (case-insensitive)"""
+        """يجلب قيمة ترويسة محددة دون التأثر بحالة الأحرف."""
         name_lower = name.lower()
         for key, value in self.headers.items():
             if key.lower() == name_lower:
                 return value
         return default
 
-    def to_dict(self) -> dict[str, Any]:
-        """Convert context to dictionary for logging/serialization"""
+    def to_dict(self) -> dict[str, object]:
+        """يحّول السياق إلى قاموس مناسب للتسجيل أو التسلسل."""
         return {
             "request_id": self.request_id,
             "method": self.method,

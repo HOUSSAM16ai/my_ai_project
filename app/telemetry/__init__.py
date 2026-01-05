@@ -18,11 +18,11 @@ import sys
 
 # Import from existing files
 from app.telemetry.events import EventTracker
-from app.telemetry.metrics import MetricsManager
+from app.telemetry.metrics import MetricRecord, MetricsManager
 from app.telemetry.performance import PerformanceMonitor
 
 # Import from my new refactored modules
-from app.telemetry.structured_logging import LoggingManager
+from app.telemetry.structured_logging import LogRecord, LoggingManager
 from app.telemetry.tracing import TracingManager
 from app.telemetry.unified_observability import (
     UnifiedObservabilityService,
@@ -46,23 +46,23 @@ class StructuredLogger(LoggingManager):
     Delegates to LoggingManager for correlation AND writes to standard output.
     """
     def info(self, message: str, **kwargs) -> None:
-        self.log("INFO", message, context=kwargs)
+        self.log(LogRecord(level="INFO", message=message, context=kwargs))
         _std_logger.info(message, extra=kwargs)
 
     def error(self, message: str, exception: Exception | None = None, **kwargs) -> None:
-        self.log("ERROR", message, context=kwargs, exception=exception)
+        self.log(LogRecord(level="ERROR", message=message, context=kwargs, exception=exception))
         _std_logger.error(message, exc_info=exception, extra=kwargs)
 
     def warning(self, message: str, **kwargs) -> None:
-        self.log("WARNING", message, context=kwargs)
+        self.log(LogRecord(level="WARNING", message=message, context=kwargs))
         _std_logger.warning(message, extra=kwargs)
 
     def debug(self, message: str, **kwargs) -> None:
-        self.log("DEBUG", message, context=kwargs)
+        self.log(LogRecord(level="DEBUG", message=message, context=kwargs))
         _std_logger.debug(message, extra=kwargs)
 
     def critical(self, message: str, **kwargs) -> None:
-        self.log("CRITICAL", message, context=kwargs)
+        self.log(LogRecord(level="CRITICAL", message=message, context=kwargs))
         _std_logger.critical(message, extra=kwargs)
 
 class MetricsCollector(MetricsManager):
@@ -76,7 +76,7 @@ class MetricsCollector(MetricsManager):
         self.set_gauge(name, value, labels=tags)
 
     def histogram(self, name: str, value: float, tags: dict[str, str] | None = None) -> None:
-        self.record_metric(name, value, labels=tags)
+        self.record_metric(MetricRecord(name=name, value=value, labels=tags or {}))
 
 class DistributedTracer(TracingManager):
     """
