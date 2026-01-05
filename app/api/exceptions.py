@@ -11,7 +11,6 @@ API Exceptions - Custom exception classes for API-First architecture.
 """
 
 from datetime import datetime
-from typing import Any
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request, status
@@ -27,7 +26,7 @@ class ErrorDetail(BaseModel):
     """نموذج تفاصيل الخطأ"""
     code: str
     message: str
-    details: dict[str, Any] | None = None
+    details: dict[str, object] | None = None
 
 
 class ErrorResponse(BaseModel):
@@ -53,7 +52,7 @@ class APIException(HTTPException):
         status_code: int,
         error_code: str,
         message: str,
-        details: dict[str, Any] | None = None,
+        details: dict[str, object] | None = None,
     ) -> None:
         self.error_code = error_code
         self.error_details = details
@@ -62,7 +61,7 @@ class APIException(HTTPException):
 
 class ValidationError(APIException):
     """خطأ في التحقق من البيانات (400 Bad Request)"""
-    def __init__(self, message: str = "Validation failed", details: dict[str, Any] | None = None) -> None:
+    def __init__(self, message: str = "Validation failed", details: dict[str, object] | None = None) -> None:
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             error_code="VALIDATION_ERROR",
@@ -73,7 +72,7 @@ class ValidationError(APIException):
 
 class AuthenticationError(APIException):
     """خطأ في المصادقة (401 Unauthorized)"""
-    def __init__(self, message: str = "Authentication failed", details: dict[str, Any] | None = None) -> None:
+    def __init__(self, message: str = "Authentication failed", details: dict[str, object] | None = None) -> None:
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
             error_code="AUTHENTICATION_ERROR",
@@ -120,7 +119,7 @@ class MissingTokenError(AuthenticationError):
 
 class AuthorizationError(APIException):
     """خطأ في التفويض (403 Forbidden)"""
-    def __init__(self, message: str = "Access forbidden", details: dict[str, Any] | None = None) -> None:
+    def __init__(self, message: str = "Access forbidden", details: dict[str, object] | None = None) -> None:
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
             error_code="AUTHORIZATION_ERROR",
@@ -163,7 +162,7 @@ class ResourceNotFoundError(APIException):
 
 class ResourceConflictError(APIException):
     """تعارض في المورد (409 Conflict)"""
-    def __init__(self, message: str = "Resource conflict", details: dict[str, Any] | None = None) -> None:
+    def __init__(self, message: str = "Resource conflict", details: dict[str, object] | None = None) -> None:
         super().__init__(
             status_code=status.HTTP_409_CONFLICT,
             error_code="RESOURCE_CONFLICT",
@@ -198,7 +197,7 @@ class RateLimitExceededError(APIException):
 
 class InternalServerError(APIException):
     """خطأ داخلي في الخادم (500 Internal Server Error)"""
-    def __init__(self, message: str = "Internal server error", details: dict[str, Any] | None = None) -> None:
+    def __init__(self, message: str = "Internal server error", details: dict[str, object] | None = None) -> None:
         super().__init__(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             error_code="INTERNAL_SERVER_ERROR",
@@ -255,9 +254,9 @@ class ExternalServiceError(InternalServerError):
 def create_error_response(
     error_code: str,
     message: str,
-    details: dict[str, Any] | None = None,
+    details: dict[str, object] | None = None,
     request_id: str | None = None,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """
     إنشاء استجابة خطأ موحدة.
     

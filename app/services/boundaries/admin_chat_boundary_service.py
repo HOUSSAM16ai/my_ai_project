@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import AsyncGenerator, Callable
-from dataclasses import dataclass
 
 import jwt
 from fastapi import HTTPException
@@ -19,21 +18,6 @@ logger = logging.getLogger(__name__)
 
 ALGORITHM = "HS256"
 
-
-@dataclass(frozen=True)
-class ServiceBoundary:
-    """تمثيل بسيط لحد الخدمة يحدد اسم الخدمة والأدوار المصرح بها."""
-
-    name: str
-    allowed_roles: list[str]
-
-
-@dataclass(frozen=True)
-class PolicyBoundary:
-    """حدود السياسات الأساسية لمكالمات محادثة المسؤول."""
-
-    requires_admin: bool
-    audit_enabled: bool
 
 class AdminChatBoundaryService:
     """
@@ -320,19 +304,3 @@ def _decode_and_extract_user_id(token: str, secret_key: str) -> int:
         raise HTTPException(status_code=401, detail="Invalid user ID in token") from e
 
 
-def get_service_boundary(service_name: str = "admin_chat") -> ServiceBoundary:
-    """
-    إرجاع حد الخدمة الافتراضي للمحادثة الإدارية.
-
-    يتيح هذا التابع تهيئة قابلة للحقن في الاختبارات مع الحفاظ على قيمة آمنة
-    في حال غياب التهيئة المركزية.
-    """
-
-    normalized = service_name or "admin_chat"
-    return ServiceBoundary(name=normalized, allowed_roles=["admin"])
-
-
-def get_policy_boundary() -> PolicyBoundary:
-    """حدود السياسات الافتراضية التي تضمن فرض متطلبات المسؤول والتدقيق."""
-
-    return PolicyBoundary(requires_admin=True, audit_enabled=True)

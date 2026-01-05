@@ -1,8 +1,9 @@
 # app/api/routers/observability.py
 """
-Observability Router - System Health and Metrics
-Provides endpoints for system observability and monitoring.
-Follows Clean Architecture by using Boundary Services.
+موجه المراقبة (Observability Router) للصحة والمقاييس.
+--------------------------------------------------
+يوفر نقاط نهاية للمراقبة الموحدة ويعتمد على خدمات الحدود لعزل المنطق وتبسيط
+طبقة العرض وفق مبادئ البنية النظيفة.
 """
 from fastapi import APIRouter, Depends
 
@@ -20,7 +21,7 @@ from app.services.boundaries.observability_boundary_service import Observability
 router = APIRouter(tags=["Observability"])
 
 def get_observability_service() -> ObservabilityBoundaryService:
-    """Dependency to get the Observability Boundary Service."""
+    """تبعية لاسترجاع خدمة المراقبة الحدية الموحدة."""
     return ObservabilityBoundaryService()
 
 @router.get(
@@ -32,8 +33,8 @@ async def health_check(
     service: ObservabilityBoundaryService = Depends(get_observability_service),
 ) -> HealthResponse:
     """
-    Get the overall system health status.
-    Delegates to ObservabilityBoundaryService.
+    الحصول على الحالة الصحية العامة للنظام.
+    يتم التفويض لخدمة الحدود لتجميع النتائج من الأنظمة الفرعية.
     """
     result = await service.get_system_health()
     return HealthResponse.model_validate(result)
@@ -47,7 +48,7 @@ async def get_metrics(
     service: ObservabilityBoundaryService = Depends(get_observability_service),
 ) -> GoldenSignalsResponse:
     """
-    Get SRE Golden Signals (Latency, Traffic, Errors, Saturation).
+    استرجاع الإشارات الذهبية الخاصة بالموثوقية (زمن الاستجابة، الحركة، الأخطاء، التشبع).
     """
     result = await service.get_golden_signals()
     return GoldenSignalsResponse.model_validate(result)
@@ -61,7 +62,7 @@ async def get_aiops_metrics(
     service: ObservabilityBoundaryService = Depends(get_observability_service),
 ) -> AIOpsMetricsResponse:
     """
-    Get AIOps anomaly detection and self-healing metrics.
+    جلب مقاييس اكتشاف الشذوذ والمعالجة الذاتية الخاصة بـ AIOps.
     """
     result = await service.get_aiops_metrics()
     return AIOpsMetricsResponse.model_validate(result)
@@ -73,8 +74,8 @@ async def get_aiops_metrics(
 )
 async def get_gitops_metrics() -> GitOpsMetricsResponse:
     """
-    Get GitOps synchronization status.
-    Note: Currently a placeholder awaiting GitOps Service integration.
+    جلب حالة المزامنة الخاصة بعمليات GitOps.
+    ملاحظة: ما زالت هذه النقطة نقطة انتظار حتى يتم دمج خدمة GitOps الفعلية.
     """
     # Placeholder for GitOps metrics
     return GitOpsMetricsResponse(status="gitops_active", sync_rate=100)
@@ -88,7 +89,7 @@ async def get_performance_snapshot(
     service: ObservabilityBoundaryService = Depends(get_observability_service),
 ) -> PerformanceSnapshotResponse:
     """
-    Get detailed performance statistics for the runtime.
+    استرجاع إحصاءات الأداء التفصيلية لوقت التشغيل.
     """
     result = await service.get_performance_snapshot()
     return PerformanceSnapshotResponse.model_validate(result)
@@ -96,17 +97,17 @@ async def get_performance_snapshot(
 @router.get(
     "/analytics/{path:path}",
     summary="Get Endpoint Analytics",
-    response_model=EndpointAnalyticsResponse,
+    response_model=list[EndpointAnalyticsResponse],
 )
 async def get_endpoint_analytics(
     path: str,
     service: ObservabilityBoundaryService = Depends(get_observability_service),
-) -> EndpointAnalyticsResponse:
+) -> list[EndpointAnalyticsResponse]:
     """
-    Get trace analytics for a specific API path.
+    الحصول على تحليلات التتبع لمسار API محدد على شكل قائمة سجلات غنية.
     """
     result = await service.get_endpoint_analytics(path)
-    return EndpointAnalyticsResponse.model_validate(result)
+    return [EndpointAnalyticsResponse.model_validate(item) for item in result]
 
 @router.get(
     "/alerts",
@@ -117,7 +118,7 @@ async def get_alerts(
     service: ObservabilityBoundaryService = Depends(get_observability_service),
 ) -> list[AlertResponse]:
     """
-    Get currently active anomaly alerts.
+    استرجاع التنبيهات النشطة الخاصة بالشذوذات الحالية.
     """
     results = await service.get_active_alerts()
     return [AlertResponse.model_validate(r) for r in results]

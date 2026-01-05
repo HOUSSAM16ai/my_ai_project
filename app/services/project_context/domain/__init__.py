@@ -4,6 +4,7 @@
 from .models import (
     CodeStatistics,
     FileAnalysis,
+    DirectorySummary,
     KeyComponent,
     ProjectHealth,
     ProjectStructure,
@@ -12,6 +13,7 @@ from .models import (
 __all__ = [
     "CodeStatistics",
     "FileAnalysis",
+    "DirectorySummary",
     "KeyComponent",
     "ProjectHealth",
     "ProjectStructure",

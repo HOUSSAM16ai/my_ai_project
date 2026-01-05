@@ -1,39 +1,40 @@
-"""Dependency Injection Container."""
+"""حاوية حقن تبعيات بسيطة تلتزم بالتصميم الواضح والخالي من النوع العام."""
 
 import contextlib
 import inspect
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import TypeVar
 
 T = TypeVar("T")
 
+
 class DIContainer:
-    """Dependency injection container."""
+    """حاوية مركزية لتسجيل الخدمات وإنشائها بطريقة آمنة."""
 
     def __init__(self):
-        self._services: dict[type, Any] = {}
-        self._factories: dict[type, Callable] = {}
-        self._singletons: dict[type, Any] = {}
+        self._services: dict[type, type[object]] = {}
+        self._factories: dict[type, Callable[..., object]] = {}
+        self._singletons: dict[type, object] = {}
 
     def register(self, interface: type[T], implementation: type[T] | T) -> None:
-        """Register service implementation."""
+        """يسجل تطبيق خدمة سواء كان صنفًا أو مثيلًا جاهزًا."""
         if inspect.isclass(implementation):
             self._services[interface] = implementation
         else:
             self._singletons[interface] = implementation
 
     def register_factory(self, interface: type[T], factory: Callable[..., T]) -> None:
-        """Register factory function."""
+        """يسجل دالة مصنع لإنشاء الخدمة عند الطلب."""
         self._factories[interface] = factory
 
     def register_singleton(self, interface: type[T], instance: T) -> None:
-        """Register singleton instance."""
+        """يسجل مثيلًا جاهزًا ليعمل كعنصر وحيد."""
         self._singletons[interface] = instance
 
     def resolve(self, interface: type[T]) -> T:
-        """Resolve service instance."""
+        """يعيد مثيل الخدمة بعد تطبيق قواعد التسجيل المختلفة."""
         if interface in self._singletons:
-            return self._singletons[interface]
+            return self._singletons[interface]  # type: ignore[return-value]
 
         if interface in self._factories:
             return self._factories[interface]()
@@ -41,16 +42,16 @@ class DIContainer:
         if interface in self._services:
             implementation = self._services[interface]
             if inspect.isclass(implementation):
-                instance = self._create_instance(implementation)
+                instance = self._create_instance(implementation)  # type: ignore[arg-type]
                 return instance
-            return implementation
+            return implementation  # type: ignore[return-value]
 
         raise ValueError(f"Service not registered: {interface}")
 
     def _create_instance(self, cls: type[T]) -> T:
-        """Create instance with dependency injection."""
+        """يبني مثيلًا مع حقن التبعيات في الباني إن أمكن."""
         sig = inspect.signature(cls.__init__)
-        params = {}
+        params: dict[str, object] = {}
 
         for param_name, param in sig.parameters.items():
             if param_name == "self":
@@ -68,21 +69,21 @@ class DIContainer:
         return cls(**params)
 
     def clear(self) -> None:
-        """Clear all registrations."""
+        """يمسح جميع التسجيلات لإعادة تهيئة الحاوية."""
         self._services.clear()
         self._factories.clear()
         self._singletons.clear()
 
-_global_container = DIContainer()
 
 def get_container() -> DIContainer:
-    """Get global DI container."""
+    """يعيد الحاوية العالمية لحقن التبعيات."""
     return _global_container
 
-def inject[T](func: Callable[..., T]) -> Callable[..., T]:
-    """Decorator for automatic dependency injection."""
 
-    def wrapper(*args: dict[str, str | int | bool], **kwargs: dict[str, str | int | bool]) -> T:
+def inject[T](func: Callable[..., T]) -> Callable[..., T]:
+    """مُزخرف يقوم بحقن التبعيات تلقائيًا في التابع الهدف."""
+
+    def wrapper(*args: object, **kwargs: object) -> T:
         sig = inspect.signature(func)
         container = get_container()
 
@@ -91,6 +92,9 @@ def inject[T](func: Callable[..., T]) -> Callable[..., T]:
                 with contextlib.suppress(ValueError):
                     kwargs[param_name] = container.resolve(param.annotation)
 
-        return func(*args, **kwargs)
+        return func(*args, **kwargs)  # type: ignore[arg-type]
 
     return wrapper
+
+
+_global_container = DIContainer()

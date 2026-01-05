@@ -11,8 +11,6 @@
 - فصل كامل للمسؤوليات (Delegation to Orchestrator).
 """
 
-from typing import Any
-
 import json
 from collections.abc import AsyncGenerator, Callable
 
@@ -75,7 +73,7 @@ async def create_mission(
     request: MissionCreate,
     background_tasks: BackgroundTasks,
     orchestrator: OvermindOrchestrator = Depends(get_orchestrator),
-) -> Any:
+) -> MissionResponse:
     """
     إنشاء مهمة جديدة وإطلاقها في الخلفية (Async Execution).
 
@@ -119,7 +117,7 @@ async def create_mission(
 async def get_mission(
     mission_id: int,
     orchestrator: OvermindOrchestrator = Depends(get_orchestrator),
-) -> Any:
+) -> MissionResponse:
     """
     استرجاع التفاصيل الحالية لمهمة معينة، بما في ذلك خطواتها ونتائجها.
     """

@@ -1,9 +1,37 @@
 from datetime import datetime
-from typing import Any
-
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from app.core.schemas import RobustBaseModel
+
+class ChatRequest(RobustBaseModel):
+    """نموذج طلب محادثة المسؤول مع تحقق صارم للحقل الرئيسي."""
+
+    question: str = Field(..., min_length=1, max_length=10_000)
+    conversation_id: int | None = Field(
+        default=None,
+        description="المحادثة المستهدفة إن وُجدت، تستخدم لاستئناف الجلسات.",
+    )
+    user_id: int | None = Field(
+        default=None,
+        gt=0,
+        description="معرف المستخدم المصدق، يتم تعيينه لاحقاً من طبقة التحقق.",
+    )
+    stream: bool = Field(
+        default=True,
+        description="تحديد ما إذا كان الرد سيُبث كتدفق أحداث أم كاستجابة واحدة.",
+    )
+    metadata: dict[str, object] = Field(default_factory=dict, description="بيانات إضافية للحالة.")
+
+    @field_validator("question")
+    @classmethod
+    def validate_question(cls, value: str) -> str:
+        """يتحقق من أن نص السؤال غير فارغ ويعيد نسخة منسقة."""
+
+        trimmed = value.strip()
+        if not trimmed:
+            msg = "يجب ألا يكون نص السؤال فارغاً."
+            raise ValueError(msg)
+        return trimmed
 
 class MessageResponse(RobustBaseModel):
     """
@@ -44,4 +72,4 @@ class ConversationDetailsResponse(RobustBaseModel):
     conversation_id: int | str = Field(..., description="معرف المحادثة")
     title: str | None = Field(None, description="عنوان المحادثة")
     messages: list[MessageResponse] = Field(..., description="قائمة الرسائل")
-    metadata: dict[str, Any] | None = Field(None, description="بيانات وصفية إضافية")
+    metadata: dict[str, object] | None = Field(None, description="بيانات وصفية إضافية")

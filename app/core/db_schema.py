@@ -1,5 +1,4 @@
-"""
-مدقق مخطط قاعدة البيانات (Database Schema Validator).
+"""مدقق مخطط قاعدة البيانات (Database Schema Validator).
 
 هذا الملف مسؤول عن التحقق من صحة جداول قاعدة البيانات وإصلاحها تلقائياً عند بدء التشغيل.
 تم فصله عن `database.py` تطبيقاً لمبدأ المسؤولية الواحدة (SRP).
@@ -9,12 +8,11 @@
 - Fail-Fast: كشف الأخطاء مبكراً.
 """
 
-from typing import Any
-
 import logging
-from typing import Final
+from typing import Final, TypedDict
 
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncConnection
 
 from app.core.database import engine
 
@@ -30,7 +28,25 @@ __all__ = ["validate_schema_on_startup"]
 _ALLOWED_TABLES: Final[frozenset[str]] = frozenset({"admin_conversations"})
 
 # قائمة الأعمدة المطلوبة لكل جدول
-REQUIRED_SCHEMA: Final[dict[str, dict[str, Any]]] = {
+class TableSchemaConfig(TypedDict):
+    """تعريف المخطط المطلوب لجدول قاعدة البيانات."""
+
+    columns: list[str]
+    auto_fix: dict[str, str]
+    indexes: dict[str, str]
+
+
+class SchemaValidationResult(TypedDict):
+    """نتيجة فحص المخطط مع تفاصيل الإصلاحات والأخطاء."""
+
+    status: str
+    checked_tables: list[str]
+    missing_columns: list[str]
+    fixed_columns: list[str]
+    errors: list[str]
+
+
+REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
     "admin_conversations": {
         "columns": [
             "id",
@@ -49,7 +65,7 @@ REQUIRED_SCHEMA: Final[dict[str, dict[str, Any]]] = {
     }
 }
 
-async def _get_existing_columns(conn: dict[str, str | int | bool], table_name: str) -> set[str]:
+async def _get_existing_columns(conn: AsyncConnection, table_name: str) -> set[str]:
     """استخراج أسماء الأعمدة الموجودة في الجدول."""
     dialect_name = conn.dialect.name
 
@@ -70,11 +86,11 @@ async def _get_existing_columns(conn: dict[str, str | int | bool], table_name: s
     return {row[0] for row in result.fetchall()}
 
 async def _fix_missing_column(
-    conn: dict[str, str | int | bool],
+    conn: AsyncConnection,
     table_name: str,
     col: str,
     auto_fix_queries: dict[str, str],
-    index_queries: dict[str, str]
+    index_queries: dict[str, str],
 ) -> bool:
     """إصلاح عمود مفقود وإنشاء الفهرس إن وجد."""
     if col not in auto_fix_queries:
@@ -93,7 +109,7 @@ async def _fix_missing_column(
         logger.error(f"❌ Failed to fix {table_name}.{col}: {e}")
         return False
 
-async def validate_and_fix_schema(auto_fix: bool = True) -> dict[str, Any]:
+async def validate_and_fix_schema(auto_fix: bool = True) -> SchemaValidationResult:
     """
     التحقق من تطابق Schema وإصلاح المشاكل تلقائياً.
 
@@ -101,9 +117,9 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> dict[str, Any]:
         auto_fix (bool): تفعيل محاولة الإصلاح التلقائي.
 
     Returns:
-        dict[str, Any]: تقرير بالنتيجة.
+        SchemaValidationResult: تقرير بالنتيجة المكتوبة الأنواع.
     """
-    results: dict[str, Any] = {
+    results: SchemaValidationResult = {
         "status": "ok",
         "checked_tables": [],
         "missing_columns": [],

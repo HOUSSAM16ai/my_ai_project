@@ -1,12 +1,12 @@
-from typing import Any
-
 from pydantic import ConfigDict, Field
 
 from app.core.schemas import RobustBaseModel
 
 class HealthComponent(RobustBaseModel):
+    """مكون صحة فرعي يوضح حالة نظام محدد."""
+
     status: str
-    details: dict[str, Any] | None = None
+    details: dict[str, object] | None = None
 
 class HealthResponse(RobustBaseModel):
     """
@@ -65,7 +65,7 @@ class AIOpsMetricsResponse(RobustBaseModel):
     """
     anomaly_score: float = Field(..., description="درجة الشذوذ")
     self_healing_events: int = Field(0, description="عدد أحداث المعالجة الذاتية")
-    predictions: dict[str, Any] | None = Field(None, description="توقعات مستقبلية")
+    predictions: dict[str, object] | None = Field(None, description="توقعات مستقبلية")
 
 class GitOpsMetricsResponse(RobustBaseModel):
     """

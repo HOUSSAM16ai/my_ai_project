@@ -34,6 +34,13 @@ Frontend (Optional)
 └─────────────────────────────┘
 ```
 
+### ✅ فحص الحالة | API-First Status Check
+
+- **لا يوجد HTTP app هنا:** لا يحتوي هذا المجلد على `main.py` أو كائنات `FastAPI`، ويتم تجميع الموجهات من `app/kernel.py` فقط لضمان أن الطبقة تعرض الواجهة دون خلط مسؤوليات.
+- **الاعتماد على المخططات:** كل موجه يستخدم مخططات التحقق من `app/api/schemas/` قبل تفويض العمل للخدمات الحدودية.
+- **لا تكامل واجهة أمامية:** لا توجد استيرادات أو تبعيات تخص UI؛ يمكن استهلاك الـ API مباشرةً عبر أي عميل HTTP.
+- **تغطية التحقق:** اختبارات مثل `tests/api/test_admin_router_refactored.py` و `tests/test_cli_smoke.py` تؤكد سلامة نقاط النهاية وتشغيل التطبيق في وضع API فقط.
+
 ### المسؤوليات | Responsibilities
 
 #### ✅ ما يجب أن يفعله API Layer:
@@ -76,15 +83,11 @@ app/api/
 │   ├── observability.py     # Observability schemas
 │   └── system/              # System schemas
 │
-├── v2/                      # API v2 (newer version)
-│   ├── endpoints/           # v2 endpoints
-│   ├── schemas.py           # v2 schemas
-│   └── router.py            # v2 router setup
-│
-├── dependencies.py          # Common dependencies
 ├── exceptions.py            # API exceptions
-└── main.py                  # API setup and configuration
+└── README.md                # This guide
 ```
+
+> **ملاحظة API-First:** تم إزالة أي شيفرة إعداد إضافية (مثل `main.py` أو مجلد `v2/`) من طبقة API. يتم تضمين جميع الموجهات عبر مسجل البيانات في `app/kernel.py` لضمان أن الطبقة تعرض واجهة HTTP خالصة وتفوض العمل إلى خدمات الحدود فقط.
 
 ---
 
@@ -98,9 +101,9 @@ app/api/
 **Endpoints:**
 ```python
 POST   /admin/api/chat/stream                    # Admin chat streaming
+GET    /admin/api/chat/latest                    # Get latest conversation snapshot
 GET    /admin/api/conversations                  # List conversations
 GET    /admin/api/conversations/{id}             # Get conversation details
-DELETE /admin/api/conversations/{id}             # Delete conversation
 ```
 
 **مثال:**
@@ -108,13 +111,18 @@ DELETE /admin/api/conversations/{id}             # Delete conversation
 @router.post("/api/chat/stream")
 async def chat_stream(
     chat_request: ChatRequest,
+    user_id: int = Depends(get_current_user_id),
+    ai_client: AIClient = Depends(get_ai_client),
     service: AdminChatBoundaryService = Depends(get_admin_service),
+    session_factory: Callable[[], AsyncSession] = Depends(get_session_factory),
 ) -> StreamingResponse:
     """Admin chat streaming endpoint."""
-    # Delegate to boundary service
     stream = service.orchestrate_chat_stream(
-        user_id=chat_request.user_id,
-        question=chat_request.question,
+        user_id,
+        chat_request.question,
+        chat_request.conversation_id,
+        ai_client,
+        session_factory,
     )
     return StreamingResponse(stream, media_type="text/event-stream")
 ```

@@ -29,8 +29,6 @@ async def test_admin_auth_uses_centralized_config():
     # 4. Patch dependencies
     with (
         patch("app.services.boundaries.admin_chat_boundary_service.get_settings", return_value=mock_settings),
-        patch("app.services.boundaries.admin_chat_boundary_service.get_service_boundary"),
-        patch("app.services.boundaries.admin_chat_boundary_service.get_policy_boundary"),
         # We need to mock AdminChatPersistence because __init__ creates it
         patch("app.services.boundaries.admin_chat_boundary_service.AdminChatPersistence"),
         patch("app.services.boundaries.admin_chat_boundary_service.AdminChatStreamer")

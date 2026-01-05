@@ -19,8 +19,6 @@ class TestAdminChatBoundaryService:
         # Correctly patch dependencies using the new path
         with (
             patch("app.services.boundaries.admin_chat_boundary_service.get_settings", return_value=mock_settings),
-            patch("app.services.boundaries.admin_chat_boundary_service.get_service_boundary"),
-            patch("app.services.boundaries.admin_chat_boundary_service.get_policy_boundary"),
             patch("app.services.boundaries.admin_chat_boundary_service.AdminChatPersistence"),
             patch("app.services.boundaries.admin_chat_boundary_service.AdminChatStreamer")
         ):

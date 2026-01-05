@@ -18,7 +18,7 @@ Similar to tools used by:
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, ClassVar
+from typing import ClassVar, TypedDict
 
 
 class SecuritySeverity(Enum):
@@ -55,6 +55,35 @@ class SecurityIssue:
     code_snippet: str | None = None
     recommendation: str = ''
     cwe_id: str | None = None
+
+
+class CriticalIssueSummary(TypedDict):
+    """ملخص عربي مضبوط الأنواع للقضايا الحرجة المكتشفة."""
+
+    title: str
+    category: str
+    file: str | None
+    line: int | None
+    recommendation: str
+
+
+class ComplianceStatus(TypedDict):
+    """حالة التوافق مع المعايير الأمنية الرئيسية."""
+
+    OWASP_Top_10: bool
+    PCI_DSS: bool
+    SOC2: bool
+
+
+class SecurityReport(TypedDict):
+    """تقرير أمني شامل خالٍ من الأنواع العامة."""
+
+    total_issues: int
+    risk_score: int
+    severity_breakdown: dict[str, int]
+    category_breakdown: dict[str, int]
+    critical_issues: list[CriticalIssueSummary]
+    compliance_status: ComplianceStatus
 
 class OWASPValidator:
     """
@@ -450,17 +479,11 @@ class OWASPValidator:
                 file_path=file_path
             )]
 
-    def generate_report(self, issues: list[SecurityIssue]) -> dict[str, Any]:
-        """
-        Generate security report
-
-        Args:
-            issues: List of security issues
-
-        Returns:
-            Comprehensive security report
-        """
-        severity_counts = dict.fromkeys(SecuritySeverity, 0)
+    def generate_report(self, issues: list[SecurityIssue]) -> SecurityReport:
+        """يولد تقرير أمني متكامل باستخدام تراكيب بيانات محددة الأنواع."""
+        severity_counts: dict[SecuritySeverity, int] = {
+            severity: 0 for severity in SecuritySeverity
+        }
         for issue in issues:
             severity_counts[issue.severity] += 1
 

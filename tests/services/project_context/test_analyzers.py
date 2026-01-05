@@ -62,9 +62,9 @@ def test_structure_analyzer(project_root):
     # Should see 'services' directory in app
     service_dir_found = False
     for d in structure.directories:
-        if d['name'] == 'services':
+        if d.name == 'services':
             service_dir_found = True
-            assert d['file_count'] == 1 # service.py
+            assert d.file_count == 1 # service.py
 
     assert service_dir_found
 
@@ -78,9 +78,6 @@ def test_issue_analyzer(project_root):
     issues = analyzer.deep_search_issues()
 
     # Should find print statement
-    found_print = False
-    for issue in issues['style_issues']:
-        if issue['type'] == 'print_statement':
-            found_print = True
+    found_print = any(issue.issue_type == 'print_statement' for issue in issues.style_issues)
 
     assert found_print

@@ -5,24 +5,19 @@
 """
 التشفير المقاوم للكم - Quantum-Safe Encryption
 
-Preparation for quantum computing era:
-✅ Hybrid encryption (classical + post-quantum)
-✅ Multiple encryption layers
-✅ Key rotation
-✅ Forward secrecy
+تحضير عملي لعصر الحوسبة الكمومية مع طبقات حماية متعددة وتوثيق عربي صارم.
 """
-
-from typing import Any
 
 import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import TypedDict
 
 from cryptography.fernet import Fernet
 
 @dataclass
 class EncryptionKey:
-    """Encryption key with metadata"""
+    """مفتاح تشفير مزود ببيانات وصفية لإدارة دورة الحياة."""
 
     key_id: str
     key_material: bytes
@@ -31,15 +26,22 @@ class EncryptionKey:
     expires_at: datetime
     rotation_count: int = 0
 
+
+class EncryptionStatistics(TypedDict):
+    """حزمة إحصائيات التشفير مع مفاتيح محددة النوع."""
+
+    total_keys: int
+    current_key_id: str | None
+    oldest_key: datetime | None
+
 class QuantumSafeEncryption:
     """
     التشفير المقاوم للكم - Quantum-Safe Encryption
 
-    Features:
-    - Hybrid encryption for quantum resistance
-    - Automatic key rotation
-    - Multiple encryption layers
-    - Forward secrecy
+    - تشفير هجين يقاوم الهجمات الكمومية
+    - تدوير تلقائي للمفاتيح مع توثيق لحالات الانتهاء
+    - طبقات متعددة للتعمية بما يضمن سرية متقدمة
+    - سرية أمامية تحمي البيانات حتى مع كشف مفاتيح مستقبلية
     """
 
     def __init__(self, master_key: bytes | None = None):
@@ -54,12 +56,7 @@ class QuantumSafeEncryption:
         self._generate_new_key()
 
     def encrypt(self, data: bytes, key_id: str | None = None) -> tuple[bytes, str]:
-        """
-        Encrypt data with quantum-safe algorithm
-
-        Returns:
-            (encrypted_data, key_id)
-        """
+        """يعمّي البيانات بطبقتين ويعيد المعطيات المشفّرة مع هوية المفتاح."""
         # Use specified key or current key
         key_id = key_id or self.current_key_id
         if not key_id or key_id not in self.keys:
@@ -76,7 +73,7 @@ class QuantumSafeEncryption:
         return encrypted, key_id
 
     def decrypt(self, encrypted_data: bytes, key_id: str) -> bytes:
-        """Decrypt data"""
+        """يفك تشفير البيانات باستخدام هوية المفتاح الصحيحة مع تحقق صارم."""
         if key_id not in self.keys:
             raise ValueError(f"Unknown key ID: {key_id}")
 
@@ -91,17 +88,17 @@ class QuantumSafeEncryption:
         return decrypted
 
     def _xor_encrypt(self, data: bytes, key: bytes) -> bytes:
-        """Simple XOR encryption (placeholder for post-quantum algorithm)"""
+        """طبقة XOR المساعدة كمحاكاة لخوارزمية كمومية مستقبلية."""
         # Extend key to match data length
         extended_key = (key * (len(data) // len(key) + 1))[: len(data)]
         return bytes(a ^ b for a, b in zip(data, extended_key, strict=False))
 
     def _xor_decrypt(self, data: bytes, key: bytes) -> bytes:
-        """Simple XOR decryption"""
+        """عكس طبقة XOR باستخدام نفس المادة المفتاحية للحفاظ على التماثل."""
         return self._xor_encrypt(data, key)  # XOR is symmetric
 
     def _generate_new_key(self) -> str:
-        """Generate new encryption key"""
+        """ينشئ مفتاحاً جديداً مع بيانات صالحة للتدوير والتتبع."""
         key_id = secrets.token_hex(16)
         key_material = secrets.token_bytes(32)
 
@@ -119,7 +116,7 @@ class QuantumSafeEncryption:
         return key_id
 
     def rotate_keys(self) -> None:
-        """Rotate encryption keys"""
+        """يدير دورة حياة المفاتيح بتوليد مفتاح جديد ورفع عداد التدوير للقديمة."""
         # Generate new key
         new_key_id = self._generate_new_key()
 
@@ -128,10 +125,10 @@ class QuantumSafeEncryption:
             if key.key_id != new_key_id:
                 key.rotation_count += 1
 
-    def get_statistics(self) -> dict[str, Any]:
-        """Get encryption statistics"""
+    def get_statistics(self) -> EncryptionStatistics:
+        """يقدم إحصائيات إدارة المفاتيح بصورة مضبوطة الأنواع."""
         return {
-            "total_keys": len(self.keys),
-            "current_key_id": self.current_key_id,
-            "oldest_key": min((k.created_at for k in self.keys.values()), default=None),
+            'total_keys': len(self.keys),
+            'current_key_id': self.current_key_id,
+            'oldest_key': min((k.created_at for k in self.keys.values()), default=None),
         }

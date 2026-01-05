@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import logging
-
 from app.services.observability.aiops.service import AIOpsService, get_aiops_service
 from app.telemetry.unified_observability import (
     UnifiedObservabilityService,
@@ -10,9 +8,9 @@ from app.telemetry.unified_observability import (
 
 class ObservabilityBoundaryService:
     """
-    Unified Boundary Service for Observability.
-    Aggregates AIOps, Telemetry, and Monitoring signals into a single clean interface.
-    Follows Separation of Concerns by isolating the Router from underlying implementations.
+    خدمة مراقبة حدية موحدة.
+    تجمع إشارات AIOps والقياسات والتتبع في واجهة نظيفة واحدة،
+    وتطبق مبدأ فصل المسؤوليات بعزل الموجه عن تفاصيل التنفيذ الداخلية.
     """
 
     def __init__(
@@ -22,11 +20,10 @@ class ObservabilityBoundaryService:
     ):
         self.aiops = aiops_service or get_aiops_service()
         self.telemetry = telemetry_service or get_unified_observability()
-        self.logger = logging.getLogger(__name__)
 
     async def get_system_health(self) -> dict[str, object]:
         """
-        Aggregates system health from multiple sources.
+        تجميع الحالة الصحية للنظام من مصادر متعددة بطريقة خفيفة الوزن.
         """
         return {
             "status": "ok",
@@ -36,31 +33,31 @@ class ObservabilityBoundaryService:
 
     async def get_golden_signals(self) -> dict[str, object]:
         """
-        Retrieves SRE Golden Signals (Latency, Traffic, Errors, Saturation).
+        استرجاع الإشارات الذهبية الخاصة بالموثوقية (زمن الاستجابة، الحركة، الأخطاء، التشبع).
         """
         return self.telemetry.get_golden_signals()
 
     async def get_aiops_metrics(self) -> dict[str, object]:
         """
-        Retrieves AIOps specific metrics (Anomalies, Healing Decisions).
+        استرجاع مقاييس AIOps للشذوذات وقرارات المعالجة الذاتية.
         """
         return self.aiops.get_aiops_metrics()
 
     async def get_performance_snapshot(self) -> dict[str, object]:
         """
-        Get a comprehensive snapshot of performance statistics.
+        الحصول على لقطة شاملة لإحصاءات الأداء.
         """
         return self.telemetry.get_statistics()
 
     async def get_endpoint_analytics(self, path: str) -> list[dict[str, object]]:
         """
-        Analyzes traces for a specific endpoint path.
+        تحليل آثار التتبع لمسار واجهة برمجة تطبيقات محدد.
         """
         return self.telemetry.find_traces_by_criteria(operation_name=path)
 
     async def get_active_alerts(self) -> list[object]:
         """
-        Retrieves active anomaly alerts from the system.
+        استرجاع التنبيهات النشطة المتعلقة بالشذوذات من النظام.
         """
         # Convert deque to list
         return list(self.telemetry.anomaly_alerts)
