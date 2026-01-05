@@ -1,6 +1,10 @@
 
 import pytest
 
+from app.services.api_config_secrets.application.config_secrets_manager import (
+    ConfigSetting,
+    SecretRequest,
+)
 from app.services.api_config_secrets.service import (
     ConfigSecretsService,
     Environment,
@@ -16,7 +20,12 @@ def service():
 def test_config_crud(service):
     """Test Create, Read for Configuration"""
     service.set_config(
-        Environment.DEVELOPMENT, "test_key", "test_value", "A test config"
+        ConfigSetting(
+            environment=Environment.DEVELOPMENT,
+            key="test_key",
+            value="test_value",
+            description="A test config",
+        )
     )
     val = service.get_config(Environment.DEVELOPMENT, "test_key")
     assert val == "test_value"
@@ -27,7 +36,12 @@ def test_config_crud(service):
 def test_secret_lifecycle(service):
     """Test Create, Read, Rotate for Secrets"""
     secret_id = service.create_secret(
-        "api_key_v1", "secret-123", SecretType.API_KEY, Environment.DEVELOPMENT
+        SecretRequest(
+            name="api_key_v1",
+            value="secret-123",
+            secret_type=SecretType.API_KEY,
+            environment=Environment.DEVELOPMENT,
+        )
     )
     assert secret_id is not None
 
@@ -45,7 +59,12 @@ def test_secret_lifecycle(service):
 def test_audit_logs(service):
     """Test that actions generate audit logs"""
     service.create_secret(
-        "audit_test", "123", SecretType.API_KEY, Environment.DEVELOPMENT
+        SecretRequest(
+            name="audit_test",
+            value="123",
+            secret_type=SecretType.API_KEY,
+            environment=Environment.DEVELOPMENT,
+        )
     )
     logs = service.get_audit_report()
     assert len(logs) > 0

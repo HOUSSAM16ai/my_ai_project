@@ -15,7 +15,10 @@ These tests verify:
 """
 
 import pytest
+from fastapi import FastAPI
+from starlette.testclient import TestClient
 
+from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.hooks import (
     LifecycleHooks,
@@ -26,6 +29,7 @@ from app.middleware.core.hooks import (
     on_before_execution,
 )
 from app.middleware.core.pipeline import SmartPipeline
+from app.middleware.core.registry import MiddlewareRegistry
 from app.middleware.core.result import MiddlewareResult
 
 # =============================================================================
@@ -222,6 +226,19 @@ class TestMiddlewareResultSerialization:
         assert "error_code" not in data
         assert "details" not in data
         assert "data" not in data
+
+    def test_to_response_components_provides_status_and_payload(self):
+        """Ensure to_response_components returns status and structured payload."""
+        result = MiddlewareResult.failure(
+            status_code=418, message="Teapot", error_code="TEAPOT", details={"hint": "brew"}
+        )
+
+        status, payload = result.to_response_components()
+
+        assert status == 418
+        assert payload["message"] == "Teapot"
+        assert payload["error_code"] == "TEAPOT"
+        assert payload["details"] == {"hint": "brew"}
 
 
 # =============================================================================
@@ -855,3 +872,99 @@ class TestRequestContext:
         assert data["trace_id"] == "trace-1"
         assert data["user_id"] == "user-1"
         assert "timestamp" in data
+
+
+# =============================================================================
+# REGISTRY TESTS
+# =============================================================================
+
+
+class DummyMiddleware(BaseMiddleware):
+    """Lightweight middleware used لقياس سلوك السجل."""
+
+    def process_request(self, ctx: RequestContext) -> MiddlewareResult:  # type: ignore[override]
+        return MiddlewareResult.success("ok")
+
+
+class BlockingMiddleware(BaseMiddleware):
+    """Middleware يوقف الطلبات لقياس بناء الاستجابات الموحدة."""
+
+    def process_request(self, ctx: RequestContext) -> MiddlewareResult:  # type: ignore[override]
+        return MiddlewareResult.failure(
+            status_code=418, message="Blocked by test middleware", details={"reason": "testing"}
+        )
+
+
+class EmptyDetailMiddleware(BaseMiddleware):
+    """Middleware يعيد فشل بدون تفاصيل للتأكد من ملء الحقول الافتراضية."""
+
+    def process_request(self, ctx: RequestContext) -> MiddlewareResult:  # type: ignore[override]
+        return MiddlewareResult.failure(status_code=401, message="Auth required")
+
+
+async def empty_app(scope, receive, send) -> None:  # type: ignore[override]
+    """تطبيق ASGI بسيط للتمرير عبر السجل دون آثار جانبية."""
+
+
+class TestMiddlewareRegistry:
+    """يتحقق من التسجيل، التخزين المؤقت، وإلغاء التسجيل بأمان."""
+
+    def test_register_and_create_instance_with_metadata(self) -> None:
+        registry = MiddlewareRegistry()
+        registry.register("dummy", DummyMiddleware, {"module": "tests"})
+
+        instance = registry.create_instance("dummy", empty_app, config={"level": "debug"})
+
+        assert isinstance(instance, DummyMiddleware)
+        assert instance.config == {"level": "debug"}
+        assert registry.get_metadata("dummy") == {"module": "tests"}
+        assert "dummy" in registry
+
+    def test_unregister_and_cache_behavior(self) -> None:
+        registry = MiddlewareRegistry()
+        registry.register("dummy", DummyMiddleware)
+
+        first_instance = registry.create_instance("dummy", empty_app)
+        second_instance = registry.create_instance("dummy", empty_app)
+        fresh_instance = registry.create_instance("dummy", empty_app, cache=False)
+
+        assert first_instance is second_instance
+        assert fresh_instance is not first_instance
+
+        assert registry.unregister("dummy") is True
+        assert registry.get_instance("dummy") is None
+        assert registry.unregister("missing") is False
+
+
+class TestBaseMiddlewareDispatch:
+    """يتحقق من بناء الردود الموحدة عند فشل الوسيط."""
+
+    def _build_app_with_middleware(self, middleware_class: type[BaseMiddleware]) -> TestClient:
+        app = FastAPI()
+        app.add_middleware(middleware_class)
+
+        @app.get("/ping")
+        def ping() -> dict[str, str]:
+            return {"status": "ok"}
+
+        return TestClient(app)
+
+    def test_dispatch_uses_result_status_and_details(self) -> None:
+        client = self._build_app_with_middleware(BlockingMiddleware)
+
+        response = client.get("/ping")
+
+        assert response.status_code == 418
+        assert response.json() == {
+            "success": False,
+            "message": "Blocked by test middleware",
+            "details": {"reason": "testing"},
+        }
+
+    def test_dispatch_injects_empty_details_when_missing(self) -> None:
+        client = self._build_app_with_middleware(EmptyDetailMiddleware)
+
+        response = client.get("/ping")
+
+        assert response.status_code == 401
+        assert response.json() == {"success": False, "message": "Auth required", "details": {}}

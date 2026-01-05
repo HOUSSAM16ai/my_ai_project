@@ -15,8 +15,10 @@
 """
 
 import functools
+import json
 import logging
 import os
+import secrets
 from typing import Literal
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
@@ -25,6 +27,128 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # إعداد السجل (Logging) لهذه الوحدة
 logger = logging.getLogger("app.config")
+
+_DEV_SECRET_KEY_CACHE: str | None = None
+
+
+def _get_or_create_dev_secret_key() -> str:
+    """يولد مفتاح تطوير ثابت طوال عمر العملية لتجنب إعادة تدوير رموز الجلسات."""
+
+    global _DEV_SECRET_KEY_CACHE
+
+    if _DEV_SECRET_KEY_CACHE is None:
+        _DEV_SECRET_KEY_CACHE = secrets.token_urlsafe(64)
+
+    return _DEV_SECRET_KEY_CACHE
+
+
+def _ensure_database_url(value: str | None, environment: str) -> str:
+    """
+    يضمن توفر رابط قاعدة بيانات صالح مع الالتزام بقواعد الأمان لكل بيئة تشغيل.
+
+    في البيئات الإنتاجية يتم الرفض الفوري عند غياب الرابط، بينما يوفر الرابط
+    الافتراضي SQLite لسيناريوهات التطوير والاختبار.
+    """
+
+    if value:
+        return value
+
+    if environment == "production":
+        raise ValueError("❌ CRITICAL: DATABASE_URL is missing in PRODUCTION! Cannot fallback to SQLite.")
+
+    logger.warning("⚠️ No DATABASE_URL found! Activating Emergency Backup Protocol (SQLite).")
+    return "sqlite+aiosqlite:///./backup_storage.db"
+
+
+def _upgrade_postgres_protocol(url: str) -> str:
+    """يرفع روابط Postgres المتزامنة إلى الصيغة غير المتزامنة المتوافقة مع asyncpg."""
+
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+
+    if url.startswith("postgresql://") and "asyncpg" not in url:
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    return url
+
+
+def _optimize_postgres_ssl_params(url: str) -> str:
+    """يبسط معاملات SSL في روابط Postgres مع الحفاظ على سلامة الاستعلام."""
+
+    try:
+        parts = urlsplit(url)
+        query_params = parse_qs(parts.query)
+
+        ssl_mode = query_params.pop("sslmode", [None])[0]
+        if ssl_mode in ("require", "disable"):
+            query_params["ssl"] = [ssl_mode]
+
+            new_query = urlencode(query_params, doseq=True)
+            new_parts = parts._replace(query=new_query)
+            return urlunsplit(new_parts)
+
+        return url
+    except Exception as exc:  # pragma: no cover - حراسة دفاعية مع تسجيل فقط
+        logger.error(f"Failed to optimize DB URL params: {exc}")
+        return url
+
+
+def _normalize_csv_or_list(value: list[str] | str | None) -> list[str]:
+    """
+    ينظّم القوائم النصية أو السلاسل المفصولة بفواصل بإزالة الفراغات والتكرارات.
+
+    يدعم الصيغ الشبيهة بـ JSON مثل "[\"https://site.com\", \"http://localhost\"]"
+    لتسهيل الاستخدام من متغيرات البيئة، ويعيد قائمة مرتبة بدون عناصر فارغة.
+    """
+
+    if value is None:
+        return []
+
+    raw_items: list[str]
+
+    if isinstance(value, str):
+        candidate = value.strip()
+
+        if candidate.startswith("[") and candidate.endswith("]"):
+            try:
+                parsed = json.loads(candidate)
+                if isinstance(parsed, list):
+                    raw_items = [str(item) for item in parsed]
+                else:
+                    raw_items = [candidate]
+            except ValueError:
+                raw_items = [segment for segment in candidate.strip("[]").split(",")]
+        else:
+            raw_items = candidate.split(",")
+    elif isinstance(value, list):
+        raw_items = [str(item) for item in value]
+    else:
+        return []
+
+    cleaned: list[str] = []
+    seen: set[str] = set()
+
+    for item in raw_items:
+        normalized = str(item).strip()
+        if not normalized:
+            continue
+        if normalized in seen:
+            continue
+
+        seen.add(normalized)
+        cleaned.append(normalized)
+
+    return cleaned
+
+
+def _lenient_json_loads(value: str) -> object:
+    """يفسر القيم الموردة من البيئة كـ JSON مع السماح بالسلاسل البسيطة عند فشل التحليل."""
+
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return value
+
 
 class AppSettings(BaseSettings):
     """
@@ -56,7 +180,9 @@ class AppSettings(BaseSettings):
     # 🛡️ SECURITY PROTOCOLS (بروتوكولات الأمان)
     # ══════════════════════════════════════════════════════════════════════════
     SECRET_KEY: str = Field(
-        ..., min_length=1, description="مفتاح التشفير الرئيسي (يجب أن يكون معقداً وطويلاً)"
+        default_factory=_get_or_create_dev_secret_key,
+        min_length=1,
+        description="مفتاح التشفير الرئيسي (يجب أن يكون معقداً وطويلاً)",
     )
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
@@ -125,6 +251,7 @@ class AppSettings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
+        env_json_loads=_lenient_json_loads,
         extra="ignore",  # تجاهل أي متغيرات غير معروفة بدلاً من الخطأ
     )
 
@@ -138,22 +265,36 @@ class AppSettings(BaseSettings):
         🔐 Global Security Auditor.
         يتحقق من تكامل الإعدادات الأمنية في بيئة الإنتاج.
         """
+        secret_key_from_env = "SECRET_KEY" in self.model_fields_set
+
         if self.ENVIRONMENT == "production":
             if self.DEBUG:
                 raise ValueError("❌ CRITICAL SECURITY VIOLATION: DEBUG must be False in production.")
 
             # Check for weak or default secret key
+            if not secret_key_from_env:
+                raise ValueError(
+                    "❌ CRITICAL SECURITY RISK: SECRET_KEY must be explicitly set in production."
+                )
+
             if self.SECRET_KEY == "changeme" or len(self.SECRET_KEY) < 32:
-                 raise ValueError("❌ CRITICAL SECURITY RISK: Production SECRET_KEY is too weak!")
+                raise ValueError("❌ CRITICAL SECURITY RISK: Production SECRET_KEY is too weak!")
 
             # Check for overly permissive hosts
             if self.ALLOWED_HOSTS == ["*"]:
-                 raise ValueError("❌ SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production.")
-            
+                raise ValueError("❌ SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production.")
+
             # Check for overly permissive CORS (API-First best practice)
             if self.BACKEND_CORS_ORIGINS == ["*"]:
-                 raise ValueError("❌ SECURITY RISK: BACKEND_CORS_ORIGINS cannot be '*' in production. Please specify allowed origins explicitly.")
-        
+                raise ValueError(
+                    "❌ SECURITY RISK: BACKEND_CORS_ORIGINS cannot be '*' in production. Please specify allowed origins explicitly."
+                )
+
+        if self.ENVIRONMENT != "production" and not secret_key_from_env:
+            logger.warning(
+                "⚠️  Auto-generated SECRET_KEY in use. Set an explicit value to avoid changing tokens between restarts."
+            )
+
         # API Strict Mode warnings for development
         if self.API_STRICT_MODE and self.ENVIRONMENT == "development":
             if self.BACKEND_CORS_ORIGINS == ["*"]:
@@ -182,7 +323,6 @@ class AppSettings(BaseSettings):
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
-    # TODO: Split this function (52 lines) - KISS principle
     def heal_database_url(cls, v: str | None, info: ValidationInfo) -> str:
         """
         💊 Database Auto-Healing Algorithm.
@@ -191,64 +331,34 @@ class AppSettings(BaseSettings):
         2. يضبط إعدادات SSL بناءً على المزود (Supabase, Neon, Local).
         3. يوفر قاعدة بيانات SQLite احتياطية إذا لم يتم العثور على رابط.
         """
-        # 🛡️ FAIL-SAFE PROTOCOL: Check Environment First
         env = info.data.get("ENVIRONMENT", "development")
+        base_url = _ensure_database_url(v, env)
 
-        if not v:
-            if env == "production":
-                raise ValueError(
-                    "❌ CRITICAL: DATABASE_URL is missing in PRODUCTION! Cannot fallback to SQLite."
-                )
+        if not base_url.startswith("postgres"):
+            return base_url
 
-            # Fallback strategy: In-memory SQLite for testing/dev safety ONLY
-            logger.warning(
-                "⚠️ No DATABASE_URL found! Activating Emergency Backup Protocol (SQLite)."
-            )
-            return "sqlite+aiosqlite:///./backup_storage.db"
-
-        # If it's not Postgres, leave it alone (e.g. SQLite, MySQL)
-        if not v.startswith("postgres"):
-            return v
-
-        # Algorithm 1: Async Protocol Upgrade
-        # يحول postgresql:// إلى postgresql+asyncpg://
-        if v.startswith("postgres://"):
-            v = v.replace("postgres://", "postgresql+asyncpg://", 1)
-        elif v.startswith("postgresql://") and "asyncpg" not in v:
-            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
-
-        # Algorithm 2: SSL Parameter Optimization
-        try:
-            parts = urlsplit(v)
-            query_params = parse_qs(parts.query)
-
-            # استخراج أوضاع SSL القديمة وتحديثها
-            ssl_mode = query_params.pop("sslmode", [None])[0]
-            if ssl_mode in ("require", "disable"):
-                query_params["ssl"] = [ssl_mode]
-
-                # Reconstruct URL
-                new_query = urlencode(query_params, doseq=True)
-                new_parts = parts._replace(query=new_query)
-                v = urlunsplit(new_parts)
-        except Exception as e:
-            logger.error(f"Failed to optimize DB URL params: {e}")
-            # Return original if optimization fails
-
-        return v
+        upgraded_url = _upgrade_postgres_protocol(base_url)
+        return _optimize_postgres_ssl_params(upgraded_url)
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: dict[str, str | int | bool]) -> list[str]:
+    def assemble_cors_origins(cls, v: list[str] | str | None) -> list[str]:
         """
         🧩 CORS Assembly Algorithm.
-        يقبل سلسلة نصية مفصولة بفواصل أو قائمة، ويعيد قائمة نظيفة.
+        يوحّد صياغة نطاقات CORS من صيغ متعددة ويزيل الفراغات والتكرارات.
         """
-        if isinstance(v, str) and not v.startswith("["):
-            return [origin.strip() for origin in v.split(",")]
-        if isinstance(v, list | str):
-            return v
-        return []
+
+        return _normalize_csv_or_list(v)
+
+    @field_validator("ALLOWED_HOSTS", mode="before")
+    @classmethod
+    def assemble_allowed_hosts(cls, v: list[str] | str | None) -> list[str]:
+        """
+        🏠 Host Assembly Algorithm.
+        يستقبل قائمة المضيفين بصيغ متعددة ويعيد قائمة نظيفة ومتناسقة.
+        """
+
+        return _normalize_csv_or_list(v)
 
     @computed_field
     @property

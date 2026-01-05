@@ -5,14 +5,10 @@
 """
 الوسيط الأساسي - Base Middleware
 
-Abstract base class for all middleware components.
-Defines the contract and lifecycle for middleware execution.
-
-Design Pattern: Template Method + Strategy Pattern
-Architecture: Plugin-based with lifecycle hooks
+طبقة تجريدية تجمع دورة حياة الوسيط وتوحّد طريقة التنفيذ لضمان الانسجام بين
+الوحدات. يعتمد التصميم على «قالب المنهج» مع تركيز على الأجزاء القابلة
+للتوسعة وتطبيق مبدأ القشرة الوظيفية مع الحد الأدنى من الآثار الجانبية.
 """
-
-from typing import Any
 
 from abc import ABC, abstractmethod
 
@@ -26,17 +22,17 @@ from .result import MiddlewareResult
 
 class BaseMiddleware(BaseHTTPMiddleware, ABC):
     """
-    Abstract base class for all middleware components
+    الطبقة التجريدية الرئيسية لجميع الوسطاء.
 
-    All middleware must inherit from this class and implement
-    the process_request method. This ensures consistency and
-    enables the pipeline to manage middleware uniformly.
+    تفرض هذه الطبقة واجهة موحّدة لمعالجة الطلبات وتقدم نقاط تمدد للحياة
+    الكاملة للوسيط من التهيئة حتى إنهاء الطلب. توثيق السمات يسهّل على
+    المبتدئين فهم دور كل وسيط وكيفية تخصيصه بأمان.
 
-    Attributes:
-        name: Unique name for this middleware
-        order: Execution order (lower executes first)
-        enabled: Whether this middleware is active
-        config: Configuration dictionary
+    السمات:
+        name: اسم فريد للوسيط.
+        order: ترتيب التنفيذ (الأصغر ينفذ أولاً).
+        enabled: حالة التفعيل.
+        config: إعدادات التكوين الخاصة بالوسيط.
     """
 
     # Class-level defaults (can be overridden)
@@ -44,130 +40,82 @@ class BaseMiddleware(BaseHTTPMiddleware, ABC):
     order: int = 0
     enabled: bool = True
 
-    def __init__(self, app: ASGIApp, config: dict[str, Any] | None = None):
-        """
-        Initialize middleware with optional configuration
-
-        Args:
-            app: The ASGI application
-            config: Configuration dictionary
-        """
+    def __init__(self, app: ASGIApp, config: dict[str, object] | None = None):
+        """يهيئ الوسيط مع إمكانية تمرير إعدادات تكوين اختيارية."""
         super().__init__(app)
         self.config = config or {}
         self._setup()
 
-    def _setup(self):
-        """
-        Internal setup method called during initialization
-        Override in subclasses for custom setup logic
-        """
-        # Default implementation is empty
+    def _setup(self) -> None:
+        """إعداد داخلي يمكن للوسطاء المشتقة تخصيصه عند الحاجة."""
 
     @abstractmethod
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
-        """
-        Process the request (synchronous)
-
-        This is the main entry point for middleware execution.
-        Must be implemented by all concrete middleware classes.
-
-        Args:
-            ctx: Request context containing all request information
-
-        Returns:
-            MiddlewareResult indicating success or failure
-        """
-        pass
+        """يعالج الطلب بشكل متزامن ويعيد نتيجة تصف حالة النجاح أو الفشل."""
+        raise NotImplementedError
 
     async def process_request_async(self, ctx: RequestContext) -> MiddlewareResult:
-        """
-        Process the request (asynchronous)
-
-        Override this method for async middleware.
-        Default implementation calls synchronous process_request.
-
-        Args:
-            ctx: Request context
-
-        Returns:
-            MiddlewareResult
-        """
+        """ينفذ المعالجة غير المتزامنة مع الاعتماد على النسخة المتزامنة افتراضياً."""
         return self.process_request(ctx)
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        """
-        ASGI Dispatch method (Starlette/FastAPI integration)
-        """
+        """واجهة الدمج مع Starlette/FastAPI لإدارة تدفق الطلبات."""
         if not self.enabled:
             return await call_next(request)
 
-        # Create Context
-        # Note: from_fastapi_request is async
         ctx = await RequestContext.from_fastapi_request(request)
 
+        if not self.should_process(ctx):
+            return await call_next(request)
+
         try:
-            # Check conditions
-            if not self.should_process(ctx):
-                return await call_next(request)
-
-            # Process Request
             result = await self.process_request_async(ctx)
+        except Exception as exc:  # pragma: no cover - حراسة تنفيذية
+            self.on_error(ctx, exc)
+            raise
 
-            if not result.is_success:
-                self.on_error(ctx, Exception(result.message))
-                self.on_complete(ctx, result)
-
-                # Convert result to Response
-                status = 400  # Default
-                if "rate limit" in str(result.message).lower():
-                    status = 429
-
-                return JSONResponse(
-                    status_code=status, content={"error": result.message, "details": result.details}
-                )
-
-            # Call Next
-            response = await call_next(request)
-
-            # Post-process (Lifecycle hooks)
-            self.on_success(ctx)
+        if not result.is_success:
+            self.on_error(ctx, ValueError(result.message))
             self.on_complete(ctx, result)
 
-            # Handle Metadata Headers (e.g. Security Headers)
-            # SecurityHeadersMiddleware stores headers in ctx.metadata["security_headers"]
-            sec_headers = ctx.get_metadata("security_headers")
-            if sec_headers and isinstance(sec_headers, dict):
-                for k, v in sec_headers.items():
-                    response.headers[k] = v
+            return self._render_error_response(result)
 
-            # Handle Rate Limit Headers (if any)
-            # RateLimitMiddleware stores in ctx.metadata["rate_limit_info"]
-            # We would need logic to map info to headers, but avoiding complexity for now.
+        response = await call_next(request)
 
-            return response
+        self.on_success(ctx)
+        self.on_complete(ctx, result)
 
-        except Exception as e:
-            self.on_error(ctx, e)
-            raise e
+        sec_headers = ctx.get_metadata("security_headers")
+        if sec_headers and isinstance(sec_headers, dict):
+            for header, value in sec_headers.items():
+                response.headers[header] = value
+
+        return response
+
+    def _render_error_response(self, result: MiddlewareResult) -> JSONResponse:
+        """يبني استجابة JSON موحدة لنتائج الفشل مع الحفاظ على التفاصيل."""
+
+        status_code, content = result.to_response_components()
+        if "details" not in content:
+            content["details"] = result.details
+
+        return JSONResponse(status_code=status_code, content=content)
 
     def on_success(self, ctx: RequestContext) -> None:
-        """Lifecycle hook called when middleware check passes"""
-        # Default implementation is empty
+        """خطاف يُستدعى عند نجاح التحقق للوسيط، قابل للتخصيص."""
 
     def on_error(self, ctx: RequestContext, error: Exception) -> None:
-        """Lifecycle hook called when middleware encounters an error"""
-        # Default implementation is empty
+        """خطاف يُستدعى عند حدوث خطأ أثناء تنفيذ الوسيط."""
 
     def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
-        """Lifecycle hook called after middleware execution completes"""
-        # Default implementation is empty
+        """خطاف يُستدعى بعد اكتمال التنفيذ لأي تنظيف أو قياس."""
 
     def should_process(self, ctx: RequestContext) -> bool:
-        """Determine if this middleware should process the request"""
+        """يحدد ما إذا كان الوسيط يجب أن يعمل على الطلب الحالي."""
         return self.enabled
 
-    def get_statistics(self) -> dict[str, Any]:
-        """Return collected metrics"""
+    def get_statistics(self) -> dict[str, object]:
+        """يعيد بيانات القياس التراكمية للوسيط."""
         return {
             "name": self.name,
             "order": self.order,
@@ -175,20 +123,20 @@ class BaseMiddleware(BaseHTTPMiddleware, ABC):
         }
 
     def __repr__(self) -> str:
-        """String representation"""
+        """تمثيل نصي مهيأ لأغراض التشخيص."""
         return f"{self.__class__.__name__}(name={self.name}, order={self.order})"
 
 class ConditionalMiddleware(BaseMiddleware):
-    """Base class for middleware that only runs under certain conditions"""
+    """قاعدة لوسطاء يعتمد تشغيلهم على شروط المسار أو الطريقة."""
 
-    def __init__(self, app: ASGIApp, config: dict[str, Any] | None = None):
+    def __init__(self, app: ASGIApp, config: dict[str, object] | None = None):
         super().__init__(app, config)
         self.include_paths: list[str] = self.config.get("include_paths", [])
         self.exclude_paths: list[str] = self.config.get("exclude_paths", [])
         self.methods: list[str] = self.config.get("methods", [])
 
     def should_process(self, ctx: RequestContext) -> bool:
-        """Check if request matches conditions"""
+        """يتحقق من مطابقة الطلب للشروط المحددة قبل المعالجة."""
         if not super().should_process(ctx):
             return False
 
@@ -212,9 +160,9 @@ class ConditionalMiddleware(BaseMiddleware):
         return not (self.methods and ctx.method not in self.methods)
 
 class MetricsMiddleware(BaseMiddleware):
-    """Base class for middleware that collects metrics"""
+    """قاعدة لوسطاء جمع المقاييس ومراقبة معدلات النجاح والفشل."""
 
-    def __init__(self, app: ASGIApp, config: dict[str, Any] | None = None):
+    def __init__(self, app: ASGIApp, config: dict[str, object] | None = None):
         super().__init__(app, config)
         self.request_count = 0
         self.success_count = 0
@@ -228,7 +176,7 @@ class MetricsMiddleware(BaseMiddleware):
         self.failure_count += 1
         self.request_count += 1
 
-    def get_statistics(self) -> dict[str, Any]:
+    def get_statistics(self) -> dict[str, object]:
         stats = super().get_statistics()
         stats.update(
             {

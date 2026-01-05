@@ -1,15 +1,16 @@
-from typing import Any
-
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+
+JsonPrimitive = str | int | float | bool | None
+JsonValue = JsonPrimitive | dict[str, "JsonValue"] | list["JsonValue"]
 
 # ======================================================================================
 # ENUMERATIONS
 # ======================================================================================
 
 class AnomalyType(Enum):
-    """Types of anomalies"""
+    """أنواع الشذوذ المحتملة في بيانات المراقبة."""
 
     LATENCY_SPIKE = "latency_spike"
     ERROR_RATE_INCREASE = "error_rate_increase"
@@ -19,7 +20,7 @@ class AnomalyType(Enum):
     PATTERN_DEVIATION = "pattern_deviation"
 
 class AnomalySeverity(Enum):
-    """Anomaly severity levels"""
+    """درجات خطورة الشذوذ التي تساعد على ترتيب الأولويات."""
 
     CRITICAL = "critical"
     HIGH = "high"
@@ -28,7 +29,7 @@ class AnomalySeverity(Enum):
     INFO = "info"
 
 class HealingAction(Enum):
-    """Self-healing actions"""
+    """إجراءات المعالجة الذاتية المتاحة لتحسين استقرار الخدمات."""
 
     SCALE_UP = "scale_up"
     SCALE_DOWN = "scale_down"
@@ -40,7 +41,7 @@ class HealingAction(Enum):
     ADJUST_RATE_LIMIT = "adjust_rate_limit"
 
 class MetricType(Enum):
-    """Metric types for telemetry"""
+    """أنواع المقاييس المستخدمة في نقاط القياس التشغيلية."""
 
     LATENCY = "latency"
     ERROR_RATE = "error_rate"
@@ -56,7 +57,7 @@ class MetricType(Enum):
 
 @dataclass
 class TelemetryData:
-    """Telemetry data point"""
+    """تمثيل نقطة قياس تشغيلية بوصف عربي واضح للمبتدئين."""
 
     metric_id: str
     service_name: str
@@ -68,7 +69,7 @@ class TelemetryData:
 
 @dataclass
 class AnomalyDetection:
-    """Detected anomaly"""
+    """سجل كشف شذوذ مع تفاصيل السياق والوقت والثقة."""
 
     anomaly_id: str
     service_name: str
@@ -85,7 +86,7 @@ class AnomalyDetection:
 
 @dataclass
 class LoadForecast:
-    """Load prediction"""
+    """توقع الحمل المستقبلي للخدمة مع معلومات الدقة."""
 
     forecast_id: str
     service_name: str
@@ -97,21 +98,21 @@ class LoadForecast:
 
 @dataclass
 class HealingDecision:
-    """Self-healing decision"""
+    """قرار المعالجة الذاتية الناتج عن كشف الشذوذ."""
 
     decision_id: str
     anomaly_id: str
     service_name: str
     action: HealingAction
     reason: str
-    parameters: dict[str, Any]
+    parameters: dict[str, JsonValue]
     executed_at: datetime | None = None
     success: bool | None = None
-    impact: dict[str, Any] = field(default_factory=dict)
+    impact: dict[str, JsonValue] = field(default_factory=dict)
 
 @dataclass
 class CapacityPlan:
-    """Capacity planning recommendation"""
+    """توصية تخطيط السعة للخدمة مع ثقة متوقعة."""
 
     plan_id: str
     service_name: str

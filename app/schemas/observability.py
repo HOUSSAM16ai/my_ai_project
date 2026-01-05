@@ -1,44 +1,47 @@
-"""
-Observability API Schemas.
-Pydantic models for System Metrics, Health Checks, and Performance Snapshots.
-Ensures strict typing and governance for the Observability Domain.
-"""
+"""نماذج مراقبة النظام بوضوح عربي وتجنّب الأنواع العامة لتسهيل الصيانة."""
 
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel, Field
 
+from app.protocols.http_client import JsonValue
+
 T = TypeVar("T")
 
+
 class LegacyResponse[T](BaseModel):
-    """
-    Standard Response Wrapper to maintain backward compatibility.
-    Includes 'status', 'timestamp', and optional 'message' fields.
-    """
-    status: str = Field(..., description="Response status (success/error)")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="UTC Timestamp")
-    message: str | None = Field(None, description="Optional status message")
-    data: T | None = Field(None, description="The actual payload data")
+    """غلاف استجابة قياسي يحافظ على التوافق العكسي مع الحقول الأساسية."""
+
+    status: str = Field(..., description="حالة الاستجابة (نجاح/فشل)")
+    timestamp: datetime = Field(default_factory=datetime.utcnow, description="تاريخ ووقت UTC")
+    message: str | None = Field(None, description="رسالة حالة اختيارية")
+    data: T | None = Field(None, description="الحمولة الفعلية للرد")
+
 
 class HealthCheckData(BaseModel):
-    """Data for health check response."""
+    """بيانات فحص الصحة الافتراضية للمنظومة."""
+
     status: str = "healthy"
 
+
 class AIOpsMetrics(BaseModel):
-    """Pydantic model for AIOps Metrics."""
+    """تمثيل مقاييس AIOps بأرقام واضحة للمراقبة."""
+
     anomalies_detected: int
     healing_actions_taken: int
     system_health_score: float
     active_threats: int = 0
     predicted_failures: int = 0
 
+
 class PerformanceSnapshotModel(BaseModel):
-    """Pydantic model for Performance Snapshot."""
-    request_count: int | None = Field(None, description="Derived from active_requests + historical if needed")
-    error_count: int | None = Field(None, description="Derived error count")
+    """لقطة أداء مفصلة للمؤشرات الزمنية وحمل الطلبات."""
+
+    request_count: int | None = Field(None, description="عدد الطلبات المشتق عند الحاجة")
+    error_count: int | None = Field(None, description="عدد الأخطاء المشتق")
 
     # Fields matching the dataclass exactly
     timestamp: datetime
@@ -54,26 +57,25 @@ class PerformanceSnapshotModel(BaseModel):
     class Config:
         from_attributes = True
 
+
 class MetricsData(BaseModel):
-    """Data payload for the /metrics endpoint."""
+    """حمولة بيانات مسار /metrics مع دعم كائنات AIOps أو تمثيلها كقاموس."""
+
     api_performance: PerformanceSnapshotModel
-    aiops_health: AIOpsMetrics | dict[str, Any]
+    aiops_health: AIOpsMetrics | dict[str, JsonValue]
+
 
 class MetricsResponse(BaseModel):
-    """
-    Specialized response for /metrics to match legacy format:
-    {
-        "status": "success",
-        "timestamp": ...,
-        "metrics": { ... }
-    }
-    """
+    """استجابة مهيكلة لمسار /metrics تحافظ على التنسيق القديم."""
+
     status: str = "success"
     timestamp: datetime
     metrics: MetricsData
 
+
 class EndpointAnalyticsData(BaseModel):
-    """Analytics data for a specific endpoint."""
+    """بيانات تحليلات نقطة نهاية محددة لتمكين القراءة السريعة."""
+
     path: str
     request_count: int
     error_rate: float
@@ -81,36 +83,33 @@ class EndpointAnalyticsData(BaseModel):
     p95_latency: float
     status: str
 
+
 class AlertModel(BaseModel):
-    """Model for a system alert."""
+    """نموذج إنذار النظام مع تفاصيل اختيارية قابلة للتسلسل."""
+
     id: str
     severity: str
     message: str
     timestamp: datetime
-    details: dict[str, Any] | None = None
+    details: dict[str, JsonValue] | None = None
 
-# --- Specific Legacy Formats (Fixing the "Disaster") ---
 
 class AiOpsResponse(BaseModel):
-    """
-    Legacy format for /metrics/aiops
-    Original: {"ok": True, "data": ...}
-    """
+    """تنسيق قديم لمسار /metrics/aiops يحافظ على مفاتيح ok و data."""
+
     ok: bool = True
-    data: dict[str, Any]
+    data: dict[str, JsonValue]
+
 
 class SnapshotResponse(BaseModel):
-    """
-    Legacy format for /performance/snapshot
-    Original: {"status": "success", "snapshot": ...}
-    """
+    """تنسيق قديم لمسار /performance/snapshot مع حمولة لقطة الأداء."""
+
     status: str = "success"
-    snapshot: PerformanceSnapshotModel | dict[str, Any]
+    snapshot: PerformanceSnapshotModel | dict[str, JsonValue]
+
 
 class AlertsResponse(BaseModel):
-    """
-    Legacy format for /alerts
-    Original: {"status": "success", "alerts": ...}
-    """
+    """تنسيق قديم لمسار /alerts يحوي قائمة إنذارات قابلة للتحليل."""
+
     status: str = "success"
-    alerts: list[dict[str, Any]]
+    alerts: list[dict[str, JsonValue]]

@@ -12,7 +12,7 @@ of sensitive data.
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
-from app.telemetry.logging import StructuredLogger
+from app.telemetry import StructuredLogger
 
 class RequestLoggerMiddleware(BaseMiddleware):
     """

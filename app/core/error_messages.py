@@ -1,9 +1,65 @@
-"""Error Messages - Standardized error message formatting."""
+"""صياغة رسائل الأخطاء بشكل موحّد ومفهوم للمبتدئين."""
+
+from __future__ import annotations
+
 import os
 import re
+from collections.abc import Callable
+from dataclasses import dataclass
+
+
+ServerErrorPredicate = Callable[["ErrorContext"], bool]
+ServerErrorBuilder = Callable[["ErrorContext"], str]
+
+
+@dataclass(frozen=True)
+class ErrorContext:
+    """سياق موحّد يضم بيانات الخطأ لتبسيط منطق المعالجة."""
+
+    prompt_length: int
+    max_tokens: int
+    error: str
+
+    @property
+    def normalized_error(self) -> str:
+        """يعيد نص الخطأ بحروف صغيرة لتسهيل المقارنة."""
+        return self.error.lower()
+
+
+SERVER_ERROR_GUIDANCE = (
+    "**بالعربية:**\n"
+    "حدث خطأ في خادم الذكاء الاصطناعي (OpenRouter/OpenAI).\n\n"
+    "**الأسباب المحتملة:**\n"
+    "1. مفتاح API غير صالح أو منتهي الصلاحية\n"
+    "2. مشكلة مؤقتة في خدمة الذكاء الاصطناعي\n"
+    "3. السؤال يحتوي على محتوى غير مسموح\n"
+    "4. تجاوز حد الاستخدام أو الرصيد\n\n"
+    "**الحلول المقترحة:**\n"
+    "1. تحقق من صلاحية مفتاح API في ملف .env\n"
+    "2. تأكد من وجود رصيد كافٍ في حساب OpenRouter/OpenAI\n"
+    "3. 🚀 إذا لم يكن نشطاً، فعّل ULTIMATE MODE للتغلب على المشكلة:\n"
+    "   LLM_ULTIMATE_COMPLEXITY_MODE=1\n"
+    "4. حاول مرة أخرى بعد بضع دقائق\n"
+    "5. إذا استمرت المشكلة، راجع سجلات الخادم (docker-compose logs web)\n\n"
+    "**English:**\n"
+    "An error occurred in the AI server (OpenRouter/OpenAI).\n\n"
+    "**Possible Causes:**\n"
+    "1. Invalid or expired API key\n"
+    "2. Temporary issue with the AI service\n"
+    "3. Question contains prohibited content\n"
+    "4. Usage limit or credit exceeded\n\n"
+    "**Suggested Solutions:**\n"
+    "1. Verify API key validity in .env file\n"
+    "2. Ensure sufficient credit in OpenRouter/OpenAI account\n"
+    "3. 🚀 If not active, enable ULTIMATE MODE to overcome the issue:\n"
+    "   LLM_ULTIMATE_COMPLEXITY_MODE=1\n"
+    "4. Try again in a few minutes\n"
+    "5. If problem persists, check server logs (docker-compose logs web)"
+)
+
 
 def _format_timeout_error(max_tokens: int) -> str:
-    """Formats timeout error message"""
+    """يصوغ رسالة تجاوز المهلة للمستخدمين بالعربية والإنجليزية."""
     return (
         f"⏱️ **انتهت مهلة الانتظار** (Timeout)\n\n"
         f"**بالعربية:**\n"
@@ -31,7 +87,7 @@ def _format_timeout_error(max_tokens: int) -> str:
     )
 
 def _format_rate_limit_error(error: str) -> str:
-    """Formats rate limit error message"""
+    """يصوغ رسالة تجاوز حد الطلبات بطريقة واضحة."""
     return (
         f"🚦 **تم تجاوز حد الطلبات** (Rate Limit)\n\n"
         f"**بالعربية:**\n"
@@ -47,7 +103,7 @@ def _format_rate_limit_error(error: str) -> str:
     )
 
 def _format_context_error(prompt_length: int, max_tokens: int, error: str) -> str:
-    """Formats context length error message"""
+    """يصوغ رسالة خطأ طول السياق مع اقتراحات مختصرة."""
     return (
         f"📏 **السياق طويل جداً** (Context Length Error)\n\n"
         f"**بالعربية:**\n"
@@ -75,7 +131,7 @@ def _format_context_error(prompt_length: int, max_tokens: int, error: str) -> st
     )
 
 def _format_auth_error(error: str) -> str:
-    """Formats authentication error message"""
+    """يصوغ رسالة خطأ المصادقة بمستوى إرشاد للمبتدئين."""
     return (
         f"🔑 **خطأ في المصادقة** (Authentication Error)\n\n"
         f"**بالعربية:**\n"
@@ -90,57 +146,17 @@ def _format_auth_error(error: str) -> str:
         f"- Error: {error}"
     )
 
-# TODO: Split this function (46 lines) - KISS principle
 def _format_server_error(prompt_length: int, max_tokens: int, error: str) -> str:
-    """Formats server error message (500)"""
-    ultimate_active = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
-    extreme_active = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
-
-    mode_status = ""
-    if ultimate_active:
-        mode_status = "🚀 ULTIMATE MODE نشط | ULTIMATE MODE Active\n"
-    elif extreme_active:
-        mode_status = "💪 EXTREME MODE نشط | EXTREME MODE Active\n"
-
+    """يبني رسالة خطأ الخادم 500 مع إبراز وضع ULTIMATE/EXTREME."""
     return (
-        f"🔴 **خطأ في الخادم** (Server Error 500)\n\n"
-        f"{mode_status}"
-        f"**بالعربية:**\n"
-        f"حدث خطأ في خادم الذكاء الاصطناعي (OpenRouter/OpenAI).\n\n"
-        f"**الأسباب المحتملة:**\n"
-        f"1. مفتاح API غير صالح أو منتهي الصلاحية\n"
-        f"2. مشكلة مؤقتة في خدمة الذكاء الاصطناعي\n"
-        f"3. السؤال يحتوي على محتوى غير مسموح\n"
-        f"4. تجاوز حد الاستخدام أو الرصيد\n\n"
-        f"**الحلول المقترحة:**\n"
-        f"1. تحقق من صلاحية مفتاح API في ملف .env\n"
-        f"2. تأكد من وجود رصيد كافٍ في حساب OpenRouter/OpenAI\n"
-        f"3. 🚀 إذا لم يكن نشطاً، فعّل ULTIMATE MODE للتغلب على المشكلة:\n"
-        f"   LLM_ULTIMATE_COMPLEXITY_MODE=1\n"
-        f"4. حاول مرة أخرى بعد بضع دقائق\n"
-        f"5. إذا استمرت المشكلة، راجع سجلات الخادم (docker-compose logs web)\n\n"
-        f"**English:**\n"
-        f"An error occurred in the AI server (OpenRouter/OpenAI).\n\n"
-        f"**Possible Causes:**\n"
-        f"1. Invalid or expired API key\n"
-        f"2. Temporary issue with the AI service\n"
-        f"3. Question contains prohibited content\n"
-        f"4. Usage limit or credit exceeded\n\n"
-        f"**Suggested Solutions:**\n"
-        f"1. Verify API key validity in .env file\n"
-        f"2. Ensure sufficient credit in OpenRouter/OpenAI account\n"
-        f"3. 🚀 If not active, enable ULTIMATE MODE to overcome the issue:\n"
-        f"   LLM_ULTIMATE_COMPLEXITY_MODE=1\n"
-        f"4. Try again in a few minutes\n"
-        f"5. If problem persists, check server logs (docker-compose logs web)\n\n"
-        f"**Technical Details:**\n"
-        f"- Prompt length: {prompt_length:,} characters\n"
-        f"- Max tokens: {max_tokens:,}\n"
-        f"- Error: {error}"
+        "🔴 **خطأ في الخادم** (Server Error 500)\n\n"
+        f"{_server_mode_status()}"
+        f"{SERVER_ERROR_GUIDANCE}"
+        f"{_technical_details_block(prompt_length, max_tokens, error)}"
     )
 
 def _format_no_response_error(prompt_length: int, max_tokens: int) -> str:
-    """Formats no response error message"""
+    """يصوغ رسالة عدم وجود استجابة مع حلول مختصرة."""
     return (
         f"❌ **لم يتم استلام رد** (No Response)\n\n"
         f"**بالعربية:**\n"
@@ -161,7 +177,7 @@ def _format_no_response_error(prompt_length: int, max_tokens: int) -> str:
     )
 
 def _format_generic_error(prompt_length: int, max_tokens: int, error: str) -> str:
-    """Formats generic error message"""
+    """يصوغ رسالة خطأ عامة عند عدم تطابق أي حالة أخرى."""
     return (
         f"⚠️ **حدث خطأ** (Error Occurred)\n\n"
         f"**بالعربية:**\n"
@@ -182,52 +198,115 @@ def _format_generic_error(prompt_length: int, max_tokens: int, error: str) -> st
         f"- Error: {error}"
     )
 
-# TODO: Split this function (31 lines) - KISS principle
-
 def build_bilingual_error_message(error: str, prompt_length: int, max_tokens: int) -> str:
-    """
-    Constructs a bilingual (Arabic/English) error message for LLM failures.
-    Refactored from MaestroGenerationService to ensure Separation of Concerns.
-    """
-    error_lower = error.lower()
+    """يجمع رسالة خطأ ثنائية اللغة عبر قواعد واضحة وبسيطة."""
+    context = ErrorContext(prompt_length=prompt_length, max_tokens=max_tokens, error=error)
 
-    if "timeout" in error_lower or "timed out" in error_lower:
-        return _format_timeout_error(max_tokens) + _add_technical_details(
-            prompt_length, max_tokens, error
-        )
-
-    if "rate" in error_lower and "limit" in error_lower:
-        return _format_rate_limit_error(error)
-
-    if "context" in error_lower or ("length" in error_lower and "token" in error_lower):
-        return _format_context_error(prompt_length, max_tokens, error)
-
-    if "api key" in error_lower or "auth" in error_lower or "unauthorized" in error_lower:
-        return _format_auth_error(error)
-
-    if (
-        "500" in error_lower
-        or re.search(r"\bserver\b", error_lower)
-        or "server_error" in error_lower
-    ):
-        return _format_server_error(prompt_length, max_tokens, error)
-
-    if error == "no_response":
-        return _format_no_response_error(prompt_length, max_tokens)
+    for predicate, builder in ERROR_HANDLERS:
+        if predicate(context):
+            return builder(context)
 
     return _format_generic_error(prompt_length, max_tokens, error)
 
-def _add_technical_details(prompt_length: int, max_tokens: int, error: str) -> str:
-    """Helper to add technical details block if not present"""
-    # Note: _format_timeout_error in the original code had these details appended,
-    # but the extracted method didn't include them in the return.
-    # We must ensure exact output match or improve.
-    # The original _format_timeout_error logic above included:
-    # "Technical Details: ... Prompt length... Max tokens... Error..."
 
+def _server_mode_status() -> str:
+    """يحدّد نص حالة وضع ULTIMATE أو EXTREME لدعم المستخدم."""
+    ultimate_active = os.getenv("LLM_ULTIMATE_COMPLEXITY_MODE", "0") == "1"
+    extreme_active = os.getenv("LLM_EXTREME_COMPLEXITY_MODE", "0") == "1"
+
+    if ultimate_active:
+        return "🚀 ULTIMATE MODE نشط | ULTIMATE MODE Active\n"
+    if extreme_active:
+        return "💪 EXTREME MODE نشط | EXTREME MODE Active\n"
+    return ""
+
+
+def _technical_details_block(prompt_length: int, max_tokens: int, error: str) -> str:
+    """يبني ملحق التفاصيل التقنية للحفاظ على الشفافية."""
     return (
         f"\n\n**Technical Details:**\n"
         f"- Prompt length: {prompt_length:,} characters\n"
         f"- Max tokens: {max_tokens:,}\n"
         f"- Error: {error}"
     )
+
+
+def _is_timeout(context: ErrorContext) -> bool:
+    """يتحقق من أخطاء المهلة الزمنية بسهولة القراءة."""
+    error_lower = context.normalized_error
+    return "timeout" in error_lower or "timed out" in error_lower
+
+
+def _is_rate_limited(context: ErrorContext) -> bool:
+    """يتحقق من رسائل تجاوز الحد."""
+    error_lower = context.normalized_error
+    return "rate" in error_lower and "limit" in error_lower
+
+
+def _is_context_error(context: ErrorContext) -> bool:
+    """يتحقق من أخطاء طول السياق."""
+    error_lower = context.normalized_error
+    return "context" in error_lower or ("length" in error_lower and "token" in error_lower)
+
+
+def _is_auth_error(context: ErrorContext) -> bool:
+    """يتحقق من أخطاء المصادقة ورفض الوصول."""
+    error_lower = context.normalized_error
+    return "api key" in error_lower or "auth" in error_lower or "unauthorized" in error_lower
+
+
+def _is_server_error(context: ErrorContext) -> bool:
+    """يتحقق من أخطاء الخادم 500 أو الرسائل المشابهة."""
+    error_lower = context.normalized_error
+    return (
+        "500" in error_lower
+        or re.search(r"\bserver\b", error_lower) is not None
+        or "server_error" in error_lower
+    )
+
+
+def _is_empty_response(context: ErrorContext) -> bool:
+    """يتحقق من حالة عدم وصول أي رد من النموذج."""
+    return context.error == "no_response"
+
+
+def _build_timeout_message(context: ErrorContext) -> str:
+    """يبني رسالة أخطاء المهلة مع تفاصيل تقنية."""
+    return _format_timeout_error(context.max_tokens) + _technical_details_block(
+        context.prompt_length, context.max_tokens, context.error
+    )
+
+
+def _build_rate_limit_message(context: ErrorContext) -> str:
+    """يبني رسالة تجاوز الحد."""
+    return _format_rate_limit_error(context.error)
+
+
+def _build_context_length_message(context: ErrorContext) -> str:
+    """يبني رسالة طول السياق الزائد."""
+    return _format_context_error(context.prompt_length, context.max_tokens, context.error)
+
+
+def _build_auth_message(context: ErrorContext) -> str:
+    """يبني رسالة أخطاء المصادقة."""
+    return _format_auth_error(context.error)
+
+
+def _build_server_error_message(context: ErrorContext) -> str:
+    """يبني رسالة خطأ الخادم باستخدام المساعدات الجديدة."""
+    return _format_server_error(context.prompt_length, context.max_tokens, context.error)
+
+
+def _build_no_response_message(context: ErrorContext) -> str:
+    """يبني رسالة توضح عدم وجود استجابة."""
+    return _format_no_response_error(context.prompt_length, context.max_tokens)
+
+
+ERROR_HANDLERS: tuple[tuple[ServerErrorPredicate, ServerErrorBuilder], ...] = (
+    (_is_timeout, _build_timeout_message),
+    (_is_rate_limited, _build_rate_limit_message),
+    (_is_context_error, _build_context_length_message),
+    (_is_auth_error, _build_auth_message),
+    (_is_server_error, _build_server_error_message),
+    (_is_empty_response, _build_no_response_message),
+)

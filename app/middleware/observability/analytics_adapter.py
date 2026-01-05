@@ -2,126 +2,114 @@
 # ======================================================================================
 # ==                    ANALYTICS ADAPTER MIDDLEWARE (v∞)                           ==
 # ======================================================================================
-"""
-محول التحليلات - Analytics Adapter
+"""وسيط محول التحليلات - يرسل أحداث الاستخدام لمنصات الرصد التجاري."""
 
-Bridge to analytics platforms for business intelligence and
-user behavior analysis.
-"""
-
-from typing import Any
+from dataclasses import dataclass
+import time
 
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 
-class AnalyticsAdapter(BaseMiddleware):
-    """
-    Analytics Adapter Middleware
+AnalyticsValue = str | int | float | bool | None
 
-    Exports analytics events to platforms like:
-    - Google Analytics
-    - Mixpanel
-    - Amplitude
-    - Custom analytics platforms
-    """
+
+@dataclass(frozen=True)
+class AnalyticsEvent:
+    """حدث تحليلي منظم يسهل تمريره لمزوّدي التحليلات المختلفين."""
+
+    timestamp: float
+    event_type: str
+    path: str
+    method: str
+    status_code: int
+    success: bool
+    user_id: str | None
+    session_id: str | None
+    user_agent: str
+    ip_address: str
+
+    def to_dict(self) -> dict[str, AnalyticsValue]:
+        """يحوّل الحدث إلى قاموس بسيط قابل للتسلسل."""
+
+        return {
+            "timestamp": self.timestamp,
+            "event_type": self.event_type,
+            "path": self.path,
+            "method": self.method,
+            "status_code": self.status_code,
+            "success": self.success,
+            "user_id": self.user_id,
+            "session_id": self.session_id,
+            "user_agent": self.user_agent,
+            "ip_address": self.ip_address,
+        }
+
+
+class AnalyticsAdapter(BaseMiddleware):
+    """وسيط يجمع أحداث التحليل السلوكي ويرسلها في نهاية الطلب."""
 
     name = "AnalyticsAdapter"
-    order = 95  # Execute late to collect all data
+    order = 95
 
-    def _setup(self):
-        """Initialize analytics adapters"""
+    def _setup(self) -> None:
+        """يضبط المنصات المفعّلة ويهيئ عدّاد الأحداث."""
+
         self.platforms: list[str] = self.config.get("platforms", [])
-        self.events_sent = 0
+        self.events_sent: int = 0
 
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
-        """
-        Track analytics event
+        """يتجاهل طلبات الصحة ويحافظ على مسار التنفيذ للطلبات الأخرى."""
 
-        Args:
-            ctx: Request context
-
-        Returns:
-            Always succeeds
-        """
-        # Skip analytics for health checks
-        if ctx.path in ["/health", "/api/health", "/ping"]:
+        if ctx.path in {"/health", "/api/health", "/ping"}:
             return MiddlewareResult.success()
 
         return MiddlewareResult.success()
 
     def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
-        """
-        Send analytics event
+        """يبني حدثاً تحليلياً ويرسله للمنصات المحددة بعد إتمام الطلب."""
 
-        Args:
-            ctx: Request context
-            result: Middleware result
-        """
-        # Skip analytics for health checks
-        if ctx.path in ["/health", "/api/health", "/ping"]:
+        if ctx.path in {"/health", "/api/health", "/ping"}:
             return
 
+        event = self._prepare_analytics_event(ctx, result)
         self.events_sent += 1
 
-        # Prepare analytics event
-        event = self._prepare_analytics_event(ctx, result)
-
-        # Send to configured platforms
         for platform in self.platforms:
             try:
-                self._send_to_platform(platform, event)
-            except Exception as e:
-                # Log error but don't fail request
-                print(f"Analytics error ({platform}): {e}")
+                self._send_to_platform(platform, event.to_dict())
+            except Exception as exc:  # pragma: no cover - حماية من مزود خارجي
+                print(f"Analytics error ({platform}): {exc}")
 
     def _prepare_analytics_event(
         self, ctx: RequestContext, result: MiddlewareResult
-    ) -> dict[str, Any]:
-        """
-        Prepare analytics event data
+    ) -> AnalyticsEvent:
+        """يحّول بيانات الطلب إلى حدث تحليلي مفهوم لكل مزود."""
 
-        Args:
-            ctx: Request context
-            result: Middleware result
+        return AnalyticsEvent(
+            timestamp=time.time(),
+            event_type="page_view" if ctx.method == "GET" else "api_call",
+            path=ctx.path,
+            method=ctx.method,
+            status_code=result.status_code,
+            success=result.is_success,
+            user_id=ctx.user_id,
+            session_id=ctx.session_id,
+            user_agent=ctx.user_agent,
+            ip_address=ctx.ip_address,
+        )
 
-        Returns:
-            Event data dictionary
-        """
-        import time
+    def _send_to_platform(self, platform: str, event: dict[str, AnalyticsValue]) -> None:
+        """نقطة دمج مستقبلية لإرسال الأحداث إلى المنصات الخارجية."""
 
-        return {
-            "timestamp": time.time(),
-            "event_type": "page_view" if ctx.method == "GET" else "api_call",
-            "path": ctx.path,
-            "method": ctx.method,
-            "status_code": result.status_code,
-            "success": result.is_success,
-            "user_id": ctx.user_id,
-            "session_id": ctx.session_id,
-            "user_agent": ctx.user_agent,
-            "ip_address": ctx.ip_address,
-        }
+    def get_statistics(self) -> dict[str, object]:
+        """يعيد إجمالي الأحداث المرسلة والمنصات المشاركة."""
 
-    def _send_to_platform(self, platform: str, event: dict[str, Any]):
-        """
-        Send event to analytics platform
-
-        Args:
-            platform: Platform name
-            event: Event data
-        """
-        # Implementation would depend on the platform
-        # This is a placeholder
-        pass
-
-    def get_statistics(self) -> dict:
-        """Return analytics adapter statistics"""
         stats = super().get_statistics()
         stats.update(
             {
                 "events_sent": self.events_sent,
-                "active_platforms": self.platforms,
+                "active_platforms": list(self.platforms),
             }
         )
         return stats

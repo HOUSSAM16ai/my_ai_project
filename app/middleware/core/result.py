@@ -5,48 +5,44 @@
 """
 نتيجة الوسيط الموحدة - Unified Middleware Result
 
-A standardized result object returned by all middleware components.
-Enables consistent error handling and flow control across the pipeline.
-
-Design Pattern: Result Pattern (Railway-Oriented Programming)
+حاوية نتائج مضبوطة تُستخدم عبر جميع الوسطاء لضمان اتساق القرارات. تُعبر عن
+حالة النجاح أو الفشل بطريقة مبسطة للمبتدئين مع الاحتفاظ بالمعلومات
+التقنية اللازمة للأنظمة المتقدمة.
 """
-
-from typing import Any
 
 from dataclasses import dataclass, field
 
 @dataclass
 class MiddlewareResult:
     """
-    Unified result returned by middleware components
+    حاوية نتيجة موحّدة تعيدها جميع الوسطاء.
 
-    This object standardizes the response from middleware execution,
-    allowing the pipeline to make intelligent decisions about
-    whether to continue, halt, or modify request processing.
+    تبسط هذه البنية مشاركة المعلومات بين الوسطاء وتوضح للمبتدئين معنى كل
+    حقل مع الحفاظ على مرونة التوسعة للمحترفين.
 
-    Attributes:
-        is_success: Whether the middleware check passed
-        status_code: HTTP status code (if blocking)
-        message: Human-readable message
-        error_code: Machine-readable error code
-        details: Additional details about the result
-        metadata: Extensible metadata
-        should_continue: Whether pipeline should continue
-        response_data: Optional response data for early termination
+    السمات:
+        is_success: يحدد نجاح التحقق من الوسيط.
+        status_code: شيفرة HTTP عند حجب الطلب.
+        message: رسالة بشرية موجزة.
+        error_code: رمز خطأ قابل للقراءة الآلية.
+        details: تفاصيل تقنية إضافية.
+        metadata: بيانات تعريفية قابلة للتوسعة.
+        should_continue: هل يجب متابعة خط الأنابيب.
+        response_data: بيانات إضافية للرد المبكر.
     """
 
     is_success: bool = True
     status_code: int = 200
     message: str = ""
     error_code: str | None = None
-    details: dict[str, Any] = field(default_factory=dict)
-    metadata: dict[str, Any] = field(default_factory=dict)
+    details: dict[str, object] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
     should_continue: bool = True
-    response_data: dict[str, Any] | None = None
+    response_data: dict[str, object] | None = None
 
     @classmethod
     def success(cls, message: str = "Success") -> "MiddlewareResult":
-        """Create a successful result"""
+        """ينشئ نتيجة نجاح قياسية."""
         return cls(
             is_success=True,
             status_code=200,
@@ -60,9 +56,9 @@ class MiddlewareResult:
         status_code: int,
         message: str,
         error_code: str | None = None,
-        details: dict[str, Any] | None = None,
+        details: dict[str, object] | None = None,
     ) -> "MiddlewareResult":
-        """Create a failure result that blocks the request"""
+        """ينشئ نتيجة فشل تحجب الطلب الحالي."""
         return cls(
             is_success=False,
             status_code=status_code,
@@ -74,7 +70,7 @@ class MiddlewareResult:
 
     @classmethod
     def forbidden(cls, message: str = "Access Forbidden") -> "MiddlewareResult":
-        """Create a 403 Forbidden result"""
+        """ينشئ نتيجة 403 ممنوعة."""
         return cls.failure(
             status_code=403,
             message=message,
@@ -83,7 +79,7 @@ class MiddlewareResult:
 
     @classmethod
     def unauthorized(cls, message: str = "Unauthorized") -> "MiddlewareResult":
-        """Create a 401 Unauthorized result"""
+        """ينشئ نتيجة 401 غير مصرّح بها."""
         return cls.failure(
             status_code=401,
             message=message,
@@ -94,7 +90,7 @@ class MiddlewareResult:
     def rate_limited(
         cls, message: str = "Rate Limit Exceeded", retry_after: int = 60
     ) -> "MiddlewareResult":
-        """Create a 429 Rate Limited result"""
+        """ينشئ نتيجة 429 لتجاوز حد الطلبات مع مدة الانتظار."""
         return cls.failure(
             status_code=429,
             message=message,
@@ -104,7 +100,7 @@ class MiddlewareResult:
 
     @classmethod
     def bad_request(cls, message: str = "Bad Request") -> "MiddlewareResult":
-        """Create a 400 Bad Request result"""
+        """ينشئ نتيجة 400 لطلب غير صالح."""
         return cls.failure(
             status_code=400,
             message=message,
@@ -113,26 +109,26 @@ class MiddlewareResult:
 
     @classmethod
     def internal_error(cls, message: str = "Internal Server Error") -> "MiddlewareResult":
-        """Create a 500 Internal Server Error result"""
+        """ينشئ نتيجة 500 لخطأ داخلي."""
         return cls.failure(
             status_code=500,
             message=message,
             error_code="INTERNAL_ERROR",
         )
 
-    def with_metadata(self, key: str, value: dict[str, str | int | bool]) -> "MiddlewareResult":
-        """Add metadata to result (chainable)"""
+    def with_metadata(self, key: str, value: object) -> "MiddlewareResult":
+        """يضيف بيانات تعريفية بشكل متسلسل."""
         self.metadata[key] = value
         return self
 
-    def with_details(self, **kwargs) -> "MiddlewareResult":
-        """Add details to result (chainable)"""
+    def with_details(self, **kwargs: object) -> "MiddlewareResult":
+        """يضيف تفاصيل إضافية بشكل متسلسل."""
         self.details.update(kwargs)
         return self
 
-    def to_dict(self) -> dict[str, Any]:
-        """Convert result to dictionary for JSON responses"""
-        result = {
+    def to_dict(self) -> dict[str, object]:
+        """يحوّل النتيجة إلى قاموس جاهز للعرض في JSON."""
+        result: dict[str, object] = {
             "success": self.is_success,
             "message": self.message,
         }
@@ -147,3 +143,7 @@ class MiddlewareResult:
             result["data"] = self.response_data
 
         return result
+
+    def to_response_components(self) -> tuple[int, dict[str, object]]:
+        """يعيد شيفرة الحالة وحمولة JSON الموحدة للردود المبكرة."""
+        return self.status_code, self.to_dict()

@@ -1,18 +1,18 @@
-"""
-Management API Schemas.
-Pydantic models for Admin Dashboard and CRUD operations.
-Ensures strict typing and governance for data exchange.
-"""
+"""نماذج إدارة النظام مع توثيق عربي صارم وتجنب الأنواع العامة."""
+
+from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel
 
 T = TypeVar("T")
 
+
 class PaginationMeta(BaseModel):
-    """Metadata for paginated responses."""
+    """بيانات التعريف الخاصة بالترقيم في الاستجابات المتعددة الصفحات."""
+
     page: int
     per_page: int
     total_items: int
@@ -20,19 +20,17 @@ class PaginationMeta(BaseModel):
     has_next: bool
     has_prev: bool
 
+
 class PaginatedResponse[T](BaseModel):
-    """
-    Generic wrapper for paginated data.
-    Standardizes response format across the API.
-    """
+    """غلاف موحّد لنتائج متعددة الصفحات يضمن اتساق الحقول للمبتدئين."""
+
     items: list[T]
     pagination: PaginationMeta
 
+
 class UserResponse(BaseModel):
-    """
-    DTO for User data.
-    Excludes sensitive fields like password hashes.
-    """
+    """كائن نقل بيانات للمستخدمين بدون الحقول الحساسة."""
+
     id: int
     email: str
     full_name: str | None = None
@@ -44,8 +42,10 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 class MissionResponse(BaseModel):
-    """DTO for Mission data."""
+    """كائن نقل بيانات للمهام مع الحفاظ على الحقول الاختيارية بسيطة."""
+
     id: int
     name: str | None = None
     objective: str | None = None
@@ -56,8 +56,10 @@ class MissionResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 class TaskResponse(BaseModel):
-    """DTO for Task data."""
+    """كائن نقل بيانات للمهام الفرعية بأسلوب واضح للمبتدئين."""
+
     id: int
     mission_id: int | None = None
     name: str | None = None
@@ -68,8 +70,10 @@ class TaskResponse(BaseModel):
     class Config:
         from_attributes = True
 
-class GenericResponse(BaseModel):
-    """Simple success/error response."""
+
+class GenericResponse[T](BaseModel):
+    """استجابة بسيطة تحافظ على التناسق مع إمكانية تمرير حمولة محددة النوع."""
+
     status: str = "success"
     message: str | None = None
-    data: Any | None = None
+    data: T | None = None

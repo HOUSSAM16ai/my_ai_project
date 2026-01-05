@@ -108,6 +108,19 @@ def test_command_injection_detection() -> None:
     assert issues[0].title == "Potential Command Injection"
 
 
+def test_command_injection_ignores_safe_subprocess_usage() -> None:
+    validator = OWASPValidator()
+    code = (
+        "import subprocess\n"
+        "subprocess.call(['ls'])\n"
+        "subprocess.run(['echo', 'ok'], shell=False)"
+    )
+
+    issues = validator._check_command_injection(code, "executor.py")
+
+    assert issues == []
+
+
 def test_plaintext_password_storage_detects_unhashed_input() -> None:
     validator = OWASPValidator()
     code = "password = request.form.get('password')\nuser.save(password)"
@@ -236,6 +249,20 @@ def test_cookie_flag_validations() -> None:
     assert len(httponly_issues) == 1
     assert secure_issues[0].cwe_id == "CWE-614"
     assert httponly_issues[0].cwe_id == "CWE-1004"
+
+
+def test_cookie_flag_validations_skip_when_already_secure() -> None:
+    validator = OWASPValidator()
+    code = (
+        "SESSION_COOKIE_SECURE = True\n"
+        "SESSION_COOKIE_HTTPONLY = True\n"
+    )
+
+    secure_issues = validator._check_secure_cookie_flag(code, "settings.py")
+    httponly_issues = validator._check_httponly_cookie_flag(code, "settings.py")
+
+    assert secure_issues == []
+    assert httponly_issues == []
 
 
 def test_logging_validations_for_missing_and_sensitive_events() -> None:

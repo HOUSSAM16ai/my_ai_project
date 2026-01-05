@@ -2,159 +2,141 @@
 # ======================================================================================
 # ==                    TELEMETRY BRIDGE MIDDLEWARE (v∞)                            ==
 # ======================================================================================
-"""
-جسر القياس - Telemetry Bridge
+"""وسيط جسر القياس - يسهّل إرسال القياسات إلى منصات المراقبة الخارجية."""
 
-Bridge to external observability platforms like OpenTelemetry,
-Prometheus, Datadog, etc.
-"""
-
-from typing import Any
+from dataclasses import dataclass
+import time
 
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 
-class TelemetryBridge(BaseMiddleware):
-    """
-    Telemetry Bridge Middleware
+TelemetryValue = str | int | float | bool | None
 
-    Exports telemetry data to external platforms:
-    - OpenTelemetry (OTLP)
-    - Prometheus
-    - Datadog
-    - Custom exporters
-    """
+
+@dataclass(frozen=True)
+class TelemetrySnapshot:
+    """لقطة قياس مهيكلة تُحافظ على البيانات الضرورية للتصدير."""
+
+    timestamp: float
+    request_id: str
+    method: str
+    path: str
+    status_code: int
+    success: bool
+    duration: float
+    ip_address: str
+    trace_id: str | None
+    span_id: str | None
+    user_id: str | None
+
+    def to_dict(self) -> dict[str, TelemetryValue]:
+        """يحوّل الكائن إلى قاموس جاهز للتسلسل أو التصدير."""
+
+        return {
+            "timestamp": self.timestamp,
+            "request_id": self.request_id,
+            "trace_id": self.trace_id,
+            "span_id": self.span_id,
+            "method": self.method,
+            "path": self.path,
+            "status_code": self.status_code,
+            "success": self.success,
+            "duration": self.duration,
+            "ip_address": self.ip_address,
+            "user_id": self.user_id,
+        }
+
+
+class TelemetryBridge(BaseMiddleware):
+    """وسيط خفيف يجمع القياسات الأولية ويصدرها بعد اكتمال الطلب."""
 
     name = "TelemetryBridge"
-    order = 4  # Execute after observability middleware
+    order = 4
 
-    def _setup(self):
-        """Initialize exporters"""
+    def _setup(self) -> None:
+        """يضبط المصدّرات ويحضّر عدادات التصدير."""
+
         self.exporters: list[str] = self.config.get("exporters", [])
-        self.export_count = 0
+        self.export_count: int = 0
 
-        # Initialize exporters based on configuration
         self._init_exporters()
 
-    def _init_exporters(self):
-        """Initialize configured exporters"""
-        # OpenTelemetry
+    def _init_exporters(self) -> None:
+        """يمهّد المصدّرات المفعّلة دون اعتماد على تنفيذات فعلية بعد."""
+
         if "opentelemetry" in self.exporters:
             self._init_opentelemetry()
 
-        # Prometheus
         if "prometheus" in self.exporters:
             self._init_prometheus()
 
-        # Datadog
         if "datadog" in self.exporters:
             self._init_datadog()
 
-    def _init_opentelemetry(self):
-        """Initialize OpenTelemetry exporter"""
-        # Configuration would be loaded from config
-        # For now, this is a placeholder
-        pass
+    def _init_opentelemetry(self) -> None:
+        """موقع تحضير مصدّر OpenTelemetry عندما تتوفر مكتباته."""
 
-    def _init_prometheus(self):
-        """Initialize Prometheus exporter"""
-        # Configuration would be loaded from config
-        pass
+    def _init_prometheus(self) -> None:
+        """موقع تحضير مصدّر Prometheus عند التوصيل بنظام القياس."""
 
-    def _init_datadog(self):
-        """Initialize Datadog exporter"""
-        # Configuration would be loaded from config
-        pass
+    def _init_datadog(self) -> None:
+        """موقع تحضير مصدّر Datadog لتجميع المقاييس."""
 
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
-        """
-        Bridge request telemetry
-
-        Args:
-            ctx: Request context
-
-        Returns:
-            Always succeeds
-        """
-        # Store export timestamp
-        import time
+        """يحفظ لحظة البدء ضمن بيانات السياق لاحتساب المدة لاحقاً."""
 
         ctx.add_metadata("telemetry_bridge_start", time.time())
 
         return MiddlewareResult.success()
 
     def on_complete(self, ctx: RequestContext, result: MiddlewareResult) -> None:
-        """
-        Export telemetry data
+        """يبني حمولة قياس مهيكلة ويصدرها لكل منصّة مفعّلة."""
 
-        Args:
-            ctx: Request context
-            result: Middleware result
-        """
+        snapshot = self._prepare_telemetry_data(ctx, result)
         self.export_count += 1
-
-        # Export to configured backends
-        telemetry_data = self._prepare_telemetry_data(ctx, result)
 
         for exporter in self.exporters:
             try:
-                self._export_to(exporter, telemetry_data)
-            except Exception as e:
-                # Log error but don't fail the request
-                print(f"Telemetry export error ({exporter}): {e}")
+                self._export_to(exporter, snapshot.to_dict())
+            except Exception as exc:  # pragma: no cover - حماية من أعطال المصدّر
+                print(f"Telemetry export error ({exporter}): {exc}")
 
     def _prepare_telemetry_data(
         self, ctx: RequestContext, result: MiddlewareResult
-    ) -> dict[str, Any]:
-        """
-        Prepare telemetry data for export
+    ) -> TelemetrySnapshot:
+        """يحول بيانات السياق والنتيجة إلى لقطة قياس متجانسة."""
 
-        Args:
-            ctx: Request context
-            result: Middleware result
+        start_time_raw = ctx.get_metadata("telemetry_bridge_start")
+        start_time = float(start_time_raw) if isinstance(start_time_raw, (int, float)) else None
+        timestamp = time.time()
+        duration = timestamp - start_time if start_time else 0.0
 
-        Returns:
-            Telemetry data dictionary
-        """
-        import time
+        return TelemetrySnapshot(
+            timestamp=timestamp,
+            request_id=ctx.request_id,
+            method=ctx.method,
+            path=ctx.path,
+            status_code=result.status_code,
+            success=result.is_success,
+            duration=duration,
+            ip_address=ctx.ip_address,
+            trace_id=ctx.trace_id,
+            span_id=ctx.span_id,
+            user_id=ctx.user_id,
+        )
 
-        start_time = ctx.get_metadata("telemetry_bridge_start")
-        duration = time.time() - start_time if start_time else 0
+    def _export_to(self, exporter: str, data: dict[str, TelemetryValue]) -> None:
+        """نقطة تمدد للتصدير الفعلي، تُستبدل لاحقاً بالدمج الحقيقي."""
 
-        return {
-            "timestamp": time.time(),
-            "request_id": ctx.request_id,
-            "trace_id": ctx.trace_id,
-            "span_id": ctx.span_id,
-            "method": ctx.method,
-            "path": ctx.path,
-            "status_code": result.status_code,
-            "success": result.is_success,
-            "duration": duration,
-            "ip_address": ctx.ip_address,
-            "user_id": ctx.user_id,
-        }
+    def get_statistics(self) -> dict[str, object]:
+        """يعيد عدد التصديرات والمصدّرات النشطة للمراقبة."""
 
-    def _export_to(self, exporter: str, data: dict[str, Any]):
-        """
-        Export data to specific backend
-
-        Args:
-            exporter: Exporter name
-            data: Telemetry data
-        """
-        # Implementation would depend on the exporter
-        # For now, this is a placeholder
-        pass
-
-    def get_statistics(self) -> dict:
-        """Return telemetry bridge statistics"""
         stats = super().get_statistics()
         stats.update(
             {
                 "export_count": self.export_count,
-                "active_exporters": self.exporters,
+                "active_exporters": list(self.exporters),
             }
         )
         return stats
