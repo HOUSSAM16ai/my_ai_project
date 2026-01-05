@@ -6,19 +6,42 @@ CRUD Router - عمليات البيانات العامة
 يعتمد على `CrudBoundaryService` لتنفيذ المنطق، مما يضمن فصل طبقة العرض عن طبقة البيانات.
 """
 
-from typing import Any
-
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.crud import GenericResourceResponse, PaginatedResponse
 from app.core.database import get_db
 from app.services.boundaries.crud_boundary_service import CrudBoundaryService
+from app.schemas.management import PaginatedResponse as BoundaryPaginatedResponse
 
 router = APIRouter(tags=["CRUD"])
 
+
+def _to_api_paginated_response(
+    boundary_result: BoundaryPaginatedResponse,
+) -> PaginatedResponse[GenericResourceResponse]:
+    """
+    يحول استجابة التقسيم إلى الصفحات من طبقة الحدود إلى نموذج الـ API الموحد.
+
+    يضمن هذا التحويل توافق مفاتيح الحقول مع توقعات الواجهة العامة، بحيث تبقى
+    الحقول `total`, `page`, `per_page`, `pages` متوفرة مع عناصر محسَّنة باستخدام
+    `GenericResourceResponse` لضمان مرونة الحقول الإضافية.
+    """
+
+    pagination = boundary_result.pagination
+    items = [GenericResourceResponse.model_validate(item) for item in boundary_result.items]
+
+    return PaginatedResponse[GenericResourceResponse](
+        items=items,
+        total=pagination.total_items,
+        page=pagination.page,
+        per_page=pagination.per_page,
+        pages=pagination.total_pages,
+    )
+
+
 def get_crud_service(db: AsyncSession = Depends(get_db)) -> CrudBoundaryService:
-    """Dependency to get the CRUD Boundary Service."""
+    """يوفر تبعية حقن لخدمة CRUD الحدية باستخدام جلسة قاعدة البيانات غير المتزامنة."""
     return CrudBoundaryService(db)
 
 @router.get(
@@ -51,6 +74,9 @@ async def list_resources(
         filters=filters
     )
     # Ensure result matches the PaginatedResponse structure
+    if isinstance(result, BoundaryPaginatedResponse):
+        return _to_api_paginated_response(result)
+
     return PaginatedResponse[GenericResourceResponse].model_validate(result)
 
 @router.post(
@@ -60,7 +86,7 @@ async def list_resources(
 )
 async def create_resource(
     resource_type: str,
-    payload: dict[str, Any],
+    payload: dict[str, object],
     service: CrudBoundaryService = Depends(get_crud_service),
 ) -> GenericResourceResponse:
     """
@@ -83,6 +109,9 @@ async def get_resource(
     جلب مورد محدد بواسطة المعرف.
     """
     result = await service.get_item(resource_type, item_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="المورد غير موجود")
+
     return GenericResourceResponse.model_validate(result)
 
 @router.put(
@@ -93,13 +122,16 @@ async def get_resource(
 async def update_resource(
     resource_type: str,
     item_id: str,
-    payload: dict[str, Any],
+    payload: dict[str, object],
     service: CrudBoundaryService = Depends(get_crud_service),
 ) -> GenericResourceResponse:
     """
     تحديث مورد موجود.
     """
     result = await service.update_item(resource_type, item_id, payload)
+    if result is None:
+        raise HTTPException(status_code=404, detail="المورد غير موجود")
+
     return GenericResourceResponse.model_validate(result)
 
 @router.delete(
@@ -116,4 +148,7 @@ async def delete_resource(
     حذف مورد محدد.
     """
     result = await service.delete_item(resource_type, item_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="المورد غير موجود")
+
     return GenericResourceResponse.model_validate(result)

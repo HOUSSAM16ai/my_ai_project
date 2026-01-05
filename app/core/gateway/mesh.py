@@ -39,6 +39,30 @@ MAX_RETRIES = 3
 CIRCUIT_FAILURE_THRESHOLD = 5
 CIRCUIT_RECOVERY_TIMEOUT = 30.0
 
+
+class OmniRouter:
+    """موجّه ذكي يعيد ترتيب العقد وفق أولوية ديناميكية."""
+
+    def __init__(self, nodes_map: dict[str, "NeuralNode"] | None = None) -> None:
+        self._nodes_map = nodes_map or {}
+
+    def get_ranked_nodes(self, prompt: str | None = None) -> list[str]:
+        """
+        إرجاع قائمة معرفات العقد بترتيب افتراضي قابل للتخصيص.
+
+        يتم الحفاظ على تسلسل منطقي (الأساسي، ثم الاحتياطي، ثم شبكة الأمان)
+        مع السماح للطبقات العليا بحقن ترتيب خاص عبر الاختبارات أو التهيئة.
+        """
+
+        del prompt  # يُترك للسيناريوهات المستقبلية الخاصة بتحليل التعقيد.
+        return list(self._nodes_map.keys())
+
+
+def get_omni_router(nodes_map: dict[str, "NeuralNode"] | None = None) -> OmniRouter:
+    """مصنع موجّه يحافظ على كائن واحد قابل للاختبار بسهولة."""
+
+    return OmniRouter(nodes_map)
+
 @runtime_checkable
 class AIClient(Protocol):
     def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]: ...
@@ -70,6 +94,7 @@ class NeuralRoutingMesh:
         }
 
         self.nodes_map: dict[str, NeuralNode] = self._initialize_nodes()
+        self.omni_router = get_omni_router(self.nodes_map)
 
     async def __aiter__(self):
         """Allow the client to be used as an async iterator context if needed."""
@@ -112,21 +137,30 @@ class NeuralRoutingMesh:
         final_nodes = []
         now = time.time()
 
-        # Check Primary
-        if PRIMARY_MODEL in self.nodes_map:
-            node = self.nodes_map[PRIMARY_MODEL]
+        ranked_models: list[str] | None = None
+        try:
+            ranked_models = self.omni_router.get_ranked_nodes(prompt)
+        except Exception as exc:  # pragma: no cover - protective fallback
+            logger.warning("OmniRouter ranking failed; falling back to static order", exc_info=exc)
+
+        if ranked_models:
+            candidates = [model_id for model_id in ranked_models if model_id in self.nodes_map]
+        else:
+            candidates = [PRIMARY_MODEL, *FALLBACK_MODELS, SAFETY_NET_MODEL_ID]
+
+        for model_id in candidates:
+            node = self.nodes_map.get(model_id)
+            if node is None:
+                continue
+
+            if model_id == SAFETY_NET_MODEL_ID:
+                final_nodes.append(node)
+                continue
+
             if node.circuit_breaker.allow_request() and node.rate_limit_cooldown_until <= now:
                 final_nodes.append(node)
 
-        # Check Fallbacks
-        for model_id in FALLBACK_MODELS:
-            if model_id in self.nodes_map:
-                node = self.nodes_map[model_id]
-                if node.circuit_breaker.allow_request() and node.rate_limit_cooldown_until <= now:
-                    final_nodes.append(node)
-
-        # Always append Safety Net at the end
-        if SAFETY_NET_MODEL_ID in self.nodes_map:
+        if SAFETY_NET_MODEL_ID in self.nodes_map and self.nodes_map[SAFETY_NET_MODEL_ID] not in final_nodes:
             final_nodes.append(self.nodes_map[SAFETY_NET_MODEL_ID])
 
         return final_nodes

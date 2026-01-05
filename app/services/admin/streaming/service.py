@@ -90,6 +90,37 @@ class SmartTokenChunker:
         # Build chunks from tokens
         return _build_chunks_from_tokens(tokens, chunk_size)
 
+    def smart_chunk(
+        self, text: str, chunk_size: int = StreamingConfig.OPTIMAL_CHUNK_SIZE
+    ) -> Generator[str, None, None]:
+        """
+        تقسيم النص إلى أجزاء مع الحفاظ على كتل الأكواد بشكل مستقل.
+
+        تستخدم هذه الدالة تحليل الكتل المحاطة بثلاث علامات ``` ككيانات
+        غير قابلة للتجزئة ثم تعيد استخدام chunk_text لبقية النص لضمان
+        تجربة بث سلسة.
+        """
+
+        if not text:
+            return
+
+        fence_pattern = re.compile(r"(```.*?```)", re.DOTALL)
+        cursor = 0
+
+        for match in fence_pattern.finditer(text):
+            leading = text[cursor : match.start()]
+            if leading:
+                for chunk in self.chunk_text(leading, chunk_size):
+                    yield chunk
+
+            yield match.group(1)
+            cursor = match.end()
+
+        trailing = text[cursor:]
+        if trailing:
+            for chunk in self.chunk_text(trailing, chunk_size):
+                yield chunk
+
 
 def _split_into_tokens(text: str) -> list[str]:
     """

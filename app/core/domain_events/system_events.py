@@ -1,8 +1,4 @@
-"""
-System Domain Events.
-
-أحداث متعلقة بالنظام والأمان والAPI (System, Security, and API Events).
-"""
+"""أحداث النطاق النظامي والأمن والواجهات."""
 
 from dataclasses import dataclass
 from typing import Any
@@ -18,12 +14,17 @@ from app.core.domain_events.base import (
 @DomainEventRegistry.register
 @dataclass
 class SecurityThreatDetected(DomainEvent):
-    def __init__(self, threat_type: str, severity: str, details: dict[str, Any]):
+    def __init__(self, threat_type: str, severity: str, source_ip: str, details: dict[str, Any]):
         super().__init__(
             event_type="SecurityThreatDetected",
             bounded_context=BoundedContext.SECURITY_COMPLIANCE,
             category=EventCategory.SYSTEM,
-            payload={"threat_type": threat_type, "severity": severity, "details": details}
+            payload={
+                "threat_type": threat_type,
+                "severity": severity,
+                "source_ip": source_ip,
+                "details": details,
+            },
         )
 
 
@@ -44,14 +45,14 @@ class AccessDenied(DomainEvent):
 @DomainEventRegistry.register
 @dataclass
 class ApiRequestReceived(DomainEvent):
-    def __init__(self, request_id: str, method: str, endpoint: str, client_id: str):
+    def __init__(self, request_id: str, method: str, endpoint: str):
         super().__init__(
             event_type="ApiRequestReceived",
             bounded_context=BoundedContext.API_GATEWAY,
             category=EventCategory.SYSTEM,
             aggregate_id=request_id,
             aggregate_type="Request",
-            payload={"method": method, "endpoint": endpoint, "client_id": client_id}
+            payload={"method": method, "endpoint": endpoint},
         )
 
 

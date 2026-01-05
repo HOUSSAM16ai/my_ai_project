@@ -90,8 +90,8 @@ class TestMissionStatus:
         assert MissionStatus.ADAPTING.value == "adapting"
 
     def test_status_count(self):
-        """يجب أن يحتوي على 5 حالات فقط."""
-        assert len(MissionStatus) == 5
+        """يجب أن يطابق إجمالي الحالات التعاريف الثمانية الحالية."""
+        assert len(MissionStatus) == 8
 
     def test_case_insensitive_lookup(self):
         """يجب أن يعمل البحث بغض النظر عن حالة الأحرف."""

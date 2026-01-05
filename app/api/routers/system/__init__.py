@@ -51,6 +51,7 @@ async def health_check(
     "/healthz",
     summary="فحص الحيوية (Kubernetes Liveness Probe)",
     response_model=HealthzResponse,
+    response_model_exclude_none=True,
 )
 async def healthz(
     response: Response,

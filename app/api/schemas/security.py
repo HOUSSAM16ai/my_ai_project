@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, ValidationInfo, field_validator
 
 from app.core.schemas import RobustBaseModel
 
@@ -32,14 +32,32 @@ class TokenVerifyRequest(RobustBaseModel):
 
 class UserResponse(RobustBaseModel):
     id: int
-    name: str = Field(..., alias="full_name")
+    name: str = Field(
+        ..., validation_alias=AliasChoices("name", "full_name"), serialization_alias="name"
+    )
+    full_name: str | None = Field(
+        None,
+        description="الاسم الكامل (متوافق مع الحقول التاريخية)",
+        serialization_alias="full_name",
+    )
     email: str
     is_admin: bool = False
 
-    @field_validator("name", mode="before")
+    @field_validator("full_name", mode="after")
     @classmethod
-    def map_full_name(cls, v: dict[str, str | int | bool], _info: dict[str, str | int | bool]) -> str:
-        return v
+    def mirror_full_name(cls, value: str | None, info: ValidationInfo) -> str:
+        """ضبط حقل الاسم الكامل ليعكس القيمة الأساسية لحقل الاسم."""
+
+        base_name = info.data.get("name") if hasattr(info, "data") else None
+        return value or base_name
+
+    def model_dump(self, *args: object, **kwargs: object) -> dict[str, object]:
+        """إخراج النموذج مع إخفاء `full_name` عند عدم استخدام الأسماء المستعارة."""
+
+        data = super().model_dump(*args, **kwargs)
+        if not kwargs.get("by_alias"):
+            data.pop("full_name", None)
+        return data
 
 class AuthResponse(RobustBaseModel):
     access_token: str

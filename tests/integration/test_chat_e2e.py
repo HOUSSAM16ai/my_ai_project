@@ -102,7 +102,7 @@ class TestStructureValidation:
         Verify no async def functions exist at module level in service file
         (All should be methods inside the class)
         """
-        service_file = "/home/runner/work/my_ai_project/my_ai_project/app/services/boundaries/admin_chat_boundary_service.py"
+        service_file = Path(__file__).resolve().parents[2] / "app/services/boundaries/admin_chat_boundary_service.py"
         
         with open(service_file, 'r') as f:
             lines = f.readlines()

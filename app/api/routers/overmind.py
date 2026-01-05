@@ -21,6 +21,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_factory, get_db
+from app.core.domain.models import Mission
 from app.core.di import get_logger
 from app.services.overmind.domain.api_schemas import (
     MissionCreate,
@@ -50,6 +51,24 @@ async def get_orchestrator(
     يتم حقن قاعدة البيانات الحالية لتهيئة إدارة الحالة.
     """
     return await create_overmind(db)
+
+def _serialize_mission(mission: Mission) -> MissionResponse:
+    """تحويل كيان المهمة إلى نموذج استجابة آمن بدون عمليات Lazy Loading."""
+
+    status_value = mission.status.value if hasattr(mission.status, "value") else mission.status
+    return MissionResponse.model_validate(
+        {
+            "id": mission.id,
+            "objective": mission.objective,
+            "status": status_value,
+            "created_at": mission.created_at,
+            "updated_at": mission.updated_at,
+            "result": getattr(mission, "result", None),
+            "steps": [],
+        },
+        from_attributes=True,
+    )
+
 
 @router.post("/missions", response_model=MissionResponse, summary="إطلاق مهمة جديدة")
 async def create_mission(
@@ -91,7 +110,7 @@ async def create_mission(
         # هذا يحل مشكلة "Garbage Collection" للجلسات المغلقة
         background_tasks.add_task(run_mission_in_background, mission_db.id)
 
-        return mission_db
+        return _serialize_mission(mission_db)
     except Exception as e:
         logger.error(f"Failed to create mission: {e}")
         raise HTTPException(status_code=500, detail="فشل في إنشاء المهمة") from e
@@ -107,7 +126,7 @@ async def get_mission(
     mission = await orchestrator.state.get_mission(mission_id)
     if not mission:
         raise HTTPException(status_code=404, detail="المهمة غير موجودة")
-    return mission
+    return _serialize_mission(mission)
 
 @router.get("/missions/{mission_id}/stream", summary="بث أحداث المهمة (Live Stream)")
 async def stream_mission(

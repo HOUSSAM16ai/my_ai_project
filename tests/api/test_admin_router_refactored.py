@@ -1,4 +1,5 @@
 import pytest
+import uuid
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,29 +10,37 @@ from app.core.domain.models import AdminConversation, AdminMessage, User
 # 'db_session' fixture provides the async session
 
 @pytest.fixture
-async def local_admin_user(db_session: AsyncSession):
-    # Create a unique admin user for this test file to avoid conflicts
-    user = User(email="refactor_admin@test.com", full_name="Refactor Admin", is_admin=True)
-    user.set_password("password")
-    db_session.add(user)
-    await db_session.commit()
-    await db_session.refresh(user)
-    return user
+def local_admin_user(db_session: AsyncSession, event_loop):
+    """إنشاء مستخدم إداري محلي للاختبارات التكاملية."""
+
+    async def _create_user() -> User:
+        unique_email = f"refactor_admin_{uuid.uuid4().hex}@test.com"
+        user = User(email=unique_email, full_name="Refactor Admin", is_admin=True)
+        user.set_password("password")
+        db_session.add(user)
+        await db_session.commit()
+        await db_session.refresh(user)
+        return user
+
+    return event_loop.run_until_complete(_create_user())
 
 @pytest.fixture
-async def client(test_app, local_admin_user):
-    # Import here to ensure we get the reloaded version of the function
+def client(test_app, local_admin_user, event_loop):
+    """تهيئة عميل HTTP غير متزامن مع حقن هوية المسؤول."""
+
     from app.api.routers.admin import get_current_user_id
 
-    # Directly override the dependency on the app instance
     test_app.dependency_overrides[get_current_user_id] = lambda: local_admin_user.id
 
-    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as ac:
-        yield ac
+    client_cm = AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test")
+    client_instance = event_loop.run_until_complete(client_cm.__aenter__())
 
-    # Cleanup override
-    if get_current_user_id in test_app.dependency_overrides:
-        del test_app.dependency_overrides[get_current_user_id]
+    try:
+        yield client_instance
+    finally:
+        event_loop.run_until_complete(client_cm.__aexit__(None, None, None))
+        if get_current_user_id in test_app.dependency_overrides:
+            del test_app.dependency_overrides[get_current_user_id]
 
 
 @pytest.mark.asyncio

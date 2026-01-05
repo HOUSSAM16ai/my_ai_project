@@ -3,70 +3,78 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
+from sqlmodel import SQLModel
+
 from app.core.domain.models import AdminConversation, AdminMessage
 from app.services.users.history_service import get_recent_conversations, rate_message_in_db
 
 
 class TestHistoryServiceComprehensive:
     @pytest.fixture
-    async def user_with_conversations(self, db_session, user_factory, mission_factory):
+    def user_with_conversations(self, db_session, user_factory, mission_factory, event_loop):
         # When using pytest-factoryboy with async sessions, we need to handle creation carefully.
         # The AsyncUserFactory in conftest.py sets sqlalchemy_session to db_session.
         # However, factory_boy's .create() calls session.commit() which is a coroutine in AsyncSession.
         # It's better to build() the object and add/commit manually in the async fixture.
 
-        user = user_factory.build()
-        db_session.add(user)
-        await db_session.commit()
-        await db_session.refresh(user)
+        async def _seed_user_and_conversations():
+            from tests.conftest import engine
 
-        # Create conversations
-        conversations = []
-        for i in range(3):
-            # Mission factory might not automatically set the user_id if we just pass user=user object depending on implementation
-            # It seems Mission table has initiator_id which is FK to User.
-            # Let's explicitly set initiator_id
+            async with engine.begin() as conn:
+                await conn.run_sync(SQLModel.metadata.create_all)
 
-            mission = mission_factory.build(initiator_id=user.id)
-            db_session.add(mission)
+            user = user_factory.build()
+            db_session.add(user)
             await db_session.commit()
-            await db_session.refresh(mission)
+            await db_session.refresh(user)
 
-            conversation = AdminConversation(
-                user_id=user.id,
-                title=f"Conversation {i}",
-                conversation_type="chat",
-                linked_mission_id=mission.id,
-            )
-            db_session.add(conversation)
-            conversations.append(conversation)
+            conversations = []
+            for i in range(3):
+                mission = mission_factory.build(initiator_id=user.id)
+                db_session.add(mission)
+                await db_session.commit()
+                await db_session.refresh(mission)
 
-        await db_session.commit()
-        for c in conversations:
-            await db_session.refresh(c)
+                conversation = AdminConversation(
+                    user_id=user.id,
+                    title=f"Conversation {i}",
+                    conversation_type="chat",
+                    linked_mission_id=mission.id,
+                )
+                db_session.add(conversation)
+                conversations.append(conversation)
 
-        return user, conversations
+            await db_session.commit()
+            for c in conversations:
+                await db_session.refresh(c)
+
+            return user, conversations
+
+        return event_loop.run_until_complete(_seed_user_and_conversations())
 
     @pytest.fixture
-    async def user_with_messages(self, db_session, user_with_conversations):
+    def user_with_messages(self, db_session, user_with_conversations, event_loop):
         user, conversations = user_with_conversations
         conversation = conversations[0]
 
-        messages = []
-        for i in range(2):
-            message = AdminMessage(
-                conversation_id=conversation.id,
-                role="user" if i % 2 == 0 else "assistant",
-                content=f"Message {i}",
-            )
-            db_session.add(message)
-            messages.append(message)
+        async def _seed_messages():
+            messages = []
+            for i in range(2):
+                message = AdminMessage(
+                    conversation_id=conversation.id,
+                    role="user" if i % 2 == 0 else "assistant",
+                    content=f"Message {i}",
+                )
+                db_session.add(message)
+                messages.append(message)
 
-        await db_session.commit()
-        for m in messages:
-            await db_session.refresh(m)
+            await db_session.commit()
+            for m in messages:
+                await db_session.refresh(m)
 
-        return user, conversation, messages
+            return user, conversation, messages
+
+        return event_loop.run_until_complete(_seed_messages())
 
     @pytest.mark.asyncio
     async def test_get_recent_conversations_success(self, user_with_conversations):

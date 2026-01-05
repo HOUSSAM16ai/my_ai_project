@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import AsyncGenerator, Callable
+from dataclasses import dataclass
 
 import jwt
 from fastapi import HTTPException
@@ -17,6 +18,22 @@ from app.services.admin.chat_streamer import AdminChatStreamer
 logger = logging.getLogger(__name__)
 
 ALGORITHM = "HS256"
+
+
+@dataclass(frozen=True)
+class ServiceBoundary:
+    """تمثيل بسيط لحد الخدمة يحدد اسم الخدمة والأدوار المصرح بها."""
+
+    name: str
+    allowed_roles: list[str]
+
+
+@dataclass(frozen=True)
+class PolicyBoundary:
+    """حدود السياسات الأساسية لمكالمات محادثة المسؤول."""
+
+    requires_admin: bool
+    audit_enabled: bool
 
 class AdminChatBoundaryService:
     """
@@ -90,17 +107,18 @@ class AdminChatBoundaryService:
         """
         استرجاع محادثة موجودة أو إنشاء واحدة جديدة.
         """
-        # تحويل conversation_id إلى int إذا كان str
-        conv_id_int: int | None = None
-        if conversation_id is not None:
-            try:
-                conv_id_int = int(conversation_id)
-            except (ValueError, TypeError) as e:
-                raise HTTPException(status_code=400, detail="Invalid conversation ID format") from e
-
         try:
+            normalized_id: str | None = None
+            if conversation_id is not None:
+                try:
+                    normalized_id = str(int(conversation_id))
+                except (TypeError, ValueError) as conversion_error:
+                    raise HTTPException(
+                        status_code=400, detail="Invalid conversation ID format"
+                    ) from conversion_error
+
             return await self.persistence.get_or_create_conversation(
-                user_id, question, conv_id_int
+                user_id, question, normalized_id
             )
         except ValueError as e:
             raise HTTPException(status_code=404, detail="Invalid conversation ID") from e
@@ -226,7 +244,8 @@ class AdminChatBoundaryService:
             if hasattr(conv, "updated_at") and conv.updated_at:
                 u_at = conv.updated_at.isoformat()
             results.append({
-                "conversation_id": conv.id,  # Use conversation_id to match schema
+                "id": conv.id,
+                "conversation_id": conv.id,
                 "title": conv.title,
                 "created_at": c_at,
                 "updated_at": u_at,
@@ -294,8 +313,26 @@ def _decode_and_extract_user_id(token: str, secret_key: str) -> int:
             raise HTTPException(status_code=401, detail="Invalid token payload")
         
         return int(user_id)
-        
+
     except jwt.PyJWTError as e:
         raise HTTPException(status_code=401, detail="Invalid token") from e
     except ValueError as e:
         raise HTTPException(status_code=401, detail="Invalid user ID in token") from e
+
+
+def get_service_boundary(service_name: str = "admin_chat") -> ServiceBoundary:
+    """
+    إرجاع حد الخدمة الافتراضي للمحادثة الإدارية.
+
+    يتيح هذا التابع تهيئة قابلة للحقن في الاختبارات مع الحفاظ على قيمة آمنة
+    في حال غياب التهيئة المركزية.
+    """
+
+    normalized = service_name or "admin_chat"
+    return ServiceBoundary(name=normalized, allowed_roles=["admin"])
+
+
+def get_policy_boundary() -> PolicyBoundary:
+    """حدود السياسات الافتراضية التي تضمن فرض متطلبات المسؤول والتدقيق."""
+
+    return PolicyBoundary(requires_admin=True, audit_enabled=True)

@@ -1,15 +1,16 @@
 # tests/conftest.py
 import asyncio
+import inspect
 import os
 import sys
+import asyncio
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
 # Ensure repository root is prioritized in import resolution
@@ -17,22 +18,80 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-# Set environment variables for testing
+# Set environment variables for testing before importing application database
 os.environ["ENVIRONMENT"] = "testing"
 os.environ["SECRET_KEY"] = "test-secret-key-that-is-very-long-and-secure-enough-for-tests-v4"
-# Use in-memory SQLite for tests
-os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
-# Create the test engine
-engine = create_async_engine(
-    os.environ["DATABASE_URL"],
-    echo=False,
-    connect_args={"check_same_thread": False},
-    pool_pre_ping=True,
-    poolclass=StaticPool,
-)
+TEST_DB_PATH = ROOT_DIR / "test.db"
+if TEST_DB_PATH.exists():
+    TEST_DB_PATH.unlink()
+os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{TEST_DB_PATH}"
 
-TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+from app.core.database import async_session_factory as TestingSessionLocal  # noqa: E402
+from app.core.database import engine  # noqa: E402
+from app.core.security import generate_service_token  # noqa: E402
+from tests.factories.base import MissionFactory, UserFactory  # noqa: E402
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """تسجيل خيارات تهيئة Pytest المفقودة محلياً لضمان استقرار الاختبارات."""
+
+    parser.addini(
+        "asyncio_mode",
+        "تمكين تشغيل الاختبارات غير المتزامنة حتى بدون وجود pytest-asyncio مثبتاً.",
+        default="auto",
+    )
+    parser.addini(
+        "env",
+        "تهيئة متغيرات البيئة المحددة في pytest.ini دون الحاجة إلى pytest-env.",
+        type="linelist",
+        default=[],
+    )
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """تطبيق تهيئة البيئة قبل تنفيذ أي اختبار."""
+
+    for line in config.getini("env"):
+        if "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip())
+
+    config.addinivalue_line(
+        "markers", "asyncio: تشغيل الاختبارات غير المتزامنة دون الاعتماد على pytest-asyncio."
+    )
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> bool | None:
+    """تنفيذ دوال الاختبار غير المتزامنة داخل حلقة حدث موحدة."""
+
+    test_func = pyfuncitem.obj
+    if not inspect.iscoroutinefunction(test_func):
+        return None
+
+    signature = inspect.signature(test_func)
+    accepted_args = {
+        name: value
+        for name, value in pyfuncitem.funcargs.items()
+        if name in signature.parameters
+    }
+
+    event_loop = accepted_args.get("event_loop")
+    owns_loop = False
+    if event_loop is None:
+        event_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(event_loop)
+        owns_loop = True
+
+    result = event_loop.run_until_complete(test_func(**accepted_args))
+
+    if owns_loop:
+        event_loop.close()
+
+    pyfuncitem._store["_async_result"] = result
+    return True
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -43,19 +102,57 @@ def event_loop():
     yield loop
     loop.close()
 
-# REMOVED autouse=True init_db to prevent auto-hang on collection
-# The test needing DB must request it explicitly
-@pytest.fixture(scope="session")
-async def init_db():
-    import app.core.domain.models # noqa: F401
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
-    yield
+@pytest.fixture(scope="session", autouse=True)
+def init_db() -> None:
+    """تهيئة قاعدة البيانات في بداية جلسة الاختبار لكل السيناريوهات."""
+
+    import app.core.domain.models  # noqa: F401
+
+    async def _create_all() -> None:
+        async with engine.begin() as conn:
+            await conn.run_sync(SQLModel.metadata.create_all)
+
+    asyncio.run(_create_all())
+
+
+@pytest.fixture(autouse=True)
+def reset_secret_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """إعادة ضبط مفتاح التشفير قبل كل اختبار للحفاظ على استقرار التوقيعات."""
+
+    from app.config.settings import get_settings
+
+    current_key = os.environ.get(
+        "SECRET_KEY", "test-secret-key-that-is-very-long-and-secure-enough-for-tests-v4"
+    )
+    get_settings.cache_clear()
+    monkeypatch.setenv("SECRET_KEY", current_key)
+
+async def _reset_database(session: AsyncSession) -> None:
+    """تفريغ كافة الجداول قبل كل اختبار لضمان العزل الكامل للبيانات."""
+
+    await session.execute(text("PRAGMA foreign_keys=OFF"))
+    try:
+        for table in reversed(SQLModel.metadata.sorted_tables):
+            await session.execute(table.delete())
+    except Exception:
+        async with engine.begin() as conn:
+            await conn.run_sync(SQLModel.metadata.create_all)
+        for table in reversed(SQLModel.metadata.sorted_tables):
+            await session.execute(table.delete())
+
+    await session.execute(text("PRAGMA foreign_keys=ON"))
+    await session.commit()
 
 @pytest.fixture
-async def db_session(init_db):
-    async with TestingSessionLocal() as session:
+def db_session(init_db, event_loop):
+    session_cm = TestingSessionLocal()
+    session = event_loop.run_until_complete(session_cm.__aenter__())
+    event_loop.run_until_complete(_reset_database(session))
+    try:
         yield session
+    finally:
+        event_loop.run_until_complete(session.rollback())
+        event_loop.run_until_complete(session_cm.__aexit__(None, None, None))
 
 @pytest.fixture
 def client():
@@ -66,31 +163,69 @@ def client():
 
 @pytest.fixture
 def test_app():
-    """
-    Fixture that returns the FastAPI app instance for testing.
-    This allows tests to override dependencies and configure the app.
-    """
+    """إرجاع تطبيق FastAPI الأساسي لتمكين تجاوز التبعيات أثناء الاختبار."""
     import app.main
     return app.main.app
 
 @pytest.fixture
-async def async_client(init_db):
-    """
-    Async client fixture for async API testing.
-    Provides a fully functional async HTTP client with database.
-    """
+def async_client(init_db, event_loop):
+    """عميل HTTP غير متزامن للاختبارات مع قاعدة بيانات مهيأة مسبقاً."""
     import app.main
     from app.core.database import get_db
-    
-    # Override get_db dependency to use test database
+
     async def override_get_db():
         async with TestingSessionLocal() as session:
             yield session
-    
+
     app.main.app.dependency_overrides[get_db] = override_get_db
-    
-    async with AsyncClient(app=app.main.app, base_url="http://test") as ac:
-        yield ac
-    
-    # Cleanup
-    app.main.app.dependency_overrides.clear()
+
+    client_cm = AsyncClient(app=app.main.app, base_url="http://test")
+    client = event_loop.run_until_complete(client_cm.__aenter__())
+    try:
+        yield client
+    finally:
+        event_loop.run_until_complete(client_cm.__aexit__(None, None, None))
+        app.main.app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def user_factory() -> UserFactory:
+    """مصنع كائنات المستخدمين للاستعمال داخل الاختبارات."""
+
+    return UserFactory()
+
+
+@pytest.fixture
+def mission_factory() -> MissionFactory:
+    """مصنع مهام تجريبية لإنشاء بيانات مرتبطة بالمستخدمين."""
+
+    return MissionFactory()
+
+
+@pytest.fixture
+def admin_user(db_session: AsyncSession, event_loop) -> "User":
+    """إنشاء مستخدم إداري حقيقي داخل قاعدة بيانات الاختبار."""
+
+    from app.core.domain.models import User
+
+    async def _create() -> User:
+        admin = User(
+            full_name="Admin User",
+            email="admin@example.com",
+            is_admin=True,
+        )
+        admin.set_password("AdminPass123!")
+        db_session.add(admin)
+        await db_session.commit()
+        await db_session.refresh(admin)
+        return admin
+
+    return event_loop.run_until_complete(_create())
+
+
+@pytest.fixture
+def admin_auth_headers(admin_user: "User") -> dict[str, str]:
+    """ترويسات تفويض JWT للمستخدم الإداري لضمان سهولة الوصول في الاختبارات."""
+
+    token = generate_service_token(str(admin_user.id))
+    return {"Authorization": f"Bearer {token}"}

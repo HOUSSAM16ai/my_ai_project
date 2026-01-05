@@ -75,7 +75,6 @@ class SuperBrain:
 
     def __init__(
         self,
-        *,
         strategist: AgentPlanner,
         architect: AgentArchitect,
         operator: AgentExecutor,

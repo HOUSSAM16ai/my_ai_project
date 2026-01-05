@@ -22,6 +22,16 @@ class ComponentAnalyzer:
         key_files = [
             ("app/main.py", "Application Entry Point", "FastAPI app creation"),
             ("app/core/database.py", "Database Engine", "Async database connections"),
+            (
+                "app/core/domain/models.py",
+                "Database Models",
+                "SQLModel entities and relationships",
+            ),
+            (
+                "app/models.py",
+                "Database Models",
+                "Legacy SQLModel definitions",
+            ),
             ("app/core/ai_gateway.py", "AI Gateway", "Neural routing mesh for AI"),
             ("app/core/prompts.py", "System Prompts", "OVERMIND identity and context"),
             ("app/services/overmind/orchestrator.py", "Overmind Orchestrator", "Mission orchestration"),
