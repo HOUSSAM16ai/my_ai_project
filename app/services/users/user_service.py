@@ -116,11 +116,34 @@ class UserService:
         Returns:
             dict[str, object]: نتيجة العملية.
         """
+        admin_email = (getattr(self.settings, "ADMIN_EMAIL", "") or "").strip()
+        admin_password = (getattr(self.settings, "ADMIN_PASSWORD", "") or "").strip()
+
+        if not admin_email or not admin_password:
+            return {
+                "status": "error",
+                "message": "Admin credentials are not set; please configure ADMIN_EMAIL and ADMIN_PASSWORD.",
+            }
+
+        normalized_email = admin_email.lower()
+
+        result = await self.session.execute(select(User).where(User.email == normalized_email))
+        existing_admin = result.scalar_one_or_none()
+        preexisting_role = existing_admin.is_admin if existing_admin is not None else None
+
         try:
             admin = await bootstrap_admin_account(self.session, settings=self.settings)
+
+            if existing_admin is None:
+                message = f"Admin user '{admin.email}' created with ADMIN role."
+            elif preexisting_role:
+                message = f"Admin user '{admin.email}' already configured."
+            else:
+                message = f"Admin user '{admin.email}' promoted to admin."
+
             return {
                 "status": "success",
-                "message": f"Admin user '{admin.email}' ensured with ADMIN role.",
+                "message": message,
             }
         except Exception as operation_error:
             await self.session.rollback()

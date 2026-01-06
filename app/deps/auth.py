@@ -14,7 +14,7 @@ from app.config.settings import get_settings
 from app.core.database import get_db
 from app.core.domain.models import User
 from app.services.auth_service import AuthService
-from app.services.rbac import RBACService
+from app.services.rbac import ADMIN_ROLE, STANDARD_ROLE, RBACService
 
 
 @dataclass
@@ -52,7 +52,14 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
 
     rbac = RBACService(service.session)
+    await rbac.ensure_seed()
     roles = await rbac.user_roles(user.id)
+
+    if not roles:
+        desired_role = ADMIN_ROLE if user.is_admin else STANDARD_ROLE
+        await rbac.assign_role(user, desired_role)
+        roles = await rbac.user_roles(user.id)
+
     permissions = await rbac.user_permissions(user.id)
     return CurrentUser(user=user, roles=roles, permissions=permissions)
 
@@ -70,6 +77,31 @@ def require_permissions(*permissions: str):
     async def dependency(current: CurrentUser = Depends(get_current_user)) -> CurrentUser:
         if not set(permissions).issubset(current.permissions):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Missing permissions")
+        return current
+
+    return dependency
+
+
+def require_permissions_or_admin(*permissions: str):
+    """تبعيات تفويض تمنح استثناءً للمستخدمين الإداريين مع احترام الصلاحيات الصريحة.
+
+    Args:
+        *permissions: قائمة الصلاحيات المطلوب تحققها.
+
+    Returns:
+        CurrentUser: كائن المستخدم الحالي بعد التحقق من الصلاحيات أو صفة الإداري.
+
+    Raises:
+        HTTPException: في حال غياب الصلاحيات المطلوبة لمستخدم غير إداري.
+    """
+
+    async def dependency(current: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+        if current.user.is_admin:
+            return current
+
+        if not set(permissions).issubset(current.permissions):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Missing permissions")
+
         return current
 
     return dependency
