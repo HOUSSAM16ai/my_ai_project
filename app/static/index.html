@@ -42,13 +42,13 @@
             flex-direction: column;
         }
 
-        .topbar { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,0.98); backdrop-filter: blur(12px); border-bottom: 1px solid var(--muted); }
+        .topbar { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,0.96); backdrop-filter: blur(10px); border-bottom: 1px solid var(--muted); }
 
         .topbar-inner { max-width: 1180px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 
         .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; letter-spacing: -0.02em; color: var(--text); }
 
-        .brand-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 10px 30px rgba(37, 99, 235, 0.2); }
+        .brand-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 8px 24px rgba(37, 99, 235, 0.16); }
 
         .topbar-actions {
             display: flex;
@@ -79,7 +79,7 @@
 
         .hero { max-width: 880px; margin: 40px auto 30px; padding: 10px 20px 0; display: grid; gap: 16px; align-items: center; }
 
-        .hero-card { background: #fff; border-radius: 18px; padding: 28px; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08); border: 1px solid #e2e8f0; }
+        .hero-card { background: #fff; border-radius: 18px; padding: 28px; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06); border: 1px solid #e2e8f0; }
 
         .hero h1 { font-size: 32px; margin: 0 0 12px; letter-spacing: -0.02em; text-align: center; }
 
@@ -97,7 +97,7 @@
 
         .welcome-shell { min-height: calc(100vh - 120px); display: grid; place-items: center; padding: 40px 16px 24px; }
 
-        .welcome-card { width: min(880px, 100%); margin: 0 auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; padding: 32px 24px; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08); }
+        .welcome-card { width: min(880px, 100%); margin: 0 auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; padding: 32px 24px; box-shadow: 0 18px 48px rgba(15, 23, 42, 0.06); }
 
         .welcome-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 16px; }
 
@@ -256,7 +256,7 @@
                                         {user.is_ephemeral ? ' • جلسة فورية' : ''}
                                     </span>
                                     <button className="ghost-btn" onClick={onLoginClick}>
-                                        <i className="fas fa-rotate"></i> تبديل الحساب
+                                        <i className="fas fa-key"></i> استرجاع محفوظاتي
                                     </button>
                                     {user.is_ephemeral && (
                                         <button className="solid-btn" onClick={onRegisterClick}>ترقية الحساب</button>
@@ -265,8 +265,8 @@
                                 </>
                             ) : (
                                 <>
-                                    <button className="ghost-btn" onClick={onLoginClick}>Log in</button>
-                                    <button className="solid-btn" onClick={onRegisterClick}>Create account</button>
+                                    <button className="ghost-btn" onClick={onLoginClick}><i className="fas fa-key"></i> تسجيل الدخول</button>
+                                    <button className="solid-btn" onClick={onRegisterClick}>تسجيل سريع</button>
                                 </>
                             )}
                         </div>
@@ -320,8 +320,8 @@
                             ))}
                         </div>
                         <div className="welcome-actions">
-                            <button className="ghost-btn" onClick={onLoginClick}>Log in</button>
-                            <button className="ghost-btn" onClick={onRegisterClick}>Sign up</button>
+                            <button className="ghost-btn" onClick={onLoginClick}><i className="fas fa-key"></i> تسجيل الدخول</button>
+                            <button className="ghost-btn" onClick={onRegisterClick}>إنشاء حساب سريع</button>
                             <button className="solid-btn" onClick={submitPrompt}>ابدأ جلسة تجريبية</button>
                         </div>
                     </div>
@@ -431,7 +431,7 @@
             );
         };
 
-        const ConversationWorkspace = ({ user, token, onLogout, onRegisterClick, onRequireLogin = () => {}, initialPrompt = '', onInitialPromptHandled = () => {} }) => {
+        const ConversationWorkspace = ({ user, token, onLogout, onRegisterClick, onRequireLogin = () => {}, onRecoverSession = async () => null, initialPrompt = '', onInitialPromptHandled = () => {} }) => {
             const [messages, setMessages] = useState([]);
             const [conversations, setConversations] = useState([]);
             const [conversationId, setConversationId] = useState(null);
@@ -529,10 +529,15 @@
                 const pendingInput = (presetInput ?? input).trim();
                 if (!pendingInput) return;
 
-                if (!token) {
-                    safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'يرجى تسجيل الدخول أو إنشاء حساب لمتابعة المحادثة.' }]);
-                    onRequireLogin();
-                    return;
+                let activeToken = token;
+                if (!activeToken) {
+                    const recoveredToken = await onRecoverSession();
+                    if (!recoveredToken) {
+                        safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'يرجى تسجيل الدخول أو إنشاء حساب لمتابعة المحادثة.' }]);
+                        onRequireLogin();
+                        return;
+                    }
+                    activeToken = recoveredToken;
                 }
 
                 if (abortControllerRef.current) {
@@ -552,14 +557,21 @@
 
                     const response = await fetch('/admin/api/chat/stream', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', ...authHeaders },
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${activeToken}` },
                         body: JSON.stringify(payload),
                         signal: abortControllerRef.current.signal
                     });
 
-                    if (response.status === 401 || response.status === 403) {
+                    if (response.status === 401) {
                         safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'انتهت صلاحية الجلسة. أعِد تسجيل الدخول لاسترجاع محادثاتك المحفوظة.' }]);
                         onRequireLogin();
+                        return;
+                    }
+
+                    if (response.status === 403) {
+                        const detail = await response.json().catch(() => ({}));
+                        const reason = (detail && (detail.detail || detail.message || detail.error || detail)) || 'تعذر إرسال الرسالة الحالية.';
+                        safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `تم رفض الرسالة: ${reason}` }]);
                         return;
                     }
 
@@ -884,6 +896,21 @@
                 }
             }, [guestCredentials]);
 
+            const recoverOrLogin = useCallback(async () => {
+                try {
+                    await bootstrapInstantGuest();
+                    const refreshed = localStorage.getItem('token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+                    if (refreshed) {
+                        setToken(refreshed);
+                        return refreshed;
+                    }
+                } catch (error) {
+                    console.error('Recovery failed', error);
+                }
+                setAuthMode('login');
+                return null;
+            }, [bootstrapInstantGuest]);
+
             useEffect(() => {
                 const stored = localStorage.getItem('token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
                 if (!stored) {
@@ -984,6 +1011,7 @@
                             onLogout={logout}
                             onRegisterClick={() => setAuthMode('register')}
                             onRequireLogin={() => setAuthMode('login')}
+                            onRecoverSession={recoverOrLogin}
                             initialPrompt={initialPrompt}
                             onInitialPromptHandled={clearInitialPrompt}
                         />
