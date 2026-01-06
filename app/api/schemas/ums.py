@@ -1,9 +1,12 @@
 """
-مخططات واجهة نظام إدارة المستخدمين والأدوار.
+مخططات واجهة UMS التي تضبط العقود بين العميل والخادم.
+
+تضمن هذه المخططات اتساق OpenAPI وتعكس بنية RBAC وحراسة الحسابات الذاتية.
 """
 from __future__ import annotations
 
 from pydantic import BaseModel, Field, field_validator
+from pydantic import model_validator
 
 from app.core.domain.models import UserStatus
 
@@ -35,12 +38,57 @@ class TokenPair(BaseModel):
     token_type: str = "Bearer"
 
 
+class ReauthRequest(BaseModel):
+    password: str
+
+
+class ReauthResponse(BaseModel):
+    reauth_token: str
+    expires_in: int
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str
 
 
 class LogoutRequest(BaseModel):
     refresh_token: str
+
+
+class PasswordResetRequest(BaseModel):
+    email: str
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        return value.lower().strip()
+
+
+class PasswordResetConfirmRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+class PasswordResetResponse(BaseModel):
+    status: str = "reset_requested"
+    reset_token: str | None = None
+    expires_in: int | None = None
+
+
+class ProfileUpdateRequest(BaseModel):
+    full_name: str | None = None
+    email: str | None = None
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str | None) -> str | None:
+        return value.lower().strip() if value else value
+
+    @model_validator(mode="after")
+    def ensure_changes(self) -> "ProfileUpdateRequest":
+        if self.full_name is None and self.email is None:
+            raise ValueError("يجب تحديد حقل واحد على الأقل للتحديث")
+        return self
 
 
 class UserOut(BaseModel):
@@ -50,6 +98,11 @@ class UserOut(BaseModel):
     is_active: bool
     status: UserStatus
     roles: list[str] = Field(default_factory=list)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
 
 
 class AdminCreateUserRequest(BaseModel):
@@ -71,6 +124,8 @@ class StatusUpdateRequest(BaseModel):
 class RoleAssignmentRequest(BaseModel):
     role_name: str
     reauth_password: str | None = None
+    reauth_token: str | None = None
+    justification: str | None = None
 
 
 class QuestionRequest(BaseModel):

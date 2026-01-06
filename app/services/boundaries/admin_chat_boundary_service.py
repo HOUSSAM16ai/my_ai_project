@@ -10,9 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import get_settings
 from app.core.ai_gateway import AIClient
-from app.core.domain.models import AdminConversation, MessageRole
+from app.core.domain.models import AdminConversation, MessageRole, User
 from app.services.admin.chat_persistence import AdminChatPersistence
 from app.services.admin.chat_streamer import AdminChatStreamer
+from app.services.policy import PolicyService
 
 logger = logging.getLogger(__name__)
 
@@ -70,13 +71,13 @@ class AdminChatBoundaryService:
         return _decode_and_extract_user_id(token, self.settings.SECRET_KEY)
 
     async def verify_conversation_access(
-        self, user_id: int, conversation_id: int
+        self, user: User, conversation_id: int
     ) -> AdminConversation:
         """
         التحقق من صلاحية وصول المستخدم للمحادثة.
         """
         try:
-            return await self.persistence.verify_access(user_id, conversation_id)
+            return await self.persistence.verify_access(user.id, conversation_id)
         except ValueError as e:
             msg = str(e)
             if "User not found" in msg:
@@ -86,7 +87,7 @@ class AdminChatBoundaryService:
             raise HTTPException(status_code=404, detail="Conversation not found") from e
 
     async def get_or_create_conversation(
-        self, user_id: int, question: str, conversation_id: str | int | None = None
+        self, user: User, question: str, conversation_id: str | int | None = None
     ) -> AdminConversation:
         """
         استرجاع محادثة موجودة أو إنشاء واحدة جديدة.
@@ -102,7 +103,7 @@ class AdminChatBoundaryService:
                     ) from conversion_error
 
             return await self.persistence.get_or_create_conversation(
-                user_id, question, normalized_id
+                user.id, question, normalized_id
             )
         except ValueError as e:
             raise HTTPException(status_code=404, detail="Invalid conversation ID") from e
@@ -117,7 +118,7 @@ class AdminChatBoundaryService:
 
     async def stream_chat_response(
         self,
-        user_id: int,
+        user: User,
         conversation: AdminConversation,
         question: str,
         history: list[dict[str, object]],
@@ -128,13 +129,13 @@ class AdminChatBoundaryService:
         تفويض عملية البث إلى Streamer.
         """
         async for chunk in self.streamer.stream_response(
-            user_id, conversation, question, history, ai_client, session_factory_func
+            user.id, conversation, question, history, ai_client, session_factory_func
         ):
             yield chunk
 
     async def stream_chat_response_safe(
         self,
-        user_id: int,
+        user: User,
         conversation: AdminConversation,
         question: str,
         history: list[dict[str, object]],
@@ -147,7 +148,7 @@ class AdminChatBoundaryService:
         """
         try:
             async for chunk in self.stream_chat_response(
-                user_id, conversation, question, history, ai_client, session_factory_func
+                user, conversation, question, history, ai_client, session_factory_func
             ):
                 yield chunk
         except Exception as e:
@@ -160,7 +161,7 @@ class AdminChatBoundaryService:
 
     async def orchestrate_chat_stream(
         self,
-        user_id: int,
+        user: User,
         question: str,
         conversation_id: str | int | None,
         ai_client: AIClient,
@@ -173,8 +174,16 @@ class AdminChatBoundaryService:
         3. تجهيز السياق (سجل المحادثة).
         4. بث الرد مع معالجة الأخطاء.
         """
+        if not user.is_admin:
+            decision = PolicyService().enforce_policy(
+                user_role="ADMIN" if user.is_admin else "STANDARD_USER",
+                question=question,
+            )
+            if not decision.allowed:
+                raise HTTPException(status_code=403, detail=decision.reason)
+
         # 1. Get or Create Conversation
-        conversation = await self.get_or_create_conversation(user_id, question, conversation_id)
+        conversation = await self.get_or_create_conversation(user, question, conversation_id)
 
         # 2. Save User Message
         await self.save_message(conversation.id, MessageRole.USER, question)
@@ -184,18 +193,18 @@ class AdminChatBoundaryService:
 
         # 4. Stream Response
         async for chunk in self.stream_chat_response_safe(
-            user_id, conversation, question, history, ai_client, session_factory_func
+            user, conversation, question, history, ai_client, session_factory_func
         ):
             yield chunk
 
     # --- طرق استرجاع البيانات (Data Retrieval Methods) ---
 
-    async def get_latest_conversation_details(self, user_id: int) -> dict[str, object] | None:
+    async def get_latest_conversation_details(self, user: User) -> dict[str, object] | None:
         """
         استرجاع تفاصيل آخر محادثة للوحة التحكم.
         يفرض حداً أقصى صارماً للرسائل (20) لمنع انهيار المتصفح وتجميد التطبيق.
         """
-        conversation = await self.persistence.get_latest_conversation(user_id)
+        conversation = await self.persistence.get_latest_conversation(user.id)
         if not conversation:
             return None
 
@@ -214,13 +223,13 @@ class AdminChatBoundaryService:
             ],
         }
 
-    async def list_user_conversations(self, user_id: int) -> list[dict[str, object]]:
+    async def list_user_conversations(self, user: User) -> list[dict[str, object]]:
         """
         سرد المحادثات للشريط الجانبي (Sidebar History).
         
         Returns data compatible with ConversationSummaryResponse schema.
         """
-        conversations = await self.persistence.list_conversations(user_id)
+        conversations = await self.persistence.list_conversations(user.id)
         results = []
         for conv in conversations:
             c_at = conv.created_at.isoformat() if conv.created_at else ""
@@ -236,12 +245,12 @@ class AdminChatBoundaryService:
             })
         return results
 
-    async def get_conversation_details(self, user_id: int, conversation_id: int) -> dict[str, object]:
+    async def get_conversation_details(self, user: User, conversation_id: int) -> dict[str, object]:
         """
         استرجاع التفاصيل الكاملة لمحادثة محددة.
         يفرض حداً أقصى صارماً للرسائل (20) لمنع انهيار المتصفح وتجميد التطبيق.
         """
-        conversation = await self.verify_conversation_access(user_id, conversation_id)
+        conversation = await self.verify_conversation_access(user, conversation_id)
         # خفض الحد من 1000 إلى 25 ثم إلى 20 لحل مشكلة التشنج (App Freeze) - تم التخفيض مرة أخرى
         messages = await self.persistence.get_conversation_messages(conversation.id, limit=20)
         return {

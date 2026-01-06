@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from app.core.domain.models import AdminConversation, MessageRole
+from app.core.domain.models import AdminConversation, MessageRole, User
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 
 
@@ -25,10 +25,11 @@ async def test_admin_chat_refactor_structure():
     )
 
     # Call the facade method
-    result = await service.get_or_create_conversation(1, "hello")
+    actor = User(id=1, email="admin@example.com", full_name="Admin", is_admin=True)
+    result = await service.get_or_create_conversation(actor, "hello")
 
     # Verify delegation
-    service.persistence.get_or_create_conversation.assert_called_once_with(1, "hello", None)
+    service.persistence.get_or_create_conversation.assert_called_once_with(actor.id, "hello", None)
     assert result.id == 1
 
 

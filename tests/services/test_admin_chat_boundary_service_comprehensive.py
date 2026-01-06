@@ -92,7 +92,8 @@ async def test_get_or_create_conversation_create_new(service):
     service.db.commit = AsyncMock()
     service.db.refresh = AsyncMock()
 
-    conversation = await service.get_or_create_conversation(user_id=1, question="Hello")
+    actor = User(id=1, email="u@example.com", full_name="Test", is_admin=True)
+    conversation = await service.get_or_create_conversation(user=actor, question="Hello")
 
     assert conversation.user_id == 1
     assert conversation.title == "Hello"
@@ -112,7 +113,7 @@ async def test_get_or_create_conversation_existing(service):
     service.db.get = AsyncMock(side_effect=[mock_user, existing_conv])
 
     conversation = await service.get_or_create_conversation(
-        user_id=1, question="New Q", conversation_id="10"
+        user=mock_user, question="New Q", conversation_id="10"
     )
 
     assert conversation.id == 10
@@ -129,7 +130,7 @@ async def test_get_or_create_conversation_not_found(service):
     service.db.get = AsyncMock(side_effect=[mock_user, None])
 
     with pytest.raises(HTTPException) as exc:
-        await service.get_or_create_conversation(user_id=1, question="Q", conversation_id="999")
+        await service.get_or_create_conversation(user=mock_user, question="Q", conversation_id="999")
 
     assert exc.value.status_code == 404
     # The actual implementation raises "Invalid conversation ID" wrapping the ValueError
@@ -139,7 +140,8 @@ async def test_get_or_create_conversation_not_found(service):
 @pytest.mark.asyncio
 async def test_get_or_create_conversation_invalid_id(service):
     with pytest.raises(HTTPException) as exc:
-        await service.get_or_create_conversation(user_id=1, question="Q", conversation_id="invalid")
+        actor = User(id=1, email="u@example.com", full_name="Test", is_admin=True)
+        await service.get_or_create_conversation(user=actor, question="Q", conversation_id="invalid")
 
     assert exc.value.status_code == 400
     assert exc.value.detail == "Invalid conversation ID format"
@@ -187,8 +189,8 @@ async def test_get_chat_history(service):
 
 @pytest.mark.asyncio
 async def test_stream_chat_response_flow(service):
-    user_id = 1
-    conversation = AdminConversation(id=1, title="Test", user_id=user_id)
+    actor = User(id=1, email="user@example.com", full_name="User", is_admin=True)
+    conversation = AdminConversation(id=1, title="Test", user_id=actor.id)
     question = "Hello"
     history = [{"role": "user", "content": "Hi"}]
 
@@ -216,7 +218,7 @@ async def test_stream_chat_response_flow(service):
         mock_orch.process.side_effect = mock_process
 
         generator = service.stream_chat_response(
-            user_id, conversation, question, history, ai_client, mock_session_factory
+            actor, conversation, question, history, ai_client, mock_session_factory
         )
 
         events = []
@@ -245,8 +247,8 @@ async def test_stream_chat_response_flow(service):
 
 @pytest.mark.asyncio
 async def test_stream_chat_response_error_handling(service):
-    user_id = 1
-    conversation = AdminConversation(id=1, title="Test", user_id=user_id)
+    actor = User(id=1, email="user@example.com", full_name="User", is_admin=True)
+    conversation = AdminConversation(id=1, title="Test", user_id=actor.id)
     question = "Hello"
     history = []
     ai_client = MagicMock()
@@ -263,7 +265,7 @@ async def test_stream_chat_response_error_handling(service):
         mock_get_orch.return_value = mock_orch
 
         generator = service.stream_chat_response(
-            user_id, conversation, question, history, ai_client, mock_session_factory
+            actor, conversation, question, history, ai_client, mock_session_factory
         )
 
         events = []

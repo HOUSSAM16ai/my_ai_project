@@ -14,7 +14,7 @@
 
 from collections.abc import Callable
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,7 +22,9 @@ from app.api.schemas.admin import ChatRequest, ConversationDetailsResponse, Conv
 from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
+from app.deps.auth import CurrentUser, require_permissions
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
+from app.services.rbac import QA_SUBMIT
 
 logger = get_logger(__name__)
 
@@ -42,20 +44,16 @@ def get_admin_service(db: AsyncSession = Depends(get_db)) -> AdminChatBoundarySe
     """تبعية للحصول على خدمة حدود محادثة المسؤول."""
     return AdminChatBoundaryService(db)
 
-def get_current_user_id(
-    request: Request, service: AdminChatBoundaryService = Depends(get_admin_service)
-) -> int:
-    """
-    استرجاع معرف المستخدم الحالي باستخدام منطق سياسات الخدمة.
-    """
-    auth_header = request.headers.get("Authorization")
-    return service.validate_auth_header(auth_header)
+def get_chat_actor(current: CurrentUser = Depends(require_permissions(QA_SUBMIT))) -> CurrentUser:
+    """تبعية تُلزم وجود صلاحية الأسئلة التعليمية قبل استخدام قنوات الدردشة."""
+
+    return current
 
 @router.post("/api/chat/stream", summary="بث محادثة المسؤول (Admin Chat Stream)")
 async def chat_stream(
     chat_request: ChatRequest,
     ai_client: AIClient = Depends(get_ai_client),
-    user_id: int = Depends(get_current_user_id),
+    actor: CurrentUser = Depends(get_chat_actor),
     service: AdminChatBoundaryService = Depends(get_admin_service),
     session_factory: Callable[[], AsyncSession] = Depends(get_session_factory),
 ) -> StreamingResponse:
@@ -79,7 +77,7 @@ async def chat_stream(
     """
     # تنسيق تدفق المحادثة بالكامل عبر خدمة الحدود
     stream_generator = service.orchestrate_chat_stream(
-        user_id,
+        actor,
         chat_request.question,
         chat_request.conversation_id,
         ai_client,
@@ -103,14 +101,14 @@ async def chat_stream(
     response_model=ConversationDetailsResponse | None,
 )
 async def get_latest_chat(
-    user_id: int = Depends(get_current_user_id),
+    actor: CurrentUser = Depends(get_chat_actor),
     service: AdminChatBoundaryService = Depends(get_admin_service),
 ) -> ConversationDetailsResponse | None:
     """
     استرجاع تفاصيل آخر محادثة للمستخدم الحالي.
     مفيد لاستعادة الحالة عند إعادة تحميل الصفحة.
     """
-    conversation_data = await service.get_latest_conversation_details(user_id)
+    conversation_data = await service.get_latest_conversation_details(actor.user)
     if not conversation_data:
         return None
     return ConversationDetailsResponse.model_validate(conversation_data)
@@ -121,7 +119,7 @@ async def get_latest_chat(
     response_model=list[ConversationSummaryResponse],
 )
 async def list_conversations(
-    user_id: int = Depends(get_current_user_id),
+    actor: CurrentUser = Depends(get_chat_actor),
     service: AdminChatBoundaryService = Depends(get_admin_service),
 ) -> list[ConversationSummaryResponse]:
     """
@@ -129,7 +127,7 @@ async def list_conversations(
     
     الخدمة تعيد البيانات متوافقة مع Schema مباشرة.
     """
-    results = await service.list_user_conversations(user_id)
+    results = await service.list_user_conversations(actor.user)
     return [ConversationSummaryResponse.model_validate(r) for r in results]
 
 @router.get(
@@ -139,11 +137,11 @@ async def list_conversations(
 )
 async def get_conversation(
     conversation_id: int,
-    user_id: int = Depends(get_current_user_id),
+    actor: CurrentUser = Depends(get_chat_actor),
     service: AdminChatBoundaryService = Depends(get_admin_service),
 ) -> ConversationDetailsResponse:
     """
     استرجاع الرسائل والتفاصيل لمحادثة محددة.
     """
-    data = await service.get_conversation_details(user_id, conversation_id)
+    data = await service.get_conversation_details(actor.user, conversation_id)
     return ConversationDetailsResponse.model_validate(data)

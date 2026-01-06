@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.settings import AppSettings, get_settings
 from app.core.database import async_session_factory
 from app.core.domain.models import User
+from app.services.bootstrap import bootstrap_admin_account
 
 logger = logging.getLogger(__name__)
 
@@ -115,51 +116,12 @@ class UserService:
         Returns:
             dict[str, object]: نتيجة العملية.
         """
-        admin_email = self.settings.ADMIN_EMAIL
-        admin_password = self.settings.ADMIN_PASSWORD
-        admin_name = self.settings.ADMIN_NAME
-
-        # 🛡️ Guard Clause: التحقق من توفر متغيرات البيئة اللازمة
-        if not all([admin_email, admin_password, admin_name]):
-            logger.error("متغيرات بيئة المسؤول غير مضبوطة.")
-            return {"status": "error", "message": "Admin environment variables not set."}
-
         try:
-            # التحقق من وجود المستخدم
-            stmt = select(User).filter_by(email=admin_email)
-            result = await self.session.execute(stmt)
-            existing_user = result.scalar()
-
-            if existing_user:
-                if existing_user.is_admin:
-                    return {
-                        "status": "success",
-                        "message": f"Admin user '{admin_email}' already configured.",
-                    }
-
-                # ترقية المستخدم الحالي إلى مسؤول
-                existing_user.is_admin = True
-                await self.session.commit()
-                logger.info(f"تمت ترقية المستخدم '{admin_email}' إلى مسؤول.")
-                return {
-                    "status": "success",
-                    "message": f"User '{admin_email}' promoted to admin.",
-                }
-
-            # إنشاء مسؤول جديد
-            # ملاحظة: نستخدم self.create_new_user لضمان توحيد المنطق، لكن هنا نحتاج التعامل المباشر
-            # لتجنب تعقيد التداخل، ولأننا تحققنا بالفعل من عدم الوجود.
-            new_admin = User(full_name=admin_name, email=admin_email, is_admin=True)
-            new_admin.set_password(admin_password) # type: ignore
-            self.session.add(new_admin)
-            await self.session.commit()
-
-            logger.info(f"تم إنشاء حساب المسؤول '{admin_email}'.")
+            admin = await bootstrap_admin_account(self.session, settings=self.settings)
             return {
                 "status": "success",
-                "message": f"Admin user '{admin_email}' created.",
+                "message": f"Admin user '{admin.email}' ensured with ADMIN role.",
             }
-
         except Exception as operation_error:
             await self.session.rollback()
             logger.error(

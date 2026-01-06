@@ -18,13 +18,15 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import AppSettings, get_settings
-from app.core.domain.models import RefreshToken, User, UserStatus, utc_now
+from app.core.domain.models import PasswordResetToken, RefreshToken, User, UserStatus, utc_now
 from app.core.domain.models import pwd_context
 from app.services.audit import AuditService
 from app.services.rbac import ADMIN_ROLE, RBACService, STANDARD_ROLE
 
 ACCESS_EXPIRE_MINUTES: Final[int] = 30
 REFRESH_EXPIRE_DAYS: Final[int] = 14
+REAUTH_EXPIRE_MINUTES: Final[int] = 10
+PASSWORD_RESET_EXPIRE_MINUTES: Final[int] = 30
 
 
 class TokenBundle(TypedDict):
@@ -128,7 +130,13 @@ class AuthService:
         )
         return user
 
-    async def issue_tokens(self, user: User) -> TokenBundle:
+    async def issue_tokens(
+        self,
+        user: User,
+        *,
+        ip: str | None = None,
+        user_agent: str | None = None,
+    ) -> TokenBundle:
         """
         إصدار رموز الوصول والتحديث مع تدوير آمن.
         """
@@ -136,12 +144,141 @@ class AuthService:
         roles = await self.rbac.user_roles(user.id)
         permissions = await self.rbac.user_permissions(user.id)
         access_token = self._encode_access_token(user, roles, permissions)
-        refresh_value = await self._create_refresh_token(user)
+        refresh_value = await self._create_refresh_token(
+            user, ip=ip, user_agent=user_agent, family_id=None
+        )
         return {
             "access_token": access_token,
             "refresh_token": refresh_value,
             "token_type": "Bearer",
         }
+
+    async def update_profile(
+        self,
+        *,
+        user: User,
+        full_name: str | None,
+        email: str | None,
+        ip: str | None = None,
+        user_agent: str | None = None,
+    ) -> User:
+        """
+        تحديث بيانات الحساب الذاتي مع التحقق من التفرد والأثر التدقيقي.
+        """
+
+        await self.rbac.ensure_seed()
+        changed_fields: list[str] = []
+
+        if full_name and full_name.strip() and full_name != user.full_name:
+            user.full_name = full_name.strip()
+            changed_fields.append("full_name")
+
+        if email:
+            normalized_email = email.lower().strip()
+            if normalized_email != user.email:
+                conflict = await self.session.execute(
+                    select(User).where(User.email == normalized_email, User.id != user.id)
+                )
+                if conflict.scalar_one_or_none():
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST, detail="Email already in use"
+                    )
+                user.email = normalized_email
+                changed_fields.append("email")
+
+        if not changed_fields:
+            return user
+
+        await self.session.commit()
+        await self.session.refresh(user)
+        await self.audit.record(
+            actor_user_id=user.id,
+            action="PROFILE_UPDATED",
+            target_type="user",
+            target_id=str(user.id),
+            metadata={"fields": changed_fields},
+            ip=ip,
+            user_agent=user_agent,
+        )
+        return user
+
+    async def issue_reauth_proof(
+        self,
+        *,
+        user: User,
+        password: str,
+        ip: str | None = None,
+        user_agent: str | None = None,
+    ) -> tuple[str, int]:
+        """
+        إصدار رمز إعادة مصادقة قصير العمر لتلبية متطلبات "كسر الزجاج".
+
+        يتأكد هذا التابع من صحة كلمة المرور الحالية قبل إنشاء رمز JWT
+        مخصص لغرض إعادة المصادقة فقط، مع مدة صلاحية مقيدة تقلل خطر
+        إعادة الاستخدام في حال تسرب الرمز.
+        """
+
+        if not user.check_password(password):
+            await self.audit.record(
+                actor_user_id=user.id,
+                action="REAUTH_REJECTED",
+                target_type="user",
+                target_id=str(user.id),
+                metadata={"reason": "bad_password"},
+                ip=ip,
+                user_agent=user_agent,
+            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Re-authentication required")
+
+        token, expires_in = self._encode_reauth_token(user)
+        await self.audit.record(
+            actor_user_id=user.id,
+            action="REAUTH_SUCCEEDED",
+            target_type="user",
+            target_id=str(user.id),
+            metadata={"expires_in": expires_in},
+            ip=ip,
+            user_agent=user_agent,
+        )
+        return token, expires_in
+
+    async def verify_reauth_proof(
+        self,
+        token: str,
+        *,
+        user: User,
+        ip: str | None = None,
+        user_agent: str | None = None,
+    ) -> None:
+        """
+        التحقق من رمز إعادة المصادقة وضمان تطابق الهوية والغرض.
+        """
+
+        try:
+            payload = jwt.decode(token, self.settings.SECRET_KEY, algorithms=["HS256"])
+        except jwt.PyJWTError as exc:  # noqa: BLE001
+            await self.audit.record(
+                actor_user_id=user.id,
+                action="REAUTH_REJECTED",
+                target_type="user",
+                target_id=str(user.id),
+                metadata={"reason": "invalid_or_expired"},
+                ip=ip,
+                user_agent=user_agent,
+            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Re-authentication required") from exc
+
+        if payload.get("purpose") != "reauth" or payload.get("sub") != str(user.id):
+            await self.audit.record(
+                actor_user_id=user.id,
+                action="REAUTH_REJECTED",
+                target_type="user",
+                target_id=str(user.id),
+                metadata={"reason": "subject_mismatch"},
+                ip=ip,
+                user_agent=user_agent,
+            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Re-authentication required")
 
     def _encode_access_token(self, user: User, roles: list[str], permissions: set[str]) -> str:
         expires_delta = timedelta(minutes=min(self.settings.ACCESS_TOKEN_EXPIRE_MINUTES, ACCESS_EXPIRE_MINUTES))
@@ -155,7 +292,35 @@ class AuthService:
         }
         return jwt.encode(payload, self.settings.SECRET_KEY, algorithm="HS256")
 
-    async def _create_refresh_token(self, user: User) -> str:
+    def _encode_reauth_token(self, user: User) -> tuple[str, int]:
+        expires_delta = timedelta(
+            minutes=min(self.settings.REAUTH_TOKEN_EXPIRE_MINUTES, REAUTH_EXPIRE_MINUTES)
+        )
+        payload = {
+            "sub": str(user.id),
+            "purpose": "reauth",
+            "jti": secrets.token_urlsafe(8),
+            "iat": datetime.now(UTC),
+            "exp": datetime.now(UTC) + expires_delta,
+        }
+        token = jwt.encode(payload, self.settings.SECRET_KEY, algorithm="HS256")
+        return token, int(expires_delta.total_seconds())
+
+    async def _create_refresh_token(
+        self,
+        user: User,
+        *,
+        family_id: str | None,
+        ip: str | None,
+        user_agent: str | None,
+    ) -> str:
+        """
+        إنشاء رمز تحديث جديد داخل عائلة تدوير واحدة مع تتبع سياق العميل.
+
+        الهدف هو ربط كل رموز التحديث الصادرة لجلسة واحدة بمعرّف عائلة
+        family_id لضمان كشف إعادة الاستخدام وإيقاف العائلة بالكامل عند اكتشاف
+        أي محاولة اختراق.
+        """
         token_id = str(uuid.uuid4())
         raw_secret = secrets.token_urlsafe(32)
         hashed = pwd_context.hash(raw_secret)
@@ -163,10 +328,13 @@ class AuthService:
 
         record = RefreshToken(
             token_id=token_id,
+            family_id=family_id or str(uuid.uuid4()),
             user_id=user.id,
             hashed_token=hashed,
             expires_at=expires_at,
             revoked_at=None,
+            created_ip=ip,
+            user_agent=user_agent,
             created_at=utc_now(),
         )
         self.session.add(record)
@@ -186,21 +354,58 @@ class AuthService:
 
         token_id, secret = self._split_refresh_token(refresh_token)
         record = await self._get_refresh_record(token_id)
-        if record is None or not record.is_active():
+        if record is None:
             await self.audit.record(
                 actor_user_id=None,
                 action="REFRESH_REJECTED",
                 target_type="refresh_token",
                 target_id=token_id,
-                metadata={"reason": "inactive_or_missing"},
+                metadata={"reason": "missing"},
                 ip=ip,
                 user_agent=user_agent,
             )
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+
+        if record.revoked_at is not None or record.replaced_by_token_id is not None:
+            await self._revoke_family(record.family_id)
+            await self.audit.record(
+                actor_user_id=record.user_id,
+                action="REFRESH_REPLAY_DETECTED",
+                target_type="refresh_token",
+                target_id=token_id,
+                metadata={"reason": "token_already_rotated"},
+                ip=ip,
+                user_agent=user_agent,
+            )
+            await self.audit.record(
+                actor_user_id=record.user_id,
+                action="REFRESH_REJECTED",
+                target_type="refresh_token",
+                target_id=token_id,
+                metadata={"reason": "replay_reuse", "family_id": record.family_id},
+                ip=ip,
+                user_agent=user_agent,
+            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+
+        if not record.is_active():
+            record.revoke()
+            await self.session.commit()
+            await self.audit.record(
+                actor_user_id=record.user_id,
+                action="REFRESH_REJECTED",
+                target_type="refresh_token",
+                target_id=token_id,
+                metadata={"reason": "expired_or_inactive"},
+                ip=ip,
+                user_agent=user_agent,
+            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+
         if not pwd_context.verify(secret, record.hashed_token):
             await self._revoke_record(record)
             await self.audit.record(
-                actor_user_id=None,
+                actor_user_id=record.user_id,
                 action="REFRESH_REJECTED",
                 target_type="refresh_token",
                 target_id=token_id,
@@ -224,37 +429,218 @@ class AuthService:
             )
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account disabled")
 
-        await self._revoke_record(record)
-        refreshed = await self.issue_tokens(user)
+        new_refresh_value = await self._create_refresh_token(
+            user,
+            family_id=record.family_id,
+            ip=ip,
+            user_agent=user_agent,
+        )
+        new_token_id, _ = self._split_refresh_token(new_refresh_value)
+        await self._revoke_record(record, replaced_by=new_token_id)
+        roles = await self.rbac.user_roles(user.id)
+        permissions = await self.rbac.user_permissions(user.id)
+        access_token = self._encode_access_token(user, roles, permissions)
+        refreshed: TokenBundle = {
+            "access_token": access_token,
+            "refresh_token": new_refresh_value,
+            "token_type": "Bearer",
+        }
         await self.audit.record(
             actor_user_id=user.id,
             action="REFRESH_ROTATED",
             target_type="refresh_token",
             target_id=token_id,
-            metadata={"status": user.status.value},
+            metadata={"status": user.status.value, "family_id": record.family_id},
             ip=ip,
             user_agent=user_agent,
         )
         return refreshed
 
-    async def logout(self, *, refresh_token: str, ip: str | None = None, user_agent: str | None = None) -> None:
+    async def change_password(
+        self,
+        *,
+        user: User,
+        current_password: str,
+        new_password: str,
+        ip: str | None = None,
+        user_agent: str | None = None,
+    ) -> None:
+        """
+        تغيير كلمة المرور مع إبطال جلسات التحديث النشطة وتدقيق الحدث.
+        """
+
+        if not user.check_password(current_password):
+            await self.audit.record(
+                actor_user_id=user.id,
+                action="PASSWORD_CHANGE_REJECTED",
+                target_type="user",
+                target_id=str(user.id),
+                metadata={"reason": "bad_current_password"},
+                ip=ip,
+                user_agent=user_agent,
+            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+
+        user.set_password(new_password)
+        await self.session.commit()
+        revoked = await self._revoke_user_tokens(user)
+        await self.audit.record(
+            actor_user_id=user.id,
+            action="PASSWORD_CHANGED",
+            target_type="user",
+            target_id=str(user.id),
+            metadata={"revoked_refresh_tokens": revoked},
+            ip=ip,
+            user_agent=user_agent,
+        )
+
+    async def request_password_reset(
+        self,
+        *,
+        email: str,
+        ip: str | None = None,
+        user_agent: str | None = None,
+    ) -> tuple[str | None, int | None]:
+        """
+        إنشاء رمز إعادة تعيين قصير العمر مع تدقيق طلب مجهول.
+
+        يعيد الرمز عند توفر المستخدم لتسهيل الاختبار/التكامل، بينما يحافظ على
+        رسالة موحدة لتجنب كشف وجود البريد الإلكتروني.
+        """
+
+        normalized_email = email.lower().strip()
+        result = await self.session.execute(select(User).where(User.email == normalized_email))
+        user = result.scalar_one_or_none()
+        if not user:
+            await self.audit.record(
+                actor_user_id=None,
+                action="PASSWORD_RESET_REQUESTED",
+                target_type="user",
+                target_id=None,
+                metadata={"email_hash": self._hash_identifier(normalized_email), "status": "unknown_user"},
+                ip=ip,
+                user_agent=user_agent,
+            )
+            return None, None
+
+        token_value = secrets.token_urlsafe(32)
+        hashed = sha256(token_value.encode()).hexdigest()
+        expires_at = utc_now() + timedelta(minutes=PASSWORD_RESET_EXPIRE_MINUTES)
+        record = PasswordResetToken(
+            hashed_token=hashed,
+            user_id=user.id,
+            expires_at=expires_at,
+            requested_ip=ip,
+            user_agent=user_agent,
+        )
+        self.session.add(record)
+        await self.session.commit()
+        await self.session.refresh(record)
+        await self.audit.record(
+            actor_user_id=user.id,
+            action="PASSWORD_RESET_REQUESTED",
+            target_type="user",
+            target_id=str(user.id),
+            metadata={"token_id": record.token_id, "expires_at": expires_at.isoformat()},
+            ip=ip,
+            user_agent=user_agent,
+        )
+        return token_value, PASSWORD_RESET_EXPIRE_MINUTES * 60
+
+    async def reset_password(
+        self,
+        *,
+        token: str,
+        new_password: str,
+        ip: str | None = None,
+        user_agent: str | None = None,
+    ) -> None:
+        """
+        تفعيل إعادة التعيين باستخدام رمز لمرة واحدة مع إبطال الجلسات السابقة.
+        """
+
+        hashed = sha256(token.encode()).hexdigest()
+        result = await self.session.execute(
+            select(PasswordResetToken).where(PasswordResetToken.hashed_token == hashed)
+        )
+        record = result.scalar_one_or_none()
+        if not record or not record.is_active():
+            await self.audit.record(
+                actor_user_id=None,
+                action="PASSWORD_RESET_REJECTED",
+                target_type="password_reset",
+                target_id=None,
+                metadata={"reason": "invalid_or_expired"},
+                ip=ip,
+                user_agent=user_agent,
+            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
+
+        user = await self.session.get(User, record.user_id)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User missing for reset")
+
+        user.set_password(new_password)
+        record.mark_redeemed()
+        await self.session.commit()
+        revoked = await self._revoke_user_tokens(user)
+        await self.audit.record(
+            actor_user_id=user.id,
+            action="PASSWORD_RESET_COMPLETED",
+            target_type="user",
+            target_id=str(user.id),
+            metadata={"token_id": record.token_id, "revoked_refresh_tokens": revoked},
+            ip=ip,
+            user_agent=user_agent,
+        )
+
+    async def logout(
+        self, *, refresh_token: str, ip: str | None = None, user_agent: str | None = None
+    ) -> None:
         token_id, _ = self._split_refresh_token(refresh_token)
         record = await self._get_refresh_record(token_id)
         if record:
-            await self._revoke_record(record)
+            await self._revoke_family(record.family_id)
             await self.audit.record(
                 actor_user_id=record.user_id,
                 action="LOGOUT",
                 target_type="refresh_token",
                 target_id=token_id,
-                metadata={"status": "revoked"},
+                metadata={"status": "family_revoked", "family_id": record.family_id},
                 ip=ip,
                 user_agent=user_agent,
             )
 
-    async def _revoke_record(self, record: RefreshToken) -> None:
-        record.revoke(revoked_at=utc_now())
+    async def _revoke_record(self, record: RefreshToken, *, replaced_by: str | None = None) -> None:
+        record.revoke(revoked_at=utc_now(), replaced_by=replaced_by)
         await self.session.commit()
+
+    async def _revoke_family(self, family_id: str) -> None:
+        """
+        إبطال جميع رموز التحديث ضمن نفس العائلة لحماية الجلسة من إعادة التشغيل.
+        """
+
+        now = utc_now()
+        result = await self.session.execute(
+            select(RefreshToken).where(RefreshToken.family_id == family_id, RefreshToken.revoked_at.is_(None))
+        )
+        tokens = result.scalars().all()
+        for token in tokens:
+            token.revoke(revoked_at=now)
+        await self.session.commit()
+
+    async def _revoke_user_tokens(self, user: User) -> int:
+        """إبطال كل رموز التحديث النشطة لمستخدم محدد."""
+
+        now = utc_now()
+        result = await self.session.execute(
+            select(RefreshToken).where(RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None))
+        )
+        tokens = result.scalars().all()
+        for token in tokens:
+            token.revoke(revoked_at=now)
+        await self.session.commit()
+        return len(tokens)
 
     def _split_refresh_token(self, token: str) -> tuple[str, str]:
         try:
