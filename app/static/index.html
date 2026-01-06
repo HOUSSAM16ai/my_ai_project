@@ -3,337 +3,222 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CogniForge V3 - Overmind CLI</title>
-    <!-- React Production Build for Performance -->
+    <title>CogniForge • Conversational Cloud</title>
     <script crossorigin src="https://cdn.jsdelivr.net/npm/react@17/umd/react.production.min.js"></script>
     <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@17/umd/react-dom.production.min.js"></script>
-    <!-- Babel for JSX transformation (consider pre-compiling for production) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Performance Monitoring -->
     <script src="/performance-monitor.js"></script>
     <style>
         :root {
-            --background-color: #1a1a1a;
-            --text-color: #e0e0e0;
-            --primary-color: #00aaff;
-            --secondary-color: #444;
-            --border-color: #555;
-            --input-bg-color: #2c2c2c;
-            --error-color: #ff4d4d;
-            --sidebar-bg: #252525;
+            --bg: #ffffff;
+            --card: #ffffff;
+            --muted: #e2e8f0;
+            --text: #0f172a;
+            --subtext: #475569;
+            --primary: #0f172a;
+            --primary-strong: #111827;
+            --accent: #2563eb;
+            --shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
         }
+
+        * { box-sizing: border-box; }
+
         body, html {
             height: 100%;
             margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            overflow: hidden;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--bg);
+            color: var(--text);
         }
+
+        a { color: inherit; }
+
         #root {
-            height: 100%;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
-        .app-container {
+
+        .topbar { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--muted); }
+
+        .topbar-inner { max-width: 1180px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; letter-spacing: -0.02em; color: var(--text); }
+
+        .brand-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 10px 30px rgba(37, 99, 235, 0.2); }
+
+        .topbar-actions {
             display: flex;
-            flex-direction: column;
-            height: 100%;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .ghost-btn, .solid-btn { padding: 10px 16px; border-radius: 10px; border: 1px solid transparent; font-weight: 700; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease; }
+
+        .ghost-btn {
+            background: #fff;
+            border-color: var(--muted);
+            color: var(--text);
+        }
+
+        .ghost-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+
+        .solid-btn {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #fff;
+            box-shadow: 0 12px 30px rgba(37, 99, 235, 0.25);
+            border: none;
+        }
+
+        .solid-btn:hover { transform: translateY(-1px); box-shadow: 0 14px 40px rgba(14, 165, 233, 0.35); }
+
+        .page-shell { flex: 1; display: flex; flex-direction: column; }
+
+        .hero { max-width: 960px; margin: 40px auto 30px; padding: 10px 20px 0; display: grid; gap: 16px; align-items: center; }
+
+        .hero-card { background: var(--card); border-radius: 18px; padding: 26px; box-shadow: var(--shadow); border: 1px solid var(--muted); }
+
+        .hero h1 { font-size: 32px; margin: 0 0 12px; letter-spacing: -0.02em; text-align: center; }
+
+        .hero p { margin: 0 0 18px; color: var(--subtext); line-height: 1.6; text-align: center; }
+
+        .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: #e0f2fe; color: var(--primary-strong); font-weight: 700; font-size: 13px; }
+
+        .chat-preview { border: 1px solid var(--muted); border-radius: 18px; background: #f8fafc; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+
+        .chat-preview .preview-input { background: #fff; border: 1px solid var(--muted); border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; color: var(--subtext); }
+
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 16px; }
+
+        .feature { background: #fff; border: 1px solid var(--muted); border-radius: 14px; padding: 14px; font-weight: 700; color: var(--subtext); }
+
+        .welcome-shell { min-height: calc(100vh - 120px); display: grid; place-items: center; padding: 40px 16px 24px; }
+
+        .welcome-card { width: min(880px, 100%); margin: 0 auto; background: #fff; border: 1px solid var(--muted); border-radius: 18px; padding: 32px 24px; box-shadow: var(--shadow); }
+
+        .welcome-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 16px; }
+
+        .prompt-row { border: 1px solid var(--muted); border-radius: 16px; padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; background: #f8fafc; }
+
+        .prompt-row input { border: none; outline: none; background: transparent; font-size: 16px; padding: 10px; color: var(--text); }
+
+        .quick-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; justify-content: center; }
+
+        .chip { border: 1px solid var(--muted); border-radius: 12px; padding: 8px 12px; background: #fff; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--subtext); cursor: pointer; }
+
+        .chip:hover { box-shadow: var(--shadow); transform: translateY(-1px); transition: all 0.15s ease; }
+
+        .workspace {
+            flex: 1;
             max-width: 1200px;
-            margin: 0 auto;
+            margin: 20px auto 40px;
             width: 100%;
-        }
-        .login-container, .dashboard-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 20px;
-        }
-        .login-form, .register-form {
-            background-color: var(--secondary-color);
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            width: 100%;
-            max-width: 400px;
-        }
-        h2 {
-            color: var(--primary-color);
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .input-group {
-            margin-bottom: 20px;
-        }
-        .input-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background-color: var(--input-bg-color);
-            color: var(--text-color);
-        }
-        .error-message {
-            color: var(--error-color);
-            text-align: center;
-            margin-bottom: 15px;
-            min-height: 20px;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 4px;
-            background-color: var(--primary-color);
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #0088cc;
-        }
-        .toggle-form {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .toggle-form a {
-            color: var(--primary-color);
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        /* Dashboard Layout */
-        .dashboard-layout {
-            display: flex;
-            height: 100%;
-            overflow: hidden;
-        }
-        .sidebar {
-            width: 250px;
-            background-color: var(--sidebar-bg);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-            overflow-y: auto;
-        }
-        .sidebar-header {
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 10px;
-        }
-        .new-chat-btn {
-            background-color: var(--primary-color);
-            margin-bottom: 15px;
-        }
-        .conversation-list {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .conversation-item {
-            padding: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: #ccc;
-        }
-        .conversation-item:hover {
-            background-color: var(--border-color);
-        }
-        .conversation-item.active {
-            background-color: #333;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-        .chat-area {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .chat-container {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            padding: 20px;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .logout-btn {
-            background: none;
-            border: none;
-            color: var(--primary-color);
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 10px 0;
-            /* Browser Optimization: helps with rendering large lists */
-            content-visibility: auto;
-        }
-        .message {
-            margin-bottom: 15px;
-            display: flex;
-        }
-        .message.user {
-            justify-content: flex-end;
-        }
-        .message-bubble {
-            max-width: 80%;
-            padding: 10px 15px;
-            border-radius: 18px;
-            /* Optimization: reduce repaint area */
-            will-change: transform;
-        }
-        .message.user .message-bubble {
-            background-color: var(--primary-color);
-            color: white;
-            border-bottom-right-radius: 4px;
-        }
-        .message.assistant .message-bubble {
-            background-color: var(--secondary-color);
-            border-bottom-left-radius: 4px;
-        }
-        .input-area {
-            display: flex;
-            padding-top: 10px;
-            border-top: 1px solid var(--border-color);
-        }
-        .input-area textarea {
-            flex-grow: 1;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background-color: var(--input-bg-color);
-            color: var(--text-color);
-            resize: none;
-            max-height: 100px;
-            font-family: inherit;
-        }
-        .input-area button {
-            width: auto;
-            margin-left: 10px;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 20px;
             padding: 0 20px;
         }
-        /* Markdown styles */
-        .markdown-content p {
-            margin-top: 0;
-            margin-bottom: 1em;
-        }
-        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
-            margin-top: 1em;
-            margin-bottom: 0.5em;
-            color: var(--primary-color);
-        }
-        .markdown-content ul, .markdown-content ol {
-            padding-left: 20px;
-        }
-        .markdown-content code {
-            background-color: var(--input-bg-color);
-            padding: 0.2em 0.4em;
-            border-radius: 3px;
-            font-family: 'Courier New', Courier, monospace;
-        }
-        .markdown-content pre {
-            background-color: var(--input-bg-color);
-            padding: 10px;
-            border-radius: 4px;
-            overflow-x: auto;
-        }
-        .markdown-content pre code {
-            padding: 0;
-            background-color: transparent;
-        }
-         .welcome-message {
-            text-align: center;
-            margin-top: 20%;
-            font-size: 1.2em;
-            color: #888;
-        }
-        .conversation-init {
-            text-align: center;
-            font-size: 0.9em;
-            color: #888;
-            margin: 10px 0;
-            font-weight: bold;
-        }
-        /* Loading Screen */
-        .loading-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            color: var(--primary-color);
-        }
-        .loading-screen i {
-            font-size: 3em;
-            margin-bottom: 20px;
+
+        .panel { background: var(--card); border-radius: 16px; border: 1px solid var(--muted); box-shadow: var(--shadow); }
+
+        .panel-header { padding: 18px; border-bottom: 1px solid var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+
+        .panel-title { font-size: 16px; font-weight: 800; margin: 0; display: flex; gap: 8px; align-items: center; }
+
+        .pill-badge { padding: 6px 10px; border-radius: 999px; background: #e0e7ff; color: #4338ca; font-weight: 700; font-size: 12px; }
+
+        .conversation-list { list-style: none; margin: 0; padding: 10px; display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 240px); overflow-y: auto; }
+
+        .conversation-item { padding: 12px; border-radius: 12px; border: 1px solid var(--muted); background: #f8fafc; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+
+        .conversation-item.active { border-color: var(--primary); background: #eef2ff; box-shadow: 0 12px 30px rgba(37, 99, 235, 0.15); transform: translateY(-1px); }
+
+        .conversation-item:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+
+        .chat-panel { display: flex; flex-direction: column; height: calc(100vh - 200px); }
+
+        .messages { flex: 1; padding: 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: linear-gradient(180deg, #f8fafc, #fff); }
+
+        .message { display: flex; }
+
+        .message .bubble { padding: 14px 16px; border-radius: 14px; border: 1px solid var(--muted); max-width: 720px; box-shadow: var(--shadow); }
+
+        .message.user { justify-content: flex-end; }
+
+        .message.user .bubble { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; border-color: transparent; }
+
+        .message.assistant .bubble { background: #fff; }
+
+        .input-area { padding: 16px; border-top: 1px solid var(--muted); display: flex; gap: 10px; }
+
+        .input-area textarea { flex: 1; border-radius: 14px; border: 1px solid var(--muted); padding: 12px; resize: none; min-height: 52px; font-size: 15px; font-family: inherit; }
+
+        .input-area button { border: none; border-radius: 12px; padding: 0 18px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25); }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--subtext); }
+
+        .empty-icon { width: 60px; height: 60px; border-radius: 16px; background: #e0f2fe; display: grid; place-items: center; color: var(--primary); margin: 0 auto 12px; }
+
+        .auth-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.35); display: grid; place-items: center; z-index: 30; padding: 14px; }
+
+        .auth-card { width: min(420px, 100%); background: var(--card); border-radius: 18px; padding: 24px; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18); border: 1px solid var(--muted); }
+
+        .auth-card h2 { margin: 0 0 6px; }
+
+        .auth-subtitle { margin: 0 0 18px; color: var(--subtext); }
+
+        .input-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+
+        .input-group label { font-weight: 700; font-size: 13px; color: var(--subtext); }
+
+        .input-group input { border-radius: 10px; border: 1px solid var(--muted); padding: 12px; font-size: 14px; }
+
+        .modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+
+        .link-btn { background: none; border: none; color: var(--primary); font-weight: 700; cursor: pointer; }
+
+        .status { margin: 10px 0; font-weight: 700; }
+
+        .status.error { color: #dc2626; }
+
+        .status.success { color: #16a34a; }
+
+        @media (max-width: 960px) {
+            .hero { grid-template-columns: 1fr; padding: 10px; }
+            .workspace { grid-template-columns: 1fr; }
+            .chat-panel { height: auto; min-height: 60vh; }
+            .conversation-list { max-height: 260px; }
+            .welcome-card { padding: 24px 18px; }
+            .prompt-row { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
     <div id="root"></div>
-
     <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback, memo } = React;
+        const { useEffect, useMemo, useState, useRef, useCallback, memo } = React;
 
-        // ══════════════════════════════════════════════════════════════════════
-        // GLOBAL ERROR HANDLING | معالجة الأخطاء العالمية
-        // ══════════════════════════════════════════════════════════════════════
-        
-        // Catch unhandled promise rejections (critical for Codespaces stability)
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
-            event.preventDefault(); // Prevent browser crash
+            event.preventDefault();
         });
 
-        // Catch general errors
         window.addEventListener('error', (event) => {
             console.error('Global error caught:', event.error);
-            event.preventDefault(); // Prevent browser crash
+            event.preventDefault();
         });
 
-        // CRITICAL FIX: Memory monitoring moved to component level to enable proper cleanup
-        // Previously these global setInterval calls caused memory leaks and browser crashes
-        // Now they will be managed inside the App component with proper cleanup on unmount
-
-        // ══════════════════════════════════════════════════════════════════════
-        // PERFORMANCE CONFIGURATION | تكوين الأداء
-        // ══════════════════════════════════════════════════════════════════════
-        
-        // CRITICAL: Detect Codespaces environment for resource optimization
-        const IS_CODESPACES = window.location.hostname.includes('github.dev') || 
+        const IS_CODESPACES = window.location.hostname.includes('github.dev') ||
                              window.location.hostname.includes('app.github.dev') ||
                              window.location.hostname.includes('preview.app.github.dev');
-        
-        const IS_CLOUD_ENV = IS_CODESPACES || 
+
+        const IS_CLOUD_ENV = IS_CODESPACES ||
                             window.location.hostname.includes('gitpod.io') ||
                             window.location.hostname.includes('repl.it');
-        
-        console.log(`🌍 Environment: ${IS_CODESPACES ? 'GitHub Codespaces' : IS_CLOUD_ENV ? 'Cloud IDE' : 'Local/Production'}`);
-        
-        // Showdown converter with performance optimizations
+
         const showdownConverter = new showdown.Converter({
             simplifiedAutoLink: true,
             excludeTrailingPunctuationFromURLs: true,
@@ -343,282 +228,113 @@
             simpleLineBreaks: true,
             openLinksInNewWindow: true
         });
-        
-        // DOM SAFETY VALVE: Limit messages to prevent memory exhaustion
-        // More aggressive limits in cloud environments
+
         const MAX_MESSAGES = IS_CLOUD_ENV ? 10 : 15;
-        
-        // CODESPACES COMPATIBILITY: Reduced limits for cloud environments
-        const MAX_STREAM_CHUNK_SIZE = IS_CLOUD_ENV ? 800 : 1000;
-        const STREAM_UPDATE_THROTTLE = IS_CLOUD_ENV ? 400 : 300; // Higher throttle for Codespaces
-        const STREAM_MICRO_DELAY = IS_CLOUD_ENV ? 12 : 8; // Longer delays in cloud
-        
-        console.log(`⚙️ Performance Config: MAX_MESSAGES=${MAX_MESSAGES}, THROTTLE=${STREAM_UPDATE_THROTTLE}ms, DELAY=${STREAM_MICRO_DELAY}ms`);
-        
-        // Performance monitoring
-        const PERFORMANCE_MONITOR = {
-            renderCount: 0,
-            lastRenderTime: 0,
-            avgRenderTime: 0
-        };
+        const STREAM_UPDATE_THROTTLE = IS_CLOUD_ENV ? 400 : 300;
+        const STREAM_MICRO_DELAY = IS_CLOUD_ENV ? 12 : 8;
 
-        // Error Boundary to prevent "Browser Explosion"
-        class ErrorBoundary extends React.Component {
-            constructor(props) {
-                super(props);
-                this.state = { hasError: false };
-            }
-
-            static getDerivedStateFromError(error) {
-                return { hasError: true };
-            }
-
-            componentDidCatch(error, errorInfo) {
-                console.error("React Error Boundary caught an error:", error, errorInfo);
-            }
-
-            render() {
-                if (this.state.hasError) {
-                    return (
-                        <div style={{ padding: '20px', color: 'var(--error-color)', textAlign: 'center' }}>
-                            <h2>⚠️ Interface Error</h2>
-                            <p>Something went wrong rendering the chat interface.</p>
-                            <button onClick={() => window.location.reload()} style={{ width: 'auto', marginTop: '10px' }}>
-                                Reload Application
-                            </button>
-                        </div>
-                    );
-                }
-                return this.props.children;
-            }
-        }
-
-        // ══════════════════════════════════════════════════════════════════════
-        // MEMOIZED MARKDOWN COMPONENT | مكون Markdown المحسّن
-        // ══════════════════════════════════════════════════════════════════════
-        // CRITICAL: Prevents re-parsing markdown for unchanged messages
-        // This is a key performance optimization following React best practices
-        
         const Markdown = memo(({ content }) => {
-            const startTime = performance.now();
-            
-            // SAFEGUARD: Truncate content to prevent Showdown regex freeze
-            const MAX_CONTENT_LENGTH = 20000;  // Optimized for Codespaces
-            const safeContent = (content || "").length > MAX_CONTENT_LENGTH
-                ? (content.substring(0, MAX_CONTENT_LENGTH) + "\n\n... [Message Truncated] ...")
-                : (content || "");
-
-            // Parse markdown with error handling
-            let html;
-            try {
-                html = showdownConverter.makeHtml(safeContent);
-            } catch (error) {
-                console.error("Markdown parsing error:", error);
-                html = `<pre>${safeContent}</pre>`;
-            }
-            
-            // Performance tracking
-            const renderTime = performance.now() - startTime;
-            PERFORMANCE_MONITOR.renderCount++;
-            PERFORMANCE_MONITOR.lastRenderTime = renderTime;
-            PERFORMANCE_MONITOR.avgRenderTime = 
-                (PERFORMANCE_MONITOR.avgRenderTime * (PERFORMANCE_MONITOR.renderCount - 1) + renderTime) 
-                / PERFORMANCE_MONITOR.renderCount;
-            
-            if (renderTime > 100) {
-                console.warn(`Slow markdown render: ${renderTime.toFixed(2)}ms`);
-            }
-            
-            return <div className="markdown-content" dangerouslySetInnerHTML={{ __html: html }} />;
-        }, (prevProps, nextProps) => {
-            // Strict equality check for memoization
-            return prevProps.content === nextProps.content;
+            const htmlContent = useMemo(() => showdownConverter.makeHtml(content || ''), [content]);
+            return <div className="markdown-content" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
         });
 
-        // Helper to generate unique IDs
-        const generateId = () => Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-        const App = () => {
-            const [token, setToken] = useState(localStorage.getItem('token'));
-            const [user, setUser] = useState(null);
-            const [isLoading, setIsLoading] = useState(!!localStorage.getItem('token'));
-
-            useEffect(() => {
-                const fetchUser = async () => {
-                    if (token) {
-                        try {
-                            const response = await fetch('/api/security/user/me', {
-                                headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            if (response.ok) {
-                                const userData = await response.json();
-                                setUser(userData);
-                            } else {
-                                logout();
-                            }
-                        } catch (error) {
-                            console.error("Failed to fetch user:", error);
-                            logout();
-                        } finally {
-                            setIsLoading(false);
-                        }
-                    } else {
-                        setIsLoading(false);
-                    }
-                };
-                fetchUser();
-            }, [token]);
-
-            // CRITICAL FIX: Memory monitoring and GC with proper cleanup
-            // This prevents memory leaks that were causing browser crashes in Codespaces
-            useEffect(() => {
-                const timers = [];
-                
-                // Memory monitoring (Codespaces has limited resources)
-                if (performance.memory) {
-                    const memoryTimer = setInterval(() => {
-                        const usedMemory = performance.memory.usedJSHeapSize;
-                        const totalMemory = performance.memory.jsHeapSizeLimit;
-                        const percentUsed = (usedMemory / totalMemory) * 100;
-                        
-                        if (percentUsed > 90) {
-                            console.warn(`⚠️ High memory usage: ${percentUsed.toFixed(1)}%`);
-                        }
-                        
-                        // CRITICAL: Auto-reload if memory exceeds 95% in Codespaces
-                        if (IS_CODESPACES && percentUsed > 95) {
-                            console.error('🚨 CRITICAL: Memory exhaustion detected! Forcing reload to prevent crash...');
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 2000);
-                        }
-                    }, 30000); // Check every 30 seconds
-                    timers.push(memoryTimer);
-                }
-
-                // Periodic garbage collection hint for memory optimization
-                const gcTimer = setInterval(() => {
-                    if (window.gc) {
-                        window.gc(); // Manual GC if available (Chrome with --expose-gc flag)
-                    }
-                }, 60000); // Every 60 seconds
-                timers.push(gcTimer);
-                
-                // CODESPACES: Health check to detect server issues
-                if (IS_CODESPACES) {
-                    let consecutiveFailures = 0;
-                    const healthTimer = setInterval(async () => {
-                        try {
-                            // Create manual timeout with AbortController for better browser compatibility
-                            const controller = new AbortController();
-                            const timeoutId = setTimeout(() => controller.abort(), 5000);
-                            
-                            const response = await fetch('/health', { 
-                                method: 'GET',
-                                cache: 'no-cache',
-                                signal: controller.signal
-                            });
-                            
-                            clearTimeout(timeoutId);
-                            
-                            if (response.ok) {
-                                consecutiveFailures = 0;
-                            } else {
-                                consecutiveFailures++;
-                                console.warn(`⚠️ Health check failed (${consecutiveFailures}/3)`);
-                            }
-                        } catch (error) {
-                            consecutiveFailures++;
-                            console.warn(`⚠️ Health check error (${consecutiveFailures}/3):`, error.message);
-                        }
-                        
-                        // If 3 consecutive failures, show warning
-                        if (consecutiveFailures >= 3) {
-                            console.error('🚨 Server appears to be down. Page will reload in 5 seconds...');
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 5000);
-                            clearInterval(healthTimer);
-                        }
-                    }, 60000); // Check every 60 seconds
-                    timers.push(healthTimer);
-                }
-
-                // CLEANUP: Clear all timers when component unmounts
-                return () => {
-                    timers.forEach(timer => clearInterval(timer));
-                };
-            }, []); // Empty dependency array - run once on mount
-
-            const handleLogin = (newToken, userData) => {
-                localStorage.setItem('token', newToken);
-                setToken(newToken);
-                setUser(userData);
-                // Don't manipulate browser history - let React handle rendering
-                // The issue with pushState in Codespaces was causing browser crashes
-            };
-
-            const logout = () => {
-                try {
-                    localStorage.removeItem('token');
-                    setToken(null);
-                    setUser(null);
-                    // Use replace instead of href to prevent browser history issues
-                    window.location.replace('/');
-                } catch (error) {
-                    console.error('Logout error:', error);
-                    // Force reload as fallback
-                    window.location.reload();
-                }
-            };
-
-            if (isLoading) {
-                return (
-                    <div className="loading-screen">
-                        <i className="fas fa-circle-notch fa-spin"></i>
-                        <h2>Initializing Reality Kernel...</h2>
+        const TopBar = ({ user, onLoginClick, onRegisterClick, onLogout }) => {
+            return (
+                <header className="topbar">
+                    <div className="topbar-inner">
+                        <div className="brand">
+                            <div className="brand-icon"><i className="fas fa-infinity"></i></div>
+                            Overmind Conversational Cloud
+                        </div>
+                        <div className="topbar-actions">
+                            {user ? (
+                                <>
+                                    <span style={{ color: '#475569', fontWeight: 700 }}>
+                                        {user.name}
+                                        {user.is_ephemeral ? ' • جلسة فورية' : ''}
+                                    </span>
+                                    {user.is_ephemeral && (
+                                        <button className="solid-btn" onClick={onRegisterClick}>ترقية الحساب</button>
+                                    )}
+                                    <button className="ghost-btn" onClick={onLogout}><i className="fas fa-sign-out-alt"></i> Sign out</button>
+                                </>
+                            ) : (
+                                <>
+                                    <button className="ghost-btn" onClick={onLoginClick}>Log in</button>
+                                    <button className="solid-btn" onClick={onRegisterClick}>Create account</button>
+                                </>
+                            )}
+                        </div>
                     </div>
-                );
-            }
-
-            if (!token || !user) {
-                return <AuthScreen onLogin={handleLogin} />;
-            }
-
-            if (user.is_admin) {
-               return <AdminDashboard user={user} onLogout={logout} />;
-            } else {
-               return (
-                   <div className="dashboard-container">
-                       <h2>Welcome, {user.name}</h2>
-                       <p>You do not have administrative privileges.</p>
-                       <button onClick={logout}>Logout</button>
-                   </div>
-               );
-            }
+                </header>
+            );
         };
 
-        const AuthScreen = ({ onLogin }) => {
-            const [isLogin, setIsLogin] = useState(true);
+        const Landing = ({ onLoginClick, onRegisterClick, onStartChat }) => {
+            const [prompt, setPrompt] = useState('');
+
+            const applyPreset = (text) => setPrompt(text);
+
+            const submitPrompt = () => {
+                onStartChat(prompt.trim());
+            };
+
             return (
-                <div className="login-container">
-                    {isLogin ?
-                        <LoginForm onLogin={onLogin} onToggle={() => setIsLogin(false)} /> :
-                        <RegisterForm onToggle={() => setIsLogin(true)} />
-                    }
+                <div className="welcome-shell">
+                    <div className="welcome-card">
+                        <div className="hero">
+                            <div className="pill"><i className="fas fa-shield-check"></i> Overmind • API first</div>
+                            <h1>بماذا تعمل حالياً؟</h1>
+                            <p>
+                                واجهة بيضاء تماماً تشبه الصفحة الأولى في المنصات العالمية: يمكنك البدء بالدردشة فوراً كزائر خفيف،
+                                ثم الترقية إلى حساب أو تسجيل الدخول من الشريط العلوي عندما ترغب.
+                            </p>
+                        </div>
+                        <div className="prompt-row">
+                            <input
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                placeholder="اطرح فكرة أو مهمة لتبدأ المحادثة فوراً"
+                            />
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button className="ghost-btn" onClick={submitPrompt}><i className="fas fa-bolt"></i> جرب الآن</button>
+                                <button className="solid-btn" onClick={() => onStartChat(prompt.trim())}><i className="fas fa-paper-plane"></i> إرسال</button>
+                            </div>
+                        </div>
+                        <div className="quick-actions">
+                            {[
+                                { icon: 'fa-paperclip', label: 'Attach', text: 'ارفق ملفاً واطلب تحليله فوراً.' },
+                                { icon: 'fa-magnifying-glass', label: 'Search', text: 'ابحث عن أفضل المصادر في لحظات.' },
+                                { icon: 'fa-graduation-cap', label: 'Study', text: 'فسّر لي هذا المفهوم بخطوات واضحة.' },
+                                { icon: 'fa-image', label: 'Create image', text: 'صمم لي صورة أولية لفكرة المنتج.' },
+                                { icon: 'fa-microphone-lines', label: 'Voice', text: 'حوّل هذه الملاحظة الصوتية إلى نقاط عمل.' }
+                            ].map((action) => (
+                                <button key={action.label} className="chip" onClick={() => applyPreset(action.text)}>
+                                    <i className={`fas ${action.icon}`}></i> {action.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="welcome-actions">
+                            <button className="ghost-btn" onClick={onLoginClick}>Log in</button>
+                            <button className="ghost-btn" onClick={onRegisterClick}>Sign up</button>
+                            <button className="solid-btn" onClick={submitPrompt}>ابدأ جلسة تجريبية</button>
+                        </div>
+                    </div>
                 </div>
             );
         };
 
-        const LoginForm = ({ onLogin, onToggle }) => {
+        const AuthModal = ({ mode, onClose, onLoginSuccess, onSwitch }) => {
+            const [fullName, setFullName] = useState('');
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
-            const [error, setError] = useState('');
+            const [status, setStatus] = useState('');
             const [isSubmitting, setIsSubmitting] = useState(false);
 
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setError('');
+            const handleLogin = async () => {
+                setStatus('');
                 setIsSubmitting(true);
                 try {
                     const response = await fetch('/api/security/login', {
@@ -626,420 +342,283 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, password })
                     });
-                    if (response.ok) {
-                        const data = await response.json();
-                        onLogin(data.access_token, data.user);
-                    } else {
-                        const errorData = await response.json();
-                        setError(errorData.detail || 'Login failed');
+
+                    if (!response.ok) {
+                        const error = await response.json().catch(() => ({}));
+                        throw new Error(error.detail || 'فشل تسجيل الدخول');
                     }
-                } catch (err) {
-                    setError('An error occurred. Please try again.');
+
+                    const data = await response.json();
+                    onLoginSuccess(data.access_token, data.user);
+                } catch (error) {
+                    setStatus(error.message);
                 } finally {
                     setIsSubmitting(false);
                 }
             };
 
-            return (
-                <div className="login-form">
-                    <form onSubmit={handleSubmit}>
-                        <h2>Admin Login</h2>
-                        <div className="error-message">{error}</div>
-                        <div className="input-group">
-                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required />
-                        </div>
-                        <div className="input-group">
-                            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required />
-                        </div>
-                        <button type="submit" disabled={isSubmitting}>
-                            {isSubmitting ? <i className="fas fa-spinner fa-spin"></i> : 'Login'}
-                        </button>
-                    </form>
-                    <div className="toggle-form">
-                        <a onClick={onToggle}>Don't have an account? Register</a>
-                    </div>
-                </div>
-            );
-        };
-
-        const RegisterForm = ({ onToggle }) => {
-            const [name, setName] = useState('');
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
-            const [error, setError] = useState('');
-            const [success, setSuccess] = useState('');
-            const [isSubmitting, setIsSubmitting] = useState(false);
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setError('');
-                setSuccess('');
+            const handleRegister = async () => {
+                setStatus('');
                 setIsSubmitting(true);
                 try {
                     const response = await fetch('/api/security/register', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ full_name: name, email, password, is_admin: false })
+                        body: JSON.stringify({ full_name: fullName, email, password })
                     });
-                    if (response.ok) {
-                        setSuccess('Registration successful! Please login.');
-                        setTimeout(onToggle, 2000);
-                    } else {
-                        const errorData = await response.json();
-                        setError(errorData.detail || 'Registration failed');
+
+                    if (!response.ok) {
+                        const error = await response.json().catch(() => ({}));
+                        throw new Error(error.detail || 'تعذر إنشاء الحساب');
                     }
-                } catch (err) {
-                    setError('An error occurred. Please try again.');
+
+                    // بعد نجاح التسجيل، سجل الدخول تلقائياً لضمان إنشاء الجلسة والحفظ الفوري.
+                    await handleLogin();
+                } catch (error) {
+                    setStatus(error.message);
                 } finally {
                     setIsSubmitting(false);
                 }
             };
 
+            const submit = async (event) => {
+                event.preventDefault();
+                if (mode === 'login') {
+                    await handleLogin();
+                } else {
+                    await handleRegister();
+                }
+            };
+
             return (
-                <div className="register-form">
-                    <form onSubmit={handleSubmit}>
-                         <h2>Register</h2>
-                        <div className="error-message">{error}</div>
-                        {success && <div style={{color: 'lightgreen', textAlign: 'center', marginBottom: '15px'}}>{success}</div>}
-                        <div className="input-group">
-                             <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Name" required />
+                <div className="auth-backdrop" role="dialog" aria-modal="true">
+                    <div className="auth-card">
+                        <h2>{mode === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب جديد'}</h2>
+                        <p className="auth-subtitle">الواجهة بيضاء وبسيطة؛ المعالجة كلها عبر الـ API.</p>
+                        <form onSubmit={submit}>
+                            {mode === 'register' && (
+                                <div className="input-group">
+                                    <label>الاسم الكامل</label>
+                                    <input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                                </div>
+                            )}
+                            <div className="input-group">
+                                <label>البريد الإلكتروني</label>
+                                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                            </div>
+                            <div className="input-group">
+                                <label>كلمة المرور</label>
+                                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                            </div>
+                            {status && <div className={`status ${status.toLowerCase().includes('نجاح') ? 'success' : 'error'}`}>{status}</div>}
+                            <div className="modal-actions">
+                                <button type="button" className="ghost-btn" onClick={onClose}>إغلاق</button>
+                                <button type="submit" className="solid-btn" disabled={isSubmitting}>
+                                    {isSubmitting ? '...جار التنفيذ' : mode === 'login' ? 'تسجيل الدخول' : 'تسجيل'}
+                                </button>
+                            </div>
+                        </form>
+                        <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <button className="link-btn" onClick={() => onSwitch(mode === 'login' ? 'register' : 'login')}>
+                                {mode === 'login' ? 'إنشاء حساب جديد' : 'لديك حساب؟ تسجيل الدخول'}
+                            </button>
                         </div>
-                        <div className="input-group">
-                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required />
-                        </div>
-                        <div className="input-group">
-                             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required />
-                        </div>
-                        <button type="submit" disabled={isSubmitting}>
-                             {isSubmitting ? <i className="fas fa-spinner fa-spin"></i> : 'Register'}
-                        </button>
-                    </form>
-                    <div className="toggle-form">
-                        <a onClick={onToggle}>Already have an account? Login</a>
                     </div>
                 </div>
             );
         };
 
-        const AdminDashboard = ({ user, onLogout }) => {
+        const ConversationWorkspace = ({ user, token, onLogout, onRegisterClick, initialPrompt = '', onInitialPromptHandled = () => {} }) => {
             const [messages, setMessages] = useState([]);
             const [conversations, setConversations] = useState([]);
             const [conversationId, setConversationId] = useState(null);
             const [input, setInput] = useState('');
             const [isLoadingConversation, setIsLoadingConversation] = useState(false);
             const messagesEndRef = useRef(null);
-            const abortControllerRef = useRef(null); // For aborting in-flight requests
+            const abortControllerRef = useRef(null);
+            const initialPromptHandled = useRef(false);
 
-            // CRITICAL FIX: Cleanup on unmount to prevent memory leaks
-            useEffect(() => {
-                return () => {
-                    // Abort any in-flight requests when component unmounts
-                    if (abortControllerRef.current) {
-                        abortControllerRef.current.abort();
+            const safeSetMessages = useCallback((updater) => {
+                setMessages((prev) => {
+                    const next = typeof updater === 'function' ? updater(prev) : updater;
+                    if (next.length > MAX_MESSAGES) {
+                        return next.slice(next.length - MAX_MESSAGES);
                     }
-                };
-            }, []);
-
-            const scrollToBottom = () => {
-                // Use requestAnimationFrame to avoid layout thrashing
-                if (messagesEndRef.current) {
-                    requestAnimationFrame(() => {
-                        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-                    });
-                }
-            };
-
-            // OPTIMIZED: Scroll only when messages array length changes, not on every update
-            // This prevents excessive re-renders during streaming
-            const messagesLength = messages.length;
-            useEffect(() => {
-                scrollToBottom();
-            }, [messagesLength]);
-
-            // Transform backend messages to include a stable ID
-            const normalizeMessages = (msgs) => {
-                return msgs.map(msg => ({
-                    ...msg,
-                    id: msg.id || generateId() // Ensure every message has a stable ID
-                }));
-            };
-
-            // Helper to enforce safety valve with stable IDs
-            const safeSetMessages = useCallback((update) => {
-                setMessages(prev => {
-                    let nextMessages;
-                    if (typeof update === 'function') {
-                        nextMessages = update(prev);
-                    } else {
-                        // Normalize incoming full updates
-                        nextMessages = Array.isArray(update) ? normalizeMessages(update) : update;
-                    }
-
-                    // DOM SAFETY VALVE: Enforce strict limit
-                    if (nextMessages.length > MAX_MESSAGES) {
-                         return nextMessages.slice(nextMessages.length - MAX_MESSAGES);
-                    }
-                    return nextMessages;
+                    return next;
                 });
             }, []);
 
-            const fetchConversations = async () => {
+            const authHeaders = useMemo(() => ({ 'Authorization': `Bearer ${token}` }), [token]);
+
+            const fetchConversations = useCallback(async () => {
                 try {
-                    const token = localStorage.getItem('token');
-                    const res = await fetch('/admin/api/conversations', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
+                    const res = await fetch('/admin/api/conversations', { headers: authHeaders });
                     if (res.ok) {
                         const data = await res.json();
                         setConversations(data);
                     }
-                } catch (e) {
-                    console.error("Failed to fetch conversations", e);
+                } catch (error) {
+                    console.error('Failed to fetch conversations', error);
                 }
-            };
+            }, [authHeaders]);
 
-            const loadConversation = async (id) => {
+            const loadConversation = useCallback(async (id) => {
                 if (!id) return;
                 setConversationId(id);
                 setIsLoadingConversation(true);
                 setMessages([]);
                 try {
-                    const token = localStorage.getItem('token');
-                    const res = await fetch(`/admin/api/conversations/${id}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
+                    const res = await fetch(`/admin/api/conversations/${id}`, { headers: authHeaders });
                     if (res.ok) {
                         const data = await res.json();
                         safeSetMessages(data.messages || []);
                         setConversationId(data.conversation_id);
                     } else {
                         const errorData = await res.json().catch(() => ({}));
-                        const errorMessage = errorData.detail || 'Failed to load conversation';
-                        safeSetMessages([{ id: generateId(), role: 'assistant', content: `Error: ${errorMessage}` }]);
+                        const errorMessage = errorData.detail || 'تعذر تحميل المحادثة';
+                        safeSetMessages([{ id: generateId(), role: 'assistant', content: `خطأ: ${errorMessage}` }]);
                     }
-                } catch (e) {
-                    console.error("Failed to load conversation", e);
-                    safeSetMessages([{ id: generateId(), role: 'assistant', content: 'Error: Failed to load conversation. Please try again.' }]);
+                } catch (error) {
+                    safeSetMessages([{ id: generateId(), role: 'assistant', content: 'تعذر الوصول للمحادثة. حاول مجدداً.' }]);
                 } finally {
                     setIsLoadingConversation(false);
                 }
-            };
+            }, [authHeaders, safeSetMessages]);
 
             useEffect(() => {
                 fetchConversations();
                 const fetchLatest = async () => {
-                     try {
-                        const token = localStorage.getItem('token');
-                        const res = await fetch('/admin/api/chat/latest', {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
+                    try {
+                        const res = await fetch('/admin/api/chat/latest', { headers: authHeaders });
                         if (res.ok) {
                             const data = await res.json();
-                            if (data.messages && Array.isArray(data.messages)) {
+                            if (data?.messages) {
                                 safeSetMessages(data.messages);
                             }
-                            if (data.conversation_id) {
+                            if (data?.conversation_id) {
                                 setConversationId(data.conversation_id);
                             }
                         }
-                    } catch (e) {
-                        console.error("Failed to fetch latest", e);
+                    } catch (error) {
+                        console.error('Failed to fetch latest conversation', error);
                     }
                 };
                 fetchLatest();
+            }, [authHeaders, fetchConversations, safeSetMessages]);
+
+            const scrollToBottom = useCallback(() => {
+                if (messagesEndRef.current) {
+                    requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }));
+                }
             }, []);
 
+            useEffect(() => { scrollToBottom(); }, [messages.length, scrollToBottom]);
+
             const handleNewChat = () => {
+                if (abortControllerRef.current) {
+                    abortControllerRef.current.abort();
+                }
                 setMessages([]);
                 setConversationId(null);
             };
 
-            const handleSend = async () => {
-                if (input.trim()) {
-                    // Abort any previous request
-                    if (abortControllerRef.current) {
-                        abortControllerRef.current.abort();
+            const handleSend = async (presetInput) => {
+                const pendingInput = (presetInput ?? input).trim();
+                if (!pendingInput) return;
+
+                if (abortControllerRef.current) {
+                    abortControllerRef.current.abort();
+                }
+
+                abortControllerRef.current = new AbortController();
+                const userMsgId = generateId();
+                safeSetMessages(prev => [...prev, { id: userMsgId, role: 'user', content: pendingInput }]);
+                setInput('');
+
+                try {
+                    const payload = { question: pendingInput };
+                    if (conversationId) {
+                        payload.conversation_id = String(conversationId);
                     }
-                    
-                    // Create new AbortController for this request
-                    abortControllerRef.current = new AbortController();
-                    
-                    // Optimistically add user message with a unique ID
-                    const userMsgId = generateId();
-                    safeSetMessages(prev => [...prev, { id: userMsgId, role: 'user', content: input }]);
-                    setInput('');
 
-                    try {
-                        const payload = { question: input };
-                        if (conversationId) {
-                            payload.conversation_id = String(conversationId);
-                        }
+                    const response = await fetch('/admin/api/chat/stream', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...authHeaders },
+                        body: JSON.stringify(payload),
+                        signal: abortControllerRef.current.signal
+                    });
 
-                        const response = await fetch('/admin/api/chat/stream', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`
-                            },
-                            body: JSON.stringify(payload),
-                            signal: abortControllerRef.current.signal // Add abort signal
-                        });
+                    if (!response.ok) {
+                        const errorText = await response.text().catch(() => 'Unknown error');
+                        throw new Error(`Server error: ${response.status} - ${errorText}`);
+                    }
 
-                        if (!response.ok) {
-                            const errorText = await response.text().catch(() => 'Unknown error');
-                            throw new Error(`Server error: ${response.status} - ${errorText}`);
-                        }
+                    if (!response.body) {
+                        throw new Error('Response body is not available for streaming');
+                    }
 
-                        // SAFETY CHECK: Ensure response.body exists
-                        if (!response.body) {
-                            throw new Error('Response body is not available for streaming');
-                        }
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let assistantMessage = '';
+                    let isNewMessage = true;
+                    let lastUpdateTime = Date.now();
 
-                        const reader = response.body.getReader();
-                        const decoder = new TextDecoder();
-                        let assistantMessage = '';
-                        let isNewMessage = true;
-                        let lastUpdateTimestamp = 0;
-                        let assistantMsgId = generateId(); // Stable ID for the stream
-                        let loopCount = 0;
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
 
-                        try {
-                            while (true) {
-                                const { value, done } = await reader.read();
-                                if (done) break;
+                        const text = decoder.decode(value, { stream: true });
+                        const segments = text.split('\n\n').filter(Boolean);
 
-                                // BROWSER SAFETY VALVE: Prevent infinite loop crash
-                                loopCount++;
-                                if (loopCount > 10000) {
-                                    console.error("⚠️ Emergency Brake: Stream loop limit reached.");
-                                    break;
+                        for (const segment of segments) {
+                            if (segment.startsWith('data:')) {
+                                const payload = segment.replace('data:', '').trim();
+                                if (payload === '[DONE]') {
+                                    continue;
                                 }
-
-                                // CODESPACES OPTIMIZATION: Slightly longer delay for cloud environments
-                                // This prevents browser overload in resource-constrained environments
-                                await new Promise(resolve => setTimeout(resolve, STREAM_MICRO_DELAY));
-
-                                const chunk = decoder.decode(value, { stream: true });
-                                const lines = chunk.split('\n\n');
-
-                            lines.forEach(line => {
-                                if (line.startsWith('data: ')) {
-                                    const dataContent = line.substring(6);
-                                    if (dataContent === '[DONE]') {
-                                        return;
-                                    }
-                                    try {
-                                        const parsed = JSON.parse(dataContent);
-
-                                        if (parsed.conversation_id && parsed.title) {
-                                             setConversationId(parsed.conversation_id);
-                                             safeSetMessages(prev => [...prev, { id: generateId(), role: 'init', content: `Conversation ${parsed.conversation_id} - ${parsed.title}` }]);
-                                             isNewMessage = true;
-                                             fetchConversations();
-                                        }
-                                        else if (parsed.choices && parsed.choices[0]) {
-                                             const delta = parsed.choices[0].delta || {};
-                                             const content = delta.content || '';
-
-                                             if (content) {
-                                                 if (isNewMessage) {
-                                                     assistantMessage = content;
-                                                     // Create new message block
-                                                     safeSetMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: assistantMessage }]);
-                                                     isNewMessage = false;
-                                                     lastUpdateTimestamp = Date.now();
-                                                 } else {
-                                                     // BROWSER SAFETY VALVE: Prevent OOM from massive streams
-                                                     if (assistantMessage.length < 50000) {
-                                                         assistantMessage += content;
-                                                     } else if (!assistantMessage.endsWith("... [Truncated by Browser Safeguard]")) {
-                                                         assistantMessage += "\n\n... [Truncated by Browser Safeguard]";
-                                                         console.warn("Stream truncated to prevent browser crash (50k limit reached)");
-                                                     }
-
-                                                     // Throttled update: Better for Codespaces
-                                                     const now = Date.now();
-                                                     if (now - lastUpdateTimestamp > STREAM_UPDATE_THROTTLE) {
-                                                         safeSetMessages(prev =>
-                                                             prev.map(msg =>
-                                                                 msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
-                                                             )
-                                                         );
-                                                         lastUpdateTimestamp = now;
-                                                     }
-                                                 }
-                                             }
-                                        }
-                                        else if (parsed.content) {
-                                            // Handle other formats similar to above...
+                                try {
+                                    const parsed = JSON.parse(payload);
+                                    if (parsed.answer_chunk) {
+                                        assistantMessage += parsed.answer_chunk;
+                                        const now = Date.now();
+                                        if (now - lastUpdateTime > STREAM_UPDATE_THROTTLE) {
+                                            lastUpdateTime = now;
                                             if (isNewMessage) {
-                                                 assistantMessage = parsed.content;
-                                                 safeSetMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: assistantMessage }]);
-                                                 isNewMessage = false;
-                                                 lastUpdateTimestamp = Date.now();
-                                             } else {
-                                                 assistantMessage += parsed.content;
-                                                 const now = Date.now();
-                                                 if (now - lastUpdateTimestamp > STREAM_UPDATE_THROTTLE) {
-                                                     safeSetMessages(prev =>
-                                                         prev.map(msg =>
-                                                             msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
-                                                         )
-                                                     );
-                                                     lastUpdateTimestamp = now;
-                                                 }
-                                             }
+                                                const newId = generateId();
+                                                safeSetMessages(prev => [...prev, { id: newId, role: 'assistant', content: assistantMessage }]);
+                                                isNewMessage = false;
+                                            } else {
+                                                safeSetMessages(prev => prev.map((m, idx, arr) => idx === arr.length - 1 ? { ...m, content: assistantMessage } : m));
+                                            }
                                         }
-                                        else if (parsed.type === 'error') {
-                                            safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Error: ${parsed.payload.error}` }]);
-                                        }
-
-                                    } catch (e) {
-                                        console.error('Error parsing stream data:', e);
                                     }
+                                    if (parsed.conversation_id) {
+                                        setConversationId(parsed.conversation_id);
+                                    }
+                                } catch (err) {
+                                    console.error('Failed to parse stream chunk', err);
                                 }
-                            });
-                        }
-
-                        // Final update
-                        if (!isNewMessage) {
-                             safeSetMessages(prev =>
-                                 prev.map(msg =>
-                                     msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
-                                 )
-                             );
-                        }
-
-                        } catch (streamError) {
-                            // Ignore abort errors - they're expected when requests are cancelled
-                            if (streamError.name === 'AbortError') {
-                                console.log('Stream aborted by user');
-                                return;
-                            }
-                            console.error('Stream reading error:', streamError);
-                            // Add error message to chat
-                            safeSetMessages(prev => [
-                                ...prev,
-                                { id: generateId(), role: 'assistant', content: `Stream error: ${streamError.message || 'Connection interrupted'}. Please try again.` }
-                            ]);
-                        } finally {
-                            // Always clean up the reader
-                            try {
-                                reader.releaseLock();
-                            } catch (e) {
-                                // Ignore cleanup errors
                             }
                         }
-
-                    } catch (error) {
-                        // Ignore abort errors - they're expected when user cancels
-                        if (error.name === 'AbortError') {
-                            console.log('Request aborted by user');
-                            return;
-                        }
-                        console.error('Streaming Error:', error);
-                        safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Sorry, I encountered an error.' }]);
+                        await new Promise(resolve => setTimeout(resolve, STREAM_MICRO_DELAY));
                     }
+
+                    if (assistantMessage) {
+                        if (isNewMessage) {
+                            safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: assistantMessage }]);
+                        } else {
+                            safeSetMessages(prev => prev.map((m, idx, arr) => idx === arr.length - 1 ? { ...m, content: assistantMessage } : m));
+                        }
+                    }
+
+                    await fetchConversations();
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        console.warn('Stream aborted by user');
+                        return;
+                    }
+                    console.error('Streaming Error:', error);
+                    safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'حدث خطأ غير متوقع. حاول مرة أخرى.' }]);
                 }
             };
 
@@ -1050,100 +629,383 @@
                 }
             };
 
+            useEffect(() => {
+                if (initialPrompt && !initialPromptHandled.current) {
+                    initialPromptHandled.current = true;
+                    handleSend(initialPrompt);
+                    onInitialPromptHandled();
+                } else if (!initialPrompt) {
+                    initialPromptHandled.current = false;
+                }
+            }, [handleSend, initialPrompt, onInitialPromptHandled]);
+
+            useEffect(() => () => {
+                if (abortControllerRef.current) {
+                    abortControllerRef.current.abort();
+                }
+            }, []);
+
             return (
-                <div className="app-container">
-                    <div className="header">
-                        <h2>Overmind CLI Mindgate - Welcome, {user.name}</h2>
-                        <button onClick={onLogout} className="logout-btn"><i className="fas fa-sign-out-alt"></i> Logout</button>
-                    </div>
-
-                    <div className="dashboard-layout">
-                        <div className="sidebar">
-                             <div className="sidebar-header">
-                                 <button className="new-chat-btn" onClick={handleNewChat}>
-                                     <i className="fas fa-plus"></i> New Chat
-                                 </button>
-                             </div>
-                             <div className="conversation-list">
-                                 {conversations.map(conv => {
-                                     const isActive = conversationId === conv.conversation_id;
-                                     const isLoading = isActive && isLoadingConversation;
-                                     const iconClass = isLoading ? 'fa-spinner fa-spin' : 'fa-comment-alt';
-                                     return (
-                                         <div
-                                             key={conv.conversation_id}
-                                             className={`conversation-item ${isActive ? 'active' : ''}`}
-                                             onClick={() => loadConversation(conv.conversation_id)}
-                                         >
-                                             <i className={`fas ${iconClass}`} style={{marginRight: '8px'}}></i>
-                                             {conv.title || `Conversation ${conv.conversation_id}`}
-                                         </div>
-                                     );
-                                 })}
-                             </div>
+                <section className="workspace">
+                    {user.is_ephemeral && (
+                        <div className="panel" style={{ gridColumn: '1 / -1', padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ color: '#334155', fontWeight: 700 }}>
+                                تجربة فورية جاهزة للعمل — تم إنشاء جلسة دردشة بيضاء مثل واتساب الخفيف مع حفظ تاريخك مباشرة في قاعدة البيانات.
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button className="ghost-btn" onClick={onRegisterClick}>إنشاء حساب دائم</button>
+                                <button className="solid-btn" onClick={onLogout}>إعادة بدء جلسة جديدة</button>
+                            </div>
                         </div>
-
-                        <div className="chat-area">
-                            <div className="chat-container">
-                                <div className="messages">
-                                    {isLoadingConversation ? (
-                                        <div className="welcome-message">
-                                            <i className="fas fa-spinner fa-spin" style={{fontSize: '2em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
-                                            <p>Loading conversation...</p>
-                                        </div>
-                                    ) : messages.length === 0 ? (
-                                        <div className="welcome-message">
-                                            <i className="fas fa-brain" style={{fontSize: '3em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
-                                            <h3 style={{margin: '10px 0', color: 'var(--primary-color)'}}>🧠 OVERMIND CLI MINDGATE</h3>
-                                            <p style={{fontSize: '0.9em', color: '#666', marginBottom: '15px'}}>
-                                                <strong>الهوية:</strong> المُنسق الذكي الأعلى لمنصة CogniForge
-                                            </p>
-                                            <div style={{textAlign: 'right', fontSize: '0.85em', color: '#555', maxWidth: '500px', margin: '0 auto', padding: '15px', background: 'rgba(74, 144, 226, 0.05)', borderRadius: '10px', border: '1px solid rgba(74, 144, 226, 0.2)'}}>
-                                                <p><strong>📊 القدرات:</strong></p>
-                                                <ul style={{textAlign: 'right', paddingRight: '20px', margin: '10px 0'}}>
-                                                    <li>تحليل المشاكل المعمارية المعقدة</li>
-                                                    <li>اقتراح حلول كود جاهزة للتنفيذ</li>
-                                                    <li>فهم سياق المحادثة السابقة</li>
-                                                    <li>التواصل بالعربية والإنجليزية</li>
-                                                </ul>
-                                                <p style={{marginTop: '10px'}}><strong>🏗️ النظام:</strong> FastAPI + SQLAlchemy + Pydantic v2</p>
-                                            </div>
-                                            <p style={{marginTop: '15px', color: '#888'}}>ابدأ محادثة جديدة للتفاعل مع Overmind...</p>
-                                        </div>
-                                    ) : (
-                                        messages.map((msg) => {
-                                            // Ensure key is unique and stable. Fallback to random if no ID (should be covered by normalize)
-                                            const key = msg.id || Math.random();
-                                            if (msg.role === 'init') {
-                                                return <div key={key} className="conversation-init">{msg.content}</div>;
-                                            }
-                                            return (
-                                                <div key={key} className={`message ${msg.role}`}>
-                                                    <div className="message-bubble">
-                                                        <Markdown content={msg.content} />
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                    <div ref={messagesEndRef} />
+                    )}
+                    <div className="panel">
+                        <div className="panel-header">
+                            <h3 className="panel-title"><i className="fas fa-clock-rotate-left"></i> سجل المحادثات</h3>
+                            <button className="ghost-btn" onClick={handleNewChat}><i className="fas fa-plus"></i> جلسة جديدة</button>
+                        </div>
+                        <ul className="conversation-list">
+                            {conversations.map((conv) => {
+                                const active = conversationId === conv.conversation_id;
+                                return (
+                                    <li key={conv.conversation_id} className={`conversation-item ${active ? 'active' : ''}`} onClick={() => loadConversation(conv.conversation_id)}>
+                                        <i className={`fas ${active && isLoadingConversation ? 'fa-spinner fa-spin' : 'fa-comment-dots'}`}></i>
+                                        <span>{conv.title || `محادثة ${conv.conversation_id}`}</span>
+                                    </li>
+                                );
+                            })}
+                            {conversations.length === 0 && (
+                                <li className="conversation-item" style={{ cursor: 'default', justifyContent: 'center' }}>
+                                    <i className="fas fa-sparkles"></i>
+                                    <span>سيتم إنشاء المحادثات تلقائياً بعد أول رسالة.</span>
+                                </li>
+                            )}
+                        </ul>
+                    </div>
+                    <div className="panel chat-panel">
+                        <div className="panel-header">
+                            <div>
+                                <p className="panel-title" style={{ margin: 0 }}>
+                                    <i className="fas fa-wand-magic-sparkles"></i> مساحة الحوار الذكي
+                                </p>
+                                <small style={{ color: '#475569' }}>كل رسالة تُرسل عبر واجهة API مستقلة وتُحفظ مع رقم الجلسة.</small>
+                            </div>
+                            <div className="pill-badge">{user.is_ephemeral ? 'جلسة تجريبية' : 'وصول موثوق'}</div>
+                        </div>
+                        <div className="messages">
+                            {isLoadingConversation ? (
+                                <div className="empty-state">
+                                    <div className="empty-icon"><i className="fas fa-circle-notch fa-spin"></i></div>
+                                    <p>جارٍ استعادة سجل الجلسة...</p>
                                 </div>
-                                <div className="input-area">
-                                    <textarea
-                                        value={input}
-                                        onChange={(e) => setInput(e.target.value)}
-                                        onKeyPress={handleKeyPress}
-                                        placeholder="Enter your command..."
-                                        rows="1"
-                                    />
-                                    <button onClick={handleSend}><i className="fas fa-paper-plane"></i></button>
+                            ) : messages.length === 0 ? (
+                                <div className="empty-state">
+                                    <div className="empty-icon"><i className="fas fa-magic"></i></div>
+                                    <p>ابدأ المحادثة الأولى وسيتم إنشاء الحساب والجلسة في قاعدة البيانات تلقائياً.</p>
+                                </div>
+                            ) : (
+                                messages.map((msg) => {
+                                    const key = msg.id || generateId();
+                                    if (msg.role === 'init') {
+                                        return <div key={key} className="empty-state">{msg.content}</div>;
+                                    }
+                                    return (
+                                        <div key={key} className={`message ${msg.role}`}>
+                                            <div className="bubble">
+                                                <Markdown content={msg.content} />
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                            <div ref={messagesEndRef} />
+                        </div>
+                        <div className="input-area">
+                            <textarea
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                                placeholder="اكتب سؤالك هنا..."
+                                rows="1"
+                            />
+                            <button onClick={handleSend}><i className="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [token, setToken] = useState(() => {
+                return localStorage.getItem('token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+            });
+            const [user, setUser] = useState(null);
+            const [isLoading, setIsLoading] = useState(true);
+            const [authMode, setAuthMode] = useState(null);
+            const [isBootstrappingGuest, setIsBootstrappingGuest] = useState(false);
+            const [bootstrapError, setBootstrapError] = useState('');
+            const [guestCredentials, setGuestCredentials] = useState(() => {
+                const cached = sessionStorage.getItem('instant-guest');
+                return cached ? JSON.parse(cached) : null;
+            });
+            const [isEphemeralSession, setIsEphemeralSession] = useState(() => Boolean(sessionStorage.getItem('instant-guest')));
+            const [view, setView] = useState('welcome');
+            const [initialPrompt, setInitialPrompt] = useState('');
+
+            const syncTokens = (accessToken) => {
+                localStorage.setItem('token', accessToken);
+                localStorage.setItem('auth_token', accessToken);
+                sessionStorage.setItem('auth_token', accessToken);
+                setToken(accessToken);
+            };
+
+            const handleLoginSuccess = (accessToken, profile, isEphemeral = false) => {
+                syncTokens(accessToken);
+                if (isEphemeral) {
+                    setIsEphemeralSession(true);
+                } else {
+                    sessionStorage.removeItem('instant-guest');
+                    setGuestCredentials(null);
+                    setIsEphemeralSession(false);
+                }
+
+                setUser({ ...profile, is_ephemeral: isEphemeral });
+                setAuthMode(null);
+
+                if (profile?.is_admin) {
+                    window.location.href = '/static/superhuman_dashboard.html';
+                    return;
+                }
+
+                setView('chat');
+            };
+
+            const persistGuestCredentials = (identity) => {
+                sessionStorage.setItem('instant-guest', JSON.stringify(identity));
+                setGuestCredentials(identity);
+                setIsEphemeralSession(true);
+            };
+
+            const startChatting = (prompt) => {
+                setInitialPrompt(prompt || '');
+                setView('chat');
+            };
+
+            const clearInitialPrompt = () => setInitialPrompt('');
+
+            const loginWithCredentials = async (email, password) => {
+                const response = await fetch('/api/security/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.detail || 'فشل تسجيل الدخول');
+                }
+
+                return response.json();
+            };
+
+            const registerIdentity = async (identity) => {
+                const response = await fetch('/api/security/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        full_name: identity.name,
+                        email: identity.email,
+                        password: identity.password
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.detail || 'تعذر إنشاء الحساب السريع');
+                }
+            };
+
+            const createInstantIdentity = () => ({
+                name: `زائر لحظي ${Math.floor(Math.random() * 9000) + 1000}`,
+                email: `instant-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@guest.local`,
+                password: `Guest-${Math.random().toString(36).slice(2, 10)}!A`
+            });
+
+            const bootstrapInstantGuest = useCallback(async () => {
+                setIsBootstrappingGuest(true);
+                setBootstrapError('');
+
+                const identity = guestCredentials || createInstantIdentity();
+
+                try {
+                    const loginData = await loginWithCredentials(identity.email, identity.password);
+                    handleLoginSuccess(loginData.access_token, loginData.user, true);
+                    if (!guestCredentials) {
+                        persistGuestCredentials(identity);
+                    }
+                } catch (loginError) {
+                    try {
+                        await registerIdentity(identity);
+                        persistGuestCredentials(identity);
+                        const loginData = await loginWithCredentials(identity.email, identity.password);
+                        handleLoginSuccess(loginData.access_token, loginData.user, true);
+                    } catch (error) {
+                        console.error('Failed to bootstrap instant guest', error);
+                        setBootstrapError(error.message || 'تعذر بدء الجلسة الفورية');
+                        setToken(null);
+                        setUser(null);
+                        sessionStorage.removeItem('instant-guest');
+                        setGuestCredentials(null);
+                        setIsEphemeralSession(false);
+                    }
+                } finally {
+                    setIsLoading(false);
+                    setIsBootstrappingGuest(false);
+                }
+            }, [guestCredentials]);
+
+            useEffect(() => {
+                const stored = localStorage.getItem('token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+                if (!stored) {
+                    bootstrapInstantGuest();
+                    return;
+                }
+
+                const fetchUser = async () => {
+                    try {
+                        const res = await fetch('/api/security/user/me', { headers: { Authorization: `Bearer ${stored}` } });
+                        if (res.ok) {
+                            const data = await res.json();
+                            handleLoginSuccess(stored, { ...data, is_admin: data.is_admin }, isEphemeralSession);
+                        } else {
+                            localStorage.removeItem('token');
+                            localStorage.removeItem('auth_token');
+                            sessionStorage.removeItem('auth_token');
+                            setToken(null);
+                            setUser(null);
+                            setIsEphemeralSession(false);
+                            await bootstrapInstantGuest();
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Failed to hydrate session', error);
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('auth_token');
+                        sessionStorage.removeItem('auth_token');
+                        setToken(null);
+                        setUser(null);
+                        setIsEphemeralSession(false);
+                        await bootstrapInstantGuest();
+                        return;
+                    } finally {
+                        setIsLoading(false);
+                    }
+                };
+
+                fetchUser();
+            }, [bootstrapInstantGuest, isEphemeralSession]);
+
+            const logout = () => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('auth_token');
+                sessionStorage.removeItem('auth_token');
+                sessionStorage.removeItem('instant-guest');
+                setToken(null);
+                setUser(null);
+                setAuthMode(null);
+                setView('welcome');
+                setIsEphemeralSession(false);
+                bootstrapInstantGuest();
+            };
+
+            const canRenderWorkspace = !!token && !!user;
+
+            if (isLoading || isBootstrappingGuest) {
+                return (
+                    <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', color: '#475569', background: '#fff' }}>
+                        <div className="empty-icon"><i className="fas fa-bolt"></i></div>
+                        <p>نطلق لك جلسة دردشة فورية بأسلوب واتساب الخفيف.</p>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="page-shell">
+                    <TopBar
+                        user={user}
+                        onLoginClick={() => setAuthMode('login')}
+                        onRegisterClick={() => setAuthMode('register')}
+                        onLogout={logout}
+                    />
+                    {bootstrapError && (
+                        <div className="hero" style={{ marginTop: 10 }}>
+                            <div className="hero-card" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px' }}>
+                                <div>
+                                    <h2 style={{ margin: '0 0 6px' }}>تعثرت الجلسة الفورية</h2>
+                                    <p style={{ margin: 0, color: '#475569' }}>{bootstrapError}</p>
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <button className="solid-btn" onClick={bootstrapInstantGuest}>إعادة المحاولة فوراً</button>
+                                    <button className="ghost-btn" onClick={() => setAuthMode('register')}>إنشاء حساب يدوي</button>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    )}
+                    {view === 'welcome' || !canRenderWorkspace ? (
+                        <Landing
+                            onLoginClick={() => setAuthMode('login')}
+                            onRegisterClick={() => setAuthMode('register')}
+                            onStartChat={startChatting}
+                        />
+                    ) : (
+                        <ConversationWorkspace
+                            user={user}
+                            token={token}
+                            onLogout={logout}
+                            onRegisterClick={() => setAuthMode('register')}
+                            initialPrompt={initialPrompt}
+                            onInitialPromptHandled={clearInitialPrompt}
+                        />
+                    )}
+                    {authMode && (
+                        <AuthModal
+                            mode={authMode}
+                            onClose={() => setAuthMode(null)}
+                            onLoginSuccess={handleLoginSuccess}
+                            onSwitch={setAuthMode}
+                        />
+                    )}
                 </div>
             );
         };
+
+        class ErrorBoundary extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false };
+            }
+
+            static getDerivedStateFromError() {
+                return { hasError: true };
+            }
+
+            componentDidCatch(error, errorInfo) {
+                console.error('React Error Boundary caught an error:', error, errorInfo);
+            }
+
+            render() {
+                if (this.state.hasError) {
+                    return (
+                        <div style={{ padding: '40px', textAlign: 'center' }}>
+                            <div className="empty-icon"><i className="fas fa-bug"></i></div>
+                            <h2>واجهتنا مشكلة في العرض</h2>
+                            <p>أعد تحميل الصفحة واستأنف التجربة البيضاء النقية.</p>
+                            <button className="solid-btn" onClick={() => window.location.reload()}>إعادة التحميل</button>
+                        </div>
+                    );
+                }
+                return this.props.children;
+            }
+        }
 
         ReactDOM.render(
             <ErrorBoundary>
@@ -1151,34 +1013,6 @@
             </ErrorBoundary>,
             document.getElementById('root')
         );
-        
-        // ══════════════════════════════════════════════════════════════════════
-        // STARTUP DIAGNOSTICS | تشخيص بدء التشغيل
-        // ══════════════════════════════════════════════════════════════════════
-        console.log('╔══════════════════════════════════════════════════════════════════╗');
-        console.log('║             CogniForge V3 - Startup Diagnostics                 ║');
-        console.log('╚══════════════════════════════════════════════════════════════════╝');
-        console.log(`🌍 Environment: ${IS_CODESPACES ? 'GitHub Codespaces' : IS_CLOUD_ENV ? 'Cloud IDE' : 'Local/Production'}`);
-        console.log(`📊 Performance Limits:`);
-        console.log(`   - MAX_MESSAGES: ${MAX_MESSAGES}`);
-        console.log(`   - STREAM_UPDATE_THROTTLE: ${STREAM_UPDATE_THROTTLE}ms`);
-        console.log(`   - STREAM_MICRO_DELAY: ${STREAM_MICRO_DELAY}ms`);
-        console.log(`   - MAX_STREAM_CHUNK_SIZE: ${MAX_STREAM_CHUNK_SIZE} chars`);
-        
-        if (performance.memory) {
-            const memoryMB = (performance.memory.jsHeapSizeLimit / 1024 / 1024).toFixed(0);
-            console.log(`💾 Memory Limit: ${memoryMB} MB`);
-        }
-        
-        console.log(`⚙️ React Version: ${React.version}`);
-        console.log(`✅ Application initialized successfully`);
-        console.log('═══════════════════════════════════════════════════════════════════');
-        
-        // Track initial load time
-        window.addEventListener('load', () => {
-            const loadTime = performance.now();
-            console.log(`⏱️ Total load time: ${loadTime.toFixed(2)}ms`);
-        });
     </script>
 </body>
 </html>
