@@ -3,7 +3,8 @@ import asyncio
 import inspect
 import os
 import sys
-import asyncio
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import pytest
@@ -31,6 +32,23 @@ from app.core.database import async_session_factory as TestingSessionLocal  # no
 from app.core.database import engine  # noqa: E402
 from app.core.security import generate_service_token  # noqa: E402
 from tests.factories.base import MissionFactory, UserFactory  # noqa: E402
+
+
+@asynccontextmanager
+async def managed_test_session() -> AsyncIterator[AsyncSession]:
+    """
+    يدير دورة حياة جلسة اختبارية مع إرجاع الاتصال للمسبح بثبات.
+
+    يستخدم سياق `AsyncSession` المدمج لضمان الإغلاق التلقائي، ويضيف تراجعًا
+    دفاعيًا بعد كل استخدام لتجنب أي معاملات عالقة، ما يحافظ على البساطة
+    (KISS) ويعيد استخدام المنطق (DRY) عبر نقطة موحدة لإدارة الجلسات.
+    """
+
+    async with TestingSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.rollback()
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -145,14 +163,13 @@ async def _reset_database(session: AsyncSession) -> None:
 
 @pytest.fixture
 def db_session(init_db, event_loop):
-    session_cm = TestingSessionLocal()
-    session = event_loop.run_until_complete(session_cm.__aenter__())
+    session_context = managed_test_session()
+    session = event_loop.run_until_complete(session_context.__aenter__())
     event_loop.run_until_complete(_reset_database(session))
     try:
         yield session
     finally:
-        event_loop.run_until_complete(session.rollback())
-        event_loop.run_until_complete(session_cm.__aexit__(None, None, None))
+        event_loop.run_until_complete(session_context.__aexit__(None, None, None))
 
 @pytest.fixture
 def client():
@@ -171,10 +188,12 @@ def test_app():
 def async_client(init_db, event_loop):
     """عميل HTTP غير متزامن للاختبارات مع قاعدة بيانات مهيأة مسبقاً."""
     import app.main
-    from app.core.database import get_db
+    from app.core.database import engine, get_db
 
     async def override_get_db():
-        async with TestingSessionLocal() as session:
+        """يوفر جلسة قاعدة بيانات ضمن سياق آمن يعيد الاتصال للمسبح بلا تسربات."""
+
+        async with managed_test_session() as session:
             yield session
 
     app.main.app.dependency_overrides[get_db] = override_get_db
@@ -186,6 +205,7 @@ def async_client(init_db, event_loop):
     finally:
         event_loop.run_until_complete(client_cm.__aexit__(None, None, None))
         app.main.app.dependency_overrides.clear()
+        event_loop.run_until_complete(engine.dispose())
 
 
 @pytest.fixture

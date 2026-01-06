@@ -1,12 +1,16 @@
 
-from unittest.mock import AsyncMock, MagicMock
-
 import pytest
 
 from app.core.domain.models import Mission
 from app.services.overmind.agents.auditor import AuditorAgent
 from app.services.overmind.domain.cognitive import CognitiveState, SuperBrain
 from app.services.overmind.domain.exceptions import StalemateError
+from tests.unit.services.overmind.test_super_brain import (
+    StubArchitect,
+    StubAuditor,
+    StubOperator,
+    StubPlanner,
+)
 
 
 @pytest.mark.asyncio
@@ -14,8 +18,7 @@ async def test_detect_loop_raises_stalemate():
     """
     Test that the AuditorAgent correctly raises StalemateError when hashes repeat.
     """
-    mock_ai = AsyncMock()
-    auditor = AuditorAgent(mock_ai)
+    auditor = AuditorAgent(MockAI())
 
     plan = {"steps": ["do_something"]}
     history = [
@@ -33,17 +36,13 @@ async def test_superbrain_stalemate_recovery():
     Test that SuperBrain catches StalemateError and updates context.
     """
     # Mocks
-    strategist = AsyncMock()
-    architect = AsyncMock()
-    operator = AsyncMock()
-    auditor = AsyncMock() # We will partially mock Auditor
-
-    # Configure Auditor to raise StalemateError on the SECOND call
-    # Logic: First call OK, Second call OK (but hash stored), Third call triggers loop logic inside SuperBrain
-
-    # We need a real auditor for the hash logic, or we can mock detect_loop
-    auditor.detect_loop = MagicMock()
-    auditor.review_work = AsyncMock(return_value={"approved": False, "feedback": "retry"})
+    strategist = StubPlanner(plans=[{"action": "same_old_thing"}] * 3)
+    architect = StubArchitect(design={"design": "noop"})
+    operator = StubOperator(result={})
+    auditor = StubAuditor(
+        reviews=[{"approved": False, "feedback": "retry"}] * 3,
+        detect_loop_sequence=[None, StalemateError("Loop!")],
+    )
 
     brain = SuperBrain(
         strategist=strategist,
@@ -53,12 +52,6 @@ async def test_superbrain_stalemate_recovery():
     )
 
     mission = Mission(id=1, objective="Fix bugs")
-
-    # Mock strategist to return SAME plan every time
-    strategist.create_plan.return_value = {"action": "same_old_thing"}
-
-    # Mock auditor.detect_loop to raise error on 2nd iteration
-    auditor.detect_loop.side_effect = [None, StalemateError("Loop!")]
 
     # Mock log function
     logs = []
@@ -83,3 +76,10 @@ async def test_superbrain_stalemate_recovery():
 
     # Verify that "stalemate_detected" was logged
     assert "stalemate_detected" in logs or any("stalemate" in str(l) for l in logs)
+
+
+class MockAI:
+    """كائن ذكاء اصطناعي تجريبي لتلبية متطلبات AuditorAgent."""
+
+    async def stream(self, *_: object, **__: object) -> None:  # pragma: no cover - مساعدة للاختبارات فقط
+        return None

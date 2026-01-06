@@ -1,78 +1,91 @@
 # tests/test_api_crud.py
 
+import pytest
+
+
+pytestmark = pytest.mark.asyncio
+
 
 class TestHealthEndpoints:
-    def test_database_health(self, client):
-        response = client.get("/system/health")  # Updated path
+    async def test_database_health(self, async_client):
+        response = await async_client.get("/system/health")  # Updated path
         assert response.status_code == 200
+        await response.aclose()
 
-    def test_database_stats(self, client):
+    async def test_database_stats(self, async_client):
         # Assuming /system/health covers stats or similar
-        response = client.get("/system/health")
+        response = await async_client.get("/system/health")
         assert response.status_code == 200
+        await response.aclose()
 
-    def test_database_tables(self, client):
+    async def test_database_tables(self, async_client):
         # Assuming /system/health covers tables or similar
-        response = client.get("/system/health")
+        response = await async_client.get("/system/health")
         assert response.status_code == 200
+        await response.aclose()
 
 
 class TestCRUDOperations:
-    def test_create_user(self, client):
+    async def test_create_user(self, async_client):
         # The Generic CRUD Router uses /resources/{resource_type}
         # It handles POST to create.
         payload = {"email": "test@example.com", "username": "testuser"}
-        response = client.post("/api/v1/resources/users", json=payload)
+        response = await async_client.post("/api/v1/resources/users", json=payload)
         # Authentication might be required (401/403) or handled (201/200)
         # If the resource doesn't exist, it might be 404 depending on implementation or 400
         assert response.status_code in [200, 201, 400, 401, 403]
+        await response.aclose()
 
-    def test_read_users(self, client):
+    async def test_read_users(self, async_client):
         # The Generic CRUD Router uses /resources/{resource_type}
-        response = client.get("/api/v1/resources/users")
+        response = await async_client.get("/api/v1/resources/users")
         assert response.status_code in [200, 401, 403]
+        await response.aclose()
 
-    def test_read_single_user(self, client):
-        response = client.get("/api/v1/resources/users/1")
+    async def test_read_single_user(self, async_client):
+        response = await async_client.get("/api/v1/resources/users/1")
         assert response.status_code in [200, 404, 401, 403]
+        await response.aclose()
 
-    def test_update_user(self, client):
+    async def test_update_user(self, async_client):  # noqa: ARG002 - placeholder
         pass
 
-    def test_delete_user(self, client):
+    async def test_delete_user(self, async_client):  # noqa: ARG002 - placeholder
         pass
 
 
 class TestValidation:
-    def test_create_user_invalid_email(self, client):
+    async def test_create_user_invalid_email(self, async_client):  # noqa: ARG002 - placeholder
         pass
 
-    def test_create_user_missing_required_field(self, client):
+    async def test_create_user_missing_required_field(self, async_client):  # noqa: ARG002 - placeholder
         pass
 
 
 class TestPaginationAndFiltering:
-    def test_pagination(self, client):
-        response = client.get("/api/v1/resources/users?page=1&per_page=10")
+    async def test_pagination(self, async_client):
+        response = await async_client.get("/api/v1/resources/users?page=1&per_page=10")
         assert response.status_code in [200, 401, 403]
+        await response.aclose()
 
-    def test_search(self, client):
+    async def test_search(self, async_client):  # noqa: ARG002 - placeholder
         pass
 
-    def test_ordering(self, client):
+    async def test_ordering(self, async_client):  # noqa: ARG002 - placeholder
         pass
 
 
 class TestErrorHandling:
-    def test_not_found_table(self, client):
+    async def test_not_found_table(self, async_client):  # noqa: ARG002 - placeholder
         pass
 
-    def test_not_found_record(self, client):
+    async def test_not_found_record(self, async_client):  # noqa: ARG002 - placeholder
         pass
 
-    def test_unauthorized_access(self, client):
+    async def test_unauthorized_access(self, async_client):
         # Assuming secure endpoint
-        response = client.get("/api/v1/resources/users")
+        response = await async_client.get("/api/v1/resources/users")
         # Our CRUD mock doesn't have auth enabled yet, so 200 is expected.
         # If real app has auth, it would be 401.
         assert response.status_code in [200, 401, 403]
+        await response.aclose()

@@ -1,39 +1,110 @@
 # tests/services/overmind/test_super_brain.py
-from unittest.mock import AsyncMock, MagicMock
+from __future__ import annotations
 
 import pytest
 
-from app.core.protocols import AgentArchitect, AgentExecutor, AgentPlanner, AgentReflector
 from app.core.domain.models import Mission
 from app.services.overmind.domain.cognitive import SuperBrain
 from app.services.overmind.domain.context import InMemoryCollaborationContext
 
 
+class StubPlanner:
+    """مخطط تجريبي يعيد خططاً محددة مع تتبع السياق."""
+
+    def __init__(self, plans: list[dict]) -> None:
+        self._plans = plans
+        self.calls = 0
+        self.contexts: list[InMemoryCollaborationContext] = []
+
+    async def create_plan(self, objective: str, context: InMemoryCollaborationContext) -> dict:
+        self.calls += 1
+        self.contexts.append(context)
+        return self._plans[min(self.calls - 1, len(self._plans) - 1)]
+
+
+class StubArchitect:
+    """معماري تجريبي يعيد تصميمًا ثابتًا مع توثيق مرّات الاستدعاء."""
+
+    def __init__(self, design: dict) -> None:
+        self._design = design
+        self.calls = 0
+        self.contexts: list[InMemoryCollaborationContext] = []
+
+    async def design_solution(self, plan: dict, context: InMemoryCollaborationContext) -> dict:
+        self.calls += 1
+        self.contexts.append(context)
+        return self._design
+
+
+class StubOperator:
+    """منفذ تجريبي يعيد نتيجة تنفيذ ثابتة."""
+
+    def __init__(self, result: dict) -> None:
+        self._result = result
+        self.calls = 0
+        self.contexts: list[InMemoryCollaborationContext] = []
+
+    async def execute_tasks(self, design: dict, context: InMemoryCollaborationContext) -> dict:
+        self.calls += 1
+        self.contexts.append(context)
+        return self._result
+
+
+class StubAuditor:
+    """مدقق تجريبي يسمح بحقن مراجعات متتالية وكشف الحلقات."""
+
+    def __init__(
+        self,
+        reviews: list[dict],
+        detect_loop_sequence: list[Exception | None] | None = None,
+        hash_value: str = "noop-hash",
+    ) -> None:
+        self._reviews = reviews
+        self._detect_loop_sequence = detect_loop_sequence or []
+        self._hash_value = hash_value
+        self.review_calls = 0
+        self.detect_calls = 0
+        self.review_contexts: list[InMemoryCollaborationContext] = []
+
+    def detect_loop(self, history_hashes: list[str], plan: dict) -> None:
+        if self.detect_calls < len(self._detect_loop_sequence):
+            effect = self._detect_loop_sequence[self.detect_calls]
+            self.detect_calls += 1
+            if effect:
+                raise effect
+            return None
+        self.detect_calls += 1
+        return None
+
+    def _compute_hash(self, plan: dict) -> str:
+        return self._hash_value
+
+    async def review_work(
+        self, result: dict, original_objective: str, context: InMemoryCollaborationContext
+    ) -> dict:
+        self.review_calls += 1
+        self.review_contexts.append(context)
+        return self._reviews[min(self.review_calls - 1, len(self._reviews) - 1)]
+
+
 @pytest.mark.asyncio
 async def test_super_brain_loop_success():
     # 1. Setup Mocks
-    mock_strategist = AsyncMock(spec=AgentPlanner)
-    mock_architect = AsyncMock(spec=AgentArchitect)
-    mock_operator = AsyncMock(spec=AgentExecutor)
-    mock_auditor = AsyncMock(spec=AgentReflector)
-
-    # Configure happy path returns
-    mock_strategist.create_plan.return_value = {"steps": ["do_something"]}
-
-    # First review (Plan) -> Approved
-    mock_auditor.review_work.side_effect = [
-        {"approved": True, "feedback": "Plan Good"}, # Plan Review
-        {"approved": True, "feedback": "Execution Good"} # Execution Review
-    ]
-
-    mock_architect.design_solution.return_value = {"tasks": [{"id": 1}]}
-    mock_operator.execute_tasks.return_value = {"status": "success"}
+    strategist = StubPlanner(plans=[{"steps": ["do_something"]}])
+    architect = StubArchitect(design={"tasks": [{"id": 1}]})
+    operator = StubOperator(result={"status": "success"})
+    auditor = StubAuditor(
+        reviews=[
+            {"approved": True, "feedback": "Plan Good"},
+            {"approved": True, "feedback": "Execution Good"},
+        ]
+    )
 
     brain = SuperBrain(
-        strategist=mock_strategist,
-        architect=mock_architect,
-        operator=mock_operator,
-        auditor=mock_auditor
+        strategist=strategist,
+        architect=architect,
+        operator=operator,
+        auditor=auditor
     )
 
     mission = Mission(id=1, objective="Build a spaceship")
@@ -45,42 +116,35 @@ async def test_super_brain_loop_success():
     assert result == {"status": "success"}
 
     # Verify collaborative context was passed
-    mock_strategist.create_plan.assert_called_once()
-    assert isinstance(mock_strategist.create_plan.call_args[0][1], InMemoryCollaborationContext)
+    assert strategist.calls == 1
+    assert isinstance(strategist.contexts[0], InMemoryCollaborationContext)
 
-    mock_architect.design_solution.assert_called_once()
-    mock_operator.execute_tasks.assert_called_once()
+    assert architect.calls == 1
+    assert operator.calls == 1
 
     # Auditor called twice (Plan Review + Final Review)
-    assert mock_auditor.review_work.call_count == 2
+    assert auditor.review_calls == 2
 
 @pytest.mark.asyncio
 async def test_super_brain_self_correction():
     # 1. Setup Mocks
-    mock_strategist = AsyncMock(spec=AgentPlanner)
-    mock_architect = AsyncMock(spec=AgentArchitect)
-    mock_operator = AsyncMock(spec=AgentExecutor)
-    mock_auditor = AsyncMock(spec=AgentReflector)
-
-    mock_strategist.create_plan.return_value = {"steps": ["bad_plan"]}
-
-    # First review: Reject Plan. Second review: Approve Plan. Third: Approve Execution.
-    mock_auditor.review_work.side_effect = [
-        {"approved": False, "feedback": "Bad Plan"}, # 1st Plan Review (Fail)
-        {"approved": True, "feedback": "Good Plan"},  # 2nd Plan Review (Pass)
-        {"approved": True, "feedback": "Done"}        # Final Review
-    ]
-
-    mock_architect.design_solution.return_value = {"tasks": []}
-    mock_operator.execute_tasks.return_value = {}
+    strategist = StubPlanner(plans=[{"steps": ["bad_plan"]}, {"steps": ["bad_plan"]}])
+    architect = StubArchitect(design={"tasks": []})
+    operator = StubOperator(result={})
+    auditor = StubAuditor(
+        reviews=[
+            {"approved": False, "feedback": "Bad Plan"},
+            {"approved": True, "feedback": "Good Plan"},
+            {"approved": True, "feedback": "Done"},
+        ]
+    )
 
     brain = SuperBrain(
-        strategist=mock_strategist,
-        architect=mock_architect,
-        operator=mock_operator,
-        auditor=mock_auditor
+        strategist=strategist,
+        architect=architect,
+        operator=operator,
+        auditor=auditor
     )
-    brain.state_class = MagicMock() # Mock if needed, or rely on actual pydantic model
 
     mission = Mission(id=2, objective="Fix bugs")
 
@@ -89,14 +153,8 @@ async def test_super_brain_self_correction():
 
     # 3. Verify
     # Strategist should be called twice (Initial + Re-planning)
-    assert mock_strategist.create_plan.call_count == 2
+    assert strategist.calls == 2
 
     # Check if context carried the feedback
-    # With generic call args inspection it might be tricky, but let's verify logic flow
-    # Since we use * args in SuperBrain.__init__, the instantiation above is correct (kwargs used).
-    # But wait, did I use kwargs in test instantiation? Yes: `strategist=mock_strategist...`
-
-    # Check if context carried the feedback
-    call_args_2 = mock_strategist.create_plan.call_args_list[1]
-    context_2 = call_args_2[0][1]
+    context_2 = strategist.contexts[1]
     assert context_2.get("feedback_from_previous_attempt") == "Bad Plan"
