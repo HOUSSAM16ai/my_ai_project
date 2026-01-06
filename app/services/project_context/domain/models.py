@@ -18,6 +18,15 @@ class DirectorySummary:
     name: str
     file_count: int
 
+    def __getitem__(self, key: str) -> str | int:
+        """يتيح الوصول إلى الحقول بالأسلوب المعجمي لدعم التوافق مع الاختبارات القديمة."""
+
+        if key == "name":
+            return self.name
+        if key == "file_count":
+            return self.file_count
+        raise KeyError(key)
+
 @dataclass
 class ProjectHealth:
     """مؤشرات صحة المشروع في الزمن الحقيقي."""

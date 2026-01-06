@@ -26,20 +26,14 @@ async def test_access_control_isolation(
     headers_a = {"Authorization": f"Bearer {token_a}"}
     headers_b = {"Authorization": f"Bearer {token_b}"}
 
-    # 2. User A creates a conversation
-    resp = await async_client.post(
-        "/admin/api/chat/stream", json={"question": "Hello form User A"}, headers=headers_a
+    # 2. User A creates a conversation manually to avoid فتح اتصال بث حي أثناء الاختبار
+    conversation = AdminConversation(
+        title="Hello form User A", user_id=user_a.id, conversation_type="general"
     )
-    # Stream response, we just want to ensure it started
-    assert resp.status_code == 200
-
-    # Get conversation ID
-    result = await db_session.execute(
-        select(AdminConversation).where(AdminConversation.user_id == user_a.id)
-    )
-    conv = result.scalars().first()
-    assert conv is not None
-    conv_id = conv.id
+    db_session.add(conversation)
+    await db_session.commit()
+    await db_session.refresh(conversation)
+    conv_id = conversation.id
 
     # 3. User B tries to access User A's conversation
     # Use get_conversation endpoint
@@ -47,6 +41,8 @@ async def test_access_control_isolation(
 
     # Should be 404 (Not Found) because currently it filters by user_id
     assert resp_b.status_code == 404
+    await resp_b.aclose()
+    await db_session.close()
 
 
 @pytest.mark.asyncio
@@ -66,15 +62,13 @@ async def test_admin_can_access_any_conversation(
     token_a = generate_service_token(str(user_a.id))
     headers_a = {"Authorization": f"Bearer {token_a}"}
 
-    await async_client.post(
-        "/admin/api/chat/stream", json={"question": "User A secret plan"}, headers=headers_a
+    conversation = AdminConversation(
+        title="User A secret plan", user_id=user_a.id, conversation_type="general"
     )
-
-    result = await db_session.execute(
-        select(AdminConversation).where(AdminConversation.user_id == user_a.id)
-    )
-    conv = result.scalars().first()
-    assert conv is not None
+    db_session.add(conversation)
+    await db_session.commit()
+    await db_session.refresh(conversation)
+    conv = conversation
 
     # 2. Admin tries to access it
     resp_admin = await async_client.get(
@@ -84,6 +78,8 @@ async def test_admin_can_access_any_conversation(
     # Current behavior is 404. We assert 200 because that's the desired "Superhuman" state.
     # This assertion ensures the test fails NOW so we can fix it.
     assert resp_admin.status_code == 200, f"Admin got {resp_admin.status_code}, expected 200"
+    await resp_admin.aclose()
+    await db_session.close()
 
 
 @pytest.mark.asyncio

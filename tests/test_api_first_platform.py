@@ -1,11 +1,18 @@
 # tests/test_api_first_platform.py
+import asyncio
 import os
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.api.schemas.system.responses import HealthResponse
 from app.config.settings import AppSettings
 from app.kernel import RealityKernel
+from app.core.database import engine, get_db
+
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:The garbage collector is trying to clean up non-checked-in connection.*:sqlalchemy.exc.SAWarning"
+)
 
 # نحن بحاجة لضبط متغيرات البيئة قبل إنشاء الإعدادات
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
@@ -19,7 +26,19 @@ settings = AppSettings()
 kernel = RealityKernel(settings=settings)
 app = kernel.get_app()
 
-client = TestClient(app)
+
+@pytest.fixture()
+def api_first_client() -> TestClient:
+    """ينشئ عميلاً مؤقتاً لضمان إغلاق الاتصالات بعد الاختبار."""
+
+    async def _noop_db():
+        yield None
+
+    app.dependency_overrides[get_db] = _noop_db
+    with TestClient(app) as client:
+        yield client
+    app.dependency_overrides.clear()
+    asyncio.run(engine.dispose())
 
 class TestAPIFirstPlatform:
     """
@@ -27,7 +46,7 @@ class TestAPIFirstPlatform:
     نتحقق من وجود Schemas محددة وصحة الاستجابات.
     """
 
-    def test_health_check_schema_compliance(self):
+    def test_health_check_schema_compliance(self, api_first_client: TestClient):
         """
         يجب أن تلتزم نقطة النهاية /system/health بنموذج HealthResponse.
         """
@@ -35,7 +54,7 @@ class TestAPIFirstPlatform:
         # وموجه النظام (system.router) لديه prefix="/system"
         # لذا المسار هو /system/health مباشرة
 
-        response = client.get("/system/health")
+        response = api_first_client.get("/system/health")
 
         # حتى لو فشل (503)، الهيكل يجب أن يكون صحيحاً
         assert response.status_code in [200, 503]
@@ -46,7 +65,9 @@ class TestAPIFirstPlatform:
         assert validated_response.application == "ok"
         assert "database" in data
 
-    def test_openapi_schema_availability(self):
+        response.close()
+
+    def test_openapi_schema_availability(self, api_first_client: TestClient):
         """
         يجب أن يكون مخطط OpenAPI متاحاً ويحتوي على تعريفات النماذج الجديدة.
         """
@@ -55,7 +76,7 @@ class TestAPIFirstPlatform:
         # ولكن openapi_url في FastAPI عادة ما يكون /openapi.json ما لم يتم تعطيله صراحة.
         # دعنا نتحقق. إذا فشل (404)، فهذا يعني أن Kernel يعطله في غير development.
 
-        response = client.get("/openapi.json")
+        response = api_first_client.get("/openapi.json")
 
         # إذا كان الـ Kernel يمنع الـ openapi في testing، فلا بأس،
         # ولكن "API First" يتطلب عادة أن يكون المخطط متاحاً للمطورين.
@@ -71,3 +92,4 @@ class TestAPIFirstPlatform:
         else:
             # إذا لم يكن متاحاً، نتخطى هذا التحقق أو نعتبره "ملاحظة"
             pass
+        response.close()

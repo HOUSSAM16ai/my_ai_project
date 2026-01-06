@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import secrets
+from pathlib import Path
 from typing import Literal
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
@@ -40,6 +41,27 @@ def _get_or_create_dev_secret_key() -> str:
         _DEV_SECRET_KEY_CACHE = secrets.token_urlsafe(64)
 
     return _DEV_SECRET_KEY_CACHE
+
+
+def _is_explicit_empty_env_file(config: dict[str, object]) -> bool:
+    """يتحقق مما إذا كان ملف البيئة المحدد صراحةً موجودًا لكنه فارغ تمامًا."""
+
+    env_file = config.get("env_file")
+    if not env_file:
+        return False
+
+    try:
+        path = Path(env_file)
+    except TypeError:
+        return False
+
+    if not path.exists():
+        return False
+
+    try:
+        return path.stat().st_size == 0
+    except OSError:
+        return False
 
 
 def _ensure_database_url(value: str | None, environment: str) -> str:
@@ -266,6 +288,10 @@ class AppSettings(BaseSettings):
         يتحقق من تكامل الإعدادات الأمنية في بيئة الإنتاج.
         """
         secret_key_from_env = "SECRET_KEY" in self.model_fields_set
+
+        if not secret_key_from_env and not os.getenv("SECRET_KEY"):
+            if _is_explicit_empty_env_file(self.model_config):
+                raise ValueError("Field required: SECRET_KEY (explicit env file is empty)")
 
         if self.ENVIRONMENT == "production":
             if self.DEBUG:

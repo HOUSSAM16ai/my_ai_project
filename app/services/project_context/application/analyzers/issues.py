@@ -22,6 +22,19 @@ class StyleIssue:
     issue_type: str
     snippet: str
 
+    def __getitem__(self, key: str) -> str | int:
+        """يسمح بقراءة خصائص المخالفة عبر مفاتيح معجمية للتماشي مع الواجهات المتوقعة."""
+
+        mapping = {
+            "file": self.file,
+            "line": self.line,
+            "type": self.issue_type,
+            "snippet": self.snippet,
+        }
+        if key not in mapping:
+            raise KeyError(key)
+        return mapping[key]
+
 
 @dataclass
 class SyntaxIssue:
@@ -71,6 +84,23 @@ class IssuesReport:
     total_files_scanned: int = 0
     total_issues_found: int = 0
 
+    def __getitem__(self, key: str):
+        """يدعم الوصول المعجمي للحقول لضمان توافق التقارير مع واجهات الاستخدام المتنوعة."""
+
+        mapping = {
+            "syntax_errors": self.syntax_errors,
+            "missing_imports": self.missing_imports,
+            "undefined_variables": self.undefined_variables,
+            "duplicate_code": self.duplicate_code,
+            "complexity_warnings": self.complexity_warnings,
+            "style_issues": self.style_issues,
+            "total_files_scanned": self.total_files_scanned,
+            "total_issues_found": self.total_issues_found,
+        }
+        if key not in mapping:
+            raise KeyError(key)
+        return mapping[key]
+
 
 @dataclass
 class CodeSmellsReport:
@@ -83,6 +113,22 @@ class CodeSmellsReport:
     magic_numbers: list[MagicNumberSmell] = field(default_factory=list)
     duplicate_logic: list[str] = field(default_factory=list)
     total_smells: int = 0
+
+    def __getitem__(self, key: str):
+        """يتيح قراءة الحقول عبر المفاتيح لتسهيل التكامل مع أدوات التقارير."""
+
+        mapping = {
+            "long_methods": self.long_methods,
+            "large_classes": self.large_classes,
+            "god_classes": self.god_classes,
+            "deep_nesting": self.deep_nesting,
+            "magic_numbers": self.magic_numbers,
+            "duplicate_logic": self.duplicate_logic,
+            "total_smells": self.total_smells,
+        }
+        if key not in mapping:
+            raise KeyError(key)
+        return mapping[key]
 
 
 @dataclass
