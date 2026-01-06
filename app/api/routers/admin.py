@@ -14,15 +14,16 @@
 
 from collections.abc import Callable
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.admin import ChatRequest, ConversationDetailsResponse, ConversationSummaryResponse
 from app.core.ai_gateway import AIClient, get_ai_client
+from app.core.domain.models import User
 from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
-from app.deps.auth import CurrentUser, require_permissions
+from app.deps.auth import CurrentUser, require_permissions_or_admin
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 from app.services.rbac import QA_SUBMIT
 
@@ -40,20 +41,77 @@ def get_session_factory() -> Callable[[], AsyncSession]:
     """
     return async_session_factory
 
+
+def get_chat_actor(
+    current: CurrentUser = Depends(require_permissions_or_admin(QA_SUBMIT)),
+) -> CurrentUser:
+    """تبعية تُلزم وجود صلاحية الأسئلة التعليمية أو صفة الإداري قبل استخدام قنوات الدردشة."""
+
+    return current
+
+
+def get_current_user_id(current: CurrentUser = Depends(get_chat_actor)) -> int:
+    """
+    إرجاع معرف المستخدم الحالي بعد التحقق من صلاحيات الأسئلة التعليمية.
+
+    يعتمد هذا التابع على تبعية `get_chat_actor` لضمان أن المستدعي يملك
+    التصاريح اللازمة قبل متابعة أي عمليات بث أو استعلامات خاصة بالمحادثات
+    الإدارية.
+
+    Args:
+        current: كائن المستخدم الحالي المزود بالأدوار والصلاحيات.
+
+    Returns:
+        int: معرف المستخدم الموثق.
+    """
+
+    return current.user.id
+
+
+async def get_actor_user(
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """
+    الحصول على كائن المستخدم الفعلي بالاعتماد على معرفه.
+
+    يوفر هذا التابع طبقة تجريد تُمكِّن من تجاوز التحقق في الاختبارات عبر
+    إعادة تعريف `get_current_user_id`، مع الحفاظ على مسار التحقق الأساسي في
+    بيئة الإنتاج.
+
+    Args:
+        user_id: معرف المستخدم المستخرج من التبعيات السابقة.
+        db: جلسة قاعدة البيانات المستخدمة للاستعلام.
+
+    Returns:
+        User: كائن المستخدم الفعّال.
+
+    Raises:
+        HTTPException: إذا كان المستخدم غير موجود أو غير مفعّل.
+    """
+
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="User inactive")
+
+    # فصل الكائن عن الجلسة لضمان توفر بياناته أثناء البث الطويل دون الاصطدام بإغلاق الجلسة.
+    await db.refresh(user)
+    db.expunge(user)
+
+    return user
+
 def get_admin_service(db: AsyncSession = Depends(get_db)) -> AdminChatBoundaryService:
     """تبعية للحصول على خدمة حدود محادثة المسؤول."""
     return AdminChatBoundaryService(db)
-
-def get_chat_actor(current: CurrentUser = Depends(require_permissions(QA_SUBMIT))) -> CurrentUser:
-    """تبعية تُلزم وجود صلاحية الأسئلة التعليمية قبل استخدام قنوات الدردشة."""
-
-    return current
 
 @router.post("/api/chat/stream", summary="بث محادثة المسؤول (Admin Chat Stream)")
 async def chat_stream(
     chat_request: ChatRequest,
     ai_client: AIClient = Depends(get_ai_client),
-    actor: CurrentUser = Depends(get_chat_actor),
+    actor: User = Depends(get_actor_user),
     service: AdminChatBoundaryService = Depends(get_admin_service),
     session_factory: Callable[[], AsyncSession] = Depends(get_session_factory),
 ) -> StreamingResponse:
@@ -101,14 +159,14 @@ async def chat_stream(
     response_model=ConversationDetailsResponse | None,
 )
 async def get_latest_chat(
-    actor: CurrentUser = Depends(get_chat_actor),
+    actor: User = Depends(get_actor_user),
     service: AdminChatBoundaryService = Depends(get_admin_service),
 ) -> ConversationDetailsResponse | None:
     """
     استرجاع تفاصيل آخر محادثة للمستخدم الحالي.
     مفيد لاستعادة الحالة عند إعادة تحميل الصفحة.
     """
-    conversation_data = await service.get_latest_conversation_details(actor.user)
+    conversation_data = await service.get_latest_conversation_details(actor)
     if not conversation_data:
         return None
     return ConversationDetailsResponse.model_validate(conversation_data)
@@ -119,7 +177,7 @@ async def get_latest_chat(
     response_model=list[ConversationSummaryResponse],
 )
 async def list_conversations(
-    actor: CurrentUser = Depends(get_chat_actor),
+    actor: User = Depends(get_actor_user),
     service: AdminChatBoundaryService = Depends(get_admin_service),
 ) -> list[ConversationSummaryResponse]:
     """
@@ -127,7 +185,7 @@ async def list_conversations(
     
     الخدمة تعيد البيانات متوافقة مع Schema مباشرة.
     """
-    results = await service.list_user_conversations(actor.user)
+    results = await service.list_user_conversations(actor)
     return [ConversationSummaryResponse.model_validate(r) for r in results]
 
 @router.get(
@@ -137,11 +195,11 @@ async def list_conversations(
 )
 async def get_conversation(
     conversation_id: int,
-    actor: CurrentUser = Depends(get_chat_actor),
+    actor: User = Depends(get_actor_user),
     service: AdminChatBoundaryService = Depends(get_admin_service),
 ) -> ConversationDetailsResponse:
     """
     استرجاع الرسائل والتفاصيل لمحادثة محددة.
     """
-    data = await service.get_conversation_details(actor.user, conversation_id)
+    data = await service.get_conversation_details(actor, conversation_id)
     return ConversationDetailsResponse.model_validate(data)
