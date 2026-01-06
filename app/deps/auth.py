@@ -76,10 +76,28 @@ def require_permissions(*permissions: str):
 
 
 def reauth_dependency():
-    async def dependency(request: Request, current: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+    async def dependency(
+        request: Request,
+        current: CurrentUser = Depends(get_current_user),
+        auth_service: AuthService = Depends(get_auth_service),
+    ) -> CurrentUser:
+        token = request.headers.get("X-Reauth-Token")
         password = request.headers.get("X-Reauth-Password")
-        if not password or not current.user.check_password(password):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Re-authentication required")
-        return current
+        client_ip = request.client.host if request.client else None
+        user_agent = request.headers.get("User-Agent")
+
+        if token:
+            await auth_service.verify_reauth_proof(
+                token,
+                user=current.user,
+                ip=client_ip,
+                user_agent=user_agent,
+            )
+            return current
+
+        if password and current.user.check_password(password):
+            return current
+
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Re-authentication required")
 
     return dependency

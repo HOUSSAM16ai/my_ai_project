@@ -212,6 +212,11 @@ class AppSettings(BaseSettings):
         description="مدة صلاحية رموز الوصول (بالدقائق)",
     )
 
+    REAUTH_TOKEN_EXPIRE_MINUTES: int = Field(
+        10,
+        description="مدة صلاحية رموز إعادة المصادقة (بالدقائق)",
+    )
+
     # CORS & Hosts
     BACKEND_CORS_ORIGINS: list[str] = Field(
         default=["*"], description="قائمة النطاقات المسموح لها بالاتصال (CORS)"

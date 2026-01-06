@@ -263,6 +263,9 @@ class User(SQLModel, table=True):
     refresh_tokens: list["RefreshToken"] = Relationship(
         sa_relationship=relationship("RefreshToken", back_populates="user"),
     )
+    password_reset_tokens: list["PasswordResetToken"] = Relationship(
+        sa_relationship=relationship("PasswordResetToken", back_populates="user"),
+    )
     audit_logs: list["AuditLog"] = Relationship(
         sa_relationship=relationship("AuditLog", back_populates="actor"),
     )
@@ -415,10 +418,19 @@ class RefreshToken(SQLModel, table=True):
         default_factory=lambda: str(uuid.uuid4()),
         sa_column=Column(String(36), unique=True, nullable=False),
     )
+    family_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        sa_column=Column(String(36), index=True, nullable=False),
+    )
     user_id: int = Field(foreign_key="users.id", index=True)
     hashed_token: str = Field(max_length=255)
     expires_at: datetime = Field(sa_column=Column(DateTime(timezone=True), index=True))
     revoked_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))
+    replaced_by_token_id: str | None = Field(
+        default=None, sa_column=Column(String(36), nullable=True, index=True)
+    )
+    created_ip: str | None = Field(default=None, max_length=64)
+    user_agent: str | None = Field(default=None, max_length=255)
     created_at: datetime = Field(
         default_factory=utc_now,
         sa_column=Column(DateTime(timezone=True), server_default=func.now()),
@@ -426,12 +438,17 @@ class RefreshToken(SQLModel, table=True):
 
     user: User = Relationship(sa_relationship=relationship("User", back_populates="refresh_tokens"))
 
-    def revoke(self, *, revoked_at: datetime | None = None) -> None:
+    def revoke(self, *, revoked_at: datetime | None = None, replaced_by: str | None = None) -> None:
         """
-        إبطال رمز التحديث مع ختم زمني صريح.
+        إبطال رمز التحديث مع ختم زمني صريح وربط الرمز البديل.
+
+        Parameters:
+            revoked_at: وقت الإبطال (افتراضي: الآن).
+            replaced_by: المعرّف الخاص بالرمز الجديد ضمن نفس العائلة.
         """
 
         self.revoked_at = revoked_at or utc_now()
+        self.replaced_by_token_id = replaced_by
 
     def is_active(self, *, now: datetime | None = None) -> bool:
         """
@@ -447,6 +464,52 @@ class RefreshToken(SQLModel, table=True):
             expiry = expiry.replace(tzinfo=UTC)
 
         return self.revoked_at is None and current_time < expiry
+
+
+class PasswordResetToken(SQLModel, table=True):
+    """
+    رمز إعادة تعيين كلمة المرور قصير العمر مع تتبع سياق الطلب.
+
+    يوفر قيد الاستخدام الواحد والفهرسة الزمنية لتسهيل الإبطال والتحقيقات.
+    """
+
+    __tablename__ = "password_resets"
+
+    id: int | None = Field(default=None, primary_key=True)
+    token_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        sa_column=Column(String(36), unique=True, nullable=False),
+    )
+    hashed_token: str = Field(max_length=255, sa_column=Column(String(255), unique=True))
+    user_id: int = Field(foreign_key="users.id", index=True)
+    expires_at: datetime = Field(sa_column=Column(DateTime(timezone=True), index=True))
+    redeemed_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))
+    requested_ip: str | None = Field(default=None, max_length=64)
+    user_agent: str | None = Field(default=None, max_length=255)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+
+    user: User = Relationship(sa_relationship=relationship("User", back_populates="password_reset_tokens"))
+
+    def is_active(self, *, now: datetime | None = None) -> bool:
+        """التحقق من صلاحية رمز إعادة التعيين وعدم استخدامه مسبقاً."""
+
+        moment = now or utc_now()
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=UTC)
+        expiry = self.expires_at
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=UTC)
+        if self.redeemed_at and self.redeemed_at.tzinfo is None:
+            self.redeemed_at = self.redeemed_at.replace(tzinfo=UTC)
+        return self.redeemed_at is None and moment < expiry
+
+    def mark_redeemed(self, *, redeemed_at: datetime | None = None) -> None:
+        """تحديث حالة الرمز عند استخدامه لمنع إعادة الاستخدام."""
+
+        self.redeemed_at = redeemed_at or utc_now()
 
 
 class AuditLog(SQLModel, table=True):

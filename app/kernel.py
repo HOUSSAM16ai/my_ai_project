@@ -34,11 +34,13 @@ from app.api.routers import admin, crud, data_mesh, observability, overmind, sec
 from app.api.routers import ums
 from app.config.settings import AppSettings
 from app.core.db_schema import validate_schema_on_startup
+from app.core.database import async_session_factory
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
 from app.middleware.security.security_headers import SecurityHeadersMiddleware
 from app.middleware.static_files_middleware import StaticFilesConfig, setup_static_files_middleware
+from app.services.bootstrap import bootstrap_admin_account
 
 logger = logging.getLogger(__name__)
 
@@ -246,12 +248,18 @@ class RealityKernel:
         """
         logger.info("🚀 CogniForge System Initializing... (Strict Mode Active)")
 
-        if self.settings_dict.get("ENVIRONMENT") != "testing":
-            try:
-                await validate_schema_on_startup()
-                logger.info("✅ Database Schema Validated")
-            except Exception as e:
-                logger.warning(f"⚠️ Schema validation warning: {e}")
+        try:
+            await validate_schema_on_startup()
+            logger.info("✅ Database Schema Validated")
+        except Exception as e:
+            logger.warning(f"⚠️ Schema validation warning: {e}")
+
+        try:
+            async with async_session_factory() as session:
+                await bootstrap_admin_account(session, settings=self.settings_obj)
+                logger.info("✅ Admin account bootstrapped and validated")
+        except Exception as exc:
+            logger.error(f"❌ Failed to bootstrap admin account: {exc}")
 
         logger.info("✅ System Ready")
         yield

@@ -8,9 +8,16 @@ from sqlalchemy import select
 
 from app.api.schemas.ums import (
     AdminCreateUserRequest,
+    ChangePasswordRequest,
     LoginRequest,
     LogoutRequest,
+    PasswordResetConfirmRequest,
+    PasswordResetRequest,
+    PasswordResetResponse,
+    ProfileUpdateRequest,
     QuestionRequest,
+    ReauthRequest,
+    ReauthResponse,
     RefreshRequest,
     RegisterRequest,
     RoleAssignmentRequest,
@@ -19,16 +26,18 @@ from app.api.schemas.ums import (
     UserOut,
 )
 from app.core.domain.models import AuditLog, User, UserStatus
-from app.deps.auth import CurrentUser, get_auth_service, require_permissions
+from app.deps.auth import CurrentUser, get_auth_service, get_current_user, require_permissions
 from app.middleware.rate_limiter_middleware import rate_limit
 from app.services.audit import AuditService
 from app.services.auth_service import AuthService
 from app.services.policy import PolicyService
 from app.services.rbac import (
     ADMIN_ROLE,
+    ACCOUNT_SELF,
     AI_CONFIG_READ,
     AI_CONFIG_WRITE,
     AUDIT_READ,
+    ROLES_WRITE,
     QA_SUBMIT,
     USERS_READ,
     USERS_WRITE,
@@ -41,6 +50,35 @@ def _audit_context(request: Request) -> tuple[str | None, str | None]:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("User-Agent")
     return client_ip, user_agent
+
+
+async def _enforce_recent_auth(
+    *,
+    request: Request,
+    auth_service: AuthService,
+    current: CurrentUser,
+    provided_token: str | None,
+    provided_password: str | None,
+) -> None:
+    """يتحقق من وجود دليل مصادقة حديث قبل تنفيذ عمليات حساسة."""
+
+    client_ip, user_agent = _audit_context(request)
+    token = provided_token or request.headers.get("X-Reauth-Token")
+    password = provided_password or request.headers.get("X-Reauth-Password")
+
+    if token:
+        await auth_service.verify_reauth_proof(
+            token,
+            user=current.user,
+            ip=client_ip,
+            user_agent=user_agent,
+        )
+        return
+
+    if password and current.user.check_password(password):
+        return
+
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Re-authentication required")
 
 
 @router.post("/auth/register", response_model=TokenPair, status_code=status.HTTP_201_CREATED)
@@ -58,8 +96,74 @@ async def register_user(
         ip=client_ip,
         user_agent=user_agent,
     )
-    tokens = await auth_service.issue_tokens(user)
+    tokens = await auth_service.issue_tokens(user, ip=client_ip, user_agent=user_agent)
     return TokenPair(**tokens)
+
+
+@router.get("/users/me", response_model=UserOut)
+async def get_me(
+    current: CurrentUser = Depends(require_permissions(ACCOUNT_SELF)),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> UserOut:
+    """إرجاع بيانات الحساب الحالية بما في ذلك الأدوار."""
+
+    roles = await auth_service.rbac.user_roles(current.user.id)
+    return UserOut(
+        id=current.user.id,
+        email=current.user.email,
+        full_name=current.user.full_name,
+        is_active=current.user.is_active,
+        status=current.user.status,
+        roles=roles,
+    )
+
+
+@router.patch("/users/me", response_model=UserOut)
+async def update_me(
+    request: Request,
+    payload: ProfileUpdateRequest,
+    current: CurrentUser = Depends(require_permissions(ACCOUNT_SELF)),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> UserOut:
+    """تحديث الاسم الكامل أو البريد الإلكتروني للمستخدم الحالي مع تدقيق التغيير."""
+
+    client_ip, user_agent = _audit_context(request)
+    updated = await auth_service.update_profile(
+        user=current.user,
+        full_name=payload.full_name,
+        email=payload.email,
+        ip=client_ip,
+        user_agent=user_agent,
+    )
+    roles = await auth_service.rbac.user_roles(updated.id)
+    return UserOut(
+        id=updated.id,
+        email=updated.email,
+        full_name=updated.full_name,
+        is_active=updated.is_active,
+        status=updated.status,
+        roles=roles,
+    )
+
+
+@router.post("/users/me/change-password")
+async def change_password(
+    request: Request,
+    payload: ChangePasswordRequest,
+    current: CurrentUser = Depends(require_permissions(ACCOUNT_SELF)),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> dict[str, str]:
+    """تغيير كلمة المرور وإبطال رموز التحديث القديمة."""
+
+    client_ip, user_agent = _audit_context(request)
+    await auth_service.change_password(
+        user=current.user,
+        current_password=payload.current_password,
+        new_password=payload.new_password,
+        ip=client_ip,
+        user_agent=user_agent,
+    )
+    return {"status": "password_changed"}
 
 
 @router.post("/auth/login", response_model=TokenPair)
@@ -76,8 +180,22 @@ async def login(
         ip=client_ip,
         user_agent=user_agent,
     )
-    tokens = await auth_service.issue_tokens(user)
+    tokens = await auth_service.issue_tokens(user, ip=client_ip, user_agent=user_agent)
     return TokenPair(**tokens)
+
+
+@router.post("/auth/reauth", response_model=ReauthResponse)
+async def reauth(
+    request: Request,
+    payload: ReauthRequest,
+    current: CurrentUser = Depends(get_current_user),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> ReauthResponse:
+    client_ip, user_agent = _audit_context(request)
+    token, expires_in = await auth_service.issue_reauth_proof(
+        user=current.user, password=payload.password, ip=client_ip, user_agent=user_agent
+    )
+    return ReauthResponse(reauth_token=token, expires_in=expires_in)
 
 
 @router.post("/auth/refresh", response_model=TokenPair)
@@ -105,6 +223,41 @@ async def logout(
     client_ip, user_agent = _audit_context(request)
     await auth_service.logout(refresh_token=payload.refresh_token, ip=client_ip, user_agent=user_agent)
     return {"status": "logged_out"}
+
+
+@router.post("/auth/password/forgot", response_model=PasswordResetResponse)
+@rate_limit(max_requests=5, window_seconds=900, limiter_key="auth_password_forgot")
+async def request_password_reset(
+    request: Request,
+    payload: PasswordResetRequest,
+    auth_service: AuthService = Depends(get_auth_service),
+) -> PasswordResetResponse:
+    """طلب إعادة تعيين كلمة المرور دون كشف وجود الحساب."""
+
+    client_ip, user_agent = _audit_context(request)
+    token, expires_in = await auth_service.request_password_reset(
+        email=payload.email, ip=client_ip, user_agent=user_agent
+    )
+    return PasswordResetResponse(reset_token=token, expires_in=expires_in)
+
+
+@router.post("/auth/password/reset")
+@rate_limit(max_requests=10, window_seconds=300, limiter_key="auth_password_reset")
+async def reset_password(
+    request: Request,
+    payload: PasswordResetConfirmRequest,
+    auth_service: AuthService = Depends(get_auth_service),
+) -> dict[str, str]:
+    """تطبيق إعادة تعيين كلمة المرور وإبطال جلسات التحديث القديمة."""
+
+    client_ip, user_agent = _audit_context(request)
+    await auth_service.reset_password(
+        token=payload.token,
+        new_password=payload.new_password,
+        ip=client_ip,
+        user_agent=user_agent,
+    )
+    return {"status": "password_reset"}
 
 
 @router.get("/admin/users", response_model=list[UserOut])
@@ -135,21 +288,27 @@ async def list_users(
 async def create_user_admin(
     request: Request,
     payload: AdminCreateUserRequest,
-    current: CurrentUser = Depends(require_permissions(USERS_WRITE)),
+    current: CurrentUser = Depends(require_permissions(USERS_WRITE, ROLES_WRITE)),
     auth_service: AuthService = Depends(get_auth_service),
 ) -> UserOut:
+    client_ip, user_agent = _audit_context(request)
+    if payload.is_admin:
+        await _enforce_recent_auth(
+            request=request,
+            auth_service=auth_service,
+            current=current,
+            provided_token=None,
+            provided_password=None,
+        )
+
     user = await auth_service.register_user(
         full_name=payload.full_name,
         email=payload.email,
         password=payload.password,
     )
     if payload.is_admin:
-        password = request.headers.get("X-Reauth-Password")
-        if not password or not current.user.check_password(password):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Re-authentication required")
         await auth_service.promote_to_admin(user=user)
     roles = await auth_service.rbac.user_roles(user.id)
-    client_ip, user_agent = _audit_context(request)
     audit = AuditService(auth_service.session)
     await audit.record(
         actor_user_id=current.user.id,
@@ -211,7 +370,7 @@ async def assign_role(
     request: Request,
     user_id: int,
     payload: RoleAssignmentRequest,
-    current: CurrentUser = Depends(require_permissions(USERS_WRITE)),
+    current: CurrentUser = Depends(require_permissions(USERS_WRITE, ROLES_WRITE)),
     auth_service: AuthService = Depends(get_auth_service),
 ) -> UserOut:
     target = await auth_service.session.get(User, user_id)
@@ -219,9 +378,18 @@ async def assign_role(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     if payload.role_name == ADMIN_ROLE:
-        password = payload.reauth_password or request.headers.get("X-Reauth-Password")
-        if not password or not current.user.check_password(password):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Re-authentication required")
+        await _enforce_recent_auth(
+            request=request,
+            auth_service=auth_service,
+            current=current,
+            provided_token=payload.reauth_token,
+            provided_password=payload.reauth_password,
+        )
+        if not payload.justification or len(payload.justification.strip()) < 10:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Justification required for admin assignment",
+            )
         await auth_service.promote_to_admin(user=target)
     else:
         await auth_service.rbac.assign_role(target, payload.role_name)
@@ -234,7 +402,7 @@ async def assign_role(
         action="USER_ROLE_ASSIGNED",
         target_type="user",
         target_id=str(target.id),
-        metadata={"role": payload.role_name},
+        metadata={"role": payload.role_name, "justification": payload.justification},
         ip=client_ip,
         user_agent=user_agent,
     )

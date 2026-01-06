@@ -170,3 +170,60 @@ async def test_audit_records_auth_anomalies(db_session, async_client: AsyncClien
     audit_rows = (await db_session.execute(select(AuditLog))).scalars().all()
     assert any(row.action == "AUTH_FAILED" for row in audit_rows)
     assert any(row.action == "REFRESH_REJECTED" for row in audit_rows)
+
+
+@pytest.mark.asyncio
+async def test_reauth_token_required_for_admin_assignment(db_session, async_client: AsyncClient):
+    await RBACService(db_session).ensure_seed()
+    admin_user = User(full_name="Admin", email="reauth-admin@example.com", is_admin=True)
+    admin_user.set_password("AdminPass123!")
+    db_session.add(admin_user)
+    await db_session.commit()
+    await db_session.refresh(admin_user)
+
+    auth_service = AuthService(db_session, get_settings())
+    await auth_service.promote_to_admin(user=admin_user)
+
+    admin_login = await async_client.post(
+        "/auth/login", json={"email": "reauth-admin@example.com", "password": "AdminPass123!"}
+    )
+    assert admin_login.status_code == 200
+    admin_token = admin_login.json()["access_token"]
+
+    reauth_resp = await async_client.post(
+        "/auth/reauth",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={"password": "AdminPass123!"},
+    )
+    assert reauth_resp.status_code == 200
+    reauth_token = reauth_resp.json()["reauth_token"]
+
+    await async_client.post(
+        "/auth/register",
+        json={"full_name": "Delegate", "email": "delegate@example.com", "password": "Deleg@te123"},
+    )
+    delegate = (
+        await db_session.execute(select(User).where(User.email == "delegate@example.com"))
+    ).scalar_one()
+
+    denied = await async_client.post(
+        f"/admin/users/{delegate.id}/roles",
+        json={"role_name": "ADMIN", "justification": "Needs elevated control"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert denied.status_code == 401
+
+    promote_resp = await async_client.post(
+        f"/admin/users/{delegate.id}/roles",
+        json={
+            "role_name": "ADMIN",
+            "justification": "Needs elevated control",
+            "reauth_token": reauth_token,
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert promote_resp.status_code == 200
+    assert ADMIN_ROLE in promote_resp.json()["roles"]
+
+    audit_rows = (await db_session.execute(select(AuditLog))).scalars().all()
+    assert any(row.action == "REAUTH_SUCCEEDED" for row in audit_rows)
