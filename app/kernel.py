@@ -31,6 +31,7 @@ from starlette.types import ASGIApp
 
 # استيراد الموجهات بشكل صريح
 from app.api.routers import admin, crud, data_mesh, observability, overmind, security, system
+from app.api.routers import ums
 from app.config.settings import AppSettings
 from app.core.db_schema import validate_schema_on_startup
 from app.middleware.fastapi_error_handlers import add_error_handlers
@@ -115,6 +116,7 @@ def _get_router_registry() -> list[RouterSpec]:
         (system.root_router, ""), # Root Level (e.g., /health)
         (system.router, ""),      # /system prefix is inside the router
         (admin.router, ""),
+        (ums.router, ""),
         (security.router, "/api/security"),
         (data_mesh.router, "/api/v1/data-mesh"),
         (observability.router, "/api/observability"),

@@ -43,3 +43,36 @@ async def test_adaptive_cache_eviction_fix():
 
     assert "new_item" in cache.cache, "'new_item' was NOT cached (expired item was not cleaned up)."
     assert "short_ttl" not in cache.cache, "'short_ttl' should have been removed."
+
+
+@pytest.mark.asyncio
+async def test_adaptive_cache_awareness_of_awaitables():
+    cache = AdaptiveCache(max_size=2)
+
+    async def async_value():
+        return "async"
+
+    def sync_returning_coroutine():
+        async def inner():
+            return "wrapped"
+
+        return inner()
+
+    assert await cache.get_or_compute("async", async_value) == "async"
+    assert await cache.get_or_compute("wrapped", sync_returning_coroutine) == "wrapped"
+    assert len(cache.cache) == 2
+
+
+@pytest.mark.asyncio
+async def test_adaptive_cache_respects_zero_ttl():
+    cache = AdaptiveCache(max_size=1)
+
+    async def compute_val():
+        return "value"
+
+    await cache.get_or_compute("immediate", compute_val, ttl=0)
+    # Next access should clear expired entry and store the new one
+    await cache.get_or_compute("replacement", compute_val)
+
+    assert "immediate" not in cache.cache
+    assert "replacement" in cache.cache

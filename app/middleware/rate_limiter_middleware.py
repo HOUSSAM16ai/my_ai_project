@@ -120,10 +120,16 @@ class TokenBucketRateLimiter:
             )
         return False, metadata
 
-_rate_limiters: dict[str, TokenBucketRateLimiter] = {'default':
-    TokenBucketRateLimiter(max_requests=100, window_seconds=60), 'strict':
-    TokenBucketRateLimiter(max_requests=20, window_seconds=60), 'lenient':
-    TokenBucketRateLimiter(max_requests=300, window_seconds=60)}
+    def reset(self) -> None:
+        """إعادة ضبط دلاء الرموز لبدء نافذة جديدة فوراً."""
+
+        self._buckets.clear()
+
+_rate_limiters: dict[str, TokenBucketRateLimiter] = {
+    'default': TokenBucketRateLimiter(max_requests=100, window_seconds=60),
+    'strict': TokenBucketRateLimiter(max_requests=20, window_seconds=60),
+    'lenient': TokenBucketRateLimiter(max_requests=300, window_seconds=60),
+}
 
 def _build_rate_limit_headers(limiter: TokenBucketRateLimiter, metadata: dict) -> dict:
     """
@@ -199,12 +205,22 @@ def rate_limit(max_requests: int = 100, window_seconds: int = 60, limiter_key: s
             # حفظ metadata للاستخدام في الطلب
             request.state.rate_limit_metadata = metadata
             return await func(request, *args, **kwargs)
-        
+
+        for name, value in func.__globals__.items():
+            wrapper.__globals__.setdefault(name, value)
+
         return wrapper
     return decorator
 
 def get_rate_limiter(limiter_key: str='default') ->TokenBucketRateLimiter:
     """Get a rate limiter instance by key."""
     return _rate_limiters.get(limiter_key, _rate_limiters['default'])
+
+
+def reset_rate_limiter(limiter_key: str) -> None:
+    """إعادة ضبط معدل الطلبات لمفتاح محدد لتسهيل الاختبارات وحالات الطوارئ."""
+
+    if limiter_key in _rate_limiters:
+        _rate_limiters[limiter_key].reset()
 
 __all__ = ['TokenBucketRateLimiter', 'get_rate_limiter', 'rate_limit']

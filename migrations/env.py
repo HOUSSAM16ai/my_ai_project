@@ -14,7 +14,7 @@ sys.path.append(os.getcwd())
 
 from app.config.settings import get_settings
 # REMOVED: from app.core.engine_factory import FatalEngineError, create_unified_async_engine
-from app.models import SQLModel  # Import SQLModel to get metadata
+from sqlmodel import SQLModel
 
 settings = get_settings()
 
