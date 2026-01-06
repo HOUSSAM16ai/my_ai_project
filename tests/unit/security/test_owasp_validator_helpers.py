@@ -1,9 +1,12 @@
 """اختبارات وحدات لوظائف OWASP Validator المساعدة."""
+
 import re
 
+EXPECTED_SECRET_ISSUES = 2
+
 from app.security.owasp_validator import (
-    OWASPValidator,
     OWASPCategory,
+    OWASPValidator,
     SecuritySeverity,
 )
 
@@ -90,7 +93,7 @@ def test_check_hardcoded_secrets_detects_literal_credentials() -> None:
 
     issues = validator._check_hardcoded_secrets(code, "secrets.py")
 
-    assert len(issues) == 2
+    assert len(issues) == EXPECTED_SECRET_ISSUES
     assert all(issue.severity is SecuritySeverity.CRITICAL for issue in issues)
     assert all(issue.category is OWASPCategory.A05_SECURITY_MISCONFIGURATION for issue in issues)
 
@@ -110,11 +113,7 @@ def test_command_injection_detection() -> None:
 
 def test_command_injection_ignores_safe_subprocess_usage() -> None:
     validator = OWASPValidator()
-    code = (
-        "import subprocess\n"
-        "subprocess.call(['ls'])\n"
-        "subprocess.run(['echo', 'ok'], shell=False)"
-    )
+    code = "import subprocess\nsubprocess.call(['ls'])\nsubprocess.run(['echo', 'ok'], shell=False)"
 
     issues = validator._check_command_injection(code, "executor.py")
 
@@ -161,10 +160,7 @@ def test_authentication_rate_limiting_silenced_when_present() -> None:
 
 def test_role_and_admin_escalation_detection() -> None:
     validator = OWASPValidator()
-    code = (
-        "role = request.json.get('role')\n"
-        "is_admin = request.form.get('is_admin')"
-    )
+    code = "role = request.json.get('role')\nis_admin = request.form.get('is_admin')"
 
     role_issues = validator._check_role_escalation(code, "access.py")
     admin_issues = validator._check_admin_escalation(code, "access.py")
@@ -198,7 +194,7 @@ def test_missing_auth_checks_skipped_when_protected() -> None:
 
 def test_sql_injection_detection_and_safe_path() -> None:
     validator = OWASPValidator()
-    vulnerable = "cursor.execute(\"SELECT * FROM users WHERE id = %s\" % user_id)"
+    vulnerable = 'cursor.execute("SELECT * FROM users WHERE id = %s" % user_id)'
     safe = "User.objects.filter(id=user_id).first()"
 
     vulnerable_issues = validator._check_sql_injection(vulnerable, "db.py")
@@ -237,10 +233,7 @@ def test_weak_crypto_detection_and_false_positives() -> None:
 
 def test_cookie_flag_validations() -> None:
     validator = OWASPValidator()
-    code = (
-        "SESSION_COOKIE_SECURE = False\n"
-        "SESSION_COOKIE_HTTPONLY = False\n"
-    )
+    code = "SESSION_COOKIE_SECURE = False\nSESSION_COOKIE_HTTPONLY = False\n"
 
     secure_issues = validator._check_secure_cookie_flag(code, "settings.py")
     httponly_issues = validator._check_httponly_cookie_flag(code, "settings.py")
@@ -253,10 +246,7 @@ def test_cookie_flag_validations() -> None:
 
 def test_cookie_flag_validations_skip_when_already_secure() -> None:
     validator = OWASPValidator()
-    code = (
-        "SESSION_COOKIE_SECURE = True\n"
-        "SESSION_COOKIE_HTTPONLY = True\n"
-    )
+    code = "SESSION_COOKIE_SECURE = True\nSESSION_COOKIE_HTTPONLY = True\n"
 
     secure_issues = validator._check_secure_cookie_flag(code, "settings.py")
     httponly_issues = validator._check_httponly_cookie_flag(code, "settings.py")
@@ -305,7 +295,9 @@ def test_is_false_positive_secret_detects_env_and_real_literals() -> None:
     literal_secret = "api_key = 'sk_live_123'"
 
     env_match = re.search(validator.hardcoded_secrets_patterns[0], env_configured, re.IGNORECASE)
-    literal_match = re.search(validator.hardcoded_secrets_patterns[1], literal_secret, re.IGNORECASE)
+    literal_match = re.search(
+        validator.hardcoded_secrets_patterns[1], literal_secret, re.IGNORECASE
+    )
 
     assert env_match is not None
     assert literal_match is not None

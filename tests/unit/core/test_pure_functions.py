@@ -1,20 +1,18 @@
-"""
-اختبارات الدوال النقية (Pure Functions Tests).
+"""اختبارات شاملة للدوال النقية وفق معايير CS50 وSICP."""
 
-يختبر الدوال النقية في app/core/ للتأكد من صحة المنطق.
-يطبق مبدأ SICP: اختبار Functional Core بشكل منفصل عن Imperative Shell.
-
-المبادئ (Principles):
-- Harvard CS50 2025: اختبارات واضحة ومفهومة
-- Berkeley SICP: اختبار الدوال النقية (لا side effects)
-- Testing Best Practices: Arrange-Act-Assert pattern
-"""
-
+import time
 from datetime import UTC, datetime
 
 import pytest
+from fastapi import APIRouter
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.domain.models import MessageRole, MissionStatus, utc_now
+from app.kernel import MiddlewareSpec, RouterSpec
+
+EXPECTED_MESSAGE_ROLES = 4
+EXPECTED_MISSION_STATUSES = 8
+MAX_DURATION_SECONDS = 0.01
 
 
 class TestUtcNow:
@@ -75,7 +73,7 @@ class TestMessageRole:
 
     def test_role_count(self):
         """يجب أن يحتوي على 4 أدوار فقط."""
-        assert len(MessageRole) == 4
+        assert len(MessageRole) == EXPECTED_MESSAGE_ROLES
 
 
 class TestMissionStatus:
@@ -91,7 +89,7 @@ class TestMissionStatus:
 
     def test_status_count(self):
         """يجب أن يطابق إجمالي الحالات التعاريف الثمانية الحالية."""
-        assert len(MissionStatus) == 8
+        assert len(MissionStatus) == EXPECTED_MISSION_STATUSES
 
     def test_case_insensitive_lookup(self):
         """يجب أن يعمل البحث بغض النظر عن حالة الأحرف."""
@@ -107,10 +105,6 @@ class TestKernelHelpers:
 
     def test_middleware_spec_structure(self):
         """يجب أن يكون MiddlewareSpec tuple من (class, dict)."""
-        from fastapi.middleware.cors import CORSMiddleware
-
-        from app.kernel import MiddlewareSpec
-
         # اختبار البنية
         spec: MiddlewareSpec = (CORSMiddleware, {"allow_origins": ["*"]})
         middleware_class, options = spec
@@ -121,10 +115,6 @@ class TestKernelHelpers:
 
     def test_router_spec_structure(self):
         """يجب أن يكون RouterSpec tuple من (router, prefix)."""
-        from fastapi import APIRouter
-
-        from app.kernel import RouterSpec
-
         # اختبار البنية
         router = APIRouter()
         spec: RouterSpec = (router, "/api/test")
@@ -137,15 +127,13 @@ class TestKernelHelpers:
 
 # ==================== اختبارات التكامل البسيطة ====================
 
+
 class TestEnumIntegration:
     """اختبارات تكامل بسيطة للـ Enums."""
 
     def test_message_role_in_dict(self):
         """يجب أن يعمل MessageRole في القواميس."""
-        message = {
-            "role": MessageRole.USER,
-            "content": "Hello"
-        }
+        message = {"role": MessageRole.USER, "content": "Hello"}
 
         assert message["role"] == MessageRole.USER
         assert message["role"].value == "user"
@@ -168,24 +156,22 @@ class TestEnumIntegration:
 
 # ==================== اختبارات الأداء ====================
 
+
 class TestPerformance:
     """اختبارات أداء بسيطة."""
 
     def test_utc_now_performance(self):
         """يجب أن تكون utc_now سريعة."""
-        import time
-
         start = time.perf_counter()
         for _ in range(1000):
             utc_now()
         duration = time.perf_counter() - start
 
         # يجب أن تكون أسرع من 10ms لـ 1000 استدعاء
-        assert duration < 0.01
+        assert duration < MAX_DURATION_SECONDS
 
     def test_enum_lookup_performance(self):
         """يجب أن يكون البحث في Enum سريعاً."""
-        import time
 
         start = time.perf_counter()
         for _ in range(1000):
@@ -193,4 +179,4 @@ class TestPerformance:
         duration = time.perf_counter() - start
 
         # يجب أن يكون أسرع من 10ms لـ 1000 استدعاء
-        assert duration < 0.01
+        assert duration < MAX_DURATION_SECONDS

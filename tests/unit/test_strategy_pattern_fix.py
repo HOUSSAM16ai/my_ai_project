@@ -1,4 +1,3 @@
-
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -11,16 +10,18 @@ class AsyncGenStrategy(Strategy[str, AsyncGenerator[str, None]]):
     async def can_handle(self, context: str) -> bool:
         return context == "gen"
 
-    async def execute(self, context: str) -> AsyncGenerator[str, None]:
+    async def execute(self, _context: str) -> AsyncGenerator[str, None]:
         yield "part1"
         yield "part2"
+
 
 class CoroutineStrategy(Strategy[str, str]):
     async def can_handle(self, context: str) -> bool:
         return context == "coro"
 
-    async def execute(self, context: str) -> str:
+    async def execute(self, _context: str) -> str:
         return "result"
+
 
 @pytest.mark.asyncio
 async def test_strategy_registry_async_generator():
@@ -37,6 +38,7 @@ async def test_strategy_registry_async_generator():
         parts.append(part)
 
     assert parts == ["part1", "part2"]
+
 
 @pytest.mark.asyncio
 async def test_strategy_registry_coroutine():

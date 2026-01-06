@@ -1,4 +1,3 @@
-
 import pytest
 
 from app.core.domain.models import Mission
@@ -21,14 +20,12 @@ async def test_detect_loop_raises_stalemate():
     auditor = AuditorAgent(MockAI())
 
     plan = {"steps": ["do_something"]}
-    history = [
-        auditor._compute_hash(plan),
-        auditor._compute_hash(plan)
-    ]
+    history = [auditor._compute_hash(plan), auditor._compute_hash(plan)]
 
     # Third time's a charm (or a curse)
     with pytest.raises(StalemateError):
         auditor.detect_loop(history, plan)
+
 
 @pytest.mark.asyncio
 async def test_superbrain_stalemate_recovery():
@@ -45,17 +42,15 @@ async def test_superbrain_stalemate_recovery():
     )
 
     brain = SuperBrain(
-        strategist=strategist,
-        architect=architect,
-        operator=operator,
-        auditor=auditor
+        strategist=strategist, architect=architect, operator=operator, auditor=auditor
     )
 
     mission = Mission(id=1, objective="Fix bugs")
 
     # Mock log function
     logs = []
-    async def log_event(evt, data):
+
+    async def log_event(evt, _data):
         logs.append(evt)
 
     # We expect the loop to run, catch the error, and retry
@@ -72,14 +67,16 @@ async def test_superbrain_stalemate_recovery():
         # We can't easily inject state into process_mission, so we run process_mission and catch the final failure
         await brain.process_mission(mission, log_event=log_event)
     except RuntimeError:
-        pass # Expected "Mission failed after N iterations"
+        pass  # Expected "Mission failed after N iterations"
 
     # Verify that "stalemate_detected" was logged
-    assert "stalemate_detected" in logs or any("stalemate" in str(l) for l in logs)
+    assert "stalemate_detected" in logs or any("stalemate" in str(log_entry) for log_entry in logs)
 
 
 class MockAI:
     """كائن ذكاء اصطناعي تجريبي لتلبية متطلبات AuditorAgent."""
 
-    async def stream(self, *_: object, **__: object) -> None:  # pragma: no cover - مساعدة للاختبارات فقط
+    async def stream(
+        self, *_: object, **__: object
+    ) -> None:  # pragma: no cover - مساعدة للاختبارات فقط
         return None

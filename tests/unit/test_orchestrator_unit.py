@@ -17,16 +17,6 @@ async def test_process_passes_session_factory():
     # But since we modified the code, we can also trust manual inspection or integration test.
     # Let's try to subclass ChatOrchestrator to inspect context creation
 
-    context_captured = None
-
-    class TestOrchestrator(ChatOrchestrator):
-        # We need to override process OR verify how context is built.
-        # process method instantiates ChatContext directly.
-        pass
-
-    # Since we can't easily intercept local variable 'context' inside process without more complex mocking,
-    # let's rely on the fact that MissionComplexHandler checks for it.
-
     orchestrator = ChatOrchestrator()
 
     # Force MissionComplexHandler to be the only handler for a specific intent
@@ -35,9 +25,7 @@ async def test_process_passes_session_factory():
 
     orchestrator._intent_detector = AsyncMock()
     orchestrator._intent_detector.detect.return_value = MagicMock(
-        intent="MISSION_COMPLEX",
-        confidence=1.0,
-        params={}
+        intent="MISSION_COMPLEX", confidence=1.0, params={}
     )
 
     # Mock the handler execution to just return the context for verification
@@ -46,7 +34,7 @@ async def test_process_passes_session_factory():
     # Let's mock the handlers registry execution
     orchestrator._handlers = MagicMock()
     orchestrator._handlers.execute = AsyncMock()
-    orchestrator._handlers.execute.return_value = None # Don't yield anything
+    orchestrator._handlers.execute.return_value = None  # Don't yield anything
 
     # Run process
     async for _ in orchestrator.process("test", 1, 1, mock_ai, [], session_factory=mock_factory):
@@ -59,6 +47,7 @@ async def test_process_passes_session_factory():
 
     assert isinstance(context, ChatContext)
     assert context.session_factory == mock_factory
+
 
 if __name__ == "__main__":
     asyncio.run(test_process_passes_session_factory())

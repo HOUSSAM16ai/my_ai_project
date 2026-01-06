@@ -7,6 +7,9 @@ from app.core.domain.models import Mission
 from app.services.overmind.domain.cognitive import SuperBrain
 from app.services.overmind.domain.context import InMemoryCollaborationContext
 
+AUDITOR_EXPECTED_REVIEWS = 2
+STRATEGIST_EXPECTED_CALLS = 2
+
 
 class StubPlanner:
     """مخطط تجريبي يعيد خططاً محددة مع تتبع السياق."""
@@ -15,9 +18,11 @@ class StubPlanner:
         self._plans = plans
         self.calls = 0
         self.contexts: list[InMemoryCollaborationContext] = []
+        self.objectives: list[str] = []
 
     async def create_plan(self, objective: str, context: InMemoryCollaborationContext) -> dict:
         self.calls += 1
+        self.objectives.append(objective)
         self.contexts.append(context)
         return self._plans[min(self.calls - 1, len(self._plans) - 1)]
 
@@ -32,6 +37,7 @@ class StubArchitect:
 
     async def design_solution(self, plan: dict, context: InMemoryCollaborationContext) -> dict:
         self.calls += 1
+        self.last_plan = plan
         self.contexts.append(context)
         return self._design
 
@@ -46,6 +52,7 @@ class StubOperator:
 
     async def execute_tasks(self, design: dict, context: InMemoryCollaborationContext) -> dict:
         self.calls += 1
+        self.last_design = design
         self.contexts.append(context)
         return self._result
 
@@ -65,24 +72,31 @@ class StubAuditor:
         self.review_calls = 0
         self.detect_calls = 0
         self.review_contexts: list[InMemoryCollaborationContext] = []
+        self.reviewed_results: list[dict] = []
+        self.reviewed_objectives: list[str] = []
 
     def detect_loop(self, history_hashes: list[str], plan: dict) -> None:
+        self.last_history = history_hashes
+        self.last_detected_plan = plan
         if self.detect_calls < len(self._detect_loop_sequence):
             effect = self._detect_loop_sequence[self.detect_calls]
             self.detect_calls += 1
             if effect:
                 raise effect
-            return None
+            return
         self.detect_calls += 1
-        return None
+        return
 
     def _compute_hash(self, plan: dict) -> str:
+        self.last_hashed_plan = plan
         return self._hash_value
 
     async def review_work(
         self, result: dict, original_objective: str, context: InMemoryCollaborationContext
     ) -> dict:
         self.review_calls += 1
+        self.reviewed_results.append(result)
+        self.reviewed_objectives.append(original_objective)
         self.review_contexts.append(context)
         return self._reviews[min(self.review_calls - 1, len(self._reviews) - 1)]
 
@@ -101,10 +115,7 @@ async def test_super_brain_loop_success():
     )
 
     brain = SuperBrain(
-        strategist=strategist,
-        architect=architect,
-        operator=operator,
-        auditor=auditor
+        strategist=strategist, architect=architect, operator=operator, auditor=auditor
     )
 
     mission = Mission(id=1, objective="Build a spaceship")
@@ -123,7 +134,8 @@ async def test_super_brain_loop_success():
     assert operator.calls == 1
 
     # Auditor called twice (Plan Review + Final Review)
-    assert auditor.review_calls == 2
+    assert auditor.review_calls == AUDITOR_EXPECTED_REVIEWS
+
 
 @pytest.mark.asyncio
 async def test_super_brain_self_correction():
@@ -140,10 +152,7 @@ async def test_super_brain_self_correction():
     )
 
     brain = SuperBrain(
-        strategist=strategist,
-        architect=architect,
-        operator=operator,
-        auditor=auditor
+        strategist=strategist, architect=architect, operator=operator, auditor=auditor
     )
 
     mission = Mission(id=2, objective="Fix bugs")
@@ -153,7 +162,7 @@ async def test_super_brain_self_correction():
 
     # 3. Verify
     # Strategist should be called twice (Initial + Re-planning)
-    assert strategist.calls == 2
+    assert strategist.calls == STRATEGIST_EXPECTED_CALLS
 
     # Check if context carried the feedback
     context_2 = strategist.contexts[1]
