@@ -26,7 +26,18 @@ __all__ = ["validate_schema_on_startup"]
 # =============================================================================
 
 # قائمة الجداول المسموح بها (whitelist للأمان)
-_ALLOWED_TABLES: Final[frozenset[str]] = frozenset({"admin_conversations", "users"})
+_ALLOWED_TABLES: Final[frozenset[str]] = frozenset(
+    {
+        "admin_conversations",
+        "audit_log",
+        "permissions",
+        "refresh_tokens",
+        "role_permissions",
+        "roles",
+        "user_roles",
+        "users",
+    }
+)
 
 # قائمة الأعمدة المطلوبة لكل جدول
 class TableSchemaConfig(TypedDict):
@@ -36,6 +47,7 @@ class TableSchemaConfig(TypedDict):
     auto_fix: dict[str, str]
     indexes: dict[str, str]
     index_names: NotRequired[dict[str, str]]
+    create_table: NotRequired[str]
 
 
 class SchemaValidationResult(TypedDict):
@@ -90,8 +102,184 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             "external_id": 'CREATE UNIQUE INDEX IF NOT EXISTS "ix_users_external_id" ON "users"("external_id")'
         },
         "index_names": {"external_id": "ix_users_external_id"},
-    }
+    },
+    "roles": {
+        "columns": [
+            "id",
+            "name",
+            "description",
+            "created_at",
+            "updated_at",
+        ],
+        "auto_fix": {},
+        "indexes": {
+            "name": 'CREATE UNIQUE INDEX IF NOT EXISTS "ix_roles_name" ON "roles"("name")',
+        },
+        "index_names": {"name": "ix_roles_name"},
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"roles\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"name" VARCHAR(100) NOT NULL UNIQUE,'
+            '"description" VARCHAR(255),'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),'
+            '"updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        ),
+    },
+    "permissions": {
+        "columns": [
+            "id",
+            "name",
+            "description",
+            "created_at",
+            "updated_at",
+        ],
+        "auto_fix": {},
+        "indexes": {
+            "name": 'CREATE UNIQUE INDEX IF NOT EXISTS "ix_permissions_name" ON "permissions"("name")',
+        },
+        "index_names": {"name": "ix_permissions_name"},
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"permissions\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"name" VARCHAR(100) NOT NULL UNIQUE,'
+            '"description" VARCHAR(255),'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),'
+            '"updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        ),
+    },
+    "user_roles": {
+        "columns": ["user_id", "role_id", "created_at"],
+        "auto_fix": {},
+        "indexes": {
+            "user_id": 'CREATE INDEX IF NOT EXISTS "ix_user_roles_user_id" ON "user_roles"("user_id")',
+            "role_id": 'CREATE INDEX IF NOT EXISTS "ix_user_roles_role_id" ON "user_roles"("role_id")',
+        },
+        "index_names": {
+            "user_id": "ix_user_roles_user_id",
+            "role_id": "ix_user_roles_role_id",
+        },
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"user_roles\"("
+            '"user_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,'
+            '"role_id" INTEGER NOT NULL REFERENCES "roles"("id") ON DELETE CASCADE,'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),'
+            'PRIMARY KEY ("user_id", "role_id")'
+            ")"
+        ),
+    },
+    "role_permissions": {
+        "columns": ["role_id", "permission_id", "created_at"],
+        "auto_fix": {},
+        "indexes": {
+            "role_id": 'CREATE INDEX IF NOT EXISTS "ix_role_permissions_role_id" ON "role_permissions"("role_id")',
+            "permission_id": 'CREATE INDEX IF NOT EXISTS "ix_role_permissions_permission_id" ON "role_permissions"("permission_id")',
+        },
+        "index_names": {
+            "role_id": "ix_role_permissions_role_id",
+            "permission_id": "ix_role_permissions_permission_id",
+        },
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"role_permissions\"("
+            '"role_id" INTEGER NOT NULL REFERENCES "roles"("id") ON DELETE CASCADE,'
+            '"permission_id" INTEGER NOT NULL REFERENCES "permissions"("id") ON DELETE CASCADE,'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),'
+            'PRIMARY KEY ("role_id", "permission_id")'
+            ")"
+        ),
+    },
+    "refresh_tokens": {
+        "columns": [
+            "id",
+            "token_id",
+            "user_id",
+            "hashed_token",
+            "expires_at",
+            "revoked_at",
+            "created_at",
+        ],
+        "auto_fix": {},
+        "indexes": {
+            "user_id": 'CREATE INDEX IF NOT EXISTS "ix_refresh_tokens_user_id" ON "refresh_tokens"("user_id")',
+            "expires_at": 'CREATE INDEX IF NOT EXISTS "ix_refresh_tokens_expires_at" ON "refresh_tokens"("expires_at")',
+            "token_id": 'CREATE UNIQUE INDEX IF NOT EXISTS "ix_refresh_tokens_token_id" ON "refresh_tokens"("token_id")',
+        },
+        "index_names": {
+            "user_id": "ix_refresh_tokens_user_id",
+            "expires_at": "ix_refresh_tokens_expires_at",
+            "token_id": "ix_refresh_tokens_token_id",
+        },
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"refresh_tokens\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"token_id" VARCHAR(36) NOT NULL UNIQUE,'
+            '"user_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,'
+            '"hashed_token" VARCHAR(255) NOT NULL,'
+            '"expires_at" TIMESTAMPTZ NOT NULL,'
+            '"revoked_at" TIMESTAMPTZ,'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        ),
+    },
+    "audit_log": {
+        "columns": [
+            "id",
+            "actor_user_id",
+            "action",
+            "target_type",
+            "target_id",
+            "metadata",
+            "ip",
+            "user_agent",
+            "created_at",
+        ],
+        "auto_fix": {},
+        "indexes": {
+            "actor_user_id": 'CREATE INDEX IF NOT EXISTS "ix_audit_log_actor_user_id" ON "audit_log"("actor_user_id")',
+            "created_at": 'CREATE INDEX IF NOT EXISTS "ix_audit_log_created_at" ON "audit_log"("created_at")',
+        },
+        "index_names": {
+            "actor_user_id": "ix_audit_log_actor_user_id",
+            "created_at": "ix_audit_log_created_at",
+        },
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"audit_log\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"actor_user_id" INTEGER REFERENCES "users"("id") ON DELETE SET NULL,'
+            '"action" VARCHAR(150) NOT NULL,'
+            '"target_type" VARCHAR(100) NOT NULL,'
+            '"target_id" VARCHAR(150),'
+            "\"metadata\" JSON NOT NULL DEFAULT '{}',"
+            '"ip" VARCHAR(64),'
+            '"user_agent" VARCHAR(255),'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        ),
+    },
 }
+
+def _assert_schema_whitelist_alignment() -> None:
+    """يضمن تطابق الجداول المعرفة في المخطط مع قائمة السماح للأمان."""
+
+    defined_tables = set(REQUIRED_SCHEMA.keys())
+    undefined_tables = defined_tables - _ALLOWED_TABLES
+    missing_definitions = _ALLOWED_TABLES - defined_tables
+
+    if undefined_tables:
+        raise ValueError(
+            "جدول غير مسموح به في إعداد المخطط: "
+            f"{', '.join(sorted(undefined_tables))}"
+        )
+
+    if missing_definitions:
+        raise ValueError(
+            "جدول مفقود من إعدادات المخطط بالرغم من إدراجه في قائمة السماح: "
+            f"{', '.join(sorted(missing_definitions))}"
+        )
+
+
+_assert_schema_whitelist_alignment()
 
 async def _get_existing_columns(conn: AsyncConnection, table_name: str) -> set[str]:
     """استخراج أسماء الأعمدة الموجودة في الجدول."""
@@ -112,6 +300,29 @@ async def _get_existing_columns(conn: AsyncConnection, table_name: str) -> set[s
         {"table_name": table_name},
     )
     return {row[0] for row in result.fetchall()}
+
+async def _table_exists(conn: AsyncConnection, table_name: str) -> bool:
+    """التحقق من وجود جدول محدد قبل محاولة إصلاحه أو إنشاءه."""
+
+    dialect_name = conn.dialect.name
+
+    if dialect_name == "sqlite":
+        result = await conn.execute(
+            text("SELECT name FROM sqlite_master WHERE type='table' AND name=:table_name"),
+            {"table_name": table_name},
+        )
+        return result.fetchone() is not None
+
+    result = await conn.execute(
+        text(
+            "SELECT EXISTS ("
+            "SELECT FROM information_schema.tables "
+            "WHERE table_schema = 'public' AND table_name = :table_name"
+            ")"
+        ),
+        {"table_name": table_name},
+    )
+    return bool(result.scalar())
 
 async def _fix_missing_column(
     conn: AsyncConnection,
@@ -246,6 +457,31 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> SchemaValidationResu
                     continue
 
                 results["checked_tables"].append(table_name)
+
+                table_exists = await _table_exists(conn, table_name)
+
+                if not table_exists:
+                    create_query = schema_info.get("create_table")
+
+                    if create_query and auto_fix:
+                        try:
+                            await conn.execute(text(create_query))
+                            logger.info(f"✅ Created missing table: {table_name}")
+                            existing_columns = set(schema_info.get("columns", []))
+                            results["fixed_columns"].extend(
+                                [f"{table_name}.{col}" for col in existing_columns]
+                            )
+                            table_exists = True
+                        except Exception as exc:
+                            results["errors"].append(
+                                f"Failed to create table {table_name}: {exc}"
+                            )
+                            continue
+                    else:
+                        results["errors"].append(
+                            f"Table {table_name} is missing and cannot be auto-created"
+                        )
+                        continue
 
                 try:
                     existing_columns = await _get_existing_columns(conn, table_name)
