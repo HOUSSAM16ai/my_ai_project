@@ -18,11 +18,13 @@ from __future__ import annotations
 
 import enum
 import json
-from datetime import UTC, datetime
+import secrets
+import uuid
+from datetime import UTC, datetime, timedelta
 from typing import Any, TYPE_CHECKING
 
 from passlib.context import CryptContext
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text, TypeDecorator, func
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text, TypeDecorator, func
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -118,6 +120,35 @@ class FlexibleEnum(TypeDecorator):
                 return value.lower()
         return value
 
+    def process_result_value(self, value, dialect):
+        """
+        إعادة بناء القيمة من قاعدة البيانات إلى نوع Enum المناسب.
+        """
+
+        if value is None:
+            return None
+        if isinstance(value, self._enum_type):
+            return value
+        try:
+            return self._enum_type(value)
+        except Exception:
+            resolved = self._enum_type._missing_(value)
+            return resolved or value
+
+
+class UserStatus(CaseInsensitiveEnum):
+    """
+    حالة حساب المستخدم (User Lifecycle Status).
+
+    صمم هذا التعداد لتوفير حالات واضحة لإدارة الحسابات دون الحاجة
+    إلى مؤشرات متعددة، مما يبسط المنطق التطبيقي ويحافظ على وضوح المسؤوليات.
+    """
+
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    PENDING = "pending"
+    DISABLED = "disabled"
+
     def process_result_value(self, value, dialect) -> None:
         """
         معالجة القيمة بعد القراءة من قاعدة البيانات.
@@ -195,10 +226,19 @@ class MissionEventType(CaseInsensitiveEnum):
 class User(SQLModel, table=True):
     __tablename__ = "users"
     id: int | None = Field(default=None, primary_key=True)
+    external_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        sa_column=Column(String(36), unique=True, nullable=True),
+    )
     full_name: str = Field(max_length=150)
     email: str = Field(max_length=150, unique=True, index=True)
     password_hash: str | None = Field(default=None, max_length=256)
     is_admin: bool = Field(default=False)
+    is_active: bool = Field(default=True)
+    status: UserStatus = Field(
+        sa_column=Column(FlexibleEnum(UserStatus), default=UserStatus.ACTIVE),
+        default=UserStatus.ACTIVE,
+    )
     created_at: datetime = Field(
         default_factory=utc_now,
         sa_column=Column(DateTime(timezone=True), server_default=func.now()),
@@ -214,6 +254,17 @@ class User(SQLModel, table=True):
     )
     missions: list[Mission] = Relationship(
         sa_relationship=relationship("Mission", back_populates="initiator")
+    )
+    roles: list["Role"] = Relationship(
+        back_populates="users",
+        link_model="UserRole",  # type: ignore[arg-type]
+        sa_relationship=relationship("Role", secondary="user_roles", back_populates="users"),
+    )
+    refresh_tokens: list["RefreshToken"] = Relationship(
+        sa_relationship=relationship("RefreshToken", back_populates="user"),
+    )
+    audit_logs: list["AuditLog"] = Relationship(
+        sa_relationship=relationship("AuditLog", back_populates="actor"),
     )
 
     def set_password(self, password: str) -> None:
@@ -253,6 +304,179 @@ class User(SQLModel, table=True):
 
     def __repr__(self):
         return f"<User id={self.id} email={self.email}>"
+
+
+class Role(SQLModel, table=True):
+    """
+    دور نظامي (Role) يحدد مجموعة صلاحيات مترابطة.
+
+    الدور هو وحدة التنظيم الأساسية للصلاحيات، ما يحقق مبدأ فصل الصلاحيات
+    ويجنب التكرار عند إسناد الامتيازات للمستخدمين.
+    """
+
+    __tablename__ = "roles"
+
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(max_length=100, sa_column=Column(String(100), unique=True))
+    description: str | None = Field(default=None, max_length=255)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+    updated_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+    )
+
+    users: list[User] = Relationship(
+        back_populates="roles",
+        link_model="UserRole",  # type: ignore[arg-type]
+        sa_relationship=relationship("User", secondary="user_roles", back_populates="roles"),
+    )
+    permissions: list["Permission"] = Relationship(
+        back_populates="roles",
+        link_model="RolePermission",  # type: ignore[arg-type]
+        sa_relationship=relationship("Permission", secondary="role_permissions", back_populates="roles"),
+    )
+
+
+class Permission(SQLModel, table=True):
+    """
+    صلاحية دقيقة (Permission) تمثل القدرة على إجراء عملية محددة.
+
+    تُستخدم لتطبيق مبدأ مبدأ أقل صلاحية (Least Privilege) بتجميعها في أدوار.
+    """
+
+    __tablename__ = "permissions"
+
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(max_length=100, sa_column=Column(String(100), unique=True))
+    description: str | None = Field(default=None, max_length=255)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+    updated_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+    )
+
+    roles: list[Role] = Relationship(
+        back_populates="permissions",
+        link_model="RolePermission",  # type: ignore[arg-type]
+        sa_relationship=relationship("Role", secondary="role_permissions", back_populates="permissions"),
+    )
+
+
+class UserRole(SQLModel, table=True):
+    """
+    جدول ربط المستخدمين بالأدوار (User-Role Mapping).
+
+    يعتمد على قيد فريد لمنع ازدواجية الإسناد ويعمل كحاجز تجريدي واضح
+    بين المستخدمين والأدوار وفق مبدأ SRP.
+    """
+
+    __tablename__ = "user_roles"
+
+    user_id: int = Field(foreign_key="users.id", primary_key=True, index=True)
+    role_id: int = Field(foreign_key="roles.id", primary_key=True, index=True)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+
+
+class RolePermission(SQLModel, table=True):
+    """
+    جدول ربط الأدوار بالصلاحيات (Role-Permission Mapping).
+    """
+
+    __tablename__ = "role_permissions"
+
+    role_id: int = Field(foreign_key="roles.id", primary_key=True, index=True)
+    permission_id: int = Field(foreign_key="permissions.id", primary_key=True, index=True)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+
+
+class RefreshToken(SQLModel, table=True):
+    """
+    رمز تحديث مجزأ مع حالة الإبطال وتواريخ الانتهاء.
+
+    يدعم تدوير الرموز ومنع إعادة الاستخدام (Replay Protection) بما يتماشى مع ضوابط الأمان.
+    """
+
+    __tablename__ = "refresh_tokens"
+
+    id: int | None = Field(default=None, primary_key=True)
+    token_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        sa_column=Column(String(36), unique=True, nullable=False),
+    )
+    user_id: int = Field(foreign_key="users.id", index=True)
+    hashed_token: str = Field(max_length=255)
+    expires_at: datetime = Field(sa_column=Column(DateTime(timezone=True), index=True))
+    revoked_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+
+    user: User = Relationship(sa_relationship=relationship("User", back_populates="refresh_tokens"))
+
+    def revoke(self, *, revoked_at: datetime | None = None) -> None:
+        """
+        إبطال رمز التحديث مع ختم زمني صريح.
+        """
+
+        self.revoked_at = revoked_at or utc_now()
+
+    def is_active(self, *, now: datetime | None = None) -> bool:
+        """
+        التحقق من صلاحية الرمز مع الأخذ بالاعتبار الإبطال والانتهاء.
+        """
+
+        current_time = now or utc_now()
+        if current_time.tzinfo is None:
+            current_time = current_time.replace(tzinfo=UTC)
+
+        expiry = self.expires_at
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=UTC)
+
+        return self.revoked_at is None and current_time < expiry
+
+
+class AuditLog(SQLModel, table=True):
+    """
+    سجل تدقيق مركزي لتوثيق كل العمليات الحساسة.
+
+    يوفر هذا السجل الشفافية وإمكانية التتبع مع فهارس للتقارير السريعة.
+    """
+
+    __tablename__ = "audit_log"
+
+    id: int | None = Field(default=None, primary_key=True)
+    actor_user_id: int | None = Field(default=None, foreign_key="users.id", index=True)
+    action: str = Field(max_length=150, index=True)
+    target_type: str = Field(max_length=100)
+    target_id: str | None = Field(default=None, max_length=150)
+    details: dict[str, Any] = Field(
+        default_factory=dict,
+        sa_column=Column("metadata", JSON, nullable=False, default=dict),
+    )
+    ip: str | None = Field(default=None, max_length=64)
+    user_agent: str | None = Field(default=None, max_length=255)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), index=True),
+    )
+
+    actor: User | None = Relationship(
+        sa_relationship=relationship("User", back_populates="audit_logs"),
+    )
 
 class AdminConversation(SQLModel, table=True):
     __tablename__ = "admin_conversations"
