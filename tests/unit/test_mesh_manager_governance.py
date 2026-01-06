@@ -1,6 +1,9 @@
-import pytest
 from app.services.data_mesh.application.mesh_manager import DataMeshManager
 from app.services.data_mesh.domain.models import GovernanceLevel
+
+QUALITY_RULE_COUNT = 3
+SCHEMA_RULE_COUNT = 2
+
 
 def test_governance_initialization():
     manager = DataMeshManager()
@@ -13,7 +16,7 @@ def test_governance_initialization():
     quality_policy = manager.governance_policies["quality-standard"]
     assert quality_policy.name == "Data Quality Standard"
     assert quality_policy.level == GovernanceLevel.MANDATORY
-    assert len(quality_policy.rules) == 3
+    assert len(quality_policy.rules) == QUALITY_RULE_COUNT
 
     rule_types = {r["type"] for r in quality_policy.rules}
     assert "completeness" in rule_types
@@ -24,7 +27,7 @@ def test_governance_initialization():
     schema_policy = manager.governance_policies["schema-compatibility"]
     assert schema_policy.name == "Schema Compatibility Policy"
     assert schema_policy.level == GovernanceLevel.MANDATORY
-    assert len(schema_policy.rules) == 2
+    assert len(schema_policy.rules) == SCHEMA_RULE_COUNT
 
     schema_rule_types = {r["type"] for r in schema_policy.rules}
     assert "compatibility_mode" in schema_rule_types

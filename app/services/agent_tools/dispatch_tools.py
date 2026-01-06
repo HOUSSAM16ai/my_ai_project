@@ -1,16 +1,8 @@
-"""
-Hyper-Dispatch & Introspection Tools
-====================================
-Meta-tools for tool management and dynamic invocation.
-"""
+"""أدوات ميتا لإدارة الأدوات واستدعائها ديناميكياً."""
 
 from typing import Any
 
-from .core import (
-    canonicalize_tool_name,
-    resolve_tool_name,
-    tool,
-)
+from .core import canonicalize_tool_name, resolve_tool_name, tool
 from .definitions import DISPATCH_ALLOW, ToolResult, __version__
 from .globals import (
     _CAPABILITIES,
@@ -19,6 +11,7 @@ from .globals import (
     _TOOL_REGISTRY,
     _TOOL_STATS,
 )
+
 
 @tool(
     name="introspect_tools",
@@ -49,9 +42,9 @@ def introspect_tools(
 ) -> ToolResult:
     """
     Introspect registered tools with filtering options.
-    
+
     فحص الأدوات المسجلة مع خيارات التصفية.
-    
+
     Args:
         include_aliases: Include alias tools in results
         include_disabled: Include disabled tools in results
@@ -60,24 +53,24 @@ def introspect_tools(
         enabled_only: Only show enabled tools
         telemetry_only: Only return telemetry data (no descriptions)
         include_layers: Include layer statistics
-        
+
     Returns:
         ToolResult with filtered tool information
     """
     # Filter and collect tools
     tools = _collect_filtered_tools(
-        include_aliases, include_disabled, category,
-        name_contains, enabled_only, telemetry_only
+        include_aliases, include_disabled, category, name_contains, enabled_only, telemetry_only
     )
-    
+
     # Build payload
     payload = {"tools": tools, "count": len(tools)}
-    
+
     # Add layer stats if requested
     if include_layers:
         _add_layer_stats(payload)
-    
+
     return ToolResult(ok=True, data=payload)
+
 
 @tool(
     name="dispatch_tool",
@@ -132,7 +125,7 @@ def _should_include_tool(
 ) -> bool:
     """
     Check if tool should be included in introspection results.
-    
+
     التحقق مما إذا كان يجب تضمين الأداة في نتائج الفحص.
     """
     if meta.get("is_alias") and not include_aliases:
@@ -143,9 +136,7 @@ def _should_include_tool(
         return False
     if category and meta.get("category") != category:
         return False
-    if name_contains and name_contains.lower() not in name.lower():
-        return False
-    return True
+    return not (name_contains and name_contains.lower() not in name.lower())
 
 
 def _build_tool_info(
@@ -155,11 +146,11 @@ def _build_tool_info(
 ) -> dict:
     """
     Build tool information dictionary.
-    
+
     بناء معلومات الأداة.
     """
     st = _TOOL_STATS.get(name, {})
-    
+
     base = {
         "name": name,
         "canonical": meta.get("canonical"),
@@ -177,12 +168,12 @@ def _build_tool_info(
         "version": __version__,
         "capabilities": _CAPABILITIES.get(name, []),
     }
-    
+
     if not telemetry_only:
         base["description"] = meta.get("description")
         base["parameters"] = meta.get("parameters")
         base["aliases"] = meta.get("aliases")
-    
+
     return base
 
 
@@ -196,14 +187,13 @@ def _collect_filtered_tools(
 ) -> list[dict]:
     """
     Collect and filter tools from registry.
-    
+
     جمع وتصفية الأدوات من السجل.
     """
     out = []
     for name, meta in sorted(_TOOL_REGISTRY.items()):
         if _should_include_tool(
-            meta, include_aliases, include_disabled,
-            enabled_only, category, name_contains, name
+            meta, include_aliases, include_disabled, enabled_only, category, name_contains, name
         ):
             tool_info = _build_tool_info(name, meta, telemetry_only)
             out.append(tool_info)
@@ -213,7 +203,7 @@ def _collect_filtered_tools(
 def _add_layer_stats(payload: dict) -> None:
     """
     Add layer statistics to payload.
-    
+
     إضافة إحصائيات الطبقات إلى النتيجة.
     """
     with _LAYER_LOCK:

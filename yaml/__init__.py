@@ -1,9 +1,4 @@
-"""وحدة YAML خفيفة وآمنة مدمجة داخل المستودع.
-
-توفر هذه الوحدة بديلاً بسيطاً لمكتبة PyYAML عندما لا تكون متاحة في بيئات CI
-المحدودة بالشبكة. يتم التركيز على التحميل الآمن فقط، مع دعم مجموعة جزئية من
-تركيب YAML تكفي لاختبارات الأمان والملفات البسيطة ضمن المشروع.
-"""
+"""محرك YAML خفيف وآمن مدمج داخل المستودع ليدعم التحميل الآمن فقط."""
 
 from __future__ import annotations
 
@@ -43,7 +38,7 @@ def safe_load(stream: str | bytes | Any) -> Any:
         raise ConstructorError("Unsafe YAML tag detected")
 
     try:
-        parsed, index = _parse_block(_split_clean_lines(text), 0)
+        parsed, _ = _parse_block(_split_clean_lines(text), 0)
         # تجاهل الأسطر الفارغة المتبقية إن وجدت
         return parsed
     except ConstructorError:
@@ -144,12 +139,32 @@ def _parse_mapping(lines: list[str], start: int, indent: int) -> tuple[dict[str,
 
 def _parse_scalar(text: str) -> Any:
     lowered = text.lower()
-    if lowered in {"true", "yes"}:
-        return True
-    if lowered in {"false", "no"}:
-        return False
-    if lowered in {"null", "none"}:
-        return None
+    literals = {
+        "true": True,
+        "yes": True,
+        "false": False,
+        "no": False,
+        "null": None,
+        "none": None,
+    }
+
+    if lowered in literals:
+        return literals[lowered]
+
+    numeric_value = _parse_numeric_scalar(text)
+    if numeric_value is not None:
+        return numeric_value
+
+    if (text.startswith('"') and text.endswith('"')) or (
+        text.startswith("'") and text.endswith("'")
+    ):
+        return text[1:-1]
+
+    return text
+
+
+def _parse_numeric_scalar(text: str) -> int | float | None:
+    """يحاول تحويل النص إلى رقم صحيح أو عشري عند الإمكان."""
 
     try:
         return int(text)
@@ -157,12 +172,7 @@ def _parse_scalar(text: str) -> Any:
         try:
             return float(text)
         except ValueError:
-            pass
-
-    if (text.startswith("\"") and text.endswith("\"")) or (text.startswith("'") and text.endswith("'")):
-        return text[1:-1]
-
-    return text
+            return None
 
 
 def _indent_of(line: str) -> int:

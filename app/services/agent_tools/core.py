@@ -4,12 +4,13 @@ Hyper-Core Registry & Decorators
 The central nervous system of the toolset.
 """
 
-from typing import Any
-from dataclasses import dataclass
-
 import time
 import traceback
 from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
+
+from app.services.overmind.tool_canonicalizer import canonicalize_tool_name as new_canonicalizer
 
 from .definitions import (
     AUTOFILL,
@@ -32,6 +33,7 @@ from .globals import (
 )
 from .utils import _coerce_to_tool_result, _dbg, _generate_trace_id, _lower
 
+
 # ======================================================================================
 # Metrics Helpers
 # ======================================================================================
@@ -41,6 +43,7 @@ class ToolExecutionContext:
     Configuration object for tool execution.
     Encapsulates all necessary parameters for executing a tool.
     """
+
     name: str
     trace_id: str
     meta_entry: dict[str, Any]
@@ -54,6 +57,7 @@ class ToolExecutionInfo:
     Configuration object for tool execution metadata enrichment.
     Encapsulates all necessary context parameters.
     """
+
     reg_name: str
     canonical_name: str
     elapsed_ms: float
@@ -67,6 +71,7 @@ def _init_tool_stats(name: str):
     if name not in _TOOL_STATS:
         _TOOL_STATS[name] = {"invocations": 0, "errors": 0, "total_ms": 0.0, "last_error": None}
 
+
 def _record_invocation(name: str, elapsed_ms: float, ok: bool, error: str | None):
     st = _TOOL_STATS[name]
     st["invocations"] += 1
@@ -75,13 +80,14 @@ def _record_invocation(name: str, elapsed_ms: float, ok: bool, error: str | None
         st["errors"] += 1
         st["last_error"] = (error or "")[:300]
 
+
 # ======================================================================================
 # Helper Functions for Tool Registration
 # ======================================================================================
 def _validate_tool_names(name: str, aliases: list[str]) -> None:
     """
     Validate that tool and alias names are unique.
-    
+
     التحقق من أن أسماء الأداة والأسماء البديلة فريدة.
     """
     if name in _TOOL_REGISTRY:
@@ -102,7 +108,7 @@ def _create_tool_metadata(
 ) -> dict:
     """
     Create tool metadata dictionary.
-    
+
     إنشاء معجم بيانات الأداة الوصفية.
     """
     return {
@@ -129,7 +135,7 @@ def _register_main_tool(
 ) -> None:
     """
     Register the main tool in registry.
-    
+
     تسجيل الأداة الرئيسية في السجل.
     """
     meta = _create_tool_metadata(name, description, parameters, category, aliases, allow_disable)
@@ -150,28 +156,40 @@ def _register_tool_aliases(
 ) -> None:
     """
     Register tool aliases in registry.
-    
+
     تسجيل الأسماء البديلة للأداة في السجل.
     """
     for a in aliases:
         _ALIAS_INDEX[a] = name
         alias_meta = _create_tool_metadata(
-            a, f"[alias of {name}] {description}",
-            parameters, category, [], allow_disable, is_alias=True
+            a,
+            f"[alias of {name}] {description}",
+            parameters,
+            category,
+            [],
+            allow_disable,
+            is_alias=True,
         )
         alias_meta["canonical"] = name
         _TOOL_REGISTRY[a] = alias_meta
         _CAPABILITIES[a] = capabilities
         _init_tool_stats(a)
 
+
 # ======================================================================================
 # Policy Hooks (stubs)
 # ======================================================================================
 def policy_can_execute(tool_name: str, args: dict[str, Any]) -> bool:
+    """يحدد إمكانية تنفيذ الأداة بناءً على السياسة المعلنة."""
+    _ = (tool_name, args)
     return True
 
+
 def transform_arguments(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    """يحول الوسائط قبل تمريرها للأداة مع الحفاظ على سلامة المدخلات."""
+    _ = tool_name
     return args
+
 
 # ======================================================================================
 # Argument Validation
@@ -180,6 +198,7 @@ def _validate_type(name: str, value: dict[str, str | int | bool], expected: str)
     py_type = SUPPORTED_TYPES.get(expected)
     if py_type and not isinstance(value, py_type):
         raise TypeError(f"Parameter '{name}' must be of type '{expected}'.")
+
 
 def _validate_arguments(schema: dict[str, Any], args: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(schema, dict) or schema.get("type") != "object":
@@ -203,6 +222,7 @@ def _validate_arguments(schema: dict[str, Any], args: dict[str, Any]) -> dict[st
         raise ValueError(f"Missing required parameters: {missing}")
     return cleaned
 
+
 # ======================================================================================
 # Canonicalization
 # ======================================================================================
@@ -210,9 +230,11 @@ def _looks_like_write(desc: str) -> bool:
     d = desc.lower()
     return any(k in d for k in WRITE_KEYWORDS)
 
+
 def _looks_like_read(desc: str) -> bool:
     d = desc.lower()
     return any(k in d for k in READ_KEYWORDS)
+
 
 def canonicalize_tool_name(raw_name: str, description: str = "") -> tuple[str, list[str]]:
     """
@@ -223,8 +245,6 @@ def canonicalize_tool_name(raw_name: str, description: str = "") -> tuple[str, l
 
     Complexity reduced from CC:22 to CC:3.
     """
-    from app.services.overmind.tool_canonicalizer import canonicalize_tool_name as new_canonicalizer
-
     # Use the new canonicalizer
     canonical, notes = new_canonicalizer(raw_name, description)
 
@@ -239,6 +259,7 @@ def canonicalize_tool_name(raw_name: str, description: str = "") -> tuple[str, l
 
     return canonical, notes
 
+
 def resolve_tool_name(name: str) -> str | None:
     canon, _ = canonicalize_tool_name(name)
     if canon in _TOOL_REGISTRY and not _TOOL_REGISTRY[canon].get("is_alias"):
@@ -247,14 +268,17 @@ def resolve_tool_name(name: str) -> str | None:
         return _ALIAS_INDEX[canon]
     return None
 
+
 def has_tool(name: str) -> bool:
     return resolve_tool_name(name) is not None
+
 
 def get_tool(name: str) -> dict[str, Any] | None:
     cname = resolve_tool_name(name)
     if not cname:
         return None
     return _TOOL_REGISTRY.get(cname)
+
 
 def list_tools(include_aliases: bool = False) -> list[dict[str, Any]]:
     out = []
@@ -263,6 +287,7 @@ def list_tools(include_aliases: bool = False) -> list[dict[str, Any]]:
             continue
         out.append(meta)
     return out
+
 
 # ======================================================================================
 # Helper Functions for Tool Decorator
@@ -278,9 +303,9 @@ def _register_tool_metadata(
 ):
     """
     Register tool and its aliases in the registry.
-    
+
     تسجيل الأداة والأسماء البديلة في السجل.
-    
+
     Args:
         name: Tool name
         description: Tool description
@@ -292,12 +317,17 @@ def _register_tool_metadata(
     """
     # Validate unique names
     _validate_tool_names(name, aliases)
-    
+
     # Register main tool
-    _register_main_tool(name, description, parameters, category, aliases, allow_disable, capabilities)
-    
+    _register_main_tool(
+        name, description, parameters, category, aliases, allow_disable, capabilities
+    )
+
     # Register aliases
-    _register_tool_aliases(name, description, parameters, category, aliases, allow_disable, capabilities)
+    _register_tool_aliases(
+        name, description, parameters, category, aliases, allow_disable, capabilities
+    )
+
 
 def _apply_autofill(kwargs: dict[str, Any], canonical_name: str, trace_id: str):
     """Apply autofill logic for write operations."""
@@ -343,7 +373,7 @@ def _enrich_result_metadata(
 ):
     """
     Add metadata to tool result using configuration object.
-    
+
     إضافة البيانات الوصفية إلى نتيجة الأداة باستخدام كائن التكوين.
     """
     stats = _TOOL_STATS[info.reg_name]
@@ -352,7 +382,7 @@ def _enrich_result_metadata(
 
     # Build metadata
     metadata = _build_result_metadata(info, stats)
-    
+
     # Update result
     result.meta.update(metadata)
     result.trace_id = info.trace_id
@@ -364,7 +394,7 @@ def _build_result_metadata(
 ) -> dict:
     """
     Build metadata dictionary for tool result.
-    
+
     بناء معجم البيانات الوصفية لنتيجة الأداة.
     """
     return {
@@ -374,9 +404,7 @@ def _build_result_metadata(
         "invocations": stats["invocations"],
         "errors": stats["errors"],
         "avg_ms": (
-            round(stats["total_ms"] / stats["invocations"], 2)
-            if stats["invocations"]
-            else 0.0
+            round(stats["total_ms"] / stats["invocations"], 2) if stats["invocations"] else 0.0
         ),
         "version": __version__,
         "category": info.category,
@@ -385,6 +413,7 @@ def _build_result_metadata(
         "disabled": info.meta_entry.get("disabled", False),
         "last_error": stats["last_error"],
     }
+
 
 # ======================================================================================
 # Tool Decorator
@@ -401,9 +430,9 @@ def tool(
 ) -> None:
     """
     Decorator for registering tools in the tool registry.
-    
+
     محدد لتسجيل الأدوات في سجل الأدوات.
-    
+
     Args:
         name: Tool name
         description: Tool description
@@ -420,8 +449,7 @@ def tool(
     def decorator(func: Callable[..., Any]) -> None:
         with _REGISTRY_LOCK:
             _register_tool_metadata(
-                name, description, parameters, category,
-                aliases, allow_disable, capabilities
+                name, description, parameters, category, aliases, allow_disable, capabilities
             )
 
             def wrapper(**kwargs) -> None:
@@ -452,7 +480,7 @@ def tool(
                     category=category,
                     capabilities=capabilities,
                     meta_entry=meta_entry,
-                    trace_id=trace_id
+                    trace_id=trace_id,
                 )
                 _enrich_result_metadata(result, exec_info)
                 return result
@@ -469,7 +497,7 @@ def tool(
 def _execute_tool_with_error_handling(ctx: ToolExecutionContext) -> ToolResult:
     """
     Execute tool with comprehensive error handling.
-    
+
     تنفيذ الأداة مع معالجة شاملة للأخطاء.
     """
     try:
@@ -478,6 +506,7 @@ def _execute_tool_with_error_handling(ctx: ToolExecutionContext) -> ToolResult:
         _dbg(f"Tool '{ctx.name}' exception: {e}")
         _dbg("Traceback:\n" + traceback.format_exc())
         return ToolResult(ok=False, error=str(e))
+
 
 def get_tools_schema(include_disabled: bool = False) -> list[dict[str, Any]]:
     schema: list[dict[str, Any]] = []

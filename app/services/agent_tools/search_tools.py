@@ -23,6 +23,7 @@ from .definitions import (
 )
 from .utils import _safe_path
 
+
 @tool(
     name="code_index_project",
     description="Lightweight lexical project index: collects file metadata, size, line counts, simple complexity heuristic.",
@@ -44,14 +45,14 @@ def code_index_project(
 ) -> ToolResult:
     """
     Index project files with complexity heuristics.
-    
+
     فهرسة ملفات المشروع مع مقاييس التعقيد.
-    
+
     Args:
         root: Root directory to index
         max_files: Maximum number of files to index
         include_exts: Comma-separated file extensions to include
-        
+
     Returns:
         ToolResult with indexed files and hotspots
     """
@@ -60,29 +61,30 @@ def code_index_project(
         root_abs = _safe_path(root)
         if not os.path.isdir(root_abs):
             return ToolResult(ok=False, error="NOT_A_DIRECTORY")
-        
+
         # Parse extensions
         exts = _parse_extensions(include_exts)
-        
+
         # Index files
         start = time.perf_counter()
         files_meta, count = _index_files(root_abs, max_files, exts)
         elapsed_ms = int((time.perf_counter() - start) * 1000)
-        
+
         # Build result
         return _build_index_result(files_meta, count, max_files, root_abs, exts, elapsed_ms)
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+
 def _parse_extensions(include_exts: str) -> set[str]:
     """
     Parse comma-separated extension string.
-    
+
     تحليل سلسلة الامتدادات المفصولة بفواصل.
-    
+
     Args:
         include_exts: Comma-separated list of file extensions
-        
+
     Returns:
         Set of lowercase extensions
     """
@@ -96,49 +98,49 @@ def _index_files(
 ) -> tuple[list[dict], int]:
     """
     Walk directory tree and index matching files.
-    
+
     المرور عبر شجرة المجلدات وفهرسة الملفات المطابقة.
-    
+
     Returns:
         Tuple of (files metadata list, count of indexed files)
     """
     files_meta = []
     count = 0
-    
+
     for base, _dirs, files in os.walk(root_abs):
         # Skip excluded directories
         if _should_skip_directory(base):
             continue
-        
+
         for fname in files:
             if count >= max_files:
                 break
-            
+
             # Check extension
             ext = os.path.splitext(fname)[1].lower()
             if exts and ext not in exts:
                 continue
-            
+
             # Process file
             fpath = os.path.join(base, fname)
             file_meta = _process_file_for_index(fpath, root_abs)
-            
+
             if file_meta:
                 files_meta.append(file_meta)
                 count += 1
-        
+
         if count >= max_files:
             break
-    
+
     return files_meta, count
 
 
 def _process_file_for_index(fpath: str, root_abs: str) -> dict | None:
     """
     Process a single file for indexing.
-    
+
     معالجة ملف واحد للفهرسة.
-    
+
     Returns:
         File metadata dict or None if file should be skipped
     """
@@ -146,13 +148,13 @@ def _process_file_for_index(fpath: str, root_abs: str) -> dict | None:
         st = os.stat(fpath)
         if st.st_size > CODE_INDEX_MAX_FILE_BYTES:
             return None
-        
+
         with open(fpath, encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
-        
+
         # Calculate metrics
         metrics = _calculate_file_metrics(lines)
-        
+
         return {
             "path": os.path.relpath(fpath, root_abs),
             "lines": metrics["line_count"],
@@ -168,21 +170,19 @@ def _process_file_for_index(fpath: str, root_abs: str) -> dict | None:
 def _calculate_file_metrics(lines: list[str]) -> dict:
     """
     Calculate file metrics for complexity scoring.
-    
+
     حساب مقاييس الملف لتقييم التعقيد.
-    
+
     Returns:
         Dict with line_count, non_empty, avg_len, complexity_score
     """
     line_count = len(lines)
     non_empty = sum(1 for line in lines if line.strip())
     avg_len = sum(len(line) for line in lines) / line_count if line_count else 0
-    
+
     # Complexity heuristic: weighted by lines, non-empty, and length
-    complexity_score = round(
-        (line_count * 0.4) + (non_empty * 0.6) + (avg_len * 0.05), 2
-    )
-    
+    complexity_score = round((line_count * 0.4) + (non_empty * 0.6) + (avg_len * 0.05), 2)
+
     return {
         "line_count": line_count,
         "non_empty": non_empty,
@@ -201,13 +201,13 @@ def _build_index_result(
 ) -> ToolResult:
     """
     Build final index result with hotspots.
-    
+
     بناء نتيجة الفهرسة النهائية مع النقاط الحرجة.
     """
     # Sort by complexity and get top hotspots
     files_meta.sort(key=lambda x: x["complexity_score"], reverse=True)
     top_hotspots = files_meta[: min(20, len(files_meta))]
-    
+
     return ToolResult(
         ok=True,
         data={
@@ -247,16 +247,16 @@ def code_search_lexical(
 ) -> ToolResult:
     """
     Perform lexical code search with substring or regex matching.
-    
+
     البحث في الكود باستخدام نص فرعي أو تعبير نمطي.
-    
+
     Args:
         query: Search query string
         root: Root directory to search
         regex: Whether to use regex matching
         limit: Maximum number of results
         context_radius: Lines of context around match
-        
+
     Returns:
         ToolResult with search results
     """
@@ -265,18 +265,18 @@ def code_search_lexical(
         validation_result = _validate_search_inputs(query, root)
         if not validation_result.ok:
             return validation_result
-        
+
         q = query.strip()
         root_abs = _safe_path(root)
-        
+
         # Compile regex pattern if needed
         pattern = _compile_regex_pattern(q, regex)
         if pattern is None and regex:
             return ToolResult(ok=False, error="REGEX_INVALID")
-        
+
         # Perform search
         results, scanned = _search_files(q, root_abs, pattern, regex, limit, context_radius)
-        
+
         # Build result
         return ToolResult(
             ok=True,
@@ -295,29 +295,29 @@ def code_search_lexical(
 def _validate_search_inputs(query: str, root: str) -> ToolResult:
     """
     Validate search input parameters.
-    
+
     التحقق من صحة معاملات البحث.
     """
     q = (query or "").strip()
     if not q:
         return ToolResult(ok=False, error="EMPTY_QUERY")
-    
+
     root_abs = _safe_path(root)
     if not os.path.isdir(root_abs):
         return ToolResult(ok=False, error="NOT_A_DIRECTORY")
-    
+
     return ToolResult(ok=True)
 
 
 def _compile_regex_pattern(query: str, regex: bool) -> re.Pattern | None:
     """
     Compile regex pattern if regex mode is enabled.
-    
+
     تجميع نمط التعبير النمطي إذا كان وضع regex مفعلاً.
     """
     if not regex:
         return None
-    
+
     try:
         return re.compile(query, re.IGNORECASE | re.MULTILINE)
     except Exception:
@@ -334,47 +334,47 @@ def _search_files(
 ) -> tuple[list[dict], int]:
     """
     Search through files for matches.
-    
+
     البحث في الملفات عن التطابقات.
-    
+
     Returns:
         Tuple of (results list, scanned files count)
     """
     results = []
     scanned = 0
-    
+
     for base, _dirs, files in os.walk(root_abs):
         # Skip excluded directories
         if _should_skip_directory(base):
             continue
-        
+
         for fname in files:
             fpath = os.path.join(base, fname)
-            
+
             # Skip large files
             if os.path.getsize(fpath) > CODE_SEARCH_FILE_MAX_BYTES:
                 continue
-            
+
             # Search file content
             file_results = _search_file_content(
                 fpath, root_abs, query, pattern, regex, context_radius
             )
-            
+
             if file_results:
                 scanned += 1
                 results.extend(file_results)
-                
+
                 # Check if limit reached
                 if len(results) >= limit:
                     return results[:limit], scanned
-    
+
     return results, scanned
 
 
 def _should_skip_directory(base: str) -> bool:
     """
     Check if directory should be skipped.
-    
+
     التحقق مما إذا كان يجب تخطي المجلد.
     """
     parts = base.replace("\\", "/").split("/")
@@ -391,7 +391,7 @@ def _search_file_content(
 ) -> list[dict]:
     """
     Search for query matches in a single file.
-    
+
     البحث عن التطابقات في ملف واحد.
     """
     try:
@@ -399,20 +399,20 @@ def _search_file_content(
             lines = f.readlines()
     except Exception:
         return []
-    
+
     results = []
     for idx, line in enumerate(lines):
         if _line_matches(line, query, pattern, regex):
             result = _build_search_result(fpath, root_abs, lines, idx, context_radius)
             results.append(result)
-    
+
     return results
 
 
 def _line_matches(line: str, query: str, pattern: re.Pattern | None, regex: bool) -> bool:
     """
     Check if line matches the search query.
-    
+
     التحقق مما إذا كان السطر يطابق استعلام البحث.
     """
     if regex and pattern:
@@ -429,7 +429,7 @@ def _build_search_result(
 ) -> dict:
     """
     Build a search result with context.
-    
+
     بناء نتيجة بحث مع السياق.
     """
     start = max(0, idx - context_radius)
@@ -437,13 +437,14 @@ def _build_search_result(
     snippet_lines = lines[start:end]
     snippet = "".join(snippet_lines)[:1000]
     rel = os.path.relpath(fpath, root_abs)
-    
+
     return {
         "file": rel,
         "line": idx + 1,
         "snippet": snippet,
         "match_line_excerpt": lines[idx].strip()[:300],
     }
+
 
 @tool(
     name="code_search_semantic",
