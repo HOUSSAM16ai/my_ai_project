@@ -42,7 +42,7 @@
             flex-direction: column;
         }
 
-        .topbar { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--muted); }
+        .topbar { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,0.98); backdrop-filter: blur(12px); border-bottom: 1px solid var(--muted); }
 
         .topbar-inner { max-width: 1180px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 
@@ -77,9 +77,9 @@
 
         .page-shell { flex: 1; display: flex; flex-direction: column; }
 
-        .hero { max-width: 960px; margin: 40px auto 30px; padding: 10px 20px 0; display: grid; gap: 16px; align-items: center; }
+        .hero { max-width: 880px; margin: 40px auto 30px; padding: 10px 20px 0; display: grid; gap: 16px; align-items: center; }
 
-        .hero-card { background: var(--card); border-radius: 18px; padding: 26px; box-shadow: var(--shadow); border: 1px solid var(--muted); }
+        .hero-card { background: #fff; border-radius: 18px; padding: 28px; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08); border: 1px solid #e2e8f0; }
 
         .hero h1 { font-size: 32px; margin: 0 0 12px; letter-spacing: -0.02em; text-align: center; }
 
@@ -97,7 +97,7 @@
 
         .welcome-shell { min-height: calc(100vh - 120px); display: grid; place-items: center; padding: 40px 16px 24px; }
 
-        .welcome-card { width: min(880px, 100%); margin: 0 auto; background: #fff; border: 1px solid var(--muted); border-radius: 18px; padding: 32px 24px; box-shadow: var(--shadow); }
+        .welcome-card { width: min(880px, 100%); margin: 0 auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; padding: 32px 24px; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08); }
 
         .welcome-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 16px; }
 
@@ -255,10 +255,13 @@
                                         {user.name}
                                         {user.is_ephemeral ? ' • جلسة فورية' : ''}
                                     </span>
+                                    <button className="ghost-btn" onClick={onLoginClick}>
+                                        <i className="fas fa-rotate"></i> تبديل الحساب
+                                    </button>
                                     {user.is_ephemeral && (
                                         <button className="solid-btn" onClick={onRegisterClick}>ترقية الحساب</button>
                                     )}
-                                    <button className="ghost-btn" onClick={onLogout}><i className="fas fa-sign-out-alt"></i> Sign out</button>
+                                    <button className="ghost-btn" onClick={onLogout}><i className="fas fa-sign-out-alt"></i> خروج</button>
                                 </>
                             ) : (
                                 <>
@@ -428,7 +431,7 @@
             );
         };
 
-        const ConversationWorkspace = ({ user, token, onLogout, onRegisterClick, initialPrompt = '', onInitialPromptHandled = () => {} }) => {
+        const ConversationWorkspace = ({ user, token, onLogout, onRegisterClick, onRequireLogin = () => {}, initialPrompt = '', onInitialPromptHandled = () => {} }) => {
             const [messages, setMessages] = useState([]);
             const [conversations, setConversations] = useState([]);
             const [conversationId, setConversationId] = useState(null);
@@ -526,6 +529,12 @@
                 const pendingInput = (presetInput ?? input).trim();
                 if (!pendingInput) return;
 
+                if (!token) {
+                    safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'يرجى تسجيل الدخول أو إنشاء حساب لمتابعة المحادثة.' }]);
+                    onRequireLogin();
+                    return;
+                }
+
                 if (abortControllerRef.current) {
                     abortControllerRef.current.abort();
                 }
@@ -547,6 +556,12 @@
                         body: JSON.stringify(payload),
                         signal: abortControllerRef.current.signal
                     });
+
+                    if (response.status === 401 || response.status === 403) {
+                        safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'انتهت صلاحية الجلسة. أعِد تسجيل الدخول لاسترجاع محادثاتك المحفوظة.' }]);
+                        onRequireLogin();
+                        return;
+                    }
 
                     if (!response.ok) {
                         const errorText = await response.text().catch(() => 'Unknown error');
@@ -792,6 +807,12 @@
 
             const clearInitialPrompt = () => setInitialPrompt('');
 
+            useEffect(() => {
+                if (user && token && view === 'welcome') {
+                    setView('chat');
+                }
+            }, [user, token, view]);
+
             const loginWithCredentials = async (email, password) => {
                 const response = await fetch('/api/security/login', {
                     method: 'POST',
@@ -962,6 +983,7 @@
                             token={token}
                             onLogout={logout}
                             onRegisterClick={() => setAuthMode('register')}
+                            onRequireLogin={() => setAuthMode('login')}
                             initialPrompt={initialPrompt}
                             onInitialPromptHandled={clearInitialPrompt}
                         />
