@@ -252,21 +252,14 @@
                             {user ? (
                                 <>
                                     <span style={{ color: '#475569', fontWeight: 700 }}>
-                                        {user.name}
-                                        {user.is_ephemeral ? ' • جلسة فورية' : ''}
+                                        {user.name || user.full_name || 'مستخدم'}
                                     </span>
-                                    <button className="ghost-btn" onClick={onLoginClick}>
-                                        <i className="fas fa-key"></i> استرجاع محفوظاتي
-                                    </button>
-                                    {user.is_ephemeral && (
-                                        <button className="solid-btn" onClick={onRegisterClick}>ترقية الحساب</button>
-                                    )}
                                     <button className="ghost-btn" onClick={onLogout}><i className="fas fa-sign-out-alt"></i> خروج</button>
                                 </>
                             ) : (
                                 <>
                                     <button className="ghost-btn" onClick={onLoginClick}><i className="fas fa-key"></i> تسجيل الدخول</button>
-                                    <button className="solid-btn" onClick={onRegisterClick}>تسجيل سريع</button>
+                                    <button className="solid-btn" onClick={onRegisterClick}>إنشاء حساب</button>
                                 </>
                             )}
                         </div>
@@ -278,8 +271,6 @@
         const Landing = ({ onLoginClick, onRegisterClick, onStartChat }) => {
             const [prompt, setPrompt] = useState('');
 
-            const applyPreset = (text) => setPrompt(text);
-
             const submitPrompt = () => {
                 onStartChat(prompt.trim());
             };
@@ -289,10 +280,9 @@
                     <div className="welcome-card">
                         <div className="hero">
                             <div className="pill"><i className="fas fa-shield-check"></i> Overmind • API first</div>
-                            <h1>بماذا تعمل حالياً؟</h1>
+                            <h1>واجهة بيضاء بسيطة جداً</h1>
                             <p>
-                                واجهة بيضاء تماماً تشبه الصفحة الأولى في المنصات العالمية: يمكنك البدء بالدردشة فوراً كزائر خفيف،
-                                ثم الترقية إلى حساب أو تسجيل الدخول من الشريط العلوي عندما ترغب.
+                                تجرب زائر فورية مثل واتساب الخفيف: مربع واحد في المنتصف مع زري تسجيل الدخول أو إنشاء الحساب.
                             </p>
                         </div>
                         <div className="prompt-row">
@@ -306,23 +296,9 @@
                                 <button className="solid-btn" onClick={() => onStartChat(prompt.trim())}><i className="fas fa-paper-plane"></i> إرسال</button>
                             </div>
                         </div>
-                        <div className="quick-actions">
-                            {[
-                                { icon: 'fa-paperclip', label: 'Attach', text: 'ارفق ملفاً واطلب تحليله فوراً.' },
-                                { icon: 'fa-magnifying-glass', label: 'Search', text: 'ابحث عن أفضل المصادر في لحظات.' },
-                                { icon: 'fa-graduation-cap', label: 'Study', text: 'فسّر لي هذا المفهوم بخطوات واضحة.' },
-                                { icon: 'fa-image', label: 'Create image', text: 'صمم لي صورة أولية لفكرة المنتج.' },
-                                { icon: 'fa-microphone-lines', label: 'Voice', text: 'حوّل هذه الملاحظة الصوتية إلى نقاط عمل.' }
-                            ].map((action) => (
-                                <button key={action.label} className="chip" onClick={() => applyPreset(action.text)}>
-                                    <i className={`fas ${action.icon}`}></i> {action.label}
-                                </button>
-                            ))}
-                        </div>
                         <div className="welcome-actions">
                             <button className="ghost-btn" onClick={onLoginClick}><i className="fas fa-key"></i> تسجيل الدخول</button>
-                            <button className="ghost-btn" onClick={onRegisterClick}>إنشاء حساب سريع</button>
-                            <button className="solid-btn" onClick={submitPrompt}>ابدأ جلسة تجريبية</button>
+                            <button className="solid-btn" onClick={onRegisterClick}>إنشاء حساب</button>
                         </div>
                     </div>
                 </div>
@@ -454,6 +430,10 @@
             const authHeaders = useMemo(() => ({ 'Authorization': `Bearer ${token}` }), [token]);
 
             const fetchConversations = useCallback(async () => {
+                if (!user?.is_admin) {
+                    setConversations([]);
+                    return;
+                }
                 try {
                     const res = await fetch('/admin/api/conversations', { headers: authHeaders });
                     if (res.ok) {
@@ -463,10 +443,10 @@
                 } catch (error) {
                     console.error('Failed to fetch conversations', error);
                 }
-            }, [authHeaders]);
+            }, [authHeaders, user]);
 
             const loadConversation = useCallback(async (id) => {
-                if (!id) return;
+                if (!id || !user?.is_admin) return;
                 setConversationId(id);
                 setIsLoadingConversation(true);
                 setMessages([]);
@@ -486,10 +466,13 @@
                 } finally {
                     setIsLoadingConversation(false);
                 }
-            }, [authHeaders, safeSetMessages]);
+            }, [authHeaders, safeSetMessages, user]);
 
             useEffect(() => {
                 fetchConversations();
+                if (!user?.is_admin) {
+                    return;
+                }
                 const fetchLatest = async () => {
                     try {
                         const res = await fetch('/admin/api/chat/latest', { headers: authHeaders });
@@ -507,7 +490,7 @@
                     }
                 };
                 fetchLatest();
-            }, [authHeaders, fetchConversations, safeSetMessages]);
+            }, [authHeaders, fetchConversations, safeSetMessages, user]);
 
             const scrollToBottom = useCallback(() => {
                 if (messagesEndRef.current) {
@@ -685,29 +668,31 @@
                             </div>
                         </div>
                     )}
-                    <div className="panel">
-                        <div className="panel-header">
-                            <h3 className="panel-title"><i className="fas fa-clock-rotate-left"></i> سجل المحادثات</h3>
-                            <button className="ghost-btn" onClick={handleNewChat}><i className="fas fa-plus"></i> جلسة جديدة</button>
-                        </div>
-                        <ul className="conversation-list">
-                            {conversations.map((conv) => {
-                                const active = conversationId === conv.conversation_id;
-                                return (
-                                    <li key={conv.conversation_id} className={`conversation-item ${active ? 'active' : ''}`} onClick={() => loadConversation(conv.conversation_id)}>
-                                        <i className={`fas ${active && isLoadingConversation ? 'fa-spinner fa-spin' : 'fa-comment-dots'}`}></i>
-                                        <span>{conv.title || `محادثة ${conv.conversation_id}`}</span>
+                    {user.is_admin && (
+                        <div className="panel">
+                            <div className="panel-header">
+                                <h3 className="panel-title"><i className="fas fa-clock-rotate-left"></i> سجل المحادثات</h3>
+                                <button className="ghost-btn" onClick={handleNewChat}><i className="fas fa-plus"></i> جلسة جديدة</button>
+                            </div>
+                            <ul className="conversation-list">
+                                {conversations.map((conv) => {
+                                    const active = conversationId === conv.conversation_id;
+                                    return (
+                                        <li key={conv.conversation_id} className={`conversation-item ${active ? 'active' : ''}`} onClick={() => loadConversation(conv.conversation_id)}>
+                                            <i className={`fas ${active && isLoadingConversation ? 'fa-spinner fa-spin' : 'fa-comment-dots'}`}></i>
+                                            <span>{conv.title || `محادثة ${conv.conversation_id}`}</span>
+                                        </li>
+                                    );
+                                })}
+                                {conversations.length === 0 && (
+                                    <li className="conversation-item" style={{ cursor: 'default', justifyContent: 'center' }}>
+                                        <i className="fas fa-sparkles"></i>
+                                        <span>سيتم إنشاء المحادثات تلقائياً بعد أول رسالة.</span>
                                     </li>
-                                );
-                            })}
-                            {conversations.length === 0 && (
-                                <li className="conversation-item" style={{ cursor: 'default', justifyContent: 'center' }}>
-                                    <i className="fas fa-sparkles"></i>
-                                    <span>سيتم إنشاء المحادثات تلقائياً بعد أول رسالة.</span>
-                                </li>
-                            )}
-                        </ul>
-                    </div>
+                                )}
+                            </ul>
+                        </div>
+                    )}
                     <div className="panel chat-panel">
                         <div className="panel-header">
                             <div>
@@ -770,11 +755,6 @@
             const [authMode, setAuthMode] = useState(null);
             const [isBootstrappingGuest, setIsBootstrappingGuest] = useState(false);
             const [bootstrapError, setBootstrapError] = useState('');
-            const [guestCredentials, setGuestCredentials] = useState(() => {
-                const cached = sessionStorage.getItem('instant-guest');
-                return cached ? JSON.parse(cached) : null;
-            });
-            const [isEphemeralSession, setIsEphemeralSession] = useState(() => Boolean(sessionStorage.getItem('instant-guest')));
             const [view, setView] = useState('welcome');
             const [initialPrompt, setInitialPrompt] = useState('');
 
@@ -787,14 +767,6 @@
 
             const handleLoginSuccess = (accessToken, profile, isEphemeral = false) => {
                 syncTokens(accessToken);
-                if (isEphemeral) {
-                    setIsEphemeralSession(true);
-                } else {
-                    sessionStorage.removeItem('instant-guest');
-                    setGuestCredentials(null);
-                    setIsEphemeralSession(false);
-                }
-
                 setUser({ ...profile, is_ephemeral: isEphemeral });
                 setAuthMode(null);
 
@@ -806,14 +778,11 @@
                 setView('chat');
             };
 
-            const persistGuestCredentials = (identity) => {
-                sessionStorage.setItem('instant-guest', JSON.stringify(identity));
-                setGuestCredentials(identity);
-                setIsEphemeralSession(true);
-            };
-
-            const startChatting = (prompt) => {
+            const startChatting = async (prompt) => {
                 setInitialPrompt(prompt || '');
+                if (!user || !token) {
+                    await bootstrapInstantGuest();
+                }
                 setView('chat');
             };
 
@@ -867,41 +836,34 @@
                 setIsBootstrappingGuest(true);
                 setBootstrapError('');
 
-                const identity = guestCredentials || createInstantIdentity();
+                const identity = createInstantIdentity();
 
                 try {
-                    const loginData = await loginWithCredentials(identity.email, identity.password);
-                    handleLoginSuccess(loginData.access_token, loginData.user, true);
-                    if (!guestCredentials) {
-                        persistGuestCredentials(identity);
-                    }
-                } catch (loginError) {
                     try {
                         await registerIdentity(identity);
-                        persistGuestCredentials(identity);
-                        const loginData = await loginWithCredentials(identity.email, identity.password);
-                        handleLoginSuccess(loginData.access_token, loginData.user, true);
-                    } catch (error) {
-                        console.error('Failed to bootstrap instant guest', error);
-                        setBootstrapError(error.message || 'تعذر بدء الجلسة الفورية');
-                        setToken(null);
-                        setUser(null);
-                        sessionStorage.removeItem('instant-guest');
-                        setGuestCredentials(null);
-                        setIsEphemeralSession(false);
+                    } catch (err) {
+                        console.warn('Instant guest registration may already exist', err);
                     }
+                    const loginData = await loginWithCredentials(identity.email, identity.password);
+                    handleLoginSuccess(loginData.access_token, loginData.user, true);
+                    setView('chat');
+                    return loginData.access_token;
+                } catch (error) {
+                    console.error('Failed to bootstrap instant guest', error);
+                    setBootstrapError(error.message || 'تعذر بدء الجلسة الفورية');
+                    setToken(null);
+                    setUser(null);
+                    throw error;
                 } finally {
                     setIsLoading(false);
                     setIsBootstrappingGuest(false);
                 }
-            }, [guestCredentials]);
+            }, []);
 
             const recoverOrLogin = useCallback(async () => {
                 try {
-                    await bootstrapInstantGuest();
-                    const refreshed = localStorage.getItem('token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+                    const refreshed = await bootstrapInstantGuest();
                     if (refreshed) {
-                        setToken(refreshed);
                         return refreshed;
                     }
                 } catch (error) {
@@ -914,7 +876,7 @@
             useEffect(() => {
                 const stored = localStorage.getItem('token') || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
                 if (!stored) {
-                    bootstrapInstantGuest();
+                    setIsLoading(false);
                     return;
                 }
 
@@ -923,16 +885,13 @@
                         const res = await fetch('/api/security/user/me', { headers: { Authorization: `Bearer ${stored}` } });
                         if (res.ok) {
                             const data = await res.json();
-                            handleLoginSuccess(stored, { ...data, is_admin: data.is_admin }, isEphemeralSession);
+                            handleLoginSuccess(stored, { ...data, is_admin: data.is_admin }, false);
                         } else {
                             localStorage.removeItem('token');
                             localStorage.removeItem('auth_token');
                             sessionStorage.removeItem('auth_token');
                             setToken(null);
                             setUser(null);
-                            setIsEphemeralSession(false);
-                            await bootstrapInstantGuest();
-                            return;
                         }
                     } catch (error) {
                         console.error('Failed to hydrate session', error);
@@ -941,28 +900,23 @@
                         sessionStorage.removeItem('auth_token');
                         setToken(null);
                         setUser(null);
-                        setIsEphemeralSession(false);
-                        await bootstrapInstantGuest();
-                        return;
                     } finally {
                         setIsLoading(false);
                     }
                 };
 
                 fetchUser();
-            }, [bootstrapInstantGuest, isEphemeralSession]);
+            }, []);
 
             const logout = () => {
                 localStorage.removeItem('token');
                 localStorage.removeItem('auth_token');
                 sessionStorage.removeItem('auth_token');
-                sessionStorage.removeItem('instant-guest');
                 setToken(null);
                 setUser(null);
                 setAuthMode(null);
                 setView('welcome');
-                setIsEphemeralSession(false);
-                bootstrapInstantGuest();
+                setIsBootstrappingGuest(false);
             };
 
             const canRenderWorkspace = !!token && !!user;
