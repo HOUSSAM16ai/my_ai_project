@@ -99,3 +99,61 @@ class MissionEventResponse(RobustBaseModel):
     payload: dict[str, str | int | float | bool | list | dict | None] = Field(
         default_factory=dict, description="بيانات الحدث التفصيلية"
     )
+
+
+class AgentPlanPriority(str, Enum):
+    """مستويات أولوية خطة الوكلاء."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    URGENT = "urgent"
+
+
+class AgentsPlanRequest(RobustBaseModel):
+    """
+    طلب إنشاء خطة للوكلاء.
+
+    يحدد الهدف والسياق والقيود التشغيلية لتوليد خطة واضحة.
+    """
+
+    objective: str = Field(..., min_length=5, max_length=5000, description="الهدف الرئيسي المطلوب")
+    context: dict[str, str | int | float | bool | None] = Field(
+        default_factory=dict, description="سياق إضافي يساعد الوكلاء على التخطيط"
+    )
+    constraints: list[str] = Field(default_factory=list, description="قيود تشغيلية أو تقنية")
+    priority: AgentPlanPriority = Field(
+        default=AgentPlanPriority.MEDIUM, description="أولوية التخطيط"
+    )
+
+
+class AgentPlanStepResponse(RobustBaseModel):
+    """
+    نموذج خطوة واحدة ضمن خطة الوكلاء.
+    """
+
+    step_id: str = Field(..., description="معرف الخطوة")
+    title: str = Field(..., description="عنوان مختصر للخطوة")
+    description: str = Field(..., description="وصف تفصيلي للخطوة")
+    dependencies: list[str] = Field(default_factory=list, description="اعتمادات الخطوة")
+    estimated_effort: str | None = Field(default=None, description="تقدير الجهد المتوقع")
+
+
+class AgentPlanData(RobustBaseModel):
+    """
+    بيانات خطة الوكلاء.
+    """
+
+    plan_id: str = Field(..., description="معرف الخطة")
+    objective: str = Field(..., description="الهدف الرئيسي للخطة")
+    steps: list[AgentPlanStepResponse] = Field(default_factory=list, description="قائمة الخطوات")
+    created_at: datetime = Field(..., description="توقيت إنشاء الخطة")
+
+
+class AgentsPlanResponse(RobustBaseModel):
+    """
+    استجابة إنشاء خطة الوكلاء.
+    """
+
+    status: str = Field("success", description="حالة الاستجابة")
+    data: AgentPlanData = Field(..., description="بيانات الخطة")

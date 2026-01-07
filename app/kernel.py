@@ -30,8 +30,18 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 # استيراد الموجهات بشكل صريح
-from app.api.routers import admin, crud, customer_chat, data_mesh, observability, overmind, security, system
-from app.api.routers import ums
+from app.api.routers import (
+    admin,
+    agents,
+    crud,
+    customer_chat,
+    data_mesh,
+    observability,
+    overmind,
+    security,
+    system,
+    ums,
+)
 from app.config.settings import AppSettings
 from app.core.db_schema import validate_schema_on_startup
 from app.core.database import async_session_factory
@@ -41,6 +51,8 @@ from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
 from app.middleware.security.security_headers import SecurityHeadersMiddleware
 from app.middleware.static_files_middleware import StaticFilesConfig, setup_static_files_middleware
 from app.services.bootstrap import bootstrap_admin_account
+from app.services.overmind.plan_registry import AgentPlanRegistry
+from app.services.overmind.plan_service import AgentPlanService
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +136,7 @@ def _get_router_registry() -> list[RouterSpec]:
         (observability.router, "/api/observability"),
         (crud.router, "/api/v1"),
         (customer_chat.router, ""),
+        (agents.router, ""),
         (overmind.router, ""),
     ]
 
@@ -228,8 +241,10 @@ class RealityKernel:
         إنشاء مثيل FastAPI الخام مع مدير دورة الحياة.
         """
         @asynccontextmanager
-        async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ARG001
+        async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             """Lifecycle Manager Closure."""
+            app.state.agent_plan_registry = AgentPlanRegistry()
+            app.state.agent_plan_service = AgentPlanService()
             async for _ in self._handle_lifespan_events():
                 yield
 
