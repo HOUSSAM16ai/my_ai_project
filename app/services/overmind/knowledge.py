@@ -21,16 +21,26 @@
 """
 
 import json
-import os
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import inspect, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config.settings import get_settings
 from app.core.database import get_db
 from app.core.di import get_logger
-from app.config.settings import get_settings
+from app.services.overmind.knowledge_environment import build_environment_info
+from app.services.overmind.knowledge_mapping import build_database_map
+from app.services.overmind.knowledge_queries import (
+    fetch_all_tables,
+    fetch_foreign_keys,
+    fetch_primary_keys,
+    fetch_table_count,
+    fetch_table_columns,
+)
+from app.services.overmind.knowledge_schema import build_schema_object, log_schema_info
+from app.services.overmind.knowledge_structure import build_project_structure
+from app.services.overmind.knowledge_timestamp import build_project_timestamp
 
 logger = get_logger(__name__)
 
@@ -92,17 +102,7 @@ class DatabaseKnowledge:
             return []
         
         try:
-            # استعلام SQL للحصول على جميع الجداول
-            # information_schema.tables هو جدول نظام في PostgreSQL
-            query = text("""
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public'
-                ORDER BY table_name
-            """)
-            
-            result = await self._session.execute(query)
-            tables = result.scalars().all()
+            tables = await fetch_all_tables(self._session)
             
             logger.info(f"Found {len(tables)} tables in database")
             return list(tables)
@@ -146,15 +146,13 @@ class DatabaseKnowledge:
         
         try:
             # جمع كل مكونات البنية
-            columns = await self._fetch_table_columns(table_name)
-            primary_keys = await self._fetch_primary_keys(table_name)
-            foreign_keys = await self._fetch_foreign_keys(table_name)
+            columns = await fetch_table_columns(self._session, table_name)
+            primary_keys = await fetch_primary_keys(self._session, table_name)
+            foreign_keys = await fetch_foreign_keys(self._session, table_name)
             
-            schema = self._build_schema_object(
-                table_name, columns, primary_keys, foreign_keys
-            )
-            
-            self._log_schema_info(table_name, columns, primary_keys, foreign_keys)
+            schema = build_schema_object(table_name, columns, primary_keys, foreign_keys)
+
+            log_schema_info(table_name, columns, primary_keys, foreign_keys)
             
             return schema
             
@@ -162,173 +160,6 @@ class DatabaseKnowledge:
             logger.error(f"Error getting schema for '{table_name}': {e}")
             return {}
 
-    async def _fetch_table_columns(self, table_name: str) -> list[dict[str, Any]]:
-        """
-        استعلام معلومات الأعمدة من قاعدة البيانات.
-        
-        Fetch column information from the database.
-        
-        Args:
-            table_name: اسم الجدول
-            
-        Returns:
-            قائمة بمعلومات الأعمدة
-        """
-        columns_query = text("""
-            SELECT 
-                column_name,
-                data_type,
-                is_nullable,
-                column_default,
-                character_maximum_length
-            FROM information_schema.columns
-            WHERE table_schema = 'public' 
-              AND table_name = :table_name
-            ORDER BY ordinal_position
-        """)
-        
-        result = await self._session.execute(
-            columns_query,
-            {"table_name": table_name}
-        )
-        
-        columns = []
-        for row in result:
-            columns.append({
-                "name": row.column_name,
-                "type": row.data_type,
-                "nullable": row.is_nullable == "YES",
-                "default": row.column_default,
-                "max_length": row.character_maximum_length,
-            })
-        
-        return columns
-
-    async def _fetch_primary_keys(self, table_name: str) -> list[str]:
-        """
-        استعلام المفاتيح الأساسية من قاعدة البيانات.
-        
-        Fetch primary keys from the database.
-        
-        Args:
-            table_name: اسم الجدول
-            
-        Returns:
-            قائمة بأسماء أعمدة المفاتيح الأساسية
-        """
-        pk_query = text("""
-            SELECT a.attname
-            FROM pg_index i
-            JOIN pg_attribute a ON a.attrelid = i.indrelid 
-                               AND a.attnum = ANY(i.indkey)
-            WHERE i.indrelid = :table_name::regclass
-              AND i.indisprimary
-        """)
-        
-        pk_result = await self._session.execute(
-            pk_query,
-            {"table_name": table_name}
-        )
-        
-        return [row.attname for row in pk_result]
-
-    async def _fetch_foreign_keys(self, table_name: str) -> list[dict[str, str]]:
-        """
-        استعلام المفاتيح الأجنبية من قاعدة البيانات.
-        
-        Fetch foreign keys from the database.
-        
-        Args:
-            table_name: اسم الجدول
-            
-        Returns:
-            قائمة بمعلومات المفاتيح الأجنبية
-        """
-        fk_query = text("""
-            SELECT
-                kcu.column_name,
-                ccu.table_name AS foreign_table_name,
-                ccu.column_name AS foreign_column_name
-            FROM information_schema.table_constraints AS tc
-            JOIN information_schema.key_column_usage AS kcu
-              ON tc.constraint_name = kcu.constraint_name
-              AND tc.table_schema = kcu.table_schema
-            JOIN information_schema.constraint_column_usage AS ccu
-              ON ccu.constraint_name = tc.constraint_name
-              AND ccu.table_schema = tc.table_schema
-            WHERE tc.constraint_type = 'FOREIGN KEY' 
-              AND tc.table_name = :table_name
-        """)
-        
-        fk_result = await self._session.execute(
-            fk_query,
-            {"table_name": table_name}
-        )
-        
-        foreign_keys = []
-        for row in fk_result:
-            foreign_keys.append({
-                "column": row.column_name,
-                "references_table": row.foreign_table_name,
-                "references_column": row.foreign_column_name,
-            })
-        
-        return foreign_keys
-
-    def _build_schema_object(
-        self,
-        table_name: str,
-        columns: list[dict[str, Any]],
-        primary_keys: list[str],
-        foreign_keys: list[dict[str, str]]
-    ) -> dict[str, Any]:
-        """
-        بناء كائن البنية من المكونات المجمعة.
-        
-        Build schema object from collected components.
-        
-        Args:
-            table_name: اسم الجدول
-            columns: قائمة الأعمدة
-            primary_keys: قائمة المفاتيح الأساسية
-            foreign_keys: قائمة المفاتيح الأجنبية
-            
-        Returns:
-            كائن البنية الكامل
-        """
-        return {
-            "table_name": table_name,
-            "columns": columns,
-            "primary_keys": primary_keys,
-            "foreign_keys": foreign_keys,
-            "total_columns": len(columns),
-        }
-
-    def _log_schema_info(
-        self,
-        table_name: str,
-        columns: list[dict[str, Any]],
-        primary_keys: list[str],
-        foreign_keys: list[dict[str, str]]
-    ) -> None:
-        """
-        تسجيل معلومات البنية في السجل.
-        
-        Log schema information.
-        
-        Args:
-            table_name: اسم الجدول
-            columns: قائمة الأعمدة
-            primary_keys: قائمة المفاتيح الأساسية
-            foreign_keys: قائمة المفاتيح الأجنبية
-        """
-        logger.info(
-            f"Retrieved schema for '{table_name}': "
-            f"{len(columns)} columns, "
-            f"{len(primary_keys)} PKs, "
-            f"{len(foreign_keys)} FKs"
-        )
-    
     async def get_table_count(self, table_name: str) -> int:
         """
         عد السجلات في جدول معين.
@@ -347,12 +178,7 @@ class DatabaseKnowledge:
             return 0
         
         try:
-            # استعلام COUNT لعد السجلات
-            query = text(f"SELECT COUNT(*) FROM {table_name}")
-            result = await self._session.execute(query)
-            count = result.scalar()
-            
-            return count or 0
+            return await fetch_table_count(self._session, table_name)
             
         except Exception as e:
             logger.error(f"Error counting rows in '{table_name}': {e}")
@@ -375,30 +201,13 @@ class DatabaseKnowledge:
         """
         tables = await self.get_all_tables()
         
-        database_map = {
-            "total_tables": len(tables),
-            "tables": {},
-            "relationships": [],
-        }
-        
-        # جمع معلومات كل جدول
+        table_details = []
         for table_name in tables:
             schema = await self.get_table_schema(table_name)
             count = await self.get_table_count(table_name)
-            
-            database_map["tables"][table_name] = {
-                "schema": schema,
-                "row_count": count,
-            }
-            
-            # استخراج العلاقات
-            for fk in schema.get("foreign_keys", []):
-                database_map["relationships"].append({
-                    "from_table": table_name,
-                    "from_column": fk["column"],
-                    "to_table": fk["references_table"],
-                    "to_column": fk["references_column"],
-                })
+            table_details.append((table_name, schema, count))
+
+        database_map = build_database_map(table_details)
         
         logger.info(
             f"Created full database map: {len(tables)} tables, "
@@ -447,22 +256,7 @@ class ProjectKnowledge:
             - لا نُرجع القيم الفعلية للأسرار
             - فقط نُشير إلى وجودها أو عدمها
         """
-        env_info = {
-            "environment": self.settings.ENVIRONMENT,
-            "debug_mode": self.settings.DEBUG,
-            "database_configured": bool(self.settings.DATABASE_URL),
-            "ai_configured": bool(os.getenv("OPENROUTER_API_KEY")),
-            "supabase_configured": bool(os.getenv("SUPABASE_URL")),
-        }
-        
-        # إضافة معلومات عن البيئة الحالية
-        env_info["runtime"] = {
-            "codespaces": self.settings.CODESPACES,
-            "gitpod": bool(os.getenv("GITPOD_WORKSPACE_ID")),
-            "local": not (self.settings.CODESPACES or os.getenv("GITPOD_WORKSPACE_ID")),
-        }
-        
-        return env_info
+        return build_environment_info(self.settings)
     
     def get_project_structure(self) -> dict[str, Any]:
         """
@@ -471,30 +265,7 @@ class ProjectKnowledge:
         Returns:
             dict: معلومات عن بنية المشروع
         """
-        app_dir = self.project_root / "app"
-        
-        structure = {
-            "root": str(self.project_root),
-            "python_files": 0,
-            "directories": 0,
-            "main_modules": [],
-        }
-        
-        # عد الملفات والمجلدات
-        for root, dirs, files in os.walk(app_dir):
-            structure["directories"] += len(dirs)
-            for file in files:
-                if file.endswith(".py"):
-                    structure["python_files"] += 1
-        
-        # قائمة المجلدات الرئيسية
-        if app_dir.exists():
-            structure["main_modules"] = [
-                d.name for d in app_dir.iterdir()
-                if d.is_dir() and not d.name.startswith("__")
-            ]
-        
-        return structure
+        return build_project_structure(self.project_root)
     
     async def get_complete_knowledge(self) -> dict[str, Any]:
         """
@@ -514,7 +285,7 @@ class ProjectKnowledge:
             "database": await self.get_database_info(),
             "environment": self.get_environment_info(),
             "structure": self.get_project_structure(),
-            "timestamp": str(os.path.getmtime(self.project_root)),
+            "timestamp": build_project_timestamp(self.project_root),
         }
         
         logger.info(
