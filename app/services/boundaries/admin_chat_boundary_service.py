@@ -13,7 +13,7 @@ from app.core.ai_gateway import AIClient
 from app.core.domain.models import AdminConversation, MessageRole, User
 from app.services.admin.chat_persistence import AdminChatPersistence
 from app.services.admin.chat_streamer import AdminChatStreamer
-from app.services.policy import PolicyService
+from app.services.chat.contracts import ChatDispatchResult
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +166,7 @@ class AdminChatBoundaryService:
         conversation_id: str | int | None,
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
-    ) -> AsyncGenerator[str, None]:
+    ) -> ChatDispatchResult:
         """
         تنسيق تدفق المحادثة الكامل:
         1. الحصول على المحادثة أو إنشاء واحدة جديدة.
@@ -175,12 +175,7 @@ class AdminChatBoundaryService:
         4. بث الرد مع معالجة الأخطاء.
         """
         if not user.is_admin:
-            decision = PolicyService().enforce_policy(
-                user_role="ADMIN" if user.is_admin else "STANDARD_USER",
-                question=question,
-            )
-            if not decision.allowed:
-                raise HTTPException(status_code=403, detail=decision.reason)
+            raise HTTPException(status_code=403, detail="Admin access required.")
 
         # 1. Get or Create Conversation
         conversation = await self.get_or_create_conversation(user, question, conversation_id)
@@ -192,10 +187,10 @@ class AdminChatBoundaryService:
         history = await self.get_chat_history(conversation.id)
 
         # 4. Stream Response
-        async for chunk in self.stream_chat_response_safe(
+        stream = self.stream_chat_response_safe(
             user, conversation, question, history, ai_client, session_factory_func
-        ):
-            yield chunk
+        )
+        return ChatDispatchResult(status_code=200, stream=stream)
 
     # --- طرق استرجاع البيانات (Data Retrieval Methods) ---
 
@@ -311,5 +306,3 @@ def _decode_and_extract_user_id(token: str, secret_key: str) -> int:
         raise HTTPException(status_code=401, detail="Invalid token") from e
     except ValueError as e:
         raise HTTPException(status_code=401, detail="Invalid user ID in token") from e
-
-

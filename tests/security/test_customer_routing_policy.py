@@ -19,7 +19,7 @@ async def test_standard_login_returns_chat_landing(async_client: AsyncClient) ->
     assert login_resp.status_code == 200
     payload = login_resp.json()
 
-    assert payload.get("landing_path") == "/chat"
+    assert payload.get("landing_path") == "/app/chat"
 
 
 @pytest.mark.asyncio

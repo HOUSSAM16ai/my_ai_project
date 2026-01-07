@@ -16,11 +16,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.ai_gateway import AIClient
 from app.core.domain.models import CustomerConversation, MessageRole, User
 from app.services.audit import AuditService
+from app.services.chat.contracts import ChatDispatchResult
+from app.services.chat.education_policy_gate import EducationPolicyGate, EducationPolicyDecision
 from app.services.chat.intent_detector import IntentDetector
-from app.services.chat.tool_access import ToolAccessPolicy
+from app.services.chat.tool_router import ToolRouter
 from app.services.customer.chat_persistence import CustomerChatPersistence
 from app.services.customer.chat_streamer import CustomerChatStreamer
-from app.services.policy import PolicyDecision, PolicyService
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +35,10 @@ class CustomerChatBoundaryService:
         self.db = db
         self.persistence = CustomerChatPersistence(db)
         self.streamer = CustomerChatStreamer(self.persistence)
-        self.policy = PolicyService()
+        self.policy_gate = EducationPolicyGate()
         self.audit = AuditService(db)
         self.intent_detector = IntentDetector()
-        self.tool_policy = ToolAccessPolicy()
+        self.tool_router = ToolRouter()
 
     async def verify_conversation_access(
         self, user: User, conversation_id: int
@@ -117,25 +118,31 @@ class CustomerChatBoundaryService:
         session_factory_func: Callable[[], AsyncSession],
         ip: str | None,
         user_agent: str | None,
-    ) -> AsyncGenerator[str, None]:
+    ) -> ChatDispatchResult:
         """
         تنسيق تدفق المحادثة مع بوابة السياسات والتخزين.
         """
-        role_label = "ADMIN" if user.is_admin else "STANDARD_USER"
+        if user.is_admin:
+            raise HTTPException(
+                status_code=403,
+                detail="Admin accounts must use the admin chat endpoint.",
+            )
+        role_label = "STANDARD_USER"
         intent_result = await self.intent_detector.detect(question)
-        tool_decision = self.tool_policy.enforce(
-            user_role=role_label,
+        tool_decision = self.tool_router.authorize_intent(
+            role=role_label,
             intent=intent_result.intent,
         )
 
         conversation = await self.get_or_create_conversation(user, question, conversation_id)
 
         if not tool_decision.allowed:
-            refusal_text = self.policy.get_refusal_message()
+            refusal_text = tool_decision.refusal_message or "عذرًا، لا يمكنني تنفيذ هذا الطلب."
             await self._record_tool_blocked(
                 user_id=user.id,
                 conversation_id=conversation.id,
                 intent=intent_result.intent.value,
+                reason_code=tool_decision.reason_code,
                 ip=ip,
                 user_agent=user_agent,
             )
@@ -147,6 +154,7 @@ class CustomerChatBoundaryService:
                     "classification": "tool_access",
                     "blocked": "true",
                     "intent": intent_result.intent.value,
+                    "reason_code": tool_decision.reason_code,
                 },
             )
             await self.save_message(
@@ -156,16 +164,13 @@ class CustomerChatBoundaryService:
                 {
                     "classification": "tool_access",
                     "refusal": "true",
+                    "reason_code": tool_decision.reason_code,
                 },
             )
-            async for chunk in self._refusal_stream(conversation, refusal_text):
-                yield chunk
-            return
+            stream = self._refusal_stream(conversation, refusal_text)
+            return ChatDispatchResult(status_code=403, stream=stream)
 
-        decision = self.policy.enforce_policy(
-            user_role=role_label,
-            question=question,
-        )
+        decision = self.policy_gate.evaluate(question)
 
         if not decision.allowed:
             await self._record_blocked_attempt(
@@ -180,9 +185,10 @@ class CustomerChatBoundaryService:
                 MessageRole.USER,
                 "[BLOCKED REQUEST]",
                 {
-                    "classification": decision.classification,
+                    "classification": decision.category,
                     "blocked": "true",
                     "redaction_hash": decision.redaction_hash,
+                    "reason_code": decision.reason_code,
                 },
             )
             await self.save_message(
@@ -190,26 +196,26 @@ class CustomerChatBoundaryService:
                 MessageRole.ASSISTANT,
                 decision.refusal_message or "",
                 {
-                    "classification": decision.classification,
+                    "classification": decision.category,
                     "refusal": "true",
+                    "reason_code": decision.reason_code,
                 },
             )
-            async for chunk in self._refusal_stream(conversation, decision.refusal_message):
-                yield chunk
-            return
+            stream = self._refusal_stream(conversation, decision.refusal_message)
+            return ChatDispatchResult(status_code=200, stream=stream)
 
         await self.save_message(
             conversation.id,
             MessageRole.USER,
             question,
-            {"classification": decision.classification},
+            {"classification": decision.category},
         )
         history = await self.get_chat_history(conversation.id)
 
-        async for chunk in self.stream_chat_response(
+        stream = self.stream_chat_response(
             conversation, question, history, ai_client, session_factory_func
-        ):
-            yield chunk
+        )
+        return ChatDispatchResult(status_code=200, stream=stream)
 
     async def _record_tool_blocked(
         self,
@@ -217,6 +223,7 @@ class CustomerChatBoundaryService:
         user_id: int,
         conversation_id: int,
         intent: str,
+        reason_code: str,
         ip: str | None,
         user_agent: str | None,
     ) -> None:
@@ -230,6 +237,7 @@ class CustomerChatBoundaryService:
             target_id=str(conversation_id),
             metadata={
                 "intent": intent,
+                "reason_code": reason_code,
             },
             ip=ip,
             user_agent=user_agent,
@@ -240,7 +248,7 @@ class CustomerChatBoundaryService:
         *,
         user_id: int,
         conversation_id: int,
-        decision: PolicyDecision,
+        decision: EducationPolicyDecision,
         ip: str | None,
         user_agent: str | None,
     ) -> None:
@@ -253,8 +261,8 @@ class CustomerChatBoundaryService:
             target_type="customer_conversation",
             target_id=str(conversation_id),
             metadata={
-                "classification": decision.classification,
-                "reason": decision.reason,
+                "classification": decision.category,
+                "reason_code": decision.reason_code,
                 "redaction_hash": decision.redaction_hash,
             },
             ip=ip,

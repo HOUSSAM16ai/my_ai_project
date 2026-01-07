@@ -11,6 +11,7 @@ from sqlalchemy import select
 from app.core.patterns.strategy import Strategy
 from app.core.domain.models import Mission, MissionEvent, MissionEventType, MissionStatus
 from app.services.chat.context import ChatContext
+from app.services.chat.context_service import get_context_service
 from app.services.overmind.factory import create_overmind
 from app.services.overmind.identity import OvermindIdentity
 
@@ -285,6 +286,7 @@ class DefaultChatHandler(IntentHandler):
     def __init__(self):
         super().__init__("DEFAULT", priority=-1)
         self._identity = OvermindIdentity()
+        self._context_service = get_context_service()
 
     async def can_handle(self, context: ChatContext) -> bool:
         """Always can handle (fallback)."""
@@ -307,20 +309,71 @@ class DefaultChatHandler(IntentHandler):
     
     def _add_identity_context(self, messages: list[dict[str, str]]) -> list[dict[str, str]]:
         """
-        إضافة معلومات الهوية إلى سياق المحادثة.
-        
+        إضافة سياق النظام والهوية لإثراء إجابة Overmind.
+
         Args:
-            messages: قائمة الرسائل الأصلية
-            
+            messages: قائمة الرسائل الأصلية.
+
         Returns:
-            list: قائمة الرسائل مع معلومات الهوية
+            list[dict[str, str]]: قائمة الرسائل بعد إدراج سياق النظام.
         """
-        # الحصول على معلومات المؤسس
+        has_system = bool(messages) and messages[0].get("role") == "system"
+        system_prompt = self._build_system_prompt(include_base_prompt=not has_system)
+        if not has_system:
+            return [{"role": "system", "content": system_prompt}] + messages
+
+        enhanced_messages = messages.copy()
+        enhanced_messages[0] = {
+            "role": "system",
+            "content": messages[0]["content"] + "\n\n" + system_prompt,
+        }
+        return enhanced_messages
+
+    def _build_system_prompt(self, *, include_base_prompt: bool) -> str:
+        """
+        إنشاء رسالة النظام الموحدة لتوجيه الردود الخارقة.
+
+        Returns:
+            str: رسالة نظام مركزة تجمع الهوية والتعليمات المتقدمة.
+        """
+        base_prompt = ""
+        if include_base_prompt:
+            base_prompt = self._context_service.get_context_system_prompt().strip()
+        identity_context = self._build_identity_context()
+        intelligence_directive = (
+            "توجيه إضافي:\n"
+            "- أجب بطريقة عبقرية فائقة الذكاء مع شرح منطقي متسلسل.\n"
+            "- حافظ على العمق والوضوح، وقدم أمثلة تعليمية عند الحاجة.\n"
+            "- إذا كان السؤال تعليمياً، قدم خطة تعلم مختصرة قبل الإجابة.\n"
+        )
+        multi_agent_directive = (
+            "توجيهات العقل الجمعي:\n"
+            "- فعّل أسلوب التفكير متعدد الوكلاء (Strategist/Architect/Auditor/Operator).\n"
+            "- لخّص خطة الحل في نقاط، ثم نفّذ الإجابة خطوة بخطوة.\n"
+            "- تحقّق من الفرضيات وصحّح المسار عند وجود غموض.\n"
+            "- استخدم أسلوب Tree of Thoughts عند الأسئلة المعقدة.\n"
+        )
+        return "\n\n".join(
+            part
+            for part in [
+                base_prompt,
+                identity_context,
+                intelligence_directive,
+                multi_agent_directive,
+            ]
+            if part
+        )
+
+    def _build_identity_context(self) -> str:
+        """
+        بناء سياق الهوية التفصيلي لـ Overmind.
+
+        Returns:
+            str: نص هوية شامل للمؤسس ودور النظام.
+        """
         founder = self._identity.get_founder_info()
         overmind = self._identity.get_overmind_info()
-        
-        # بناء رسالة النظام مع معلومات الهوية
-        identity_context = f"""أنت {overmind['name_ar']} (Overmind)، {overmind['role_ar']}.
+        return f"""أنت {overmind['name_ar']} (Overmind)، {overmind['role_ar']}.
 
 معلومات المؤسس (مهمة جداً):
 - الاسم الكامل: {founder['name_ar']} ({founder['name']})
@@ -332,15 +385,3 @@ class DefaultChatHandler(IntentHandler):
 
 عندما يسأل أحد عن المؤسس أو مؤسس النظام أو من أنشأ Overmind، أجب بهذه المعلومات بدقة تامة.
 """
-        
-        # إضافة رسالة النظام في البداية إذا لم تكن موجودة
-        if not messages or messages[0].get("role") != "system":
-            return [{"role": "system", "content": identity_context}] + messages
-        else:
-            # إضافة معلومات الهوية إلى رسالة النظام الموجودة
-            enhanced_messages = messages.copy()
-            enhanced_messages[0] = {
-                "role": "system",
-                "content": messages[0]["content"] + "\n\n" + identity_context
-            }
-            return enhanced_messages

@@ -62,7 +62,7 @@ class AuthResponse(RobustBaseModel):
     token_type: str = "Bearer"
     user: UserResponse
     status: str = "success"
-    landing_path: str = "/chat"
+    landing_path: str = "/app/chat"
 
 class RegisterResponse(RobustBaseModel):
     status: str = "success"
