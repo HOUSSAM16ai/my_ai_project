@@ -22,6 +22,20 @@ ALLOWED_ARABIC_EDU = {
     "تكامل",
     "احتمالات",
 }
+ALLOWED_EDU_VERBS = {
+    "تعلم",
+    "تعليم",
+    "شرح",
+    "اشرح",
+    "فسر",
+    "حل",
+    "حلل",
+    "ادرس",
+    "learn",
+    "study",
+    "explain",
+    "teach",
+}
 ALLOWED_GREETINGS = {"hello", "hi", "hey", "السلام", "السلام عليكم", "مرحبا", "أهلاً"}
 DISALLOWED_KEYWORDS = {
     "admin",
@@ -72,6 +86,8 @@ class PolicyService:
         if any(greeting in normalized for greeting in ALLOWED_GREETINGS):
             return "greeting"
         if any(term in question for term in ALLOWED_ARABIC_EDU):
+            return "education"
+        if any(verb in normalized for verb in ALLOWED_EDU_VERBS):
             return "education"
         for domain in ALLOWED_DOMAINS:
             if domain in normalized:
