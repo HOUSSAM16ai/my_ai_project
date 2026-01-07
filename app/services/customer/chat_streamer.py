@@ -40,15 +40,21 @@ class CustomerChatStreamer:
         yield self._create_init_event(conversation)
 
         full_response: list[str] = []
-        async for chunk in ai_client.stream_chat(history):
-            content = self._extract_chunk_content(chunk)
-            if not content:
-                continue
-            full_response.append(content)
-            yield self._create_chunk_event(content)
-
-        await self._persist_response(conversation.id, full_response, session_factory_func)
-        yield "data: [DONE]\n\n"
+        try:
+            async for chunk in ai_client.stream_chat(history):
+                content = self._extract_chunk_content(chunk)
+                if not content:
+                    continue
+                full_response.append(content)
+                yield self._create_chunk_event(content)
+        except Exception as exc:
+            logger.error(f"❌ Customer chat streaming failed: {exc}")
+            fallback_message = "تعذر الوصول إلى خدمة الذكاء الاصطناعي حالياً. حاول مرة أخرى لاحقاً."
+            full_response = [fallback_message]
+            yield self._create_chunk_event(fallback_message)
+        finally:
+            await self._persist_response(conversation.id, full_response, session_factory_func)
+            yield "data: [DONE]\n\n"
 
     def _create_init_event(self, conversation: CustomerConversation) -> str:
         payload = {"conversation_id": conversation.id, "title": conversation.title}

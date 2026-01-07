@@ -108,3 +108,40 @@ async def test_customer_chat_enforces_ownership(test_app, db_session) -> None:
             assert detail_resp.status_code == 404
     finally:
         test_app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_customer_chat_falls_back_on_stream_error(test_app, db_session) -> None:
+    async def mock_stream_chat(messages):
+        if False:
+            yield ""
+        raise RuntimeError("stream failed")
+
+    mock_ai_client = MagicMock()
+    mock_ai_client.stream_chat = mock_stream_chat
+
+    def override_get_ai_client():
+        return mock_ai_client
+
+    async def override_get_db():
+        yield db_session
+
+    test_app.dependency_overrides[get_ai_client] = override_get_ai_client
+    test_app.dependency_overrides[get_db] = override_get_db
+
+    transport = ASGITransport(app=test_app)
+    try:
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            token = await _register_and_login(ac, "fallback@example.com")
+
+            response = await ac.post(
+                "/api/chat/stream",
+                json={"question": "Explain math vectors"},
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            assert response.status_code == 200
+    finally:
+        test_app.dependency_overrides.clear()
+
+    messages = (await db_session.execute(select(CustomerMessage))).scalars().all()
+    assert any("تعذر الوصول" in message.content for message in messages)
