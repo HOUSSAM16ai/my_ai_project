@@ -252,6 +252,9 @@ class User(SQLModel, table=True):
     admin_conversations: list[AdminConversation] = Relationship(
         sa_relationship=relationship("AdminConversation", back_populates="user")
     )
+    customer_conversations: list["CustomerConversation"] = Relationship(
+        sa_relationship=relationship("CustomerConversation", back_populates="user")
+    )
     missions: list[Mission] = Relationship(
         sa_relationship=relationship("Mission", back_populates="initiator")
     )
@@ -641,6 +644,57 @@ class JSONText(TypeDecorator):
             return json.loads(value)
         except (json.JSONDecodeError, TypeError):
             return value
+
+class CustomerConversation(SQLModel, table=True):
+    """
+    محادثة العميل القياسي (Customer Conversation).
+
+    تمثل هذا الكيان جلسة محادثة تعليمية مرتبطة بمستخدم قياسي،
+    مع الحفاظ على فصل تام عن محادثات المسؤولين.
+    """
+
+    __tablename__ = "customer_conversations"
+
+    id: int | None = Field(default=None, primary_key=True)
+    title: str = Field(max_length=500)
+    user_id: int = Field(foreign_key="users.id", index=True)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+
+    user: User = Relationship(
+        sa_relationship=relationship("User", back_populates="customer_conversations")
+    )
+    messages: list["CustomerMessage"] = Relationship(
+        sa_relationship=relationship("CustomerMessage", back_populates="conversation")
+    )
+
+class CustomerMessage(SQLModel, table=True):
+    """
+    رسالة محادثة العميل القياسي (Customer Message).
+
+    تدعم الحقول الوصفية لتسجيل نتائج بوابة السياسات وأعلام الرفض.
+    """
+
+    __tablename__ = "customer_messages"
+
+    id: int | None = Field(default=None, primary_key=True)
+    conversation_id: int = Field(foreign_key="customer_conversations.id", index=True)
+    role: MessageRole = Field(sa_column=Column(FlexibleEnum(MessageRole)))
+    content: str = Field(sa_column=Column(Text))
+    policy_flags: dict[str, str] | None = Field(
+        default=None,
+        sa_column=Column(JSONText),
+    )
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+
+    conversation: CustomerConversation = Relationship(
+        sa_relationship=relationship("CustomerConversation", back_populates="messages")
+    )
 
 class MissionPlan(SQLModel, table=True):
     __tablename__ = "mission_plans"

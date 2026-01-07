@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import get_settings
 from app.security.chrono_shield import chrono_shield
+from app.services.rbac import RBACService, STANDARD_ROLE
 from app.services.security.auth_persistence import AuthPersistence
 
 logger = logging.getLogger(__name__)
@@ -81,6 +82,9 @@ class AuthBoundaryService:
             password=password,
             is_admin=False,
         )
+        rbac_service = RBACService(self.db)
+        await rbac_service.ensure_seed()
+        await rbac_service.assign_role(new_user, STANDARD_ROLE)
 
         return {
             "status": "success",
@@ -152,6 +156,7 @@ class AuthBoundaryService:
 
         token = jwt.encode(payload, self.settings.SECRET_KEY, algorithm="HS256")
 
+        landing_path = "/admin" if user.is_admin else "/chat"
         return {
             "access_token": token,
             "token_type": "Bearer",
@@ -162,6 +167,7 @@ class AuthBoundaryService:
                 "is_admin": user.is_admin,
             },
             "status": "success",
+            "landing_path": landing_path,
         }
 
     async def get_current_user(self, token: str) -> dict[str, object]:
