@@ -1,55 +1,153 @@
 # ملاحظة: حذفنا رقم الإصدار version لأنه لم يعد مطلوباً
 
-# --- 1. هذا هو الجزء المفقود (التعريف) ---
-# يجب أن يبدأ بـ x- وعلامة & ليعرف البرنامج أن هذا "قالب"
-x-common-environment: &common-environment
-  # متغيرات البيئة الأساسية
-  ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
-  ADMIN_NAME: ${ADMIN_NAME:-Admin}
-  ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
-  DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./cogniforge.db}
-  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-  SECRET_KEY: ${SECRET_KEY:-development-secret-key-change-in-production}
-  ENV: ${ENV:-development}
-  PYTHONUNBUFFERED: "1"
-
 services:
-  # Backend Service - FastAPI with Uvicorn
-  web:
+  # Orchestrator Service - Coordinates agents
+  orchestrator-service:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
-    container_name: cogniforge-backend
+    container_name: cogniforge-orchestrator
     restart: unless-stopped
-    
+
     ports:
-      - "8000:8000"
-      
+      - "8004:8004"
+
     networks:
       - appnet
-      
+
     environment:
-      <<: *common-environment
-      PORT: 8000
-      
+      ORCHESTRATOR_DATABASE_URL: ${ORCHESTRATOR_DATABASE_URL:-sqlite+aiosqlite:///./orchestrator.db}
+      ORCHESTRATOR_PLANNING_AGENT_URL: ${ORCHESTRATOR_PLANNING_AGENT_URL:-http://planning-agent:8001}
+      ORCHESTRATOR_MEMORY_AGENT_URL: ${ORCHESTRATOR_MEMORY_AGENT_URL:-http://memory-agent:8002}
+      ORCHESTRATOR_USER_SERVICE_URL: ${ORCHESTRATOR_USER_SERVICE_URL:-http://user-service:8003}
+
+    depends_on:
+      - planning-agent
+      - memory-agent
+      - user-service
+
     healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health || exit 1"]
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8004/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 15s
 
-    # Direct command without scripts for reliability
     command: >
       bash -c "
-      echo 'Running migrations...' &&
-      python -m alembic upgrade head 2>/dev/null || echo 'Migration skipped (SQLite)' &&
-      echo 'Starting Uvicorn...' &&
-      python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      echo 'Starting Orchestrator Service...' &&
+      python -m uvicorn microservices.orchestrator_service.main:app --host 0.0.0.0 --port 8004 --reload
       "
-    
+
+    volumes:
+      - .:/app
+      - /app/__pycache__
+
+  # Planning Agent - Generates plans
+  planning-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+    container_name: cogniforge-planning-agent
+    restart: unless-stopped
+
+    ports:
+      - "8001:8001"
+
+    networks:
+      - appnet
+
+    environment:
+      PLANNING_DATABASE_URL: ${PLANNING_DATABASE_URL:-sqlite+aiosqlite:///./planning_agent.db}
+
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+    command: >
+      bash -c "
+      echo 'Starting Planning Agent...' &&
+      python -m uvicorn microservices.planning_agent.main:app --host 0.0.0.0 --port 8001 --reload
+      "
+
+    volumes:
+      - .:/app
+      - /app/__pycache__
+
+  # Memory Agent - Retrieves context
+  memory-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+    container_name: cogniforge-memory-agent
+    restart: unless-stopped
+
+    ports:
+      - "8002:8002"
+
+    networks:
+      - appnet
+
+    environment:
+      MEMORY_DATABASE_URL: ${MEMORY_DATABASE_URL:-sqlite+aiosqlite:///./memory_agent.db}
+
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8002/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+    command: >
+      bash -c "
+      echo 'Starting Memory Agent...' &&
+      python -m uvicorn microservices.memory_agent.main:app --host 0.0.0.0 --port 8002 --reload
+      "
+
+    volumes:
+      - .:/app
+      - /app/__pycache__
+
+  # User Service - Manages users
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+    container_name: cogniforge-user-service
+    restart: unless-stopped
+
+    ports:
+      - "8003:8003"
+
+    networks:
+      - appnet
+
+    environment:
+      USER_DATABASE_URL: ${USER_DATABASE_URL:-sqlite+aiosqlite:///./user_service.db}
+
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8003/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    command: >
+      bash -c "
+      echo 'Starting User Service...' &&
+      python -m uvicorn microservices.user_service.main:app --host 0.0.0.0 --port 8003 --reload
+      "
+
     volumes:
       - .:/app
       - /app/__pycache__
