@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -28,11 +28,13 @@ async def _register_and_login(ac: AsyncClient, email: str) -> str:
 
 @pytest.mark.asyncio
 async def test_customer_chat_persists_messages(test_app, db_session) -> None:
-    async def mock_stream_chat(messages):
-        yield {"choices": [{"delta": {"content": "Hello"}}]}
+    async def mock_process(**kwargs):
+        yield "Hello"
+
+    mock_orchestrator = MagicMock()
+    mock_orchestrator.process.side_effect = mock_process
 
     mock_ai_client = MagicMock()
-    mock_ai_client.stream_chat.side_effect = mock_stream_chat
 
     def override_get_ai_client():
         return mock_ai_client
@@ -45,15 +47,19 @@ async def test_customer_chat_persists_messages(test_app, db_session) -> None:
 
     transport = ASGITransport(app=test_app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            token = await _register_and_login(ac, "student-chat@example.com")
+        with patch(
+            "app.services.customer.chat_streamer.get_chat_orchestrator",
+            return_value=mock_orchestrator,
+        ):
+            async with AsyncClient(transport=transport, base_url="http://test") as ac:
+                token = await _register_and_login(ac, "student-chat@example.com")
 
-            response = await ac.post(
-                "/api/chat/stream",
-                json={"question": "Explain math vectors"},
-                headers={"Authorization": f"Bearer {token}"},
-            )
-            assert response.status_code == 200
+                response = await ac.post(
+                    "/api/chat/stream",
+                    json={"question": "Explain math vectors"},
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                assert response.status_code == 200
     finally:
         test_app.dependency_overrides.clear()
 
@@ -68,11 +74,13 @@ async def test_customer_chat_persists_messages(test_app, db_session) -> None:
 
 @pytest.mark.asyncio
 async def test_customer_chat_enforces_ownership(test_app, db_session) -> None:
-    async def mock_stream_chat(messages):
-        yield {"choices": [{"delta": {"content": "Hello"}}]}
+    async def mock_process(**kwargs):
+        yield "Hello"
+
+    mock_orchestrator = MagicMock()
+    mock_orchestrator.process.side_effect = mock_process
 
     mock_ai_client = MagicMock()
-    mock_ai_client.stream_chat.side_effect = mock_stream_chat
 
     def override_get_ai_client():
         return mock_ai_client
@@ -85,40 +93,46 @@ async def test_customer_chat_enforces_ownership(test_app, db_session) -> None:
 
     transport = ASGITransport(app=test_app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            token_owner = await _register_and_login(ac, "owner@example.com")
-            token_other = await _register_and_login(ac, "other@example.com")
+        with patch(
+            "app.services.customer.chat_streamer.get_chat_orchestrator",
+            return_value=mock_orchestrator,
+        ):
+            async with AsyncClient(transport=transport, base_url="http://test") as ac:
+                token_owner = await _register_and_login(ac, "owner@example.com")
+                token_other = await _register_and_login(ac, "other@example.com")
 
-            response = await ac.post(
-                "/api/chat/stream",
-                json={"question": "Explain math vectors"},
-                headers={"Authorization": f"Bearer {token_owner}"},
-            )
-            assert response.status_code == 200
+                response = await ac.post(
+                    "/api/chat/stream",
+                    json={"question": "Explain math vectors"},
+                    headers={"Authorization": f"Bearer {token_owner}"},
+                )
+                assert response.status_code == 200
 
-            conversation = (
-                await db_session.execute(select(CustomerConversation).order_by(CustomerConversation.id.desc()))
-            ).scalars().first()
-            assert conversation is not None
+                conversation = (
+                    await db_session.execute(select(CustomerConversation).order_by(CustomerConversation.id.desc()))
+                ).scalars().first()
+                assert conversation is not None
 
-            detail_resp = await ac.get(
-                f"/api/chat/conversations/{conversation.id}",
-                headers={"Authorization": f"Bearer {token_other}"},
-            )
-            assert detail_resp.status_code == 404
+                detail_resp = await ac.get(
+                    f"/api/chat/conversations/{conversation.id}",
+                    headers={"Authorization": f"Bearer {token_other}"},
+                )
+                assert detail_resp.status_code == 404
     finally:
         test_app.dependency_overrides.clear()
 
 
 @pytest.mark.asyncio
 async def test_customer_chat_falls_back_on_stream_error(test_app, db_session) -> None:
-    async def mock_stream_chat(messages):
+    async def mock_process(**kwargs):
         if False:
             yield ""
         raise RuntimeError("stream failed")
 
+    mock_orchestrator = MagicMock()
+    mock_orchestrator.process.side_effect = mock_process
+
     mock_ai_client = MagicMock()
-    mock_ai_client.stream_chat = mock_stream_chat
 
     def override_get_ai_client():
         return mock_ai_client
@@ -131,15 +145,19 @@ async def test_customer_chat_falls_back_on_stream_error(test_app, db_session) ->
 
     transport = ASGITransport(app=test_app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            token = await _register_and_login(ac, "fallback@example.com")
+        with patch(
+            "app.services.customer.chat_streamer.get_chat_orchestrator",
+            return_value=mock_orchestrator,
+        ):
+            async with AsyncClient(transport=transport, base_url="http://test") as ac:
+                token = await _register_and_login(ac, "fallback@example.com")
 
-            response = await ac.post(
-                "/api/chat/stream",
-                json={"question": "Explain math vectors"},
-                headers={"Authorization": f"Bearer {token}"},
-            )
-            assert response.status_code == 200
+                response = await ac.post(
+                    "/api/chat/stream",
+                    json={"question": "Explain math vectors"},
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                assert response.status_code == 200
     finally:
         test_app.dependency_overrides.clear()
 
