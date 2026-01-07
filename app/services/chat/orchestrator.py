@@ -7,9 +7,12 @@
 التعقيد السيكلوماتيكي (Cyclomatic Complexity): 3 (تم تخفيضه من 24).
 """
 
+from __future__ import annotations
+
 import logging
 import time
 from collections.abc import AsyncGenerator, Callable
+from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +33,11 @@ from app.services.chat.intent_detector import IntentDetector
 from app.services.chat.ports import IntentDetectorPort
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from app.core.domain.models import User
+    from app.services.chat.contracts import ChatDispatchRequest, ChatDispatchResult
+    from app.services.chat.dispatcher import ChatRoleDispatcher
 
 class ChatOrchestrator:
     """
@@ -127,3 +135,15 @@ class ChatOrchestrator:
 
         duration = (time.time() - start_time) * 1000
         logger.debug(f"Request processed in {duration:.2f}ms")
+
+    @staticmethod
+    async def dispatch(
+        *,
+        user: "User",
+        request: "ChatDispatchRequest",
+        dispatcher: "ChatRoleDispatcher",
+    ) -> "ChatDispatchResult":
+        """
+        تفريع مسار الدردشة حسب الدور عبر الموزّع المركزي.
+        """
+        return await dispatcher.dispatch(user=user, request=request)

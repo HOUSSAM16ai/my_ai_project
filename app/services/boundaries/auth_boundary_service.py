@@ -156,7 +156,7 @@ class AuthBoundaryService:
 
         token = jwt.encode(payload, self.settings.SECRET_KEY, algorithm="HS256")
 
-        landing_path = "/admin" if user.is_admin else "/chat"
+        landing_path = "/admin" if user.is_admin else "/app/chat"
         return {
             "access_token": token,
             "token_type": "Bearer",

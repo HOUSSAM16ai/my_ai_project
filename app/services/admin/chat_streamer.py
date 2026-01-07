@@ -95,7 +95,7 @@ class AdminChatStreamer:
             try:
                 from app.services.chat.context_service import get_context_service
                 ctx_service = get_context_service()
-                system_prompt = ctx_service.get_context_system_prompt()
+                system_prompt = ctx_service.get_admin_system_prompt()
                 history.insert(0, {"role": "system", "content": system_prompt})
             except Exception as e:
                 logger.error(f"⚠️ Failed to inject Overmind context: {e}")

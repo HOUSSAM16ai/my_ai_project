@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass
 
 ALLOWED_DOMAINS = {"math", "physics", "programming", "engineering", "science"}
@@ -61,6 +62,45 @@ DISALLOWED_KEYWORDS = {
 }
 
 
+def _normalize_text(text: str) -> str:
+    """
+    توحيد النص العربي والإنجليزي لتسهيل تصنيف الأسئلة.
+
+    Args:
+        text: النص الخام من المستخدم.
+
+    Returns:
+        نص موحد بدون تشكيل أو رموز زائدة.
+    """
+    normalized = text.lower().strip()
+    normalized = normalized.replace("أ", "ا").replace("إ", "ا").replace("آ", "ا")
+    normalized = normalized.replace("ى", "ي").replace("ة", "ه")
+    normalized = re.sub(r"[\u064b-\u065f]", "", normalized)
+    normalized = re.sub(r"[^\w\s]", " ", normalized, flags=re.UNICODE)
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    return normalized
+
+
+def _normalize_terms(terms: set[str]) -> set[str]:
+    """
+    توحيد قائمة المصطلحات لمطابقة أكثر تسامحاً.
+
+    Args:
+        terms: مجموعة المصطلحات الأصلية.
+
+    Returns:
+        مجموعة المصطلحات بعد التطبيع.
+    """
+    return {_normalize_text(term) for term in terms}
+
+
+NORMALIZED_ALLOWED_DOMAINS = _normalize_terms(ALLOWED_DOMAINS)
+NORMALIZED_ALLOWED_ARABIC_EDU = _normalize_terms(ALLOWED_ARABIC_EDU)
+NORMALIZED_ALLOWED_EDU_VERBS = _normalize_terms(ALLOWED_EDU_VERBS)
+NORMALIZED_ALLOWED_GREETINGS = _normalize_terms(ALLOWED_GREETINGS)
+NORMALIZED_DISALLOWED_KEYWORDS = _normalize_terms(DISALLOWED_KEYWORDS)
+
+
 @dataclass(frozen=True)
 class PolicyDecision:
     """
@@ -80,22 +120,22 @@ class PolicyService:
     """
 
     def classify_question(self, question: str) -> str:
-        normalized = question.lower()
-        if any(keyword in normalized for keyword in DISALLOWED_KEYWORDS):
+        normalized = _normalize_text(question)
+        if any(keyword in normalized for keyword in NORMALIZED_DISALLOWED_KEYWORDS):
             return "sensitive"
-        if any(greeting in normalized for greeting in ALLOWED_GREETINGS):
+        if any(greeting in normalized for greeting in NORMALIZED_ALLOWED_GREETINGS):
             return "greeting"
-        if any(term in question for term in ALLOWED_ARABIC_EDU):
+        if any(term in normalized for term in NORMALIZED_ALLOWED_ARABIC_EDU):
             return "education"
-        if any(verb in normalized for verb in ALLOWED_EDU_VERBS):
+        if any(verb in normalized for verb in NORMALIZED_ALLOWED_EDU_VERBS):
             return "education"
-        for domain in ALLOWED_DOMAINS:
+        for domain in NORMALIZED_ALLOWED_DOMAINS:
             if domain in normalized:
                 return "education"
         return "unknown"
 
     def enforce_policy(self, *, user_role: str, question: str) -> PolicyDecision:
-        normalized = question.lower()
+        normalized = _normalize_text(question)
         redaction_hash = hashlib.sha256(normalized.encode()).hexdigest()
         classification = self.classify_question(question)
 

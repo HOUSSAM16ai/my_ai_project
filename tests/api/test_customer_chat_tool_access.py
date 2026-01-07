@@ -51,7 +51,7 @@ async def test_tool_access_blocked_and_logged(test_app, db_session) -> None:
                 json={"question": "read file secrets.txt"},
                 headers={"Authorization": f"Bearer {token}"},
             )
-            assert response.status_code == 200
+            assert response.status_code == 403
             refusal_text = ""
             for line in response.text.splitlines():
                 if line.startswith("data: ") and "choices" in line:

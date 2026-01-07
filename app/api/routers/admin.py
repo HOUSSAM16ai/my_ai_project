@@ -25,6 +25,9 @@ from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
 from app.deps.auth import CurrentUser, require_roles
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
+from app.services.chat.contracts import ChatDispatchRequest
+from app.services.chat.dispatcher import ChatRoleDispatcher, build_chat_dispatcher
+from app.services.chat.orchestrator import ChatOrchestrator
 from app.services.rbac import ADMIN_ROLE
 
 logger = get_logger(__name__)
@@ -107,12 +110,16 @@ def get_admin_service(db: AsyncSession = Depends(get_db)) -> AdminChatBoundarySe
     """تبعية للحصول على خدمة حدود محادثة المسؤول."""
     return AdminChatBoundaryService(db)
 
+def get_chat_dispatcher(db: AsyncSession = Depends(get_db)) -> ChatRoleDispatcher:
+    """تبعية للحصول على موزّع الدردشة حسب الدور."""
+    return build_chat_dispatcher(db)
+
 @router.post("/api/chat/stream", summary="بث محادثة المسؤول (Admin Chat Stream)")
 async def chat_stream(
     chat_request: ChatRequest,
     ai_client: AIClient = Depends(get_ai_client),
     actor: User = Depends(get_actor_user),
-    service: AdminChatBoundaryService = Depends(get_admin_service),
+    dispatcher: ChatRoleDispatcher = Depends(get_chat_dispatcher),
     session_factory: Callable[[], AsyncSession] = Depends(get_session_factory),
 ) -> StreamingResponse:
     """
@@ -134,17 +141,22 @@ async def chat_stream(
         StreamingResponse: تدفق أحداث الخادم (SSE).
     """
     # تنسيق تدفق المحادثة بالكامل عبر خدمة الحدود
-    stream_generator = service.orchestrate_chat_stream(
-        actor,
-        chat_request.question,
-        chat_request.conversation_id,
-        ai_client,
-        session_factory,
+    dispatch_request = ChatDispatchRequest(
+        question=chat_request.question,
+        conversation_id=chat_request.conversation_id,
+        ai_client=ai_client,
+        session_factory=session_factory,
+    )
+    dispatch_result = await ChatOrchestrator.dispatch(
+        user=actor,
+        request=dispatch_request,
+        dispatcher=dispatcher,
     )
 
     return StreamingResponse(
-        stream_generator,
+        dispatch_result.stream,
         media_type="text/event-stream",
+        status_code=dispatch_result.status_code,
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",

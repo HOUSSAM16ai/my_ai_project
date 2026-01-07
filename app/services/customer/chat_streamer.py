@@ -39,6 +39,7 @@ class CustomerChatStreamer:
         """
         بث استجابة الذكاء الاصطناعي مع حفظ الرسالة النهائية.
         """
+        self._inject_system_context_if_missing(history)
         yield self._create_init_event(conversation)
 
         full_response: list[str] = []
@@ -72,6 +73,21 @@ class CustomerChatStreamer:
     def _create_chunk_event(self, content: str) -> str:
         chunk_data = {"choices": [{"delta": {"content": content}}]}
         return f"data: {json.dumps(chunk_data)}\n\n"
+
+    def _inject_system_context_if_missing(self, history: list[dict[str, str]]) -> None:
+        """
+        حقن سياق النظام التعليمي لمسار الزبون عند غيابه.
+        """
+        has_system = any(msg.get("role") == "system" for msg in history)
+        if not has_system:
+            try:
+                from app.services.chat.context_service import get_context_service
+
+                ctx_service = get_context_service()
+                system_prompt = ctx_service.get_customer_system_prompt()
+                history.insert(0, {"role": "system", "content": system_prompt})
+            except Exception as exc:
+                logger.error(f"⚠️ Failed to inject customer context: {exc}")
 
     def _extract_chunk_content(self, chunk: object) -> str:
         if isinstance(chunk, dict):
