@@ -41,3 +41,11 @@ def test_policy_allows_arabic_education() -> None:
     assert decision.allowed is True
     assert decision.classification == "education"
     assert decision.refusal_message is None
+
+
+def test_policy_allows_education_verb_only() -> None:
+    service = PolicyService()
+    decision = service.enforce_policy(user_role="STANDARD_USER", question="أريد تعلم المزيد")
+    assert decision.allowed is True
+    assert decision.classification == "education"
+    assert decision.refusal_message is None
