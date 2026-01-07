@@ -37,6 +37,7 @@ class ToolAccessPolicy:
             ChatIntent.DEFAULT,
             ChatIntent.HELP,
             ChatIntent.DEEP_ANALYSIS,
+            ChatIntent.MISSION_COMPLEX,
         }
 
     def enforce(self, *, user_role: str, intent: ChatIntent) -> ToolAccessDecision:

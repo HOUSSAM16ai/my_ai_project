@@ -10,6 +10,7 @@ import hashlib
 from dataclasses import dataclass
 
 ALLOWED_DOMAINS = {"math", "physics", "programming", "engineering", "science"}
+ALLOWED_GREETINGS = {"hello", "hi", "hey", "السلام", "السلام عليكم", "مرحبا", "أهلاً"}
 DISALLOWED_KEYWORDS = {
     "admin",
     "apikey",
@@ -56,6 +57,8 @@ class PolicyService:
         normalized = question.lower()
         if any(keyword in normalized for keyword in DISALLOWED_KEYWORDS):
             return "sensitive"
+        if any(greeting in normalized for greeting in ALLOWED_GREETINGS):
+            return "greeting"
         for domain in ALLOWED_DOMAINS:
             if domain in normalized:
                 return "education"
@@ -75,7 +78,7 @@ class PolicyService:
                 refusal_message=self.get_refusal_message(),
             )
 
-        if user_role != "ADMIN" and classification != "education":
+        if user_role != "ADMIN" and classification not in {"education", "greeting"}:
             return PolicyDecision(
                 allowed=False,
                 reason="السؤال خارج النطاق التعليمي المسموح به للمستخدم القياسي.",
