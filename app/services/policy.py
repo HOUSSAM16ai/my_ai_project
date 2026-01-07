@@ -10,6 +10,18 @@ import hashlib
 from dataclasses import dataclass
 
 ALLOWED_DOMAINS = {"math", "physics", "programming", "engineering", "science"}
+ALLOWED_ARABIC_EDU = {
+    "رياضيات",
+    "فيزياء",
+    "برمجة",
+    "هندسة",
+    "علوم",
+    "خوارزمية",
+    "معادلة",
+    "تفاضل",
+    "تكامل",
+    "احتمالات",
+}
 ALLOWED_GREETINGS = {"hello", "hi", "hey", "السلام", "السلام عليكم", "مرحبا", "أهلاً"}
 DISALLOWED_KEYWORDS = {
     "admin",
@@ -59,6 +71,8 @@ class PolicyService:
             return "sensitive"
         if any(greeting in normalized for greeting in ALLOWED_GREETINGS):
             return "greeting"
+        if any(term in question for term in ALLOWED_ARABIC_EDU):
+            return "education"
         for domain in ALLOWED_DOMAINS:
             if domain in normalized:
                 return "education"

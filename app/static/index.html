@@ -718,7 +718,9 @@
         const CustomerDashboard = ({ user, onLogout }) => {
             const [messages, setMessages] = useState([]);
             const [conversationId, setConversationId] = useState(null);
+            const [conversations, setConversations] = useState([]);
             const [input, setInput] = useState('');
+            const [isLoadingConversation, setIsLoadingConversation] = useState(false);
             const messagesEndRef = useRef(null);
             const abortControllerRef = useRef(null);
 
@@ -785,8 +787,55 @@
                         console.error("Failed to fetch latest chat", e);
                     }
                 };
+                const fetchConversations = async () => {
+                    try {
+                        const token = localStorage.getItem('token');
+                        const res = await fetch('/api/chat/conversations', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            setConversations(data);
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch conversations", e);
+                    }
+                };
+                fetchConversations();
                 fetchLatest();
             }, []);
+
+            const loadConversation = async (id) => {
+                if (!id) return;
+                setConversationId(id);
+                setIsLoadingConversation(true);
+                setMessages([]);
+                try {
+                    const token = localStorage.getItem('token');
+                    const res = await fetch(`/api/chat/conversations/${id}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        safeSetMessages(data.messages || []);
+                        setConversationId(data.conversation_id);
+                    } else {
+                        const errorData = await res.json().catch(() => ({}));
+                        const errorMessage = errorData.detail || 'Failed to load conversation';
+                        safeSetMessages([{ id: generateId(), role: 'assistant', content: `Error: ${errorMessage}` }]);
+                    }
+                } catch (e) {
+                    console.error("Failed to load conversation", e);
+                    safeSetMessages([{ id: generateId(), role: 'assistant', content: 'Error: Failed to load conversation. Please try again.' }]);
+                } finally {
+                    setIsLoadingConversation(false);
+                }
+            };
+
+            const handleNewChat = () => {
+                setMessages([]);
+                setConversationId(null);
+            };
 
             const handleSend = async () => {
                 if (!input.trim()) return;
@@ -807,7 +856,7 @@
                         payload.conversation_id = String(conversationId);
                     }
 
-                    const response = await fetch('/api/chat/stream', {
+                        const response = await fetch('/api/chat/stream', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -854,6 +903,12 @@
                                         if (parsed.conversation_id && parsed.title) {
                                             setConversationId(parsed.conversation_id);
                                             isNewMessage = true;
+                                            const token = localStorage.getItem('token');
+                                            fetch('/api/chat/conversations', {
+                                                headers: { 'Authorization': `Bearer ${token}` }
+                                            }).then(res => res.ok ? res.json() : [])
+                                              .then(data => setConversations(Array.isArray(data) ? data : []))
+                                              .catch(() => {});
                                         } else if (parsed.choices && parsed.choices[0]) {
                                             const delta = parsed.choices[0].delta || {};
                                             const content = delta.content || '';
@@ -923,41 +978,72 @@
                         <button onClick={onLogout} className="logout-btn"><i className="fas fa-sign-out-alt"></i> Logout</button>
                     </div>
 
-                    <div className="chat-area">
-                        <div className="chat-container">
-                            <div className="messages">
-                                {messages.length === 0 ? (
-                                    <div className="welcome-message">
-                                        <i className="fas fa-graduation-cap" style={{fontSize: '3em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
-                                        <h3 style={{margin: '10px 0', color: 'var(--primary-color)'}}>Education-Only Overmind</h3>
-                                        <p style={{fontSize: '0.9em', color: '#666', marginBottom: '15px'}}>
-                                            اسأل عن الرياضيات أو الفيزياء أو البرمجة أو الهندسة أو العلوم.
-                                        </p>
-                                        <p style={{marginTop: '15px', color: '#888'}}>ابدأ محادثة تعليمية الآن...</p>
-                                    </div>
-                                ) : (
-                                    messages.map((msg) => {
-                                        const key = msg.id || Math.random();
-                                        return (
-                                            <div key={key} className={`message ${msg.role}`}>
-                                                <div className="message-bubble">
-                                                    {msg.content}
+                    <div className="dashboard-layout">
+                        <div className="sidebar">
+                             <div className="sidebar-header">
+                                 <button className="new-chat-btn" onClick={handleNewChat}>
+                                     <i className="fas fa-plus"></i> New Chat
+                                 </button>
+                             </div>
+                             <div className="conversation-list">
+                                 {conversations.map(conv => {
+                                     const isActive = conversationId === conv.conversation_id;
+                                     const iconClass = isLoadingConversation && isActive ? 'fa-spinner fa-spin' : 'fa-comment-alt';
+                                     return (
+                                         <div
+                                             key={conv.conversation_id}
+                                             className={`conversation-item ${isActive ? 'active' : ''}`}
+                                             onClick={() => loadConversation(conv.conversation_id)}
+                                         >
+                                             <i className={`fas ${iconClass}`} style={{marginRight: '8px'}}></i>
+                                             {conv.title || `Conversation ${conv.conversation_id}`}
+                                         </div>
+                                     );
+                                 })}
+                             </div>
+                        </div>
+
+                        <div className="chat-area">
+                            <div className="chat-container">
+                                <div className="messages">
+                                    {isLoadingConversation ? (
+                                        <div className="welcome-message">
+                                            <i className="fas fa-spinner fa-spin" style={{fontSize: '2em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
+                                            <p>Loading conversation...</p>
+                                        </div>
+                                    ) : messages.length === 0 ? (
+                                        <div className="welcome-message">
+                                            <i className="fas fa-graduation-cap" style={{fontSize: '3em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
+                                            <h3 style={{margin: '10px 0', color: 'var(--primary-color)'}}>Education-Only Overmind</h3>
+                                            <p style={{fontSize: '0.9em', color: '#666', marginBottom: '15px'}}>
+                                                اسأل عن الرياضيات أو الفيزياء أو البرمجة أو الهندسة أو العلوم.
+                                            </p>
+                                            <p style={{marginTop: '15px', color: '#888'}}>ابدأ محادثة تعليمية الآن...</p>
+                                        </div>
+                                    ) : (
+                                        messages.map((msg) => {
+                                            const key = msg.id || Math.random();
+                                            return (
+                                                <div key={key} className={`message ${msg.role}`}>
+                                                    <div className="message-bubble">
+                                                        {msg.content}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                                <div ref={messagesEndRef} />
-                            </div>
-                            <div className="input-area">
-                                <textarea
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    onKeyPress={handleKeyPress}
-                                    placeholder="اكتب سؤالك التعليمي هنا..."
-                                    rows="3"
-                                />
-                                <button onClick={handleSend}>Send</button>
+                                            );
+                                        })
+                                    )}
+                                    <div ref={messagesEndRef} />
+                                </div>
+                                <div className="input-area">
+                                    <textarea
+                                        value={input}
+                                        onChange={(e) => setInput(e.target.value)}
+                                        onKeyPress={handleKeyPress}
+                                        placeholder="اكتب سؤالك التعليمي هنا..."
+                                        rows="3"
+                                    />
+                                    <button onClick={handleSend}>Send</button>
+                                </div>
                             </div>
                         </div>
                     </div>

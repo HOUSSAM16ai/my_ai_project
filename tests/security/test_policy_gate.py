@@ -33,3 +33,11 @@ def test_policy_allows_greeting() -> None:
     assert decision.allowed is True
     assert decision.classification == "greeting"
     assert decision.refusal_message is None
+
+
+def test_policy_allows_arabic_education() -> None:
+    service = PolicyService()
+    decision = service.enforce_policy(user_role="STANDARD_USER", question="أريد تعلم الرياضيات")
+    assert decision.allowed is True
+    assert decision.classification == "education"
+    assert decision.refusal_message is None
