@@ -13,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ai_gateway import AIClient
 from app.core.domain.models import CustomerConversation, MessageRole
+from app.services.chat import get_chat_orchestrator
+from app.services.chat.orchestrator import ChatOrchestrator
 from app.services.customer.chat_persistence import CustomerChatPersistence
 
 logger = logging.getLogger(__name__)
@@ -41,8 +43,15 @@ class CustomerChatStreamer:
 
         full_response: list[str] = []
         try:
-            async for chunk in ai_client.stream_chat(history):
-                content = self._extract_chunk_content(chunk)
+            orchestrator = self._get_orchestrator()
+            async for content in orchestrator.process(
+                question=question,
+                user_id=conversation.user_id,
+                conversation_id=conversation.id,
+                ai_client=ai_client,
+                history_messages=history,
+                session_factory=session_factory_func,
+            ):
                 if not content:
                     continue
                 full_response.append(content)
@@ -73,6 +82,12 @@ class CustomerChatStreamer:
         if isinstance(chunk, str):
             return chunk
         return ""
+
+    def _get_orchestrator(self) -> ChatOrchestrator:
+        """
+        إرجاع منسق المحادثة القياسي لضمان استخدام وكلاء Overmind المتعددين.
+        """
+        return get_chat_orchestrator()
 
     async def _persist_response(
         self,
