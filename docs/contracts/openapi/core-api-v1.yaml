@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: CogniForge Core API
   description: |
@@ -44,6 +44,8 @@ servers:
 tags:
   - name: Security
     description: Authentication & Authorization endpoints
+  - name: Agents
+    description: Agent planning and coordination endpoints
   - name: Users
     description: User management operations
   - name: CRUD
@@ -215,6 +217,99 @@ components:
           maxLength: 100
           description: User's full name
           example: "John Doe"
+
+    # ==============================================================================
+    # Agents Schemas
+    # ==============================================================================
+    AgentPlanStep:
+      type: object
+      required:
+        - step_id
+        - title
+        - description
+      properties:
+        step_id:
+          type: string
+          description: Unique identifier for the plan step
+          example: "step-01"
+        title:
+          type: string
+          description: Short title of the plan step
+          example: "تحليل الهدف"
+        description:
+          type: string
+          description: Detailed explanation of the plan step
+          example: "جمع المعطيات وتحليل المشكلة لتحديد نطاق التنفيذ."
+        dependencies:
+          type: array
+          description: List of step IDs that must be completed first
+          items:
+            type: string
+          example: ["step-00"]
+        estimated_effort:
+          type: string
+          description: Human-readable estimate for the step
+          example: "2 ساعات"
+
+    AgentsPlanRequest:
+      type: object
+      required:
+        - objective
+      properties:
+        objective:
+          type: string
+          description: الهدف الرئيسي المطلوب من فريق الوكلاء
+          example: "تصميم نظام API-First للعقود"
+        context:
+          type: object
+          description: سياق إضافي يساعد الوكلاء على الفهم
+          additionalProperties: true
+        constraints:
+          type: array
+          description: القيود التشغيلية أو التقنية
+          items:
+            type: string
+          example: ["OpenAPI v3.1", "JWT Auth", "No backend code yet"]
+        priority:
+          type: string
+          description: أولوية التخطيط
+          enum: ["low", "medium", "high", "urgent"]
+          example: "high"
+
+    AgentsPlanResponse:
+      type: object
+      required:
+        - status
+        - data
+      properties:
+        status:
+          type: string
+          enum: ["success"]
+          description: Status of the response
+        data:
+          type: object
+          required:
+            - plan_id
+            - objective
+            - steps
+          properties:
+            plan_id:
+              type: string
+              description: Unique identifier for the generated plan
+              example: "plan_01HZX9G8KQK1R2"
+            objective:
+              type: string
+              description: Original objective of the plan
+              example: "تصميم نظام API-First للعقود"
+            steps:
+              type: array
+              items:
+                $ref: '#/components/schemas/AgentPlanStep'
+            created_at:
+              type: string
+              format: date-time
+              description: Timestamp when the plan was created
+              example: "2026-01-03T00:00:00Z"
     
     AuthResponse:
       type: object
@@ -582,6 +677,131 @@ paths:
                     error:
                       code: "RATE_LIMIT_EXCEEDED"
                       message: "Too many login attempts. Please try again later."
+                    timestamp: "2026-01-03T00:00:00Z"
+
+  # ==============================================================================
+  # Agents Endpoints
+  # ==============================================================================
+  /api/v1/agents/plan:
+    post:
+      tags:
+        - Agents
+      summary: Create Agent Plan
+      description: |
+        Generate a structured plan using the agent council.
+
+        **Authentication**: Requires JWT Bearer token.
+      operationId: createAgentPlan
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentsPlanRequest'
+            examples:
+              default:
+                summary: Basic planning request
+                value:
+                  objective: "تصميم نظام API-First للعقود"
+                  constraints:
+                    - "OpenAPI v3.1"
+                    - "JWT Auth"
+                  priority: "high"
+      responses:
+        '201':
+          description: Plan generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentsPlanResponse'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_payload:
+                  value:
+                    status: "error"
+                    error:
+                      code: "INVALID_REQUEST"
+                      message: "Objective is required"
+                    timestamp: "2026-01-03T00:00:00Z"
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorized:
+                  value:
+                    status: "error"
+                    error:
+                      code: "UNAUTHORIZED"
+                      message: "Missing or invalid token"
+                    timestamp: "2026-01-03T00:00:00Z"
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rate_limit:
+                  value:
+                    status: "error"
+                    error:
+                      code: "RATE_LIMIT_EXCEEDED"
+                      message: "Too many planning requests. Please try again later."
+                    timestamp: "2026-01-03T00:00:00Z"
+
+  /api/v1/agents/plan/{plan_id}:
+    get:
+      tags:
+        - Agents
+      summary: Get Agent Plan
+      description: Retrieve the details of a previously generated plan.
+      operationId: getAgentPlan
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: plan_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique plan identifier
+          example: "plan_01HZX9G8KQK1R2"
+      responses:
+        '200':
+          description: Plan retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentsPlanResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Plan not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                plan_not_found:
+                  value:
+                    status: "error"
+                    error:
+                      code: "PLAN_NOT_FOUND"
+                      message: "No plan found for the given identifier"
                     timestamp: "2026-01-03T00:00:00Z"
   
   # ==============================================================================
