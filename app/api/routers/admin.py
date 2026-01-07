@@ -23,9 +23,9 @@ from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.domain.models import User
 from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
-from app.deps.auth import CurrentUser, require_permissions_or_admin
+from app.deps.auth import CurrentUser, require_roles
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
-from app.services.rbac import QA_SUBMIT
+from app.services.rbac import ADMIN_ROLE
 
 logger = get_logger(__name__)
 
@@ -43,9 +43,9 @@ def get_session_factory() -> Callable[[], AsyncSession]:
 
 
 def get_chat_actor(
-    current: CurrentUser = Depends(require_permissions_or_admin(QA_SUBMIT)),
+    current: CurrentUser = Depends(require_roles(ADMIN_ROLE)),
 ) -> CurrentUser:
-    """تبعية تُلزم وجود صلاحية الأسئلة التعليمية أو صفة الإداري قبل استخدام قنوات الدردشة."""
+    """تبعية تُلزم صفة الإداري قبل استخدام قنوات الدردشة الإدارية."""
 
     return current
 

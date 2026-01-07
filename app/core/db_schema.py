@@ -30,6 +30,8 @@ _ALLOWED_TABLES: Final[frozenset[str]] = frozenset(
     {
         "admin_conversations",
         "audit_log",
+        "customer_conversations",
+        "customer_messages",
         "permissions",
         "refresh_tokens",
         "role_permissions",
@@ -79,6 +81,52 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             "linked_mission_id": 'CREATE INDEX IF NOT EXISTS "ix_admin_conversations_linked_mission_id" ON "admin_conversations"("linked_mission_id")'
         },
         "index_names": {"linked_mission_id": "ix_admin_conversations_linked_mission_id"},
+    },
+    "customer_conversations": {
+        "columns": [
+            "id",
+            "title",
+            "user_id",
+            "created_at",
+        ],
+        "auto_fix": {},
+        "indexes": {
+            "user_id": 'CREATE INDEX IF NOT EXISTS "ix_customer_conversations_user_id" ON "customer_conversations"("user_id")'
+        },
+        "index_names": {"user_id": "ix_customer_conversations_user_id"},
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"customer_conversations\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"title" VARCHAR(500) NOT NULL,'
+            '"user_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        ),
+    },
+    "customer_messages": {
+        "columns": [
+            "id",
+            "conversation_id",
+            "role",
+            "content",
+            "policy_flags",
+            "created_at",
+        ],
+        "auto_fix": {},
+        "indexes": {
+            "conversation_id": 'CREATE INDEX IF NOT EXISTS "ix_customer_messages_conversation_id" ON "customer_messages"("conversation_id")'
+        },
+        "index_names": {"conversation_id": "ix_customer_messages_conversation_id"},
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"customer_messages\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"conversation_id" INTEGER NOT NULL REFERENCES "customer_conversations"("id") ON DELETE CASCADE,'
+            '"role" VARCHAR(50) NOT NULL,'
+            '"content" TEXT NOT NULL,'
+            '"policy_flags" TEXT,'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        ),
     },
     "users": {
         "columns": [

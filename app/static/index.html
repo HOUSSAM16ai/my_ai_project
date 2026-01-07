@@ -588,13 +588,7 @@
             if (user.is_admin) {
                return <AdminDashboard user={user} onLogout={logout} />;
             } else {
-               return (
-                   <div className="dashboard-container">
-                       <h2>Welcome, {user.name}</h2>
-                       <p>You do not have administrative privileges.</p>
-                       <button onClick={logout}>Logout</button>
-                   </div>
-               );
+               return <CustomerDashboard user={user} onLogout={logout} />;
             }
         };
 
@@ -716,6 +710,256 @@
                     </form>
                     <div className="toggle-form">
                         <a onClick={onToggle}>Already have an account? Login</a>
+                    </div>
+                </div>
+            );
+        };
+
+        const CustomerDashboard = ({ user, onLogout }) => {
+            const [messages, setMessages] = useState([]);
+            const [conversationId, setConversationId] = useState(null);
+            const [input, setInput] = useState('');
+            const messagesEndRef = useRef(null);
+            const abortControllerRef = useRef(null);
+
+            useEffect(() => {
+                return () => {
+                    if (abortControllerRef.current) {
+                        abortControllerRef.current.abort();
+                    }
+                };
+            }, []);
+
+            const scrollToBottom = () => {
+                if (messagesEndRef.current) {
+                    requestAnimationFrame(() => {
+                        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                    });
+                }
+            };
+
+            const messagesLength = messages.length;
+            useEffect(() => {
+                scrollToBottom();
+            }, [messagesLength]);
+
+            const normalizeMessages = (msgs) => {
+                return msgs.map(msg => ({
+                    ...msg,
+                    id: msg.id || generateId()
+                }));
+            };
+
+            const safeSetMessages = useCallback((update) => {
+                setMessages(prev => {
+                    let nextMessages;
+                    if (typeof update === 'function') {
+                        nextMessages = update(prev);
+                    } else {
+                        nextMessages = Array.isArray(update) ? normalizeMessages(update) : update;
+                    }
+                    if (nextMessages.length > MAX_MESSAGES) {
+                        return nextMessages.slice(nextMessages.length - MAX_MESSAGES);
+                    }
+                    return nextMessages;
+                });
+            }, []);
+
+            useEffect(() => {
+                const fetchLatest = async () => {
+                    try {
+                        const token = localStorage.getItem('token');
+                        const res = await fetch('/api/chat/latest', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data?.messages && Array.isArray(data.messages)) {
+                                safeSetMessages(data.messages);
+                            }
+                            if (data?.conversation_id) {
+                                setConversationId(data.conversation_id);
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch latest chat", e);
+                    }
+                };
+                fetchLatest();
+            }, []);
+
+            const handleSend = async () => {
+                if (!input.trim()) return;
+
+                if (abortControllerRef.current) {
+                    abortControllerRef.current.abort();
+                }
+                abortControllerRef.current = new AbortController();
+
+                const userMsgId = generateId();
+                const question = input;
+                safeSetMessages(prev => [...prev, { id: userMsgId, role: 'user', content: question }]);
+                setInput('');
+
+                try {
+                    const payload = { question };
+                    if (conversationId) {
+                        payload.conversation_id = String(conversationId);
+                    }
+
+                    const response = await fetch('/api/chat/stream', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify(payload),
+                        signal: abortControllerRef.current.signal
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text().catch(() => 'Unknown error');
+                        throw new Error(`Server error: ${response.status} - ${errorText}`);
+                    }
+
+                    if (!response.body) {
+                        throw new Error('Response body is not available for streaming');
+                    }
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let assistantMessage = '';
+                    let isNewMessage = true;
+                    let lastUpdateTimestamp = 0;
+                    const assistantMsgId = generateId();
+
+                    try {
+                        while (true) {
+                            const { value, done } = await reader.read();
+                            if (done) break;
+
+                            await new Promise(resolve => setTimeout(resolve, STREAM_MICRO_DELAY));
+
+                            const chunk = decoder.decode(value, { stream: true });
+                            const lines = chunk.split('\n\n');
+
+                            lines.forEach(line => {
+                                if (line.startsWith('data: ')) {
+                                    const dataContent = line.substring(6);
+                                    if (dataContent === '[DONE]') {
+                                        return;
+                                    }
+                                    try {
+                                        const parsed = JSON.parse(dataContent);
+                                        if (parsed.conversation_id && parsed.title) {
+                                            setConversationId(parsed.conversation_id);
+                                            isNewMessage = true;
+                                        } else if (parsed.choices && parsed.choices[0]) {
+                                            const delta = parsed.choices[0].delta || {};
+                                            const content = delta.content || '';
+
+                                            if (content) {
+                                                if (isNewMessage) {
+                                                    assistantMessage = content;
+                                                    safeSetMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: assistantMessage }]);
+                                                    isNewMessage = false;
+                                                    lastUpdateTimestamp = Date.now();
+                                                } else {
+                                                    if (assistantMessage.length < 50000) {
+                                                        assistantMessage += content;
+                                                    }
+
+                                                    const now = Date.now();
+                                                    if (now - lastUpdateTimestamp > STREAM_UPDATE_THROTTLE) {
+                                                        safeSetMessages(prev =>
+                                                            prev.map(msg =>
+                                                                msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
+                                                            )
+                                                        );
+                                                        lastUpdateTimestamp = now;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } catch (parseError) {
+                                        console.error('Parse error:', parseError);
+                                    }
+                                }
+                            });
+                        }
+                    } finally {
+                        try {
+                            reader.releaseLock();
+                        } catch (e) {}
+                    }
+
+                    if (!isNewMessage) {
+                        safeSetMessages(prev =>
+                            prev.map(msg =>
+                                msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
+                            )
+                        );
+                    }
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        return;
+                    }
+                    console.error('Streaming Error:', error);
+                    safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Sorry, I encountered an error.' }]);
+                }
+            };
+
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                }
+            };
+
+            return (
+                <div className="app-container">
+                    <div className="header">
+                        <h2>Overmind Education Chat - Welcome, {user.name}</h2>
+                        <button onClick={onLogout} className="logout-btn"><i className="fas fa-sign-out-alt"></i> Logout</button>
+                    </div>
+
+                    <div className="chat-area">
+                        <div className="chat-container">
+                            <div className="messages">
+                                {messages.length === 0 ? (
+                                    <div className="welcome-message">
+                                        <i className="fas fa-graduation-cap" style={{fontSize: '3em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
+                                        <h3 style={{margin: '10px 0', color: 'var(--primary-color)'}}>Education-Only Overmind</h3>
+                                        <p style={{fontSize: '0.9em', color: '#666', marginBottom: '15px'}}>
+                                            اسأل عن الرياضيات أو الفيزياء أو البرمجة أو الهندسة أو العلوم.
+                                        </p>
+                                        <p style={{marginTop: '15px', color: '#888'}}>ابدأ محادثة تعليمية الآن...</p>
+                                    </div>
+                                ) : (
+                                    messages.map((msg) => {
+                                        const key = msg.id || Math.random();
+                                        return (
+                                            <div key={key} className={`message ${msg.role}`}>
+                                                <div className="message-bubble">
+                                                    {msg.content}
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+                            <div className="input-area">
+                                <textarea
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                    placeholder="اكتب سؤالك التعليمي هنا..."
+                                    rows="3"
+                                />
+                                <button onClick={handleSend}>Send</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             );

@@ -85,6 +85,11 @@ class DecisionSynthesizer:
         Determine decision priority based on urgency.
         """
         urgency = analysis.get("urgency")
+        urgency_score = analysis.get("urgency_score", 0.0)
+        if isinstance(urgency_score, (int, float)) and urgency_score >= 0.8:
+            return DecisionPriority.CRITICAL
+        if isinstance(urgency_score, (int, float)) and urgency_score >= 0.5:
+            return DecisionPriority.HIGH
         if urgency == "high":
             return DecisionPriority.CRITICAL
         return DecisionPriority.MEDIUM
@@ -96,6 +101,11 @@ class DecisionSynthesizer:
         Determine decision impact based on complexity.
         """
         complexity = analysis.get("complexity_level", "medium")
+        complexity_score = analysis.get("complexity_score", 0.0)
+        if isinstance(complexity_score, (int, float)) and complexity_score >= 0.8:
+            return DecisionImpact.GENERATIONAL
+        if isinstance(complexity_score, (int, float)) and complexity_score >= 0.6:
+            return DecisionImpact.LONG_TERM
         if complexity == "high":
             return DecisionImpact.LONG_TERM
         elif complexity == "low":
@@ -118,8 +128,14 @@ class DecisionSynthesizer:
         complexity = analysis.get("complexity_level", "medium")
         urgency = analysis.get("urgency", "normal")
 
+        category = DecisionSynthesizer._determine_category(analysis)
+        reasoning = DecisionSynthesizer._compose_reasoning(
+            analysis=analysis,
+            avg_confidence=avg_confidence,
+        )
+
         return Decision(
-            category=DecisionCategory.STRATEGIC,
+            category=category,
             priority=priority,
             impact=impact,
             title=f"Autonomous Decision: {situation[:50]}",
@@ -129,7 +145,7 @@ class DecisionSynthesizer:
                 "تم التوصل إلى هذا القرار بناءً على الحكمة الجماعية. "
                 f"مستوى التعقيد: {complexity}, "
                 f"الإلحاح: {urgency}, "
-                f"متوسط ثقة الوكلاء: {avg_confidence:.1f}%"
+                f"{reasoning}"
             ),
             agents_involved=agents_involved,
         )
@@ -178,6 +194,43 @@ class DecisionSynthesizer:
             "Enhanced user experience",
             "Better long-term sustainability",
         ]
+
+    @staticmethod
+    def _determine_category(analysis: dict[str, Any]) -> DecisionCategory:
+        """
+        تحديد فئة القرار باستخدام مؤشرات المخاطر والقيمة الاستراتيجية.
+        """
+        strategic_value = analysis.get("strategic_value_score", 0.0)
+        risk_index = analysis.get("risk_index", 0.0)
+        depth_score = analysis.get("depth_score", 0.0)
+
+        if isinstance(strategic_value, (int, float)) and strategic_value >= 0.6:
+            return DecisionCategory.STRATEGIC
+        if isinstance(risk_index, (int, float)) and risk_index >= 0.7:
+            return DecisionCategory.RISK_MANAGEMENT
+        if isinstance(depth_score, (int, float)) and depth_score >= 0.7:
+            return DecisionCategory.ARCHITECTURAL
+        return DecisionCategory.TECHNICAL
+
+    @staticmethod
+    def _compose_reasoning(*, analysis: dict[str, Any], avg_confidence: float) -> str:
+        """
+        صياغة جزء منطق القرار اعتماداً على المؤشرات الكمية.
+        """
+        strategic_value = analysis.get("strategic_value_score")
+        risk_index = analysis.get("risk_index")
+        depth_score = analysis.get("depth_score")
+        confidence = f"متوسط ثقة الوكلاء: {avg_confidence:.1f}%"
+
+        parts = [confidence]
+        if isinstance(strategic_value, (int, float)):
+            parts.append(f"القيمة الاستراتيجية: {strategic_value:.2f}")
+        if isinstance(risk_index, (int, float)):
+            parts.append(f"مؤشر المخاطرة: {risk_index:.2f}")
+        if isinstance(depth_score, (int, float)):
+            parts.append(f"عمق التحليل: {depth_score:.2f}")
+
+        return ", ".join(parts)
 
     @staticmethod
     def _get_default_risks() -> list[dict[str, str]]:

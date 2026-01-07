@@ -30,7 +30,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 # استيراد الموجهات بشكل صريح
-from app.api.routers import admin, crud, data_mesh, observability, overmind, security, system
+from app.api.routers import admin, crud, customer_chat, data_mesh, observability, overmind, security, system
 from app.api.routers import ums
 from app.config.settings import AppSettings
 from app.core.db_schema import validate_schema_on_startup
@@ -123,6 +123,7 @@ def _get_router_registry() -> list[RouterSpec]:
         (data_mesh.router, "/api/v1/data-mesh"),
         (observability.router, "/api/observability"),
         (crud.router, "/api/v1"),
+        (customer_chat.router, ""),
         (overmind.router, ""),
     ]
 
