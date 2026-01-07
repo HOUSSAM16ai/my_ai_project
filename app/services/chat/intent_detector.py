@@ -1,15 +1,12 @@
-"""
-Intent detection service.
-"""
-
-from typing import Any
+"""خدمة كشف النوايا للمحادثات عبر قواعد نمطية قابلة للتوسع."""
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 
 class ChatIntent(str, Enum):
-    """Chat intents."""
+    """نوايا المحادثة المعتمدة في طبقة التوجيه."""
     FILE_READ = "FILE_READ"
     FILE_WRITE = "FILE_WRITE"
     CODE_SEARCH = "CODE_SEARCH"
@@ -19,37 +16,81 @@ class ChatIntent(str, Enum):
     HELP = "HELP"
     DEFAULT = "DEFAULT"
 
-@dataclass
-class IntentResult:
-    """Intent detection result."""
 
-    intent: str
+@dataclass(frozen=True, slots=True)
+class IntentPattern:
+    """نمط نية محدد يربط التعبير بالنية ومعالج المعاملات."""
+
+    pattern: str
+    intent: ChatIntent
+    extractor: Callable[[re.Match[str]], dict[str, str]]
+
+
+@dataclass(frozen=True, slots=True)
+class IntentResult:
+    """نتيجة كشف النية مع المعاملات المرافقة."""
+
+    intent: ChatIntent
     confidence: float
-    params: dict[str, Any]
+    params: dict[str, str]
 
 class IntentDetector:
-    """Detect user intent from question."""
+    """يكشف نية المستخدم من نص السؤال باستخدام قواعد نمطية بسيطة."""
 
-    def __init__(self):
-        self._patterns = [
-            (r"(اقرأ|read|show|display)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_READ, self._extract_path),
-            (r"(اكتب|write|create)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_WRITE, self._extract_path),
-            (r"(ابحث|search|find)\s+(عن|for)?\s*(.+)", ChatIntent.CODE_SEARCH, self._extract_query),
-            (r"(فهرس|index)\s+(المشروع|project)", ChatIntent.PROJECT_INDEX, lambda m: {}),
-            (r"(حلل|analyze|explain)\s+(.+)", ChatIntent.DEEP_ANALYSIS, lambda m: {}),
-            (r"(مساعدة|help)", ChatIntent.HELP, lambda m: {}),
+    def __init__(self) -> None:
+        self._patterns = self._build_patterns()
+
+    def _build_patterns(
+        self,
+    ) -> list[IntentPattern]:
+        """يبني قواعد النمط كنصوص قابلة للتمديد وفق مبدأ البيانات ككود."""
+        return [
+            IntentPattern(
+                pattern=r"(اقرأ|read|show|display)\s+(ملف|file)\s+(.+)",
+                intent=ChatIntent.FILE_READ,
+                extractor=self._extract_path,
+            ),
+            IntentPattern(
+                pattern=r"(اكتب|write|create)\s+(ملف|file)\s+(.+)",
+                intent=ChatIntent.FILE_WRITE,
+                extractor=self._extract_path,
+            ),
+            IntentPattern(
+                pattern=r"(ابحث|search|find)\s+(عن|for)?\s*(.+)",
+                intent=ChatIntent.CODE_SEARCH,
+                extractor=self._extract_query,
+            ),
+            IntentPattern(
+                pattern=r"(فهرس|index)\s+(المشروع|project)",
+                intent=ChatIntent.PROJECT_INDEX,
+                extractor=self._empty_params,
+            ),
+            IntentPattern(
+                pattern=r"(حلل|analyze|explain)\s+(.+)",
+                intent=ChatIntent.DEEP_ANALYSIS,
+                extractor=self._empty_params,
+            ),
+            IntentPattern(
+                pattern=r"(مساعدة|help)",
+                intent=ChatIntent.HELP,
+                extractor=self._empty_params,
+            ),
         ]
 
     async def detect(self, question: str) -> IntentResult:
-        """Detect intent from question."""
+        """يكشف نية المستخدم من السؤال بعد تبسيط النص."""
         question_lower = question.lower().strip()
 
-        for pattern, intent, extractor in self._patterns:
-            match = re.search(pattern, question_lower, re.IGNORECASE)
+        for pattern in self._patterns:
+            match = re.search(pattern.pattern, question_lower, re.IGNORECASE)
             if match:
-                params = extractor(match)
+                params = pattern.extractor(match)
                 confidence = self._calculate_confidence(match)
-                return IntentResult(intent=intent, confidence=confidence, params=params)
+                return IntentResult(
+                    intent=pattern.intent,
+                    confidence=confidence,
+                    params=params,
+                )
 
         # Check for complex mission indicators
         if self._is_complex_mission(question):
@@ -58,20 +99,25 @@ class IntentDetector:
         # Default to chat
         return IntentResult(intent=ChatIntent.DEFAULT, confidence=1.0, params={})
 
-    def _extract_path(self, match: re.Match) -> dict[str, str]:
-        """Extract file path from match."""
+    def _extract_path(self, match: re.Match[str]) -> dict[str, str]:
+        """يستخرج مسار الملف من التطابق."""
         return {"path": match.group(3).strip()}
 
-    def _extract_query(self, match: re.Match) -> dict[str, str]:
-        """Extract search query from match."""
+    def _extract_query(self, match: re.Match[str]) -> dict[str, str]:
+        """يستخرج عبارة البحث من التطابق."""
         return {"query": match.group(3).strip()}
 
-    def _calculate_confidence(self, match: re.Match) -> float:
-        """Calculate confidence score."""
+    @staticmethod
+    def _empty_params(_: re.Match[str]) -> dict[str, str]:
+        """يعيد قاموس معاملات فارغ للحالات التي لا تحتاج بيانات إضافية."""
+        return {}
+
+    def _calculate_confidence(self, match: re.Match[str]) -> float:
+        """يحسب درجة الثقة اعتمادًا على قوة التطابق."""
         return 0.9 if match else 0.5
 
     def _is_complex_mission(self, question: str) -> bool:
-        """Check if question indicates complex mission."""
+        """يتحقق مما إذا كان السؤال يشير إلى مهمة معقدة."""
         indicators = [
             "قم ب",
             "نفذ",

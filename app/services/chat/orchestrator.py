@@ -14,7 +14,7 @@ from collections.abc import AsyncGenerator, Callable
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ai_gateway import AIClient
-from app.core.patterns.strategy import StrategyRegistry
+from app.core.patterns.strategy import Strategy, StrategyRegistry
 from app.services.chat.context import ChatContext
 from app.services.chat.handlers.strategy_handlers import (
     CodeSearchHandler,
@@ -27,6 +27,7 @@ from app.services.chat.handlers.strategy_handlers import (
     ProjectIndexHandler,
 )
 from app.services.chat.intent_detector import IntentDetector
+from app.services.chat.ports import IntentDetectorPort
 
 logger = logging.getLogger(__name__)
 
@@ -40,14 +41,25 @@ class ChatOrchestrator:
     3. اختيار وتنفيذ المعالج المناسب (Strategy Execution).
     """
 
-    def __init__(self) -> None:
-        self._intent_detector = IntentDetector()
-        self._handlers = StrategyRegistry[ChatContext, AsyncGenerator[str, None]]()
-        self._initialize_handlers()
+    def __init__(
+        self,
+        intent_detector: IntentDetectorPort | None = None,
+        registry: StrategyRegistry[ChatContext, AsyncGenerator[str, None]] | None = None,
+        handlers: list[Strategy[ChatContext, AsyncGenerator[str, None]]] | None = None,
+    ) -> None:
+        """يبني المنسق مع دعم حقن مكونات الكشف والمعالجة."""
+        self._intent_detector = intent_detector or IntentDetector()
+        self._handlers = (
+            registry or StrategyRegistry[ChatContext, AsyncGenerator[str, None]]()
+        )
+        self._initialize_handlers(handlers)
 
-    def _initialize_handlers(self) -> None:
-        """تسجيل جميع معالجات النوايا المتاحة."""
-        handlers = [
+    def _initialize_handlers(
+        self,
+        handlers: list[Strategy[ChatContext, AsyncGenerator[str, None]]] | None = None,
+    ) -> None:
+        """تسجيل جميع معالجات النوايا المتاحة أو المعالجات المحقونة."""
+        resolved_handlers = handlers or [
             FileReadHandler(),
             FileWriteHandler(),
             CodeSearchHandler(),
@@ -58,7 +70,7 @@ class ChatOrchestrator:
             DefaultChatHandler(),  # المعالج الافتراضي
         ]
 
-        for handler in handlers:
+        for handler in resolved_handlers:
             self._handlers.register(handler)
 
     async def process(
