@@ -1,6 +1,6 @@
 # Docker Compose file specifically for DevContainer/Codespaces/Ona
-# Modified: Removed network_mode: host to restore port forwarding notifications
-# and access in Codespaces. This reverts to standard bridge networking.
+# Modified: Enabled network_mode: host as required for ONA agent connectivity.
+# Note: When using host network mode, port mappings are ignored/invalid.
 
 x-common-environment: &common-environment
   # Basic environment variables
@@ -24,11 +24,12 @@ services:
     container_name: cogniforge-backend
     restart: unless-stopped
 
-    # Reverted to Bridge Mode for better VS Code integration
-    # network_mode: host  <-- CAUSE OF ISSUE
+    # Enabled Host Mode for ONA Agent compatibility
+    network_mode: host
 
-    ports:
-      - "8000:8000"
+    # Ports are not used in host mode
+    # ports:
+    #   - "8000:8000"
 
     environment:
       <<: *common-environment
@@ -49,6 +50,7 @@ services:
       - ..:/app  # Mount root directory to /app
       - /app/__pycache__
 
+# Networks configuration is irrelevant in host mode but kept for structure if needed later
 networks:
   default:
     driver: bridge
