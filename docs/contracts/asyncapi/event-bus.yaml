@@ -1,0 +1,326 @@
+asyncapi: 2.6.0
+info:
+  title: CogniForge Event Bus
+  version: '1.0.0'
+  description: |
+    # ناقل الأحداث المركزي
+    
+    يوفر آلية نشر/اشتراك للتواصل غير المتزامن بين الخدمات المصغرة.
+    
+    ## المبادئ
+    - **Loose Coupling**: الخدمات لا تعرف بعضها مباشرة
+    - **Async Communication**: معالجة غير متزامنة
+    - **Event Sourcing**: سجل كامل للأحداث
+    - **Reliability**: ضمان توصيل الأحداث
+  contact:
+    name: CogniForge Support
+    email: support@cogniforge.ai
+
+channels:
+  user/created:
+    description: حدث إنشاء مستخدم جديد
+    subscribe:
+      summary: الاشتراك في أحداث إنشاء المستخدمين
+      operationId: onUserCreated
+      message:
+        $ref: '#/components/messages/UserCreated'
+  
+  user/updated:
+    description: حدث تحديث بيانات مستخدم
+    subscribe:
+      summary: الاشتراك في أحداث تحديث المستخدمين
+      operationId: onUserUpdated
+      message:
+        $ref: '#/components/messages/UserUpdated'
+  
+  plan/created:
+    description: حدث إنشاء خطة تعليمية جديدة
+    subscribe:
+      summary: الاشتراك في أحداث إنشاء الخطط
+      operationId: onPlanCreated
+      message:
+        $ref: '#/components/messages/PlanCreated'
+  
+  plan/completed:
+    description: حدث إكمال خطة تعليمية
+    subscribe:
+      summary: الاشتراك في أحداث إكمال الخطط
+      operationId: onPlanCompleted
+      message:
+        $ref: '#/components/messages/PlanCompleted'
+  
+  memory/stored:
+    description: حدث حفظ ذاكرة جديدة
+    subscribe:
+      summary: الاشتراك في أحداث حفظ الذاكرة
+      operationId: onMemoryStored
+      message:
+        $ref: '#/components/messages/MemoryStored'
+  
+  learning/progress:
+    description: حدث تقدم في التعلم
+    subscribe:
+      summary: الاشتراك في أحداث التقدم
+      operationId: onLearningProgress
+      message:
+        $ref: '#/components/messages/LearningProgress'
+  
+  task/assigned:
+    description: حدث تعيين مهمة
+    subscribe:
+      summary: الاشتراك في أحداث تعيين المهام
+      operationId: onTaskAssigned
+      message:
+        $ref: '#/components/messages/TaskAssigned'
+  
+  task/completed:
+    description: حدث إكمال مهمة
+    subscribe:
+      summary: الاشتراك في أحداث إكمال المهام
+      operationId: onTaskCompleted
+      message:
+        $ref: '#/components/messages/TaskCompleted'
+
+components:
+  messages:
+    UserCreated:
+      name: UserCreated
+      title: حدث إنشاء مستخدم
+      summary: يُنشر عند إنشاء مستخدم جديد
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/UserCreatedPayload'
+    
+    UserUpdated:
+      name: UserUpdated
+      title: حدث تحديث مستخدم
+      summary: يُنشر عند تحديث بيانات مستخدم
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/UserUpdatedPayload'
+    
+    PlanCreated:
+      name: PlanCreated
+      title: حدث إنشاء خطة
+      summary: يُنشر عند إنشاء خطة تعليمية جديدة
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlanCreatedPayload'
+    
+    PlanCompleted:
+      name: PlanCompleted
+      title: حدث إكمال خطة
+      summary: يُنشر عند إكمال خطة تعليمية
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlanCompletedPayload'
+    
+    MemoryStored:
+      name: MemoryStored
+      title: حدث حفظ ذاكرة
+      summary: يُنشر عند حفظ ذاكرة جديدة
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/MemoryStoredPayload'
+    
+    LearningProgress:
+      name: LearningProgress
+      title: حدث تقدم في التعلم
+      summary: يُنشر عند تحديث تقدم المتعلم
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LearningProgressPayload'
+    
+    TaskAssigned:
+      name: TaskAssigned
+      title: حدث تعيين مهمة
+      summary: يُنشر عند تعيين مهمة لوكيل
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TaskAssignedPayload'
+    
+    TaskCompleted:
+      name: TaskCompleted
+      title: حدث إكمال مهمة
+      summary: يُنشر عند إكمال مهمة
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TaskCompletedPayload'
+
+  schemas:
+    EventBase:
+      type: object
+      required:
+        - event_id
+        - event_type
+        - timestamp
+        - source
+      properties:
+        event_id:
+          type: string
+          format: uuid
+          description: معرف فريد للحدث
+        event_type:
+          type: string
+          description: نوع الحدث
+        timestamp:
+          type: string
+          format: date-time
+          description: وقت الحدث
+        source:
+          type: string
+          description: مصدر الحدث
+        correlation_id:
+          type: string
+          format: uuid
+          description: معرف الارتباط للتتبع
+    
+    UserCreatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          required:
+            - user_id
+            - email
+          properties:
+            user_id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+    
+    UserUpdatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          required:
+            - user_id
+          properties:
+            user_id:
+              type: string
+              format: uuid
+            updated_fields:
+              type: array
+              items:
+                type: string
+    
+    PlanCreatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          required:
+            - plan_id
+            - goal
+          properties:
+            plan_id:
+              type: string
+              format: uuid
+            goal:
+              type: string
+            user_id:
+              type: string
+              format: uuid
+            steps:
+              type: array
+              items:
+                type: string
+    
+    PlanCompletedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          required:
+            - plan_id
+            - user_id
+          properties:
+            plan_id:
+              type: string
+              format: uuid
+            user_id:
+              type: string
+              format: uuid
+            completion_date:
+              type: string
+              format: date-time
+    
+    MemoryStoredPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          required:
+            - memory_id
+            - content
+          properties:
+            memory_id:
+              type: string
+              format: uuid
+            content:
+              type: string
+            tags:
+              type: array
+              items:
+                type: string
+    
+    LearningProgressPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          required:
+            - user_id
+            - plan_id
+            - progress_percentage
+          properties:
+            user_id:
+              type: string
+              format: uuid
+            plan_id:
+              type: string
+              format: uuid
+            progress_percentage:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+            current_step:
+              type: integer
+    
+    TaskAssignedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          required:
+            - task_id
+            - agent_name
+          properties:
+            task_id:
+              type: string
+              format: uuid
+            agent_name:
+              type: string
+            description:
+              type: string
+            priority:
+              type: string
+              enum: [low, medium, high, critical]
+    
+    TaskCompletedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          required:
+            - task_id
+            - agent_name
+          properties:
+            task_id:
+              type: string
+              format: uuid
+            agent_name:
+              type: string
+            result:
+              type: object
+            completion_time:
+              type: string
+              format: date-time

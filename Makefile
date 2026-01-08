@@ -14,9 +14,13 @@
 #   make security      - Run security scans
 #   make docs          - Generate documentation
 #   make clean         - Clean build artifacts
+#   make microservices - Manage microservices
 # ======================================================================================
 
-.PHONY: help install quality test format lint security docs clean run dev deploy
+.PHONY: help install quality test format lint security docs clean run dev deploy \
+        microservices-build microservices-up microservices-down microservices-logs \
+        microservices-test microservices-health gateway-test event-bus-test \
+        circuit-breaker-test integration-test
 
 # Colors for output
 BLUE := \033[0;34m
@@ -242,6 +246,92 @@ docker-down:
 docker-logs:
 	@echo "$(BLUE)🐳 Viewing Docker logs...$(NC)"
 	docker-compose logs -f
+
+# =============================================================================
+# MICROSERVICES - API-First Architecture
+# =============================================================================
+microservices-build:
+	@echo "$(BLUE)🏗️  Building all microservices...$(NC)"
+	docker-compose -f docker-compose.microservices.yml build
+	@echo "$(GREEN)✅ All microservices built!$(NC)"
+
+microservices-up:
+	@echo "$(BLUE)🚀 Starting all microservices...$(NC)"
+	docker-compose -f docker-compose.microservices.yml up -d
+	@echo "$(GREEN)✅ All microservices started!$(NC)"
+	@echo ""
+	@echo "$(YELLOW)📊 Service URLs:$(NC)"
+	@echo "  API Gateway:        http://localhost:8000"
+	@echo "  Planning Agent:     http://localhost:8001"
+	@echo "  Memory Agent:       http://localhost:8002"
+	@echo "  User Service:       http://localhost:8003"
+	@echo "  Orchestrator:       http://localhost:8004"
+	@echo "  Observability:      http://localhost:8005"
+
+microservices-down:
+	@echo "$(BLUE)🛑 Stopping all microservices...$(NC)"
+	docker-compose -f docker-compose.microservices.yml down
+	@echo "$(GREEN)✅ All microservices stopped!$(NC)"
+
+microservices-logs:
+	@echo "$(BLUE)📋 Viewing microservices logs...$(NC)"
+	docker-compose -f docker-compose.microservices.yml logs -f
+
+microservices-health:
+	@echo "$(BLUE)🏥 Checking microservices health...$(NC)"
+	@echo ""
+	@echo "$(YELLOW)API Gateway:$(NC)"
+	@curl -s http://localhost:8000/gateway/health | jq || echo "$(RED)❌ Not responding$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Planning Agent:$(NC)"
+	@curl -s http://localhost:8001/health | jq || echo "$(RED)❌ Not responding$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Memory Agent:$(NC)"
+	@curl -s http://localhost:8002/health | jq || echo "$(RED)❌ Not responding$(NC)"
+	@echo ""
+	@echo "$(YELLOW)User Service:$(NC)"
+	@curl -s http://localhost:8003/health | jq || echo "$(RED)❌ Not responding$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Orchestrator:$(NC)"
+	@curl -s http://localhost:8004/health | jq || echo "$(RED)❌ Not responding$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Observability:$(NC)"
+	@curl -s http://localhost:8005/health | jq || echo "$(RED)❌ Not responding$(NC)"
+
+microservices-restart:
+	@echo "$(BLUE)🔄 Restarting all microservices...$(NC)"
+	docker-compose -f docker-compose.microservices.yml restart
+	@echo "$(GREEN)✅ All microservices restarted!$(NC)"
+
+microservices-ps:
+	@echo "$(BLUE)📊 Microservices status:$(NC)"
+	docker-compose -f docker-compose.microservices.yml ps
+
+# =============================================================================
+# MICROSERVICES TESTING
+# =============================================================================
+gateway-test:
+	@echo "$(BLUE)🧪 Testing API Gateway...$(NC)"
+	python -m pytest tests/test_gateway.py -v
+	@echo "$(GREEN)✅ Gateway tests passed!$(NC)"
+
+event-bus-test:
+	@echo "$(BLUE)🧪 Testing Event Bus...$(NC)"
+	python -m pytest tests/test_event_bus.py -v
+	@echo "$(GREEN)✅ Event Bus tests passed!$(NC)"
+
+circuit-breaker-test:
+	@echo "$(BLUE)🧪 Testing Circuit Breaker...$(NC)"
+	python -m pytest tests/test_circuit_breaker.py -v
+	@echo "$(GREEN)✅ Circuit Breaker tests passed!$(NC)"
+
+integration-test:
+	@echo "$(BLUE)🧪 Running integration tests...$(NC)"
+	python -m pytest tests/integration/ -v
+	@echo "$(GREEN)✅ Integration tests passed!$(NC)"
+
+microservices-test: gateway-test event-bus-test circuit-breaker-test integration-test
+	@echo "$(GREEN)✅ All microservices tests passed!$(NC)"
 
 # =============================================================================
 # DATABASE
