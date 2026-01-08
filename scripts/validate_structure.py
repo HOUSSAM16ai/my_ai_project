@@ -6,7 +6,7 @@ Pre-commit Structure Validation Script
 import ast
 import sys
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
 
 class ServiceStructureValidator:
@@ -146,8 +146,8 @@ def main():
     """Main validation function"""
     validator = ServiceStructureValidator()
     
-    # Find all service files
-    project_root = Path("/home/runner/work/my_ai_project/my_ai_project")
+    # Find all service files - use current directory or script's parent
+    project_root = Path(__file__).parent.parent
     service_files = list(project_root.glob("app/services/**/*service*.py"))
     
     print(f"Validating {len(service_files)} service files...")

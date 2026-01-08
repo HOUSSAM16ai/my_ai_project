@@ -23,10 +23,8 @@ if str(ROOT_DIR) not in sys.path:
 os.environ["ENVIRONMENT"] = "testing"
 os.environ["SECRET_KEY"] = "test-secret-key-that-is-very-long-and-secure-enough-for-tests-v4"
 
-TEST_DB_PATH = ROOT_DIR / "test.db"
-if TEST_DB_PATH.exists():
-    TEST_DB_PATH.unlink()
-os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{TEST_DB_PATH}"
+# Use in-memory database for better test isolation
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
 from app.core.database import async_session_factory as TestingSessionLocal  # noqa: E402
 from app.core.database import engine  # noqa: E402
@@ -111,26 +109,42 @@ def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> bool | None:
     pyfuncitem._store["_async_result"] = result
     return True
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def event_loop():
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
+    """
+    إنشاء حلقة حدث جديدة لكل اختبار لضمان العزل الكامل
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     yield loop
-    loop.close()
+    # تنظيف المهام المعلقة قبل إغلاق الحلقة
+    try:
+        pending = asyncio.all_tasks(loop)
+        for task in pending:
+            task.cancel()
+        if pending:
+            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+    except Exception:
+        pass
+    finally:
+        try:
+            loop.close()
+        except Exception:
+            pass
 
-@pytest.fixture(scope="session", autouse=True)
-def init_db() -> None:
-    """تهيئة قاعدة البيانات في بداية جلسة الاختبار لكل السيناريوهات."""
-
+@pytest.fixture(scope="function", autouse=True)
+def init_db(event_loop) -> None:
+    """
+    تهيئة قاعدة البيانات لكل اختبار لضمان العزل الكامل
+    """
     import app.core.domain.models  # noqa: F401
 
     async def _create_all() -> None:
         async with engine.begin() as conn:
+            await conn.run_sync(SQLModel.metadata.drop_all)
             await conn.run_sync(SQLModel.metadata.create_all)
 
-    asyncio.run(_create_all())
+    event_loop.run_until_complete(_create_all())
 
 
 @pytest.fixture(autouse=True)
@@ -163,13 +177,20 @@ async def _reset_database(session: AsyncSession) -> None:
 
 @pytest.fixture
 def db_session(init_db, event_loop):
+    """
+    جلسة قاعدة بيانات معزولة لكل اختبار
+    """
     session_context = managed_test_session()
     session = event_loop.run_until_complete(session_context.__aenter__())
     event_loop.run_until_complete(_reset_database(session))
     try:
         yield session
     finally:
-        event_loop.run_until_complete(session_context.__aexit__(None, None, None))
+        try:
+            event_loop.run_until_complete(session_context.__aexit__(None, None, None))
+        except Exception:
+            # تجاهل أخطاء الإغلاق إذا كانت الحلقة مغلقة بالفعل
+            pass
 
 @pytest.fixture
 def client():

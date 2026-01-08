@@ -48,7 +48,12 @@ jobs:
           SYNC_GITLAB_ID: ${{ secrets.SYNC_GITLAB_ID }}
         run: |
           echo "🔄 Starting GitLab synchronization..."
-          python scripts/universal_repo_sync.py && echo "✅ Sync completed successfully!" || echo "⚠️ Sync completed with warnings"
+          if [ -z "$SYNC_GITHUB_TOKEN" ] || [ -z "$SYNC_GITLAB_TOKEN" ]; then
+            echo "⚠️ Sync tokens not configured - skipping synchronization"
+            echo "This is expected if you haven't set up GitLab mirroring"
+            exit 0
+          fi
+          python scripts/universal_repo_sync.py
           
       - name: Verify Sync Status
         if: always()
