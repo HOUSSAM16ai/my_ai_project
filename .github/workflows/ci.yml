@@ -63,22 +63,26 @@ jobs:
       - name: 🔍 Validate OpenAPI Contracts
         run: |
           echo "🔍 Validating OpenAPI contracts..."
-          for file in docs/contracts/openapi/*.yaml; do
-            if [ -f "$file" ]; then
+          if ls docs/contracts/openapi/*.yaml 1> /dev/null 2>&1; then
+            for file in docs/contracts/openapi/*.yaml; do
               echo "Validating: $file"
-              spectral lint "$file" --ruleset docs/contracts/policies/.spectral.yaml || echo "⚠️ Validation completed with warnings for $file"
-            fi
-          done
+              spectral lint "$file" --ruleset docs/contracts/policies/.spectral.yaml || true
+            done
+          else
+            echo "⚠️ No OpenAPI contracts found - skipping validation"
+          fi
 
       - name: 🔍 Validate AsyncAPI Contracts
         run: |
           echo "🔍 Validating AsyncAPI contracts..."
-          for file in docs/contracts/asyncapi/*.yaml; do
-            if [ -f "$file" ]; then
+          if ls docs/contracts/asyncapi/*.yaml 1> /dev/null 2>&1; then
+            for file in docs/contracts/asyncapi/*.yaml; do
               echo "Validating: $file"
-              spectral lint "$file" --ruleset docs/contracts/policies/.spectral.yaml || echo "⚠️ Validation completed with warnings for $file"
-            fi
-          done
+              spectral lint "$file" --ruleset docs/contracts/policies/.spectral.yaml || true
+            done
+          else
+            echo "⚠️ No AsyncAPI contracts found - skipping validation"
+          fi
 
       - name: ✅ Contract Validation Summary
         run: echo "✅ All contract validations completed!"
@@ -111,10 +115,10 @@ jobs:
           pip install ruff
 
       - name: 🔧 Lint with Ruff
-        run: ruff check . || echo "⚠️ Linting completed with warnings"
+        run: ruff check .
 
       - name: 🎨 Format Check with Ruff
-        run: ruff format --check . || echo "⚠️ Format check completed with warnings"
+        run: ruff format --check .
 
   # ===========================================================================
   # 🧪 مرحلة الاختبارات
@@ -165,8 +169,7 @@ jobs:
             --cov-report=xml:coverage.xml \
             --cov-report=term-missing \
             --durations=10 \
-            --tb=short \
-            || echo "⚠️ Some tests failed but continuing build"
+            --tb=short
 
       - name: 📊 Upload Coverage Report
         uses: actions/upload-artifact@v4
@@ -261,7 +264,7 @@ jobs:
               print('✅ Schema validation passed!')
           except Exception as e:
               print(f'⚠️ Schema validation completed with warnings: {e}')
-          " || echo "⚠️ Schema check completed with warnings"
+          "
 
   # ===========================================================================
   # 🏗️ Build Status Check (Required for Branch Protection)
