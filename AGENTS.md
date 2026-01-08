@@ -18,6 +18,18 @@ This project adopts a unique fusion of two legendary computer science methodolog
 
 ---
 
+## 🏛️ API-First Microservice Architecture
+
+The system follows a strict **API-First Microservice Architecture**. Refer to `API_FIRST_PLAN.md` for the full executive guide.
+
+### Core Tenets:
+1.  **Contracts First:** Define and document API contracts (OpenAPI) *before* implementing logic. The contract is the source of truth.
+2.  **Bounded Contexts:** Each service owns its data and logic exclusively. No shared databases. No direct code coupling between services.
+3.  **Communication:** All inter-service communication happens via defined APIs or Event Bus.
+4.  **Zero Trust Security:** Authenticate and authorize every request, internal or external.
+
+---
+
 ## 🛠️ Coding Rules
 
 ### A. The Reality Kernel (System Root)
