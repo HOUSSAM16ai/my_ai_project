@@ -4,7 +4,7 @@ from sqlalchemy import select
 
 from app.core.domain.models import MessageRole, User
 from app.services.admin.chat_persistence import AdminChatPersistence
-from app.services.auth_service import AuthService
+from app.services.auth import AuthService
 from app.services.rbac import ADMIN_ROLE
 from tests.conftest import managed_test_session
 

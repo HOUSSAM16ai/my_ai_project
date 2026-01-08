@@ -5,7 +5,7 @@ from sqlalchemy import select
 from app.config.settings import get_settings
 from app.core.domain.models import AuditLog, User, UserStatus
 from app.middleware.rate_limiter_middleware import reset_rate_limiter
-from app.services.auth_service import AuthService
+from app.services.auth import AuthService
 from app.services.rbac import ADMIN_ROLE, RBACService
 
 

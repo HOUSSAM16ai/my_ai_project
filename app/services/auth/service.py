@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import AppSettings, get_settings
 from app.core.domain.models import User, UserStatus, pwd_context
+from app.core.base_service import BaseService
 from app.services.audit import AuditService
 from app.services.auth.crypto import AuthCrypto
 from app.services.auth.password_manager import PasswordManager
@@ -21,12 +22,13 @@ from app.services.auth.token_manager import TokenManager
 from app.services.rbac import ADMIN_ROLE, RBACService
 
 
-class AuthService:
+class AuthService(BaseService):
     """
     طبقة المصادقة التطبيقية مع واجهات تسجيل الدخول، التسجيل، وتدوير الرموز.
     """
 
     def __init__(self, session: AsyncSession, settings: AppSettings | None = None) -> None:
+        super().__init__(service_name="AuthService")
         self.session = session
         self.settings = settings or get_settings()
         self.rbac = RBACService(session)
@@ -48,19 +50,24 @@ class AuthService:
         user_agent: str | None = None,
     ) -> User:
         """إنشاء مستخدم قياسي جديد."""
-        user = await self.registration_manager.register_user(
-            full_name=full_name, email=email, password=password
-        )
-        await self.audit.record(
-            actor_user_id=user.id,
-            action="USER_REGISTERED",
-            target_type="user",
-            target_id=str(user.id),
-            metadata={"email_hash": self.crypto.hash_identifier(email.lower().strip())},
-            ip=ip,
-            user_agent=user_agent,
-        )
-        return user
+        self._log_info("Registering new user", email_hash=self.crypto.hash_identifier(email))
+        try:
+            user = await self.registration_manager.register_user(
+                full_name=full_name, email=email, password=password
+            )
+            await self.audit.record(
+                actor_user_id=user.id,
+                action="USER_REGISTERED",
+                target_type="user",
+                target_id=str(user.id),
+                metadata={"email_hash": self.crypto.hash_identifier(email.lower().strip())},
+                ip=ip,
+                user_agent=user_agent,
+            )
+            return user
+        except Exception as e:
+            self._log_error("Failed to register user", exc=e, email_hash=self.crypto.hash_identifier(email))
+            raise
 
     async def authenticate(
         self,
@@ -77,6 +84,7 @@ class AuthService:
         user = result.scalar_one_or_none()
 
         if not user or not user.password_hash or not user.check_password(password):
+            self._log_warning("Authentication failed", email_hash=self.crypto.hash_identifier(normalized_email))
             await self.audit.record(
                 actor_user_id=None,
                 action="AUTH_FAILED",
@@ -89,6 +97,7 @@ class AuthService:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
         if not user.is_active or user.status in {UserStatus.SUSPENDED, UserStatus.DISABLED}:
+            self._log_warning("Authentication rejected: Account disabled", user_id=str(user.id))
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account disabled")
 
         await self.audit.record(
@@ -252,6 +261,7 @@ class AuthService:
         record = await self.token_manager.get_refresh_record(token_id)
 
         if record is None:
+            self._log_warning("Refresh token rejected: Missing", token_id=token_id)
             await self.audit.record(
                 actor_user_id=None,
                 action="REFRESH_REJECTED",
@@ -264,6 +274,7 @@ class AuthService:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
         if record.revoked_at is not None or record.replaced_by_token_id is not None:
+            self._log_warning("Refresh token replay detected", user_id=str(record.user_id), token_id=token_id)
             await self.token_manager.revoke_family(record.family_id)
             await self.audit.record(
                 actor_user_id=record.user_id,
@@ -404,6 +415,8 @@ class AuthService:
         user = result.scalar_one_or_none()
 
         if not user:
+            # Note: We do not log error here to avoid user enumeration, but we can log debug
+            self._log_debug("Password reset requested for unknown email", email_hash=self.crypto.hash_identifier(normalized_email))
             await self.audit.record(
                 actor_user_id=None,
                 action="PASSWORD_RESET_REQUESTED",

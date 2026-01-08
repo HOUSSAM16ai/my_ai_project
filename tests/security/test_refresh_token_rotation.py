@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from app.core.domain.models import RefreshToken
-from app.services.auth_service import AuthService
+from app.services.auth import AuthService
 
 
 @pytest.mark.asyncio

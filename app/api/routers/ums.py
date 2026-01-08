@@ -29,7 +29,7 @@ from app.core.domain.models import AuditLog, User, UserStatus
 from app.deps.auth import CurrentUser, get_auth_service, get_current_user, require_permissions
 from app.middleware.rate_limiter_middleware import rate_limit
 from app.services.audit import AuditService
-from app.services.auth_service import AuthService
+from app.services.auth import AuthService
 from app.services.policy import PolicyService
 from app.services.rbac import (
     ADMIN_ROLE,
