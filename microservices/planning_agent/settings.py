@@ -1,7 +1,7 @@
 """
 إعدادات وكيل التخطيط (Planning Agent).
 
-تعكس هذه الإعدادات استقلالية الوكيل وارتباطه بقاعدة بياناته الخاصة.
+تضمن هذه الإعدادات عمل الوكيل بشكل مستقل وقابل للتكوين.
 """
 
 import functools
@@ -14,8 +14,7 @@ class PlanningAgentSettings(BaseSettings):
     """
     إعدادات وكيل التخطيط.
 
-    يتم استخدام رابط قاعدة البيانات الخاصة بالوكيل لضمان
-    العزل الكامل عن بقية الخدمات.
+    تستخدم لتحديد معلمات التشغيل والاتصال بقاعدة البيانات.
     """
 
     SERVICE_NAME: str = Field("planning-agent", description="اسم الوكيل")
@@ -30,6 +29,6 @@ class PlanningAgentSettings(BaseSettings):
 
 @functools.lru_cache(maxsize=1)
 def get_settings() -> PlanningAgentSettings:
-    """يبني إعدادات الوكيل مع تخزينها داخلياً."""
+    """يبني إعدادات الوكيل مع تخزينها للاستخدام المتكرر."""
 
     return PlanningAgentSettings()

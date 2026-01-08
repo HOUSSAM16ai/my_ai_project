@@ -5,23 +5,23 @@ services:
   orchestrator-service:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: microservices/orchestrator_service/Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
     container_name: cogniforge-orchestrator
     restart: unless-stopped
 
     ports:
-      - "8004:8004"
+      - "8004:8000"
 
     networks:
       - appnet
 
     environment:
       ORCHESTRATOR_DATABASE_URL: ${ORCHESTRATOR_DATABASE_URL:-sqlite+aiosqlite:///./orchestrator.db}
-      ORCHESTRATOR_PLANNING_AGENT_URL: ${ORCHESTRATOR_PLANNING_AGENT_URL:-http://planning-agent:8001}
-      ORCHESTRATOR_MEMORY_AGENT_URL: ${ORCHESTRATOR_MEMORY_AGENT_URL:-http://memory-agent:8002}
-      ORCHESTRATOR_USER_SERVICE_URL: ${ORCHESTRATOR_USER_SERVICE_URL:-http://user-service:8003}
+      ORCHESTRATOR_PLANNING_AGENT_URL: ${ORCHESTRATOR_PLANNING_AGENT_URL:-http://planning-agent:8000}
+      ORCHESTRATOR_MEMORY_AGENT_URL: ${ORCHESTRATOR_MEMORY_AGENT_URL:-http://memory-agent:8000}
+      ORCHESTRATOR_USER_SERVICE_URL: ${ORCHESTRATOR_USER_SERVICE_URL:-http://user-service:8000}
 
     depends_on:
       - planning-agent
@@ -29,17 +29,11 @@ services:
       - user-service
 
     healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f http://localhost:8004/health || exit 1"]
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 15s
-
-    command: >
-      bash -c "
-      echo 'Starting Orchestrator Service...' &&
-      python -m uvicorn microservices.orchestrator_service.main:app --host 0.0.0.0 --port 8004 --reload
-      "
 
     volumes:
       - .:/app
@@ -49,14 +43,14 @@ services:
   planning-agent:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: microservices/planning_agent/Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
     container_name: cogniforge-planning-agent
     restart: unless-stopped
 
     ports:
-      - "8001:8001"
+      - "8001:8000"
 
     networks:
       - appnet
@@ -65,17 +59,11 @@ services:
       PLANNING_DATABASE_URL: ${PLANNING_DATABASE_URL:-sqlite+aiosqlite:///./planning_agent.db}
 
     healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f http://localhost:8001/health || exit 1"]
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 15s
-
-    command: >
-      bash -c "
-      echo 'Starting Planning Agent...' &&
-      python -m uvicorn microservices.planning_agent.main:app --host 0.0.0.0 --port 8001 --reload
-      "
 
     volumes:
       - .:/app
@@ -85,14 +73,14 @@ services:
   memory-agent:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: microservices/memory_agent/Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
     container_name: cogniforge-memory-agent
     restart: unless-stopped
 
     ports:
-      - "8002:8002"
+      - "8002:8000"
 
     networks:
       - appnet
@@ -101,17 +89,11 @@ services:
       MEMORY_DATABASE_URL: ${MEMORY_DATABASE_URL:-sqlite+aiosqlite:///./memory_agent.db}
 
     healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f http://localhost:8002/health || exit 1"]
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 15s
-
-    command: >
-      bash -c "
-      echo 'Starting Memory Agent...' &&
-      python -m uvicorn microservices.memory_agent.main:app --host 0.0.0.0 --port 8002 --reload
-      "
 
     volumes:
       - .:/app
@@ -121,14 +103,14 @@ services:
   user-service:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: microservices/user_service/Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
     container_name: cogniforge-user-service
     restart: unless-stopped
 
     ports:
-      - "8003:8003"
+      - "8003:8000"
 
     networks:
       - appnet
@@ -137,16 +119,11 @@ services:
       USER_DATABASE_URL: ${USER_DATABASE_URL:-sqlite+aiosqlite:///./user_service.db}
 
     healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f http://localhost:8003/health || exit 1"]
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 15s
-    command: >
-      bash -c "
-      echo 'Starting User Service...' &&
-      python -m uvicorn microservices.user_service.main:app --host 0.0.0.0 --port 8003 --reload
-      "
 
     volumes:
       - .:/app

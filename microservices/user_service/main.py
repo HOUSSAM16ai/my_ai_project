@@ -5,45 +5,21 @@
 تضمن عدم مشاركة قواعد البيانات بين الخدمات.
 """
 
-from dataclasses import dataclass, field
-from uuid import uuid4
-
+from contextlib import asynccontextmanager
 import re
+from uuid import UUID
 
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
+from sqlalchemy.exc import IntegrityError
 
 from microservices.user_service.settings import UserServiceSettings, get_settings
+from microservices.user_service.models import User
+from microservices.user_service.database import init_db, get_session
 
 _EMAIL_PATTERN = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
-
-
-@dataclass(slots=True)
-class UserRecord:
-    """تمثيل داخلي لمستخدم محفوظ."""
-
-    user_id: str
-    name: str
-    email: str
-
-
-@dataclass(slots=True)
-class UserStore:
-    """مخزن مستخدمين بسيط يعتمد على الذاكرة المؤقتة."""
-
-    users: dict[str, UserRecord] = field(default_factory=dict)
-
-    def create(self, name: str, email: str) -> UserRecord:
-        """ينشئ مستخدم جديد ويعيده."""
-
-        record = UserRecord(user_id=str(uuid4()), name=name, email=email)
-        self.users[record.user_id] = record
-        return record
-
-    def list_all(self) -> list[UserRecord]:
-        """يعيد جميع المستخدمين المسجلين."""
-
-        return list(self.users.values())
 
 
 class UserCreateRequest(BaseModel):
@@ -66,12 +42,12 @@ class UserCreateRequest(BaseModel):
 class UserResponse(BaseModel):
     """استجابة بيانات المستخدم."""
 
-    user_id: str
+    user_id: UUID
     name: str
     email: str
 
 
-def _build_router(settings: UserServiceSettings, store: UserStore) -> APIRouter:
+def _build_router(settings: UserServiceSettings) -> APIRouter:
     """ينشئ موجهات خدمة المستخدمين مع مخزن مستقل."""
 
     router = APIRouter()
@@ -87,33 +63,56 @@ def _build_router(settings: UserServiceSettings, store: UserStore) -> APIRouter:
         }
 
     @router.post("/users", response_model=UserResponse)
-    def create_user(payload: UserCreateRequest) -> UserResponse:
+    async def create_user(
+        payload: UserCreateRequest,
+        session: AsyncSession = Depends(get_session)
+    ) -> UserResponse:
         """ينشئ مستخدم جديد داخل الخدمة."""
 
-        user = store.create(payload.name, payload.email)
-        return UserResponse(user_id=user.user_id, name=user.name, email=user.email)
+        user = User(name=payload.name, email=payload.email)
+        session.add(user)
+        try:
+            await session.commit()
+            await session.refresh(user)
+        except IntegrityError:
+            await session.rollback()
+            raise HTTPException(status_code=409, detail="البريد الإلكتروني مسجل بالفعل")
+
+        return UserResponse(user_id=user.id, name=user.name, email=user.email)
 
     @router.get("/users", response_model=list[UserResponse])
-    def list_users() -> list[UserResponse]:
+    async def list_users(
+        session: AsyncSession = Depends(get_session)
+    ) -> list[UserResponse]:
         """يعرض جميع المستخدمين المسجلين."""
 
-        return [UserResponse(user_id=user.user_id, name=user.name, email=user.email) for user in store.list_all()]
+        statement = select(User)
+        result = await session.execute(statement)
+        users = result.scalars().all()
+
+        return [UserResponse(user_id=user.id, name=user.name, email=user.email) for user in users]
 
     return router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    yield
 
 
 def create_app(settings: UserServiceSettings | None = None) -> FastAPI:
     """يبني تطبيق FastAPI لخدمة المستخدمين."""
 
     effective_settings = settings or get_settings()
-    store = UserStore()
 
     app = FastAPI(
         title="User Service",
         version=effective_settings.SERVICE_VERSION,
         description="خدمة مستقلة لإدارة المستخدمين",
+        lifespan=lifespan
     )
-    app.include_router(_build_router(effective_settings, store))
+    app.include_router(_build_router(effective_settings))
 
     return app
 
