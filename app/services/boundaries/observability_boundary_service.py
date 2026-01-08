@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from app.services.observability.aiops.service import AIOpsService, get_aiops_service
 from app.telemetry.unified_observability import (
     UnifiedObservabilityService,
     get_unified_observability,
 )
+from app.services.boundaries.observability_client import ObservabilityServiceClient
 
 class ObservabilityBoundaryService:
     """
@@ -15,20 +15,26 @@ class ObservabilityBoundaryService:
 
     def __init__(
         self,
-        aiops_service: AIOpsService | None = None,
         telemetry_service: UnifiedObservabilityService | None = None,
+        observability_client: ObservabilityServiceClient | None = None,
     ):
-        self.aiops = aiops_service or get_aiops_service()
         self.telemetry = telemetry_service or get_unified_observability()
+        self.client = observability_client or ObservabilityServiceClient()
 
     async def get_system_health(self) -> dict[str, object]:
         """
         تجميع الحالة الصحية للنظام من مصادر متعددة بطريقة خفيفة الوزن.
         """
+        golden_signals = self.telemetry.get_golden_signals()
+
+        # We can also fetch health from the microservice if needed,
+        # but for now we keep the existing behavior augmented with microservice check if possible,
+        # or just return the local view as the "system" health.
+
         return {
             "status": "ok",
             "system": "superhuman",
-            "timestamp": self.telemetry.get_golden_signals()["timestamp"],
+            "timestamp": golden_signals.get("timestamp"),
         }
 
     async def get_golden_signals(self) -> dict[str, object]:
@@ -40,8 +46,17 @@ class ObservabilityBoundaryService:
     async def get_aiops_metrics(self) -> dict[str, object]:
         """
         استرجاع مقاييس AIOps للشذوذات وقرارات المعالجة الذاتية.
+        يتم التفويض الآن لخدمة المراقبة الدقيقة (Microservice).
         """
-        return self.aiops.get_aiops_metrics()
+        try:
+            return await self.client.get_aiops_metrics()
+        except Exception:
+            # Fallback or return empty if service is down, to avoid breaking the monolith UI
+            return {
+                "error": "Observability Service Unavailable",
+                "total_anomalies": 0,
+                "active_healing_decisions": 0
+            }
 
     async def get_performance_snapshot(self) -> dict[str, object]:
         """
