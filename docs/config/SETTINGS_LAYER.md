@@ -2,16 +2,16 @@
 
 ## 1. Purpose
 
-This document outlines the architecture of the new, framework-independent settings layer introduced as part of the progressive decoupling of the application from the Flask framework. The primary objective is to establish a single, reliable, and validated source of truth for all configuration parameters across the application, including the future FastAPI services, CLI tools, and background workers.
+This document outlines the architecture of the new, framework-independent settings layer introduced as part of the progressive decoupling of the application from a legacy web framework. The primary objective is to establish a single, reliable, and validated source of truth for all configuration parameters across the application, including the future FastAPI services, CLI tools, and background workers.
 
-## 2. The Problem: Configuration Coupled to Flask
+## 2. The Problem: Configuration Coupled to a Legacy Framework
 
-Previously, the application's configuration was tightly coupled to Flask's global `current_app.config` object. This presented several architectural challenges:
+Previously, the application's configuration was tightly coupled to a global `current_app.config` object. This presented several architectural challenges:
 
-- **Framework Dependency:** Accessing configuration required an active Flask application context, making it impossible to import and use configuration in framework-agnostic modules, such as service layers, utility functions, or standalone scripts.
-- **Testing Complexity:** Unit tests for services that needed configuration values had to create a full Flask application context, slowing down tests and introducing unnecessary dependencies.
-- **Lack of Validation:** Flask's configuration system is a simple dictionary. There was no built-in mechanism for type validation, presence checks, or default value management, leading to potential runtime errors if environment variables were missing or malformed.
-- **Blocked FastAPI Migration:** A clean migration to FastAPI depends on having components (like a settings module) that can be imported and used without pulling in the entire Flask application.
+- **Framework Dependency:** Accessing configuration required an active legacy application context, making it impossible to import and use configuration in framework-agnostic modules, such as service layers, utility functions, or standalone scripts.
+- **Testing Complexity:** Unit tests for services that needed configuration values had to create a full legacy application context, slowing down tests and introducing unnecessary dependencies.
+- **Lack of Validation:** The legacy configuration system is a simple dictionary. There was no built-in mechanism for type validation, presence checks, or default value management, leading to potential runtime errors if environment variables were missing or malformed.
+- **Blocked FastAPI Migration:** A clean migration to FastAPI depends on having components (like a settings module) that can be imported and used without pulling in the entire legacy application.
 
 ## 3. The Solution: Pydantic Settings
 
@@ -20,7 +20,7 @@ To solve these issues, we have introduced a new settings layer based on [Pydanti
 ### Key Benefits:
 
 - **Single Source of Truth:** All configuration is defined in one place: `app.config.settings.AppSettings`.
-- **Framework-Independent:** The module is pure Python and has no dependency on Flask or FastAPI. It can be safely imported and used anywhere.
+- **Framework-Independent:** The module is pure Python and has no dependency on any web framework. It can be safely imported and used anywhere.
 - **Automatic Validation:** Pydantic automatically validates that required environment variables are present and that all values conform to their specified type hints (e.g., `str`, `int`). The application will fail fast on startup if the configuration is invalid, preventing runtime errors.
 - **Environment-Aware:** It automatically loads configuration from environment variables and `.env` files, following the 12-Factor App methodology.
 - **IDE Support:** Because settings are defined as typed class attributes, we get excellent autocompletion and static analysis support from tools like MyPy.

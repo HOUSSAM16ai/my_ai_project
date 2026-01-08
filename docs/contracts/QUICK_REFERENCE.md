@@ -23,11 +23,11 @@ cp .env.example .env
 # Edit .env with your configuration
 
 # Initialize database
-flask db upgrade
-flask users create-admin
+python -m app.cli db-migrate
+python -m app.cli db seed --confirm
 
 # Start development server
-flask run
+python -m uvicorn app.main:app --reload
 ```
 
 ### 2. Contract-First Development | تطوير العقد أولاً
@@ -147,9 +147,6 @@ npx graphql-schema-linter docs/contracts/graphql/schema.graphql
 ### Generate API Key
 
 ```bash
-# Via CLI
-flask users create --email dev@example.com --name "Developer"
-
 # Via Python
 python -c "
 from app.services.api_first_platform_service import APIFirstPlatformService
@@ -164,12 +161,12 @@ print(f'API Key: {key[\"key\"]}')
 ```bash
 # cURL
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-     http://localhost:5000/api/v1/accounts
+     http://localhost:8000/api/v1/accounts
 
 # Python requests
 import requests
 headers = {"Authorization": "Bearer YOUR_API_KEY"}
-response = requests.get("http://localhost:5000/api/v1/accounts", headers=headers)
+response = requests.get("http://localhost:8000/api/v1/accounts", headers=headers)
 ```
 
 ---
@@ -273,7 +270,7 @@ docker-compose -f docker-compose.prod.yml build
 docker-compose -f docker-compose.prod.yml up -d
 
 # Health check
-curl http://localhost:5000/health
+curl http://localhost:8000/health
 ```
 
 ### Kubernetes Deployment
@@ -297,45 +294,39 @@ kubectl logs -f deployment/cogniforge-api -n cogniforge
 
 ```bash
 # Create migration
-flask db migrate -m "description"
+python -m alembic revision --autogenerate -m "description"
 
 # Apply migrations
-flask db upgrade
+python -m alembic upgrade head
 
 # Rollback
-flask db downgrade
+python -m alembic downgrade -1
 
-# Database health
-flask db health
-
-# Database stats
-flask db stats
+# Create tables directly
+python -m app.cli db create-all
 ```
 
 ### User Management
 
 ```bash
-# Create admin user
-flask users create-admin
+# Seed admin user
+python -m app.cli db seed --confirm
 
-# List users
-flask users list
-
-# Create regular user
-flask users create --email user@example.com --name "User Name"
+# Dry-run seed
+python -m app.cli db seed --dry-run
 ```
 
 ### Service Management
 
 ```bash
 # Start service
-flask run
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 # Development mode
-FLASK_DEBUG=1 flask run
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 # Production mode
-gunicorn -c gunicorn.conf.py app:create_app()
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-level info
 ```
 
 ---
@@ -346,30 +337,26 @@ gunicorn -c gunicorn.conf.py app:create_app()
 
 ```bash
 # Enable debug logging
-export FLASK_DEBUG=1
 export LOG_LEVEL=DEBUG
-flask run
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
 ```
 
 ### Database Issues
 
 ```bash
 # Reset database
-flask db downgrade base
-flask db upgrade
-
-# Check connection
-flask db health
+python -m alembic downgrade base
+python -m alembic upgrade head
 
 # View schema
-flask db tables
+python -m alembic history
 ```
 
 ### API Issues
 
 ```bash
 # Test endpoint
-curl -v http://localhost:5000/api/v1/accounts
+curl -v http://localhost:8000/api/v1/accounts
 
 # Check logs
 docker-compose logs web

@@ -246,7 +246,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed - Previous
 - Refactored `AIServiceGateway` to be a class-based, dependency-injected service.
-- Decoupled `AIServiceGateway` from Flask and the `requests` library by introducing an `HttpClientProtocol`.
+- Decoupled `AIServiceGateway` from the legacy web framework and the `requests` library by introducing an `HttpClientProtocol`.
 - Moved `AIServiceGateway` to `app/gateways/ai_service_gateway.py`.
 - Added backward-compatibility wrappers for `AIServiceGateway` in `app/services/ai_service_gateway.py`.
 - Added smoke tests for `AIServiceGateway`.

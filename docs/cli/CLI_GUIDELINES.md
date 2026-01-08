@@ -4,7 +4,7 @@ This document provides guidelines for developing and using the CLI tool.
 
 ## Guiding Principles
 
-- **No Flask Imports**: CLI handlers in `app/cli_handlers` must not import `current_app` or any other Flask-specific context variables. This ensures that the CLI is decoupled from the web application.
+- **No Legacy Context Imports**: CLI handlers in `app/cli_handlers` must not import `current_app` or any other legacy context variables. This ensures that the CLI is decoupled from the web application.
 - **Transactional Sessions**: All database operations must be performed within a transactional session using the `transactional_session` context manager. This ensures that operations are atomic and can be safely rolled back in case of errors.
 - **Safety Flags**: Critical commands must include safety flags like `--confirm` and `--dry-run` to prevent accidental data loss or modification in production environments.
 - **Idempotency**: Strive to make commands idempotent where possible. This means that running the same command multiple times should produce the same result as running it once.

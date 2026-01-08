@@ -14,7 +14,10 @@ import json
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+
+MetricValue = int | float | str | list[int]
+MetricBucket = dict[str, MetricValue]
+MetricsSnapshot = dict[str, MetricValue | MetricBucket]
 
 
 # Colors for terminal output
@@ -50,9 +53,9 @@ def run_command(cmd: str, capture_output: bool = True) -> tuple[int, str]:
         return 1, str(e)
 
 
-def get_code_metrics() -> dict[str, Any]:
+def get_code_metrics() -> MetricBucket:
     """Get code quality metrics."""
-    metrics = {}
+    metrics: MetricBucket = {}
 
     # Count lines of code
     code, output = run_command(
@@ -114,13 +117,13 @@ def get_code_metrics() -> dict[str, Any]:
     return metrics
 
 
-def get_test_metrics() -> dict[str, Any]:
+def get_test_metrics() -> MetricBucket:
     """Get test coverage metrics."""
-    metrics = {}
+    metrics: MetricBucket = {}
 
     # Run pytest with coverage
     code, output = run_command(
-        "FLASK_ENV=testing TESTING=1 SECRET_KEY=test-key "
+        "ENVIRONMENT=testing TESTING=1 SECRET_KEY=test-key "
         "pytest --quiet --cov=app --cov-report=json --cov-report=term 2>&1"
     )
 
@@ -169,9 +172,9 @@ def get_test_metrics() -> dict[str, Any]:
     return metrics
 
 
-def get_security_metrics() -> dict[str, Any]:
+def get_security_metrics() -> MetricBucket:
     """Get security scan metrics."""
-    metrics = {}
+    metrics: MetricBucket = {}
 
     # Run Bandit
     _code, output = run_command("bandit -r app/ -c pyproject.toml -f json 2>&1")
@@ -200,9 +203,9 @@ def get_security_metrics() -> dict[str, Any]:
     return metrics
 
 
-def get_linting_metrics() -> dict[str, Any]:
+def get_linting_metrics() -> MetricBucket:
     """Get linting metrics."""
-    metrics = {}
+    metrics: MetricBucket = {}
 
     # Ruff
     code, output = run_command("ruff check app/ tests/ --output-format=json 2>&1")
@@ -227,7 +230,7 @@ def get_linting_metrics() -> dict[str, Any]:
     return metrics
 
 
-def calculate_overall_score(metrics: dict[str, Any]) -> float:
+def calculate_overall_score(metrics: MetricsSnapshot) -> float:
     """Calculate overall quality score (0-100)."""
     scores = []
 
@@ -259,7 +262,7 @@ def calculate_overall_score(metrics: dict[str, Any]) -> float:
     return round(sum(scores), 2)
 
 
-def display_dashboard(metrics: dict[str, Any]) -> None:
+def display_dashboard(metrics: MetricsSnapshot) -> None:
     """Display metrics dashboard."""
     print(f"{Colors.PURPLE}{'=' * 80}{Colors.NC}")
     print(f"{Colors.PURPLE}  🏆 SUPERHUMAN QUALITY METRICS DASHBOARD{Colors.NC}")

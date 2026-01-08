@@ -94,7 +94,7 @@ class ErrorResponseFactory:
         # Simplified debug check: assume debug if not explicitly known, or check env
         is_debug = True  # Default to safe verbose for now or check app.debug if available
         if app:
-            # FastAPI doesn't store debug config exactly like Flask, using a safe default or attribute check
+            # FastAPI doesn't expose debug flags like some frameworks; use a safe attribute check.
             is_debug = getattr(app, "debug", False)
 
         details = str(error) if is_debug else "A database error occurred."

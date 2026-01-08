@@ -92,7 +92,7 @@ spec:
           
           # Environment variables
           env:
-            - name: FLASK_ENV
+            - name: ENVIRONMENT
               value: "production"
             - name: DATABASE_URL
               valueFrom:
