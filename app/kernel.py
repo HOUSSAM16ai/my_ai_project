@@ -45,6 +45,9 @@ from app.api.routers import (
 from app.config.settings import AppSettings
 from app.core.db_schema import validate_schema_on_startup
 from app.core.database import async_session_factory
+from app.core.event_bus_impl import EventBus, get_event_bus
+from app.gateway import APIGateway, GatewayConfig, ServiceRegistry
+from app.gateway.config import DEFAULT_GATEWAY_CONFIG
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
@@ -119,14 +122,17 @@ def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
 
     return stack
 
-def _get_router_registry() -> list[RouterSpec]:
+def _get_router_registry(gateway_router: APIRouter | None = None) -> list[RouterSpec]:
     """
     سجل الموجهات (Router Registry) كبيانات.
+
+    Args:
+        gateway_router: موجه البوابة (اختياري)
 
     Returns:
         list[RouterSpec]: قائمة (الموجه، البادئة).
     """
-    return [
+    routers = [
         (system.root_router, ""), # Root Level (e.g., /health)
         (system.router, ""),      # /system prefix is inside the router
         (admin.router, ""),
@@ -139,6 +145,12 @@ def _get_router_registry() -> list[RouterSpec]:
         (agents.router, ""),
         (overmind.router, ""),
     ]
+    
+    # إضافة موجه البوابة إذا كان متاحاً
+    if gateway_router:
+        routers.append((gateway_router, ""))
+    
+    return routers
 
 def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
     """
@@ -215,7 +227,13 @@ class RealityKernel:
         middleware_stack = (
             _get_middleware_stack(self.settings_obj) if self.settings_obj else []
         )
-        router_registry = _get_router_registry()
+        
+        # إضافة موجه البوابة إذا كان متاحاً
+        gateway_router = None
+        if hasattr(app.state, "api_gateway"):
+            gateway_router = app.state.api_gateway.router
+        
+        router_registry = _get_router_registry(gateway_router)
 
         # 3. Transformations - API Core (100% API-First)
         app = _apply_middleware(app, middleware_stack)
@@ -243,8 +261,21 @@ class RealityKernel:
         @asynccontextmanager
         async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             """Lifecycle Manager Closure."""
+            # تهيئة المكونات الأساسية
             app.state.agent_plan_registry = AgentPlanRegistry()
             app.state.agent_plan_service = AgentPlanService()
+            
+            # تهيئة Event Bus
+            app.state.event_bus = get_event_bus()
+            
+            # تهيئة API Gateway
+            gateway_config = DEFAULT_GATEWAY_CONFIG
+            app.state.service_registry = ServiceRegistry(services=gateway_config.services)
+            app.state.api_gateway = APIGateway(
+                config=gateway_config,
+                registry=app.state.service_registry,
+            )
+            
             async for _ in self._handle_lifespan_events():
                 yield
 

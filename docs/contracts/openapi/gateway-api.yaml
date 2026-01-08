@@ -1,0 +1,225 @@
+openapi: 3.1.0
+info:
+  title: CogniForge API Gateway
+  description: |
+    # بوابة API المركزية
+    
+    نقطة الدخول الموحدة لجميع الخدمات المصغرة في نظام CogniForge.
+    
+    ## الميزات
+    - **توجيه ذكي**: توجيه الطلبات إلى الخدمات المناسبة
+    - **موازنة الحمل**: توزيع الطلبات بين نسخ الخدمات
+    - **إعادة المحاولة**: إعادة المحاولة التلقائية عند الفشل
+    - **فحص الصحة**: مراقبة صحة جميع الخدمات
+    - **تحديد المعدل**: حماية من الطلبات الزائدة
+    
+    ## المصادقة
+    جميع الطلبات تتطلب JWT token:
+    ```
+    Authorization: Bearer <token>
+    ```
+  version: "1.0.0"
+  contact:
+    name: CogniForge Support
+    email: support@cogniforge.ai
+
+servers:
+  - url: http://localhost:8000/gateway
+    description: Local Development
+  - url: https://api.cogniforge.ai/gateway
+    description: Production
+
+tags:
+  - name: Gateway
+    description: عمليات البوابة الأساسية
+  - name: Services
+    description: إدارة الخدمات المسجلة
+
+paths:
+  /health:
+    get:
+      summary: فحص صحة البوابة
+      description: يفحص صحة البوابة وجميع الخدمات المسجلة
+      operationId: getGatewayHealth
+      tags:
+        - Gateway
+      responses:
+        '200':
+          description: البوابة والخدمات صحية
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gateway:
+                    type: string
+                    example: "healthy"
+                  services:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/ServiceHealth'
+                  summary:
+                    type: object
+                    properties:
+                      healthy:
+                        type: integer
+                        description: عدد الخدمات الصحية
+                      total:
+                        type: integer
+                        description: إجمالي الخدمات
+                      percentage:
+                        type: number
+                        format: float
+                        description: نسبة الخدمات الصحية
+
+  /services:
+    get:
+      summary: عرض الخدمات المسجلة
+      description: يعرض قائمة بجميع الخدمات المسجلة في البوابة
+      operationId: listServices
+      tags:
+        - Services
+      responses:
+        '200':
+          description: قائمة الخدمات
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  services:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ServiceInfo'
+                  count:
+                    type: integer
+                    description: عدد الخدمات
+
+  /{service_name}/{path}:
+    get:
+      summary: توجيه طلب GET
+      description: يوجه طلب GET إلى الخدمة المحددة
+      operationId: proxyGetRequest
+      tags:
+        - Gateway
+      parameters:
+        - name: service_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: اسم الخدمة المستهدفة
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+          description: المسار في الخدمة المستهدفة
+      responses:
+        '200':
+          description: استجابة من الخدمة
+        '404':
+          description: الخدمة غير موجودة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: فشل الاتصال بالخدمة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: الخدمة غير متاحة
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      summary: توجيه طلب POST
+      description: يوجه طلب POST إلى الخدمة المحددة
+      operationId: proxyPostRequest
+      tags:
+        - Gateway
+      parameters:
+        - name: service_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: استجابة من الخدمة
+        '404':
+          description: الخدمة غير موجودة
+        '502':
+          description: فشل الاتصال بالخدمة
+        '503':
+          description: الخدمة غير متاحة
+
+components:
+  schemas:
+    ServiceHealth:
+      type: object
+      properties:
+        healthy:
+          type: boolean
+          description: هل الخدمة صحية
+        response_time_ms:
+          type: number
+          format: float
+          nullable: true
+          description: وقت الاستجابة بالميلي ثانية
+        last_check:
+          type: string
+          format: date-time
+          description: آخر فحص
+        error:
+          type: string
+          nullable: true
+          description: رسالة الخطأ إن وجدت
+    
+    ServiceInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          description: اسم الخدمة
+        base_url:
+          type: string
+          format: uri
+          description: عنوان URL الأساسي
+        health_path:
+          type: string
+          description: مسار فحص الصحة
+        timeout:
+          type: integer
+          description: مهلة الطلب بالثواني
+    
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: تفاصيل الخطأ
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []
