@@ -215,7 +215,7 @@ echo ""
 echo "📝 Test 10: Running basic tests..."
 if command -v pytest &> /dev/null; then
     # Set test environment
-    export FLASK_ENV=testing
+    export ENVIRONMENT=testing
     export TESTING=1
     export SECRET_KEY=test-secret-key
     

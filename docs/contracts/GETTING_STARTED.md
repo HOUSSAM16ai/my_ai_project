@@ -77,7 +77,7 @@ cp .env.example .env
 # Edit .env with your configuration
 # Required variables:
 # - DATABASE_URL: PostgreSQL connection string
-# - SECRET_KEY: Flask secret key
+# - SECRET_KEY: Application secret key
 # - OPENROUTER_API_KEY: AI service API key (optional for basic usage)
 ```
 
@@ -85,17 +85,17 @@ cp .env.example .env
 
 ```bash
 # Run database migrations
-flask db upgrade
+python -m app.cli db-migrate
 
 # Create admin user
-flask users create-admin
+python -m app.cli db seed --confirm
 ```
 
 ### Step 5: Start the Application | تشغيل التطبيق
 
 ```bash
 # Development mode
-flask run
+python -m uvicorn app.main:app --reload
 
 # Production mode (Docker)
 docker-compose up -d
@@ -103,9 +103,9 @@ docker-compose up -d
 
 **Expected Output:**
 ```
- * Serving Flask app 'app'
- * Debug mode: on
- * Running on http://127.0.0.1:5000
+INFO:     Started server process
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000
 ```
 
 ---
@@ -119,12 +119,6 @@ CogniForge APIs use API keys for authentication. Generate your API key through t
 تستخدم APIs منصة CogniForge مفاتيح API للمصادقة. قم بإنشاء مفتاح API من خلال لوحة الإدارة أو سطر الأوامر.
 
 #### Generate API Key | إنشاء مفتاح API
-
-**Via CLI:**
-```bash
-flask users create --email developer@example.com --name "Developer"
-# API key will be displayed in output
-```
 
 **Via Python:**
 ```python

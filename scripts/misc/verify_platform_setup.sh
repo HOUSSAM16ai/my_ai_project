@@ -341,7 +341,7 @@ ${CYAN}المنصات المدعومة:${RESET}
 ${CYAN}الخطوات التالية:${RESET}
   1. تأكد من تكوين DATABASE_URL في .env
   2. شغّل المشروع: docker-compose up -d
-  3. نفّذ الترحيلات: docker-compose run --rm web flask db upgrade
+  3. نفّذ الترحيلات: docker-compose run --rm web python -m app.cli db-migrate
 
 ${CYAN}للمزيد من المعلومات:${RESET}
   📖 راجع PLATFORM_STATUS_AR.md للتفاصيل الكاملة

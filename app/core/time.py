@@ -1,7 +1,6 @@
-"""
-The TIME-ENGINE.
+"""محرك الزمن.
 
-This engine enforces the Law of Temporal Coherence, eliminating context
-errors and async/sync paradoxes. It provides a bridge for legacy code
-that expects a Flask-like application context.
+يفرض هذا المحرك قانون الاتساق الزمني ويمنع تناقضات السياق بين
+العمليات المتزامنة وغير المتزامنة. كما يوفّر جسراً آمناً للشيفرات
+القديمة التي تتوقع وجود سياق تطبيقي عام.
 """

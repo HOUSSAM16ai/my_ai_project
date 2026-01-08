@@ -56,20 +56,14 @@ npm run build
 echo -e "${GREEN}✅ Frontend built successfully!${NC}"
 echo ""
 
-# Check if Flask is running
-echo -e "${BLUE}🌐 Starting Flask server...${NC}"
+# Start API server
+echo -e "${BLUE}🌐 Starting API server...${NC}"
 echo "The Superhuman UI will be available at:"
 echo ""
-echo -e "${GREEN}  👉 http://localhost:5000/superhuman-ui${NC}"
+echo -e "${GREEN}  👉 http://localhost:8000/superhuman-ui${NC}"
 echo ""
 echo "Press Ctrl+C to stop the server"
 echo ""
 
-# Start Flask
-if command -v flask &> /dev/null; then
-    flask run
-else
-    echo -e "${YELLOW}⚠️  Flask is not installed!${NC}"
-    echo "Install Flask with: pip install -r requirements.txt"
-    echo "Then run: flask run"
-fi
+# Start API server
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

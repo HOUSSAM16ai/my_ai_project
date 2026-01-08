@@ -364,7 +364,7 @@ OPENROUTER_API_KEY=your-api-key
 
 ### 2. تطبيق Migrations
 ```bash
-flask db upgrade
+python -m app.cli db-migrate
 ```
 
 ### 3. إعادة تشغيل التطبيق
