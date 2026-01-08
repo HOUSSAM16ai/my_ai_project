@@ -6,19 +6,21 @@ CRUD Router - عمليات البيانات العامة
 يعتمد على `CrudBoundaryService` لتنفيذ المنطق، مما يضمن فصل طبقة العرض عن طبقة البيانات.
 """
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.crud import GenericResourceResponse, PaginatedResponse
 from app.core.database import get_db
-from app.services.boundaries.crud_boundary_service import CrudBoundaryService
 from app.schemas.management import PaginatedResponse as BoundaryPaginatedResponse
+from app.services.boundaries.crud_boundary_service import CrudBoundaryService
 
 router = APIRouter(tags=["CRUD"])
 
 
 def _to_api_paginated_response(
-    boundary_result: BoundaryPaginatedResponse,
+    boundary_result: BoundaryPaginatedResponse[Any],
 ) -> PaginatedResponse[GenericResourceResponse]:
     """
     يحول استجابة التقسيم إلى الصفحات من طبقة الحدود إلى نموذج الـ API الموحد.
@@ -29,6 +31,9 @@ def _to_api_paginated_response(
     """
 
     pagination = boundary_result.pagination
+    # Transform Pydantic models to GenericResourceResponse dicts or keep them as models
+    # GenericResourceResponse is likely a Pydantic model with loose dict support or specific fields.
+    # We will attempt to model_validate.
     items = [GenericResourceResponse.model_validate(item) for item in boundary_result.items]
 
     return PaginatedResponse[GenericResourceResponse](
@@ -53,8 +58,8 @@ async def list_resources(
     resource_type: str,
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
-    sort_by: str | None = Query(None, description="Field to sort by"),
-    order: str | None = Query("asc", description="Sort order (asc/desc)"),
+    sort_by: str | None = Query(None, description="Field to sort by", pattern=r"^[a-zA-Z0-9_]+$"),
+    order: str | None = Query("asc", description="Sort order (asc/desc)", pattern=r"^(asc|desc)$"),
     search: str | None = Query(None, description="Search query"),
     service: CrudBoundaryService = Depends(get_crud_service),
 ) -> PaginatedResponse[GenericResourceResponse]:
@@ -65,18 +70,24 @@ async def list_resources(
     if search:
         filters["search"] = search
 
-    result = await service.list_items(
-        resource_type,
-        page=page,
-        per_page=per_page,
-        sort_by=sort_by,
-        order=order,
-        filters=filters
-    )
-    # Ensure result matches the PaginatedResponse structure
+    try:
+        result = await service.list_items(
+            resource_type,
+            page=page,
+            per_page=per_page,
+            sort_by=sort_by,
+            order=order,  # type: ignore # Validated by Query pattern
+            filters=filters
+        )
+    except ValueError as e:
+        # Handle invalid resource type or other value errors gracefully
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Check against the imported BoundaryPaginatedResponse class (from schemas)
     if isinstance(result, BoundaryPaginatedResponse):
         return _to_api_paginated_response(result)
 
+    # Fallback if result is still a dict (legacy support, though service is updated)
     return PaginatedResponse[GenericResourceResponse].model_validate(result)
 
 @router.post(
