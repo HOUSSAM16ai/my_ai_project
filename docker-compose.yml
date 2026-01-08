@@ -39,6 +39,33 @@ services:
       - .:/app
       - /app/__pycache__
 
+  # Observability Service - AIOps and Monitoring
+  observability-service:
+    build:
+      context: .
+      dockerfile: microservices/observability_service/Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+    container_name: cogniforge-observability-service
+    restart: unless-stopped
+
+    ports:
+      - "8005:8000"
+
+    networks:
+      - appnet
+
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+    volumes:
+      - .:/app
+      - /app/__pycache__
+
   # Planning Agent - Generates plans
   planning-agent:
     build:
