@@ -41,7 +41,7 @@ We are committed to providing a welcoming and inspiring community for all. Pleas
 - Python 3.12+
 - Git
 - PostgreSQL (or use Supabase)
-- Basic understanding of Flask and SQLAlchemy
+- Basic understanding of FastAPI and SQLAlchemy
 
 ### Initial Setup
 
@@ -467,7 +467,7 @@ Instead, email: security@cogniforge.ai (or create a private security advisory)
 ### External Resources
 - [PEP 8 Style Guide](https://pep8.org/)
 - [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)
-- [Flask Documentation](https://flask.palletsprojects.com/)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
 
 ---

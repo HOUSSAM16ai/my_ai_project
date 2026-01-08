@@ -4,12 +4,12 @@
 
 This document describes the `session_factory` module located at `app/db/session_factory.py`.
 
-The primary goal of this module is to provide a **robust, configurable, and independent SQLAlchemy session factory**. This is a foundational step in the strategic migration from a tightly-coupled Flask application to a more modern, decoupled architecture using FastAPI/ASGI.
+The primary goal of this module is to provide a **robust, configurable, and independent SQLAlchemy session factory**. This is a foundational step in the strategic migration from a tightly-coupled legacy application to a more modern, decoupled architecture using FastAPI/ASGI.
 
 **Key characteristics:**
-- **Independence:** It has zero dependencies on the Flask application context (`current_app`, `g`, etc.). This allows it to be used in any part of the application, including FastAPI endpoints, WebSocket handlers, CLI commands, and standalone scripts.
-- **Safety:** It is an *additive* component. It does not modify or interfere with the existing Flask-SQLAlchemy setup (`db.session`). Both systems can coexist, ensuring the current application continues to function without any changes.
-- **Testability:** Its independence makes services that use it easier to test in isolation, without needing to construct a full Flask application context.
+- **Independence:** It has zero dependencies on legacy application context objects (`current_app`, `g`, etc.). This allows it to be used in any part of the application, including FastAPI endpoints, WebSocket handlers, CLI commands, and standalone scripts.
+- **Safety:** It is an *additive* component. It does not modify or interfere with the existing legacy SQLAlchemy integration (`db.session`). Both systems can coexist, ensuring the current application continues to function without any changes.
+- **Testability:** Its independence makes services that use it easier to test in isolation, without needing to construct a full legacy application context.
 - **Reversibility:** The entire feature is self-contained. It can be removed by reverting a single commit if necessary.
 
 ## 2. How to Use
@@ -74,4 +74,4 @@ The connection pool is pre-configured with safe defaults (`pool_size=5`, `max_ov
 
 ## 4. Rollback and Safety
 
-This component is completely parallel to the existing `Flask-SQLAlchemy` integration. It does not replace or modify it. Therefore, it can be safely removed by reverting the commit that added it without affecting the existing application's functionality.
+This component is completely parallel to the existing legacy SQLAlchemy integration. It does not replace or modify it. Therefore, it can be safely removed by reverting the commit that added it without affecting the existing application's functionality.

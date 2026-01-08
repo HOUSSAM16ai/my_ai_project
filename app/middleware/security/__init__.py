@@ -19,6 +19,7 @@ Security Philosophy:
 """
 
 from .ai_threat_middleware import AIThreatMiddleware
+from .jwt_auth_middleware import JwtAuthMiddleware
 from .policy_enforcer import PolicyEnforcer
 from .rate_limit_middleware import RateLimitMiddleware
 from .security_headers import SecurityHeadersMiddleware
@@ -28,6 +29,7 @@ from .zero_trust_middleware import ZeroTrustMiddleware
 
 __all__ = [
     "AIThreatMiddleware",
+    "JwtAuthMiddleware",
     "PolicyEnforcer",
     "RateLimitMiddleware",
     "SecurityHeadersMiddleware",

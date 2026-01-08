@@ -29,6 +29,7 @@ __all__ = ["validate_schema_on_startup"]
 _ALLOWED_TABLES: Final[frozenset[str]] = frozenset(
     {
         "admin_conversations",
+        "agent_plan_snapshots",
         "audit_log",
         "customer_conversations",
         "customer_messages",
@@ -65,6 +66,29 @@ class SchemaValidationResult(TypedDict):
 
 
 REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
+    "agent_plan_snapshots": {
+        "columns": [
+            "id",
+            "plan_id",
+            "payload_json",
+            "created_at",
+            "updated_at",
+        ],
+        "auto_fix": {},
+        "indexes": {
+            "plan_id": 'CREATE UNIQUE INDEX IF NOT EXISTS "ix_agent_plan_snapshots_plan_id" ON "agent_plan_snapshots"("plan_id")'
+        },
+        "index_names": {"plan_id": "ix_agent_plan_snapshots_plan_id"},
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"agent_plan_snapshots\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"plan_id" VARCHAR(120) NOT NULL UNIQUE,'
+            '"payload_json" TEXT,'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),'
+            '"updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        ),
+    },
     "admin_conversations": {
         "columns": [
             "id",

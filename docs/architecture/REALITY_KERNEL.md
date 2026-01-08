@@ -4,7 +4,7 @@ This document outlines the Transcendent Beyond-Reality Architecture of the Cogni
 
 ## The Reality Kernel
 
-The heart of the system is the **Reality Kernel**, located in `app/kernel.py`. It is the single source of truth for the application's existence. It establishes a unified FastAPI application object that bridges the legacy Flask world with the modern ASGI reality.
+The heart of the system is the **Reality Kernel**, located in `app/kernel.py`. It is the single source of truth for the application's existence. It establishes a unified FastAPI application object that bridges the legacy stack with the modern ASGI reality.
 
 ## The Five Transcendent Omni-Engines
 

@@ -2,10 +2,10 @@
 
 ## 1. Rationale
 
-The legacy application architecture is tightly coupled to Flask's global context objects, primarily `current_app`. This creates several significant challenges:
+The legacy application architecture is tightly coupled to global context objects, primarily `current_app`. This creates several significant challenges:
 
-- **Framework Lock-in:** Business logic cannot be reused or tested outside of a Flask application context, making a migration to a modern framework like FastAPI difficult and risky.
-- **Testability:** Unit testing services requires instantiating a full Flask application, which is slow and brittle.
+- **Framework Lock-in:** Business logic cannot be reused or tested outside of the legacy application context, making a migration to a modern framework like FastAPI difficult and risky.
+- **Testability:** Unit testing services requires instantiating a full legacy application, which is slow and brittle.
 - **Scalability:** Reliance on global singletons can lead to unpredictable behavior in complex or concurrent environments (e.g., async workers).
 
 The new Dependency Layer is a critical step in the decoupling roadmap. It provides a framework-independent, enterprise-grade infrastructure for accessing core application dependencies:
@@ -14,7 +14,7 @@ The new Dependency Layer is a critical step in the decoupling roadmap. It provid
 - **Database Sessions:** `get_session()`
 - **Logging:** `get_logger()`
 
-This layer is **100% additive** and does not modify any existing Flask code. It prepares our services for a safe, incremental migration to a decoupled architecture.
+This layer is **100% additive** and does not modify any existing legacy framework code. It prepares our services for a safe, incremental migration to a decoupled architecture.
 
 ## 2. Architecture Diagram
 
@@ -50,7 +50,8 @@ The following examples demonstrate how to refactor a service to use the new depe
 
 ```python
 # app/services/some_service.py
-from flask import current_app
+# legacy_context represents the old application context reference.
+from legacy_context import current_app
 from app.extensions import db
 
 class SomeService:

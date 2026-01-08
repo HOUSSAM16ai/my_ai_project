@@ -23,11 +23,11 @@ cp .env.example .env
 # Edit .env with your configuration
 
 # Initialize database
-flask db upgrade
-flask users create-admin
+python -m alembic upgrade head
+python -m app.cli db seed --confirm
 
 # Start development server
-flask run
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### 2. Contract-First Development | تطوير العقد أولاً
@@ -147,8 +147,10 @@ npx graphql-schema-linter docs/contracts/graphql/schema.graphql
 ### Generate API Key
 
 ```bash
-# Via CLI
-flask users create --email dev@example.com --name "Developer"
+# Via API
+curl -X POST http://localhost:8000/api/security/register \
+  -H "Content-Type: application/json" \
+  -d '{"full_name":"Developer","email":"dev@example.com","password":"ChangeMe123!"}'
 
 # Via Python
 python -c "
@@ -297,45 +299,44 @@ kubectl logs -f deployment/cogniforge-api -n cogniforge
 
 ```bash
 # Create migration
-flask db migrate -m "description"
+python -m alembic revision --autogenerate -m "description"
 
 # Apply migrations
-flask db upgrade
+python -m alembic upgrade head
 
 # Rollback
-flask db downgrade
+python -m alembic downgrade -1
 
 # Database health
-flask db health
+curl http://localhost:8000/system/health
 
 # Database stats
-flask db stats
+curl http://localhost:8000/api/observability/health
 ```
 
 ### User Management
 
 ```bash
-# Create admin user
-flask users create-admin
+# Create admin user (seed)
+python -m app.cli db seed --confirm
 
-# List users
-flask users list
-
-# Create regular user
-flask users create --email user@example.com --name "User Name"
+# Register a user (API)
+curl -X POST http://localhost:8000/api/security/register \
+  -H "Content-Type: application/json" \
+  -d '{"full_name":"User Name","email":"user@example.com","password":"ChangeMe123!"}'
 ```
 
 ### Service Management
 
 ```bash
 # Start service
-flask run
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 # Development mode
-FLASK_DEBUG=1 flask run
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # Production mode
-gunicorn -c gunicorn.conf.py app:create_app()
+gunicorn -k uvicorn.workers.UvicornWorker app.main:app
 ```
 
 ---
@@ -346,30 +347,29 @@ gunicorn -c gunicorn.conf.py app:create_app()
 
 ```bash
 # Enable debug logging
-export FLASK_DEBUG=1
 export LOG_LEVEL=DEBUG
-flask run
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### Database Issues
 
 ```bash
 # Reset database
-flask db downgrade base
-flask db upgrade
+python -m alembic downgrade base
+python -m alembic upgrade head
 
 # Check connection
-flask db health
+curl http://localhost:8000/system/health
 
 # View schema
-flask db tables
+python -m alembic current
 ```
 
 ### API Issues
 
 ```bash
 # Test endpoint
-curl -v http://localhost:5000/api/v1/accounts
+curl -v http://localhost:8000/api/v1/accounts
 
 # Check logs
 docker-compose logs web

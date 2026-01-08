@@ -36,23 +36,29 @@ from app.api.routers import (
     crud,
     customer_chat,
     data_mesh,
+    gateway,
     observability,
     overmind,
     security,
     system,
     ums,
+    versioned_system,
 )
 from app.config.settings import AppSettings
 from app.core.db_schema import validate_schema_on_startup
 from app.core.database import async_session_factory
+from app.core.gateway.registry import register_default_gateway_catalog
+from app.core.gateway.service import api_gateway_service
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
+from app.middleware.security.jwt_auth_middleware import AccessPolicy, JwtAuthMiddleware
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
 from app.middleware.security.security_headers import SecurityHeadersMiddleware
 from app.middleware.static_files_middleware import StaticFilesConfig, setup_static_files_middleware
 from app.services.bootstrap import bootstrap_admin_account
-from app.services.overmind.plan_registry import AgentPlanRegistry
+from app.services.overmind.plan_registry import DatabasePlanRegistry, InMemoryPlanRegistry
 from app.services.overmind.plan_service import AgentPlanService
+from app.services.rbac import ADMIN_ROLE
 
 logger = logging.getLogger(__name__)
 
@@ -103,21 +109,70 @@ def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
             "expose_headers": ["Content-Length", "Content-Range"],
         }),
 
-        # 3. ترويسات الأمان (Security Headers)
+        # 3. المصادقة المركزية (JWT)
+        (JwtAuthMiddleware, _build_auth_middleware_config(settings)),
+
+        # 4. ترويسات الأمان (Security Headers)
         (SecurityHeadersMiddleware, {}),
 
-        # 4. تنظيف الترويسات (Clean Headers)
+        # 5. تنظيف الترويسات (Clean Headers)
         (RemoveBlockingHeadersMiddleware, {}),
 
-        # 5. ضغط البيانات (GZip)
+        # 6. ضغط البيانات (GZip)
         (GZipMiddleware, {"minimum_size": 1000}),
     ]
 
     # إضافة تحديد المعدل فقط في غير بيئة الاختبار
     if settings.ENVIRONMENT != "testing":
-        stack.insert(3, (RateLimitMiddleware, {}))
+        stack.insert(4, (RateLimitMiddleware, {}))
 
     return stack
+
+
+def _build_auth_exempt_paths(settings: AppSettings) -> list[str]:
+    """
+    بناء قائمة المسارات المعفاة من المصادقة.
+    """
+    exempt_paths = [
+        "/health",
+        "/system/health",
+        "/system/healthz",
+        "/api/v1/health",
+        "/api/v1/database/health",
+        "/api/security/health",
+        "/api/security/login",
+        "/api/security/register",
+        "/api/security/token/verify",
+        "/api/security/token/generate",
+        "/static",
+        "/favicon.ico",
+    ]
+
+    if settings.ENVIRONMENT == "development":
+        exempt_paths.extend(["/docs", "/redoc", "/openapi.json"])
+
+    return exempt_paths
+
+
+def _build_auth_policies() -> list[AccessPolicy]:
+    """
+    تعريف سياسات الوصول الافتراضية حسب الأدوار.
+    """
+    return [
+        AccessPolicy(path_prefix="/admin", required_roles=[ADMIN_ROLE]),
+        AccessPolicy(path_prefix="/api/v1/gateway", required_roles=[ADMIN_ROLE]),
+    ]
+
+
+def _build_auth_middleware_config(settings: AppSettings) -> dict[str, object]:
+    """
+    إنشاء إعدادات وسيط المصادقة المركزية بصورة تعريفية.
+    """
+    return {
+        "settings": settings,
+        "exclude_paths": _build_auth_exempt_paths(settings),
+        "policies": _build_auth_policies(),
+    }
 
 def _get_router_registry() -> list[RouterSpec]:
     """
@@ -129,6 +184,7 @@ def _get_router_registry() -> list[RouterSpec]:
     return [
         (system.root_router, ""), # Root Level (e.g., /health)
         (system.router, ""),      # /system prefix is inside the router
+        (versioned_system.router, ""),
         (admin.router, ""),
         (ums.router, ""),
         (security.router, "/api/security"),
@@ -138,6 +194,7 @@ def _get_router_registry() -> list[RouterSpec]:
         (customer_chat.router, ""),
         (agents.router, ""),
         (overmind.router, ""),
+        (gateway.router, ""),
     ]
 
 def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
@@ -243,8 +300,13 @@ class RealityKernel:
         @asynccontextmanager
         async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             """Lifecycle Manager Closure."""
-            app.state.agent_plan_registry = AgentPlanRegistry()
+            if self.settings_obj.ENVIRONMENT == "testing":
+                app.state.agent_plan_registry = InMemoryPlanRegistry()
+            else:
+                app.state.agent_plan_registry = DatabasePlanRegistry()
             app.state.agent_plan_service = AgentPlanService()
+            app.state.api_gateway = api_gateway_service
+            register_default_gateway_catalog(app.state.api_gateway)
             async for _ in self._handle_lifespan_events():
                 yield
 

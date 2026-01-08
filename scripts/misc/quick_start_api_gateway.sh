@@ -63,8 +63,7 @@ echo ""
 
 # Step 5: Database setup
 echo -e "${BLUE}Step 5: Setting up database...${NC}"
-export FLASK_APP=app
-flask db upgrade > /dev/null 2>&1 || {
+python -m alembic upgrade head > /dev/null 2>&1 || {
     echo -e "${YELLOW}Note: Database migrations may need configuration${NC}"
 }
 echo -e "${GREEN}✓ Database ready${NC}"
@@ -109,5 +108,5 @@ echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop the server${NC}"
 echo ""
 
-# Start Flask application
-python run.py
+# Start FastAPI application
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000

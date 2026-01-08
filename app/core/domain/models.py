@@ -727,6 +727,30 @@ class MissionPlan(SQLModel, table=True):
     )
     tasks: list[Task] = Relationship(sa_relationship=relationship("Task", back_populates="plan"))
 
+class AgentPlanSnapshot(SQLModel, table=True):
+    """
+    لقطة خطة الوكلاء المخزنة مركزياً.
+
+    تُستخدم لتخزين خطط الوكلاء بشكل قابل للتشارك بين النسخ المختلفة من الخدمة
+    بحيث لا يعتمد الوصول على الذاكرة المحلية لأي نسخة.
+    """
+
+    __tablename__ = "agent_plan_snapshots"
+    id: int | None = Field(default=None, primary_key=True)
+    plan_id: str = Field(max_length=120, unique=True, index=True)
+    payload_json: dict[str, object] | list[object] | None = Field(
+        default=None,
+        sa_column=Column(JSONText),
+    )
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+    updated_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+    )
+
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"
     id: int | None = Field(default=None, primary_key=True)

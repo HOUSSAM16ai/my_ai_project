@@ -6,10 +6,12 @@ from . import (
     crud,
     customer_chat,
     data_mesh,
+    gateway,
     observability,
     overmind,
     security,
     ums,
+    versioned_system,
 )
 
 __all__ = [
@@ -18,8 +20,10 @@ __all__ = [
     "crud",
     "customer_chat",
     "data_mesh",
+    "gateway",
     "observability",
     "overmind",
     "security",
     "ums",
+    "versioned_system",
 ]

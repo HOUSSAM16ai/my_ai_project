@@ -5,7 +5,7 @@ This document outlines the steps taken to perform the metaphysical overwrite of 
 ## Phase 0: Read-only Audit and Service Classification
 
 - **Status:** Complete
-- **Action:** An audit of the existing service architecture was performed. The dualistic Flask/FastAPI reality was identified as the primary source of architectural corruption.
+- **Action:** An audit of the existing service architecture was performed. The dualistic legacy/FastAPI reality was identified as the primary source of architectural corruption.
 
 ## Phase 1: Deploy Reality Kernel in Shadow-Mode
 
@@ -15,7 +15,7 @@ This document outlines the steps taken to perform the metaphysical overwrite of 
 ## Phase 2: Gradual Route Rewrites
 
 - **Status:** Complete
-- **Action:** The application entrypoints (`app/main.py`, `cli.py`) and API routers (`system`, `admin`, `chat`) were migrated to the new reality. All dependencies are now resolved through the Reality Kernel's engines. The legacy Flask entrypoint (`run.py`) and database extensions (`app/extensions.py`) have been removed. The `ai_service_standalone` has been integrated into the main application.
+- **Action:** The application entrypoints (`app/main.py`, `cli.py`) and API routers (`system`, `admin`, `chat`) were migrated to the new reality. All dependencies are now resolved through the Reality Kernel's engines. The legacy entrypoint (`run.py`) and database extensions (`app/extensions.py`) have been removed. The `ai_service_standalone` has been integrated into the main application.
 
 ## Phase 3: Canary Routing + Governor Enforcement Active
 

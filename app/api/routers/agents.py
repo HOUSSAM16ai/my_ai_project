@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from app.core.di import get_logger
 from app.deps.auth import CurrentUser, get_current_user
 from app.services.overmind.domain.api_schemas import AgentsPlanRequest, AgentsPlanResponse
-from app.services.overmind.plan_registry import AgentPlanRegistry
+from app.services.overmind.plan_registry import PlanRegistry
 from app.services.overmind.plan_service import AgentPlanService
 
 logger = get_logger(__name__)
@@ -22,7 +22,7 @@ router = APIRouter(
 )
 
 
-def get_plan_registry(request: Request) -> AgentPlanRegistry:
+def get_plan_registry(request: Request) -> PlanRegistry:
     """
     الحصول على سجل الخطط من حالة التطبيق.
     """
@@ -61,14 +61,14 @@ def get_plan_service(request: Request) -> AgentPlanService:
 async def create_agent_plan(
     payload: AgentsPlanRequest,
     current: CurrentUser = Depends(get_current_user),
-    registry: AgentPlanRegistry = Depends(get_plan_registry),
+    registry: PlanRegistry = Depends(get_plan_registry),
     plan_service: AgentPlanService = Depends(get_plan_service),
 ) -> AgentsPlanResponse:
     """
     إنشاء خطة جديدة من مجلس الوكلاء.
     """
     plan_record = await plan_service.create_plan(payload)
-    registry.store(plan_record)
+    await registry.store(plan_record)
     logger.info("Agent plan stored", extra={"user_id": current.user.id, "plan_id": plan_record.data.plan_id})
     return AgentsPlanResponse(status="success", data=plan_record.data)
 
@@ -85,12 +85,12 @@ async def create_agent_plan(
 async def get_agent_plan(
     plan_id: str,
     current: CurrentUser = Depends(get_current_user),
-    registry: AgentPlanRegistry = Depends(get_plan_registry),
+    registry: PlanRegistry = Depends(get_plan_registry),
 ) -> AgentsPlanResponse:
     """
     استرجاع خطة محفوظة عبر معرفها.
     """
-    plan_record = registry.get(plan_id)
+    plan_record = await registry.get(plan_id)
     if plan_record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan not found")
     logger.info("Agent plan retrieved", extra={"user_id": current.user.id, "plan_id": plan_record.data.plan_id})

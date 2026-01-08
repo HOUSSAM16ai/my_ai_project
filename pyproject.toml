@@ -1,7 +1,7 @@
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-exclude = ["legacy/flask", "migrations"]
+exclude = ["legacy", "migrations"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP", "B", "C4", "SIM", "RUF", "PL", "N", "TID", "RET", "ARG"]

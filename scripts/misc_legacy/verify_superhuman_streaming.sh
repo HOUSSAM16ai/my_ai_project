@@ -109,7 +109,7 @@ if [ $CHECKS_PASSED -eq $TOTAL_CHECKS ]; then
     echo "   البث الخارق مُفعّل بالكامل!"
     echo ""
     echo "🚀 Next steps:"
-    echo "   1. Start the application: flask run"
+    echo "   1. Start the application: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
     echo "   2. Open: http://localhost:5000/admin/dashboard"
     echo "   3. Type a question and watch it stream word-by-word!"
     echo ""

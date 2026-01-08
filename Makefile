@@ -161,7 +161,7 @@ complexity:
 # =============================================================================
 test:
 	@echo "$(BLUE)🧪 Running test suite with coverage...$(NC)"
-	FLASK_ENV=testing TESTING=1 SECRET_KEY=test-key \
+	ENVIRONMENT=testing TESTING=1 SECRET_KEY=test-key \
 	pytest --verbose --cov=app --cov-report=term-missing:skip-covered \
 	       --cov-report=html:htmlcov --cov-report=xml:coverage.xml \
 	       --cov-fail-under=30
@@ -169,12 +169,12 @@ test:
 
 test-fast:
 	@echo "$(BLUE)🧪 Running fast tests...$(NC)"
-	FLASK_ENV=testing TESTING=1 SECRET_KEY=test-key pytest
+	ENVIRONMENT=testing TESTING=1 SECRET_KEY=test-key pytest
 	@echo "$(GREEN)✅ Fast tests complete!$(NC)"
 
 test-verbose:
 	@echo "$(BLUE)🧪 Running tests with detailed output...$(NC)"
-	FLASK_ENV=testing TESTING=1 SECRET_KEY=test-key pytest -vv -s
+	ENVIRONMENT=testing TESTING=1 SECRET_KEY=test-key pytest -vv -s
 	@echo "$(GREEN)✅ Verbose tests complete!$(NC)"
 
 coverage:
@@ -211,15 +211,15 @@ docs-validate:
 # =============================================================================
 run:
 	@echo "$(BLUE)🚀 Starting application...$(NC)"
-	python run.py
+	python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 dev:
 	@echo "$(BLUE)🔧 Starting development server...$(NC)"
-	FLASK_DEBUG=1 python run.py
+	python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 debug:
 	@echo "$(BLUE)🐛 Starting debug mode...$(NC)"
-	FLASK_DEBUG=1 FLASK_ENV=development python run.py
+	LOG_LEVEL=DEBUG python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # =============================================================================
 # DOCKER
@@ -248,22 +248,22 @@ docker-logs:
 # =============================================================================
 db-migrate:
 	@echo "$(BLUE)🗄️ Creating migration...$(NC)"
-	flask db migrate -m "$(MSG)"
+	python -m alembic revision --autogenerate -m "$(MSG)"
 	@echo "$(GREEN)✅ Migration created!$(NC)"
 
 db-upgrade:
 	@echo "$(BLUE)🗄️ Applying migrations...$(NC)"
-	flask db upgrade
+	python -m alembic upgrade head
 	@echo "$(GREEN)✅ Migrations applied!$(NC)"
 
 db-downgrade:
 	@echo "$(BLUE)🗄️ Rolling back migration...$(NC)"
-	flask db downgrade
+	python -m alembic downgrade -1
 	@echo "$(GREEN)✅ Migration rolled back!$(NC)"
 
 db-status:
 	@echo "$(BLUE)🗄️ Checking migration status...$(NC)"
-	python check_migrations_status.py
+	python -m alembic current
 
 # =============================================================================
 # SIMPLICITY - Superhuman Simplicity Implementation

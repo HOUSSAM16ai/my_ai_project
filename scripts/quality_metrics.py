@@ -120,7 +120,7 @@ def get_test_metrics() -> dict[str, Any]:
 
     # Run pytest with coverage
     code, output = run_command(
-        "FLASK_ENV=testing TESTING=1 SECRET_KEY=test-key "
+        "ENVIRONMENT=testing TESTING=1 SECRET_KEY=test-key "
         "pytest --quiet --cov=app --cov-report=json --cov-report=term 2>&1"
     )
 
