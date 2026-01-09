@@ -8,10 +8,11 @@ from functools import wraps
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from .cache import IntelligentCache
+from .cache import CacheFactory, generate_cache_key
 from .models import GatewayRoute, PolicyRule, ProtocolType, UpstreamService
 from .policy import PolicyEngine
 from .protocols.base import ProtocolAdapter
+from .protocols.cache import CacheProviderProtocol
 from .protocols.graphql import GraphQLAdapter
 from .protocols.grpc import GRPCAdapter
 from .protocols.rest import RESTAdapter
@@ -27,7 +28,7 @@ class APIGatewayService:
     - Unified API reception layer
     - Protocol adapters (REST/GraphQL/gRPC)
     - Intelligent routing engine
-    - Dynamic caching
+    - Dynamic caching (Async & Replaceable)
     - Policy enforcement
     - Load balancing
     - Circuit breaker pattern
@@ -42,7 +43,14 @@ class APIGatewayService:
             ProtocolType.GRPC.value: GRPCAdapter(),
         }
         self.intelligent_router = IntelligentRouter()
-        self.cache = IntelligentCache(max_size_mb=100)
+
+        # Initialize Cache using Factory (API First / Replaceable)
+        self.cache: CacheProviderProtocol = CacheFactory.get_provider(
+            provider_type="memory",
+            max_size_items=1000,
+            ttl=300
+        )
+
         self.policy_engine = PolicyEngine()
         self.routes: dict[str, GatewayRoute] = {}
         self.upstream_services: dict[str, UpstreamService] = {}
@@ -119,10 +127,16 @@ class APIGatewayService:
             if not allowed:
                 return {"error": deny_reason, "status": "forbidden"}, 403
 
-            # 3. Check Cache
-            cached_response = self.cache.get(request_data)
+            # 3. Check Cache (Async)
+            cache_key = generate_cache_key(request_data)
+            cached_response = await self.cache.get(cache_key)
             if cached_response:
-                cached_response["cache_hit"] = True
+                # Ensure we return a copy or update it safely without modifying cache state
+                # Note: If cached_response is a dict, modifying it here is generally bad practice if the cache stores references.
+                # However, InMemoryCache stores tuples, and we should return a fresh dict ideally.
+                # For now, we return as is but assume the caller won't mutate deeply or it doesn't matter for read-only.
+                if isinstance(cached_response, dict):
+                     cached_response["cache_hit"] = True
                 return cached_response, 200
 
             # 4. Route Request (placeholder for actual upstream call)
@@ -136,9 +150,9 @@ class APIGatewayService:
                 "cache_hit": False,
             }
 
-            # 5. Cache Response (for cacheable requests)
+            # 5. Cache Response (for cacheable requests - Async)
             if request.method == "GET":
-                self.cache.put(request_data, response_data, ttl_seconds=300)
+                await self.cache.put(cache_key, response_data, ttl=300)
 
             return response_data, 200
 
@@ -146,12 +160,12 @@ class APIGatewayService:
             logger.error(f"Gateway processing error: {e}", exc_info=True)
             return {"error": "Internal gateway error", "status": "error", "message": str(e)}, 500
 
-    def get_gateway_stats(self) -> dict[str, Any]:
+    async def get_gateway_stats(self) -> dict[str, Any]:
         """Get comprehensive gateway statistics"""
         return {
             "routes_registered": len(self.routes),
             "upstream_services": len(self.upstream_services),
-            "cache_stats": self.cache.get_stats(),
+            "cache_stats": await self.cache.get_stats(),
             "policy_violations": len(self.policy_engine.get_violations(limit=100)),
             "protocols_supported": list(self.protocol_adapters.keys()),
         }

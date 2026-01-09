@@ -1,141 +1,188 @@
-from typing import Any
-
+import asyncio
 import hashlib
 import json
-import threading
-from datetime import UTC, datetime, timedelta
+import logging
+import time
+from collections import OrderedDict
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
-class IntelligentCache:
+from app.core.gateway.protocols.cache import CacheProviderProtocol
+
+logger = logging.getLogger(__name__)
+
+class InMemoryCacheProvider(CacheProviderProtocol):
     """
-    طبقة التخزين المؤقت الذكية - Intelligent caching layer
+    موفر التخزين المؤقت في الذاكرة - In-Memory Cache Provider
 
-    Features:
-    - Cost-based caching (expensive operations cached longer)
-    - LRU eviction with size limits
-    - Cache hit rate tracking
-    - Predictive cache warming
-    - Horizontal Scaling Ready (Redis Adapter Hooks)
+    A high-performance, thread-safe, asynchronous in-memory caching implementation
+    designed for the API Gateway. It uses an LRU (Least Recently Used) eviction
+    policy and supports Time-To-Live (TTL) expiration.
+
+    Design Principles (Harvard Standard):
+    1.  **Thread Safety**: Uses asyncio primitives for safe concurrent access.
+    2.  **Efficiency**: O(1) complexity for get/put operations using OrderedDict.
+    3.  **Clarity**: Extensive Arabic/English documentation for beginners.
+
+    Attributes:
+        max_size_items (int): Maximum number of items to hold before eviction.
+        default_ttl (int): Default expiration time in seconds.
     """
 
-    def __init__(self, max_size_mb: int = 100):
-        self.cache: dict[str, dict[str, Any]] = {}
-        self.access_times: dict[str, datetime] = {}
-        self.hit_count = 0
-        self.miss_count = 0
-        self.max_size_mb = max_size_mb
-        self.current_size_bytes = 0
-        self.lock = threading.RLock()
-        self.redis_client = None  # Placeholder for Redis client
+    def __init__(self, max_size_items: int = 1000, default_ttl: int = 300):
+        """
+        Initialize the in-memory cache.
 
-    def _generate_key(self, request_data: dict[str, Any]) -> str:
-        """Generate cache key from request data"""
-        # Create deterministic hash of request
-        try:
-            key_data = json.dumps(request_data, sort_keys=True)
-        except Exception:
-            # Fallback for non-serializable data
-            key_data = str(request_data)
+        Args:
+            max_size_items: The maximum number of entries to keep in memory.
+            default_ttl: Default Time-To-Live in seconds for entries without explicit TTL.
+        """
+        self.max_size = max_size_items
+        self.default_ttl = default_ttl
 
-        return hashlib.sha256(key_data.encode()).hexdigest()
+        # storage: maps key -> (value, expire_at_timestamp)
+        self._storage: OrderedDict[str, tuple[Any, float]] = OrderedDict()
 
-    def get(self, request_data: dict[str, Any]) -> dict[str, Any] | None:
-        """Get from cache"""
-        key = self._generate_key(request_data)
-
-        # Future: Redis Lookup Here
-        if self.redis_client:
-            # return self.redis_client.get(key)
-            pass
-
-        with self.lock:
-            if key in self.cache:
-                entry = self.cache[key]
-
-                # Check if expired
-                if datetime.now(UTC) > entry["expires_at"]:
-                    self._remove_entry(key)
-                    self.miss_count += 1
-                    return None
-
-                # Update access time
-                self.access_times[key] = datetime.now(UTC)
-                self.hit_count += 1
-                return entry["data"]
-
-            self.miss_count += 1
-            return None
-
-    def put(
-        self, request_data: dict[str, Any], response_data: dict[str, Any], ttl_seconds: int = 300
-    ) -> None:
-        """Put into cache"""
-        key = self._generate_key(request_data)
-
-        # Future: Redis Set Here
-        if self.redis_client:
-            # self.redis_client.setex(key, ttl_seconds, json.dumps(response_data))
-            pass
-
-        with self.lock:
-            # Estimate size
-            data_size = len(json.dumps(response_data))
-            max_size_bytes = self.max_size_mb * 1024 * 1024
-
-            # If item is larger than total cache size, don't cache it
-            if data_size > max_size_bytes:
-                return
-
-            # If overwriting, remove old entry first to avoid edge cases and correct size calc
-            if key in self.cache:
-                self._remove_entry(key)
-
-            # Evict if needed
-            self._ensure_capacity(data_size, max_size_bytes)
-
-            # Store
-            self.cache[key] = {
-                "data": response_data,
-                "expires_at": datetime.now(UTC) + timedelta(seconds=ttl_seconds),
-                "size_bytes": data_size,
-            }
-            self.access_times[key] = datetime.now(UTC)
-            self.current_size_bytes += data_size
-
-    def _remove_entry(self, key: str) -> None:
-        """Remove entry from cache and update stats"""
-        if key in self.cache:
-            self.current_size_bytes -= self.cache[key]["size_bytes"]
-            del self.cache[key]
-        if key in self.access_times:
-            del self.access_times[key]
-
-    def _ensure_capacity(self, required_size: int, max_size_bytes: float) -> None:
-        """Ensure there is enough space in the cache"""
-        while (self.current_size_bytes + required_size) > max_size_bytes:
-            if not self.cache:
-                break
-            self._evict_lru()
-
-    def _evict_lru(self):
-        """Evict least recently used entry"""
-        if not self.access_times:
-            return
-
-        # Find LRU key
-        lru_key = min(self.access_times.items(), key=lambda x: x[1])[0]
-        self._remove_entry(lru_key)
-
-    def get_stats(self) -> dict[str, Any]:
-        """Get cache statistics"""
-        total_requests = self.hit_count + self.miss_count
-        hit_rate = self.hit_count / total_requests if total_requests > 0 else 0.0
-
-        return {
-            "hit_count": self.hit_count,
-            "miss_count": self.miss_count,
-            "hit_rate": hit_rate,
-            "cache_size_mb": self.current_size_bytes / (1024 * 1024),
-            "max_size_mb": self.max_size_mb,
-            "entry_count": len(self.cache),
-            "redis_enabled": self.redis_client is not None,
+        # Statistics
+        self._stats = {
+            "hits": 0,
+            "misses": 0,
+            "evictions": 0,
+            "sets": 0
         }
+
+        # Async lock for thread safety in async context
+        self._lock = asyncio.Lock()
+
+    async def get(self, key: str) -> Any | None:
+        """
+        استرجاع عنصر من الذاكرة المؤقتة.
+        Retrieves an item if it exists and hasn't expired.
+        """
+        async with self._lock:
+            if key not in self._storage:
+                self._stats["misses"] += 1
+                return None
+
+            value, expire_at = self._storage[key]
+
+            # Check expiration (time.time() is more efficient than datetime for simple comparisons)
+            if time.time() > expire_at:
+                # Expired: Remove lazily
+                del self._storage[key]
+                self._stats["misses"] += 1
+                return None
+
+            # Move to end (LRU policy: recently used is at the end)
+            self._storage.move_to_end(key)
+            self._stats["hits"] += 1
+            return value
+
+    async def put(self, key: str, value: Any, ttl: int | timedelta | None = None) -> bool:
+        """
+        تخزين عنصر في الذاكرة.
+        Stores an item. If cache is full, evicts the least recently used item.
+        """
+        if ttl is None:
+            ttl_seconds = self.default_ttl
+        elif isinstance(ttl, timedelta):
+            ttl_seconds = ttl.total_seconds()
+        else:
+            ttl_seconds = ttl
+
+        expire_at = time.time() + ttl_seconds
+
+        async with self._lock:
+            # If updating existing key, remove it first to handle order correctly
+            if key in self._storage:
+                self._storage.move_to_end(key)
+                self._storage[key] = (value, expire_at)
+            else:
+                self._storage[key] = (value, expire_at)
+
+                # Check capacity
+                if len(self._storage) > self.max_size:
+                    # Pop first item (LRU is at the beginning of OrderedDict)
+                    self._storage.popitem(last=False)
+                    self._stats["evictions"] += 1
+
+            self._stats["sets"] += 1
+            return True
+
+    async def delete(self, key: str) -> bool:
+        """
+        حذف عنصر محدد.
+        Removes a specific item from the cache.
+        """
+        async with self._lock:
+            if key in self._storage:
+                del self._storage[key]
+                return True
+            return False
+
+    async def clear(self) -> bool:
+        """
+        مسح كافة البيانات.
+        Clears the entire cache.
+        """
+        async with self._lock:
+            self._storage.clear()
+            # Reset stats? Maybe keep them for historical reasons.
+            # Let's reset them to represent "fresh start".
+            self._stats = {k: 0 for k in self._stats}
+            return True
+
+    async def get_stats(self) -> dict[str, Any]:
+        """
+        الحصول على الإحصائيات.
+        Returns a snapshot of the cache statistics.
+        """
+        async with self._lock:
+            total_ops = self._stats["hits"] + self._stats["misses"]
+            hit_rate = (self._stats["hits"] / total_ops) if total_ops > 0 else 0.0
+
+            return {
+                "type": "InMemory",
+                "size": len(self._storage),
+                "max_size": self.max_size,
+                "hit_rate": round(hit_rate, 4),
+                "hits": self._stats["hits"],
+                "misses": self._stats["misses"],
+                "evictions": self._stats["evictions"]
+            }
+
+
+class CacheFactory:
+    """
+    مصنع الذاكرة المؤقتة - Cache Factory
+
+    Implements the Factory Pattern to instantiate the appropriate cache provider
+    based on configuration.
+    """
+
+    @staticmethod
+    def get_provider(provider_type: str = "memory", **kwargs) -> CacheProviderProtocol:
+        if provider_type == "memory":
+            return InMemoryCacheProvider(
+                max_size_items=kwargs.get("max_size_items", 1000),
+                default_ttl=kwargs.get("ttl", 300)
+            )
+        # Future: elif provider_type == "redis": ...
+        else:
+            logger.warning(f"Unknown provider type '{provider_type}', falling back to memory.")
+            return InMemoryCacheProvider()
+
+# Backwards compatibility helper for key generation
+def generate_cache_key(data: Any) -> str:
+    """
+    Generates a deterministic SHA256 hash for a dictionary or string.
+    """
+    try:
+        if isinstance(data, dict):
+            key_data = json.dumps(data, sort_keys=True)
+        else:
+            key_data = str(data)
+    except Exception:
+        key_data = str(data)
+
+    return hashlib.sha256(key_data.encode()).hexdigest()
