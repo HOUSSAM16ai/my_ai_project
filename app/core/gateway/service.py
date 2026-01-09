@@ -21,6 +21,8 @@ from typing import Any
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from app.core.types import JSON, JSONDict
+
 from .cache import CacheFactory, generate_cache_key
 from .models import GatewayRoute, PolicyRule, ProtocolType, UpstreamService
 from .policy import PolicyEngine
@@ -108,7 +110,7 @@ class APIGatewayService:
         request: Request,
         protocol: ProtocolType = ProtocolType.REST,
         route_id: str | None = None,
-    ) -> tuple[dict[str, Any], int]:
+    ) -> tuple[JSONDict, int]:
         """
         معالجة الطلب عبر البوابة (Process Request).
 
@@ -120,7 +122,7 @@ class APIGatewayService:
         5. تحديث التخزين المؤقت (Cache Update).
 
         Returns:
-            tuple[dict[str, Any], int]: بيانات الاستجابة ورمز الحالة.
+            tuple[JSONDict, int]: بيانات الاستجابة ورمز الحالة.
         """
         start_time = time.time()
 
@@ -156,7 +158,7 @@ class APIGatewayService:
 
     async def _adapt_and_validate(
         self, adapter: ProtocolAdapter | None, request: Request, protocol: ProtocolType
-    ) -> Any:
+    ) -> JSON:
         if not adapter:
             raise ValueError(f"Unsupported protocol: {protocol.value}")
 
@@ -179,18 +181,18 @@ class APIGatewayService:
         if not allowed:
             raise PermissionError(deny_reason)
 
-    async def _check_cache(self, cache_key: str) -> dict[str, Any] | None:
+    async def _check_cache(self, cache_key: str) -> JSONDict | None:
         cached_response = await self.cache.get(cache_key)
         if cached_response:
             if isinstance(cached_response, dict):
                 # نستخدم نسخة لتجنب تعديل الكائن الأصلي في الذاكرة
-                response_copy = cached_response.copy()
-                response_copy["cache_hit"] = True
-                return response_copy
+                response_copy = cached_response.copy()  # type: ignore
+                response_copy["cache_hit"] = True  # type: ignore
+                return response_copy  # type: ignore
             return cached_response  # type: ignore
         return None
 
-    def _simulate_upstream_call(self, protocol: ProtocolType, start_time: float) -> dict[str, Any]:
+    def _simulate_upstream_call(self, protocol: ProtocolType, start_time: float) -> JSONDict:
         # في الإنتاج، هنا يتم استدعاء IntelligentRouter و UpstreamService
         return {
             "status": "success",
@@ -202,12 +204,12 @@ class APIGatewayService:
         }
 
     async def _update_cache_if_needed(
-        self, method: str, key: str, data: dict[str, Any]
+        self, method: str, key: str, data: JSONDict
     ) -> None:
         if method == "GET":
             await self.cache.put(key, data, ttl=300)
 
-    async def get_gateway_stats(self) -> dict[str, Any]:
+    async def get_gateway_stats(self) -> JSONDict:
         """الحصول على إحصائيات شاملة للبوابة."""
         return {
             "routes_registered": len(self.routes),
