@@ -172,126 +172,66 @@ def _lenient_json_loads(value: str) -> object:
         return value
 
 
-class AppSettings(BaseSettings):
+class BaseServiceSettings(BaseSettings):
     """
-    💎 MATRIX V4: INTELLIGENT CONFIGURATION SYSTEM
+    💎 BASE SERVICE SETTINGS (إعدادات الخدمة الأساسية)
 
-    مصدر الحقيقة الوحيد (Single Source of Truth).
-    يستخدم خوارزميات Pydantic V2 للتحقق الصارم من البيانات.
+    أساس مشترك لجميع الخدمات (Monolith & Microservices).
+    يوفر:
+    - كشف البيئة (Environment Detection)
+    - أمن المفاتيح (Security Validation)
+    - إصلاح قواعد البيانات (DB Auto-Healing)
+    - إعدادات السجلات (Logging)
     """
-
     # ══════════════════════════════════════════════════════════════════════════
-    # 🆔 SYSTEM IDENTITY (هوية النظام)
+    # 🆔 IDENTITY & ENV
     # ══════════════════════════════════════════════════════════════════════════
-    PROJECT_NAME: str = Field("CogniForge", description="اسم المشروع (The Project Name)")
-    VERSION: str = Field("4.0.0-legendary", description="إصدار النظام")
-    DESCRIPTION: str = Field(
-        "AI-Powered Educational Platform with Hyper-Intelligent Architecture",
-        description="وصف النظام",
-    )
-
-    # Environment Control
     ENVIRONMENT: Literal["development", "staging", "production", "testing"] = Field(
         "development", description="بيئة التشغيل الحالية"
     )
-
-    DEBUG: bool = Field(False, description="وضع التصحيح (يجب أن يكون False في الإنتاج)")
+    DEBUG: bool = Field(False, description="وضع التصحيح")
     API_V1_STR: str = Field("/api/v1", description="بادئة مسارات API")
 
     # ══════════════════════════════════════════════════════════════════════════
-    # 🛡️ SECURITY PROTOCOLS (بروتوكولات الأمان)
+    # 🛡️ SECURITY
     # ══════════════════════════════════════════════════════════════════════════
     SECRET_KEY: str = Field(
         default_factory=_get_or_create_dev_secret_key,
         min_length=1,
-        description="مفتاح التشفير الرئيسي (يجب أن يكون معقداً وطويلاً)",
-    )
-
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
-        60 * 24 * 8,  # 8 days
-        description="مدة صلاحية رموز الوصول (بالدقائق)",
-    )
-
-    REAUTH_TOKEN_EXPIRE_MINUTES: int = Field(
-        10,
-        description="مدة صلاحية رموز إعادة المصادقة (بالدقائق)",
-    )
-
-    # CORS & Hosts
-    BACKEND_CORS_ORIGINS: list[str] = Field(
-        default=["*"], description="قائمة النطاقات المسموح لها بالاتصال (CORS)"
-    )
-
-    ALLOWED_HOSTS: list[str] = Field(
-        default=["*"], description="قائمة المضيفين الموثوقين (Trusted Hosts)"
+        description="مفتاح التشفير الرئيسي",
     )
     
-    # API-First Security Settings
-    API_STRICT_MODE: bool = Field(
-        default=True, 
-        description="تفعيل الوضع الصارم للـ API (يحذر من استخدام * في CORS)"
-    )
-
-    FRONTEND_URL: str = Field(default="http://localhost:3000", description="رابط الواجهة الأمامية")
-
     # ══════════════════════════════════════════════════════════════════════════
-    # 💾 DATA NEURAL NETWORK (الشبكة العصبية للبيانات)
+    # 💾 DATA & INFRA
     # ══════════════════════════════════════════════════════════════════════════
     DATABASE_URL: str | None = Field(
-        default=None, description="رابط قاعدة البيانات (يتم معالجته وتصحيحه تلقائياً)"
+        default=None, description="رابط قاعدة البيانات"
     )
-    DB_POOL_SIZE: int = Field(40, description="حجم مسبح الاتصالات الأساسي")
+    DB_POOL_SIZE: int = Field(40, description="حجم مسبح الاتصالات")
     DB_MAX_OVERFLOW: int = Field(60, description="الحد الأقصى للاتصالات الإضافية")
 
-    REDIS_URL: str | None = Field(None, description="رابط تخزين الذاكرة المؤقتة (Redis)")
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # 🤖 ARTIFICIAL INTELLIGENCE (الذكاء الاصطناعي)
-    # ══════════════════════════════════════════════════════════════════════════
-    OPENAI_API_KEY: str | None = Field(None, description="OpenAI API Key")
-    OPENROUTER_API_KEY: str | None = Field(None, description="OpenRouter API Key")
-    AI_SERVICE_URL: str | None = Field(None, description="رابط خدمة الذكاء الاصطناعي الخارجية")
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # ☁️ INFRASTRUCTURE INTELLIGENCE (ذكاء البنية التحتية)
-    # ══════════════════════════════════════════════════════════════════════════
     CODESPACES: bool = Field(False, description="هل نعمل داخل GitHub Codespaces؟")
-    CODESPACE_NAME: str | None = Field(None, description="اسم مساحة العمل")
-    GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: str | None = Field(None)
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # 👮 ADMIN SEEDING (بيانات المدير الأول)
-    # ══════════════════════════════════════════════════════════════════════════
-    ADMIN_EMAIL: str = Field("admin@cogniforge.com", description="البريد الإلكتروني للمدير")
-    ADMIN_PASSWORD: str = Field("change_me_please_123!", description="كلمة مرور المدير")
-    ADMIN_NAME: str = Field("Supreme Administrator", description="اسم المدير")
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # ⚙️ LOGGING & MONITORING
-    # ══════════════════════════════════════════════════════════════════════════
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
         "INFO", description="مستوى التفصيل في السجلات"
     )
 
-    # Pydantic Config
+    # Pydantic Config for All Services
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
         env_json_loads=_lenient_json_loads,
-        extra="ignore",  # تجاهل أي متغيرات غير معروفة بدلاً من الخطأ
+        extra="ignore",
     )
 
     # ══════════════════════════════════════════════════════════════════════════
-    # 🧠 GENIUS ALGORITHMS (الخوارزميات العبقرية)
+    # 🧠 SHARED ALGORITHMS (الخوارزميات المشتركة)
     # ══════════════════════════════════════════════════════════════════════════
 
     @model_validator(mode='after')
-    def validate_production_security(self) -> 'AppSettings':
-        """
-        🔐 Global Security Auditor.
-        يتحقق من تكامل الإعدادات الأمنية في بيئة الإنتاج.
-        """
+    def validate_production_security(self) -> 'BaseServiceSettings':
+        """🔐 Global Security Auditor for all services."""
         secret_key_from_env = "SECRET_KEY" in self.model_fields_set
 
         if not secret_key_from_env and not os.getenv("SECRET_KEY"):
@@ -300,54 +240,23 @@ class AppSettings(BaseSettings):
 
         if self.ENVIRONMENT == "production":
             if self.DEBUG:
-                raise ValueError("❌ CRITICAL SECURITY VIOLATION: DEBUG must be False in production.")
+                raise ValueError("❌ CRITICAL: DEBUG must be False in production.")
 
-            # Check for weak or default secret key
             if not secret_key_from_env:
-                raise ValueError(
-                    "❌ CRITICAL SECURITY RISK: SECRET_KEY must be explicitly set in production."
-                )
+                raise ValueError("❌ CRITICAL: SECRET_KEY must be explicitly set in production.")
 
             if self.SECRET_KEY == "changeme" or len(self.SECRET_KEY) < 32:
-                raise ValueError("❌ CRITICAL SECURITY RISK: Production SECRET_KEY is too weak!")
-
-            # Check for overly permissive hosts
-            if self.ALLOWED_HOSTS == ["*"]:
-                raise ValueError("❌ SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production.")
-
-            # Check for overly permissive CORS (API-First best practice)
-            if self.BACKEND_CORS_ORIGINS == ["*"]:
-                raise ValueError(
-                    "❌ SECURITY RISK: BACKEND_CORS_ORIGINS cannot be '*' in production. Please specify allowed origins explicitly."
-                )
+                raise ValueError("❌ CRITICAL: Production SECRET_KEY is too weak!")
 
         if self.ENVIRONMENT != "production" and not secret_key_from_env:
-            logger.warning(
-                "⚠️  Auto-generated SECRET_KEY in use. Set an explicit value to avoid changing tokens between restarts."
-            )
-
-        # API Strict Mode warnings for development
-        if self.API_STRICT_MODE and self.ENVIRONMENT == "development":
-            if self.BACKEND_CORS_ORIGINS == ["*"]:
-                logger.warning(
-                    "⚠️  API Strict Mode: CORS is set to '*'. "
-                    "For production deployment, please specify allowed origins explicitly."
-                )
-            if self.ALLOWED_HOSTS == ["*"]:
-                logger.warning(
-                    "⚠️  API Strict Mode: ALLOWED_HOSTS is set to '*'. "
-                    "For production deployment, please specify trusted hosts explicitly."
-                )
+            logger.warning("⚠️  Auto-generated SECRET_KEY in use.")
 
         return self
 
     @field_validator("CODESPACES", mode="before")
     @classmethod
     def detect_codespaces(cls, v: dict[str, str | int | bool]) -> bool:
-        """
-        🕵️‍♂️ Environment Sensing Algorithm.
-        يكتشف البيئة تلقائياً حتى لو لم يتم ضبط المتغير يدوياً.
-        """
+        """🕵️‍♂️ Detect GitHub Codespaces."""
         if v is not None:
             return bool(v)
         return os.getenv("CODESPACES") == "true"
@@ -355,13 +264,7 @@ class AppSettings(BaseSettings):
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def heal_database_url(cls, v: str | None, info: ValidationInfo) -> str:
-        """
-        💊 Database Auto-Healing Algorithm.
-        يقوم هذا الخوارزمي بإصلاح رابط قاعدة البيانات تلقائياً:
-        1. يحول الروابط التزامنية (Sync) إلى غير تزامنية (Async) للتوافق مع FastAPIs.
-        2. يضبط إعدادات SSL بناءً على المزود (Supabase, Neon, Local).
-        3. يوفر قاعدة بيانات SQLite احتياطية إذا لم يتم العثور على رابط.
-        """
+        """💊 Database Auto-Healing Algorithm."""
         env = info.data.get("ENVIRONMENT", "development")
         base_url = _ensure_database_url(v, env)
 
@@ -371,36 +274,69 @@ class AppSettings(BaseSettings):
         upgraded_url = _upgrade_postgres_protocol(base_url)
         return _optimize_postgres_ssl_params(upgraded_url)
 
+    @computed_field
+    @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT == "production"
+
+
+class AppSettings(BaseServiceSettings):
+    """
+    💎 MONOLITH APP SETTINGS (إعدادات التطبيق الرئيسي)
+
+    يرث من BaseServiceSettings ويضيف إعدادات خاصة بالتطبيق المركزي.
+    """
+
+    PROJECT_NAME: str = Field("CogniForge", description="اسم المشروع")
+    VERSION: str = Field("4.0.0-legendary", description="إصدار النظام")
+    DESCRIPTION: str = Field(
+        "AI-Powered Educational Platform with Hyper-Intelligent Architecture",
+        description="وصف النظام",
+    )
+
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(60 * 24 * 8, description="صلاحية الرموز")
+    REAUTH_TOKEN_EXPIRE_MINUTES: int = Field(10, description="صلاحية إعادة المصادقة")
+
+    BACKEND_CORS_ORIGINS: list[str] = Field(default=["*"])
+    ALLOWED_HOSTS: list[str] = Field(default=["*"])
+    API_STRICT_MODE: bool = Field(default=True)
+    FRONTEND_URL: str = Field(default="http://localhost:3000")
+
+    REDIS_URL: str | None = Field(None)
+
+    OPENAI_API_KEY: str | None = Field(None)
+    OPENROUTER_API_KEY: str | None = Field(None)
+    AI_SERVICE_URL: str | None = Field(None)
+
+    CODESPACE_NAME: str | None = Field(None)
+    GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: str | None = Field(None)
+
+    ADMIN_EMAIL: str = Field("admin@cogniforge.com")
+    ADMIN_PASSWORD: str = Field("change_me_please_123!")
+    ADMIN_NAME: str = Field("Supreme Administrator")
+
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: list[str] | str | None) -> list[str]:
-        """
-        🧩 CORS Assembly Algorithm.
-        يوحّد صياغة نطاقات CORS من صيغ متعددة ويزيل الفراغات والتكرارات.
-        """
-
         return _normalize_csv_or_list(v)
 
     @field_validator("ALLOWED_HOSTS", mode="before")
     @classmethod
     def assemble_allowed_hosts(cls, v: list[str] | str | None) -> list[str]:
-        """
-        🏠 Host Assembly Algorithm.
-        يستقبل قائمة المضيفين بصيغ متعددة ويعيد قائمة نظيفة ومتناسقة.
-        """
-
         return _normalize_csv_or_list(v)
 
-    @computed_field
-    @property
-    def is_production(self) -> bool:
-        """🚀 Returns True if we are in production mode."""
-        return self.ENVIRONMENT == "production"
+    @model_validator(mode='after')
+    def validate_api_security(self) -> 'AppSettings':
+        """Additional API-specific security checks."""
+        if self.ENVIRONMENT == "production":
+            if self.ALLOWED_HOSTS == ["*"]:
+                raise ValueError("❌ SECURITY: ALLOWED_HOSTS cannot be '*' in production.")
+            if self.BACKEND_CORS_ORIGINS == ["*"]:
+                raise ValueError("❌ SECURITY: BACKEND_CORS_ORIGINS cannot be '*' in production.")
+        return self
+
 
 @functools.lru_cache
 def get_settings() -> AppSettings:
-    """
-    ⚡ Global Singleton Accessor.
-    يستخدم LRU Cache لضمان تحميل الإعدادات مرة واحدة فقط (Performance Optimization).
-    """
+    """⚡ Singleton Accessor for Monolith Settings."""
     return AppSettings()
