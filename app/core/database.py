@@ -1,19 +1,19 @@
 """
-محرك قاعدة البيانات (Database Engine) - قلب البيانات.
+Canonical Database Factory for CogniForge.
 
-هذا الملف هو المسؤول الوحيد عن إنشاء وإدارة الاتصال بقاعدة البيانات في النظام.
-تم تبسيطه ليكون مفهوماً للمطورين المبتدئين، مع الالتزام بمبادئ Clean Code.
+Provides a unified Factory Pattern for creating AsyncEngines and SessionMakers.
+Supports Microservices (Bounded Contexts) by allowing each service to instantiate
+its own isolated DB stack based on its configuration.
 
-المبادئ (Principles):
-- SRP: مسؤول فقط عن الاتصال وإنشاء الجلسات.
-- KISS: استخدام مباشر للمكتبات القياسية بدون تعقيدات زائدة.
-- Async First: النظام مصمم ليعمل بشكل غير متزامن للحصول على أعلى أداء.
-- CS61: Connection pooling, memory management, performance profiling.
+Standards:
+- Async First: Uses `sqlalchemy.ext.asyncio`.
+- Factory Pattern: No global state for microservices; explicit `create_engine` calls.
+- Connection Pooling: Configured via settings.
 """
 
 import logging
 from collections.abc import AsyncGenerator
-from typing import Final
+from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -22,137 +22,78 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from app.core.config import get_settings
+from app.core.settings.base import BaseServiceSettings, get_settings
 
 logger = logging.getLogger(__name__)
 
-__all__ = [
-    "async_session_factory",
-    "engine",
-    "get_db",
-]
+__all__ = ["create_db_engine", "create_session_factory", "get_db", "engine", "async_session_factory"]
 
-def _create_engine() -> AsyncEngine:
+def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
     """
-    إنشاء محرك قاعدة البيانات.
-    Create database engine.
-
-    يستخدم إعدادات التطبيق لإنشاء اتصال آمن وفعال.
-    Uses application settings to create a safe and efficient connection.
+    Creates an AsyncEngine based on the provided settings.
+    Canonical implementation for all services.
     """
-    settings = get_settings()
-    db_url = str(settings.DATABASE_URL)
+    db_url = settings.DATABASE_URL
+    if not db_url:
+        raise ValueError("DATABASE_URL is not set in settings.")
 
-    # Build engine configuration
-    engine_args = _build_base_engine_args(settings)
-    
-    # Apply database-specific settings
+    engine_args = {
+        "echo": settings.DEBUG,
+        "pool_pre_ping": True,
+        "pool_recycle": 1800,
+    }
+
     if "sqlite" in db_url:
-        _configure_sqlite_args(engine_args)
+        engine_args["connect_args"] = {"check_same_thread": False}
+        logger.info(f"🔌 Database (SQLite): {settings.SERVICE_NAME}")
     else:
-        _configure_postgres_args(engine_args, settings)
+        # Postgres / Production optimization
+        is_dev = settings.ENVIRONMENT in ("development", "testing")
 
-    _log_engine_configuration(engine_args)
+        # Pool size
+        engine_args["pool_size"] = 5 if is_dev else 40
+        engine_args["max_overflow"] = 10 if is_dev else 60
+
+        # PgBouncer Compatibility (Supabase)
+        # Disable prepared statements
+        engine_args["connect_args"] = {
+            "statement_cache_size": 0,
+            "prepared_statement_cache_size": 0
+        }
+        logger.info(f"🔌 Database (Postgres): {settings.SERVICE_NAME}")
+
     return create_async_engine(db_url, **engine_args)
 
+def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+    """Creates a configured sessionmaker for the given engine."""
+    return async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+    )
 
-def _build_base_engine_args(settings) -> dict:
-    """
-    Build base engine arguments.
-    بناء المعاملات الأساسية للمحرك.
-    """
-    return {
-        "echo": settings.DEBUG,  # طباعة استعلامات SQL في وضع التطوير
-        "pool_pre_ping": True,   # التحقق من صحة الاتصال قبل استخدامه
-        "pool_recycle": 1800,    # إعادة تدوير الاتصال كل 30 دقيقة
-    }
+# -----------------------------------------------------------------------------
+# Global Singleton (For Legacy App/Core usage only)
+# -----------------------------------------------------------------------------
+# Ideally, we should remove this, but for Phase 2 backward compatibility, we keep it.
+# Services should NOT use this. They should create their own in their `database.py`.
 
+_legacy_settings = get_settings()
+engine: AsyncEngine = create_db_engine(_legacy_settings)
+async_session_factory = create_session_factory(engine)
 
-def _configure_sqlite_args(engine_args: dict) -> None:
-    """
-    Configure SQLite-specific settings.
-    تكوين إعدادات SQLite الخاصة.
-    """
-    engine_args["connect_args"] = {"check_same_thread": False}
-    logger.info("🔌 Database: SQLite (Local/Testing Mode)")
-
-
-def _configure_postgres_args(engine_args: dict, settings) -> None:
-    """
-    Configure PostgreSQL-specific settings.
-    تكوين إعدادات PostgreSQL الخاصة.
-    """
-    # Connection pool settings
-    _set_postgres_pool_size(engine_args, settings)
-    
-    # Compatibility settings for PgBouncer
-    _set_postgres_compatibility(engine_args)
-    
-    logger.info(f"🔌 Connecting to Postgres Database: {settings.ENVIRONMENT}")
-    logger.warning("   -> Prepared Statements: DISABLED (PgBouncer Strict Compatibility Mode)")
-
-
-def _set_postgres_pool_size(engine_args: dict, settings) -> None:
-    """
-    Set PostgreSQL connection pool size based on environment.
-    تعيين حجم مسبح اتصالات PostgreSQL بناءً على البيئة.
-    """
-    # ⚠️ CRITICAL: Reduce pool size in development to prevent OOM Kill
-    if settings.ENVIRONMENT == "development" or settings.CODESPACES:
-        logger.info("🔧 Development/Codespaces mode detected: Reducing DB pool size to prevent OOM.")
-        engine_args["pool_size"] = 5      # Small connection count
-        engine_args["max_overflow"] = 10  # Limited overflow
-    else:
-        engine_args["pool_size"] = settings.DB_POOL_SIZE
-        engine_args["max_overflow"] = settings.DB_MAX_OVERFLOW
-
-
-def _set_postgres_compatibility(engine_args: dict) -> None:
-    """
-    Set PostgreSQL compatibility settings for PgBouncer.
-    تعيين إعدادات التوافق مع PgBouncer.
-    
-    ⚠️ CRITICAL FIX: Disable prepared statements completely.
-    This is essential for compatibility with Supabase Transaction Pooler (PgBouncer).
-    Without this setting, the system will crash with error: prepared statement "..." does not exist
-    """
-    engine_args["connect_args"] = {
-        "statement_cache_size": 0,  # Disable prepared statements for AsyncPG
-        "prepared_statement_cache_size": 0,  # Redundant safety for some SQLAlchemy versions
-    }
-
-
-def _log_engine_configuration(engine_args: dict) -> None:
-    """
-    Log final engine configuration for debugging.
-    تسجيل تكوين المحرك النهائي للتصحيح.
-    """
-    logger.debug(f"   -> Final Engine Args: {engine_args}")
-
-# 1. إنشاء المحرك (The Engine)
-engine: Final[AsyncEngine] = _create_engine()
-
-# 2. مصنع الجلسات (Session Factory)
-async_session_factory: Final[async_sessionmaker[AsyncSession]] = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
-)
-
-# 3. حاقن التبعية (Dependency Injection)
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
-    مزود جلسات قاعدة البيانات (Database Session Provider).
-
-    يستخدم هذا التابع في موجهات FastAPI (Routers) للحصول على اتصال آمن بقاعدة البيانات.
+    Dependency for getting a DB session.
+    Used by the Monolith/Core only. Microservices should define their own `get_db`.
     """
     async with async_session_factory() as session:
         try:
             yield session
         except Exception as e:
-            logger.error(f"❌ Database session error: {e!s}")
+            logger.error(f"❌ Database session error: {e}")
             await session.rollback()
             raise
         finally:
