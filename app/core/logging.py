@@ -17,7 +17,7 @@ from typing import Final, Any
 
 from pythonjsonlogger import jsonlogger
 
-from app.core.config import get_settings
+from app.core.settings.base import get_settings
 
 # Correlation ID Context (for tracking requests across services)
 correlation_id: ContextVar[str | None] = ContextVar("correlation_id", default=None)
