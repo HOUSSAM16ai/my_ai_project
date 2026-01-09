@@ -375,7 +375,7 @@ def process_user(user_data: UserData, options: UserCreationOptions) -> User:
 1. app/main.py                          ✅ Already clean
 2. app/kernel.py                        ✅ Already clean
 3. app/models.py                        ⏳ Needs type hints
-4. app/config/settings.py               ⏳ Needs simplification
+4. app.core.config.py               ⏳ Needs simplification
 5. app/core/database.py                 ⏳ Needs DRY
 6. app/core/security.py                 ⏳ Needs interfaces
 7. app/core/ai_gateway.py               ⏳ Needs SOLID

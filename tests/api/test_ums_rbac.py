@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from app.config.settings import get_settings
+from app.core.config import get_settings
 from app.core.domain.models import AuditLog, User, UserStatus
 from app.middleware.rate_limiter_middleware import reset_rate_limiter
 from app.services.auth import AuthService

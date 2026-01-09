@@ -15,8 +15,8 @@ from typing import TYPE_CHECKING, Final
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config.settings import AppSettings
-from app.config.settings import get_settings as _get_settings_config
+from app.core.config import AppSettings
+from app.core.config import get_settings as _get_settings_config
 from app.core.database import async_session_factory
 from app.core.logging import get_logger as _get_logger
 

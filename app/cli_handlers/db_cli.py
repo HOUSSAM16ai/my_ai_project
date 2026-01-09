@@ -16,7 +16,7 @@ from sqlmodel import SQLModel
 
 from app import models
 from app.cli_handlers.context import CLIContext, get_cli_context
-from app.config.settings import AppSettings
+from app.core.config import AppSettings
 from app.core.database import engine
 
 SessionFactory = Callable[[], AsyncGenerator[AsyncSession, None]]

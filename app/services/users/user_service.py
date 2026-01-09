@@ -22,7 +22,7 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config.settings import AppSettings, get_settings
+from app.core.config import AppSettings, get_settings
 from app.core.database import async_session_factory
 from app.core.domain.models import User
 from app.services.bootstrap import bootstrap_admin_account

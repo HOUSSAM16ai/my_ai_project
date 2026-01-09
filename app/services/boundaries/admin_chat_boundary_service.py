@@ -8,7 +8,7 @@ import jwt
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config.settings import get_settings
+from app.core.config import get_settings
 from app.core.ai_gateway import AIClient
 from app.core.domain.models import AdminConversation, MessageRole, User
 from app.services.admin.chat_persistence import AdminChatPersistence

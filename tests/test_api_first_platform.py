@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api.schemas.system.responses import HealthResponse
-from app.config.settings import AppSettings
+from app.core.config import AppSettings
 from app.kernel import RealityKernel
 from app.core.database import engine, get_db
 

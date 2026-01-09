@@ -9,7 +9,7 @@
 - Singleton Pattern: يتم الحصول على النواة عبر الكائن النهائي.
 """
 
-from app.config.settings import AppSettings, get_settings
+from app.core.config import AppSettings, get_settings
 from app.kernel import RealityKernel
 from app.middleware.static_files_middleware import StaticFilesConfig, setup_static_files_middleware
 from fastapi import FastAPI

@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config.settings import AppSettings as Settings
+from app.core.config import AppSettings as Settings
 from app.core.di import get_logger, get_session
 
 

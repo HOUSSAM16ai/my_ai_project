@@ -252,7 +252,7 @@ HttpResponse<String> response = client.send(request,
 ### الطريقة 1: من Python مباشرة
 
 ```python
-from app.config.settings import get_settings
+from app.core.config import get_settings
 from app.kernel import RealityKernel
 
 # تشغيل بدون الواجهة الأمامية

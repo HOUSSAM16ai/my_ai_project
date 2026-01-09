@@ -19,7 +19,7 @@ import jwt
 from fastapi import HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config.settings import get_settings
+from app.core.config import get_settings
 from app.security.chrono_shield import chrono_shield
 from app.services.rbac import RBACService, STANDARD_ROLE
 from app.services.security.auth_persistence import AuthPersistence

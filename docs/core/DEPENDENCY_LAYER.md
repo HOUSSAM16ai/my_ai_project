@@ -37,7 +37,7 @@ The new dependency layer acts as a simple, centralized access point for core ser
 +-------------------+            +---------------------------+            +-------------------+
          |                                     |                                    |
 +--------v----------+            +-------------v-------------+            +---------v---------+
-| app.config.settings |            | app.db.session_factory  |            | app.core.logging  |
+| app.core.config |            | app.db.session_factory  |            | app.core.logging  |
 +-------------------+            +---------------------------+            +-------------------+
 
 ```

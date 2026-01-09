@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 # Ensure we can import the app modules
 sys.path.append(os.getcwd())
 
-from app.config.settings import get_settings
+from app.core.config import get_settings
 # REMOVED: from app.core.engine_factory import FatalEngineError, create_unified_async_engine
 from sqlmodel import SQLModel
 

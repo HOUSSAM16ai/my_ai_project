@@ -19,7 +19,7 @@ if not hasattr(bcrypt, '__about__'):
     with contextlib.suppress(Exception):
         bcrypt.__about__ = type('about', (object,), {'__version__': bcrypt.
             __version__})
-from app.config.settings import get_settings
+from app.core.config import get_settings
 from app.core.domain.models import pwd_context
 
 def generate_service_token(user_id: str) -> str:

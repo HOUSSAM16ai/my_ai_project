@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from app.config.settings import AppSettings
+from app.core.config import AppSettings
 
 
 class TestSuperhumanConfiguration:

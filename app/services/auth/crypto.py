@@ -11,7 +11,7 @@ from typing import Final
 import jwt
 from fastapi import HTTPException, status
 
-from app.config.settings import AppSettings
+from app.core.config import AppSettings
 from app.core.domain.models import User
 
 ACCESS_EXPIRE_MINUTES: Final[int] = 30

@@ -5,7 +5,7 @@ import jwt
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config.settings import AppSettings
+from app.core.config import AppSettings
 
 
 @pytest.mark.asyncio

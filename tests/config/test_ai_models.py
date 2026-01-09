@@ -1,4 +1,4 @@
-from app.config.ai_models import ActiveModels, AvailableModels, get_ai_config
+from app.core.ai_config import ActiveModels, AvailableModels, get_ai_config
 
 
 class TestAIModelsConfiguration:

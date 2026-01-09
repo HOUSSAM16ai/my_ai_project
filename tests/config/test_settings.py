@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from app.config.settings import AppSettings
+from app.core.config import AppSettings
 
 
 def test_database_url_fixer_handles_duplicates_gracefully():

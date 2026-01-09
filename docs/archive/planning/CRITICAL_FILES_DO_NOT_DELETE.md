@@ -200,9 +200,9 @@
 
 ### Core Configuration
 ```
-✅ app/config/settings.py                   - الإعدادات الرئيسية
-✅ app/config/ai_models.py                  - تكوين نماذج AI
-✅ app/config/dependencies.py               - Dependency Injection
+✅ app.core.config.py                   - الإعدادات الرئيسية
+✅ app.core.ai_config.py                  - تكوين نماذج AI
+✅ app/core/config.py               - Dependency Injection
 ```
 
 ### Database
