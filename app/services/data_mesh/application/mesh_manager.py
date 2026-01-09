@@ -28,7 +28,7 @@ class DataMeshManager:
     Manages the lifecycle of data products, contracts, and governance.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.bounded_contexts: dict[str, BoundedContext] = {}
         self.data_contracts: dict[str, DataContract] = {}
         self.data_products: dict[str, DataProduct] = {}
@@ -44,12 +44,12 @@ class DataMeshManager:
 
         self._initialize_governance()
 
-    def _initialize_governance(self):
+    def _initialize_governance(self) -> None:
         """Initialize default governance policies"""
         self._create_quality_standard_policy()
         self._create_schema_compatibility_policy()
 
-    def _create_quality_standard_policy(self):
+    def _create_quality_standard_policy(self) -> None:
         self.add_governance_policy(
             GovernancePolicy(
                 policy_id="quality-standard",
@@ -66,7 +66,7 @@ class DataMeshManager:
             )
         )
 
-    def _create_schema_compatibility_policy(self):
+    def _create_schema_compatibility_policy(self) -> None:
         self.add_governance_policy(
             GovernancePolicy(
                 policy_id="schema-compatibility",
@@ -157,7 +157,6 @@ class DataMeshManager:
             status=DataProductStatus.ACTIVE
         )
 
-    # TODO: Split this function (42 lines) - KISS principle
     def evolve_contract_schema(
         self,
         contract_id: str,
@@ -165,13 +164,40 @@ class DataMeshManager:
         new_version: str,
         changes: list[dict[str, Any]],
     ) -> SchemaEvolution | None:
+        """
+        تطور مخطط العقد وتتحقق من التوافق.
+        Evolves the contract schema and checks for compatibility.
+        """
         contract = self.data_contracts.get(contract_id)
         if not contract:
             return None
 
-        compatibility = self._detect_schema_compatibility(
-            contract.schema_definition, new_schema, changes
+        compatibility = self._check_schema_compatibility(contract.schema_definition, new_schema, changes)
+        if not compatibility:
+            return None
+
+        evolution = self._create_schema_evolution(
+            contract_id=contract_id,
+            contract_version=contract.schema_version,
+            new_version=new_version,
+            changes=changes,
+            compatibility=compatibility
         )
+
+        self._apply_schema_evolution(contract, evolution, new_schema, new_version)
+        return evolution
+
+    def _check_schema_compatibility(
+        self,
+        old_schema: dict[str, Any],
+        new_schema: dict[str, Any],
+        changes: list[dict[str, Any]]
+    ) -> SchemaCompatibility | None:
+        """
+        التحقق من توافق المخطط مع السياسات.
+        Checks schema compatibility against governance policies.
+        """
+        compatibility = self._detect_schema_compatibility(old_schema, new_schema, changes)
 
         if compatibility == SchemaCompatibility.BREAKING:
             policy = self.governance_policies.get("schema-compatibility")
@@ -179,10 +205,24 @@ class DataMeshManager:
                 logging.getLogger(__name__).error("Breaking schema changes not allowed")
                 return None
 
-        evolution = SchemaEvolution(
+        return compatibility
+
+    def _create_schema_evolution(
+        self,
+        contract_id: str,
+        contract_version: str,
+        new_version: str,
+        changes: list[dict[str, Any]],
+        compatibility: SchemaCompatibility
+    ) -> SchemaEvolution:
+        """
+        إنشاء كائن تطور المخطط.
+        Creates the SchemaEvolution object.
+        """
+        return SchemaEvolution(
             evolution_id=str(uuid.uuid4()),
             contract_id=contract_id,
-            from_version=contract.schema_version,
+            from_version=contract_version,
             to_version=new_version,
             changes=changes,
             compatibility=compatibility,
@@ -190,17 +230,26 @@ class DataMeshManager:
             validated_at=datetime.now(UTC),
         )
 
+    def _apply_schema_evolution(
+        self,
+        contract: DataContract,
+        evolution: SchemaEvolution,
+        new_schema: dict[str, Any],
+        new_version: str
+    ) -> None:
+        """
+        تطبيق تطور المخطط على العقد وتحديث الحالة.
+        Applies the evolution to the contract and updates state safely.
+        """
         with self.lock:
-            self.schema_evolutions[contract_id].append(evolution)
+            self.schema_evolutions[contract.contract_id].append(evolution)
             contract.schema_definition = new_schema
             contract.schema_version = new_version
             contract.updated_at = datetime.now(UTC)
 
             logging.getLogger(__name__).info(
-                f"Schema evolved: {contract.name} v{new_version} ({compatibility.value})"
+                f"Schema evolved: {contract.name} v{new_version} ({evolution.compatibility.value})"
             )
-
-        return evolution
 
     def _validate_schema_compatibility(self, contract: DataContract) -> bool:
         required_fields = ["type", "properties"]
@@ -285,7 +334,7 @@ class DataMeshManager:
             self.quality_metrics[metrics.product_id].append(metrics)
             self._check_quality_thresholds(metrics)
 
-    def _check_quality_thresholds(self, metrics: DataQualityMetrics):
+    def _check_quality_thresholds(self, metrics: DataQualityMetrics) -> None:
         policy = self.governance_policies.get("quality-standard")
         if not policy or not policy.enabled:
             return
@@ -294,20 +343,23 @@ class DataMeshManager:
             rule_type = rule.get("type")
             threshold = rule.get("threshold")
 
-            if rule_type == "completeness" and metrics.completeness < threshold:
+            if threshold is None:
+                continue
+
+            if rule_type == "completeness" and metrics.completeness < float(threshold):
                 self._trigger_governance_action(
                     policy, f"Completeness below threshold: {metrics.completeness:.2%}"
                 )
-            elif rule_type == "accuracy" and metrics.accuracy < threshold:
+            elif rule_type == "accuracy" and metrics.accuracy < float(threshold):
                 self._trigger_governance_action(
                     policy, f"Accuracy below threshold: {metrics.accuracy:.2%}"
                 )
-            elif rule_type == "freshness_max_seconds" and metrics.freshness_seconds > threshold:
+            elif rule_type == "freshness_max_seconds" and metrics.freshness_seconds > float(threshold):
                 self._trigger_governance_action(
                     policy, f"Data freshness exceeded: {metrics.freshness_seconds}s"
                 )
 
-    def _trigger_governance_action(self, policy: GovernancePolicy, reason: str):
+    def _trigger_governance_action(self, policy: GovernancePolicy, reason: str) -> None:
         logging.getLogger(__name__).warning(f"Governance action: {policy.name} - {reason}")
         # In future: implement specific actions like blocking consumption
 
@@ -331,7 +383,7 @@ class DataMeshManager:
             "sample_count": len(recent_metrics),
         }
 
-    def _publish_event(self, event_type: str, payload: dict[str, Any]):
+    def _publish_event(self, event_type: str, payload: dict[str, Any]) -> None:
         event = {
             "event_id": str(uuid.uuid4()),
             "event_type": event_type,
