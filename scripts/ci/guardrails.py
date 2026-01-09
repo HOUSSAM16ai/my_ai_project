@@ -145,62 +145,64 @@ def _match_path(filepath: Path, pattern: str) -> bool:
         return s_path.startswith(pattern[:-1]) or fnmatch(s_path, pattern)
     return fnmatch(s_path, pattern)
 
-def _check_microservice_imports(node, current_service, filepath, errors, exemptions):
-    module_name = _get_import_module(node)
-    if not module_name:
-        return
+def _get_modules_from_import(node) -> list[str]:
+    modules = []
+    if isinstance(node, ast.Import):
+        for name in node.names:
+            modules.append(name.name)
+    elif isinstance(node, ast.ImportFrom):
+        if node.module:
+            modules.append(node.module)
+    return modules
 
-    # Rule: No cross-service imports
-    if module_name.startswith("microservices."):
-        parts = module_name.split(".")
-        if len(parts) > 1:
+def _check_microservice_imports(node, current_service, filepath, errors, exemptions):
+    modules = _get_modules_from_import(node)
+
+    for module_name in modules:
+        # Rule: No cross-service imports
+        # Matches "microservices", "microservices.foo"
+        if module_name == "microservices" or module_name.startswith("microservices."):
+            parts = module_name.split(".")
+            # If importing "microservices" directly, it's a violation unless checking dynamic loading (rare)
+            if len(parts) == 1:
+                 errors.append(f"{filepath}:{node.lineno} - Direct import of 'microservices' package is forbidden.")
+                 continue
+
             imported_service = parts[1]
             if imported_service != current_service:
                 errors.append(f"{filepath}:{node.lineno} - Cross-service import forbidden: '{current_service}' importing from '{imported_service}'")
 
-    # Rule: No importing app.services (Monolith Leak)
-    if module_name.startswith("app.services"):
-        errors.append(f"{filepath}:{node.lineno} - Microservice cannot import 'app.services' (Monolith Leak).")
+        # Rule: No importing app.services (Monolith Leak)
+        if module_name.startswith("app.services"):
+            errors.append(f"{filepath}:{node.lineno} - Microservice cannot import 'app.services' (Monolith Leak).")
 
-    # Rule: No importing app.api (Layer Violation)
-    if module_name.startswith("app.api"):
-        errors.append(f"{filepath}:{node.lineno} - Microservice cannot import 'app.api' (Layer Violation).")
+        # Rule: No importing app.api (Layer Violation)
+        if module_name.startswith("app.api"):
+            errors.append(f"{filepath}:{node.lineno} - Microservice cannot import 'app.api' (Layer Violation).")
 
-    # Rule: Only app.core is allowed from app
-    if module_name.startswith("app.") and not module_name.startswith("app.core"):
-        errors.append(f"{filepath}:{node.lineno} - Microservice can only import from 'app.core'. Found: '{module_name}'")
+        # Rule: Only app.core is allowed from app
+        if module_name.startswith("app.") and not module_name.startswith("app.core"):
+            errors.append(f"{filepath}:{node.lineno} - Microservice can only import from 'app.core'. Found: '{module_name}'")
 
 
 def _check_monolith_imports(node, filepath, errors):
-    module_name = _get_import_module(node)
-    if not module_name:
-        return
-
-    # Rule: Monolith cannot import microservices (Use HTTP/Event Bus)
-    if module_name.startswith("microservices"):
-        errors.append(f"{filepath}:{node.lineno} - Monolith cannot import 'microservices' directly. Use APIs.")
+    modules = _get_modules_from_import(node)
+    for module_name in modules:
+        # Rule: Monolith cannot import microservices (Use HTTP/Event Bus)
+        if module_name == "microservices" or module_name.startswith("microservices."):
+            errors.append(f"{filepath}:{node.lineno} - Monolith cannot import 'microservices' directly. Use APIs.")
 
 def _check_admin_db_imports(node, filepath, errors, exemptions):
     if "db_import" in exemptions:
         return
 
-    module_name = _get_import_module(node)
-    if not module_name:
-        return
-
+    modules = _get_modules_from_import(node)
     forbidden_db = ["sqlalchemy", "sqlmodel", "alembic", "app.core.database"]
 
-    for db_mod in forbidden_db:
-        if module_name.startswith(db_mod) or module_name == db_mod:
-             errors.append(f"{filepath}:{node.lineno} - UI/API Layer cannot import DB module '{module_name}'. Use Services/Boundaries.")
-
-def _get_import_module(node) -> str | None:
-    if isinstance(node, ast.Import):
-        # Return first one for simplicity, though could be multiple
-        return node.names[0].name
-    elif isinstance(node, ast.ImportFrom):
-        return node.module
-    return None
+    for module_name in modules:
+        for db_mod in forbidden_db:
+            if module_name.startswith(db_mod) or module_name == db_mod:
+                 errors.append(f"{filepath}:{node.lineno} - UI/API Layer cannot import DB module '{module_name}'. Use Services/Boundaries.")
 
 def main():
     root_dir = Path(".")
