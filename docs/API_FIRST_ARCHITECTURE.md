@@ -130,7 +130,7 @@ async def login(
 
 ```python
 # app/main.py
-from app.config.settings import get_settings
+from app.core.config import get_settings
 from app.kernel import RealityKernel
 
 settings = get_settings()
@@ -147,7 +147,7 @@ app = kernel.get_app()
 
 ```python
 # app/main.py
-from app.config.settings import get_settings
+from app.core.config import get_settings
 from app.kernel import RealityKernel
 
 settings = get_settings()
@@ -171,7 +171,7 @@ ENABLE_STATIC_FILES=false  # للوضع API-only
 ```
 
 ```python
-# app/config/settings.py
+# app.core.config.py
 class AppSettings(BaseSettings):
     ENABLE_STATIC_FILES: bool = True
 ```

@@ -26,7 +26,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config.settings import get_settings
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.di import get_logger
 from app.services.overmind.knowledge_environment import build_environment_info

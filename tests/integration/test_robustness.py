@@ -2,7 +2,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.config.settings import AppSettings
+from app.core.config import AppSettings
 from app.kernel import RealityKernel
 
 

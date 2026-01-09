@@ -1,6 +1,6 @@
 """اختبارات توصيفية لمعلومات البيئة في معرفة المشروع."""
 
-from app.config.settings import get_settings
+from app.core.config import get_settings
 from app.services.overmind.knowledge import ProjectKnowledge
 
 

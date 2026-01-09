@@ -81,7 +81,7 @@ ENVIRONMENT="${ENVIRONMENT:-development}"
 TESTING="${TESTING:-0}"
 
 # ══════════════════════════════════════════════════════════════════════
-# ⚠️ NOTE: AI Models are configured in app/config/ai_models.py
+# ⚠️ NOTE: AI Models are configured in app/core/ai_config.py
 # ══════════════════════════════════════════════════════════════════════
 EOF
     

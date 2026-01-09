@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from app.config.settings import get_settings
+from app.core.config import get_settings
 from app.core.domain.models import User
 from app.services.bootstrap import bootstrap_admin_account
 from app.services.rbac import ADMIN_ROLE, RBACService

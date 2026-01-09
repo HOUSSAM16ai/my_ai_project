@@ -1,6 +1,6 @@
 """مساعدات قراءة معلومات البيئة لمعرفة المشروع."""
 
-from app.config.settings import AppSettings
+from app.core.config import AppSettings
 
 
 def build_environment_info(settings: AppSettings) -> dict[str, object]:

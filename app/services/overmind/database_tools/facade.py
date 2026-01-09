@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.di import get_logger
-from app.config.settings import get_settings
+from app.core.config import get_settings
 from app.services.overmind.database_tools.operations_logger import OperationsLogger
 from app.services.overmind.database_tools.table_manager import TableManager
 from app.services.overmind.database_tools.column_manager import ColumnManager

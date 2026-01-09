@@ -19,7 +19,7 @@ To solve these issues, we have introduced a new settings layer based on [Pydanti
 
 ### Key Benefits:
 
-- **Single Source of Truth:** All configuration is defined in one place: `app.config.settings.AppSettings`.
+- **Single Source of Truth:** All configuration is defined in one place: `app.core.config.AppSettings`.
 - **Framework-Independent:** The module is pure Python and has no dependency on any web framework. It can be safely imported and used anywhere.
 - **Automatic Validation:** Pydantic automatically validates that required environment variables are present and that all values conform to their specified type hints (e.g., `str`, `int`). The application will fail fast on startup if the configuration is invalid, preventing runtime errors.
 - **Environment-Aware:** It automatically loads configuration from environment variables and `.env` files, following the 12-Factor App methodology.
@@ -31,13 +31,13 @@ A global, cached singleton accessor is provided to ensure the settings are loade
 
 ### In FastAPI (Future)
 
-The settings will be injected into route handlers and dependencies using FastAPI's built-in dependency injection system. A dedicated entry point is already created in `app.config.dependencies.py`.
+The settings will be injected into route handlers and dependencies using FastAPI's built-in dependency injection system. A dedicated entry point is already created in `app.core.config.py`.
 
 ```python
 # Example in a future FastAPI route
 from fastapi import APIRouter, Depends
-from app.config.dependencies import get_settings
-from app.config.settings import AppSettings
+from app.core.config import get_settings
+from app.core.config import AppSettings
 
 router = APIRouter()
 
@@ -52,7 +52,7 @@ Services and other modules can directly import the accessor function.
 
 ```python
 # Example in a service function
-from app.config.dependencies import get_settings
+from app.core.config import get_settings
 
 def some_service_function():
     settings = get_settings()

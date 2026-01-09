@@ -76,7 +76,7 @@ class RealityKernel:
 ```bash
 python -c "
 from app.kernel import RealityKernel
-from app.config.settings import get_settings
+from app.core.config import get_settings
 
 # تشغيل API بدون Frontend
 kernel = RealityKernel(
@@ -158,7 +158,7 @@ curl -X POST http://localhost:8000/api/security/login \
 ### ✅ أمان محسّن
 
 ```python
-# app/config/settings.py
+# app.core.config.py
 ✅ API_STRICT_MODE - تحذيرات للمطورين
 ✅ CORS production validation (يمنع '*')
 ✅ ALLOWED_HOSTS production checks
@@ -213,7 +213,7 @@ cat docs/contracts/openapi/core-api-v1.yaml
 # تشغيل API بدون Frontend
 python -c "
 from app.kernel import RealityKernel
-from app.config.settings import get_settings
+from app.core.config import get_settings
 
 kernel = RealityKernel(
     settings=get_settings(),

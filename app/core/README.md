@@ -195,7 +195,7 @@ class Service:
 ### 3. Configuration over Code | الإعدادات بدلاً من الكود
 استخدام environment variables للإعدادات:
 ```python
-from app.config.settings import get_settings
+from app.core.config import get_settings
 
 settings = get_settings()
 DATABASE_URL = settings.DATABASE_URL  # From environment

@@ -42,7 +42,7 @@ from app.api.routers import (
     system,
     ums,
 )
-from app.config.settings import AppSettings
+from app.core.config import AppSettings
 from app.core.db_schema import validate_schema_on_startup
 from app.core.database import async_session_factory
 from app.core.event_bus_impl import EventBus, get_event_bus

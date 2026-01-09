@@ -41,7 +41,7 @@ per-file-ignores =
 
 # Import order checking (compatible with isort)
 import-order-style = google
-application-import-names = app,config
+application-import-names = app
 
 # Docstring requirements
 docstring-convention = google

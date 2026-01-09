@@ -1,4 +1,4 @@
-# app/config/settings.py
+# app/core/config.py
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    🧠 THE COGNITIVE CONFIGURATION CORTEX                     ║
@@ -27,7 +27,7 @@ from pydantic import Field, ValidationInfo, computed_field, field_validator, mod
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # إعداد السجل (Logging) لهذه الوحدة
-logger = logging.getLogger("app.config")
+logger = logging.getLogger("app.core.config")
 
 _DEV_SECRET_KEY_CACHE: str | None = None
 

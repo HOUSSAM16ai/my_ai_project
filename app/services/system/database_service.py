@@ -6,7 +6,7 @@ import logging
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config.settings import AppSettings
+from app.core.config import AppSettings
 
 logger = logging.getLogger(__name__)
 

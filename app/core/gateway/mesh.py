@@ -14,7 +14,7 @@ from typing import Any, Protocol, runtime_checkable
 import httpx
 
 # Config imports
-from app.config.ai_models import get_ai_config
+from app.core.ai_config import get_ai_config
 from app.core.cognitive_cache import get_cognitive_engine
 from app.core.gateway.circuit_breaker import CircuitBreaker
 from app.core.gateway.connection import BASE_TIMEOUT, ConnectionManager

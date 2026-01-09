@@ -32,7 +32,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 
-from app.config.settings import get_settings
+from app.core.config import get_settings
 
 class AvailableModels:
     """

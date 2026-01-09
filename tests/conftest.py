@@ -151,7 +151,7 @@ def init_db(event_loop) -> None:
 def reset_secret_key(monkeypatch: pytest.MonkeyPatch) -> None:
     """إعادة ضبط مفتاح التشفير قبل كل اختبار للحفاظ على استقرار التوقيعات."""
 
-    from app.config.settings import get_settings
+    from app.core.config import get_settings
 
     current_key = os.environ.get(
         "SECRET_KEY", "test-secret-key-that-is-very-long-and-secure-enough-for-tests-v4"

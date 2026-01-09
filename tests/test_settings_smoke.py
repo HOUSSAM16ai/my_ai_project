@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from app.config.settings import get_settings
+from app.core.config import get_settings
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -31,7 +31,7 @@ def test_settings_validation_error_on_missing_required_fields():
     with (
         patch.dict(os.environ, {}, clear=True),
         patch(
-            "app.config.settings.AppSettings.model_config",
+            "app.core.config.AppSettings.model_config",
             {"env_file": empty_env_path, "extra": "ignore"},
         ),
     ):
