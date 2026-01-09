@@ -3,12 +3,17 @@ Standardized Logging Module for CogniForge.
 
 Provides structured logging configuration using python-json-logger in production
 and readable console logging in development. Supports request correlation IDs.
+
+Standards:
+- JSON in Production.
+- Correlation IDs for tracing.
+- Redaction of sensitive keys (Secrets).
 """
 
 import logging
 import sys
 from contextvars import ContextVar
-from typing import Final
+from typing import Final, Any
 
 from pythonjsonlogger import jsonlogger
 
@@ -17,39 +22,68 @@ from app.core.config import get_settings
 # Correlation ID Context (for tracking requests across services)
 correlation_id: ContextVar[str | None] = ContextVar("correlation_id", default=None)
 
+# Keys to redact from logs
+SENSITIVE_KEYS: Final[set[str]] = {
+    "password", "token", "secret", "authorization", "api_key", "access_token"
+}
+
+class RedactingJsonFormatter(jsonlogger.JsonFormatter):
+    """JSON Formatter that automatically redacts sensitive keys."""
+
+    def process_log_record(self, log_record: dict[str, Any]) -> dict[str, Any]:
+        """Redacts sensitive keys from the log record."""
+        for key in list(log_record.keys()):
+            if key.lower() in SENSITIVE_KEYS:
+                log_record[key] = "***REDACTED***"
+
+        # Also check inside 'message' if it's a dict (structured log)
+        if isinstance(log_record.get("message"), dict):
+             for key in list(log_record["message"].keys()): # type: ignore
+                 if key.lower() in SENSITIVE_KEYS:
+                     log_record["message"][key] = "***REDACTED***" # type: ignore
+
+        return super().process_log_record(log_record)
+
 class CorrelationIdFilter(logging.Filter):
     """Injects the correlation ID into the log record."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.correlation_id = correlation_id.get()
+        cid = correlation_id.get()
+        # Add to record so it appears in formatter
+        record.correlation_id = cid # type: ignore
         return True
 
-def setup_logging() -> None:
+def setup_logging(service_name: str | None = None) -> None:
     """
-    Configures the root logger with structured JSON logging or colored console output
-    depending on the environment.
+    Configures the root logger with structured JSON logging or colored console output.
     """
     settings = get_settings()
     log_level = settings.LOG_LEVEL.upper()
 
-    # Check if we are in development or production
-    is_dev = settings.ENVIRONMENT == "development"
+    # Determine service name
+    svc_name = service_name or settings.SERVICE_NAME
+
+    # Check environment
+    is_production = settings.ENVIRONMENT in ("production", "staging")
 
     handler: logging.Handler
-    if is_dev:
+    formatter: logging.Formatter
+
+    if is_production:
+        # JSON format for Production (Observability)
+        handler = logging.StreamHandler(sys.stdout)
+        # We include service_name in the format string
+        formatter = RedactingJsonFormatter(
+            "%(asctime)s %(name)s %(levelname)s %(message)s %(correlation_id)s %(service_name)s"
+        )
+    else:
         # Simple readable format for Dev
         handler = logging.StreamHandler(sys.stdout)
         formatter = logging.Formatter(
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
-        handler.setFormatter(formatter)
-    else:
-        # JSON format for Production (Observability)
-        handler = logging.StreamHandler(sys.stdout)
-        formatter = jsonlogger.JsonFormatter(
-            "%(asctime)s %(name)s %(levelname)s %(message)s %(correlation_id)s"
-        )
-        handler.setFormatter(formatter)
+
+    handler.setFormatter(formatter)
 
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
@@ -59,21 +93,24 @@ def setup_logging() -> None:
         root_logger.handlers = []
 
     root_logger.addHandler(handler)
-    root_logger.addFilter(CorrelationIdFilter())
+
+    # Add correlation ID filter to handler so it works even if we add multiple handlers
+    handler.addFilter(CorrelationIdFilter())
+
+    # Inject Service Name Record Factory
+    old_factory = logging.getLogRecordFactory()
+    def record_factory(*args: Any, **kwargs: Any) -> logging.LogRecord:
+        record = old_factory(*args, **kwargs)
+        record.service_name = svc_name # type: ignore
+        return record
+    logging.setLogRecordFactory(record_factory)
 
     # Silence noisy libraries
-    logging.getLogger("uvicorn.access").disabled = True # We might handle access logs via middleware
+    logging.getLogger("uvicorn.access").disabled = True # We use our own middleware
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("watchfiles").setLevel(logging.WARNING)
 
 def get_logger(name: str) -> logging.Logger:
-    """
-    Returns a logger instance with the given name.
-
-    Args:
-        name: The name of the logger (usually __name__).
-
-    Returns:
-        logging.Logger: The logger instance.
-    """
+    """Returns a logger instance with the given name."""
     return logging.getLogger(name)
