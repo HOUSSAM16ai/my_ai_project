@@ -88,6 +88,13 @@ def _normalize_csv_or_list(value: list[str] | str | None) -> list[str]:
 
     return []
 
+def _lenient_json_loads(value: str) -> object:
+    """Parses environment values as JSON, allowing simple strings on failure."""
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return value
+
 # -----------------------------------------------------------------------------
 # Base Settings (Shared across all services)
 # -----------------------------------------------------------------------------
@@ -127,6 +134,7 @@ class BaseServiceSettings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
+        env_json_loads=_lenient_json_loads,
         extra="ignore"
     )
 
@@ -148,6 +156,11 @@ class BaseServiceSettings(BaseSettings):
                  raise ValueError("Production SECRET_KEY is too weak")
         return self
 
+    @computed_field
+    @property
+    def is_production(self) -> bool:
+        """Returns True if we are in production mode."""
+        return self.ENVIRONMENT == "production"
 
 # -----------------------------------------------------------------------------
 # Main App Settings (Legacy Monolith + Gateway)
@@ -159,11 +172,13 @@ class AppSettings(BaseServiceSettings):
     Inherits from BaseServiceSettings for consistency.
     """
     SERVICE_NAME: str = "CogniForge-Core"
-
     PROJECT_NAME: str = Field("CogniForge", description="Project Name")
+    VERSION: str = Field("4.0.0-legendary", description="System Version")
+    DESCRIPTION: str = Field("AI-Powered Platform", description="System Description")
 
     # API
     API_V1_STR: str = "/api/v1"
+    API_STRICT_MODE: bool = Field(True, description="Strict API Security")
 
     # CORS & Hosts
     BACKEND_CORS_ORIGINS: list[str] = Field(default=["*"])
@@ -171,15 +186,50 @@ class AppSettings(BaseServiceSettings):
 
     # Infra
     REDIS_URL: str | None = None
+    DB_POOL_SIZE: int = Field(40, description="DB Pool Size")
+    DB_MAX_OVERFLOW: int = Field(60, description="DB Max Overflow")
 
     # Admin
     ADMIN_EMAIL: str = "admin@cogniforge.com"
     ADMIN_PASSWORD: str = "change_me_please_123!"
+    ADMIN_NAME: str = "Supreme Administrator"
+
+    # AI (Missing fields restored)
+    OPENAI_API_KEY: str | None = Field(None, description="OpenAI API Key")
+    OPENROUTER_API_KEY: str | None = Field(None, description="OpenRouter API Key")
+    AI_SERVICE_URL: str | None = Field(None, description="AI Service URL")
+
+    # Codespaces / Dev Environment (Missing fields restored)
+    CODESPACES: bool = Field(False, description="Is running in Codespaces")
+    CODESPACE_NAME: str | None = Field(None, description="Codespace Name")
+    GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: str | None = Field(None)
+    FRONTEND_URL: str = Field(default="http://localhost:3000", description="Frontend URL")
+
+    # Security (Tokens)
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(60 * 24 * 8, description="Access Token Expiry")
+    REAUTH_TOKEN_EXPIRE_MINUTES: int = Field(10, description="Re-auth Token Expiry")
 
     @field_validator("BACKEND_CORS_ORIGINS", "ALLOWED_HOSTS", mode="before")
     @classmethod
     def assemble_list(cls, v: str | list[str] | None) -> list[str]:
         return _normalize_csv_or_list(v)
+
+    @field_validator("CODESPACES", mode="before")
+    @classmethod
+    def detect_codespaces(cls, v: dict[str, str | int | bool]) -> bool:
+        if v is not None:
+            return bool(v)
+        return os.getenv("CODESPACES") == "true"
+
+    @model_validator(mode="after")
+    def validate_production_security(self) -> "AppSettings":
+        """Strict Production Guardrails"""
+        if self.ENVIRONMENT == "production":
+             if self.ALLOWED_HOSTS == ["*"]:
+                 raise ValueError("SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production.")
+             if self.BACKEND_CORS_ORIGINS == ["*"]:
+                 raise ValueError("SECURITY RISK: BACKEND_CORS_ORIGINS cannot be '*' in production.")
+        return self
 
 
 @functools.lru_cache
