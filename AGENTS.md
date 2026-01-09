@@ -56,4 +56,9 @@ The `app/kernel.py` and `app/core` must act as the **Evaluator** of the system.
 *   **Coverage:** 100% ambition. Every branch must be checked.
 
 ---
+
+## 📜 Advanced Software Design Principles (The "Code of Conduct")
+See [PRINCIPLES.md](docs/architecture/PRINCIPLES.md) for the detailed Arabic breakdown of SOLID, Architecture, and Quality standards. All agents must strive to adhere to these principles.
+
+---
 *Verified by the Council of Wisdom.*

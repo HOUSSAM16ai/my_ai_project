@@ -8,6 +8,7 @@
 - Functional Core: معالجة الطلبات كسلسلة من التحويلات الوظيفية.
 - Defense in Depth: تطبيق السياسات في وقت مبكر.
 - Observability: تسجيل المقاييس والأخطاء بدقة.
+- SOLID - Dependency Inversion: حقن التبعيات (Router, Cache, Policy) بدلاً من إنشائها داخلياً.
 """
 from __future__ import annotations
 
@@ -43,30 +44,41 @@ class APIGatewayService:
     - محرك توجيه ذكي.
     - تخزين مؤقت ديناميكي.
     - تطبيق سياسات الأمان.
+    - مصمم بمبدأ Dependency Injection.
     """
 
-    def __init__(self) -> None:
-        self.protocol_adapters: dict[str, ProtocolAdapter] = {
+    def __init__(
+        self,
+        router: IntelligentRouter,
+        policy_engine: PolicyEngine,
+        cache_provider: CacheProviderProtocol,
+        adapters: dict[str, ProtocolAdapter] | None = None
+    ) -> None:
+        """
+        تهيئة البوابة مع حقن التبعيات.
+
+        Args:
+            router: موجه الطلبات الذكي.
+            policy_engine: محرك تطبيق السياسات.
+            cache_provider: مزود التخزين المؤقت.
+            adapters: محولات البروتوكولات (اختياري).
+        """
+        self.intelligent_router = router
+        self.policy_engine = policy_engine
+        self.cache = cache_provider
+
+        self.protocol_adapters: dict[str, ProtocolAdapter] = adapters or {
             ProtocolType.REST.value: RESTAdapter(),
             ProtocolType.GRAPHQL.value: GraphQLAdapter(),
             ProtocolType.GRPC.value: GRPCAdapter(),
         }
-        self.intelligent_router = IntelligentRouter()
 
-        # تهيئة التخزين المؤقت باستخدام Factory
-        self.cache: CacheProviderProtocol = CacheFactory.get_provider(
-            provider_type="memory",
-            max_size_items=1000,
-            ttl=300
-        )
-
-        self.policy_engine = PolicyEngine()
         self.routes: dict[str, GatewayRoute] = {}
         self.upstream_services: dict[str, UpstreamService] = {}
 
         self._initialize_default_policies()
 
-        logger.info("API Gateway Service initialized successfully")
+        logger.info("API Gateway Service initialized successfully with injected dependencies")
 
     def _initialize_default_policies(self) -> None:
         """تهيئة سياسات الأمان الافتراضية."""
@@ -207,10 +219,31 @@ class APIGatewayService:
 
 
 # ======================================================================================
-# SINGLETON INSTANCE
+# FACTORY & SINGLETON
 # ======================================================================================
 
-api_gateway_service = APIGatewayService()
+def create_default_gateway() -> APIGatewayService:
+    """
+    إنشاء مثيل افتراضي من البوابة (Factory Method).
+    يقوم بتهيئة التبعيات الافتراضية وحقنها في البوابة.
+    """
+    router = IntelligentRouter()
+    policy_engine = PolicyEngine()
+
+    # تهيئة التخزين المؤقت باستخدام Factory
+    cache_provider = CacheFactory.get_provider(
+        provider_type="memory",
+        max_size_items=1000,
+        ttl=300
+    )
+
+    return APIGatewayService(
+        router=router,
+        policy_engine=policy_engine,
+        cache_provider=cache_provider
+    )
+
+api_gateway_service = create_default_gateway()
 
 
 # ======================================================================================
