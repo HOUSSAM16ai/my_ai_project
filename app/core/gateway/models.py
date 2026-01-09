@@ -1,29 +1,58 @@
-from typing import Any
+"""
+نماذج البيانات الأساسية للبوابة (Gateway Core Data Models).
+
+يحتوي هذا الملف على تعريفات هياكل البيانات والأنواع المستخدمة في نظام البوابة الذكية.
+تم تصميم هذه النماذج لتكون غير قابلة للتغيير (Immutable) قدر الإمكان وتتبع مبدأ "البيانات كعقد" (Data as a Contract).
+
+المبادئ (Principles):
+- Type Safety: استخدام أنواع Python الحديثة لضمان سلامة البيانات.
+- Documentation: توثيق عربي احترافي يشرح الغرض من كل نموذج.
+- Abstraction: فصل تعريف البيانات عن المنطق التنفيذي.
+"""
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from typing import Any
+
 
 class ProtocolType(Enum):
-    """Supported protocol types"""
+    """
+    أنواع البروتوكولات المدعومة في البوابة.
+
+    تحدد هذه القائمة البروتوكولات التي يمكن للبوابة التعامل معها وتحويلها.
+    يتم استخدامها لاختيار المحول (Adapter) المناسب للطلب.
+    """
 
     REST = "rest"
     GRAPHQL = "graphql"
     GRPC = "grpc"
     WEBSOCKET = "websocket"
 
+
 class RoutingStrategy(Enum):
-    """Routing strategies for requests"""
+    """
+    استراتيجيات توجيه الطلبات بين الخدمات.
+
+    تحدد الخوارزمية المستخدمة لاختيار أفضل خدمة (أو مزود) لمعالجة الطلب.
+    تتراوح من الطرق البسيطة (Round Robin) إلى الذكية (Intelligent).
+    """
 
     ROUND_ROBIN = "round_robin"
     LEAST_CONNECTIONS = "least_connections"
     WEIGHTED = "weighted"
     LATENCY_BASED = "latency_based"
     COST_OPTIMIZED = "cost_optimized"
-    INTELLIGENT = "intelligent"  # ML-based routing
+    INTELLIGENT = "intelligent"  # توجيه مبني على الذكاء الاصطناعي والتحليل التنبؤي
+
 
 class ModelProvider(Enum):
-    """AI Model providers"""
+    """
+    مزوّدو خدمات الذكاء الاصطناعي.
+
+    قائمة بمزودي النماذج الذين يمكن للبوابة توجيه الطلبات إليهم.
+    """
 
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
@@ -33,18 +62,29 @@ class ModelProvider(Enum):
     LOCAL = "local"
     CUSTOM = "custom"
 
+
 class CacheStrategy(Enum):
-    """Caching strategies"""
+    """
+    استراتيجيات التخزين المؤقت (Caching).
+
+    تحدد كيفية تخزين واسترجاع البيانات لتقليل زمن الاستجابة وتكاليف الحوسبة.
+    """
 
     NO_CACHE = "no_cache"
     REDIS = "redis"
     MEMORY = "memory"
     DISTRIBUTED = "distributed"
-    INTELLIGENT = "intelligent"  # ML-based caching
+    INTELLIGENT = "intelligent"  # تخزين ذكي يقرر ماذا يخزن بناءً على أنماط الاستخدام
+
 
 @dataclass
 class GatewayRoute:
-    """Gateway route configuration"""
+    """
+    تعريف مسار البوابة وخصائصه.
+
+    يمثل هذا النموذج قاعدة توجيه واحدة تربط نمط مسار (Path Pattern) بخدمة خلفية (Upstream Service).
+    يحتوي على إعدادات الأمان، وتقييد المعدل، والتخزين المؤقت الخاصة بهذا المسار.
+    """
 
     route_id: str
     path_pattern: str
@@ -56,9 +96,15 @@ class GatewayRoute:
     cache_ttl: int | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
+
 @dataclass
 class UpstreamService:
-    """Upstream service configuration"""
+    """
+    إعدادات الخدمة الخلفية (Upstream Service).
+
+    يحتوي على المعلومات اللازمة للاتصال بالخدمة التي تقع خلف البوابة،
+    بما في ذلك العنوان الأساسي، وإعدادات الصحة، وقواعد قاطع الدائرة.
+    """
 
     service_id: str
     name: str
@@ -71,9 +117,15 @@ class UpstreamService:
     circuit_breaker_threshold: int = 5
     metadata: dict[str, Any] = field(default_factory=dict)
 
+
 @dataclass
 class RoutingDecision:
-    """Routing decision result"""
+    """
+    نتيجة قرار التوجيه.
+
+    يمثل هذا الكائن القرار النهائي الذي اتخذه الموجه الذكي،
+    متضمناً الخدمة المختارة، والأسباب (Latnecy, Cost, etc.)، والثقة في القرار.
+    """
 
     service_id: str
     base_url: str
@@ -84,9 +136,15 @@ class RoutingDecision:
     reasoning: str
     metadata: dict[str, Any] = field(default_factory=dict)
 
+
 @dataclass
 class LoadBalancerState:
-    """Load balancer state tracking"""
+    """
+    تتبع حالة موازن الأحمال.
+
+    يخزن الإحصائيات الحية لكل خدمة للمساعدة في اتخاذ قرارات التوجيه وقاطع الدائرة.
+    يتم تحديثه في الوقت الفعلي مع كل طلب.
+    """
 
     service_id: str
     active_connections: int = 0
@@ -96,13 +154,19 @@ class LoadBalancerState:
     last_health_check: datetime | None = None
     is_healthy: bool = True
 
+
 @dataclass
 class PolicyRule:
-    """Policy enforcement rule"""
+    """
+    قاعدة تنفيذ السياسة (Policy Enforcement Rule).
+
+    تمثل شرطاً وإجراءً يجب تطبيقه على الطلبات (مثل الحظر، السماح، أو التحويل).
+    تستخدم في محرك السياسات لضمان الامتثال والأمان.
+    """
 
     rule_id: str
     name: str
-    condition: str  # Expression to evaluate
+    condition: str  # تعبير منطقي للتقييم
     action: str  # allow, deny, rate_limit, transform
     priority: int = 100
     enabled: bool = True
