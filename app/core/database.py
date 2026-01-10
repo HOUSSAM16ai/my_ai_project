@@ -15,6 +15,7 @@ import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
+from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -32,6 +33,9 @@ def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
     """
     Creates an AsyncEngine based on the provided settings.
     Canonical implementation for all services.
+
+    Handles 'sslmode' in asyncpg URLs by converting it to an SSL context,
+    preventing 'unexpected keyword argument' errors.
     """
     db_url = settings.DATABASE_URL
     if not db_url:
@@ -43,23 +47,57 @@ def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
         "pool_recycle": 1800,
     }
 
-    if "sqlite" in db_url:
+    # Parse URL to safely handle driver-specific logic
+    url_obj = make_url(db_url)
+
+    if "sqlite" in url_obj.drivername:
         engine_args["connect_args"] = {"check_same_thread": False}
         logger.info(f"🔌 Database (SQLite): {settings.SERVICE_NAME}")
-    else:
-        # Postgres / Production optimization
-        is_dev = settings.ENVIRONMENT in ("development", "testing")
 
-        # Pool size
+    elif "postgresql" in url_obj.drivername or "asyncpg" in url_obj.drivername:
+        # Initialize connect_args if not exists
+        if "connect_args" not in engine_args:
+            engine_args["connect_args"] = {}
+
+        # PgBouncer Compatibility (Supabase)
+        engine_args["connect_args"].update({
+            "statement_cache_size": 0,
+            "prepared_statement_cache_size": 0
+        })
+
+        # Handle 'sslmode' which asyncpg does not accept as a kwarg
+        # We strip it from the URL and convert it to an 'ssl' context
+        qs = dict(url_obj.query)
+        if "sslmode" in qs:
+            ssl_mode = qs.pop("sslmode")
+            # Update db_url to exclude sslmode
+            url_obj = url_obj.set(query=qs)
+            db_url = str(url_obj)
+
+            # Create SSL Context based on mode
+            # 'disable' is default (no ssl arg)
+            if ssl_mode in ("require", "verify-ca", "verify-full"):
+                import ssl
+                # Create a default context that verifies certificates
+                ctx = ssl.create_default_context()
+
+                if ssl_mode == "require":
+                    # In 'require', we want SSL but don't strictly verify hostname/cert
+                    # if the user just wants encryption.
+                    # Note: Asyncpg's 'require' usually implies SSL but not necessarily full validation.
+                    # For strict safety, 'verify-full' is best.
+                    # Here we mimic common 'require' behavior: accept self-signed if needed or relax checks.
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
+
+                engine_args["connect_args"]["ssl"] = ctx
+                logger.info(f"🔒 SSL Enabled (Mode: {ssl_mode})")
+
+        # Production optimization
+        is_dev = settings.ENVIRONMENT in ("development", "testing")
         engine_args["pool_size"] = 5 if is_dev else 40
         engine_args["max_overflow"] = 10 if is_dev else 60
 
-        # PgBouncer Compatibility (Supabase)
-        # Disable prepared statements
-        engine_args["connect_args"] = {
-            "statement_cache_size": 0,
-            "prepared_statement_cache_size": 0
-        }
         logger.info(f"🔌 Database (Postgres): {settings.SERVICE_NAME}")
 
     return create_async_engine(db_url, **engine_args)
