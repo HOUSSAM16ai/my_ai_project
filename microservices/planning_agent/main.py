@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
+from microservices.planning_agent.health import HealthResponse, build_health_payload
 from microservices.planning_agent.settings import PlanningAgentSettings, get_settings
 from microservices.planning_agent.models import Plan
 from microservices.planning_agent.database import init_db, get_session
@@ -58,15 +59,11 @@ def _build_router(settings: PlanningAgentSettings) -> APIRouter:
 
     router = APIRouter()
 
-    @router.get("/health")
-    def health_check() -> dict[str, str]:
+    @router.get("/health", response_model=HealthResponse)
+    def health_check() -> HealthResponse:
         """يفحص جاهزية الوكيل بشكل مستقل."""
 
-        return {
-            "service": settings.SERVICE_NAME,
-            "status": "ok",
-            "database": settings.DATABASE_URL,
-        }
+        return build_health_payload(settings)
 
     @router.post("/plans", response_model=PlanResponse)
     async def create_plan(

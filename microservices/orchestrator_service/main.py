@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
+from microservices.orchestrator_service.health import HealthResponse, build_health_payload
 from microservices.orchestrator_service.settings import OrchestratorSettings, get_settings
 from microservices.orchestrator_service.models import Task
 from microservices.orchestrator_service.database import init_db, get_session
@@ -53,15 +54,11 @@ def _build_router(settings: OrchestratorSettings, registry: list[AgentEndpoint])
 
     router = APIRouter()
 
-    @router.get("/health")
-    def health_check() -> dict[str, str]:
+    @router.get("/health", response_model=HealthResponse)
+    def health_check() -> HealthResponse:
         """يفحص جاهزية الخدمة دون أي اعتماد خارجي."""
 
-        return {
-            "service": settings.SERVICE_NAME,
-            "status": "ok",
-            "database": settings.DATABASE_URL,
-        }
+        return build_health_payload(settings)
 
     @router.get("/orchestrator/agents")
     def list_agents() -> dict[str, list[dict[str, str]]]:
