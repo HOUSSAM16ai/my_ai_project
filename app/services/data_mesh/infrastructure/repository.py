@@ -5,6 +5,7 @@ In-Memory Repository for DataMesh
 import threading
 from collections import deque
 
+
 class InMemoryDataMeshRepository:
     """In-memory implementation"""
 

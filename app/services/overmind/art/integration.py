@@ -31,14 +31,14 @@ from app.services.overmind.art.visualizer import (
 class OvermindArtIntegration:
     """
     نقطة التكامل الرئيسية بين Overmind والفن.
-    
+
     CS73: Bridge between code and art.
     """
-    
+
     def __init__(self, default_style: ArtStyle = ArtStyle.MODERN):
         """
         تهيئة نظام الفن.
-        
+
         Args:
             default_style: النمط الافتراضي للتصورات
         """
@@ -49,7 +49,7 @@ class OvermindArtIntegration:
         self.pattern_artist = CodePatternArtist(default_style)
         self.metrics_artist = MetricsArtist(default_style)
         self.network_artist = NetworkArtist(default_style)
-    
+
     def visualize_code_intelligence(
         self,
         analysis_result: dict[str, Any],
@@ -57,14 +57,14 @@ class OvermindArtIntegration:
     ) -> dict[str, str]:
         """
         تحويل نتائج تحليل الكود إلى تصورات فنية.
-        
+
         Args:
             analysis_result: نتائج من StructuralCodeIntelligence
             style: نمط فني اختياري
-            
+
         Returns:
             dict: مجموعة من التصورات الفنية
-            
+
         Example:
             >>> integration = OvermindArtIntegration()
             >>> art = integration.visualize_code_intelligence({
@@ -77,9 +77,9 @@ class OvermindArtIntegration:
         """
         if style:
             self.code_visualizer = CodeArtVisualizer(style)
-        
+
         visualizations = {}
-        
+
         # 1. Complexity Landscape
         if "avg_complexity" in analysis_result:
             visualizations["complexity_art"] = (
@@ -88,7 +88,7 @@ class OvermindArtIntegration:
                     title="Code Complexity Landscape"
                 )
             )
-        
+
         # 2. Metrics Dashboard
         metrics = {
             k: v for k, v in analysis_result.items()
@@ -101,7 +101,7 @@ class OvermindArtIntegration:
                     title="Code Metrics Art"
                 )
             )
-        
+
         # 3. Code Pattern Art
         visualizations["pattern_art"] = (
             self.data_generator.generate_code_pattern(
@@ -109,7 +109,7 @@ class OvermindArtIntegration:
                 size=(600, 600)
             )
         )
-        
+
         # 4. Fractal Tree (based on complexity)
         complexity = int(analysis_result.get("avg_complexity", 5))
         fractal_depth = min(max(complexity // 2, 3), 7)
@@ -119,9 +119,9 @@ class OvermindArtIntegration:
                 seed=42
             )
         )
-        
+
         return visualizations
-    
+
     def visualize_mission_journey(
         self,
         mission_data: dict[str, Any],
@@ -129,14 +129,14 @@ class OvermindArtIntegration:
     ) -> dict[str, str]:
         """
         تصور رحلة المهمة بشكل فني.
-        
+
         Args:
             mission_data: بيانات المهمة (events, phases, etc.)
             style: نمط فني اختياري
-            
+
         Returns:
             dict: تصورات فنية للمهمة
-            
+
         Example:
             >>> integration = OvermindArtIntegration()
             >>> art = integration.visualize_mission_journey({
@@ -149,9 +149,9 @@ class OvermindArtIntegration:
         """
         if style:
             self.mission_artist = MissionFlowArtist(style)
-        
+
         visualizations = {}
-        
+
         # 1. Mission Timeline
         visualizations["timeline"] = (
             self.mission_artist.create_mission_timeline(
@@ -159,7 +159,7 @@ class OvermindArtIntegration:
                 title="Mission Journey"
             )
         )
-        
+
         # 2. Evolution Spiral
         iterations = len(mission_data.get("events", [])) * 10
         visualizations["evolution_spiral"] = (
@@ -168,9 +168,9 @@ class OvermindArtIntegration:
                 data_seed=mission_data.get("id", 42)
             )
         )
-        
+
         return visualizations
-    
+
     def visualize_metrics(
         self,
         metrics: dict[str, float],
@@ -179,16 +179,16 @@ class OvermindArtIntegration:
     ) -> dict[str, str]:
         """
         تصور المقاييس بطرق فنية متعددة.
-        
+
         Args:
             metrics: المقاييس المراد تصورها
             style: نمط فني اختياري
             visualization_types: أنواع التصورات المطلوبة
                 ["radial", "bar", "sculpture"]
-            
+
         Returns:
             dict: تصورات فنية متعددة
-            
+
         Example:
             >>> integration = OvermindArtIntegration()
             >>> art = integration.visualize_metrics({
@@ -200,12 +200,12 @@ class OvermindArtIntegration:
         if style:
             self.metrics_artist = MetricsArtist(style)
             self.data_generator = DataArtGenerator(style)
-        
+
         if visualization_types is None:
             visualization_types = ["radial", "bar", "sculpture"]
-        
+
         visualizations = {}
-        
+
         if "radial" in visualization_types:
             visualizations["radial_chart"] = (
                 self.metrics_artist.create_radial_chart(
@@ -213,7 +213,7 @@ class OvermindArtIntegration:
                     title="Metrics Radial View"
                 )
             )
-        
+
         if "bar" in visualization_types:
             visualizations["bar_chart"] = (
                 self.metrics_artist.create_bar_art(
@@ -221,7 +221,7 @@ class OvermindArtIntegration:
                     title="Metrics Bar Chart"
                 )
             )
-        
+
         if "sculpture" in visualization_types:
             visualizations["data_sculpture"] = (
                 self.data_generator.create_data_sculpture(
@@ -229,9 +229,9 @@ class OvermindArtIntegration:
                     title="Metrics Sculpture"
                 )
             )
-        
+
         return visualizations
-    
+
     def visualize_dependencies(
         self,
         modules: list[str],
@@ -240,15 +240,15 @@ class OvermindArtIntegration:
     ) -> str:
         """
         تصور شبكة التبعيات بشكل فني.
-        
+
         Args:
             modules: قائمة أسماء الوحدات
             dependencies: قائمة التبعيات (من, إلى)
             style: نمط فني اختياري
-            
+
         Returns:
             str: SVG network visualization
-            
+
         Example:
             >>> integration = OvermindArtIntegration()
             >>> art = integration.visualize_dependencies(
@@ -258,16 +258,16 @@ class OvermindArtIntegration:
         """
         if style:
             self.network_artist = NetworkArtist(style)
-        
+
         # تحويل قائمة الوحدات إلى عقد
         nodes = [{"id": module, "label": module} for module in modules]
-        
+
         return self.network_artist.create_dependency_web(
             nodes=nodes,
             edges=dependencies,
             title="Code Dependencies Network"
         )
-    
+
     def create_full_report(
         self,
         analysis_data: dict[str, Any],
@@ -275,24 +275,24 @@ class OvermindArtIntegration:
     ) -> dict[str, Any]:
         """
         إنشاء تقرير فني شامل.
-        
+
         CS73: تحويل التقرير التقني إلى معرض فني.
-        
+
         Args:
             analysis_data: بيانات التحليل الشاملة
             style: نمط فني اختياري
-            
+
         Returns:
             dict: تقرير فني شامل مع جميع التصورات
         """
         style = style or self.default_style
-        
+
         report = {
             "style": style.value,
             "generated_at": "now",  # يمكن استبداله بـ datetime
             "visualizations": {}
         }
-        
+
         # Code Intelligence Art
         if "code_analysis" in analysis_data:
             report["visualizations"]["code_intelligence"] = (
@@ -301,7 +301,7 @@ class OvermindArtIntegration:
                     style
                 )
             )
-        
+
         # Mission Journey Art
         if "mission_data" in analysis_data:
             report["visualizations"]["mission_journey"] = (
@@ -310,7 +310,7 @@ class OvermindArtIntegration:
                     style
                 )
             )
-        
+
         # Metrics Art
         if "metrics" in analysis_data:
             report["visualizations"]["metrics"] = (
@@ -319,7 +319,7 @@ class OvermindArtIntegration:
                     style
                 )
             )
-        
+
         # Dependencies Network Art
         if "dependencies" in analysis_data:
             deps = analysis_data["dependencies"]
@@ -330,7 +330,7 @@ class OvermindArtIntegration:
                     style=style
                 )
             )
-        
+
         return report
 
 
@@ -340,16 +340,16 @@ def create_art_from_overmind_data(
 ) -> dict[str, Any]:
     """
     دالة مساعدة سريعة لإنشاء الفن من بيانات Overmind.
-    
+
     CS73: One-liner للحصول على فن من البيانات.
-    
+
     Args:
         overmind_data: أي بيانات من نظام Overmind
         style: النمط الفني
-        
+
     Returns:
         dict: تصورات فنية
-        
+
     Example:
         >>> from app.services.overmind.art.integration import create_art_from_overmind_data
         >>> art = create_art_from_overmind_data(my_analysis_result)

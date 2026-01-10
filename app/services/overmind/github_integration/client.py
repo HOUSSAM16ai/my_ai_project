@@ -7,7 +7,8 @@ Ensures blocking calls are executed in a thread executor.
 import asyncio
 import os
 import subprocess
-from typing import Any, TypeVar, Callable
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from app.core.di import get_logger
 from app.services.overmind.github_integration.models import RepoInfo
@@ -101,7 +102,7 @@ class GitHubClient:
         try:
             result = subprocess.run(
                 ["git", "remote", "-v"],
-                capture_output=True,
+                check=False, capture_output=True,
                 text=True,
                 timeout=5,
             )
@@ -120,7 +121,7 @@ class GitHubClient:
         try:
             result = subprocess.run(
                 ["git", "remote", "-v"],
-                capture_output=True,
+                check=False, capture_output=True,
                 text=True,
                 timeout=5,
             )

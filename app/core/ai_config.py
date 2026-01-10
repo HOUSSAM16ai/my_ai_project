@@ -34,6 +34,7 @@ from functools import lru_cache
 
 from app.core.config import get_settings
 
+
 class AvailableModels:
     """
     📚 All Available AI Models | جميع النماذج المتاحة

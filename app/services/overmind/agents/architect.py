@@ -11,9 +11,8 @@
 - استخدام واجهات صارمة.
 """
 
-from typing import Any
-
 import json
+from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
@@ -57,7 +56,7 @@ class ArchitectAgent(AgentArchitect):
             design_data = await self._generate_design_with_ai(
                 system_prompt, user_content
             )
-            
+
             # 3. تخزين في السياق | Store in context
             context.update("last_design", design_data)
             return design_data

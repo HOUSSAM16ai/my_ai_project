@@ -26,25 +26,25 @@ async def search_users(
 ) -> list[dict[str, Any]]:
     """
     البحث عن مستخدمين.
-    
+
     Args:
         session: جلسة قاعدة البيانات
         query: نص البحث (اسم أو بريد)
         limit: عدد النتائج
-        
+
     Returns:
         list[dict]: نتائج البحث
     """
     try:
         # البحث في الاسم أو البريد
         search_query = select(User).where(
-            (User.name.ilike(f"%{query}%")) | 
+            (User.name.ilike(f"%{query}%")) |
             (User.email.ilike(f"%{query}%"))
         ).limit(limit)
-        
+
         result = await session.execute(search_query)
         users = result.scalars().all()
-        
+
         results = []
         for user in users:
             results.append({
@@ -53,10 +53,10 @@ async def search_users(
                 "email": user.email,
                 "role": user.role.value if hasattr(user.role, 'value') else str(user.role),
             })
-        
+
         logger.info(f"Found {len(results)} users matching '{query}'")
         return results
-        
+
     except Exception as e:
         logger.error(f"Error searching users: {e}")
         return []

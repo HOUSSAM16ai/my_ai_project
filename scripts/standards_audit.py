@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import argparse
 import ast
+import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 IGNORED_FOLDERS = {
     ".git",
@@ -40,8 +41,8 @@ class AuditSummary:
     total_files: int
     files_with_issues: int
     docstring_reports: list[DocstringReport]
-    design_reports: list["DesignReport"]
-    duplicate_functions: list["DuplicateSignature"]
+    design_reports: list[DesignReport]
+    duplicate_functions: list[DuplicateSignature]
 
 
 @dataclass
@@ -221,7 +222,7 @@ def _function_fingerprint(node: ast.AST, source_text: str) -> str | None:
     if raw_source is None:
         try:
             raw_source = ast.unparse(node)
-        except Exception:  # noqa: BLE001
+        except Exception:
             return None
 
     normalized_lines = [line.strip() for line in raw_source.splitlines() if line.strip()]
@@ -393,7 +394,7 @@ def main() -> None:
     print(report_text)
 
     if summary.files_with_issues > 0:
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

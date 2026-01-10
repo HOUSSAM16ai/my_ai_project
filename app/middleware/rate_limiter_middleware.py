@@ -27,14 +27,15 @@ except ImportError:
     class Request:
         pass
 
-    class HTTPException(Exception):
+    class HTTPExceptionError(Exception):
 
-        def __init__(self, status_code: int, detail: str, headers: (dict |
-            None)=None):
+        def __init__(self, status_code: int, detail: str, headers: dict | None = None):
             self.status_code = status_code
             self.detail = detail
             self.headers = headers or {}
             super().__init__(detail)
+
+    HTTPException = HTTPExceptionError
 logger = logging.getLogger(__name__)
 
 class TokenBucketRateLimiter:
@@ -134,11 +135,11 @@ _rate_limiters: dict[str, TokenBucketRateLimiter] = {
 def _build_rate_limit_headers(limiter: TokenBucketRateLimiter, metadata: dict) -> dict:
     """
     بناء ترويسات HTTP للرد على تجاوز الحد.
-    
+
     Args:
         limiter: مثيل rate limiter
         metadata: معلومات العميل والحدود
-        
+
     Returns:
         dict: ترويسات HTTP
     """
@@ -153,12 +154,12 @@ def _build_rate_limit_headers(limiter: TokenBucketRateLimiter, metadata: dict) -
 def _get_or_create_limiter(limiter_key: str, max_requests: int, window_seconds: int) -> TokenBucketRateLimiter:
     """
     الحصول على أو إنشاء rate limiter.
-    
+
     Args:
         limiter_key: مفتاح rate limiter
         max_requests: أقصى عدد طلبات
         window_seconds: نافذة الوقت بالثواني
-        
+
     Returns:
         TokenBucketRateLimiter: مثيل rate limiter
     """
@@ -192,7 +193,7 @@ def rate_limit(max_requests: int = 100, window_seconds: int = 60, limiter_key: s
         async def wrapper(request: Request, *args, **kwargs):
             # فحص السماح بالطلب
             allowed, metadata = limiter.is_allowed(request)
-            
+
             if not allowed:
                 # بناء الرد برفض الطلب
                 headers = _build_rate_limit_headers(limiter, metadata)
@@ -201,7 +202,7 @@ def rate_limit(max_requests: int = 100, window_seconds: int = 60, limiter_key: s
                     detail='Too many requests. Please try again later.',
                     headers=headers
                 )
-            
+
             # حفظ metadata للاستخدام في الطلب
             request.state.rate_limit_metadata = metadata
             return await func(request, *args, **kwargs)

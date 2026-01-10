@@ -1,7 +1,7 @@
-from typing import Any
-
 import subprocess
 from pathlib import Path
+from typing import Any
+
 
 class GitAnalyzer:
     """Git History Analyzer"""
@@ -12,7 +12,7 @@ class GitAnalyzer:
     def analyze_file_history(self, file_path: str) -> dict[str, Any]:
         """
         تحليل تاريخ تعديلات الملف.
-        
+
         Note: تم تقسيم الدالة إلى helper methods لتطبيق KISS و SRP
         """
         try:
@@ -22,7 +22,7 @@ class GitAnalyzer:
             num_authors = self._get_author_count(file_path)
             bugfix_commits = self._get_bugfix_commits(file_path)
             branches_modified = self._get_branch_count(file_path)
-            
+
             return {
                 "total_commits": total_commits,
                 "commits_last_6months": commits_6m,
@@ -33,7 +33,7 @@ class GitAnalyzer:
             }
         except Exception:
             return self._get_empty_analysis()
-    
+
     def _get_total_commits(self, file_path: str) -> int:
         """الحصول على إجمالي عدد الـ commits للملف."""
         result = subprocess.run(
@@ -45,7 +45,7 @@ class GitAnalyzer:
             timeout=10,
         )
         return len(result.stdout.strip().split("\n")) if result.stdout.strip() else 0
-    
+
     def _get_commits_since(self, file_path: str, since: str) -> int:
         """الحصول على عدد الـ commits منذ فترة معينة."""
         result = subprocess.run(
@@ -57,7 +57,7 @@ class GitAnalyzer:
             timeout=10,
         )
         return len(result.stdout.strip().split("\n")) if result.stdout.strip() else 0
-    
+
     def _get_author_count(self, file_path: str) -> int:
         """الحصول على عدد المطورين الذين عدّلوا الملف."""
         result = subprocess.run(
@@ -70,7 +70,7 @@ class GitAnalyzer:
         )
         authors = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
         return len(authors)
-    
+
     def _get_bugfix_commits(self, file_path: str) -> int:
         """الحصول على عدد الـ commits المتعلقة بإصلاح الأخطاء."""
         result = subprocess.run(
@@ -93,7 +93,7 @@ class GitAnalyzer:
             timeout=10,
         )
         return len(result.stdout.strip().split("\n")) if result.stdout.strip() else 0
-    
+
     def _get_branch_count(self, file_path: str) -> int:
         """الحصول على عدد الـ branches التي عُدّل فيها الملف."""
         result = subprocess.run(
@@ -104,7 +104,7 @@ class GitAnalyzer:
             text=True,
             timeout=10,
         )
-        
+
         branches: set[str] = set()
         if result.stdout.strip():
             for line in result.stdout.strip().split("\n"):
@@ -116,9 +116,9 @@ class GitAnalyzer:
                             continue
                         if part and not part.startswith("tag:"):
                             branches.add(part)
-        
+
         return len(branches)
-    
+
     def _get_empty_analysis(self) -> dict[str, int]:
         """إرجاع تحليل فارغ في حالة الفشل."""
         return {

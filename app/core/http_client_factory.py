@@ -28,11 +28,10 @@ DOES NOT:
 
 from __future__ import annotations
 
-from typing import Any
-from dataclasses import dataclass, field
-
 import logging
 import threading
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +45,7 @@ class HTTPClientConfig:
     """
     HTTP Client Configuration Object.
     تكوين عميل HTTP - يتبع Config Object Pattern.
-    
+
     Replaces 6 parameters with a single config object (KISS + SOLID).
     """
     name: str = "default"
@@ -55,7 +54,7 @@ class HTTPClientConfig:
     max_keepalive_connections: int = 20
     keepalive_expiry: float = 30.0
     use_cache: bool = True
-    
+
     def get_cache_key(self) -> str:
         """Generate cache key for this config."""
         return f"{self.name}:{self.timeout}:{self.max_connections}"
@@ -83,7 +82,7 @@ class HTTPClientFactory:
         # Create config from kwargs if not provided
         if config is None:
             config = HTTPClientConfig(**kwargs) if kwargs else HTTPClientConfig()
-        
+
         cache_key = config.get_cache_key()
 
         # Check cache first
@@ -119,7 +118,7 @@ class HTTPClientFactory:
 
             # Create and configure client
             client = HTTPClientFactory._build_http_client(config)
-            
+
             # Cache if enabled
             if config.use_cache:
                 _HTTP_CLIENTS[cache_key] = client
@@ -251,12 +250,12 @@ def get_http_client(
 
     Returns:
         HTTP client instance
-        
+
     Examples:
         # New pattern (recommended):
         config = HTTPClientConfig(name="api", timeout=60.0)
         client = get_http_client(config)
-        
+
         # Old pattern (still supported):
         client = get_http_client(name="api", timeout=60.0)
     """
@@ -275,9 +274,9 @@ def get_http_client_stats() -> dict[str, Any]:
     return HTTPClientFactory.get_cached_clients()
 
 __all__ = [
+    "HTTPClientConfig",
     # Classes
     "HTTPClientFactory",
-    "HTTPClientConfig",
     # Functions
     "close_all_http_clients",
     "close_http_client",

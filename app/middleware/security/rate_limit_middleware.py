@@ -16,6 +16,7 @@ from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 from app.security.rate_limiter import AdaptiveRateLimiter, UserTier
 
+
 class RateLimitMiddleware(BaseMiddleware):
     """
     Adaptive Rate Limiting Middleware
@@ -45,10 +46,10 @@ class RateLimitMiddleware(BaseMiddleware):
             return MiddlewareResult.success()
 
         user_tier = self._get_user_tier(ctx)
-        
+
         try:
             is_allowed, info = self._check_rate_limit(ctx, user_tier)
-            
+
             if not is_allowed:
                 return self._create_rate_limit_response(info, user_tier)
 

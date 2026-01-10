@@ -1,7 +1,6 @@
-from typing import Optional
 from uuid import UUID, uuid4
 
-from sqlmodel import Field, SQLModel, JSON
+from sqlmodel import JSON, Field, SQLModel
 
 
 class Plan(SQLModel, table=True):

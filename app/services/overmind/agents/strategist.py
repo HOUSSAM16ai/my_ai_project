@@ -11,9 +11,8 @@
 - استخدام واجهات صارمة.
 """
 
-from typing import Any
-
 import json
+from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
@@ -45,11 +44,11 @@ class StrategistAgent(AgentPlanner):
         try:
             # إنشاء الخطة باستخدام الذكاء الاصطناعي
             plan_data = await self._generate_plan_with_ai(objective, context)
-            
+
             # تحديث الذاكرة المشتركة
             context.update("last_plan", plan_data)
             logger.info(f"Strategist: Plan created with {len(plan_data.get('steps', []))} steps")
-            
+
             return plan_data
 
         except json.JSONDecodeError as e:
@@ -58,25 +57,25 @@ class StrategistAgent(AgentPlanner):
             return self._handle_general_error(e)
 
     async def _generate_plan_with_ai(
-        self, 
-        objective: str, 
+        self,
+        objective: str,
         context: CollaborationContext
     ) -> dict[str, Any]:
         """
         توليد الخطة باستخدام الذكاء الاصطناعي.
-        
+
         Generate plan using AI.
-        
+
         Args:
             objective: الهدف المطلوب
             context: سياق التعاون
-            
+
         Returns:
             بيانات الخطة
         """
         system_prompt = self._build_system_prompt()
         user_content = self._build_user_content(objective, context)
-        
+
         logger.info("Strategist: Calling AI for plan generation...")
         response_text = await self.ai.send_message(
             system_prompt=system_prompt,
@@ -84,21 +83,21 @@ class StrategistAgent(AgentPlanner):
             temperature=0.2  # دقة عالية، إبداع منخفض
         )
         logger.info(f"Strategist: Received AI response ({len(response_text)} chars)")
-        
+
         # تنظيف وتحليل الرد
         plan_data = self._parse_ai_response(response_text)
-        
+
         # التحقق من الصحة
         self._validate_plan(plan_data)
-        
+
         return plan_data
 
     def _build_system_prompt(self) -> str:
         """
         بناء نص التعليمات للنظام.
-        
+
         Build system prompt.
-        
+
         Returns:
             نص التعليمات
         """
@@ -129,19 +128,19 @@ class StrategistAgent(AgentPlanner):
         """
 
     def _build_user_content(
-        self, 
-        objective: str, 
+        self,
+        objective: str,
         context: CollaborationContext
     ) -> str:
         """
         بناء محتوى رسالة المستخدم.
-        
+
         Build user message content.
-        
+
         Args:
             objective: الهدف
             context: السياق
-            
+
         Returns:
             محتوى الرسالة
         """
@@ -151,12 +150,12 @@ class StrategistAgent(AgentPlanner):
     def _parse_ai_response(self, response_text: str) -> dict[str, Any]:
         """
         تحليل رد الذكاء الاصطناعي.
-        
+
         Parse AI response.
-        
+
         Args:
             response_text: نص الرد
-            
+
         Returns:
             بيانات الخطة
         """
@@ -166,12 +165,12 @@ class StrategistAgent(AgentPlanner):
     def _validate_plan(self, plan_data: dict[str, Any]) -> None:
         """
         التحقق من صحة بيانات الخطة.
-        
+
         Validate plan data.
-        
+
         Args:
             plan_data: بيانات الخطة
-            
+
         Raises:
             ValueError: إذا كانت البيانات غير صحيحة
         """
@@ -179,19 +178,19 @@ class StrategistAgent(AgentPlanner):
             raise ValueError("Missing 'steps' in AI plan")
 
     def _handle_json_decode_error(
-        self, 
+        self,
         error: json.JSONDecodeError,
         response_text: str | None
     ) -> dict[str, Any]:
         """
         معالجة خطأ تحليل JSON.
-        
+
         Handle JSON decode error.
-        
+
         Args:
             error: خطأ التحليل
             response_text: نص الرد (إن وجد)
-            
+
         Returns:
             خطة طوارئ
         """
@@ -219,12 +218,12 @@ class StrategistAgent(AgentPlanner):
     def _handle_general_error(self, error: Exception) -> dict[str, Any]:
         """
         معالجة الأخطاء العامة.
-        
+
         Handle general errors.
-        
+
         Args:
             error: الخطأ
-            
+
         Returns:
             خطة طوارئ
         """
@@ -244,9 +243,9 @@ class StrategistAgent(AgentPlanner):
     def _create_ai_unavailable_plan(self) -> dict[str, Any]:
         """
         إنشاء خطة لحالة عدم توفر خدمة AI.
-        
+
         Create plan for AI service unavailable.
-        
+
         Returns:
             خطة طوارئ
         """

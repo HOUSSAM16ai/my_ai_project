@@ -119,7 +119,7 @@ def _validate_static_directory(directory: str) -> bool:
     """
     التحقق من وجود مجلد الملفات الثابتة.
     Validate static directory exists.
-    
+
     Returns:
         bool: True إذا كان المجلد موجوداً
     """

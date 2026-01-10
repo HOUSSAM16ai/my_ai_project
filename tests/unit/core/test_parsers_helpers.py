@@ -1,6 +1,7 @@
 """اختبارات مساعدة لوحدة parsers لضمان سلامة استخراج JSON وتنظيف Markdown."""
 from app.core import parsers
 
+
 def test_strip_markdown_fences_removes_code_block() -> None:
     content = "```json\n{\n  \"value\": 42\n}\n```"
 

@@ -9,15 +9,14 @@ from contextlib import asynccontextmanager
 from dataclasses import asdict, dataclass
 from uuid import UUID
 
-from fastapi import APIRouter, FastAPI, Depends
+from fastapi import APIRouter, Depends, FastAPI
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
 
+from microservices.orchestrator_service.database import get_session, init_db
 from microservices.orchestrator_service.health import HealthResponse, build_health_payload
-from microservices.orchestrator_service.settings import OrchestratorSettings, get_settings
 from microservices.orchestrator_service.models import Task
-from microservices.orchestrator_service.database import init_db, get_session
+from microservices.orchestrator_service.settings import OrchestratorSettings, get_settings
 
 
 @dataclass(frozen=True, slots=True)

@@ -9,6 +9,7 @@ from pathlib import Path
 
 from app.services.project_context.domain.models import CodeStatistics
 
+
 @dataclass
 class CodeStatsAnalyzer:
     """Analyzer for code statistics."""

@@ -22,6 +22,7 @@ if not hasattr(bcrypt, '__about__'):
 from app.core.config import get_settings
 from app.core.domain.models import pwd_context
 
+
 def generate_service_token(user_id: str) -> str:
     """
     توليد رمز JWT قصير الأجل للمصادقة مع الخدمات الداخلية.

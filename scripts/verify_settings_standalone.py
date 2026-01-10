@@ -7,6 +7,7 @@ sys.path.insert(0, os.getcwd())
 from app.core.settings.base import BaseServiceSettings
 from microservices.user_service.settings import UserServiceSettings
 
+
 def test_settings():
     print("Testing BaseServiceSettings defaults...")
     base = BaseServiceSettings(SERVICE_NAME="test", DATABASE_URL="sqlite:///test.db")

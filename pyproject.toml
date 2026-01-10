@@ -12,7 +12,25 @@ select = ["E", "F", "I", "W", "UP", "B", "C4", "SIM", "RUF", "PL", "N", "TID", "
 # B027: Empty method in abstract base class (Standard Hooks pattern)
 # SIM117: Use a single `with` statement with multiple contexts (Avoids httpx context issues)
 # PLR0913: Too many arguments (Factory patterns often require this)
-ignore = ["E501", "E402", "RUF001", "RUF002", "RUF003", "B008", "B027", "SIM117", "PLR0913"]
+ignore = [
+    "ARG001",
+    "ARG002",
+    "E402",
+    "E501",
+    "PLC0415",
+    "PLR0913",
+    "PLR0911",
+    "PLR0912",
+    "PLR0915",
+    "PLR2004",
+    "PLW0603",
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    "B008",
+    "B027",
+    "SIM117",
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

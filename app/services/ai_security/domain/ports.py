@@ -10,6 +10,7 @@ from typing import Protocol
 
 from .models import SecurityEvent, ThreatDetection, UserBehaviorProfile
 
+
 class ThreatDetectorPort(Protocol):
     """
     كاشف التهديدات - Threat detection interface

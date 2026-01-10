@@ -39,13 +39,13 @@ class BoundedContext(Enum):
 class DomainEvent:
     """
     الفئة الأساسية لجميع أحداث النظام (Base class for all domain events).
-    
+
     المبادئ:
         - Immutable: الأحداث غير قابلة للتغيير
         - Self-describing: كل حدث يصف نفسه
         - Timestamped: كل حدث له طابع زمني
     """
-    
+
     event_type: str = field(init=True)
     payload: dict[str, Any] = field(default_factory=dict)
     event_id: str | None = None
@@ -67,10 +67,10 @@ class DomainEvent:
 class DomainEventRegistry:
     """
     سجل أحداث النظام (Domain Event Registry).
-    
+
     يسمح بالتسجيل الديناميكي للأحداث واسترجاعها.
     """
-    
+
     _registry: ClassVar[dict[str, type[DomainEvent]]] = {}
 
     @classmethod

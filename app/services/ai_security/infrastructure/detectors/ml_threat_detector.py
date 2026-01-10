@@ -10,7 +10,13 @@ import re
 import uuid
 from datetime import datetime
 
-from ...domain.models import SecurityEvent, ThreatDetection, ThreatLevel, ThreatType
+from app.services.ai_security.domain.models import (
+    SecurityEvent,
+    ThreatDetection,
+    ThreatLevel,
+    ThreatType,
+)
+
 
 class DeepLearningThreatDetector:
     """
@@ -52,7 +58,7 @@ class DeepLearningThreatDetector:
             list[ThreatDetection]: قائمة التهديدات المكتشفة | List of detected threats
         """
         threats = []
-        
+
         self._detect_sql_injection_threat(event, threats)
         self._detect_xss_threat(event, threats)
 
@@ -62,7 +68,7 @@ class DeepLearningThreatDetector:
         """
         كشف تهديد حقن SQL.
         Detect SQL injection threat.
-        
+
         Args:
             event: حدث الأمان | Security event
             threats: قائمة التهديدات للتحديث | Threats list to update
@@ -76,7 +82,7 @@ class DeepLearningThreatDetector:
         """
         كشف تهديد XSS.
         Detect XSS threat.
-        
+
         Args:
             event: حدث الأمان | Security event
             threats: قائمة التهديدات للتحديث | Threats list to update
@@ -87,18 +93,18 @@ class DeepLearningThreatDetector:
             threats.append(threat)
 
     def _create_sql_injection_detection(
-        self, 
-        event: SecurityEvent, 
+        self,
+        event: SecurityEvent,
         evidence: list[str]
     ) -> ThreatDetection:
         """
         إنشاء كشف حقن SQL.
         Create SQL injection detection.
-        
+
         Args:
             event: حدث الأمان | Security event
             evidence: الأدلة المكتشفة | Detected evidence
-            
+
         Returns:
             ThreatDetection: كشف التهديد | Threat detection
         """
@@ -116,18 +122,18 @@ class DeepLearningThreatDetector:
         )
 
     def _create_xss_detection(
-        self, 
-        event: SecurityEvent, 
+        self,
+        event: SecurityEvent,
         evidence: list[str]
     ) -> ThreatDetection:
         """
         إنشاء كشف XSS.
         Create XSS detection.
-        
+
         Args:
             event: حدث الأمان | Security event
             evidence: الأدلة المكتشفة | Detected evidence
-            
+
         Returns:
             ThreatDetection: كشف التهديد | Threat detection
         """

@@ -119,6 +119,7 @@ def check_sync_script() -> tuple[bool, list[str]]:
         sys.path.insert(0, ".")
         from scripts.universal_repo_sync import check_workload_identity, sync_remotes
         print_success("Sync script imports successfully")
+        _ = sync_remotes
 
         # Test check_workload_identity
         workload_id = check_workload_identity()

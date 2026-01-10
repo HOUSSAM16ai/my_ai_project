@@ -8,6 +8,7 @@ from .reporters.html_reporter import generate_heatmap_html
 from .reporters.json_reporter import save_json_report
 from .reporters.markdown_reporter import generate_markdown_report
 
+
 def main() -> None:
     """
     نقطة الدخول الرئيسية للتحليل.
@@ -15,9 +16,9 @@ def main() -> None:
     """
     args = _parse_arguments()
     _prepare_output_directory(args.output_dir)
-    
+
     analysis = _run_analysis(args.repo_path, args.targets)
-    
+
     _generate_all_reports(analysis, args.output_dir)
     _print_summary(analysis, args.output_dir)
 
@@ -26,7 +27,7 @@ def _parse_arguments() -> argparse.Namespace:
     """
     تحليل وسائط سطر الأوامر.
     Parse command line arguments.
-    
+
     Returns:
         Parsed arguments namespace
     """
@@ -59,7 +60,7 @@ def _prepare_output_directory(output_dir: Path) -> None:
     """
     تحضير دليل الإخراج.
     Prepare output directory.
-    
+
     Args:
         output_dir: Output directory path
     """
@@ -70,11 +71,11 @@ def _run_analysis(repo_path: Path, targets: list[str]):
     """
     تنفيذ التحليل البنيوي.
     Run structural analysis.
-    
+
     Args:
         repo_path: Repository path
         targets: Target paths to analyze
-        
+
     Returns:
         Project analysis results
     """
@@ -86,18 +87,18 @@ def _generate_all_reports(analysis, output_dir: Path) -> None:
     """
     إنشاء جميع التقارير.
     Generate all report formats.
-    
+
     Args:
         analysis: Analysis results
         output_dir: Output directory
     """
     print("\n📝 Generating reports...")
-    
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
+
     # Generate timestamped reports
     _save_timestamped_reports(analysis, output_dir, timestamp)
-    
+
     # Generate latest reports
     _save_latest_reports(analysis, output_dir)
 
@@ -106,7 +107,7 @@ def _save_timestamped_reports(analysis, output_dir: Path, timestamp: str) -> Non
     """
     حفظ تقارير بختم زمني.
     Save timestamped reports.
-    
+
     Args:
         analysis: Analysis results
         output_dir: Output directory
@@ -122,7 +123,7 @@ def _save_latest_reports(analysis, output_dir: Path) -> None:
     """
     حفظ التقارير الأحدث.
     Save latest reports.
-    
+
     Args:
         analysis: Analysis results
         output_dir: Output directory
@@ -137,7 +138,7 @@ def _print_summary(analysis, output_dir: Path) -> None:
     """
     طباعة ملخص التحليل.
     Print analysis summary.
-    
+
     Args:
         analysis: Analysis results
         output_dir: Output directory

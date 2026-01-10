@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
-
 import logging
 import threading
 import uuid
 from collections import defaultdict, deque
 from collections.abc import Callable
 from datetime import UTC, datetime
+from typing import Any
 
 from app.services.data_mesh.domain.models import (
     BoundedContext,
@@ -21,6 +20,7 @@ from app.services.data_mesh.domain.models import (
     SchemaCompatibility,
     SchemaEvolution,
 )
+
 
 class DataMeshManager:
     """

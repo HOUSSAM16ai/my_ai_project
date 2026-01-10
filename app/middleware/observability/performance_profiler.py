@@ -1,7 +1,7 @@
 """وسيط مُحلل الأداء - يتتبع زمن الاستجابة والتدفق بوضوح تام."""
 
-from dataclasses import dataclass
 import time
+from dataclasses import dataclass
 
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext

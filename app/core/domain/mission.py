@@ -11,7 +11,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text, func
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
-from app.core.domain.common import FlexibleEnum, JSONText, CaseInsensitiveEnum, utc_now
+from app.core.domain.common import CaseInsensitiveEnum, FlexibleEnum, JSONText, utc_now
 
 if TYPE_CHECKING:
     from app.core.domain.user import User
@@ -84,18 +84,18 @@ class Mission(SQLModel, table=True):
     )
 
     # Relationships
-    initiator: "User" = Relationship(sa_relationship=relationship("User", back_populates="missions"))
-    tasks: list["Task"] = Relationship(
+    initiator: User = Relationship(sa_relationship=relationship("User", back_populates="missions"))
+    tasks: list[Task] = Relationship(
         sa_relationship=relationship(
             "Task", back_populates="mission", foreign_keys="[Task.mission_id]"
         )
     )
-    mission_plans: list["MissionPlan"] = Relationship(
+    mission_plans: list[MissionPlan] = Relationship(
         sa_relationship=relationship(
             "MissionPlan", back_populates="mission", foreign_keys="[MissionPlan.mission_id]"
         )
     )
-    events: list["MissionEvent"] = Relationship(
+    events: list[MissionEvent] = Relationship(
         sa_relationship=relationship("MissionEvent", back_populates="mission")
     )
 
@@ -128,7 +128,7 @@ class MissionPlan(SQLModel, table=True):
             "Mission", back_populates="mission_plans", foreign_keys="[MissionPlan.mission_id]"
         )
     )
-    tasks: list["Task"] = Relationship(sa_relationship=relationship("Task", back_populates="plan"))
+    tasks: list[Task] = Relationship(sa_relationship=relationship("Task", back_populates="plan"))
 
 
 class Task(SQLModel, table=True):

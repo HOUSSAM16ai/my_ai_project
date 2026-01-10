@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import logging
 import statistics
 import threading
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from .models import (
@@ -34,6 +33,7 @@ from .repositories import (
     InMemoryHealingDecisionRepository,
     InMemoryTelemetryRepository,
 )
+
 
 @dataclass
 class AIOpsConfig:
@@ -184,8 +184,7 @@ class AIOpsService:
         """تحديد نوع الشذوذ حسب نوع المقياس لتبسيط التفسير."""
         if metric_type == MetricType.LATENCY:
             return AnomalyType.LATENCY_SPIKE
-        else:
-            return AnomalyType.TRAFFIC_ANOMALY
+        return AnomalyType.TRAFFIC_ANOMALY
 
     def _record_anomaly(self, anomaly: AnomalyDetection) -> None:
         """تسجيل الشذوذ المكتشف وتحديث التخزين المؤقت بأمان."""
@@ -220,7 +219,7 @@ class AIOpsService:
 
         self._execute_healing(decision)
 
-    def _determine_healing_action(self, anomaly: AnomalyDetection) -> "HealingPlan" | None:
+    def _determine_healing_action(self, anomaly: AnomalyDetection) -> HealingPlan | None:
         """اختيار خطة المعالجة الذاتية المناسبة بناءً على نوع الشذوذ."""
         if anomaly.anomaly_type == AnomalyType.LATENCY_SPIKE:
             return HealingPlan(

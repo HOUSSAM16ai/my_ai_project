@@ -7,6 +7,7 @@ from typing import Any, ClassVar
 
 from app.core.protocols import StrategyProtocol as StrategyInterface
 
+
 @dataclass
 class ServiceEndpoint:
     """Service endpoint information."""

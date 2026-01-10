@@ -108,7 +108,7 @@ class DecisionSynthesizer:
             return DecisionImpact.LONG_TERM
         if complexity == "high":
             return DecisionImpact.LONG_TERM
-        elif complexity == "low":
+        if complexity == "low":
             return DecisionImpact.SHORT_TERM
         return DecisionImpact.MEDIUM_TERM
 

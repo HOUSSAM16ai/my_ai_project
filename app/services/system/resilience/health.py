@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from typing import Any
-
-
 import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
+from typing import Any
+
 
 class HealthCheckType(Enum):
     """Health check types"""
@@ -57,7 +56,7 @@ class HealthChecker:
     def check(self, check_func: Callable) -> HealthCheckResult:
         """
         تنفيذ فحص الصحة | Execute health check
-        
+
         يفحص صحة الخدمة مع قياس الأداء
         Checks service health with performance monitoring
         """
@@ -79,10 +78,10 @@ class HealthChecker:
     def _validate_latency(self, latency_ms: float) -> None:
         """
         التحقق من زمن الاستجابة | Validate latency
-        
+
         Args:
             latency_ms: زمن الاستجابة بالميلي ثانية | Latency in milliseconds
-            
+
         Raises:
             TimeoutError: إذا تجاوز الوقت المحدد | If timeout exceeded
         """
@@ -92,7 +91,7 @@ class HealthChecker:
     def _update_success_state(self) -> None:
         """
         تحديث حالة النجاح | Update success state
-        
+
         يعيد تعيين عداد الفشل ويسجل وقت النجاح
         Resets failure counter and records success time
         """
@@ -103,7 +102,7 @@ class HealthChecker:
     def _update_failure_state(self) -> None:
         """
         تحديث حالة الفشل | Update failure state
-        
+
         يزيد عداد الفشل المتتالي
         Increments consecutive failure counter
         """
@@ -115,11 +114,11 @@ class HealthChecker:
     ) -> HealthCheckResult:
         """
         إنشاء نتيجة نجاح | Create success result
-        
+
         Args:
             latency_ms: زمن الاستجابة | Latency
             result: نتيجة الفحص | Check result
-            
+
         Returns:
             نتيجة فحص صحة ناجحة | Successful health check result
         """
@@ -136,11 +135,11 @@ class HealthChecker:
     ) -> HealthCheckResult:
         """
         إنشاء نتيجة فشل | Create failure result
-        
+
         Args:
             latency_ms: زمن الاستجابة | Latency
             error: الخطأ المحدث | Error encountered
-            
+
         Returns:
             نتيجة فحص صحة فاشلة | Failed health check result
         """

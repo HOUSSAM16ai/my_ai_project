@@ -2,6 +2,7 @@ from pydantic import AliasChoices, Field, ValidationInfo, field_validator
 
 from app.core.schemas import RobustBaseModel
 
+
 class TokenRequest(RobustBaseModel):
     user_id: int | None = None
     scopes: list[str] = Field(default_factory=list)

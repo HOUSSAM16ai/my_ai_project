@@ -10,7 +10,6 @@ from starlette.types import ASGIApp
 
 from .base_middleware import BaseMiddleware
 
-
 Metadata = dict[str, object]
 
 

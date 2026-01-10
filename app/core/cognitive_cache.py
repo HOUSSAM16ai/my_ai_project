@@ -97,9 +97,8 @@ class CognitiveResonanceEngine:
 
         # Weighted Average:
         # Jaccard: 30%, Containment: 30%, Structure: 40%
-        final_score = (jaccard_score * 0.3) + (containment_score * 0.3) + (structural_score * 0.4)
+        return (jaccard_score * 0.3) + (containment_score * 0.3) + (structural_score * 0.4)
 
-        return final_score
 
     def _find_best_match(
         self, input_tokens: set[str], prompt: str, context_hash: str

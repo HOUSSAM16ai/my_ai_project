@@ -2,7 +2,6 @@
 
 import pytest
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -47,18 +46,18 @@ class TestCRUDOperations:
         assert response.status_code in [200, 404, 401, 403]
         await response.aclose()
 
-    async def test_update_user(self, async_client):  # noqa: ARG002 - placeholder
+    async def test_update_user(self, async_client):
         pass
 
-    async def test_delete_user(self, async_client):  # noqa: ARG002 - placeholder
+    async def test_delete_user(self, async_client):
         pass
 
 
 class TestValidation:
-    async def test_create_user_invalid_email(self, async_client):  # noqa: ARG002 - placeholder
+    async def test_create_user_invalid_email(self, async_client):
         pass
 
-    async def test_create_user_missing_required_field(self, async_client):  # noqa: ARG002 - placeholder
+    async def test_create_user_missing_required_field(self, async_client):
         pass
 
 
@@ -68,18 +67,18 @@ class TestPaginationAndFiltering:
         assert response.status_code in [200, 401, 403]
         await response.aclose()
 
-    async def test_search(self, async_client):  # noqa: ARG002 - placeholder
+    async def test_search(self, async_client):
         pass
 
-    async def test_ordering(self, async_client):  # noqa: ARG002 - placeholder
+    async def test_ordering(self, async_client):
         pass
 
 
 class TestErrorHandling:
-    async def test_not_found_table(self, async_client):  # noqa: ARG002 - placeholder
+    async def test_not_found_table(self, async_client):
         pass
 
-    async def test_not_found_record(self, async_client):  # noqa: ARG002 - placeholder
+    async def test_not_found_record(self, async_client):
         pass
 
     async def test_unauthorized_access(self, async_client):

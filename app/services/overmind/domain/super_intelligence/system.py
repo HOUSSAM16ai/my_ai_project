@@ -6,13 +6,12 @@
 
 from datetime import datetime
 from typing import Any
-import random
 
 from app.core.di import get_logger
 from app.services.overmind.agents import AgentCouncil
 from app.services.overmind.collaboration import CollaborationHub
-from app.services.overmind.domain.super_intelligence.models import Decision
 from app.services.overmind.domain.super_intelligence.analyzer import SituationAnalyzer
+from app.services.overmind.domain.super_intelligence.models import Decision
 from app.services.overmind.domain.super_intelligence.synthesizer import DecisionSynthesizer
 
 logger = get_logger(__name__)

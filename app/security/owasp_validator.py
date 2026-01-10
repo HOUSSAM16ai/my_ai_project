@@ -481,9 +481,7 @@ class OWASPValidator:
 
     def generate_report(self, issues: list[SecurityIssue]) -> SecurityReport:
         """يولد تقرير أمني متكامل باستخدام تراكيب بيانات محددة الأنواع."""
-        severity_counts: dict[SecuritySeverity, int] = {
-            severity: 0 for severity in SecuritySeverity
-        }
+        severity_counts: dict[SecuritySeverity, int] = dict.fromkeys(SecuritySeverity, 0)
         for issue in issues:
             severity_counts[issue.severity] += 1
 

@@ -3,8 +3,8 @@
 
 from .models import (
     CodeStatistics,
-    FileAnalysis,
     DirectorySummary,
+    FileAnalysis,
     KeyComponent,
     ProjectHealth,
     ProjectStructure,
@@ -12,8 +12,8 @@ from .models import (
 
 __all__ = [
     "CodeStatistics",
-    "FileAnalysis",
     "DirectorySummary",
+    "FileAnalysis",
     "KeyComponent",
     "ProjectHealth",
     "ProjectStructure",

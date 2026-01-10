@@ -77,8 +77,7 @@ def _normalize_text(text: str) -> str:
     normalized = normalized.replace("ى", "ي").replace("ة", "ه")
     normalized = re.sub(r"[\u064b-\u065f]", "", normalized)
     normalized = re.sub(r"[^\w\s]", " ", normalized, flags=re.UNICODE)
-    normalized = re.sub(r"\s+", " ", normalized).strip()
-    return normalized
+    return re.sub(r"\s+", " ", normalized).strip()
 
 
 def _normalize_terms(terms: set[str]) -> set[str]:

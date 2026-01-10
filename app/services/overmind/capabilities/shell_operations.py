@@ -21,15 +21,15 @@ logger = get_logger(__name__)
 class ShellOperations:
     """
     عمليات Shell (Shell Operations).
-    
+
     توفر تنفيذ آمن لأوامر Shell.
-    
+
     تحذير:
         - ⚠️ استخدام أوامر Shell خطير!
         - ⚠️ لا تثق بمدخلات المستخدم
         - ⚠️ استخدم القائمة البيضاء للأوامر المسموحة
     """
-    
+
     def __init__(self) -> None:
         """تهيئة نظام عمليات Shell."""
         # الأوامر المسموحة (Whitelist)
@@ -43,7 +43,7 @@ class ShellOperations:
             "grep",
             "find",
         }
-    
+
     async def execute_command(
         self,
         command: str,
@@ -52,18 +52,18 @@ class ShellOperations:
     ) -> dict[str, Any]:
         """
         تنفيذ أمر Shell.
-        
+
         Args:
             command: الأمر المراد تنفيذه
             cwd: المجلد الحالي للتنفيذ
             timeout: المهلة الزمنية بالثواني
-            
+
         Returns:
             dict: نتيجة التنفيذ (stdout, stderr, returncode)
         """
         # استخراج الأمر الأول
         command_name = command.split()[0] if command.strip() else ""
-        
+
         # التحقق من القائمة البيضاء
         if command_name not in self.allowed_commands:
             logger.error(f"Command not allowed: {command_name}")
@@ -74,26 +74,26 @@ class ShellOperations:
                 "stderr": "",
                 "returncode": -1,
             }
-        
+
         try:
             # تنفيذ الأمر
             logger.info(f"Executing command: {command}")
             result = subprocess.run(
                 command,
-                shell=True,
+                check=False, shell=True,
                 cwd=cwd,
                 timeout=timeout,
                 capture_output=True,
                 text=True,
             )
-            
+
             return {
                 "success": result.returncode == 0,
                 "stdout": result.stdout,
                 "stderr": result.stderr,
                 "returncode": result.returncode,
             }
-            
+
         except subprocess.TimeoutExpired:
             logger.error(f"Command timeout: {command}")
             return {

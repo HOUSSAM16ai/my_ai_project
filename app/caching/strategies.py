@@ -8,14 +8,14 @@
 import time
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 # نوع المفتاح والقيمة
 K = TypeVar("K")
 V = TypeVar("V")
 
 
-class EvictionPolicy(ABC, Generic[K]):
+class EvictionPolicy[K](ABC):
     """
     بروتوكول سياسة الطرد (Eviction Policy Protocol).
     """
@@ -139,10 +139,9 @@ class StrategicMemoryCache:
         self._storage[key] = (value, expire_at)
         evicted = self._policy.on_add(key)
 
-        if evicted and evicted != key:
+        if evicted and evicted != key and evicted in self._storage:
             # إذا طُلب طرد عنصر وكان موجوداً في التخزين
-            if evicted in self._storage:
-                del self._storage[evicted]
+            del self._storage[evicted]
 
     def delete(self, key: str) -> None:
         if key in self._storage:

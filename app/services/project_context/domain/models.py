@@ -82,8 +82,8 @@ class KeyComponent:
 
 __all__ = [
     "CodeStatistics",
-    "FileAnalysis",
     "DirectorySummary",
+    "FileAnalysis",
     "KeyComponent",
     "ProjectHealth",
     "ProjectStructure",

@@ -7,6 +7,7 @@ from .analyzers.git import GitAnalyzer
 from .analyzers.smells import StructuralSmellDetector
 from .models import FileMetrics, ProjectAnalysis
 
+
 class StructuralCodeIntelligence:
     """Main Structural Intelligence Analyzer"""
 
@@ -51,10 +52,10 @@ class StructuralCodeIntelligence:
         """
         حساب أنواع الأسطر المختلفة.
         Count different types of lines.
-        
+
         Args:
             lines: قائمة أسطر الملف - List of file lines
-            
+
         Returns:
             tuple: (code_lines, comment_lines, blank_lines)
         """
@@ -79,21 +80,21 @@ class StructuralCodeIntelligence:
     ) -> tuple[float, int, str, float]:
         """
         حساب إحصائيات التعقيد.
-        
+
         Args:
             functions: قائمة معلومات الدوال
-            
+
         Returns:
             tuple: (avg_complexity, max_complexity, max_func_name, std_dev)
         """
         function_complexities = [f["complexity"] for f in functions]
-        
+
         if not function_complexities:
             return 0.0, 0, "", 0.0
 
         avg_complexity = sum(function_complexities) / len(function_complexities)
         max_complexity = max(function_complexities)
-        
+
         # Find function with max complexity
         max_func_name = ""
         for f in functions:
@@ -114,10 +115,10 @@ class StructuralCodeIntelligence:
     def _calculate_nesting_stats(self, functions: list[dict]) -> float:
         """
         حساب إحصائيات التداخل.
-        
+
         Args:
             functions: قائمة معلومات الدوال
-            
+
         Returns:
             float: متوسط عمق التداخل
         """
@@ -140,7 +141,7 @@ class StructuralCodeIntelligence:
     ) -> FileMetrics:
         """
         إنشاء كائن FileMetrics الأساسي.
-        
+
         Args:
             file_path: مسار الملف
             lines: أسطر الملف
@@ -153,12 +154,12 @@ class StructuralCodeIntelligence:
             max_func_name: اسم الدالة الأكثر تعقيداً
             std_dev: الانحراف المعياري
             avg_nesting: متوسط التداخل
-            
+
         Returns:
             FileMetrics: كائن المقاييس الأساسية
         """
         relative_path = str(file_path.relative_to(self.repo_path))
-        
+
         return FileMetrics(
             file_path=str(file_path),
             relative_path=relative_path,
@@ -183,7 +184,7 @@ class StructuralCodeIntelligence:
     def _enrich_with_git_metrics(self, metrics: FileMetrics) -> None:
         """
         إثراء المقاييس بمعلومات Git.
-        
+
         Args:
             metrics: كائن المقاييس للإثراء
         """
@@ -202,7 +203,7 @@ class StructuralCodeIntelligence:
     ) -> None:
         """
         إثراء المقاييس بالروائح البنيوية.
-        
+
         Args:
             metrics: كائن المقاييس للإثراء
             imports: قائمة الاستيرادات
@@ -219,12 +220,12 @@ class StructuralCodeIntelligence:
     def analyze_file(self, file_path: Path) -> FileMetrics | None:
         """
         تحليل شامل لملف واحد.
-        
+
         تم التحسين: تقسيم الدالة إلى helper methods حسب KISS principle
-        
+
         Args:
             file_path: مسار الملف للتحليل
-            
+
         Returns:
             FileMetrics أو None: مقاييس الملف أو None عند الفشل
         """
@@ -269,10 +270,10 @@ class StructuralCodeIntelligence:
     def calculate_hotspot_scores(self, all_metrics: list[FileMetrics]) -> None:
         """
         حساب درجات النقاط الساخنة | Calculate hotspot scores with normalization
-        
+
         يقوم بتطبيع القيم وحساب الدرجات الموزونة
         Normalizes values and calculates weighted scores
-        
+
         Args:
             all_metrics: قائمة مقاييس الملفات | List of file metrics
         """
@@ -281,17 +282,17 @@ class StructuralCodeIntelligence:
 
         # Extract and normalize values
         ranks = self._extract_and_normalize_metrics(all_metrics)
-        
+
         # Calculate scores and assign priorities
         self._calculate_weighted_scores(all_metrics, ranks)
 
     def _extract_and_normalize_metrics(self, all_metrics: list[FileMetrics]) -> dict:
         """
         استخراج وتطبيع المقاييس | Extract and normalize metrics
-        
+
         Args:
             all_metrics: قائمة المقاييس | Metrics list
-            
+
         Returns:
             معجم القيم المطبعة | Dictionary of normalized values
         """
@@ -310,10 +311,10 @@ class StructuralCodeIntelligence:
     def _count_smells(self, metrics: FileMetrics) -> int:
         """
         عد الروائح البنيوية | Count structural smells
-        
+
         Args:
             metrics: مقاييس الملف | File metrics
-            
+
         Returns:
             عدد الروائح | Number of smells
         """
@@ -326,10 +327,10 @@ class StructuralCodeIntelligence:
     def _normalize_values(self, values: list[float]) -> list[float]:
         """
         تطبيع القيم إلى نطاق 0-1 | Normalize values to 0-1 range
-        
+
         Args:
             values: قائمة القيم | List of values
-            
+
         Returns:
             قائمة القيم المطبعة | List of normalized values
         """
@@ -345,7 +346,7 @@ class StructuralCodeIntelligence:
     ) -> None:
         """
         حساب الدرجات الموزونة | Calculate weighted scores
-        
+
         Args:
             all_metrics: قائمة المقاييس | Metrics list
             ranks: القيم المطبعة | Normalized ranks
@@ -373,29 +374,28 @@ class StructuralCodeIntelligence:
     def _determine_priority_tier(self, score: float) -> str:
         """
         تحديد مستوى الأولوية | Determine priority tier
-        
+
         Args:
             score: درجة النقطة الساخنة | Hotspot score
-            
+
         Returns:
             مستوى الأولوية | Priority tier
         """
         if score >= 0.7:
             return "CRITICAL"
-        elif score >= 0.5:
+        if score >= 0.5:
             return "HIGH"
-        elif score >= 0.3:
+        if score >= 0.3:
             return "MEDIUM"
-        else:
-            return "LOW"
+        return "LOW"
 
     def analyze_project(self) -> ProjectAnalysis:
         """
         تحليل المشروع بالكامل | Analyze entire project
-        
+
         يقوم بتحليل جميع الملفات وحساب المقاييس
         Analyzes all files and calculates metrics
-        
+
         Returns:
             تحليل المشروع | Project analysis
         """
@@ -416,15 +416,15 @@ class StructuralCodeIntelligence:
     def _collect_file_metrics(self) -> list:
         """
         جمع مقاييس الملفات | Collect file metrics
-        
+
         يقوم بالعثور على جميع الملفات وتحليلها
         Finds and analyzes all files
-        
+
         Returns:
             قائمة المقاييس | List of metrics
         """
         all_metrics = []
-        
+
         for target in self.target_paths:
             target_path = self.repo_path / target
             if not target_path.exists():
@@ -440,7 +440,7 @@ class StructuralCodeIntelligence:
     def _analyze_target_path(self, target_path, all_metrics: list) -> None:
         """
         تحليل مسار مستهدف | Analyze target path
-        
+
         Args:
             target_path: المسار المستهدف | Target path
             all_metrics: قائمة المقاييس | Metrics list
@@ -456,7 +456,7 @@ class StructuralCodeIntelligence:
     def _calculate_and_sort_hotspots(self, all_metrics: list) -> None:
         """
         حساب وترتيب النقاط الساخنة | Calculate and sort hotspots
-        
+
         Args:
             all_metrics: قائمة المقاييس | Metrics list
         """
@@ -467,19 +467,19 @@ class StructuralCodeIntelligence:
     def _build_project_analysis(self, all_metrics: list) -> ProjectAnalysis:
         """
         بناء تحليل المشروع | Build project analysis
-        
+
         يحسب الإحصائيات الإجمالية ويحدد النقاط الساخنة
         Calculates overall statistics and identifies hotspots
-        
+
         Args:
             all_metrics: قائمة المقاييس | Metrics list
-            
+
         Returns:
             تحليل المشروع | Project analysis
         """
         stats = self._calculate_project_statistics(all_metrics)
         hotspots = self._identify_hotspots(all_metrics)
-        
+
         return ProjectAnalysis(
             timestamp=datetime.now().isoformat(),
             total_files=len(all_metrics),
@@ -497,10 +497,10 @@ class StructuralCodeIntelligence:
     def _calculate_project_statistics(self, all_metrics: list) -> dict:
         """
         حساب إحصائيات المشروع | Calculate project statistics
-        
+
         Args:
             all_metrics: قائمة المقاييس | Metrics list
-            
+
         Returns:
             معجم الإحصائيات | Statistics dictionary
         """
@@ -523,10 +523,10 @@ class StructuralCodeIntelligence:
     def _identify_hotspots(self, all_metrics: list) -> dict:
         """
         تحديد النقاط الساخنة | Identify hotspots
-        
+
         Args:
             all_metrics: قائمة المقاييس المرتبة | Sorted metrics list
-            
+
         Returns:
             معجم النقاط الساخنة | Hotspots dictionary
         """

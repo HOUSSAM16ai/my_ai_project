@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+
 class DatabaseHealth(BaseModel):
     status: str = Field(..., description="حالة قاعدة البيانات (e.g., connected, disconnected)")
     detail: str | None = Field(None, description="تفاصيل إضافية في حالة الخطأ")

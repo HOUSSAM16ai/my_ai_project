@@ -7,10 +7,9 @@ from __future__ import annotations
 import enum
 import json
 from datetime import UTC, datetime
-from typing import Any
 
 from sqlalchemy import Text, TypeDecorator
-from sqlalchemy.types import TypeDecorator
+
 
 def utc_now() -> datetime:
     """
@@ -20,6 +19,7 @@ def utc_now() -> datetime:
         datetime: Current UTC datetime
     """
     return datetime.now(UTC)
+
 
 class CaseInsensitiveEnum(str, enum.Enum):
     """
@@ -37,6 +37,7 @@ class CaseInsensitiveEnum(str, enum.Enum):
                 if member.value == value.lower():
                     return member
         return None
+
 
 class FlexibleEnum(TypeDecorator):
     """
@@ -73,6 +74,7 @@ class FlexibleEnum(TypeDecorator):
         except Exception:
             resolved = self._enum_type._missing_(value)
             return resolved or value
+
 
 class JSONText(TypeDecorator):
     """

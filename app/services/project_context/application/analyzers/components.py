@@ -9,6 +9,7 @@ from pathlib import Path
 
 from app.services.project_context.domain.models import KeyComponent
 
+
 @dataclass
 class ComponentAnalyzer:
     """Analyzer for identifying key components."""

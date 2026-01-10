@@ -12,7 +12,6 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from app.core.event_bus import event_bus
 from app.core.domain.models import (
     Mission,
     MissionEvent,
@@ -23,6 +22,7 @@ from app.core.domain.models import (
     Task,
     TaskStatus,
 )
+from app.core.event_bus import event_bus
 
 logger = logging.getLogger(__name__)
 

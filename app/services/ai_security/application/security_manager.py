@@ -7,16 +7,20 @@ Orchestrates threat detection, analysis, and response.
 """
 
 from dataclasses import dataclass
-from typing import Any
 
-from ..domain.models import SecurityEvent, ThreatDetection, UserBehaviorProfile
-from ..domain.ports import (
+from app.services.ai_security.domain.models import (
+    SecurityEvent,
+    ThreatDetection,
+    UserBehaviorProfile,
+)
+from app.services.ai_security.domain.ports import (
     BehavioralAnalyzerPort,
     ProfileRepositoryPort,
     ResponseSystemPort,
     ThreatDetectorPort,
     ThreatLoggerPort,
 )
+
 
 @dataclass
 class SecurityManagerConfig:
@@ -80,7 +84,7 @@ class SecurityManager:
         """
         كشف التهديدات بناءً على الأنماط.
         Detect pattern-based threats.
-        
+
         Args:
             event: حدث الأمان | Security event
             all_threats: قائمة التهديدات للتحديث | Threats list to update
@@ -92,28 +96,28 @@ class SecurityManager:
         """
         تحليل سلوك المستخدم.
         Analyze user behavior.
-        
+
         Args:
             event: حدث الأمان | Security event
             all_threats: قائمة التهديدات للتحديث | Threats list to update
         """
         if not event.user_id:
             return
-            
+
         profile = self.profile_repo.get_profile(event.user_id)
         if not profile:
             return
 
         behavioral_threats = self.behavioral_analyzer.analyze_behavior(event, profile)
         all_threats.extend(behavioral_threats)
-        
+
         self._update_user_profile(event, profile)
 
     def _update_user_profile(self, event: SecurityEvent, profile: UserBehaviorProfile) -> None:
         """
         تحديث ملف المستخدم.
         Update user profile.
-        
+
         Args:
             event: حدث الأمان | Security event
             profile: ملف المستخدم | User profile
@@ -125,7 +129,7 @@ class SecurityManager:
         """
         معالجة الاستجابة للتهديدات.
         Process threats response.
-        
+
         Args:
             all_threats: قائمة التهديدات | Threats list
         """
@@ -136,7 +140,7 @@ class SecurityManager:
         """
         معالجة تهديد واحد.
         Handle single threat.
-        
+
         Args:
             threat: التهديد | Threat
         """

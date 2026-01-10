@@ -20,6 +20,7 @@ from datetime import UTC, datetime
 
 from fastapi import FastAPI
 
+
 class ErrorResponseFactory:
     """
     Factory for creating standardized error responses.
@@ -30,7 +31,10 @@ class ErrorResponseFactory:
 
     @staticmethod
     def create_error_response(
-        code: int, message: str, details: dict[str, str | int | bool] = None, include_debug_info: bool = False  # noqa: unused variable
+        code: int,
+        message: str,
+        details: dict[str, str | int | bool] | None = None,
+        include_debug_info: bool = False,
     ) -> dict:
         """
         Create a standardized error response dictionary.
@@ -52,6 +56,7 @@ class ErrorResponseFactory:
             },
             "timestamp": datetime.now(UTC).isoformat(),
         }
+        _ = include_debug_info
 
         # Add details if provided
         if details is not None:

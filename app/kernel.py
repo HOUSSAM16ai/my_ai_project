@@ -27,7 +27,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
 
 # استيراد الموجهات بشكل صريح
 from app.api.routers import (
@@ -43,10 +42,10 @@ from app.api.routers import (
     ums,
 )
 from app.core.config import AppSettings
-from app.core.db_schema import validate_schema_on_startup
 from app.core.database import async_session_factory
-from app.core.event_bus_impl import EventBus, get_event_bus
-from app.gateway import APIGateway, GatewayConfig, ServiceRegistry
+from app.core.db_schema import validate_schema_on_startup
+from app.core.event_bus_impl import get_event_bus
+from app.gateway import APIGateway, ServiceRegistry
 from app.gateway.config import DEFAULT_GATEWAY_CONFIG
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
@@ -145,11 +144,11 @@ def _get_router_registry(gateway_router: APIRouter | None = None) -> list[Router
         (agents.router, ""),
         (overmind.router, ""),
     ]
-    
+
     # إضافة موجه البوابة إذا كان متاحاً
     if gateway_router:
         routers.append((gateway_router, ""))
-    
+
     return routers
 
 def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
@@ -200,7 +199,7 @@ class RealityKernel:
         else:
             self.settings_obj = settings
             self.settings_dict = settings.model_dump()
-        
+
         self.enable_static_files = enable_static_files
 
         # بناء التطبيق فور الإنشاء
@@ -227,12 +226,12 @@ class RealityKernel:
         middleware_stack = (
             _get_middleware_stack(self.settings_obj) if self.settings_obj else []
         )
-        
+
         # إضافة موجه البوابة إذا كان متاحاً
         gateway_router = None
         if hasattr(app.state, "api_gateway"):
             gateway_router = app.state.api_gateway.router
-        
+
         router_registry = _get_router_registry(gateway_router)
 
         # 3. Transformations - API Core (100% API-First)
@@ -264,10 +263,10 @@ class RealityKernel:
             # تهيئة المكونات الأساسية
             app.state.agent_plan_registry = AgentPlanRegistry()
             app.state.agent_plan_service = AgentPlanService()
-            
+
             # تهيئة Event Bus
             app.state.event_bus = get_event_bus()
-            
+
             # تهيئة API Gateway
             gateway_config = DEFAULT_GATEWAY_CONFIG
             app.state.service_registry = ServiceRegistry(services=gateway_config.services)
@@ -275,7 +274,7 @@ class RealityKernel:
                 config=gateway_config,
                 registry=app.state.service_registry,
             )
-            
+
             async for _ in self._handle_lifespan_events():
                 yield
 

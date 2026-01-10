@@ -9,10 +9,7 @@ Following Hexagonal Architecture / Ports & Adapters pattern.
 
 from __future__ import annotations
 
-from typing import Any
-
-
-from typing import Protocol
+from typing import Any, Protocol
 
 from app.services.serving.domain.models import (
     ModelMetrics,

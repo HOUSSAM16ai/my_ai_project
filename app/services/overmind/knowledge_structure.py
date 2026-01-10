@@ -15,7 +15,7 @@ def build_project_structure(project_root: Path) -> dict[str, object]:
         "main_modules": [],
     }
 
-    for root, dirs, files in os.walk(app_dir):
+    for _root, dirs, files in os.walk(app_dir):
         structure["directories"] = int(structure["directories"]) + len(dirs)
         for file in files:
             if file.endswith(".py"):

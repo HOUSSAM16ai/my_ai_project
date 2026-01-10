@@ -16,6 +16,7 @@ from .ports import (
     TelemetryRepository,
 )
 
+
 class InMemoryTelemetryRepository(TelemetryRepository):
     def __init__(self):
         self._data: dict[str, deque[TelemetryData]] = defaultdict(lambda: deque(maxlen=10000))

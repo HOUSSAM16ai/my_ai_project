@@ -11,15 +11,13 @@
 - استخدام واجهات صارمة.
 """
 
-from typing import Any
-
 import json
-import random
+from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
-from app.core.protocols import AgentExecutor, CollaborationContext
 from app.core.domain.models import Task, TaskStatus
+from app.core.protocols import AgentExecutor, CollaborationContext
 from app.services.overmind.executor import TaskExecutor
 
 logger = get_logger(__name__)
@@ -145,7 +143,7 @@ class OperatorAgent(AgentExecutor):
         """
         التحقق من صحة التصميم.
         Validate design for errors.
-        
+
         Returns:
             dict | None: تقرير خطأ إذا كان التصميم غير صالح، None إذا كان صالحاً
         """
@@ -178,7 +176,7 @@ class OperatorAgent(AgentExecutor):
         """
         تنفيذ قائمة المهام.
         Execute list of tasks sequentially.
-        
+
         Returns:
             tuple: (النتائج، الحالة الإجمالية)
         """

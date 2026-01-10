@@ -78,7 +78,7 @@ class PerformanceMetrics:
             return 0.0
         return self.empty_responses / self.total_requests * 100.0
 
-    def to_dict(self) -> "ModelMetricsPayload":
+    def to_dict(self) -> ModelMetricsPayload:
         """يصدر المقاييس في هيكل معجمي محدد الأنواع للاستهلاك الخارجي."""
         return {
             'model_id': self.model_id,

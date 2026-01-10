@@ -6,6 +6,7 @@ import ast
 
 from .context import AnalysisContext
 
+
 class FileReadStep:
     """
     Reads file content from disk.

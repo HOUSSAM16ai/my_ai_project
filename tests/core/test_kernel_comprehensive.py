@@ -1,4 +1,4 @@
-
+from contextlib import suppress
 from unittest.mock import patch
 
 import pytest
@@ -108,10 +108,8 @@ class TestRealityKernel:
              mock_validate.assert_not_called()
 
         # SHUTDOWN
-        try:
+        with suppress(StopAsyncIteration):
             await anext(lifespan_gen)
-        except StopAsyncIteration:
-            pass # Expected end of generator
 
     def test_cors_logic_dev_vs_prod(self):
         """
@@ -148,25 +146,25 @@ class TestRealityKernel:
         GIVEN the kernel module
         WHEN checking for Any type availability
         THEN Any should be imported and available for type hints.
-        
+
         This test ensures that the NameError: name 'Any' is not defined
         issue doesn't regress.
         """
         # Test that we can import the module without NameError
-        from app import kernel
-        
         # Verify that typing.Any is imported in the module
         import typing
+
+        from app import kernel
         assert hasattr(typing, 'Any'), "typing.Any should exist"
-        
+
         # Verify the kernel module loads successfully (no NameError)
         assert hasattr(kernel, 'RealityKernel'), "RealityKernel should be available"
-        
+
         # Verify we can inspect the __init__ signature which uses dict[str, Any]
         import inspect
         sig = inspect.signature(kernel.RealityKernel.__init__)
         params = sig.parameters
-        
+
         # The settings parameter should have the union type hint
         assert 'settings' in params, "settings parameter should exist"
         # If we got this far without NameError, the Any import is working

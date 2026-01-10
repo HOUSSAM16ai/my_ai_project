@@ -12,6 +12,7 @@ from collections import defaultdict
 
 from app.services.adaptive.domain.models import ServiceHealth, ServiceMetrics
 
+
 class PredictiveHealthMonitor:
     """
     نظام مراقبة صحة تنبؤي يكتشف المشاكل قبل حدوثها
@@ -27,15 +28,14 @@ class PredictiveHealthMonitor:
         """
         تحليل صحة الخدمة والتنبؤ بالمشاكل
         Analyze service health and predict issues
-        
+
         Args:
             service_name: اسم الخدمة | Service name
             current_metrics: المقاييس الحالية | Current metrics
-            
+
         Returns:
             حالة الصحة وقائمة التحذيرات | Health status and warnings list
         """
-        warnings = []
 
         # Store and maintain metrics history
         self._store_metrics_history(service_name, current_metrics)
@@ -47,10 +47,10 @@ class PredictiveHealthMonitor:
 
         # Check degraded conditions
         degraded_warnings = self._check_degraded_conditions(current_metrics)
-        
+
         # Check for anomalies
         anomaly_warnings = self._detect_anomalies(service_name, current_metrics)
-        
+
         # Combine all warnings
         all_warnings = degraded_warnings + anomaly_warnings
         if all_warnings:
@@ -63,7 +63,7 @@ class PredictiveHealthMonitor:
     ) -> None:
         """
         تخزين وصيانة تاريخ المقاييس | Store and maintain metrics history
-        
+
         Args:
             service_name: اسم الخدمة | Service name
             current_metrics: المقاييس الحالية | Current metrics
@@ -79,10 +79,10 @@ class PredictiveHealthMonitor:
     ) -> list[str]:
         """
         فحص الظروف الحرجة | Check critical conditions
-        
+
         Args:
             current_metrics: المقاييس الحالية | Current metrics
-            
+
         Returns:
             قائمة التحذيرات الحرجة | Critical warnings list
         """
@@ -102,10 +102,10 @@ class PredictiveHealthMonitor:
     ) -> list[str]:
         """
         فحص ظروف التدهور | Check degraded conditions
-        
+
         Args:
             current_metrics: المقاييس الحالية | Current metrics
-            
+
         Returns:
             قائمة تحذيرات التدهور | Degraded warnings list
         """
@@ -162,7 +162,9 @@ class PredictiveHealthMonitor:
         return anomalies
 
     def predict_failure(
-        self, service_name: str, lookahead_minutes: int = 15  # noqa: unused variable
+        self,
+        service_name: str,
+        lookahead_minutes: int = 15,
     ) -> tuple[float, list[str]]:
         """
         التنبؤ باحتمالية الفشل في المستقبل القريب

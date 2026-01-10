@@ -1,8 +1,11 @@
 import asyncio
 import sys
+
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+
 from app.core.database import create_db_engine, create_session_factory
 from app.core.settings.base import BaseServiceSettings
+
 
 class TestDBSettings(BaseServiceSettings):
     """Test settings for DB contract."""

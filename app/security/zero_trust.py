@@ -1,6 +1,7 @@
 # app/security/zero_trust.py
 from fastapi import HTTPException, Request, status
 
+
 class ZeroTrustAuthenticator:
     def __init__(self):
         # In a real implementation, this would manage sessions

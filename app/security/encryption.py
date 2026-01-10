@@ -15,6 +15,7 @@ from typing import TypedDict
 
 from cryptography.fernet import Fernet
 
+
 @dataclass
 class EncryptionKey:
     """مفتاح تشفير مزود ببيانات وصفية لإدارة دورة الحياة."""
@@ -83,9 +84,8 @@ class QuantumSafeEncryption:
         decrypted = self._xor_decrypt(encrypted_data, key.key_material)
 
         # Layer 1: Fernet decrypt
-        decrypted = self.fernet.decrypt(decrypted)
+        return self.fernet.decrypt(decrypted)
 
-        return decrypted
 
     def _xor_encrypt(self, data: bytes, key: bytes) -> bytes:
         """طبقة XOR المساعدة كمحاكاة لخوارزمية كمومية مستقبلية."""

@@ -96,10 +96,7 @@ class AnomalyInspector(BaseMiddleware):
         """يحافظ على قائمة نتائج الشذوذ في بيانات السياق لتستهلكها الطبقات اللاحقة."""
         existing = ctx.get_metadata(self._FINDINGS_KEY)
         findings: list[AnomalyFinding]
-        if isinstance(existing, list):
-            findings = [*existing]
-        else:
-            findings = []
+        findings = [*existing] if isinstance(existing, list) else []
 
         findings.append(finding)
         ctx.add_metadata(self._FINDINGS_KEY, findings)

@@ -4,6 +4,7 @@ Security utilities for chat.
 
 import re
 
+
 class PathValidator:
     """Validate file paths."""
 
@@ -24,5 +25,4 @@ class ErrorSanitizer:
         """Sanitize error message."""
         msg = str(error)
         # Remove potential secrets or paths
-        msg = re.sub(r"/.+/", "...", msg)
-        return msg
+        return re.sub(r"/.+/", "...", msg)

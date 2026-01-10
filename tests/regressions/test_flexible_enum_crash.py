@@ -26,8 +26,8 @@ def test_flexible_enum_resilience():
     # Use in-memory SQLite
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
 
     # 1. Test valid value
     m1 = MockModel(status=MockStatus.ACTIVE)

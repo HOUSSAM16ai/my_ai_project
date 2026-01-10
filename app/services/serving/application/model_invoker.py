@@ -5,13 +5,11 @@ Handles the actual invocation of models and request processing.
 """
 from __future__ import annotations
 
-from typing import Any
-
-
 import random
 import time
 import uuid
 from collections import deque
+from typing import Any
 
 from app.services.serving.domain.models import (
     ModelRequest,
@@ -20,6 +18,7 @@ from app.services.serving.domain.models import (
     ModelType,
     ModelVersion,
 )
+
 
 class ModelInvoker:
     """
@@ -45,7 +44,7 @@ class ModelInvoker:
     ) -> ModelResponse:
         """
         خدمة طلب للنموذج | Serve model request
-        
+
         تنفيذ طلب الاستدلال وحساب التكلفة والمقاييس
         Executes inference request and calculates cost and metrics
 
@@ -60,23 +59,23 @@ class ModelInvoker:
             استجابة النموذج | Model response
         """
         request_id = str(uuid.uuid4())
-        
+
         # Validate model status
         if model.status != ModelStatus.READY:
             return self._create_error_response(request_id, model, 'Model not ready')
-        
+
         # Create and store request
         request = self._create_request(request_id, model, input_data, parameters)
         self._request_history.append(request)
-        
+
         # Execute inference
         response = self._execute_inference(request_id, model, input_data, parameters, cost_calculator)
-        
+
         # Store response and update metrics
         self._response_history.append(response)
         if metrics_updater:
             metrics_updater(model.version_id, response)
-        
+
         return response
 
     def _create_error_response(
@@ -87,12 +86,12 @@ class ModelInvoker:
     ) -> ModelResponse:
         """
         إنشاء استجابة خطأ | Create error response
-        
+
         Args:
             request_id: معرف الطلب | Request ID
             model: النموذج | Model
             error: رسالة الخطأ | Error message
-            
+
         Returns:
             استجابة الخطأ | Error response
         """
@@ -115,13 +114,13 @@ class ModelInvoker:
     ) -> ModelRequest:
         """
         إنشاء كائن الطلب | Create request object
-        
+
         Args:
             request_id: معرف الطلب | Request ID
             model: النموذج | Model
             input_data: بيانات الإدخال | Input data
             parameters: المعاملات | Parameters
-            
+
         Returns:
             كائن الطلب | Request object
         """
@@ -143,26 +142,26 @@ class ModelInvoker:
     ) -> ModelResponse:
         """
         تنفيذ الاستدلال | Execute inference
-        
+
         Args:
             request_id: معرف الطلب | Request ID
             model: النموذج | Model
             input_data: بيانات الإدخال | Input data
             parameters: المعاملات | Parameters
             cost_calculator: حاسب التكلفة | Cost calculator
-            
+
         Returns:
             استجابة النموذج | Model response
         """
         start_time = time.time()
-        
+
         try:
             output = self._invoke_model(model, input_data, parameters or {})
             latency_ms = (time.time() - start_time) * 1000
-            
+
             # Calculate cost if calculator provided
             cost = cost_calculator(model, output) if cost_calculator else 0.0
-            
+
             return ModelResponse(
                 request_id=request_id,
                 model_id=model.model_name,

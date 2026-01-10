@@ -9,11 +9,12 @@ Standards:
 - Error responses follow a strict JSON schema.
 """
 
-from typing import Any, Callable
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+
 
 class ErrorDetail(BaseModel):
     code: str

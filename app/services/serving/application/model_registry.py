@@ -100,7 +100,7 @@ class ModelRegistry:
 
             # Initiate draining process
             self._initiate_draining(model)
-            
+
             # Start async draining and stopping
             self._start_async_drain_and_stop(version_id)
 
@@ -109,7 +109,7 @@ class ModelRegistry:
     def _initiate_draining(self, model: ModelVersion) -> None:
         """
         بدء عملية التفريغ | Initiate draining process
-        
+
         Args:
             model: نسخة النموذج | Model version
         """
@@ -121,7 +121,7 @@ class ModelRegistry:
         """
         بدء عملية التفريغ والإيقاف بشكل غير متزامن
         Start async draining and stopping process
-        
+
         Args:
             version_id: معرف نسخة النموذج | Model version ID
         """

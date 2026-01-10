@@ -1,7 +1,7 @@
 """اختبارات ماسح الحواجز المعمارية للـ CI."""
 
-from pathlib import Path
 import tempfile
+from pathlib import Path
 
 from scripts import ci_guardrails
 

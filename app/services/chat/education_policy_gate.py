@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
+from typing import ClassVar
 
 from app.services.policy import _normalize_text
 
@@ -28,7 +29,7 @@ class EducationPolicyGate:
     بوابة حماية تعليمية لمسار الزبون.
     """
 
-    _EDU_TERMS = {
+    _EDU_TERMS: ClassVar[set[str]] = {
         "رياضيات",
         "فيزياء",
         "برمجه",
@@ -38,7 +39,6 @@ class EducationPolicyGate:
         "تفاضل",
         "تكامل",
         "خوارزميه",
-        "برمجه",
         "algorithm",
         "math",
         "physics",
@@ -46,7 +46,7 @@ class EducationPolicyGate:
         "engineering",
         "science",
     }
-    _EDU_VERBS = {
+    _EDU_VERBS: ClassVar[set[str]] = {
         "اشرح",
         "شرح",
         "تعلم",
@@ -57,7 +57,7 @@ class EducationPolicyGate:
         "learn",
         "explain",
     }
-    _SENSITIVE_KEYWORDS = {
+    _SENSITIVE_KEYWORDS: ClassVar[set[str]] = {
         "api key",
         "apikey",
         "secret",
@@ -76,7 +76,7 @@ class EducationPolicyGate:
         "database password",
         "config",
     }
-    _OPERATIONAL_PATTERNS = [
+    _OPERATIONAL_PATTERNS: ClassVar[list[str]] = [
         r"\b(read|show|dump|list|export|expose)\b.*\b(file|database|db|repo|table)\b",
         r"\b(connect|access|query)\b.*\b(database|db)\b",
         r"\b(system prompt|prompt injection|tools?)\b",
@@ -114,10 +114,7 @@ class EducationPolicyGate:
         """
         if any(keyword in normalized for keyword in self._normalize_terms(self._SENSITIVE_KEYWORDS)):
             return True
-        for pattern in self._OPERATIONAL_PATTERNS:
-            if re.search(pattern, normalized):
-                return True
-        return False
+        return any(re.search(pattern, normalized) for pattern in self._OPERATIONAL_PATTERNS)
 
     def _is_education(self, normalized: str) -> bool:
         """

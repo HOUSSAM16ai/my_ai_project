@@ -14,6 +14,7 @@ Design Pattern: Observer Pattern + Event System
 from collections import defaultdict
 from collections.abc import Callable
 
+
 class LifecycleHooks:
     """
     Lifecycle hook manager for middleware events

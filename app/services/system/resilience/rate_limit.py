@@ -5,6 +5,7 @@ import time
 from collections import deque
 from dataclasses import dataclass
 
+
 @dataclass
 class RateLimitConfig:
     """Rate limiting configuration"""

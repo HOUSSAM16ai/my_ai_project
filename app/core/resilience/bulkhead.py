@@ -2,12 +2,10 @@
 Bulkhead pattern for resource isolation.
 """
 
-from typing import Any
-
 import asyncio
 import logging
 from collections.abc import Callable
-from typing import TypeVar
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 

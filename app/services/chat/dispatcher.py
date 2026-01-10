@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.domain.models import User
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 from app.services.boundaries.customer_chat_boundary_service import (

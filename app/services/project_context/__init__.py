@@ -22,6 +22,7 @@ from app.services.project_context.domain.models import (
     ProjectStructure,
 )
 
+
 # Define helper functions that were expected by the legacy shim
 def get_project_context_service() -> ProjectContextService:
     """Factory to get the singleton instance of ProjectContextService."""

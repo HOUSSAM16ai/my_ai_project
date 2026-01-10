@@ -23,7 +23,7 @@ from app.core.domain_events.base import (
 @dataclass
 class UserCreated(DomainEvent):
     """حدث إنشاء مستخدم جديد."""
-    
+
     def __init__(self, user_id: str, email: str, name: str):
         super().__init__(
             event_type="UserCreated",
@@ -39,7 +39,7 @@ class UserCreated(DomainEvent):
 @dataclass
 class UserUpdated(DomainEvent):
     """حدث تحديث بيانات مستخدم."""
-    
+
     def __init__(self, user_id: str, changes: dict[str, Any]):
         super().__init__(
             event_type="UserUpdated",
@@ -55,7 +55,7 @@ class UserUpdated(DomainEvent):
 @dataclass
 class UserDeleted(DomainEvent):
     """حدث حذف مستخدم."""
-    
+
     def __init__(self, user_id: str, reason: str):
         super().__init__(
             event_type="UserDeleted",

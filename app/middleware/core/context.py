@@ -15,7 +15,6 @@ from uuid import uuid4
 
 from fastapi import Request
 
-
 Primitive = str | int | float | bool | None
 
 @dataclass

@@ -4,8 +4,8 @@ import jwt
 import pytest
 from fastapi import HTTPException
 
-from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 from app.core.domain.models import User
+from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 
 
 class TestAdminChatBoundaryService:

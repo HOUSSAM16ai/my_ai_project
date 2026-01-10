@@ -1,6 +1,6 @@
+import ast
 from typing import Any
 
-import ast
 
 class ComplexityAnalyzer(ast.NodeVisitor):
     """Advanced Cyclomatic Complexity Analyzer"""

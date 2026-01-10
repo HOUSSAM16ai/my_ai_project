@@ -3,7 +3,7 @@ from httpx import AsyncClient
 from sqlalchemy import select
 
 from app.core.config import get_settings
-from app.core.domain.models import AuditLog, User, UserStatus
+from app.core.domain.models import AuditLog, User
 from app.middleware.rate_limiter_middleware import reset_rate_limiter
 from app.services.auth import AuthService
 from app.services.rbac import ADMIN_ROLE, RBACService
@@ -123,7 +123,7 @@ async def test_admin_can_suspend_user_and_audit(db_session, async_client: AsyncC
     assert admin_login.status_code == 200
     admin_token = admin_login.json()["access_token"]
 
-    target_resp = await async_client.post(
+    await async_client.post(
         "/auth/register",
         json={"full_name": "Target", "email": "target@example.com", "password": "Target123!"},
     )

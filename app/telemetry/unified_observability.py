@@ -3,18 +3,19 @@ from collections import deque
 
 from fastapi import Request
 
+from app.telemetry.aggregator import TelemetryAggregator
+from app.telemetry.analyzer import TelemetryAnalyzer
 from app.telemetry.metrics import MetricRecord, MetricsManager
-from app.telemetry.structured_logging import LogRecord, LoggingManager
-from app.telemetry.tracing import TracingManager
 from app.telemetry.models import (
+    CorrelatedLog,
     MetricSample,
     TraceContext,
     UnifiedSpan,
     UnifiedTrace,
-    CorrelatedLog
 )
-from app.telemetry.analyzer import TelemetryAnalyzer
-from app.telemetry.aggregator import TelemetryAggregator
+from app.telemetry.structured_logging import LoggingManager, LogRecord
+from app.telemetry.tracing import TracingManager
+
 
 class UnifiedObservabilityService:
     """
@@ -74,7 +75,7 @@ class UnifiedObservabilityService:
     def end_span(self, span_id: str, status: str = 'OK', error_message: str | None = None,
                  metrics: dict[str, float] | None = None) -> None:
         """إنهاء نطاق تتبع"""
-        completed_trace = self.tracing.end_span(span_id, status, error_message, metrics)
+        self.tracing.end_span(span_id, status, error_message, metrics)
         # منطق الارتباط (Correlation) يتم الآن ضمنياً عبر المعرفات المشتركة
         # لا حاجة لاستدعاء _correlate_trace يدوياً هنا
 

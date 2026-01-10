@@ -8,25 +8,26 @@ Standards:
 - Bounded Context: Owns `users` table.
 """
 
-from contextlib import asynccontextmanager
 import re
+from contextlib import asynccontextmanager
 from uuid import UUID
 
-from fastapi import APIRouter, FastAPI, Depends
+from fastapi import APIRouter, Depends, FastAPI
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
-from sqlalchemy.exc import IntegrityError
+
+from app.core.errors import ConflictError, setup_exception_handlers
 
 # Shared Kernel
-from app.core.logging import setup_logging, get_logger
-from app.core.errors import setup_exception_handlers, ConflictError, ResourceNotFoundError
+from app.core.logging import get_logger, setup_logging
+from microservices.user_service.database import get_session, init_db
 
 # Local Domain
 from microservices.user_service.health import HealthResponse, build_health_payload
-from microservices.user_service.settings import UserServiceSettings, get_settings
 from microservices.user_service.models import User
-from microservices.user_service.database import init_db, get_session
+from microservices.user_service.settings import UserServiceSettings, get_settings
 
 logger = get_logger("user-service")
 
@@ -77,10 +78,10 @@ def _build_router(settings: UserServiceSettings) -> APIRouter:
         try:
             await session.commit()
             await session.refresh(user)
-        except IntegrityError:
+        except IntegrityError as exc:
             await session.rollback()
             logger.warning("Email conflict", extra={"email": payload.email})
-            raise ConflictError("Email already registered")
+            raise ConflictError("Email already registered") from exc
 
         return UserResponse(user_id=user.id, name=user.name, email=user.email)
 

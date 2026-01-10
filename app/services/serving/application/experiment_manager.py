@@ -9,15 +9,13 @@ Single Responsibility: Experimental deployment strategies.
 
 from __future__ import annotations
 
-from typing import Any
-
-
 import logging
 import random
 import threading
 import time
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from app.services.serving.application.inference_router import InferenceRouter
 from app.services.serving.application.model_registry import ModelRegistry
@@ -95,7 +93,7 @@ class ExperimentManager:
         config = self._create_ab_test_config(
             test_id, model_a_id, model_b_id, split_percentage, duration_hours, success_metric
         )
-        
+
         self._register_ab_test(test_id, config)
         self._log_ab_test_start(test_id, model_a_id, model_b_id, split_percentage)
         self._schedule_auto_end(test_id, duration_hours)
@@ -114,7 +112,7 @@ class ExperimentManager:
         """
         إنشاء تكوين اختبار A/B.
         Create A/B test configuration.
-        
+
         Args:
             test_id: معرف الاختبار | Test ID
             model_a_id: معرف النموذج A | Model A ID
@@ -122,7 +120,7 @@ class ExperimentManager:
             split_percentage: نسبة الحركة | Traffic percentage
             duration_hours: مدة الاختبار | Test duration
             success_metric: مقياس النجاح | Success metric
-            
+
         Returns:
             ABTestConfig: تكوين الاختبار | Test configuration
         """
@@ -140,7 +138,7 @@ class ExperimentManager:
         """
         تسجيل اختبار A/B.
         Register A/B test.
-        
+
         Args:
             test_id: معرف الاختبار | Test ID
             config: تكوين الاختبار | Test configuration
@@ -149,16 +147,16 @@ class ExperimentManager:
             self._ab_tests[test_id] = config
 
     def _log_ab_test_start(
-        self, 
-        test_id: str, 
-        model_a_id: str, 
-        model_b_id: str, 
+        self,
+        test_id: str,
+        model_a_id: str,
+        model_b_id: str,
         split_percentage: float
     ) -> None:
         """
         تسجيل بدء اختبار A/B.
         Log A/B test start.
-        
+
         Args:
             test_id: معرف الاختبار | Test ID
             model_a_id: معرف النموذج A | Model A ID
@@ -175,7 +173,7 @@ class ExperimentManager:
         """
         جدولة إنهاء تلقائي للاختبار.
         Schedule automatic test end.
-        
+
         Args:
             test_id: معرف الاختبار | Test ID
             duration_hours: مدة الاختبار بالساعات | Test duration in hours
@@ -209,7 +207,7 @@ class ExperimentManager:
         config = self._get_ab_test_config(test_id)
         version_id = self._select_model_for_ab_test(config)
         model = self._get_model_by_version(version_id)
-        
+
         return self._router.serve_request(
             model.model_name,
             input_data,
@@ -221,13 +219,13 @@ class ExperimentManager:
         """
         الحصول على تكوين اختبار A/B.
         Get A/B test configuration.
-        
+
         Args:
             test_id: معرف الاختبار | Test ID
-            
+
         Returns:
             ABTestConfig: تكوين الاختبار | Test configuration
-            
+
         Raises:
             ValueError: إذا لم يُعثر على الاختبار | If test not found
         """
@@ -240,10 +238,10 @@ class ExperimentManager:
         """
         اختيار نموذج بناءً على نسبة الحركة.
         Select model based on traffic percentage.
-        
+
         Args:
             config: تكوين اختبار A/B | A/B test config
-            
+
         Returns:
             str: معرف النموذج المختار | Selected model version ID
         """
@@ -255,13 +253,13 @@ class ExperimentManager:
         """
         الحصول على نموذج بواسطة معرف الإصدار.
         Get model by version ID.
-        
+
         Args:
             version_id: معرف الإصدار | Version ID
-            
+
         Returns:
             Model: كائن النموذج | Model object
-            
+
         Raises:
             ValueError: إذا لم يُعثر على النموذج | If model not found
         """
@@ -361,7 +359,7 @@ class ExperimentManager:
         deployment = self._create_shadow_deployment(
             shadow_id, primary_model_id, shadow_model_id, traffic_percentage
         )
-        
+
         self._register_shadow_deployment(shadow_id, deployment)
         self._log_shadow_deployment_start(shadow_id, shadow_model_id, primary_model_id)
 
@@ -377,13 +375,13 @@ class ExperimentManager:
         """
         إنشاء نشر ظل.
         Create shadow deployment.
-        
+
         Args:
             shadow_id: معرف الظل | Shadow ID
             primary_model_id: معرف النموذج الأساسي | Primary model ID
             shadow_model_id: معرف نموذج الظل | Shadow model ID
             traffic_percentage: نسبة الحركة | Traffic percentage
-            
+
         Returns:
             ShadowDeployment: نشر الظل | Shadow deployment
         """
@@ -398,7 +396,7 @@ class ExperimentManager:
         """
         تسجيل نشر الظل.
         Register shadow deployment.
-        
+
         Args:
             shadow_id: معرف الظل | Shadow ID
             deployment: نشر الظل | Shadow deployment
@@ -407,15 +405,15 @@ class ExperimentManager:
             self._shadow_deployments[shadow_id] = deployment
 
     def _log_shadow_deployment_start(
-        self, 
-        shadow_id: str, 
-        shadow_model_id: str, 
+        self,
+        shadow_id: str,
+        shadow_model_id: str,
         primary_model_id: str
     ) -> None:
         """
         تسجيل بدء نشر الظل.
         Log shadow deployment start.
-        
+
         Args:
             shadow_id: معرف الظل | Shadow ID
             shadow_model_id: معرف نموذج الظل | Shadow model ID

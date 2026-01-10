@@ -9,8 +9,8 @@
 
 import re
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 
 def _scan_patterns(content: str, checks: Iterable[tuple[str, str]], *, flags: int = 0) -> tuple[int, int]:
@@ -141,28 +141,28 @@ def _validate_diagnostic_script() -> tuple[int, int]:
 def test_performance_monitor():
     """يتأكد من تفعيل مسارات تنظيف الأداء في مراقب الواجهة."""
 
-    passed, failed = _validate_performance_monitor()
+    _passed, failed = _validate_performance_monitor()
     assert failed == 0, f"performance-monitor.js missing {failed} safeguards"
 
 
 def test_index_html():
     """يتحقق من إعدادات التكيف مع البيئات السحابية في index.html."""
 
-    passed, failed = _validate_index_html()
+    _passed, failed = _validate_index_html()
     assert failed == 0, f"index.html missing {failed} adaptive features"
 
 
 def test_supervisor():
     """يفرض وجود معالجات Codespaces في مشرف الحاوية."""
 
-    passed, failed = _validate_supervisor_script()
+    _passed, failed = _validate_supervisor_script()
     assert failed == 0, f"supervisor.sh missing {failed} Codespaces handlers"
 
 
 def test_diagnostic_script():
     """يضمن سلامة نص التشخيص الخاص بـ Codespaces."""
 
-    passed, failed = _validate_diagnostic_script()
+    _passed, failed = _validate_diagnostic_script()
     assert failed == 0, f"codespaces_diagnostic.sh missing {failed} diagnostics"
 
 def main():
@@ -170,10 +170,10 @@ def main():
     print("║     Codespaces Crash Fix - Verification Tests                   ║")
     print("╚══════════════════════════════════════════════════════════════════╝")
     print()
-    
+
     total_passed = 0
     total_failed = 0
-    
+
     # Run all tests
     passed, failed = _validate_performance_monitor()
     total_passed += passed
@@ -190,7 +190,7 @@ def main():
     passed, failed = _validate_diagnostic_script()
     total_passed += passed
     total_failed += failed
-    
+
     # Summary
     print("\n" + "="*70)
     print("SUMMARY")
@@ -199,7 +199,7 @@ def main():
     print(f"❌ Failed: {total_failed}")
     print(f"📊 Total:  {total_passed + total_failed}")
     print()
-    
+
     if total_failed == 0:
         print("🎉 ALL TESTS PASSED! The fix is complete.")
         print()
@@ -209,9 +209,8 @@ def main():
         print("  3. Test the application for 15+ minutes")
         print("  4. Monitor memory usage in browser console")
         return 0
-    else:
-        print("⚠️  Some tests failed. Please review the output above.")
-        return 1
+    print("⚠️  Some tests failed. Please review the output above.")
+    return 1
 
 if __name__ == "__main__":
     sys.exit(main())

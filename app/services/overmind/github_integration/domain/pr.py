@@ -51,13 +51,12 @@ class PRManager:
 
         try:
             def _create():
-                pr = self.client.repo_object.create_pull(
+                return self.client.repo_object.create_pull(
                     title=title,
                     body=body,
                     head=head,
                     base=base,
                 )
-                return pr
 
             pr = await self.client.run_async(_create)
             logger.info(f"Created PR #{pr.number}: {title}")
@@ -84,8 +83,7 @@ class PRManager:
         try:
             def _merge():
                 pr = self.client.repo_object.get_pull(pr_number)
-                result = pr.merge(merge_method=merge_method)
-                return result
+                return pr.merge(merge_method=merge_method)
 
             result = await self.client.run_async(_merge)
             logger.info(f"Merged PR #{pr_number} using {merge_method}")

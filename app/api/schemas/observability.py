@@ -2,6 +2,7 @@ from pydantic import ConfigDict, Field
 
 from app.core.schemas import RobustBaseModel
 
+
 class HealthComponent(RobustBaseModel):
     """مكون صحة فرعي يوضح حالة نظام محدد."""
 

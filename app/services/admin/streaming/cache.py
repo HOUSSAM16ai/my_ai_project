@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import inspect
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Awaitable, Callable, Generic, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 T = TypeVar("T")
 
@@ -30,7 +31,7 @@ ComputeFunc = Callable[[], T] | Callable[[], Awaitable[T]]
 
 
 @dataclass(slots=True)
-class AdaptiveCache(Generic[T]):
+class AdaptiveCache[T]:
     """تخزين مؤقت مع طرد LRU وتوقيت صلاحية مرن."""
 
     max_size: int = 100

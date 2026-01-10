@@ -22,7 +22,7 @@ from app.telemetry.metrics import MetricRecord, MetricsManager
 from app.telemetry.performance import PerformanceMonitor
 
 # Import from my new refactored modules
-from app.telemetry.structured_logging import LogRecord, LoggingManager
+from app.telemetry.structured_logging import LoggingManager, LogRecord
 from app.telemetry.tracing import TracingManager
 from app.telemetry.unified_observability import (
     UnifiedObservabilityService,

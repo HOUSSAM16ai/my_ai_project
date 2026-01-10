@@ -92,7 +92,7 @@ def test_database_url_non_postgres_left_untouched(monkeypatch: pytest.MonkeyPatc
 
     settings = AppSettings()
 
-    assert settings.DATABASE_URL == mysql_url
+    assert mysql_url == settings.DATABASE_URL
 
 
 def test_database_url_sslmode_disable_converts_to_ssl(monkeypatch: pytest.MonkeyPatch) -> None:

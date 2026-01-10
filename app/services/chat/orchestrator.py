@@ -139,10 +139,10 @@ class ChatOrchestrator:
     @staticmethod
     async def dispatch(
         *,
-        user: "User",
-        request: "ChatDispatchRequest",
-        dispatcher: "ChatRoleDispatcher",
-    ) -> "ChatDispatchResult":
+        user: User,
+        request: ChatDispatchRequest,
+        dispatcher: ChatRoleDispatcher,
+    ) -> ChatDispatchResult:
         """
         تفريع مسار الدردشة حسب الدور عبر الموزّع المركزي.
         """

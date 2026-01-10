@@ -1,10 +1,9 @@
 """
 Tool registry with thread-safe operations.
 """
-from typing import Any
-
 import logging
 import threading
+from typing import Any
 
 from app.services.agent_tools.tool_model import Tool
 

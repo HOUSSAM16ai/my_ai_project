@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, ClassVar
 
+
 class VitalType(Enum):
     """Web Vitals types"""
     LCP = 'lcp'

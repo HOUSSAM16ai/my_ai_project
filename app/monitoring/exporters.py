@@ -10,7 +10,8 @@ import time
 from abc import ABC, abstractmethod
 from typing import Any
 
-from app.monitoring.metrics import MetricsCollector, PrometheusExporter as BasePrometheusExporter
+from app.monitoring.metrics import MetricsCollector
+from app.monitoring.metrics import PrometheusExporter as BasePrometheusExporter
 
 logger = logging.getLogger(__name__)
 

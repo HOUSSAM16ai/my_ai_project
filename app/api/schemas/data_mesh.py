@@ -2,6 +2,7 @@ from pydantic import Field
 
 from app.core.schemas import RobustBaseModel
 
+
 class DataContractRequest(RobustBaseModel):
     """
     نموذج طلب إنشاء عقد بيانات.

@@ -2,10 +2,10 @@
 نماذج البيانات لخاصة بنظام الذكاء الجماعي الفائق.
 """
 
+import uuid
 from datetime import datetime
 from enum import Enum
 from typing import Any
-import uuid
 
 from pydantic import BaseModel, Field
 

@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 from app.core.gateway.circuit_breaker import CircuitBreaker
 
+
 @dataclass
 class NeuralNode:
     """

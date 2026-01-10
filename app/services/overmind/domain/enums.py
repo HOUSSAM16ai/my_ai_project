@@ -6,6 +6,7 @@ Addresses Meaning Connascence by centralizing string literals.
 
 from enum import StrEnum
 
+
 class CognitivePhase(StrEnum):
     """Phases of the SuperBrain cognitive loop."""
     PLANNING = "PLANNING"

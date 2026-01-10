@@ -7,6 +7,7 @@ Intelligent code search.
 from dataclasses import dataclass
 from pathlib import Path
 
+
 @dataclass
 class SearchAnalyzer:
     """Analyzer for code search."""
@@ -17,11 +18,11 @@ class SearchAnalyzer:
         """
         بحث ذكي في الكود.
         Intelligent code search.
-        
+
         Args:
             query: استعلام البحث | Search query
             max_results: الحد الأقصى للنتائج | Maximum results
-            
+
         Returns:
             list[dict]: نتائج البحث المرتبة | Sorted search results
         """
@@ -32,7 +33,7 @@ class SearchAnalyzer:
             return results
 
         query_info = self._prepare_query(query)
-        
+
         for py_file in self._iterate_python_files(app_dir):
             self._search_in_file(py_file, query_info, results, max_results)
             if len(results) >= max_results * 2:
@@ -44,10 +45,10 @@ class SearchAnalyzer:
         """
         تحضير معلومات البحث.
         Prepare search query information.
-        
+
         Args:
             query: استعلام البحث | Search query
-            
+
         Returns:
             dict: معلومات البحث المحضرة | Prepared query information
         """
@@ -61,10 +62,10 @@ class SearchAnalyzer:
         """
         التكرار عبر ملفات Python.
         Iterate through Python files.
-        
+
         Args:
             app_dir: مسار دليل التطبيق | Application directory path
-            
+
         Yields:
             Path: مسار ملف Python | Python file path
         """
@@ -73,16 +74,16 @@ class SearchAnalyzer:
                 yield py_file
 
     def _search_in_file(
-        self, 
-        py_file: Path, 
-        query_info: dict, 
-        results: list[dict], 
+        self,
+        py_file: Path,
+        query_info: dict,
+        results: list[dict],
         max_results: int
     ) -> None:
         """
         البحث في ملف واحد.
         Search in a single file.
-        
+
         Args:
             py_file: مسار الملف | File path
             query_info: معلومات البحث | Query information
@@ -102,17 +103,17 @@ class SearchAnalyzer:
             pass
 
     def _check_line_match(
-        self, 
-        line: str, 
-        line_num: int, 
-        file_path: str, 
-        query_info: dict, 
+        self,
+        line: str,
+        line_num: int,
+        file_path: str,
+        query_info: dict,
         results: list[dict]
     ) -> None:
         """
         التحقق من تطابق السطر مع الاستعلام.
         Check if line matches query.
-        
+
         Args:
             line: السطر للفحص | Line to check
             line_num: رقم السطر | Line number
@@ -147,11 +148,11 @@ class SearchAnalyzer:
         """
         حساب تداخل الكلمات.
         Calculate word overlap.
-        
+
         Args:
             line_lower: السطر بأحرف صغيرة | Line in lowercase
             query_words: كلمات الاستعلام | Query words
-            
+
         Returns:
             float: نسبة التداخل | Overlap ratio
         """
@@ -162,11 +163,11 @@ class SearchAnalyzer:
         """
         ترتيب وتحديد النتائج.
         Sort and limit results.
-        
+
         Args:
             results: قائمة النتائج | Results list
             max_results: الحد الأقصى للنتائج | Maximum results
-            
+
         Returns:
             list[dict]: النتائج المرتبة والمحدودة | Sorted and limited results
         """

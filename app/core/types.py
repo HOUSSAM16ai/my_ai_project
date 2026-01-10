@@ -20,41 +20,41 @@ This module provides centralized type definitions following CS 252r principles:
 
 from __future__ import annotations
 
-from typing import TypeAlias, TypeVar
+from typing import TypeVar
 
 # ============================================================================
 # Basic Type Aliases
 # ============================================================================
 
-JSONPrimitive: TypeAlias = str | int | float | bool | None
+type JSONPrimitive = str | int | float | bool | None
 """القيمة البدائية المسموح بها ضمن JSON."""
 
-JSON: TypeAlias = dict[str, "JSON"] | list["JSON"] | JSONPrimitive
+type JSON = dict[str, "JSON"] | list["JSON"] | JSONPrimitive
 """نوع يدعم جميع قيم JSON بشكل متداخل دون استخدام Any."""
 
-JSONDict: TypeAlias = dict[str, JSON]
+type JSONDict = dict[str, JSON]
 """تمثيل كائن JSON مع قيم متماسكة النوع."""
 
-JSONList: TypeAlias = list[JSON]
+type JSONList = list[JSON]
 """تمثيل مصفوفة JSON بقيم متداخلة محكمة."""
 
-JSONValue: TypeAlias = JSONPrimitive
+type JSONValue = JSONPrimitive
 """نوع القيم البدائية لـ JSON لإبقاء التوثيق موحدًا."""
 
 # ============================================================================
 # Common Data Structure Types
 # ============================================================================
 
-Metadata: TypeAlias = dict[str, str | int | float | bool]
+type Metadata = dict[str, str | int | float | bool]
 """قاموس بيانات وصفية بقيم بدائية فقط لتفادي الأنواع الحرة."""
 
-Headers: TypeAlias = dict[str, str]
+type Headers = dict[str, str]
 """HTTP headers type"""
 
-QueryParams: TypeAlias = dict[str, str | int | bool]
+type QueryParams = dict[str, str | int | bool]
 """نوع معاملات الاستعلام بقيم محددة ودون Any."""
 
-Config: TypeAlias = dict[str, JSON]
+type Config = dict[str, JSON]
 """تهيئة منسجمة تعتمد على قيم JSON الصارمة."""
 
 # ============================================================================
@@ -63,13 +63,13 @@ Config: TypeAlias = dict[str, JSON]
 
 from collections.abc import Awaitable, Callable
 
-AsyncCallable: TypeAlias = Callable[..., Awaitable[object]]
+type AsyncCallable = Callable[..., Awaitable[object]]
 """تابع غير متزامن يعيد أي كائن مضبوط النوع دون اللجوء إلى Any."""
 
-ErrorHandler: TypeAlias = Callable[[Exception], object]
+type ErrorHandler = Callable[[Exception], object]
 """معالج أخطاء يعيد قيمة مضبوطة لتوثيق السلوك بوضوح."""
 
-Validator: TypeAlias = Callable[[object], bool]
+type Validator = Callable[[object], bool]
 """دالة تحقق لمدخلات موثقة بدلاً من الأنواع العامة."""
 
 # ============================================================================
@@ -77,29 +77,33 @@ Validator: TypeAlias = Callable[[object], bool]
 # ============================================================================
 
 # User and Authentication
-UserId: TypeAlias = int
+type UserId = int
 """User identifier type"""
 
-Email: TypeAlias = str
+type Email = str
 """Email address type (semantic)"""
 
-Token: TypeAlias = str
+type Token = str
 """Authentication token type"""
 
 # Mission and Task
-MissionId: TypeAlias = int
+type MissionId = int
 """Mission identifier type"""
 
-TaskId: TypeAlias = int
+type TaskId = int
 """Task identifier type"""
 
 # Timestamps
-Timestamp: TypeAlias = float
+type Timestamp = float
 """Unix timestamp (seconds since epoch)"""
 
 # ============================================================================
 # Type Variables for Generics
 # ============================================================================
+
+class BaseEntity:
+    """كيان أساسي لتقييد المتغيرات النوعية بعقدة نطاقية واضحة."""
+
 
 T = TypeVar('T')
 """Generic type variable"""
@@ -121,9 +125,9 @@ ModelT = TypeVar('ModelT')
 # Result Types (for error handling)
 # ============================================================================
 
-from typing import Generic
 
-class Result(Generic[T]):
+
+class Result[T]:
     """
     نوع نتيجة موثق لإرجاع نجاح أو خطأ مع واجهة عربية واضحة.
 
@@ -134,45 +138,45 @@ class Result(Generic[T]):
     Example:
         def divide(a: int, b: int) -> Result[float]:
             if b == 0:
-                return Result.error("Division by zero")
+                return Result.from_error("Division by zero")
             return Result.ok(a / b)
     """
-    
+
     def __init__(self, value: T | None = None, error: str | None = None):
         self._value = value
         self._error = error
-    
+
     @property
     def is_ok(self) -> bool:
         """Check if result is successful"""
         return self._error is None
-    
+
     @property
     def is_error(self) -> bool:
         """Check if result is an error"""
         return self._error is not None
-    
+
     @property
     def value(self) -> T:
         """Get the value (raises if error)"""
         if self._error:
             raise ValueError(f"Cannot get value from error result: {self._error}")
         return self._value  # type: ignore
-    
+
     @property
     def error(self) -> str:
         """Get the error message (raises if ok)"""
         if self._error is None:
             raise ValueError("Cannot get error from ok result")
         return self._error
-    
+
     @classmethod
     def ok(cls, value: T) -> Result[T]:
         """Create a successful result"""
         return cls(value=value)
-    
+
     @classmethod
-    def error(cls, error: str) -> Result[T]:
+    def from_error(cls, error: str) -> Result[T]:
         """Create an error result"""
         return cls(error=error)
 
@@ -181,34 +185,29 @@ class Result(Generic[T]):
 # ============================================================================
 
 __all__ = [
-    # Basic types
-    'JSONPrimitive',
     'JSON',
+    'AsyncCallable',
+    'BaseEntity',
+    'Config',
+    'Email',
+    'EntityT',
+    'ErrorHandler',
+    'Headers',
     'JSONDict',
     'JSONList',
+    'JSONPrimitive',
     'JSONValue',
-    # Common structures
     'Metadata',
-    'Headers',
-    'QueryParams',
-    'Config',
-    # Functions
-    'AsyncCallable',
-    'ErrorHandler',
-    'Validator',
-    # Domain types
-    'UserId',
-    'Email',
-    'Token',
     'MissionId',
-    'TaskId',
-    'Timestamp',
-    # Type variables
+    'ModelT',
+    'QueryParams',
+    'Result',
     'T',
     'T_co',
     'T_contra',
-    'EntityT',
-    'ModelT',
-    # Result type
-    'Result',
+    'TaskId',
+    'Timestamp',
+    'Token',
+    'UserId',
+    'Validator',
 ]

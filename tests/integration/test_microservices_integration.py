@@ -11,16 +11,14 @@
 """
 
 import pytest
-from httpx import AsyncClient
 from fastapi import FastAPI
+from httpx import AsyncClient
 
-from microservices.planning_agent.main import create_app as create_planning_app
+from app.core.event_bus_impl import Event, EventBus
 from microservices.memory_agent.main import create_app as create_memory_app
-from microservices.user_service.main import create_app as create_user_app
 from microservices.orchestrator_service.main import create_app as create_orchestrator_app
-from app.gateway import APIGateway, GatewayConfig
-from app.gateway.config import ServiceEndpoint, RouteRule
-from app.core.event_bus_impl import EventBus, Event
+from microservices.planning_agent.main import create_app as create_planning_app
+from microservices.user_service.main import create_app as create_user_app
 
 
 @pytest.fixture
@@ -55,7 +53,7 @@ def orchestrator_app() -> FastAPI:
 
 class TestMicroservicesHealth:
     """اختبارات صحة الخدمات المصغرة."""
-    
+
     @pytest.mark.asyncio
     async def test_planning_agent_health(self, planning_app: FastAPI) -> None:
         """يختبر صحة Planning Agent."""
@@ -65,7 +63,7 @@ class TestMicroservicesHealth:
             data = response.json()
             assert data["service"] == "planning-agent"
             assert data["status"] == "ok"
-    
+
     @pytest.mark.asyncio
     async def test_memory_agent_health(self, memory_app: FastAPI) -> None:
         """يختبر صحة Memory Agent."""
@@ -75,7 +73,7 @@ class TestMicroservicesHealth:
             data = response.json()
             assert data["service"] == "memory-agent"
             assert data["status"] == "ok"
-    
+
     @pytest.mark.asyncio
     async def test_user_service_health(self, user_app: FastAPI) -> None:
         """يختبر صحة User Service."""
@@ -85,7 +83,7 @@ class TestMicroservicesHealth:
             data = response.json()
             assert data["service"] == "user-service"
             assert data["status"] == "ok"
-    
+
     @pytest.mark.asyncio
     async def test_orchestrator_health(self, orchestrator_app: FastAPI) -> None:
         """يختبر صحة Orchestrator Service."""
@@ -99,7 +97,7 @@ class TestMicroservicesHealth:
 
 class TestPlanningAgentAPI:
     """اختبارات API لـ Planning Agent."""
-    
+
     @pytest.mark.asyncio
     async def test_create_plan(self, planning_app: FastAPI) -> None:
         """يختبر إنشاء خطة."""
@@ -116,7 +114,7 @@ class TestPlanningAgentAPI:
             assert "plan_id" in data
             assert data["goal"] == "تعلم البرمجة"
             assert len(data["steps"]) > 0
-    
+
     @pytest.mark.asyncio
     async def test_list_plans(self, planning_app: FastAPI) -> None:
         """يختبر عرض الخطط."""
@@ -126,7 +124,7 @@ class TestPlanningAgentAPI:
                 "/plans",
                 json={"goal": "تعلم Python", "context": []},
             )
-            
+
             # عرض الخطط
             response = await client.get("/plans")
             assert response.status_code == 200
@@ -137,7 +135,7 @@ class TestPlanningAgentAPI:
 
 class TestMemoryAgentAPI:
     """اختبارات API لـ Memory Agent."""
-    
+
     @pytest.mark.asyncio
     async def test_create_memory(self, memory_app: FastAPI) -> None:
         """يختبر إنشاء ذاكرة."""
@@ -154,7 +152,7 @@ class TestMemoryAgentAPI:
             assert "entry_id" in data
             assert data["content"] == "تعلمت اليوم عن FastAPI"
             assert "learning" in data["tags"]
-    
+
     @pytest.mark.asyncio
     async def test_search_memories(self, memory_app: FastAPI) -> None:
         """يختبر البحث في الذاكرة."""
@@ -167,7 +165,7 @@ class TestMemoryAgentAPI:
                     "tags": ["fastapi"],
                 },
             )
-            
+
             # البحث
             response = await client.get("/memories/search?query=fastapi")
             assert response.status_code == 200
@@ -178,7 +176,7 @@ class TestMemoryAgentAPI:
 
 class TestUserServiceAPI:
     """اختبارات API لـ User Service."""
-    
+
     @pytest.mark.asyncio
     async def test_create_user(self, user_app: FastAPI) -> None:
         """يختبر إنشاء مستخدم."""
@@ -195,7 +193,7 @@ class TestUserServiceAPI:
             assert "user_id" in data
             assert data["name"] == "أحمد محمد"
             assert data["email"] == "ahmed@example.com"
-    
+
     @pytest.mark.asyncio
     async def test_list_users(self, user_app: FastAPI) -> None:
         """يختبر عرض المستخدمين."""
@@ -208,7 +206,7 @@ class TestUserServiceAPI:
                     "email": "fatima@example.com",
                 },
             )
-            
+
             # عرض المستخدمين
             response = await client.get("/users")
             assert response.status_code == 200
@@ -219,7 +217,7 @@ class TestUserServiceAPI:
 
 class TestOrchestratorAPI:
     """اختبارات API لـ Orchestrator Service."""
-    
+
     @pytest.mark.asyncio
     async def test_list_agents(self, orchestrator_app: FastAPI) -> None:
         """يختبر عرض الوكلاء المسجلين."""
@@ -229,7 +227,7 @@ class TestOrchestratorAPI:
             data = response.json()
             assert "agents" in data
             assert isinstance(data["agents"], list)
-    
+
     @pytest.mark.asyncio
     async def test_create_task(self, orchestrator_app: FastAPI) -> None:
         """يختبر إنشاء مهمة."""
@@ -245,56 +243,56 @@ class TestOrchestratorAPI:
 
 class TestEventBusIntegration:
     """اختبارات تكامل ناقل الأحداث."""
-    
+
     @pytest.mark.asyncio
     async def test_event_flow_between_services(self, event_bus: EventBus) -> None:
         """يختبر تدفق الأحداث بين الخدمات."""
         received_events = []
-        
+
         # محاكاة اشتراك خدمة المستخدمين
         @event_bus.subscribe("user.created")
         async def on_user_created(event: Event) -> None:
             received_events.append(("user-service", event))
-        
+
         # محاكاة اشتراك خدمة الذاكرة
         @event_bus.subscribe("user.created")
         async def on_user_created_memory(event: Event) -> None:
             received_events.append(("memory-agent", event))
-        
+
         # نشر حدث
         await event_bus.publish(
             event_type="user.created",
             payload={"user_id": "123", "email": "test@example.com"},
             source="user-service",
         )
-        
+
         # التحقق من استلام الحدث
         assert len(received_events) == 2
         assert received_events[0][0] == "user-service"
         assert received_events[1][0] == "memory-agent"
-    
+
     @pytest.mark.asyncio
     async def test_plan_created_event(self, event_bus: EventBus) -> None:
         """يختبر حدث إنشاء خطة."""
         plan_events = []
-        
+
         @event_bus.subscribe("plan.created")
         async def on_plan_created(event: Event) -> None:
             plan_events.append(event)
-        
+
         await event_bus.publish(
             event_type="plan.created",
             payload={"plan_id": "456", "goal": "تعلم Python"},
             source="planning-agent",
         )
-        
+
         assert len(plan_events) == 1
         assert plan_events[0].payload["goal"] == "تعلم Python"
 
 
 class TestEndToEndScenarios:
     """اختبارات السيناريوهات الشاملة."""
-    
+
     @pytest.mark.asyncio
     async def test_complete_learning_flow(
         self,
@@ -321,7 +319,7 @@ class TestEndToEndScenarios:
             assert user_response.status_code == 200
             user_data = user_response.json()
             user_id = user_data["user_id"]
-        
+
         # 2. إنشاء خطة تعليمية
         async with AsyncClient(app=planning_app, base_url="http://test") as client:
             plan_response = await client.post(
@@ -334,7 +332,7 @@ class TestEndToEndScenarios:
             assert plan_response.status_code == 200
             plan_data = plan_response.json()
             plan_id = plan_data["plan_id"]
-        
+
         # 3. حفظ التقدم في الذاكرة
         async with AsyncClient(app=memory_app, base_url="http://test") as client:
             memory_response = await client.post(
@@ -345,7 +343,7 @@ class TestEndToEndScenarios:
                 },
             )
             assert memory_response.status_code == 200
-        
+
         # 4. نشر حدث التقدم
         await event_bus.publish(
             event_type="learning.progress",
@@ -356,7 +354,7 @@ class TestEndToEndScenarios:
             },
             source="orchestrator",
         )
-        
+
         # التحقق من السجل
         history = event_bus.get_history(event_type="learning.progress")
         assert len(history) > 0

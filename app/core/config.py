@@ -1,5 +1,6 @@
 import warnings
-from app.core.settings.base import AppSettings, get_settings, BaseServiceSettings
+
+from app.core.settings.base import AppSettings, BaseServiceSettings, get_settings
 
 # Deprecation Warning for using this module directly
 warnings.warn(
@@ -9,4 +10,4 @@ warnings.warn(
     stacklevel=2
 )
 
-__all__ = ["AppSettings", "get_settings", "BaseServiceSettings"]
+__all__ = ["AppSettings", "BaseServiceSettings", "get_settings"]

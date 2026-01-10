@@ -6,7 +6,8 @@ Simple automated threat response implementation.
 نظام الاستجابة التلقائية
 """
 
-from ...domain.models import ThreatDetection, ThreatLevel
+from app.services.ai_security.domain.models import ThreatDetection, ThreatLevel
+
 
 class SimpleResponseSystem:
     """

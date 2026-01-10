@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import ClassVar
 
 from app.services.chat.intent_detector import ChatIntent
 
@@ -25,7 +26,7 @@ class ToolRouter:
     موجه مركزي للأدوات يعتمد الدور وقائمة السماح.
     """
 
-    _STANDARD_ALLOWLIST = {
+    _STANDARD_ALLOWLIST: ClassVar[set[ChatIntent]] = {
         ChatIntent.DEFAULT,
         ChatIntent.HELP,
         ChatIntent.DEEP_ANALYSIS,

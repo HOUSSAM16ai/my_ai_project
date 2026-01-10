@@ -2,6 +2,7 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 
+
 class SamplingDecision(Enum):
     SAMPLE = 'sample'
     DROP = 'drop'

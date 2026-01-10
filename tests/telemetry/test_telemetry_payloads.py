@@ -1,6 +1,6 @@
 from app.telemetry.events import EventPayload, EventTracker, EventType
 from app.telemetry.metrics import MetricRecord, MetricsManager
-from app.telemetry.structured_logging import LogRecord, LoggingManager
+from app.telemetry.structured_logging import LoggingManager, LogRecord
 
 
 def test_metric_record_tracks_histogram_and_traces() -> None:
@@ -16,7 +16,7 @@ def test_metric_record_tracks_histogram_and_traces() -> None:
     manager.record_metric(record)
 
     assert manager.stats["metrics_recorded"] == 1
-    assert list(manager.histograms["latency_ms"])[0] == 120.5
+    assert next(iter(manager.histograms["latency_ms"])) == 120.5
     assert manager.trace_metrics["trace-1"][0].exemplar_span_id == "span-1"
 
 

@@ -10,12 +10,10 @@ Following Domain-Driven Design principles.
 
 from __future__ import annotations
 
-from typing import Any
-
-
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
+from typing import Any
 
 # ======================================================================================
 # ENUMERATIONS

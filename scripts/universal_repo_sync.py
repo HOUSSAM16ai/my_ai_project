@@ -82,8 +82,7 @@ def resolve_github_url(token, repo_id):
         data = response.json()
         clone_url = data.get("clone_url")
         # Inject auth
-        auth_url = clone_url.replace("https://", f"https://oauth2:{token}@")
-        return auth_url
+        return clone_url.replace("https://", f"https://oauth2:{token}@")
     except Exception as e:
         logger.error(f"Failed to resolve GitHub target: {e}")
         raise
@@ -102,8 +101,7 @@ def resolve_gitlab_url(token, project_id):
         http_url = data.get("http_url_to_repo")
         # Inject auth - GitLab supports oauth2 as user for tokens, or just the token as user
         # Format: https://oauth2:<token>@gitlab.com/...
-        auth_url = http_url.replace("https://", f"https://oauth2:{token}@")
-        return auth_url
+        return http_url.replace("https://", f"https://oauth2:{token}@")
     except Exception as e:
         logger.error(f"Failed to resolve GitLab target: {e}")
         raise
@@ -210,7 +208,7 @@ def sync_remotes():
     # 3. Execute Synchronization based on Direction
 
     # CASE A: GitHub -> GitLab
-    if (target_platform == "GitLab" or target_platform == "All") and gitlab_token and gitlab_id:
+    if (target_platform in {"GitLab", "All"}) and gitlab_token and gitlab_id:
         try:
             target_url = resolve_gitlab_url(gitlab_token, gitlab_id)
             logger.info("Initiating Mirror Push to GitLab...")
@@ -230,7 +228,7 @@ def sync_remotes():
                 sys.exit(1)
 
     # CASE B: GitLab -> GitHub
-    if (target_platform == "GitHub" or target_platform == "All") and github_token and github_id:
+    if (target_platform in {"GitHub", "All"}) and github_token and github_id:
         try:
             target_url = resolve_github_url(github_token, github_id)
             logger.info("Initiating Mirror Push to GitHub...")

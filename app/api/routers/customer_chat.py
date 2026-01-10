@@ -16,9 +16,9 @@ from app.api.schemas.customer_chat import (
     CustomerConversationSummary,
 )
 from app.core.ai_gateway import AIClient, get_ai_client
-from app.core.domain.models import User
 from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
+from app.core.domain.models import User
 from app.deps.auth import CurrentUser, require_permissions
 from app.services.boundaries.customer_chat_boundary_service import CustomerChatBoundaryService
 from app.services.chat.contracts import ChatDispatchRequest

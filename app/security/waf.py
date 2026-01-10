@@ -1,9 +1,9 @@
 # app/security/waf.py
 
-from typing import Pattern, TypedDict
-
 import contextlib
 import re
+from re import Pattern
+from typing import TypedDict
 
 from fastapi import HTTPException, Request, status
 
@@ -44,7 +44,7 @@ class WebApplicationFirewall:
 
     async def _extract_all_params(self, request: Request) -> dict[str, str]:
         """يجمع معطيات الطلب ويحولها إلى نصوص لضمان فحص متسق."""
-        params: dict[str, str] = {k: v for k, v in request.query_params.items()}
+        params: dict[str, str] = dict(request.query_params.items())
         if request.method in ["POST", "PUT"]:
             with contextlib.suppress(Exception):
                 body = await request.json()

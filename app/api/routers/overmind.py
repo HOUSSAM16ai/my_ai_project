@@ -19,8 +19,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_factory, get_db
-from app.core.domain.models import Mission
 from app.core.di import get_logger
+from app.core.domain.models import Mission
 from app.services.overmind.domain.api_schemas import (
     MissionCreate,
     MissionResponse,

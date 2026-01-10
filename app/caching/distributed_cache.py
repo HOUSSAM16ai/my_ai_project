@@ -10,7 +10,6 @@
 """
 
 import logging
-import asyncio
 from typing import Any
 
 from app.caching.base import CacheBackend

@@ -20,13 +20,13 @@ Design Principles (مبادئ التصميم):
 """
 
 from enum import Enum
-from typing import NamedTuple
+from typing import ClassVar, NamedTuple
 
 
 class ColorPalette(NamedTuple):
     """
     لوحة ألوان فنية لتصور البيانات.
-    
+
     Attributes:
         primary: اللون الأساسي (للعناصر المهمة)
         secondary: اللون الثانوي (للعناصر الداعمة)
@@ -52,31 +52,31 @@ class ColorPalette(NamedTuple):
 class ArtStyle(Enum):
     """
     أنماط فنية مختلفة لتصور البيانات.
-    
+
     CS73 Concept: كل نمط يعبر عن الفلسفة الجمالية المختلفة.
     """
-    
+
     # Minimalist: بساطة وأناقة
     MINIMALIST = "minimalist"
-    
+
     # Cyberpunk: مستقبلي مع ألوان نيون
     CYBERPUNK = "cyberpunk"
-    
+
     # Nature: مستوحى من الطبيعة
     NATURE = "nature"
-    
+
     # Retro: نمط كلاسيكي قديم
     RETRO = "retro"
-    
+
     # Modern: عصري وجريء
     MODERN = "modern"
-    
+
     # Dark Mode: وضع داكن للعين
     DARK = "dark"
-    
+
     # Light Mode: وضع فاتح ومشرق
     LIGHT = "light"
-    
+
     # Gradient: تدرجات لونية ناعمة
     GRADIENT = "gradient"
 
@@ -84,12 +84,12 @@ class ArtStyle(Enum):
 class VisualTheme:
     """
     ثيم بصري متكامل يجمع الألوان والأنماط.
-    
+
     CS73: يطبق مبادئ الانسجام البصري والتوازن.
     """
-    
+
     # تعريف لوحات الألوان للأنماط المختلفة
-    PALETTES: dict[ArtStyle, ColorPalette] = {
+    PALETTES: ClassVar[dict[ArtStyle, ColorPalette]] = {
         ArtStyle.MINIMALIST: ColorPalette(
             primary="#2C3E50",
             secondary="#95A5A6",
@@ -179,54 +179,54 @@ class VisualTheme:
             info="#4F86F7",
         ),
     }
-    
+
     @classmethod
     def get_palette(cls, style: ArtStyle) -> ColorPalette:
         """
         الحصول على لوحة الألوان لنمط معين.
-        
+
         Args:
             style: النمط الفني المطلوب
-            
+
         Returns:
             ColorPalette: لوحة الألوان المناسبة
-            
+
         Example:
             >>> theme = VisualTheme.get_palette(ArtStyle.CYBERPUNK)
             >>> print(theme.primary)
             '#00FF41'
         """
         return cls.PALETTES.get(style, cls.PALETTES[ArtStyle.MINIMALIST])
-    
+
     @classmethod
     def create_gradient(cls, color1: str, color2: str, steps: int = 10) -> list[str]:
         """
         إنشاء تدرج لوني بين لونين.
-        
+
         CS73 Concept: التدرج اللوني يخلق انتقال ناعم وجمالي.
-        
+
         Args:
             color1: اللون الأول (hex format)
             color2: اللون الثاني (hex format)
             steps: عدد الخطوات في التدرج
-            
+
         Returns:
             list[str]: قائمة من الألوان في التدرج
-            
+
         Complexity: O(steps)
         """
         def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
             """تحويل hex إلى RGB"""
             hex_color = hex_color.lstrip('#')
             return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))  # type: ignore
-        
+
         def rgb_to_hex(rgb: tuple[int, int, int]) -> str:
             """تحويل RGB إلى hex"""
             return f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
-        
+
         rgb1 = hex_to_rgb(color1)
         rgb2 = hex_to_rgb(color2)
-        
+
         gradient: list[str] = []
         for i in range(steps):
             ratio = i / (steps - 1) if steps > 1 else 0
@@ -234,30 +234,30 @@ class VisualTheme:
             g = int(rgb1[1] + (rgb2[1] - rgb1[1]) * ratio)
             b = int(rgb1[2] + (rgb2[2] - rgb1[2]) * ratio)
             gradient.append(rgb_to_hex((r, g, b)))
-        
+
         return gradient
-    
+
     @classmethod
     def get_contrasting_color(cls, color: str) -> str:
         """
         الحصول على لون متباين للنص على خلفية معينة.
-        
+
         CS73 Principle: التباين الكافي يضمن قراءة سهلة.
-        
+
         Args:
             color: لون الخلفية (hex format)
-            
+
         Returns:
             str: أبيض أو أسود حسب السطوع
-            
+
         Complexity: O(1)
         """
         # حساب السطوع (Luminance)
         hex_color = color.lstrip('#')
         r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-        
+
         # صيغة السطوع النسبي (Relative Luminance)
         luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-        
+
         # إذا كان اللون فاتح، استخدم نص داكن، والعكس
         return "#000000" if luminance > 0.5 else "#FFFFFF"

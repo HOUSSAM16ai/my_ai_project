@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Callable
 from dataclasses import dataclass
 from json import dumps
 from pathlib import Path
-from typing import Callable
 
 
 @dataclass
@@ -15,7 +15,7 @@ class NodeStats:
     path: str
     kind: str
     size_bytes: int
-    children: list["NodeStats"]
+    children: list[NodeStats]
 
     def to_dict(self) -> dict[str, object]:
         """يحوّل بيانات العقدة إلى قاموس صالح للتسلسل إلى JSON."""

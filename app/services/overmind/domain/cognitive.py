@@ -13,17 +13,15 @@
 - MIT 6.0001: التجريد والخوارزميات (Abstraction & Algorithms).
 """
 
-from typing import Any
-
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 from pydantic import BaseModel, Field
 
-from app.core.protocols import AgentArchitect, AgentExecutor, AgentPlanner, AgentReflector
 from app.core.domain.models import Mission
+from app.core.protocols import AgentArchitect, AgentExecutor, AgentPlanner, AgentReflector
 from app.services.overmind.domain.context import InMemoryCollaborationContext
 from app.services.overmind.domain.enums import CognitiveEvent, CognitivePhase, OvermindMessage
 from app.services.overmind.domain.exceptions import StalemateError
@@ -91,10 +89,10 @@ class SuperBrain:
     ) -> Callable[[str, dict[str, Any]], Awaitable[None]]:
         """
         إنشاء دالة تسجيل آمنة.
-        
+
         Args:
             log_event: دالة التسجيل الاختيارية
-            
+
         Returns:
             دالة تسجيل آمنة
         """
@@ -111,15 +109,15 @@ class SuperBrain:
     ) -> CognitiveCritique:
         """
         معالجة مرحلة التخطيط والمراجعة.
-        
+
         Args:
             state: حالة المهمة المعرفية
             collab_context: سياق التعاون
             safe_log: دالة التسجيل الآمنة
-            
+
         Returns:
             نتيجة المراجعة
-            
+
         Raises:
             RuntimeError: في حال مشاكل في خدمة الذكاء الاصطناعي
         """
@@ -140,8 +138,8 @@ class SuperBrain:
             phase_name=CognitivePhase.REVIEW_PLAN,
             agent_name="Auditor",
             action=lambda: self.auditor.review_work(
-                state.plan, 
-                f"Plan for: {state.objective}", 
+                state.plan,
+                f"Plan for: {state.objective}",
                 collab_context
             ),
             timeout=60.0,
@@ -172,12 +170,12 @@ class SuperBrain:
     ) -> None:
         """
         الكشف عن الحلقات المفرغة ومعالجتها.
-        
+
         Args:
             state: حالة المهمة المعرفية
             collab_context: سياق التعاون
             safe_log: دالة التسجيل الآمنة
-            
+
         Raises:
             StalemateError: عند اكتشاف حلقة مفرغة
         """
@@ -210,7 +208,7 @@ class SuperBrain:
     ) -> None:
         """
         تنفيذ مرحلة التصميم.
-        
+
         Args:
             state: حالة المهمة المعرفية
             collab_context: سياق التعاون
@@ -232,7 +230,7 @@ class SuperBrain:
     ) -> None:
         """
         تنفيذ مرحلة التنفيذ.
-        
+
         Args:
             state: حالة المهمة المعرفية
             collab_context: سياق التعاون
@@ -254,7 +252,7 @@ class SuperBrain:
     ) -> None:
         """
         تنفيذ مرحلة الانعكاس والمراجعة النهائية.
-        
+
         Args:
             state: حالة المهمة المعرفية
             collab_context: سياق التعاون
@@ -264,14 +262,14 @@ class SuperBrain:
             phase_name=CognitivePhase.REFLECTION,
             agent_name="Auditor",
             action=lambda: self.auditor.review_work(
-                state.execution_result, 
-                state.objective, 
+                state.execution_result,
+                state.objective,
                 collab_context
             ),
             timeout=60.0,
             log_func=safe_log
         )
-        
+
         state.critique = CognitiveCritique(
             approved=raw_final_critique.get("approved", False),
             feedback=raw_final_critique.get("feedback", "No feedback provided"),
@@ -311,7 +309,7 @@ class SuperBrain:
             try:
                 # محاولة تنفيذ دورة معرفية كاملة | Try complete cognitive cycle
                 result = await self._execute_cognitive_cycle(state, collab_context, safe_log)
-                
+
                 if result is not None:
                     return result
 
@@ -333,7 +331,7 @@ class SuperBrain:
         """
         تنفيذ دورة معرفية كاملة.
         Execute one complete cognitive cycle (plan → design → execute → review).
-        
+
         Returns:
             dict | None: النتيجة إذا نجحت، None إذا تحتاج إعادة المحاولة
         """
@@ -370,20 +368,20 @@ class SuperBrain:
         """
         محاولة تنفيذ مرحلة التخطيط.
         Try executing planning phase with stalemate handling.
-        
+
         Returns:
             bool: True إذا نجح، False إذا يحتاج إعادة
         """
         try:
             critique = await self._handle_planning_phase(state, collab_context, safe_log)
-            
+
             if not critique.approved:
                 state.current_phase = CognitivePhase.RE_PLANNING
                 collab_context.update("feedback_from_previous_attempt", critique.feedback)
                 return False
-            
+
             return True
-        
+
         except StalemateError:
             # استراتيجية كسر الجمود - إعادة التخطيط فوراً
             state.current_phase = CognitivePhase.RE_PLANNING
@@ -400,7 +398,7 @@ class SuperBrain:
         Prepare state for retry after failed critique.
         """
         await safe_log(
-            CognitiveEvent.MISSION_CRITIQUE_FAILED, 
+            CognitiveEvent.MISSION_CRITIQUE_FAILED,
             {"critique": state.critique.model_dump()}
         )
         state.current_phase = CognitivePhase.RE_PLANNING

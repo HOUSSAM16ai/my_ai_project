@@ -1,7 +1,6 @@
-from typing import Optional
 from uuid import UUID, uuid4
 
-from sqlmodel import Field, SQLModel, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
 
 class MemoryTagLink(SQLModel, table=True):

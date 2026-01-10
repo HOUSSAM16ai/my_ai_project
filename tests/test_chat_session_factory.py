@@ -10,7 +10,7 @@ from app.services.chat.orchestrator import ChatOrchestrator
 @pytest.mark.asyncio
 async def test_chat_orchestrator_passes_session_factory():
     # Setup
-    orchestrator = ChatOrchestrator()
+    ChatOrchestrator()
     mock_ai_client = AsyncMock()
     mock_session_factory = MagicMock()
 

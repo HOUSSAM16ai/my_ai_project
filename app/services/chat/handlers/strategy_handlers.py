@@ -8,8 +8,8 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy import select
 
-from app.core.patterns.strategy import Strategy
 from app.core.domain.models import Mission, MissionEvent, MissionEventType, MissionStatus
+from app.core.patterns.strategy import Strategy
 from app.services.chat.context import ChatContext
 from app.services.chat.context_service import get_context_service
 from app.services.overmind.factory import create_overmind
@@ -229,10 +229,13 @@ class MissionComplexHandler(IntentHandler):
 
                 # Check mission status if task is done or we suspect completion
                 mission_check = await session.get(Mission, mission_id)
-                if mission_check.status in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED):
-                     if running: # If we haven't detected task end yet
-                         running = False
-                         yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
+                if (
+                    mission_check.status
+                    in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED)
+                    and running
+                ):
+                    running = False
+                    yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
 
         yield "\n✅ **تم انتهاء متابعة المهمة.**\n"
 
@@ -296,7 +299,7 @@ class DefaultChatHandler(IntentHandler):
         """Execute default chat with identity context."""
         # إضافة معلومات الهوية إلى رسائل المحادثة
         enhanced_messages = self._add_identity_context(context.history_messages)
-        
+
         async for chunk in context.ai_client.stream_chat(enhanced_messages):
             if isinstance(chunk, dict):
                 choices = chunk.get("choices", [])
@@ -306,7 +309,7 @@ class DefaultChatHandler(IntentHandler):
                         yield content
             elif isinstance(chunk, str):
                 yield chunk
-    
+
     def _add_identity_context(self, messages: list[dict[str, str]]) -> list[dict[str, str]]:
         """
         إضافة سياق النظام والهوية لإثراء إجابة Overmind.
@@ -320,7 +323,7 @@ class DefaultChatHandler(IntentHandler):
         has_system = bool(messages) and messages[0].get("role") == "system"
         system_prompt = self._build_system_prompt(include_base_prompt=not has_system)
         if not has_system:
-            return [{"role": "system", "content": system_prompt}] + messages
+            return [{"role": "system", "content": system_prompt}, *messages]
 
         enhanced_messages = messages.copy()
         enhanced_messages[0] = {

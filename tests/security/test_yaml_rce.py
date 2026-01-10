@@ -3,8 +3,8 @@ import subprocess
 import tempfile
 
 import pytest
-import yaml
 
+import yaml
 from app.core.yaml_utils import YamlSecurityError, load_yaml_file_safely, load_yaml_safely
 
 

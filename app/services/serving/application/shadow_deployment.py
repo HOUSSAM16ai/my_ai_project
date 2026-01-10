@@ -5,12 +5,9 @@ Manages shadow deployments for testing new models in production without affectin
 """
 from __future__ import annotations
 
-from typing import Any
-
-
 import threading
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from app.services.serving.domain.models import ShadowDeployment
 
@@ -56,33 +53,33 @@ class ShadowDeploymentManager:
         """
         الحصول على إحصائيات النشر الخفي
         Get shadow deployment statistics
-        
+
         Args:
             shadow_id: معرف النشر الخفي | Shadow deployment ID
-            
+
         Returns:
             إحصائيات النشر أو None | Deployment statistics or None
         """
         deployment = self._shadow_deployments.get(shadow_id)
         if not deployment:
             return None
-        
+
         # Get comparison results
         comparisons = self._get_deployment_comparisons(deployment)
-        
+
         if not comparisons:
             return self._create_empty_stats_response(shadow_id)
-        
+
         # Calculate statistics
         return self._calculate_deployment_statistics(shadow_id, deployment, comparisons)
 
     def _get_deployment_comparisons(self, deployment: ShadowDeployment) -> list[dict[str, Any]]:
         """
         الحصول على نتائج المقارنة | Get comparison results
-        
+
         Args:
             deployment: النشر الخفي | Shadow deployment
-            
+
         Returns:
             قائمة نتائج المقارنة | Comparison results list
         """
@@ -92,10 +89,10 @@ class ShadowDeploymentManager:
     def _create_empty_stats_response(self, shadow_id: str) -> dict[str, Any]:
         """
         إنشاء استجابة فارغة للإحصائيات | Create empty stats response
-        
+
         Args:
             shadow_id: معرف النشر | Deployment ID
-            
+
         Returns:
             استجابة فارغة | Empty response
         """
@@ -113,24 +110,24 @@ class ShadowDeploymentManager:
     ) -> dict[str, Any]:
         """
         حساب إحصائيات النشر | Calculate deployment statistics
-        
+
         Args:
             shadow_id: معرف النشر | Deployment ID
             deployment: النشر الخفي | Shadow deployment
             comparisons: نتائج المقارنة | Comparison results
-            
+
         Returns:
             الإحصائيات المحسوبة | Calculated statistics
         """
         total = len(comparisons)
-        
+
         # Calculate speed comparison
         primary_faster = sum(
             1 for c in comparisons
             if c['primary_latency'] < c['shadow_latency']
         )
         shadow_faster = total - primary_faster
-        
+
         # Calculate success rates
         primary_success_rate = (
             sum(1 for c in comparisons if c['primary_success']) / total * 100
@@ -138,7 +135,7 @@ class ShadowDeploymentManager:
         shadow_success_rate = (
             sum(1 for c in comparisons if c['shadow_success']) / total * 100
         )
-        
+
         return {
             'shadow_id': shadow_id,
             'primary_model_id': deployment.primary_model_id,

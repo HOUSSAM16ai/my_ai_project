@@ -56,12 +56,11 @@ class IssueManager:
 
         try:
             def _create():
-                issue = self.client.repo_object.create_issue(
+                return self.client.repo_object.create_issue(
                     title=title,
                     body=body,
                     labels=labels or [],
                 )
-                return issue
 
             issue = await self.client.run_async(_create)
             logger.info(f"Created issue #{issue.number}: {title}")

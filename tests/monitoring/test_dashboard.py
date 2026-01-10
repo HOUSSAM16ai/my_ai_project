@@ -1,11 +1,13 @@
 
+from datetime import datetime
+
 import pytest
-from unittest.mock import MagicMock
+
+from app.monitoring.alerts import Alert, AlertManager, AlertSeverity
 from app.monitoring.dashboard import DashboardManager, DashboardView, DashboardWidget
 from app.monitoring.metrics import MetricsCollector
-from app.monitoring.alerts import AlertManager, Alert, AlertSeverity
-from app.monitoring.performance import PerformanceTracker, PerformanceMetrics
-from datetime import datetime
+from app.monitoring.performance import PerformanceMetrics, PerformanceTracker
+
 
 @pytest.fixture
 def dashboard_manager():

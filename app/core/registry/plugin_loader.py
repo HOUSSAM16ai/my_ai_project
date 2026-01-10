@@ -7,9 +7,8 @@ Load plugins with dependency resolution
 
 مبدأ البساطة: Simple dependency resolution
 """
-from typing import Any
-
 import logging
+from typing import Any
 
 from app.core.protocols import PluginProtocol as IPlugin
 from app.core.registry.plugin_registry import registry

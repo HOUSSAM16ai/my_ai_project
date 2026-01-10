@@ -7,6 +7,7 @@ from pathlib import Path
 
 from app.services.project_context.domain.models import DirectorySummary, ProjectStructure
 
+
 @dataclass
 class StructureAnalyzer:
     """محلل للحصول على صورة دقيقة عن هيكل مجلد التطبيق."""

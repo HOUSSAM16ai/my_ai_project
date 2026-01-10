@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import httpx
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from app.services.observability.aiops.models import TelemetryData, MetricType, HealingDecision, LoadForecast, CapacityPlan
-from app.services.observability.aiops.service import AIOpsService
+
+from app.services.observability.aiops.models import (
+    TelemetryData,
+)
+
 
 class ObservabilityClientSettings(BaseSettings):
     OBSERVABILITY_SERVICE_URL: str = "http://observability-service:8000"

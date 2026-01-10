@@ -26,7 +26,7 @@ security_logger = logging.getLogger('security')
 class AuthAttemptEvent:
     """
     بيانات محاولة المصادقة (Authentication Attempt Event).
-    
+
     يحل مشكلة المعاملات الكثيرة باستخدام dataclass.
     """
     user_id: str | None
@@ -35,7 +35,7 @@ class AuthAttemptEvent:
     ip_address: str
     user_agent: str | None = None
     reason: str | None = None
-    
+
     def to_dict(self) -> dict:
         """تحويل إلى dictionary للتسجيل."""
         return {
@@ -54,7 +54,7 @@ class AuthAttemptEvent:
 class AccessDeniedEvent:
     """
     بيانات رفض الوصول (Access Denied Event).
-    
+
     يحل مشكلة المعاملات الكثيرة باستخدام dataclass.
     """
     user_id: str
@@ -63,7 +63,7 @@ class AccessDeniedEvent:
     action: str
     ip_address: str
     reason: str | None = None
-    
+
     def to_dict(self) -> dict:
         """تحويل إلى dictionary للتسجيل."""
         return {
@@ -95,7 +95,7 @@ class SecurityEventLogger:
             event: بيانات محاولة المصادقة
         """
         event_dict = event.to_dict()
-        
+
         if event.success:
             security_logger.info(
                 f'Authentication successful: user={event.username}, ip={event.ip_address}',
@@ -160,9 +160,9 @@ def log_unauthorized_access(user_id: str, resource: str, action: str, ip: str) -
 
 
 __all__ = [
-    'SecurityEventLogger',
-    'AuthAttemptEvent',
     'AccessDeniedEvent',
+    'AuthAttemptEvent',
+    'SecurityEventLogger',
     'log_login_failure',
     'log_login_success',
     'log_unauthorized_access',

@@ -16,7 +16,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import async_session_factory
 
 if TYPE_CHECKING:
-    from app.core.domain.models import AdminConversation, AdminMessage
+    from app.core.domain.models import AdminConversation
 
 logger = logging.getLogger(__name__)
 

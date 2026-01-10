@@ -5,9 +5,12 @@ Inherits from canonical BaseServiceSettings.
 """
 
 import functools
+
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict
+
 from app.core.settings.base import BaseServiceSettings
+
 
 class UserServiceSettings(BaseServiceSettings):
     """

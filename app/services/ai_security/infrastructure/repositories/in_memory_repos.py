@@ -8,7 +8,8 @@ Simple in-memory storage for profiles and logs.
 
 from collections import deque
 
-from ...domain.models import ThreatDetection, UserBehaviorProfile
+from app.services.ai_security.domain.models import ThreatDetection, UserBehaviorProfile
+
 
 class InMemoryProfileRepository:
     """

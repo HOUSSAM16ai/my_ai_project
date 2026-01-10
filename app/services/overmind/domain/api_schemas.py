@@ -19,6 +19,7 @@ from pydantic import AliasChoices, Field
 
 from app.core.schemas import RobustBaseModel
 
+
 class MissionStatusEnum(str, Enum):
     """حالات المهمة الممكنة."""
     # Ensure values match app.models.MissionStatus (lowercase)

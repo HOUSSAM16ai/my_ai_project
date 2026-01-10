@@ -22,14 +22,14 @@ logger = get_logger(__name__)
 async def get_user_basic_info(session: AsyncSession, user_id: int) -> dict[str, Any]:
     """
     الحصول على المعلومات الأساسية للمستخدم.
-    
+
     Args:
         session: جلسة قاعدة البيانات
         user_id: معرّف المستخدم
-        
+
     Returns:
         dict: المعلومات الأساسية
-        
+
     يشمل:
         - id: المعرّف الفريد
         - name: الاسم الكامل
@@ -46,11 +46,11 @@ async def get_user_basic_info(session: AsyncSession, user_id: int) -> dict[str, 
             select(User).where(User.id == user_id)
         )
         user = result.scalar_one_or_none()
-        
+
         if not user:
             logger.warning(f"User {user_id} not found")
             return {}
-        
+
         return {
             "id": user.id,
             "name": user.name,
@@ -61,7 +61,7 @@ async def get_user_basic_info(session: AsyncSession, user_id: int) -> dict[str, 
             "created_at": user.created_at.isoformat() if hasattr(user, 'created_at') else None,
             "updated_at": user.updated_at.isoformat() if hasattr(user, 'updated_at') else None,
         }
-        
+
     except Exception as e:
         logger.error(f"Error getting basic info for user {user_id}: {e}")
         return {}
@@ -74,12 +74,12 @@ async def list_all_users(
 ) -> list[dict[str, Any]]:
     """
     عرض قائمة جميع المستخدمين مع معلومات مختصرة.
-    
+
     Args:
         session: جلسة قاعدة البيانات
         limit: عدد المستخدمين المطلوب
         offset: الإزاحة (للصفحات)
-        
+
     Returns:
         list[dict]: قائمة المستخدمين
     """
@@ -88,7 +88,7 @@ async def list_all_users(
         query = select(User).limit(limit).offset(offset)
         result = await session.execute(query)
         users = result.scalars().all()
-        
+
         users_list = []
         for user in users:
             users_list.append({
@@ -98,10 +98,10 @@ async def list_all_users(
                 "role": user.role.value if hasattr(user.role, 'value') else str(user.role),
                 "is_active": user.is_active if hasattr(user, 'is_active') else True,
             })
-        
+
         logger.info(f"Listed {len(users_list)} users")
         return users_list
-        
+
     except Exception as e:
         logger.error(f"Error listing users: {e}")
         return []

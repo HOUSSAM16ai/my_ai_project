@@ -10,10 +10,9 @@
 - توثيق "Legendary" باللغة العربية.
 """
 
-from typing import Any
-
 import hashlib
 import json
+from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger

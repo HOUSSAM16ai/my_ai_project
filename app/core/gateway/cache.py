@@ -4,7 +4,7 @@ import json
 import logging
 import time
 from collections import OrderedDict
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import Any
 
 from app.core.gateway.protocols.cache import CacheProviderProtocol
@@ -129,7 +129,7 @@ class InMemoryCacheProvider(CacheProviderProtocol):
             self._storage.clear()
             # Reset stats? Maybe keep them for historical reasons.
             # Let's reset them to represent "fresh start".
-            self._stats = {k: 0 for k in self._stats}
+            self._stats = dict.fromkeys(self._stats, 0)
             return True
 
     async def get_stats(self) -> dict[str, Any]:
@@ -168,9 +168,8 @@ class CacheFactory:
                 default_ttl=kwargs.get("ttl", 300)
             )
         # Future: elif provider_type == "redis": ...
-        else:
-            logger.warning(f"Unknown provider type '{provider_type}', falling back to memory.")
-            return InMemoryCacheProvider()
+        logger.warning(f"Unknown provider type '{provider_type}', falling back to memory.")
+        return InMemoryCacheProvider()
 
 # Backwards compatibility helper for key generation
 def generate_cache_key(data: Any) -> str:
@@ -178,10 +177,7 @@ def generate_cache_key(data: Any) -> str:
     Generates a deterministic SHA256 hash for a dictionary or string.
     """
     try:
-        if isinstance(data, dict):
-            key_data = json.dumps(data, sort_keys=True)
-        else:
-            key_data = str(data)
+        key_data = json.dumps(data, sort_keys=True) if isinstance(data, dict) else str(data)
     except Exception:
         key_data = str(data)
 

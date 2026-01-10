@@ -3,8 +3,10 @@ Handlers for metadata operations (existence, listing).
 """
 
 import os
+
 from app.services.agent_tools.domain.filesystem.validators.path_validator import validate_path
 from app.services.agent_tools.tool_model import ToolResult
+
 
 def file_exists_logic(path: str) -> ToolResult:
     """Checks file existence and type."""

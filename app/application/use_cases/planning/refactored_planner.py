@@ -1,11 +1,11 @@
 """Refactored planner using clean architecture."""
 
-from typing import Any
-
 from dataclasses import dataclass
+from typing import Any
 
 from app.core.protocols import PlannerProtocol as PlannerInterface
 from app.infrastructure.patterns import EventBus, get_event_bus
+
 
 @dataclass
 class Task:
@@ -181,7 +181,7 @@ class TaskGenerator:
         """
         إنشاء مهام للأهداف المعقدة
         Generate tasks for complex objectives.
-        
+
         Creates a 5-stage pipeline: analysis → decomposition → execution → integration → validation
         """
         tasks = []
@@ -191,7 +191,7 @@ class TaskGenerator:
         tasks.append(self._create_integration_task())
         tasks.append(self._create_validation_task())
         return tasks
-    
+
     def _create_analysis_task(self, objective: str) -> Task:
         """
         إنشاء مهمة التحليل العميق
@@ -204,7 +204,7 @@ class TaskGenerator:
             tool_args={"objective": objective},
             dependencies=[],
         )
-    
+
     def _create_decomposition_task(self) -> Task:
         """
         إنشاء مهمة تفكيك الهدف
@@ -217,7 +217,7 @@ class TaskGenerator:
             tool_args={},
             dependencies=["task_1"],
         )
-    
+
     def _create_execution_task(self) -> Task:
         """
         إنشاء مهمة التنفيذ المتوازي
@@ -230,7 +230,7 @@ class TaskGenerator:
             tool_args={},
             dependencies=["task_2"],
         )
-    
+
     def _create_integration_task(self) -> Task:
         """
         إنشاء مهمة دمج النتائج
@@ -243,7 +243,7 @@ class TaskGenerator:
             tool_args={},
             dependencies=["task_3"],
         )
-    
+
     def _create_validation_task(self) -> Task:
         """
         إنشاء مهمة التحقق والتحقيق

@@ -1,15 +1,15 @@
 from collections import defaultdict
 from pathlib import Path
 
-from ..models import ProjectAnalysis
+from app.services.overmind.code_intelligence.models import ProjectAnalysis
 
 
 def generate_markdown_report(analysis: ProjectAnalysis, output_path: Path) -> None:
     """
     Generate comprehensive Markdown report for code analysis.
-    
+
     توليد تقرير Markdown شامل لتحليل الكود.
-    
+
     Args:
         analysis: Project analysis results
         output_path: Path to save the report
@@ -22,14 +22,14 @@ def generate_markdown_report(analysis: ProjectAnalysis, output_path: Path) -> No
     md += _build_structural_smells_section(analysis)
     md += _build_next_steps_section()
     md += _build_notes_section()
-    
+
     _save_report(md, output_path)
 
 
 def _build_report_header(analysis: ProjectAnalysis) -> str:
     """
     Build report header with title and timestamp.
-    
+
     بناء رأس التقرير مع العنوان والتاريخ.
     """
     return f"""# 🔍 تقرير التحليل البنيوي للكود
@@ -45,7 +45,7 @@ def _build_report_header(analysis: ProjectAnalysis) -> str:
 def _build_project_summary_section(analysis: ProjectAnalysis) -> str:
     """
     Build project summary statistics section.
-    
+
     بناء قسم إحصائيات ملخص المشروع.
     """
     return f"""## 📊 ملخص المشروع
@@ -68,7 +68,7 @@ def _build_project_summary_section(analysis: ProjectAnalysis) -> str:
 def _build_critical_hotspots_section(analysis: ProjectAnalysis) -> str:
     """
     Build critical hotspots section with top 20 files.
-    
+
     بناء قسم النقاط الساخنة الحرجة مع أعلى 20 ملف.
     """
     section = """## 🔥 Hotspots حرجة (Top 20)
@@ -76,7 +76,7 @@ def _build_critical_hotspots_section(analysis: ProjectAnalysis) -> str:
 الملفات التي تحتاج إلى معالجة فورية:
 
 """
-    
+
     for i, path in enumerate(analysis.critical_hotspots, 1):
         file_m = next((f for f in analysis.files if f.relative_path == path), None)
         if file_m:
@@ -85,36 +85,36 @@ def _build_critical_hotspots_section(analysis: ProjectAnalysis) -> str:
             section += f"التعقيد: `{file_m.file_complexity}` | "
             section += f"التعديلات: `{file_m.commits_last_12months}` | "
             section += f"الأولوية: `{file_m.priority_tier}`\n\n"
-    
+
     return section
 
 
 def _build_high_hotspots_section(analysis: ProjectAnalysis) -> str:
     """
     Build high-priority hotspots section.
-    
+
     بناء قسم النقاط الساخنة عالية الأولوية.
     """
     section = "\n---\n\n## ⚠️ Hotspots عالية (التالي 20)\n\n"
-    
+
     for i, path in enumerate(analysis.high_hotspots, 1):
         file_m = next((f for f in analysis.files if f.relative_path == path), None)
         if file_m:
             section += f"{i}. **{path}** - درجة: `{file_m.hotspot_score:.4f}`\n"
-    
+
     return section
 
 
 def _build_priority_distribution_section(analysis: ProjectAnalysis) -> str:
     """
     Build priority distribution section.
-    
+
     بناء قسم توزيع الأولويات.
     """
     priority_counts = defaultdict(int)
     for f in analysis.files:
         priority_counts[f.priority_tier] += 1
-    
+
     return f"""\n---\n\n## 📈 توزيع الأولويات
 
 - 🔴 حرجة (CRITICAL): {priority_counts['CRITICAL']}
@@ -128,13 +128,13 @@ def _build_priority_distribution_section(analysis: ProjectAnalysis) -> str:
 def _build_structural_smells_section(analysis: ProjectAnalysis) -> str:
     """
     Build structural code smells detection section.
-    
+
     بناء قسم اكتشاف الروائح البنيوية في الكود.
     """
     god_classes = [f for f in analysis.files if f.is_god_class]
     layer_mixing = [f for f in analysis.files if f.has_layer_mixing]
     cross_layer = [f for f in analysis.files if f.has_cross_layer_imports]
-    
+
     return f"""---
 
 ## 🦨 الروائح البنيوية المكتشفة
@@ -149,7 +149,7 @@ def _build_structural_smells_section(analysis: ProjectAnalysis) -> str:
 def _build_next_steps_section() -> str:
     """
     Build recommended next steps section.
-    
+
     بناء قسم الخطوات الموصى بها.
     """
     return """---
@@ -170,7 +170,7 @@ def _build_next_steps_section() -> str:
 def _build_notes_section() -> str:
     """
     Build notes and disclaimers section.
-    
+
     بناء قسم الملاحظات والتنويهات.
     """
     return """---
@@ -187,10 +187,10 @@ def _build_notes_section() -> str:
 def _save_report(content: str, output_path: Path) -> None:
     """
     Save report content to file.
-    
+
     حفظ محتوى التقرير إلى ملف.
     """
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(content)
-    
+
     print(f"💾 Markdown report saved: {output_path}")
