@@ -33,6 +33,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from app.core.config import get_settings
+from app.core.logging import logger
 
 class AvailableModels:
     """
@@ -151,31 +152,31 @@ class AIConfig:
 
     def print_config(self) -> None:
         """Print current configuration."""
-        print(
+        logger.info(
             """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    🧠 CURRENT AI MODELS CONFIGURATION                        ║
 ╠══════════════════════════════════════════════════════════════════════════════╣"""
             )
-        print(f'║  🎯 Primary Model:     {self.primary_model:<50} ║')
-        print(f'║  💰 Low Cost Model:    {self.low_cost_model:<50} ║')
-        print(
+        logger.info(f'║  🎯 Primary Model:     {self.primary_model:<50} ║')
+        logger.info(f'║  💰 Low Cost Model:    {self.low_cost_model:<50} ║')
+        logger.info(
             '╠══════════════════════════════════════════════════════════════════════════════╣'
             )
-        print(f'║  🌟 Gateway Primary:   {self.gateway_primary:<50} ║')
-        print(f'║  🔄 Fallback 1:        {self.gateway_fallback_1:<50} ║')
-        print(f'║  🔄 Fallback 2:        {self.gateway_fallback_2:<50} ║')
-        print(f'║  🔄 Fallback 3:        {self.gateway_fallback_3:<50} ║')
-        print(f'║  🔄 Fallback 4:        {self.gateway_fallback_4:<50} ║')
-        print(f'║  🔄 Fallback 5:        {self.gateway_fallback_5:<50} ║')
-        print(
+        logger.info(f'║  🌟 Gateway Primary:   {self.gateway_primary:<50} ║')
+        logger.info(f'║  🔄 Fallback 1:        {self.gateway_fallback_1:<50} ║')
+        logger.info(f'║  🔄 Fallback 2:        {self.gateway_fallback_2:<50} ║')
+        logger.info(f'║  🔄 Fallback 3:        {self.gateway_fallback_3:<50} ║')
+        logger.info(f'║  🔄 Fallback 4:        {self.gateway_fallback_4:<50} ║')
+        logger.info(f'║  🔄 Fallback 5:        {self.gateway_fallback_5:<50} ║')
+        logger.info(
             '╠══════════════════════════════════════════════════════════════════════════════╣'
             )
-        print(f'║  ⚡ Tier NANO:         {self.tier_nano:<50} ║')
-        print(f'║  🚀 Tier FAST:         {self.tier_fast:<50} ║')
-        print(f'║  🧠 Tier SMART:        {self.tier_smart:<50} ║')
-        print(f'║  🎓 Tier GENIUS:       {self.tier_genius:<50} ║')
-        print(
+        logger.info(f'║  ⚡ Tier NANO:         {self.tier_nano:<50} ║')
+        logger.info(f'║  🚀 Tier FAST:         {self.tier_fast:<50} ║')
+        logger.info(f'║  🧠 Tier SMART:        {self.tier_smart:<50} ║')
+        logger.info(f'║  🎓 Tier GENIUS:       {self.tier_genius:<50} ║')
+        logger.info(
             '╚══════════════════════════════════════════════════════════════════════════════╝'
             )
 
@@ -188,15 +189,19 @@ ai_config = get_ai_config()
 __all__ = ['AIConfig', 'ActiveModels', 'AvailableModels', 'ai_config', 'get_ai_config']
 
 if __name__ == '__main__':
-    print('\n📋 Available Models for Reference:')
-    print('─' * 60)
-    print(f'  OpenAI GPT-4o:           {AvailableModels.GPT_4O}')
-    print(f'  OpenAI GPT-4o-mini:      {AvailableModels.GPT_4O_MINI}')
-    print(
+    # Use standard logger for script execution info too, or print if intended for CLI only.
+    # Since this is "application code" according to guardrails, we use logger.
+    # However, if it's main execution, we might need basic print if logging isn't set up.
+    # But let's stick to the rule: "Use of 'print()' is forbidden in application code."
+    logger.info('\n📋 Available Models for Reference:')
+    logger.info('─' * 60)
+    logger.info(f'  OpenAI GPT-4o:           {AvailableModels.GPT_4O}')
+    logger.info(f'  OpenAI GPT-4o-mini:      {AvailableModels.GPT_4O_MINI}')
+    logger.info(
         f'  Claude 3.7 Sonnet:       {AvailableModels.CLAUDE_37_SONNET_THINKING}'
         )
-    print(f'  Claude 3.5 Sonnet:       {AvailableModels.CLAUDE_35_SONNET}')
-    print(f'  Claude 3 Opus:           {AvailableModels.CLAUDE_3_OPUS}')
-    print('─' * 60)
+    logger.info(f'  Claude 3.5 Sonnet:       {AvailableModels.CLAUDE_35_SONNET}')
+    logger.info(f'  Claude 3 Opus:           {AvailableModels.CLAUDE_3_OPUS}')
+    logger.info('─' * 60)
     config = get_ai_config()
     config.print_config()

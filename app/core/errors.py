@@ -9,16 +9,18 @@ Standards:
 - Error responses follow a strict JSON schema.
 """
 
-from typing import Any, Callable
+from typing import Callable
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from app.core.types import JSONDict
+
 class ErrorDetail(BaseModel):
     code: str
     message: str
-    details: dict[str, Any] | None = None
+    details: JSONDict | None = None
 
 class ErrorResponse(BaseModel):
     error: ErrorDetail
@@ -29,7 +31,7 @@ class AppError(Exception):
     status_code: int = 500
     code: str = "INTERNAL_ERROR"
 
-    def __init__(self, message: str, details: dict[str, Any] | None = None):
+    def __init__(self, message: str, details: JSONDict | None = None):
         self.message = message
         self.details = details
         super().__init__(message)
