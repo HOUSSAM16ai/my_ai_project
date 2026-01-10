@@ -25,7 +25,8 @@ from app.api.schemas.ums import (
     TokenPair,
     UserOut,
 )
-from app.core.domain.models import AuditLog, User, UserStatus
+from app.core.domain.audit import AuditLog
+from app.core.domain.user import User, UserStatus
 from app.deps.auth import CurrentUser, get_auth_service, get_current_user, require_permissions
 from app.middleware.rate_limiter_middleware import rate_limit
 from app.services.audit import AuditService

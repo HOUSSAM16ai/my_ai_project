@@ -317,7 +317,7 @@ async def _link_mission_to_conversation(conversation_id: int, mission_id: int):
     try:
         # Lazy imports to prevent circular dependencies - this is intentional
         from app.core.database import SessionLocal
-        from app.core.domain.models import AdminConversation
+        from app.core.domain.chat import AdminConversation
         from app.services.async_tool_bridge import run_sync_tool
 
         def _update():

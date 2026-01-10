@@ -18,7 +18,7 @@
 from collections.abc import AsyncGenerator
 from typing import Protocol, runtime_checkable
 
-from app.core.domain.models import Mission, MissionEvent, MissionEventType, MissionStatus, Task
+from app.core.domain.mission import Mission, MissionEvent, MissionEventType, MissionStatus, Task
 
 
 @runtime_checkable

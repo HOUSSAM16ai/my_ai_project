@@ -20,7 +20,7 @@ from typing import Any, Protocol, TypeVar
 
 from pydantic import BaseModel, Field
 
-from app.core.domain.models import Mission
+from app.core.domain.mission import Mission
 from app.core.protocols import AgentArchitect, AgentExecutor, AgentPlanner, AgentReflector
 from app.services.overmind.domain.context import InMemoryCollaborationContext
 from app.services.overmind.domain.enums import CognitiveEvent, CognitivePhase, OvermindMessage

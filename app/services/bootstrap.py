@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import AppSettings, get_settings
-from app.core.domain.models import User, UserStatus
+from app.core.domain.user import User, UserStatus
 from app.services.audit import AuditService
 from app.services.rbac import ADMIN_ROLE, RBACService
 

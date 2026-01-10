@@ -12,7 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base_service import BaseService
 from app.core.config import AppSettings, get_settings
-from app.core.domain.models import User, UserStatus, pwd_context
+from app.core.domain.user import User, UserStatus
+from app.security.passwords import pwd_context
 from app.services.audit import AuditService
 from app.services.auth.crypto import AuthCrypto
 from app.services.auth.password_manager import PasswordManager

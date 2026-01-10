@@ -17,10 +17,9 @@ import jwt
 if not hasattr(bcrypt, '__about__'):
     import contextlib
     with contextlib.suppress(Exception):
-        bcrypt.__about__ = type('about', (object,), {'__version__': bcrypt.
-            __version__})
+        bcrypt.__about__ = type('about', (object,), {'__version__': bcrypt.__version__})
 from app.core.config import get_settings
-from app.core.domain.models import pwd_context
+from app.security.passwords import pwd_context
 
 
 def generate_service_token(user_id: str) -> str:

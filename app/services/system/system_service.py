@@ -18,7 +18,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_factory
-from app.core.domain.models import User
+from app.core.domain.user import User
 
 SessionFactory = Callable[[], AsyncIterator[AsyncSession]]
 

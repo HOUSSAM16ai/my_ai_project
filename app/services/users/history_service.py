@@ -16,7 +16,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import async_session_factory
 
 if TYPE_CHECKING:
-    from app.core.domain.models import AdminConversation
+    from app.core.domain.chat import AdminConversation
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ async def get_recent_conversations(user_id: int, limit: int = 5) -> list[AdminCo
         list[AdminConversation]: قائمة كائنات المحادثات، أو قائمة فارغة في حال حدوث خطأ.
     """
     # استيراد النماذج داخل الدالة لتجنب التبعيات الدائرية (Lazy Import)
-    from app.core.domain.models import AdminConversation as Conversation
+    from app.core.domain.chat import AdminConversation as Conversation
 
     try:
         async with async_session_factory() as session:
@@ -71,7 +71,7 @@ async def rate_message_in_db(
     Returns:
         dict[str, object]: قاموس يحتوي على حالة العملية والرسالة الوصفية.
     """
-    from app.core.domain.models import AdminMessage as Message
+    from app.core.domain.chat import AdminMessage as Message
 
     if rating not in ["good", "bad", "neutral"]:
         return {"status": "error", "message": "Invalid rating value provided."}

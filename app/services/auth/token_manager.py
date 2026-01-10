@@ -11,7 +11,9 @@ from typing import Final
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.domain.models import RefreshToken, User, pwd_context, utc_now
+from app.core.domain.common import utc_now
+from app.core.domain.user import RefreshToken, User
+from app.security.passwords import pwd_context
 
 REFRESH_EXPIRE_DAYS: Final[int] = 14
 

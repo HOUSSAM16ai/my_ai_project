@@ -14,7 +14,8 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ai_gateway import AIClient
-from app.core.domain.models import CustomerConversation, MessageRole, User
+from app.core.domain.chat import CustomerConversation, MessageRole
+from app.core.domain.user import User
 from app.services.audit import AuditService
 from app.services.chat.contracts import ChatDispatchResult
 from app.services.chat.education_policy_gate import EducationPolicyDecision, EducationPolicyGate

@@ -4,7 +4,7 @@ from typing import TypedDict
 
 from fastapi import Request
 
-from app.core.domain.models import pwd_context
+from app.security.passwords import pwd_context
 
 
 class AuthenticatedUserPayload(TypedDict):

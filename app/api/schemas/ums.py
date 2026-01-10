@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.core.domain.models import UserStatus
+from app.core.domain.user import UserStatus
 
 
 class RegisterRequest(BaseModel):

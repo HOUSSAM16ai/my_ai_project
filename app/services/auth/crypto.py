@@ -12,7 +12,7 @@ import jwt
 from fastapi import HTTPException, status
 
 from app.core.config import AppSettings
-from app.core.domain.models import User
+from app.core.domain.user import User
 
 ACCESS_EXPIRE_MINUTES: Final[int] = 30
 REAUTH_EXPIRE_MINUTES: Final[int] = 10

@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.domain.models import User, UserStatus
+from app.core.domain.user import User, UserStatus
 from app.services.rbac import STANDARD_ROLE, RBACService
 
 

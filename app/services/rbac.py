@@ -13,7 +13,8 @@ from typing import Final
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.domain.models import Permission, Role, RolePermission, User, UserRole, utc_now
+from app.core.domain.common import utc_now
+from app.core.domain.user import Permission, Role, RolePermission, User, UserRole
 
 STANDARD_ROLE: Final[str] = "STANDARD_USER"
 ADMIN_ROLE: Final[str] = "ADMIN"

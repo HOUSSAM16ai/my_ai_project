@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Protocol, TypedDict
 
-from app.core.domain.models import User
+from app.core.domain.user import User
 
 
 class UserUpdatePayload(TypedDict, total=False):

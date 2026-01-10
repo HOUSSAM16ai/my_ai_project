@@ -12,7 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from app.core.domain.models import (
+from app.core.domain.mission import (
     Mission,
     MissionEvent,
     MissionEventType,

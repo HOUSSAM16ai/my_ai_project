@@ -26,7 +26,7 @@ from app.api.schemas.admin import (
 from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
-from app.core.domain.models import User
+from app.core.domain.user import User
 from app.deps.auth import CurrentUser, require_roles
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 from app.services.chat.contracts import ChatDispatchRequest

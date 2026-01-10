@@ -16,7 +16,7 @@ from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
-from app.core.domain.models import Task, TaskStatus
+from app.core.domain.mission import Task, TaskStatus
 from app.core.protocols import AgentExecutor, CollaborationContext
 from app.services.overmind.executor import TaskExecutor
 

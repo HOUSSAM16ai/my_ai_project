@@ -16,7 +16,8 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.domain.models import AdminConversation, AdminMessage, MessageRole, User
+from app.core.domain.chat import AdminConversation, AdminMessage, MessageRole
+from app.core.domain.user import User
 from app.core.prompts import get_system_prompt
 
 logger = logging.getLogger(__name__)
