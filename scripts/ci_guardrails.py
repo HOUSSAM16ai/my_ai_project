@@ -21,9 +21,27 @@ FORBIDDEN_PATTERNS = [
         "message": "Direct use of 'async_sessionmaker' is forbidden. Use the shared factory in app.core.database.",
     },
     {
+        "pattern": "create_engine",
+        "allowed_in": ["app/core/database.py", "migrations/env.py", "scripts/*"],
+        "message": "Direct use of 'create_engine' is forbidden. Use the shared factory in app.core.database.",
+    },
+    {
+        "pattern": "sessionmaker",
+        "allowed_in": ["app/core/database.py"],
+        "message": "Direct use of 'sessionmaker' is forbidden. Use the shared factory in app.core.database.",
+    },
+    {
         "pattern": "print",
         "allowed_in": ["scripts/*", "cli.py", "tests/*", "examples/*", "dev_setup.py"],
         "message": "Use of 'print()' is forbidden in application code. Use 'app.core.logging' instead.",
+    },
+]
+
+FORBIDDEN_ATTRIBUTE_CALLS = [
+    {
+        "pattern": "create_all",
+        "allowed_in": ["migrations/*", "scripts/*", "tests/*"],
+        "message": "Schema auto-creation via 'create_all' is forbidden outside migrations/tests.",
     },
 ]
 
@@ -58,9 +76,12 @@ LEGACY_EXEMPTIONS = {
     "app/monitoring/alerts.py": ["Any"],
     "app/monitoring/exporters.py": ["Any"],
     "infra/pipelines/data_quality_checkpoint.py": ["Any"],
-    "microservices/orchestrator_service/database.py": ["create_async_engine"],
-    "microservices/planning_agent/database.py": ["create_async_engine"],
-    "microservices/memory_agent/database.py": ["create_async_engine"],
+    "microservices/orchestrator_service/database.py": ["create_async_engine", "create_all", "sessionmaker"],
+    "microservices/planning_agent/database.py": ["create_async_engine", "create_all", "sessionmaker"],
+    "microservices/memory_agent/database.py": ["create_async_engine", "create_all", "sessionmaker"],
+    "microservices/user_service/database.py": ["create_all"],
+    "app/cli_handlers/db_cli.py": ["create_all"],
+    "scripts/verify_admin_flow.py": ["create_all"],
 }
 
 
@@ -82,6 +103,8 @@ def check_file(filepath: Path) -> list[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
             _check_forbidden_calls(node, filepath, exemptions, errors)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            _check_forbidden_attribute_calls(node, filepath, exemptions, errors)
 
     if "microservices" in parts and "tests" not in parts:
         _check_microservice_isolation(tree, filepath, errors, exemptions)
@@ -159,6 +182,24 @@ def _check_forbidden_calls(
     func_name = node.func.id
     for check in FORBIDDEN_PATTERNS:
         if func_name != check["pattern"]:
+            continue
+        if check["pattern"] in exemptions:
+            return
+        allowed = any(_match_path(filepath, allowed_pattern) for allowed_pattern in check["allowed_in"])
+        if not allowed:
+            errors.append(f"{filepath}:{node.lineno} - {check['message']}")
+
+
+def _check_forbidden_attribute_calls(
+    node: ast.Call,
+    filepath: Path,
+    exemptions: list[str],
+    errors: list[str],
+) -> None:
+    """يفحص الاستدعاءات عبر الخصائص المحظورة مثل create_all خارج المسارات المسموحة."""
+    attr_name = node.func.attr
+    for check in FORBIDDEN_ATTRIBUTE_CALLS:
+        if attr_name != check["pattern"]:
             continue
         if check["pattern"] in exemptions:
             return

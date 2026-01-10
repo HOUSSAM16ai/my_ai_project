@@ -181,7 +181,7 @@ test:
 	ENVIRONMENT=testing TESTING=1 SECRET_KEY=test-key \
 	pytest --verbose --cov=app --cov-report=term-missing:skip-covered \
 	       --cov-report=html:htmlcov --cov-report=xml:coverage.xml \
-	       --cov-fail-under=30
+	       --cov-fail-under=100
 	@echo "$(GREEN)✅ Tests passed with coverage!$(NC)"
 
 test-fast:
