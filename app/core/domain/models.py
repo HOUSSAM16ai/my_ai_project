@@ -15,7 +15,34 @@ from typing import TYPE_CHECKING
 
 from sqlmodel import SQLModel
 
-# Re-export from domain sub-modules
+from app.core.domain.audit import AuditLog, GeneratedPrompt, PromptTemplate
+from app.core.domain.chat import (
+    AdminConversation,
+    AdminMessage,
+    CustomerConversation,
+    CustomerMessage,
+    MessageRole,
+)
+from app.core.domain.mission import (
+    Mission,
+    MissionEvent,
+    MissionEventType,
+    MissionPlan,
+    MissionStatus,
+    PlanStatus,
+    Task,
+    TaskStatus,
+)
+from app.core.domain.user import (
+    PasswordResetToken,
+    Permission,
+    RefreshToken,
+    Role,
+    RolePermission,
+    User,
+    UserRole,
+    UserStatus,
+)
 
 if TYPE_CHECKING:
     pass
@@ -30,3 +57,30 @@ with suppress(Exception):
     # It might fail if some models are not fully defined yet or circular deps logic
     # But usually model_rebuild is robust.
     SQLModel.model_rebuild()
+
+__all__ = [
+    "AdminConversation",
+    "AdminMessage",
+    "AuditLog",
+    "CustomerConversation",
+    "CustomerMessage",
+    "GeneratedPrompt",
+    "MessageRole",
+    "Mission",
+    "MissionEvent",
+    "MissionEventType",
+    "MissionPlan",
+    "MissionStatus",
+    "PasswordResetToken",
+    "Permission",
+    "PlanStatus",
+    "PromptTemplate",
+    "RefreshToken",
+    "Role",
+    "RolePermission",
+    "Task",
+    "TaskStatus",
+    "User",
+    "UserRole",
+    "UserStatus",
+]
