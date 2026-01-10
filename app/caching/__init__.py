@@ -5,16 +5,14 @@
 """
 
 __all__ = [
+    "CacheBackend",
+    "InMemoryCache",
     "RedisCache",
-    "MemoryCache",
-    "DistributedCache",
-    "CacheStrategy",
-    "LRUCache",
-    "LFUCache",
-    "TTLCache",
+    "CacheFactory",
+    "get_cache",
 ]
 
+from app.caching.base import CacheBackend
+from app.caching.memory_cache import InMemoryCache
 from app.caching.redis_cache import RedisCache
-from app.caching.memory_cache import MemoryCache, LRUCache, LFUCache, TTLCache
-from app.caching.distributed_cache import DistributedCache
-from app.caching.strategies import CacheStrategy
+from app.caching.factory import CacheFactory, get_cache
