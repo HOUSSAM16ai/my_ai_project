@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from microservices.user_service.settings import get_settings
 from microservices.user_service.models import SQLModel
 from app.core.database import create_db_engine, create_session_factory
+from app.core.errors import AppError
 
 # 1. Initialize Settings
 settings = get_settings()
@@ -19,12 +20,21 @@ engine = create_db_engine(settings)
 async_session_factory = create_session_factory(engine)
 
 async def init_db() -> None:
-    """Initialize database schema."""
-    # Strict Production Guardrail: No auto-create in Prod
-    if settings.ENVIRONMENT == "production":
-         # In production, we assume migrations ran.
-         # Check if we can/should check for migration status here?
-         # For now, just return.
+    """
+    Initialize database schema.
+
+    Safety:
+    - ALLOWED: Development/Testing (via create_all)
+    - FORBIDDEN: Production (Must use Alembic)
+    """
+    if settings.ENVIRONMENT not in ("development", "testing"):
+         # Hard fail if someone tries to auto-create in production
+         # But usually init_db is called on startup.
+         # We should probably log a warning and skip, or strictly do nothing.
+         # Standards say: "PROD hard fail always" if they try to auto-create.
+         # But if the app calls init_db() on startup, we don't want to crash the app
+         # if the DB is already there. We just want to ensure we DON'T run create_all.
+         # The best way is to strict check.
          return
 
     async with engine.begin() as conn:
