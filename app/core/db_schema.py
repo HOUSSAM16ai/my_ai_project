@@ -1,11 +1,12 @@
-"""مدقق مخطط قاعدة البيانات (Database Schema Validator).
+"""Database Schema Validator.
 
-هذا الملف مسؤول عن التحقق من صحة جداول قاعدة البيانات وإصلاحها تلقائياً عند بدء التشغيل.
-تم فصله عن `database.py` تطبيقاً لمبدأ المسؤولية الواحدة (SRP).
+Responsible for validating and auto-repairing database schema at startup.
+Separated from `database.py` to adhere to SRP.
 
-المعايير (Standards):
-- CS50 2025: توثيق عربي شامل.
-- Fail-Fast: كشف الأخطاء مبكراً.
+Standards:
+- CS50 2025: Arabic Documentation.
+- Fail-Fast: Detect errors early.
+- Dialect Agnostic: Supports PostgreSQL and SQLite.
 """
 
 import logging
@@ -22,10 +23,10 @@ logger = logging.getLogger(__name__)
 __all__ = ["validate_schema_on_startup"]
 
 # =============================================================================
-# 🛡️ إعدادات المخطط (Schema Configuration)
+# 🛡️ Schema Configuration
 # =============================================================================
 
-# قائمة الجداول المسموح بها (whitelist للأمان)
+# Whitelist for security
 _ALLOWED_TABLES: Final[frozenset[str]] = frozenset(
     {
         "admin_conversations",
@@ -38,12 +39,17 @@ _ALLOWED_TABLES: Final[frozenset[str]] = frozenset(
         "roles",
         "user_roles",
         "users",
+        "missions",
+        "mission_plans",
+        "tasks",
+        "mission_events",
+        "prompt_templates",
+        "generated_prompts",
     }
 )
 
-# قائمة الأعمدة المطلوبة لكل جدول
 class TableSchemaConfig(TypedDict):
-    """تعريف المخطط المطلوب لجدول قاعدة البيانات."""
+    """Schema definition for a table."""
 
     columns: list[str]
     auto_fix: dict[str, str]
@@ -53,7 +59,7 @@ class TableSchemaConfig(TypedDict):
 
 
 class SchemaValidationResult(TypedDict):
-    """نتيجة فحص المخطط مع تفاصيل الإصلاحات والأخطاء."""
+    """Validation result with fix details."""
 
     status: str
     checked_tables: list[str]
@@ -75,12 +81,22 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             "created_at",
         ],
         "auto_fix": {
-            "linked_mission_id": 'ALTER TABLE "admin_conversations" ADD COLUMN IF NOT EXISTS "linked_mission_id" INTEGER'
+            "linked_mission_id": 'ALTER TABLE "admin_conversations" ADD COLUMN "linked_mission_id" INTEGER'
         },
         "indexes": {
             "linked_mission_id": 'CREATE INDEX IF NOT EXISTS "ix_admin_conversations_linked_mission_id" ON "admin_conversations"("linked_mission_id")'
         },
         "index_names": {"linked_mission_id": "ix_admin_conversations_linked_mission_id"},
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"admin_conversations\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"title" VARCHAR(500) NOT NULL,'
+            '"user_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,'
+            '"conversation_type" VARCHAR(50) DEFAULT \'general\','
+            '"linked_mission_id" INTEGER,'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        ),
     },
     "customer_conversations": {
         "columns": [
@@ -142,14 +158,28 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             "updated_at",
         ],
         "auto_fix": {
-            "external_id": 'ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "external_id" VARCHAR(36)',
-            "is_active": 'ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "is_active" BOOLEAN NOT NULL DEFAULT TRUE',
-            "status": 'ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "status" VARCHAR(50) NOT NULL DEFAULT \'active\''
+            "external_id": 'ALTER TABLE "users" ADD COLUMN "external_id" VARCHAR(36)',
+            "is_active": 'ALTER TABLE "users" ADD COLUMN "is_active" BOOLEAN NOT NULL DEFAULT TRUE',
+            "status": 'ALTER TABLE "users" ADD COLUMN "status" VARCHAR(50) NOT NULL DEFAULT \'active\''
         },
         "indexes": {
             "external_id": 'CREATE UNIQUE INDEX IF NOT EXISTS "ix_users_external_id" ON "users"("external_id")'
         },
         "index_names": {"external_id": "ix_users_external_id"},
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"users\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"external_id" VARCHAR(36) UNIQUE,'
+            '"full_name" VARCHAR(150) NOT NULL,'
+            '"email" VARCHAR(150) NOT NULL UNIQUE,'
+            '"password_hash" VARCHAR(256),'
+            '"is_admin" BOOLEAN DEFAULT FALSE,'
+            '"is_active" BOOLEAN DEFAULT TRUE,'
+            '"status" VARCHAR(50) DEFAULT \'active\','
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),'
+            '"updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        ),
     },
     "roles": {
         "columns": [
@@ -305,32 +335,181 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             ")"
         ),
     },
+    # New tables added to schema
+    "missions": {
+        "columns": ["id", "objective", "status", "initiator_id", "active_plan_id", "created_at", "updated_at"],
+        "auto_fix": {},
+        "indexes": {
+            "initiator_id": 'CREATE INDEX IF NOT EXISTS "ix_missions_initiator_id" ON "missions"("initiator_id")'
+        },
+        "index_names": {"initiator_id": "ix_missions_initiator_id"},
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"missions\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"objective" TEXT,'
+            '"status" VARCHAR(50) DEFAULT \'pending\','
+            '"initiator_id" INTEGER NOT NULL REFERENCES "users"("id"),'
+            '"active_plan_id" INTEGER,'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),'
+            '"updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        )
+    },
+    "mission_plans": {
+        "columns": ["id", "mission_id", "version", "planner_name", "status", "score", "rationale", "raw_json", "stats_json", "warnings_json", "content_hash", "created_at"],
+        "auto_fix": {},
+        "indexes": {
+            "mission_id": 'CREATE INDEX IF NOT EXISTS "ix_mission_plans_mission_id" ON "mission_plans"("mission_id")'
+        },
+        "index_names": {"mission_id": "ix_mission_plans_mission_id"},
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"mission_plans\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"mission_id" INTEGER NOT NULL REFERENCES "missions"("id"),'
+            '"version" INTEGER DEFAULT 1,'
+            '"planner_name" VARCHAR(100) NOT NULL,'
+            '"status" VARCHAR(50) DEFAULT \'draft\','
+            '"score" FLOAT DEFAULT 0.0,'
+            '"rationale" TEXT,'
+            '"raw_json" TEXT,'
+            '"stats_json" TEXT,'
+            '"warnings_json" TEXT,'
+            '"content_hash" VARCHAR(64),'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        )
+    },
+    "tasks": {
+        "columns": ["id", "mission_id", "plan_id", "task_key", "description", "tool_name", "tool_args_json", "status", "attempt_count", "max_attempts", "priority", "risk_level", "criticality", "depends_on_json", "result_text", "result_meta_json", "error_text", "started_at", "finished_at", "next_retry_at", "duration_ms", "created_at", "updated_at"],
+        "auto_fix": {},
+        "indexes": {
+            "mission_id": 'CREATE INDEX IF NOT EXISTS "ix_tasks_mission_id" ON "tasks"("mission_id")',
+            "plan_id": 'CREATE INDEX IF NOT EXISTS "ix_tasks_plan_id" ON "tasks"("plan_id")'
+        },
+        "index_names": {"mission_id": "ix_tasks_mission_id", "plan_id": "ix_tasks_plan_id"},
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"tasks\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"mission_id" INTEGER NOT NULL REFERENCES "missions"("id"),'
+            '"plan_id" INTEGER REFERENCES "mission_plans"("id"),'
+            '"task_key" VARCHAR(50) NOT NULL,'
+            '"description" TEXT,'
+            '"tool_name" VARCHAR(100),'
+            '"tool_args_json" TEXT,'
+            '"status" VARCHAR(50) DEFAULT \'pending\','
+            '"attempt_count" INTEGER DEFAULT 0,'
+            '"max_attempts" INTEGER DEFAULT 3,'
+            '"priority" INTEGER DEFAULT 0,'
+            '"risk_level" VARCHAR(50),'
+            '"criticality" VARCHAR(50),'
+            '"depends_on_json" TEXT,'
+            '"result_text" TEXT,'
+            '"result_meta_json" TEXT,'
+            '"error_text" TEXT,'
+            '"started_at" TIMESTAMPTZ,'
+            '"finished_at" TIMESTAMPTZ,'
+            '"next_retry_at" TIMESTAMPTZ,'
+            '"duration_ms" INTEGER DEFAULT 0,'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),'
+            '"updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        )
+    },
+    "mission_events": {
+        "columns": ["id", "mission_id", "event_type", "payload_json", "created_at"],
+        "auto_fix": {},
+        "indexes": {
+             "mission_id": 'CREATE INDEX IF NOT EXISTS "ix_mission_events_mission_id" ON "mission_events"("mission_id")'
+        },
+        "index_names": {"mission_id": "ix_mission_events_mission_id"},
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"mission_events\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"mission_id" INTEGER NOT NULL REFERENCES "missions"("id"),'
+            '"event_type" VARCHAR(50) NOT NULL,'
+            '"payload_json" TEXT,'
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        )
+    },
+    "prompt_templates": {
+        "columns": ["id", "name", "template"],
+        "auto_fix": {},
+        "indexes": {
+            "name": 'CREATE UNIQUE INDEX IF NOT EXISTS "ix_prompt_templates_name" ON "prompt_templates"("name")'
+        },
+        "index_names": {"name": "ix_prompt_templates_name"},
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"prompt_templates\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"name" VARCHAR(255) NOT NULL UNIQUE,'
+            '"template" TEXT NOT NULL'
+            ")"
+        )
+    },
+    "generated_prompts": {
+        "columns": ["id", "prompt", "template_id"],
+        "auto_fix": {},
+        "indexes": {
+            "template_id": 'CREATE INDEX IF NOT EXISTS "ix_generated_prompts_template_id" ON "generated_prompts"("template_id")'
+        },
+        "index_names": {"template_id": "ix_generated_prompts_template_id"},
+        "create_table": (
+            "CREATE TABLE IF NOT EXISTS \"generated_prompts\"("
+            '"id" SERIAL PRIMARY KEY,'
+            '"prompt" TEXT NOT NULL,'
+            '"template_id" INTEGER NOT NULL REFERENCES "prompt_templates"("id")'
+            ")"
+        )
+    }
 }
 
+def _to_sqlite_ddl(sql: str) -> str:
+    """Converts PostgreSQL DDL to SQLite compatible DDL."""
+    # Replace SERIAL with INTEGER PRIMARY KEY AUTOINCREMENT
+    # Note: In CREATE TABLE, "id SERIAL PRIMARY KEY" becomes "id INTEGER PRIMARY KEY AUTOINCREMENT"
+    sql = re.sub(r"SERIAL PRIMARY KEY", "INTEGER PRIMARY KEY AUTOINCREMENT", sql, flags=re.IGNORECASE)
+
+    # Replace TIMESTAMPTZ with TIMESTAMP or TEXT
+    # SQLite has no TIMESTAMPTZ. TIMESTAMP is a safe generic type.
+    sql = re.sub(r"TIMESTAMPTZ", "TIMESTAMP", sql, flags=re.IGNORECASE)
+
+    # Replace JSON with TEXT
+    sql = re.sub(r"JSON", "TEXT", sql, flags=re.IGNORECASE)
+
+    # Replace BOOLEAN with INTEGER (or keep BOOLEAN as SQLite accepts it, but 0/1 is safer for defaults)
+    # Handling Defaults: DEFAULT TRUE -> DEFAULT 1
+    sql = re.sub(r"DEFAULT TRUE", "DEFAULT 1", sql, flags=re.IGNORECASE)
+    sql = re.sub(r"DEFAULT FALSE", "DEFAULT 0", sql, flags=re.IGNORECASE)
+
+    # Replace NOW() with CURRENT_TIMESTAMP
+    sql = re.sub(r"NOW\(\)", "CURRENT_TIMESTAMP", sql, flags=re.IGNORECASE)
+
+    # Replace IF NOT EXISTS in ADD COLUMN (SQLite doesn't support it in ALTER TABLE usually, removing it)
+    # Postgres: ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...
+    # SQLite: ALTER TABLE ... ADD COLUMN ... (fails if exists)
+    sql = re.sub(r"ADD COLUMN IF NOT EXISTS", "ADD COLUMN", sql, flags=re.IGNORECASE)
+
+    return sql
+
 def _assert_schema_whitelist_alignment() -> None:
-    """يضمن تطابق الجداول المعرفة في المخطط مع قائمة السماح للأمان."""
+    """Ensures schema matches whitelist."""
 
     defined_tables = set(REQUIRED_SCHEMA.keys())
     undefined_tables = defined_tables - _ALLOWED_TABLES
     missing_definitions = _ALLOWED_TABLES - defined_tables
 
     if undefined_tables:
-        raise ValueError(
-            "جدول غير مسموح به في إعداد المخطط: "
-            f"{', '.join(sorted(undefined_tables))}"
-        )
+        raise ValueError(f"Unauthorized table in schema: {', '.join(sorted(undefined_tables))}")
 
     if missing_definitions:
-        raise ValueError(
-            "جدول مفقود من إعدادات المخطط بالرغم من إدراجه في قائمة السماح: "
-            f"{', '.join(sorted(missing_definitions))}"
-        )
+        raise ValueError(f"Missing schema definition for allowed tables: {', '.join(sorted(missing_definitions))}")
 
 
 _assert_schema_whitelist_alignment()
 
 async def _get_existing_columns(conn: AsyncConnection, table_name: str) -> set[str]:
-    """استخراج أسماء الأعمدة الموجودة في الجدول."""
+    """Extracts existing columns."""
     dialect_name = conn.dialect.name
 
     if dialect_name == "sqlite":
@@ -350,7 +529,7 @@ async def _get_existing_columns(conn: AsyncConnection, table_name: str) -> set[s
     return {row[0] for row in result.fetchall()}
 
 async def _table_exists(conn: AsyncConnection, table_name: str) -> bool:
-    """التحقق من وجود جدول محدد قبل محاولة إصلاحه أو إنشاءه."""
+    """Checks if table exists."""
 
     dialect_name = conn.dialect.name
 
@@ -379,16 +558,25 @@ async def _fix_missing_column(
     auto_fix_queries: dict[str, str],
     index_queries: dict[str, str],
 ) -> bool:
-    """إصلاح عمود مفقود وإنشاء الفهرس إن وجد."""
+    """Fixes a missing column."""
     if col not in auto_fix_queries:
         return False
 
+    query = auto_fix_queries[col]
+    if conn.dialect.name == "sqlite":
+        query = _to_sqlite_ddl(query)
+
     try:
-        await conn.execute(text(auto_fix_queries[col]))
+        await conn.execute(text(query))
         logger.info(f"✅ Added missing column: {table_name}.{col}")
 
         if col in index_queries:
-            await conn.execute(text(index_queries[col]))
+            idx_query = index_queries[col]
+            # SQLite indexes are same syntax mostly, but ensure no Postgres specifics
+            if conn.dialect.name == "sqlite":
+                idx_query = _to_sqlite_ddl(idx_query)
+
+            await conn.execute(text(idx_query))
             logger.info(f"✅ Created index for: {table_name}.{col}")
 
         return True
@@ -397,11 +585,7 @@ async def _fix_missing_column(
         return False
 
 def _infer_index_name(index_query: str) -> str | None:
-    """استنتاج اسم الفهرس من جملة SQL عند غياب التسمية الصريحة.
-
-    يتم استخدام هذا التابع كاحتياط لضمان إنشاء الفهرس حتى لو لم يتم توفير
-    الاسم بشكل يدوي في الإعدادات.
-    """
+    """Infers index name from SQL."""
     pattern = re.compile(r"INDEX(?: IF NOT EXISTS)?\s+\"([^\"]+)\"", flags=re.IGNORECASE)
     match = pattern.search(index_query)
     if match:
@@ -409,7 +593,7 @@ def _infer_index_name(index_query: str) -> str | None:
     return None
 
 async def _get_existing_indexes(conn: AsyncConnection, table_name: str) -> set[str]:
-    """جلب أسماء الفهارس الموجودة في الجدول لتفادي إنشائها مرتين."""
+    """Gets existing index names."""
     dialect_name = conn.dialect.name
 
     if dialect_name == "sqlite":
@@ -433,11 +617,7 @@ async def _ensure_missing_indexes(
     existing_columns: set[str],
     auto_fix: bool,
 ) -> tuple[list[str], list[str], list[str]]:
-    """إنشاء الفهارس المفقودة وتوثيق النتائج.
-
-    Returns:
-        tuple[list[str], list[str], list[str]]: (المفقودة، المثبتة، الأخطاء)
-    """
+    """Ensures indexes exist."""
     missing_indexes: list[str] = []
     fixed_indexes: list[str] = []
     errors: list[str] = []
@@ -469,6 +649,9 @@ async def _ensure_missing_indexes(
             continue
 
         try:
+            if conn.dialect.name == "sqlite":
+                index_query = _to_sqlite_ddl(index_query)
+
             await conn.execute(text(index_query))
             fixed_indexes.append(f"{table_name}.{index_name}")
             logger.info(f"✅ Created missing index: {table_name}.{index_name}")
@@ -480,13 +663,7 @@ async def _ensure_missing_indexes(
 
 async def validate_and_fix_schema(auto_fix: bool = True) -> SchemaValidationResult:
     """
-    التحقق من تطابق Schema وإصلاح المشاكل تلقائياً للأعمدة والفهارس.
-
-    Args:
-        auto_fix (bool): تفعيل محاولة الإصلاح التلقائي.
-
-    Returns:
-        SchemaValidationResult: تقرير بالنتيجة المكتوبة الأنواع.
+    Validates and fixes schema.
     """
     results: SchemaValidationResult = {
         "status": "ok",
@@ -513,6 +690,9 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> SchemaValidationResu
 
                     if create_query and auto_fix:
                         try:
+                            if conn.dialect.name == "sqlite":
+                                create_query = _to_sqlite_ddl(create_query)
+
                             await conn.execute(text(create_query))
                             logger.info(f"✅ Created missing table: {table_name}")
                             existing_columns = set(schema_info.get("columns", []))
@@ -588,7 +768,7 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> SchemaValidationResu
 
 async def validate_schema_on_startup() -> None:
     """
-    فحص Schema عند بدء التطبيق.
+    Start-up Validation Hook.
     """
     logger.info("🔍 Validating database schema... (جاري فحص مخطط قاعدة البيانات)")
 
