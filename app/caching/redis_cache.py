@@ -112,6 +112,25 @@ class RedisCache(CacheBackend):
             logger.error(f"❌ Redis clear error: {e}")
             return False
 
+    async def scan_keys(self, pattern: str) -> list[str]:
+        """
+        البحث عن مفاتيح تطابق نمطاً معيناً باستخدام SCAN.
+
+        Args:
+            pattern: نمط البحث (e.g., "user:*")
+
+        Returns:
+            list[str]: قائمة المفاتيح المطابقة
+        """
+        keys: list[str] = []
+        try:
+            async for key in self._redis.scan_iter(match=pattern):
+                keys.append(key)
+            return keys
+        except Exception as e:
+            logger.error(f"❌ Redis scan error for pattern {pattern}: {e}")
+            return []
+
     async def close(self) -> None:
         """إغلاق الاتصال."""
         await self._redis.close()

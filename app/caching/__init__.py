@@ -1,18 +1,29 @@
 """
-نظام التخزين المؤقت المتقدم (Advanced Caching System).
+حزمة التخزين المؤقت (Caching Package).
 
-يوفر تخزين مؤقت متعدد المستويات مع استراتيجيات ذكية.
+توفر واجهات وتنفيذات لنظام التخزين المؤقت المتقدم.
 """
+
+from app.caching.base import CacheBackend
+from app.caching.distributed_cache import MultiLevelCache
+from app.caching.invalidation import InvalidationManager
+from app.caching.memory_cache import InMemoryCache
+from app.caching.redis_cache import RedisCache
+from app.caching.strategies import (
+    EvictionPolicy,
+    LFUPolicy,
+    LRUPolicy,
+    StrategicMemoryCache,
+)
 
 __all__ = [
     "CacheBackend",
     "InMemoryCache",
     "RedisCache",
-    "CacheFactory",
-    "get_cache",
+    "EvictionPolicy",
+    "LRUPolicy",
+    "LFUPolicy",
+    "StrategicMemoryCache",
+    "MultiLevelCache",
+    "InvalidationManager",
 ]
-
-from app.caching.base import CacheBackend
-from app.caching.memory_cache import InMemoryCache
-from app.caching.redis_cache import RedisCache
-from app.caching.factory import CacheFactory, get_cache
