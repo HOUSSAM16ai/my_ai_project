@@ -16,6 +16,7 @@ from collections.abc import Callable
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.admin import (
@@ -28,6 +29,7 @@ from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
 from app.core.domain.user import User
 from app.deps.auth import CurrentUser, require_roles
+from app.infrastructure.clients.user_client import user_client
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 from app.services.chat.contracts import ChatDispatchRequest
 from app.services.chat.dispatcher import ChatRoleDispatcher, build_chat_dispatcher
@@ -40,6 +42,16 @@ router = APIRouter(
     prefix="/admin",
     tags=["Admin"],
 )
+
+# -----------------------------------------------------------------------------
+# DTOs
+# -----------------------------------------------------------------------------
+class AdminUserCountResponse(BaseModel):
+    count: int
+
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
 
 def get_session_factory() -> Callable[[], AsyncSession]:
     """
@@ -117,6 +129,28 @@ def get_admin_service(db: AsyncSession = Depends(get_db)) -> AdminChatBoundarySe
 def get_chat_dispatcher(db: AsyncSession = Depends(get_db)) -> ChatRoleDispatcher:
     """تبعية للحصول على موزّع الدردشة حسب الدور."""
     return build_chat_dispatcher(db)
+
+# -----------------------------------------------------------------------------
+# Endpoints
+# -----------------------------------------------------------------------------
+
+@router.get(
+    "/users/count",
+    summary="User Count (Admin)",
+    response_model=AdminUserCountResponse,
+    dependencies=[Depends(require_roles(ADMIN_ROLE))]
+)
+async def get_admin_user_count() -> AdminUserCountResponse:
+    """
+    Retrieve the total number of users in the system.
+    Proxies to the User Service.
+    """
+    try:
+        count = await user_client.get_user_count()
+        return AdminUserCountResponse(count=count)
+    except Exception as e:
+        logger.error(f"Failed to retrieve user count: {e}")
+        raise HTTPException(status_code=503, detail="User Service unavailable")
 
 @router.post("/api/chat/stream", summary="بث محادثة المسؤول (Admin Chat Stream)")
 async def chat_stream(

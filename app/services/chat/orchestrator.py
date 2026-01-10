@@ -3,6 +3,7 @@
 ---------------------------------------------------------
 تمت إعادة الهيكلة لتقليل التعقيد وتحسين القابلية للصيانة.
 يعتمد نمط الاستراتيجية (Strategy Pattern) لاختيار المعالج المناسب بناءً على نية المستخدم.
+تم دمجه الآن مع نظام الوكلاء المتعددين (Multi-Agent System) للتعامل مع المهام الإدارية.
 
 التعقيد السيكلوماتيكي (Cyclomatic Complexity): 3 (تم تخفيضه من 24).
 """
@@ -18,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ai_gateway import AIClient
 from app.core.patterns.strategy import Strategy, StrategyRegistry
+from app.services.chat.agents.orchestrator import OrchestratorAgent
 from app.services.chat.context import ChatContext
 from app.services.chat.handlers.strategy_handlers import (
     CodeSearchHandler,
@@ -31,6 +33,7 @@ from app.services.chat.handlers.strategy_handlers import (
 )
 from app.services.chat.intent_detector import IntentDetector
 from app.services.chat.ports import IntentDetectorPort
+from app.services.chat.tools import ToolRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +64,10 @@ class ChatOrchestrator:
             registry or StrategyRegistry[ChatContext, AsyncGenerator[str, None]]()
         )
         self._initialize_handlers(handlers)
+
+        # Multi-Agent System Initialization
+        self.tool_registry = ToolRegistry()
+        # Note: AIClient will be passed in process()
 
     def _initialize_handlers(
         self,
@@ -93,19 +100,31 @@ class ChatOrchestrator:
         """
         معالجة طلب المحادثة.
 
-        Args:
-            question: سؤال المستخدم.
-            user_id: معرف المستخدم.
-            conversation_id: معرف المحادثة.
-            ai_client: عميل الذكاء الاصطناعي.
-            history_messages: سجل الرسائل السابق.
-            session_factory: مصنع الجلسات للعمليات الخلفية.
-
-        Yields:
-            str: أجزاء الرد (Chunks) بشكل تدفقي.
+        تم تحديثها لتستخدم OrchestratorAgent في حالات الإدارة.
         """
         start_time = time.time()
 
+        # Check if we should use the new Multi-Agent System (Admin/Governance tasks)
+        # For this fix, we prioritize the new agent system for specific intents
+        is_admin_query = any(k in question.lower() for k in ["users", "count", "find", "locate", "search", "admin"])
+
+        if is_admin_query:
+            logger.info("Delegating to Multi-Agent Orchestrator", extra={"user_id": user_id})
+            agent = OrchestratorAgent(ai_client, self.tool_registry)
+            response = await agent.run(question)
+
+            # Yield response as chunks to match the interface
+            # In a real streaming scenario, the agent would yield chunks.
+            # Here we simulate streaming the final result.
+            chunk_size = 50
+            for i in range(0, len(response), chunk_size):
+                yield response[i : i + chunk_size]
+
+            duration = (time.time() - start_time) * 1000
+            logger.debug(f"Agent processed in {duration:.2f}ms")
+            return
+
+        # Fallback to legacy Strategy Pattern for other chats
         # 1. الكشف عن النية (Detect Intent)
         intent_result = await self._intent_detector.detect(question)
 

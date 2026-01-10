@@ -14,6 +14,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, FastAPI
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -55,6 +56,9 @@ class UserResponse(BaseModel):
     name: str
     email: str
 
+class UserCountResponse(BaseModel):
+    count: int
+
 # -----------------------------------------------------------------------------
 # Router
 # -----------------------------------------------------------------------------
@@ -84,6 +88,16 @@ def _build_router(settings: UserServiceSettings) -> APIRouter:
             raise ConflictError("Email already registered") from exc
 
         return UserResponse(user_id=user.id, name=user.name, email=user.email)
+
+    @router.get("/users/count", response_model=UserCountResponse)
+    async def count_users(
+        session: AsyncSession = Depends(get_session)
+    ) -> UserCountResponse:
+        """Get the total number of users."""
+        statement = select(func.count(User.id))
+        result = await session.execute(statement)
+        count = result.scalar_one()
+        return UserCountResponse(count=count)
 
     @router.get("/users", response_model=list[UserResponse])
     async def list_users(
