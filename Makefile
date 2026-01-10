@@ -20,7 +20,7 @@
 .PHONY: help install quality test format lint security docs clean run dev deploy \
         microservices-build microservices-up microservices-down microservices-logs \
         microservices-test microservices-health gateway-test event-bus-test \
-        circuit-breaker-test integration-test
+        circuit-breaker-test integration-test fmt guardrails ci
 
 # Colors for output
 BLUE := \033[0;34m
@@ -48,11 +48,14 @@ help:
 	@echo "$(GREEN)🎨 Code Quality:$(NC)"
 	@echo "  make quality          - Run ALL quality checks (recommended)"
 	@echo "  make format           - Auto-format code (black + ruff)"
+	@echo "  make fmt              - Alias for format"
 	@echo "  make lint             - Run all linters (ruff + pylint + flake8)"
 	@echo "  make check            - Check code formatting (no changes)"
 	@echo "  make type-check       - Run type checker (mypy)"
 	@echo "  make security         - Run security scans (bandit + safety)"
 	@echo "  make complexity       - Analyze code complexity"
+	@echo "  make guardrails       - Run architecture guardrails scan"
+	@echo "  make ci               - Run CI-equivalent checks locally"
 	@echo ""
 	@echo "$(GREEN)🧪 Testing:$(NC)"
 	@echo "  make test             - Run test suite with coverage"
@@ -127,11 +130,21 @@ format:
 	ruff format .
 	@echo "$(GREEN)✅ Code formatted!$(NC)"
 
+fmt: format
+
 lint:
 	@echo "$(BLUE)🔍 Running linters...$(NC)"
 	@echo "$(YELLOW)⚡ Ruff (ultra-fast)...$(NC)"
 	ruff check .
 	@echo "$(GREEN)✅ Linting complete!$(NC)"
+
+guardrails:
+	@echo "$(BLUE)🛡️ Running architecture guardrails...$(NC)"
+	python scripts/ci_guardrails.py
+	@echo "$(GREEN)✅ Guardrails passed!$(NC)"
+
+ci: check lint guardrails test
+	@echo "$(GREEN)✅ CI checks complete!$(NC)"
 
 check:
 	@echo "$(BLUE)✅ Checking code formatting (no changes)...$(NC)"

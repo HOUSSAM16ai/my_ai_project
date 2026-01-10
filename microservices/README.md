@@ -149,6 +149,8 @@ GET  /plans/{id}              - تفاصيل خطة
 
 **Database**: SQLite (مستقل)
 
+**Service README**: [microservices/planning_agent/README.md](microservices/planning_agent/README.md)
+
 ---
 
 ### 3. Memory Agent (Port 8002)
@@ -172,6 +174,8 @@ GET  /memories/{id}           - تفاصيل ذاكرة
 **Contract**: [memory_agent-openapi.json](docs/contracts/openapi/memory_agent-openapi.json)
 
 **Database**: SQLite (مستقل)
+
+**Service README**: [microservices/memory_agent/README.md](microservices/memory_agent/README.md)
 
 ---
 
@@ -198,6 +202,8 @@ PUT  /users/{id}              - تحديث مستخدم
 
 **Database**: SQLite (مستقل)
 
+**Service README**: [microservices/user_service/README.md](microservices/user_service/README.md)
+
 ---
 
 ### 5. Orchestrator Service (Port 8004)
@@ -222,6 +228,8 @@ GET  /orchestrator/tasks      - عرض المهام
 
 **Database**: SQLite (مستقل)
 
+**Service README**: [microservices/orchestrator_service/README.md](microservices/orchestrator_service/README.md)
+
 ---
 
 ### 6. Observability Service (Port 8005)
@@ -243,6 +251,8 @@ POST /forecast                - التنبؤ
 ```
 
 **Contract**: [observability_service-openapi.json](docs/contracts/openapi/observability_service-openapi.json)
+
+**Service README**: [microservices/observability_service/README.md](microservices/observability_service/README.md)
 
 ---
 

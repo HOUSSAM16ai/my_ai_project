@@ -69,7 +69,7 @@ This document defines the **Non-Negotiable Engineering Standards** for the Cogni
 
 ## 4. Guardrails (Automated Enforcement)
 
-The `scripts/ci/guardrails.py` script enforces these rules.
+The `scripts/ci_guardrails.py` script enforces these rules.
 
 | Rule | Description | Violation |
 | :--- | :--- | :--- |

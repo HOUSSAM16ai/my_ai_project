@@ -23,6 +23,7 @@ from app.core.logging import setup_logging, get_logger
 from app.core.errors import setup_exception_handlers, ConflictError, ResourceNotFoundError
 
 # Local Domain
+from microservices.user_service.health import HealthResponse, build_health_payload
 from microservices.user_service.settings import UserServiceSettings, get_settings
 from microservices.user_service.models import User
 from microservices.user_service.database import init_db, get_session
@@ -60,13 +61,9 @@ class UserResponse(BaseModel):
 def _build_router(settings: UserServiceSettings) -> APIRouter:
     router = APIRouter()
 
-    @router.get("/health")
-    def health_check() -> dict[str, str]:
-        return {
-            "service": settings.SERVICE_NAME,
-            "status": "ok",
-            "env": settings.ENVIRONMENT,
-        }
+    @router.get("/health", response_model=HealthResponse)
+    def health_check() -> HealthResponse:
+        return build_health_payload(settings)
 
     @router.post("/users", response_model=UserResponse)
     async def create_user(
