@@ -14,6 +14,7 @@ from typing import Any
 
 from app.core.protocols import CollaborationContext
 
+
 class InMemoryCollaborationContext(CollaborationContext):
     """
     سياق تعاوني في الذاكرة (In-Memory).

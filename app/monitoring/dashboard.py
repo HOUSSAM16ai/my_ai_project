@@ -160,22 +160,22 @@ class DashboardManager:
                 for a in self.alert_manager.get_active_alerts()
             ]
 
-        elif source == "alerts.stats":
+        if source == "alerts.stats":
             return self.alert_manager.get_alert_stats()
 
-        elif source == "metrics.uptime":
+        if source == "metrics.uptime":
             all_metrics = self.metrics_collector.get_all_metrics()
             return all_metrics.get("metadata", {}).get("uptime_seconds", 0)
 
-        elif source == "metrics.requests_total":
+        if source == "metrics.requests_total":
             return self.metrics_collector.get_counter("operation_total")
 
-        elif source == "metrics.error_rate":
+        if source == "metrics.error_rate":
             total = self.metrics_collector.get_counter("operation_total")
             errors = self.metrics_collector.get_counter("operation_errors_total")
             return (errors / total * 100) if total > 0 else 0.0
 
-        elif source == "performance.slow_ops":
+        if source == "performance.slow_ops":
             return [
                 {
                     "operation": op.operation_name,
@@ -185,7 +185,7 @@ class DashboardManager:
                 for op in self.performance_tracker.get_slow_operations(limit=5)
             ]
 
-        elif source == "performance.stats":
+        if source == "performance.stats":
             return self.performance_tracker.get_all_stats()
 
         if source.startswith("metrics."):

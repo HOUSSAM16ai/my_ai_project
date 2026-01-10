@@ -4,9 +4,8 @@ Hyper-Global State Container
 Separated to avoid circular dependency loops in the Neural Mesh.
 """
 
-from typing import Any
-
 import threading
+from typing import Any
 
 # ======================================================================================
 # Ephemeral Memory

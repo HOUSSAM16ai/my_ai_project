@@ -5,6 +5,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 
 from app.security.waf import waf
 
+
 class SuperhumanSecurityMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         try:
@@ -22,5 +23,4 @@ class SuperhumanSecurityMiddleware(BaseHTTPMiddleware):
                 content={"detail": "An internal security error occurred."},
             )
 
-        response = await call_next(request)
-        return response
+        return await call_next(request)

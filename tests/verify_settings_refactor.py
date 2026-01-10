@@ -1,13 +1,13 @@
-import sys
 import os
+import sys
 
 # Ensure root is in path
 sys.path.append(os.getcwd())
 
 try:
+    from microservices.memory_agent.settings import get_settings as get_mem_settings
     from microservices.orchestrator_service.settings import get_settings as get_orch_settings
     from microservices.planning_agent.settings import get_settings as get_plan_settings
-    from microservices.memory_agent.settings import get_settings as get_mem_settings
 except ImportError as e:
     print(f"Import Error: {e}")
     # Try to simulate how it might run if app is not found (though sys.path.append should fix it)

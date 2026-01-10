@@ -13,6 +13,7 @@ from app.services.api_config_secrets.domain.ports import (
     SecretMetadataRepository,
 )
 
+
 class InMemoryConfigRepository(ConfigRepository):
     def __init__(self):
         self._store: dict[Environment, dict[str, ConfigEntry]] = defaultdict(dict)

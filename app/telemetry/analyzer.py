@@ -1,13 +1,15 @@
 import statistics
+import threading
 import time
 import uuid
-import threading
-from dataclasses import asdict
 from collections import deque
-from datetime import datetime, UTC
-from app.telemetry.models import AlertSeverity, AnomalyAlert, UnifiedTrace
+from dataclasses import asdict
+from datetime import UTC, datetime
+
 from app.telemetry.metrics import MetricsManager
+from app.telemetry.models import AlertSeverity, AnomalyAlert, UnifiedTrace
 from app.telemetry.tracing import TracingManager
+
 
 class TelemetryAnalyzer:
     """

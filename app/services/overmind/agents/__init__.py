@@ -14,15 +14,15 @@
 1. StrategistAgent: المخطط الاستراتيجي
    - يحلل الأهداف ويفككها إلى خطوات
    - يستخدم التفكير الشجري (Tree of Thoughts)
-   
+
 2. ArchitectAgent: المصمم التقني
    - يحول الخطة إلى تصميم تقني قابل للتنفيذ
    - يحدد الأدوات والمعاملات المطلوبة
-   
+
 3. OperatorAgent: المنفذ الميداني
    - ينفذ المهام واحدة تلو الأخرى
    - يسجل النتائج والأخطاء
-   
+
 4. AuditorAgent: المدقق والمراجع
    - يراجع النتائج للتأكد من الجودة
    - يكتشف الأخطاء والحلقات المفرغة
@@ -30,9 +30,9 @@
 التعاون بين الوكلاء (Agent Collaboration):
 -------------------------------------------
 الوكلاء يعملون معاً في pipeline متسلسل:
-  
+
   Objective → [Strategist] → Plan → [Architect] → Design → [Operator] → Results → [Auditor] → Approval
-  
+
 كل وكيل:
 - يستقبل مخرجات الوكيل السابق
 - يعالجها حسب تخصصه
@@ -48,10 +48,10 @@
         AuditorAgent,
         create_agent_council
     )
-    
+
     # إنشاء مجلس الوكلاء
     council = await create_agent_council(ai_client, task_executor)
-    
+
     # استخدام الوكلاء
     plan = await council.strategist.create_plan(objective, context)
     design = await council.architect.design_solution(plan, context)
@@ -75,11 +75,11 @@ from .operator import OperatorAgent
 from .strategist import StrategistAgent
 
 __all__ = [
-    "StrategistAgent",
-    "ArchitectAgent",
-    "OperatorAgent",
-    "AuditorAgent",
     "AgentCouncil",
+    "ArchitectAgent",
+    "AuditorAgent",
+    "OperatorAgent",
+    "StrategistAgent",
     "create_agent_council",
 ]
 
@@ -87,20 +87,20 @@ __all__ = [
 class AgentCouncil(NamedTuple):
     """
     مجلس الوكلاء (Council of Agents).
-    
+
     يجمع جميع الوكلاء في هيكل واحد لسهولة الوصول والإدارة.
-    
+
     Attributes:
         strategist: الوكيل الاستراتيجي (المخطط)
         architect: الوكيل المعماري (المصمم)
         operator: الوكيل المنفذ (المشغل)
         auditor: الوكيل المدقق (المراجع)
-        
+
     ملاحظة:
         - NamedTuple تُستخدم لإنشاء هيكل بيانات بسيط وثابت (immutable)
         - كل وكيل يتبع بروتوكولاً محدداً (AgentPlanner, AgentArchitect, إلخ)
     """
-    
+
     strategist: AgentPlanner      # المخطط: يفكك الأهداف إلى خطوات
     architect: AgentArchitect     # المصمم: يحول الخطوات إلى مهام تقنية
     operator: AgentExecutor       # المنفذ: ينفذ المهام الواحدة تلو الأخرى
@@ -113,23 +113,23 @@ async def create_agent_council(
 ) -> AgentCouncil:
     """
     إنشاء مجلس الوكلاء مع جميع التبعيات المطلوبة.
-    
+
     هذه دالة مصنع (Factory Function) توفر طريقة بسيطة لإنشاء
     جميع الوكلاء دفعة واحدة مع التبعيات الصحيحة.
-    
+
     Args:
         ai_client: عميل الذكاء الاصطناعي للوكلاء التي تحتاج LLM
         task_executor: محرك تنفيذ المهام للوكيل المنفذ
-        
+
     Returns:
         AgentCouncil: مجلس يحتوي على جميع الوكلاء الجاهزة للعمل
-        
+
     مثال (Example):
         >>> ai_client = AIClient(...)
         >>> executor = TaskExecutor(...)
         >>> council = await create_agent_council(ai_client, executor)
         >>> plan = await council.strategist.create_plan("Build API", context)
-        
+
     ملاحظة توضيحية:
         - القوس () يستدعي الكونستركتر (Constructor) للكلاس
         - الفاصلة (,) تفصل بين المعاملات
@@ -142,7 +142,7 @@ async def create_agent_council(
     architect = ArchitectAgent(ai_client)    # يحتاج AI لتصميم المهام
     operator = OperatorAgent(task_executor, ai_client)  # يحتاج executor و AI للاستشارة
     auditor = AuditorAgent(ai_client)        # يحتاج AI لمراجعة النتائج
-    
+
     # إرجاع المجلس كـ NamedTuple
     # القوس () هنا ينشئ instance من AgentCouncil
     return AgentCouncil(

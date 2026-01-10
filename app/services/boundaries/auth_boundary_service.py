@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.security.chrono_shield import chrono_shield
-from app.services.rbac import RBACService, STANDARD_ROLE
+from app.services.rbac import STANDARD_ROLE, RBACService
 from app.services.security.auth_persistence import AuthPersistence
 
 logger = logging.getLogger(__name__)

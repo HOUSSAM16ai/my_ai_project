@@ -34,30 +34,30 @@ class CapacityPlanRequest(BaseModel):
     forecast_horizon_hours: int = 72
 
 class TelemetryResponse(BaseModel):
-    """استجابة استقبال القياس.""" 
+    """استجابة استقبال القياس."""
 
     status: str
     metric_id: str
 
 class RootResponse(BaseModel):
-    """رسالة الجذر لخدمة المراقبة.""" 
+    """رسالة الجذر لخدمة المراقبة."""
 
     message: str
 
 class MetricsResponse(BaseModel):
-    """استجابة المقاييس الإجمالية.""" 
+    """استجابة المقاييس الإجمالية."""
 
     metrics: dict[str, float | int]
 
 class ForecastResponse(BaseModel):
-    """استجابة توقع الحمل مع فاصل الثقة.""" 
+    """استجابة توقع الحمل مع فاصل الثقة."""
 
     forecast_id: str
     predicted_load: float
     confidence_interval: tuple[float, float]
 
 class CapacityPlanPayload(BaseModel):
-    """تفاصيل خطة السعة الناتجة عن التحليل.""" 
+    """تفاصيل خطة السعة الناتجة عن التحليل."""
 
     plan_id: str
     service_name: str
@@ -69,7 +69,7 @@ class CapacityPlanPayload(BaseModel):
     created_at: str
 
 class CapacityPlanResponse(BaseModel):
-    """استجابة خطة السعة بعد التوليد.""" 
+    """استجابة خطة السعة بعد التوليد."""
 
     plan: CapacityPlanPayload
 

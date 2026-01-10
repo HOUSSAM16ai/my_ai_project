@@ -5,8 +5,13 @@ ML-based risk prediction and trend analysis
 
 import statistics
 
-from ..domain.models import RiskPrediction, SecurityMetrics, TrendDirection
-from ..domain.ports import PredictiveAnalyticsPort
+from app.services.security_metrics.domain.models import (
+    RiskPrediction,
+    SecurityMetrics,
+    TrendDirection,
+)
+from app.services.security_metrics.domain.ports import PredictiveAnalyticsPort
+
 
 class LinearRegressionPredictor(PredictiveAnalyticsPort):
     """
@@ -19,14 +24,14 @@ class LinearRegressionPredictor(PredictiveAnalyticsPort):
     ) -> RiskPrediction:
         """
         التنبؤ بالمخاطر المستقبلية | Predict future risk using linear regression
-        
+
         يستخدم الانحدار الخطي للتنبؤ بمستوى المخاطر
         Uses linear regression to predict risk level
-        
+
         Args:
             historical_metrics: مقاييس تاريخية | Historical metrics
             days_ahead: أيام للتنبؤ | Days to predict ahead
-            
+
         Returns:
             توقع المخاطر | Risk prediction
         """
@@ -50,7 +55,7 @@ class LinearRegressionPredictor(PredictiveAnalyticsPort):
     def _create_insufficient_data_prediction(self) -> RiskPrediction:
         """
         إنشاء توقع للبيانات غير الكافية | Create prediction for insufficient data
-        
+
         Returns:
             توقع مخاطر افتراضي | Default risk prediction
         """
@@ -67,10 +72,10 @@ class LinearRegressionPredictor(PredictiveAnalyticsPort):
     ) -> tuple[float, float]:
         """
         حساب الانحدار الخطي | Calculate linear regression
-        
+
         Args:
             risk_scores: قيم المخاطر | Risk scores
-            
+
         Returns:
             (الميل، نقطة التقاطع) | (slope, intercept)
         """
@@ -94,13 +99,13 @@ class LinearRegressionPredictor(PredictiveAnalyticsPort):
     ) -> float:
         """
         حساب قيمة المخاطر المتوقعة | Calculate predicted risk value
-        
+
         Args:
             slope: الميل | Slope
             intercept: نقطة التقاطع | Intercept
             n: عدد نقاط البيانات | Number of data points
             days_ahead: أيام للتنبؤ | Days ahead
-            
+
         Returns:
             قيمة المخاطر المتوقعة (0-100) | Predicted risk value (0-100)
         """
@@ -113,15 +118,15 @@ class LinearRegressionPredictor(PredictiveAnalyticsPort):
     ) -> float:
         """
         حساب مستوى الثقة بالتنبؤ | Calculate prediction confidence
-        
+
         يستخدم R-squared لقياس جودة الملاءمة
         Uses R-squared to measure goodness of fit
-        
+
         Args:
             risk_scores: قيم المخاطر | Risk scores
             slope: الميل | Slope
             intercept: نقطة التقاطع | Intercept
-            
+
         Returns:
             مستوى الثقة (0-100) | Confidence level (0-100)
         """

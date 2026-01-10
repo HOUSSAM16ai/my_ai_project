@@ -1,8 +1,10 @@
-import pytest
 import asyncio
-from datetime import timedelta
-from app.core.gateway.cache import InMemoryCacheProvider, CacheFactory, generate_cache_key
+
+import pytest
+
+from app.core.gateway.cache import CacheFactory, InMemoryCacheProvider, generate_cache_key
 from app.core.gateway.protocols.cache import CacheProviderProtocol
+
 
 @pytest.mark.asyncio
 async def test_in_memory_cache_basic_ops():

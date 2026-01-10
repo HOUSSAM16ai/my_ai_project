@@ -1,5 +1,6 @@
-from typing import Any, Protocol, runtime_checkable
 from datetime import timedelta
+from typing import Any, Protocol, runtime_checkable
+
 
 @runtime_checkable
 class CacheProviderProtocol(Protocol):

@@ -10,8 +10,7 @@ from collections.abc import Mapping
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.domain.models import AuditLog
-from app.core.domain.models import utc_now
+from app.core.domain.models import AuditLog, utc_now
 
 
 class AuditService:

@@ -17,7 +17,7 @@ from app.core.ai_gateway import AIClient
 from app.core.domain.models import CustomerConversation, MessageRole, User
 from app.services.audit import AuditService
 from app.services.chat.contracts import ChatDispatchResult
-from app.services.chat.education_policy_gate import EducationPolicyGate, EducationPolicyDecision
+from app.services.chat.education_policy_gate import EducationPolicyDecision, EducationPolicyGate
 from app.services.chat.intent_detector import IntentDetector
 from app.services.chat.tool_router import ToolRouter
 from app.services.customer.chat_persistence import CustomerChatPersistence

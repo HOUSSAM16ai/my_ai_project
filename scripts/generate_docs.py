@@ -10,11 +10,8 @@ Usage:
 """
 
 import argparse
-import json
-import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import yaml
 
@@ -31,7 +28,7 @@ class DocumentationGenerator:
         """
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         self.contracts_dir = Path("docs/contracts")
         self.openapi_dir = self.contracts_dir / "openapi"
         self.asyncapi_dir = self.contracts_dir / "asyncapi"
@@ -108,7 +105,7 @@ class DocumentationGenerator:
                 print(f"   ❌ Error: {e}")
 
     def _generate_openapi_markdown(
-        self, spec: Dict, title: str, version: str
+        self, spec: dict, title: str, version: str
     ) -> str:
         """Generate Markdown documentation from OpenAPI spec"""
         lines = [
@@ -242,7 +239,7 @@ class DocumentationGenerator:
             except Exception as e:
                 print(f"   ❌ Error: {e}")
 
-    def _generate_asyncapi_markdown(self, spec: Dict, title: str) -> str:
+    def _generate_asyncapi_markdown(self, spec: dict, title: str) -> str:
         """Generate Markdown documentation from AsyncAPI spec"""
         lines = [
             f"# {title} (AsyncAPI)",

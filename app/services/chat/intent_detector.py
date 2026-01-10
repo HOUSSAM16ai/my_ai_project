@@ -5,6 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 
+
 class ChatIntent(str, Enum):
     """نوايا المحادثة المعتمدة في طبقة التوجيه."""
     FILE_READ = "FILE_READ"

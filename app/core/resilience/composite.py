@@ -2,11 +2,9 @@
 Composite resilience policy combining multiple patterns.
 """
 
-from typing import Any
-
 import logging
 from collections.abc import Callable
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from app.core.resilience.bulkhead import Bulkhead
 from app.core.resilience.circuit_breaker import CircuitBreaker

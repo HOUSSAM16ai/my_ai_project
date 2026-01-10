@@ -1,7 +1,9 @@
 
 import os
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from app.core.database import create_db_engine
 from app.core.settings.base import BaseServiceSettings
 

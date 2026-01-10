@@ -2,10 +2,13 @@
 اختبارات التخزين المؤقت الموزع.
 """
 
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from app.caching.distributed_cache import MultiLevelCache
+
 from app.caching.base import CacheBackend
+from app.caching.distributed_cache import MultiLevelCache
+
 
 @pytest.fixture
 def l1_mock():

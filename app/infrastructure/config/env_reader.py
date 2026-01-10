@@ -4,6 +4,7 @@ Shared environment variable readers to eliminate duplication.
 
 import os
 
+
 def read_int_env(name: str, default: int) -> int:
     """Read integer from environment variable with fallback."""
     try:

@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
-
 import logging
 import threading
 import uuid
@@ -10,6 +7,8 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
+from typing import Any
+
 
 class SpanKind(Enum):
     """Span kind classification"""

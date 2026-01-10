@@ -31,14 +31,12 @@ DOES NOT:
 
 from __future__ import annotations
 
-from typing import Any
-
-
 import logging
 import threading
 import time
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 

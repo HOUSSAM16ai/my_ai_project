@@ -9,13 +9,14 @@ Basic behavioral analysis implementation.
 import uuid
 from datetime import datetime
 
-from ...domain.models import (
+from app.services.ai_security.domain.models import (
     SecurityEvent,
     ThreatDetection,
     ThreatLevel,
     ThreatType,
     UserBehaviorProfile,
 )
+
 
 class SimpleBehavioralAnalyzer:
     """
@@ -30,7 +31,7 @@ class SimpleBehavioralAnalyzer:
         """
         Analyze event against user profile.
         تحليل الحدث مقابل ملف المستخدم
-        
+
         Args:
             event: Current security event | الحدث الأمني الحالي
             profile: User's behavioral profile | ملف السلوك للمستخدم
@@ -52,11 +53,11 @@ class SimpleBehavioralAnalyzer:
     ) -> bool:
         """
         تحقق إذا كان نقطة النهاية غير معتادة | Check if endpoint is unusual
-        
+
         Args:
             event: الحدث الأمني | Security event
             profile: ملف المستخدم | User profile
-            
+
         Returns:
             True إذا كان غير معتاد | True if unusual
         """
@@ -71,16 +72,16 @@ class SimpleBehavioralAnalyzer:
         """
         إنشاء كشف تهديد لنقطة نهاية غير معتادة
         Create threat detection for unusual endpoint
-        
+
         Args:
             event: الحدث الأمني | Security event
             profile: ملف المستخدم | User profile
-            
+
         Returns:
             كشف التهديد | Threat detection
         """
         typical_endpoints_sample = ', '.join(profile.typical_endpoints[:3])
-        
+
         return ThreatDetection(
             detection_id=str(uuid.uuid4()),
             threat_type=ThreatType.ANOMALOUS_BEHAVIOR,

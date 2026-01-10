@@ -1,8 +1,8 @@
-from typing import Any
-
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
+from typing import Any
+
 
 class DataDomainType(Enum):
     """Data domain types"""

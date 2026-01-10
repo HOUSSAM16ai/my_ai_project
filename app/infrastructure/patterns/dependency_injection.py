@@ -42,8 +42,7 @@ class DIContainer:
         if interface in self._services:
             implementation = self._services[interface]
             if inspect.isclass(implementation):
-                instance = self._create_instance(implementation)  # type: ignore[arg-type]
-                return instance
+                return self._create_instance(implementation)  # type: ignore[arg-type]
             return implementation  # type: ignore[return-value]
 
         raise ValueError(f"Service not registered: {interface}")

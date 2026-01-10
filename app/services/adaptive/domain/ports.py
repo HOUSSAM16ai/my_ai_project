@@ -11,6 +11,7 @@ from typing import Protocol
 
 from app.services.adaptive.domain.models import ServiceInstance, ServiceMetrics
 
+
 class ServiceInstanceRepository(Protocol):
     """Repository for service instance management"""
 

@@ -2,8 +2,8 @@
 اختبارات استراتيجيات التخزين المؤقت.
 """
 
-import pytest
-from app.caching.strategies import LRUPolicy, LFUPolicy, StrategicMemoryCache
+from app.caching.strategies import LFUPolicy, LRUPolicy, StrategicMemoryCache
+
 
 class TestLRUPolicy:
     def test_lru_eviction(self):

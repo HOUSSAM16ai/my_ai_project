@@ -78,7 +78,6 @@ class AuthCrypto:
         """التحقق من صحة توقيع JWT."""
         try:
             # Note: The original code casts the result of jwt.decode (which is Any) to dict.
-            payload = jwt.decode(token, self.settings.SECRET_KEY, algorithms=["HS256"])
-            return payload
+            return jwt.decode(token, self.settings.SECRET_KEY, algorithms=["HS256"])
         except jwt.PyJWTError as exc:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc

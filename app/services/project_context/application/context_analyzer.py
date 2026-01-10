@@ -156,7 +156,7 @@ class ProjectContextService:
     def generate_context_for_ai(self) -> str:
         """
         توليد سياق شامل للذكاء الاصطناعي.
-        
+
         Returns:
             str: السياق المنسق للمشروع بالكامل.
         """
@@ -165,7 +165,7 @@ class ProjectContextService:
 
         context_data = self._gather_project_data()
         context_parts = self._build_context_sections(context_data)
-        
+
         self._cached_context = "\n".join(context_parts)
         self._cache_timestamp = datetime.now()
 
@@ -175,7 +175,7 @@ class ProjectContextService:
         """التحقق من صلاحية الذاكرة المؤقتة."""
         if not self._cached_context or not self._cache_timestamp:
             return False
-        
+
         elapsed = (datetime.now() - self._cache_timestamp).seconds
         return elapsed < self._cache_ttl_seconds
 
@@ -194,7 +194,7 @@ class ProjectContextService:
     def _build_context_sections(self, data: dict[str, object]) -> list[str]:
         """بناء أقسام السياق من البيانات المجمعة."""
         sections = ["# 📊 REAL-TIME PROJECT ANALYSIS", ""]
-        
+
         # Casting needed because data is dict[str, object]
         stats = data['stats']
         structure = data['structure']
@@ -219,7 +219,7 @@ class ProjectContextService:
         sections.extend(self._build_components_section(m_list, s_list, r_list)) # type: ignore
         sections.extend(self._build_analysis_section(i_list, str_list)) # type: ignore
         sections.append(f"## ⏰ Analysis Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        
+
         return sections
 
     def _build_statistics_section(self, stats: CodeStatistics) -> list[str]:
@@ -242,9 +242,9 @@ class ProjectContextService:
         return lines
 
     def _build_components_section(
-        self, 
-        models: list[str], 
-        services: list[str], 
+        self,
+        models: list[str],
+        services: list[str],
         routes: list[str]
     ) -> list[str]:
         """بناء قسم المكونات."""

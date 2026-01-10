@@ -13,7 +13,7 @@ Standards:
 import logging
 import sys
 from contextvars import ContextVar
-from typing import Final, Any
+from typing import Any, Final
 
 from pythonjsonlogger import jsonlogger
 

@@ -5,12 +5,12 @@
 """
 
 __all__ = [
-    "MetricsCollector",
-    "PrometheusExporter",
-    "PerformanceTracker",
     "AlertManager",
+    "MetricsCollector",
+    "PerformanceTracker",
+    "PrometheusExporter",
 ]
 
+from app.monitoring.alerts import AlertManager
 from app.monitoring.metrics import MetricsCollector, PrometheusExporter
 from app.monitoring.performance import PerformanceTracker
-from app.monitoring.alerts import AlertManager

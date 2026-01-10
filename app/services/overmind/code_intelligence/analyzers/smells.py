@@ -1,7 +1,6 @@
 from typing import ClassVar
 
-
-from ..models import FileMetrics
+from app.services.overmind.code_intelligence.models import FileMetrics
 
 
 class StructuralSmellDetector:
@@ -29,9 +28,11 @@ class StructuralSmellDetector:
         }
 
         # God class detection
-        if metrics.num_classes > 0:
-            if metrics.code_lines > self.GOD_CLASS_LOC_THRESHOLD or metrics.num_functions > self.GOD_CLASS_METHODS_THRESHOLD:
-                smells["is_god_class"] = True
+        if metrics.num_classes > 0 and (
+            metrics.code_lines > self.GOD_CLASS_LOC_THRESHOLD
+            or metrics.num_functions > self.GOD_CLASS_METHODS_THRESHOLD
+        ):
+            smells["is_god_class"] = True
 
         # Detect current file layer
         current_layer = self._detect_layer(file_path)

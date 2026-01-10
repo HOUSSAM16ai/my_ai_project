@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from .base import ProtocolAdapter
 
+
 class GraphQLAdapter(ProtocolAdapter):
     """GraphQL protocol adapter"""
 

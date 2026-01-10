@@ -168,7 +168,7 @@ class ToolExecutionStarted(DomainEvent):
 @DomainEventRegistry.register
 @dataclass
 class ToolExecutionCompleted(DomainEvent):
-    def __init__(self, tool_name: str, executed_by: str, context_id: str, success: bool, duration_ms: float, result: dict[str, str | int | bool] = None):
+    def __init__(self, tool_name: str, executed_by: str, context_id: str, success: bool, duration_ms: float, result: dict[str, str | int | bool] | None = None):
         super().__init__(
             event_type="ToolExecutionCompleted",
             bounded_context=BoundedContext.TASK_EXECUTION,

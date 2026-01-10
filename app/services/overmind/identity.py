@@ -14,7 +14,6 @@
 - Single Source of Truth: مصدر واحد للحقيقة
 """
 
-from datetime import datetime
 from typing import Any
 
 from app.core.di import get_logger
@@ -25,13 +24,13 @@ logger = get_logger(__name__)
 class OvermindIdentity:
     """
     هوية وشخصية Overmind (Overmind's Identity).
-    
+
     تحتوي على جميع المعلومات الأساسية عن Overmind:
     - المؤسس والفريق
     - الفلسفة والرؤية
     - التاريخ والتطور
     - القدرات والإمكانيات
-    
+
     الاستخدام:
         >>> identity = OvermindIdentity()
         >>> print(identity.get_founder())
@@ -39,7 +38,7 @@ class OvermindIdentity:
         >>> print(identity.answer_question("من هو مؤسس overmind"))
         "مؤسس Overmind هو Houssam Benmerah..."
     """
-    
+
     def __init__(self) -> None:
         """تهيئة هوية Overmind."""
         # المعلومات الأساسية (Core Information)
@@ -58,7 +57,7 @@ class OvermindIdentity:
                 "github": "HOUSSAM16ai",
                 "email": "houssam.benmerah@example.com",
             },
-            
+
             # معلومات المشروع (Project Information)
             "project": {
                 "name": "CogniForge",
@@ -68,7 +67,7 @@ class OvermindIdentity:
                 "repository": "https://github.com/ai-for-solution-labs/my_ai_project",
                 "license": "MIT",
             },
-            
+
             # معلومات Overmind (Overmind Information)
             "overmind": {
                 "name": "Overmind",
@@ -80,7 +79,7 @@ class OvermindIdentity:
                 "purpose": "تنسيق وإدارة الوكلاء الذكية لتنفيذ المهام المعقدة",
                 "purpose_en": "Coordinate and manage intelligent agents to execute complex tasks",
             },
-            
+
             # الفلسفة والمبادئ (Philosophy & Principles)
             "philosophy": {
                 "heritage": "The Dual Heritage - Harvard CS50 2025 + Berkeley SICP",
@@ -99,7 +98,7 @@ class OvermindIdentity:
                     "YAGNI: You Aren't Gonna Need It",
                 ],
             },
-            
+
             # الوكلاء (Agents)
             "agents": {
                 "strategist": {
@@ -123,7 +122,7 @@ class OvermindIdentity:
                     "capabilities": ["Quality Review", "Loop Detection", "Security Audit"],
                 },
             },
-            
+
             # القدرات (Capabilities)
             "capabilities": {
                 "knowledge": [
@@ -165,7 +164,7 @@ class OvermindIdentity:
                     "ProjectKnowledge: معرفة شاملة بالمشروع",
                 ],
             },
-            
+
             # التاريخ (History)
             "history": {
                 "milestones": [
@@ -177,147 +176,146 @@ class OvermindIdentity:
                 ],
             },
         }
-    
+
     def get_founder(self) -> str:
         """
         الحصول على اسم المؤسس.
-        
+
         Returns:
             str: اسم المؤسس
         """
         return self._identity["founder"]["name"]
-    
+
     def get_founder_info(self) -> dict[str, Any]:
         """
         الحصول على معلومات المؤسس الكاملة.
-        
+
         Returns:
             dict: جميع معلومات المؤسس
         """
         return self._identity["founder"]
-    
+
     def get_project_info(self) -> dict[str, Any]:
         """
         الحصول على معلومات المشروع.
-        
+
         Returns:
             dict: معلومات المشروع
         """
         return self._identity["project"]
-    
+
     def get_overmind_info(self) -> dict[str, Any]:
         """
         الحصول على معلومات Overmind.
-        
+
         Returns:
             dict: معلومات Overmind
         """
         return self._identity["overmind"]
-    
+
     def get_philosophy(self) -> dict[str, Any]:
         """
         الحصول على الفلسفة والمبادئ.
-        
+
         Returns:
             dict: الفلسفة والمبادئ
         """
         return self._identity["philosophy"]
-    
+
     def get_agents_info(self) -> dict[str, Any]:
         """
         الحصول على معلومات الوكلاء.
-        
+
         Returns:
             dict: معلومات جميع الوكلاء
         """
         return self._identity["agents"]
-    
+
     def get_capabilities(self) -> dict[str, Any]:
         """
         الحصول على القدرات والإمكانيات.
-        
+
         Returns:
             dict: جميع القدرات
         """
         return self._identity["capabilities"]
-    
+
     def answer_question(self, question: str) -> str:
         """
         الإجابة على سؤال عن Overmind أو المشروع.
-        
+
         Args:
             question: السؤال المطروح
-            
+
         Returns:
             str: الإجابة
-            
+
         مثال:
             >>> identity.answer_question("من هو مؤسس overmind")
             "مؤسس Overmind هو حسام بن مراح (Houssam Benmerah)..."
-            
+
         ملاحظة:
             - تم تقسيم هذه الدالة إلى helper methods لتطبيق KISS و SRP
             - كل نوع سؤال له method خاص به
         """
         q = question.lower()
-        
+
         # التحقق من نوع السؤال وتوجيهه للـ handler المناسب
         if self._is_founder_question(q):
             return self._answer_founder_question()
-        elif self._is_overmind_question(q):
+        if self._is_overmind_question(q):
             return self._answer_overmind_question()
-        elif self._is_agents_question(q):
+        if self._is_agents_question(q):
             return self._answer_agents_question()
-        elif self._is_capabilities_question(q):
+        if self._is_capabilities_question(q):
             return self._answer_capabilities_question()
-        elif self._is_project_question(q):
+        if self._is_project_question(q):
             return self._answer_project_question()
-        elif self._is_philosophy_question(q):
+        if self._is_philosophy_question(q):
             return self._answer_philosophy_question()
-        elif self._is_birth_date_question(q):
+        if self._is_birth_date_question(q):
             return self._answer_birth_date_question()
-        elif self._is_history_question(q):
+        if self._is_history_question(q):
             return self._answer_history_question()
-        else:
-            return self._answer_unknown_question()
-    
+        return self._answer_unknown_question()
+
     def _is_founder_question(self, q: str) -> bool:
         """التحقق إذا كان السؤال عن المؤسس."""
         keywords = ["مؤسس", "founder", "creator", "من أنشأ", "من بنى",
                    "who is the", "who founded", "who created"]
         return any(keyword in q for keyword in keywords)
-    
+
     def _is_overmind_question(self, q: str) -> bool:
         """التحقق إذا كان السؤال عن Overmind نفسه."""
         keywords = ["ما هو overmind", "what is overmind", "من أنت", "who are you"]
         return any(keyword in q for keyword in keywords)
-    
+
     def _is_agents_question(self, q: str) -> bool:
         """التحقق إذا كان السؤال عن الوكلاء."""
         return any(keyword in q for keyword in ["وكلاء", "agents", "الفريق"])
-    
+
     def _is_capabilities_question(self, q: str) -> bool:
         """التحقق إذا كان السؤال عن القدرات."""
         keywords = ["قدرات", "capabilities", "ماذا تستطيع", "what can you do"]
         return any(keyword in q for keyword in keywords)
-    
+
     def _is_project_question(self, q: str) -> bool:
         """التحقق إذا كان السؤال عن المشروع."""
         return any(keyword in q for keyword in ["مشروع", "project", "cogniforge"])
-    
+
     def _is_philosophy_question(self, q: str) -> bool:
         """التحقق إذا كان السؤال عن الفلسفة."""
         return any(keyword in q for keyword in ["فلسفة", "philosophy", "مبادئ", "principles"])
-    
+
     def _is_birth_date_question(self, q: str) -> bool:
         """التحقق إذا كان السؤال عن تاريخ الميلاد."""
-        return ("تاريخ ميلاد" in q or "birth date" in q or "متى ولد" in q or 
+        return ("تاريخ ميلاد" in q or "birth date" in q or "متى ولد" in q or
                 ("when was" in q and ("born" in q or "birthday" in q)))
-    
+
     def _is_history_question(self, q: str) -> bool:
         """التحقق إذا كان السؤال عن التاريخ."""
         return any(keyword in q for keyword in ["تاريخ", "history", "متى", "when"])
-    
+
     def _answer_founder_question(self) -> str:
         """الإجابة على أسئلة المؤسس."""
         founder = self._identity["founder"]
@@ -329,7 +327,7 @@ class OvermindIdentity:
             f"هو {founder['role_ar']} ({founder['role']}) للمشروع. "
             f"يمكنك التواصل معه عبر GitHub: @{founder['github']}"
         )
-    
+
     def _answer_overmind_question(self) -> str:
         """الإجابة على أسئلة Overmind نفسه."""
         overmind = self._identity["overmind"]
@@ -338,14 +336,14 @@ class OvermindIdentity:
             f"مهمتي هي {overmind['purpose']}. "
             f"تم إنشائي في {overmind['birth_date']} وأنا حالياً في الإصدار {overmind['version']}."
         )
-    
+
     def _answer_agents_question(self) -> str:
         """الإجابة على أسئلة الوكلاء."""
         agents = self._identity["agents"]
-        agents_list = [f"• {agent['name']}: {agent['role']}" 
+        agents_list = [f"• {agent['name']}: {agent['role']}"
                       for agent in agents.values()]
         return "أنا أعمل مع فريق من 4 وكلاء متخصصة:\n" + "\n".join(agents_list)
-    
+
     def _answer_capabilities_question(self) -> str:
         """الإجابة على أسئلة القدرات."""
         caps = self._identity["capabilities"]
@@ -355,14 +353,14 @@ class OvermindIdentity:
             ("🧠 الذكاء", caps["intelligence"]),
             ("🛠️ الأدوات الخارقة (Super Tools)", caps["super_tools"])
         ]
-        
+
         response = "لدي قدرات واسعة وفائقة التطور:\n\n"
         response += "\n\n".join(
             f"{title}:\n" + "\n".join(f"• {item}" for item in items)
             for title, items in sections
         )
         return response
-    
+
     def _answer_project_question(self) -> str:
         """الإجابة على أسئلة المشروع."""
         project = self._identity["project"]
@@ -371,13 +369,13 @@ class OvermindIdentity:
             f"{project['description']}. "
             f"يمكنك زيارة المستودع على: {project['repository']}"
         )
-    
+
     def _answer_philosophy_question(self) -> str:
         """الإجابة على أسئلة الفلسفة."""
         philosophy = self._identity["philosophy"]
         principles = "\n".join(f"• {p}" for p in philosophy["principles"])
         return f"أتبع فلسفة {philosophy['heritage']}. المبادئ الأساسية:\n{principles}"
-    
+
     def _answer_birth_date_question(self) -> str:
         """الإجابة على أسئلة تاريخ الميلاد."""
         founder = self._identity["founder"]
@@ -385,13 +383,13 @@ class OvermindIdentity:
             f"تاريخ ميلاد المؤسس {founder['name_ar']} ({founder['name']}) "
             f"هو {founder['birth_date']} (11 أغسطس 1997 / August 11, 1997)."
         )
-    
+
     def _answer_history_question(self) -> str:
         """الإجابة على أسئلة التاريخ."""
         history = self._identity["history"]["milestones"]
         milestones = "\n".join(f"• {m['date']}: {m['event']}" for m in history)
         return f"أهم المعالم في تاريخي:\n{milestones}"
-    
+
     def _answer_unknown_question(self) -> str:
         """الإجابة على أسئلة غير معروفة."""
         return (
@@ -404,11 +402,11 @@ class OvermindIdentity:
             "• الفلسفة (ما هي الفلسفة؟)\n"
             "• التاريخ (ما هو تاريخك؟)"
         )
-    
+
     def get_full_identity(self) -> dict[str, Any]:
         """
         الحصول على الهوية الكاملة.
-        
+
         Returns:
             dict: جميع معلومات الهوية
         """

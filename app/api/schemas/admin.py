@@ -1,7 +1,9 @@
 from datetime import datetime
+
 from pydantic import Field, field_validator, model_validator
 
 from app.core.schemas import RobustBaseModel
+
 
 class ChatRequest(RobustBaseModel):
     """نموذج طلب محادثة المسؤول مع تحقق صارم للحقل الرئيسي."""

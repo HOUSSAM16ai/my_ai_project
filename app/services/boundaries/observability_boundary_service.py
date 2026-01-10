@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from app.services.boundaries.observability_client import ObservabilityServiceClient
 from app.telemetry.unified_observability import (
     UnifiedObservabilityService,
     get_unified_observability,
 )
-from app.services.boundaries.observability_client import ObservabilityServiceClient
+
 
 class ObservabilityBoundaryService:
     """

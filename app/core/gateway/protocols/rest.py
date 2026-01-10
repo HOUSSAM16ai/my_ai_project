@@ -1,11 +1,11 @@
-from typing import Any
-
 import contextlib
+from typing import Any
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from .base import ProtocolAdapter
+
 
 class RESTAdapter(ProtocolAdapter):
     """REST protocol adapter"""

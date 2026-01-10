@@ -1,10 +1,11 @@
 
-import pytest
 import json
-from datetime import datetime
-from unittest.mock import MagicMock
+
+import pytest
+
+from app.monitoring.exporters import InfluxDBExporter, JSONExporter, PrometheusExporter
 from app.monitoring.metrics import MetricsCollector
-from app.monitoring.exporters import JSONExporter, InfluxDBExporter, PrometheusExporter
+
 
 @pytest.fixture
 def collector():

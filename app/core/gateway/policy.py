@@ -1,8 +1,7 @@
-from typing import Any
-
 import logging
 import threading
 from datetime import UTC, datetime
+from typing import Any
 
 from .models import PolicyRule
 

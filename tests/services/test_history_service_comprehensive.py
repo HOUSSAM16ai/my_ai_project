@@ -2,7 +2,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
-
 from sqlmodel import SQLModel
 
 from app.core.domain.models import AdminConversation, AdminMessage

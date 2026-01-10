@@ -20,6 +20,7 @@ from typing import Protocol, runtime_checkable
 
 from app.core.domain.models import Mission, MissionEvent, MissionEventType, MissionStatus, Task
 
+
 @runtime_checkable
 class LifecycleProtocol(Protocol):
     """

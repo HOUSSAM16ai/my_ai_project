@@ -5,8 +5,7 @@
 """
 from __future__ import annotations
 
-from pydantic import BaseModel, Field, field_validator
-from pydantic import model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.core.domain.models import UserStatus
 
@@ -85,7 +84,7 @@ class ProfileUpdateRequest(BaseModel):
         return value.lower().strip() if value else value
 
     @model_validator(mode="after")
-    def ensure_changes(self) -> "ProfileUpdateRequest":
+    def ensure_changes(self) -> ProfileUpdateRequest:
         if self.full_name is None and self.email is None:
             raise ValueError("يجب تحديد حقل واحد على الأقل للتحديث")
         return self

@@ -4,6 +4,7 @@ import threading
 from collections import deque
 from dataclasses import dataclass, field
 
+
 @dataclass
 class TimeoutConfig:
     """Timeout hierarchy configuration"""

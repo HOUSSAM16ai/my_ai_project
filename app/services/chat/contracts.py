@@ -3,8 +3,8 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 from collections.abc import AsyncGenerator, Callable
+from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 

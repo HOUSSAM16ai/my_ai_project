@@ -12,6 +12,7 @@ from datetime import datetime
 
 from app.services.adaptive.domain.models import ServiceHealth, ServiceInstance
 
+
 class IntelligentRouter:
     """
     موجه ذكي يستخدم ML لاختيار أفضل instance للطلب
@@ -30,12 +31,12 @@ class IntelligentRouter:
         """
         اختيار أفضل instance بناءً على ML scoring
         Select best instance using ML scoring
-        
+
         Args:
             service_name: اسم الخدمة | Service name
             instances: قائمة instances المتاحة | Available instances
             request_metadata: بيانات الطلب | Request metadata
-            
+
         Returns:
             أفضل instance أو None | Best instance or None
         """
@@ -57,10 +58,10 @@ class IntelligentRouter:
     ) -> ServiceInstance | None:
         """
         تصفية واختيار instance صحي | Filter and select healthy instance
-        
+
         Args:
             instances: قائمة instances | Instances list
-            
+
         Returns:
             أفضل instance صحي | Best healthy instance
         """
@@ -79,10 +80,10 @@ class IntelligentRouter:
     ) -> ServiceInstance | None:
         """
         اختيار instance متدهور كحل بديل | Select degraded instance as fallback
-        
+
         Args:
             instances: قائمة instances | Instances list
-            
+
         Returns:
             أول instance متدهور أو None | First degraded instance or None
         """
@@ -94,10 +95,10 @@ class IntelligentRouter:
     ) -> ServiceInstance:
         """
         تسجيل واختيار أفضل instance | Score and select best instance
-        
+
         Args:
             instances: قائمة instances الصحية | Healthy instances list
-            
+
         Returns:
             أفضل instance بناءً على النقاط | Best scored instance
         """
@@ -119,7 +120,7 @@ class IntelligentRouter:
     ) -> None:
         """
         تسجيل قرار التوجيه للتعلم | Record routing decision for learning
-        
+
         Args:
             service_name: اسم الخدمة | Service name
             instance: الـ instance المختار | Selected instance
@@ -162,7 +163,7 @@ class IntelligentRouter:
         historical_score = self.instance_scores.get(instance.instance_id, 0.5)
 
         # Weighted combination
-        total_score = (
+        return (
             resource_score * 0.3
             + latency_score * 0.25
             + error_score * 0.2
@@ -170,7 +171,6 @@ class IntelligentRouter:
             + historical_score * 0.1
         )
 
-        return total_score
 
     def update_instance_score(self, instance_id: str, success: bool, response_time: float) -> None:
         """

@@ -20,6 +20,7 @@ from starlette.types import ASGIApp
 from .context import RequestContext
 from .result import MiddlewareResult
 
+
 class BaseMiddleware(BaseHTTPMiddleware, ABC):
     """
     الطبقة التجريدية الرئيسية لجميع الوسطاء.

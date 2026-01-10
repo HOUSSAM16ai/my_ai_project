@@ -8,15 +8,15 @@
 from contextlib import asynccontextmanager
 from uuid import UUID
 
-from fastapi import APIRouter, FastAPI, Depends
+from fastapi import APIRouter, Depends, FastAPI
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
+from microservices.planning_agent.database import get_session, init_db
 from microservices.planning_agent.health import HealthResponse, build_health_payload
-from microservices.planning_agent.settings import PlanningAgentSettings, get_settings
 from microservices.planning_agent.models import Plan
-from microservices.planning_agent.database import init_db, get_session
+from microservices.planning_agent.settings import PlanningAgentSettings, get_settings
 
 
 class PlanRequest(BaseModel):

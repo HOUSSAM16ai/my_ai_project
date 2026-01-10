@@ -6,7 +6,7 @@
 
 from typing import Any
 
-from sqlalchemy import MetaData, Table, Column, Integer, String, Text, text, inspect
+from sqlalchemy import MetaData, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.di import get_logger
@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 
 class TableManager:
     """مدير الجداول في قاعدة البيانات."""
-    
+
     def __init__(
         self,
         session: AsyncSession,
@@ -26,7 +26,7 @@ class TableManager:
     ) -> None:
         """
         تهيئة مدير الجداول.
-        
+
         Args:
             session: جلسة قاعدة البيانات
             metadata: معلومات البيانات الوصفية
@@ -35,40 +35,40 @@ class TableManager:
         self._session = session
         self.metadata = metadata
         self._logger = operations_logger
-    
+
     async def list_all_tables(self) -> list[str]:
         """
         عرض جميع الجداول في قاعدة البيانات.
-        
+
         Returns:
             list[str]: أسماء جميع الجداول
         """
         try:
             query = text("""
-                SELECT table_name 
-                FROM information_schema.tables 
+                SELECT table_name
+                FROM information_schema.tables
                 WHERE table_schema = 'public'
                 ORDER BY table_name
             """)
-            
+
             result = await self._session.execute(query)
             tables = [row[0] for row in result]
-            
+
             self._logger.log_operation("list_tables", {"count": len(tables)})
             return tables
-            
+
         except Exception as e:
             logger.error(f"Error listing tables: {e}")
             self._logger.log_operation("list_tables", {"error": str(e)}, success=False)
             return []
-    
+
     async def get_table_details(self, table_name: str) -> dict[str, Any]:
         """
         الحصول على تفاصيل كاملة عن جدول.
-        
+
         Args:
             table_name: اسم الجدول
-            
+
         Returns:
             dict: تفاصيل شاملة تشمل:
                 - columns: الأعمدة مع أنواعها
@@ -85,15 +85,15 @@ class TableManager:
             foreign_keys = await self._get_foreign_keys(table_name)
             indexes = await self._get_indexes(table_name)
             row_count = await self._get_row_count(table_name)
-            
+
             details = self._build_table_details(
-                table_name, columns, primary_keys, 
+                table_name, columns, primary_keys,
                 foreign_keys, indexes, row_count
             )
-            
+
             self._logger.log_operation("get_table_details", {"table": table_name})
             return details
-            
+
         except Exception as e:
             logger.error(f"Error getting table details: {e}")
             self._logger.log_operation(
@@ -106,30 +106,30 @@ class TableManager:
     async def _get_columns(self, table_name: str) -> list[dict[str, Any]]:
         """
         استعلام معلومات الأعمدة.
-        
+
         Query column information.
-        
+
         Args:
             table_name: اسم الجدول
-            
+
         Returns:
             قائمة بمعلومات الأعمدة
         """
-        columns_query = text(f"""
-            SELECT 
-                column_name, 
-                data_type, 
+        columns_query = text("""
+            SELECT
+                column_name,
+                data_type,
                 is_nullable,
                 column_default
             FROM information_schema.columns
             WHERE table_name = :table_name
             ORDER BY ordinal_position
         """)
-        
+
         result = await self._session.execute(
             columns_query, {"table_name": table_name}
         )
-        
+
         columns = []
         for row in result:
             columns.append({
@@ -138,22 +138,22 @@ class TableManager:
                 "nullable": row[2] == "YES",
                 "default": row[3],
             })
-        
+
         return columns
 
     async def _get_primary_keys(self, table_name: str) -> list[str]:
         """
         استعلام المفاتيح الأساسية.
-        
+
         Query primary keys.
-        
+
         Args:
             table_name: اسم الجدول
-            
+
         Returns:
             قائمة بأسماء أعمدة المفاتيح الأساسية
         """
-        pk_query = text(f"""
+        pk_query = text("""
             SELECT kcu.column_name
             FROM information_schema.table_constraints tc
             JOIN information_schema.key_column_usage kcu
@@ -161,24 +161,24 @@ class TableManager:
             WHERE tc.table_name = :table_name
                 AND tc.constraint_type = 'PRIMARY KEY'
         """)
-        
+
         result = await self._session.execute(pk_query, {"table_name": table_name})
         return [row[0] for row in result]
 
     async def _get_foreign_keys(self, table_name: str) -> list[dict[str, str]]:
         """
         استعلام المفاتيح الأجنبية.
-        
+
         Query foreign keys.
-        
+
         Args:
             table_name: اسم الجدول
-            
+
         Returns:
             قائمة بمعلومات المفاتيح الأجنبية
         """
-        fk_query = text(f"""
-            SELECT 
+        fk_query = text("""
+            SELECT
                 kcu.column_name,
                 ccu.table_name AS foreign_table,
                 ccu.column_name AS foreign_column
@@ -190,9 +190,9 @@ class TableManager:
             WHERE tc.table_name = :table_name
                 AND tc.constraint_type = 'FOREIGN KEY'
         """)
-        
+
         result = await self._session.execute(fk_query, {"table_name": table_name})
-        
+
         foreign_keys = []
         for row in result:
             foreign_keys.append({
@@ -200,49 +200,49 @@ class TableManager:
                 "references_table": row[1],
                 "references_column": row[2],
             })
-        
+
         return foreign_keys
 
     async def _get_indexes(self, table_name: str) -> list[dict[str, str]]:
         """
         استعلام الفهارس.
-        
+
         Query indexes.
-        
+
         Args:
             table_name: اسم الجدول
-            
+
         Returns:
             قائمة بمعلومات الفهارس
         """
-        idx_query = text(f"""
-            SELECT 
+        idx_query = text("""
+            SELECT
                 indexname,
                 indexdef
             FROM pg_indexes
             WHERE tablename = :table_name
         """)
-        
+
         result = await self._session.execute(idx_query, {"table_name": table_name})
-        
+
         indexes = []
         for row in result:
             indexes.append({
                 "name": row[0],
                 "definition": row[1],
             })
-        
+
         return indexes
 
     async def _get_row_count(self, table_name: str) -> int:
         """
         حساب عدد الصفوف في الجدول.
-        
+
         Count table rows.
-        
+
         Args:
             table_name: اسم الجدول
-            
+
         Returns:
             عدد الصفوف
         """
@@ -261,9 +261,9 @@ class TableManager:
     ) -> dict[str, Any]:
         """
         بناء كائن التفاصيل من المكونات المجمعة.
-        
+
         Build details object from collected components.
-        
+
         Args:
             table_name: اسم الجدول
             columns: قائمة الأعمدة
@@ -271,7 +271,7 @@ class TableManager:
             foreign_keys: قائمة المفاتيح الأجنبية
             indexes: قائمة الفهارس
             row_count: عدد الصفوف
-            
+
         Returns:
             كائن التفاصيل الكامل
         """
@@ -284,7 +284,7 @@ class TableManager:
             "constraints": [],  # Reserved for future use
             "row_count": row_count,
         }
-    
+
     async def create_table(
         self,
         table_name: str,
@@ -292,12 +292,12 @@ class TableManager:
     ) -> dict[str, Any]:
         """
         إنشاء جدول جديد.
-        
+
         Args:
             table_name: اسم الجدول
             columns: قاموس الأعمدة {اسم: نوع}
                 مثال: {"id": "INTEGER PRIMARY KEY", "name": "VARCHAR(255)"}
-        
+
         Returns:
             dict: نتيجة الإنشاء
         """
@@ -306,25 +306,25 @@ class TableManager:
             columns_sql = ", ".join(
                 [f'"{col_name}" {col_type}' for col_name, col_type in columns.items()]
             )
-            
+
             create_sql = f'CREATE TABLE "{table_name}" ({columns_sql})'
-            
+
             await self._session.execute(text(create_sql))
             await self._session.commit()
-            
+
             result = {
                 "success": True,
                 "table_name": table_name,
                 "columns": columns,
             }
-            
+
             self._logger.log_operation("create_table", result)
             return result
-            
+
         except Exception as e:
             await self._session.rollback()
             logger.error(f"Error creating table: {e}")
-            
+
             result = {
                 "success": False,
                 "table_name": table_name,
@@ -332,7 +332,7 @@ class TableManager:
             }
             self._logger.log_operation("create_table", result, success=False)
             return result
-    
+
     async def drop_table(
         self,
         table_name: str,
@@ -340,37 +340,37 @@ class TableManager:
     ) -> dict[str, Any]:
         """
         حذف جدول.
-        
+
         Args:
             table_name: اسم الجدول
             cascade: حذف التبعيات أيضاً
-        
+
         Returns:
             dict: نتيجة الحذف
-            
+
         تحذير:
             ⚠️ هذه عملية خطيرة - البيانات ستُحذف نهائياً!
         """
         try:
             cascade_sql = " CASCADE" if cascade else ""
             drop_sql = f'DROP TABLE IF EXISTS "{table_name}"{cascade_sql}'
-            
+
             await self._session.execute(text(drop_sql))
             await self._session.commit()
-            
+
             result = {
                 "success": True,
                 "table_name": table_name,
                 "cascade": cascade,
             }
-            
+
             self._logger.log_operation("drop_table", result)
             return result
-            
+
         except Exception as e:
             await self._session.rollback()
             logger.error(f"Error dropping table: {e}")
-            
+
             result = {
                 "success": False,
                 "table_name": table_name,

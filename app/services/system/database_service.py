@@ -1,7 +1,6 @@
-from typing import Any
-
 import asyncio
 import logging
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import AppSettings
 
 logger = logging.getLogger(__name__)
+
 
 class DatabaseService:
     def __init__(
@@ -52,7 +52,7 @@ class DatabaseService:
         per_page: int = 50,
         search: str | None = None,
         order_by: str | None = None,
-        order_dir: str = "asc",  # noqa: unused variable
+        order_dir: str = "asc",
     ) -> dict[str, Any]:
         return {"items": [], "total": 0}
 
@@ -76,5 +76,6 @@ class DatabaseService:
             return {"status": "success", "rowcount": result.rowcount}
         except Exception as e:
             return {"status": "error", "message": str(e)}
+
 
 database_service = DatabaseService()

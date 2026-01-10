@@ -8,8 +8,8 @@
 """
 
 import pytest
+
 from app.services.chat.handlers.strategy_handlers import DefaultChatHandler
-from app.services.chat.context import ChatContext
 
 
 class TestFounderIdentityInChat:

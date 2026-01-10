@@ -15,6 +15,7 @@ from app.services.admin.streaming.service import (
     set_streaming_service_factory,
 )
 
+
 @pytest.fixture(autouse=True)
 def reset_streaming_singleton() -> None:
     reset_streaming_service()

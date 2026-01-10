@@ -11,6 +11,7 @@ from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 
+
 class PolicyEnforcer(BaseMiddleware):
     """
     Policy-Based Access Control Middleware
@@ -83,9 +84,7 @@ class PolicyEnforcer(BaseMiddleware):
             return False
         if not self._check_method(ctx, policy):
             return False
-        if not self._check_ip_access(ctx, policy):
-            return False
-        return True
+        return self._check_ip_access(ctx, policy)
 
     def _check_roles(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
         """Check if user has required roles"""
@@ -124,9 +123,7 @@ class PolicyEnforcer(BaseMiddleware):
             return False
         # Check blacklist
         ip_blacklist = policy.get('ip_blacklist', [])
-        if ip_blacklist and ctx.ip_address in ip_blacklist:
-            return False
-        return True
+        return not (ip_blacklist and ctx.ip_address in ip_blacklist)
 
     def add_policy(self, path: str, policy: dict[str, Any]) -> None:
         """

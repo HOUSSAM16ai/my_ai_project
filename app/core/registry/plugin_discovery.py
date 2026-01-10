@@ -45,7 +45,7 @@ def _extract_plugin_instance(
     if not hasattr(plugin_module, 'plugin'):
         return None
 
-    plugin = getattr(plugin_module, 'plugin')
+    plugin = plugin_module.plugin
     if isinstance(plugin, IPlugin):
         return plugin
 

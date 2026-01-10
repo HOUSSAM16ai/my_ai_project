@@ -11,6 +11,7 @@ from collections import defaultdict, deque
 
 from app.services.serving.domain.models import ModelMetrics, ModelResponse, ModelVersion
 
+
 class MetricsCollector:
     """
     Metrics Collector - جامع المقاييس

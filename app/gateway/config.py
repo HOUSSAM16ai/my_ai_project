@@ -12,7 +12,7 @@ from typing import Final
 class ServiceEndpoint:
     """
     تمثيل نقطة نهاية خدمة مصغرة.
-    
+
     Attributes:
         name: اسم الخدمة الفريد
         base_url: عنوان URL الأساسي للخدمة
@@ -20,7 +20,7 @@ class ServiceEndpoint:
         timeout: مهلة الطلب بالثواني (افتراضي: 30)
         retry_count: عدد محاولات إعادة الطلب (افتراضي: 3)
     """
-    
+
     name: str
     base_url: str
     health_path: str = "/health"
@@ -32,14 +32,14 @@ class ServiceEndpoint:
 class RouteRule:
     """
     قاعدة توجيه الطلبات.
-    
+
     Attributes:
         path_prefix: بادئة المسار للتوجيه
         service_name: اسم الخدمة المستهدفة
         strip_prefix: إزالة البادئة قبل التوجيه (افتراضي: True)
         require_auth: يتطلب مصادقة (افتراضي: True)
     """
-    
+
     path_prefix: str
     service_name: str
     strip_prefix: bool = True
@@ -50,10 +50,10 @@ class RouteRule:
 class GatewayConfig:
     """
     تكوين البوابة الشامل.
-    
+
     يتبع مبدأ "البيانات ككود" (Data as Code) من SICP.
     """
-    
+
     services: tuple[ServiceEndpoint, ...] = field(default_factory=tuple)
     routes: tuple[RouteRule, ...] = field(default_factory=tuple)
     enable_cors: bool = True

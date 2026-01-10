@@ -1,4 +1,3 @@
-import pathlib
 
 class BaseStep:
     async def execute(self, context):

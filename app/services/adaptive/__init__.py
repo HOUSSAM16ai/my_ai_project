@@ -37,6 +37,9 @@ from app.services.adaptive.infrastructure import (
 __all__ = [
     # Application Services (Direct Access - KISS)
     "AIScalingEngine",
+    # Infrastructure
+    "InMemoryMetricsRepository",
+    "InMemoryServiceInstanceRepository",
     "IntelligentRouter",
     "PredictiveHealthMonitor",
     # Domain Models
@@ -45,7 +48,4 @@ __all__ = [
     "ServiceHealth",
     "ServiceInstance",
     "ServiceMetrics",
-    # Infrastructure
-    "InMemoryMetricsRepository",
-    "InMemoryServiceInstanceRepository",
 ]

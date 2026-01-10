@@ -12,6 +12,7 @@ from datetime import datetime
 
 from app.services.adaptive.domain.models import ScalingDecision, ScalingDirection, ServiceMetrics
 
+
 class AIScalingEngine:
     """
     محرك التوسع الذكي المدعوم بالذكاء الاصطناعي
@@ -49,13 +50,13 @@ class AIScalingEngine:
         ) ->ScalingDecision:
         """
         حساب العدد الأمثل من المثيلات | Calculate optimal number of instances
-        
+
         يستخدم multi-objective optimization لتحديد العدد الأمثل
         Uses multi-objective optimization to determine optimal number
         """
         _predicted_load, confidence = self.predict_load(service_name,
             current_metrics)
-        
+
         avg_util = self._calculate_average_utilization(current_metrics)
         scaling_factor, direction, reason = self._determine_scaling_direction(
             avg_util, current_instances
@@ -66,14 +67,14 @@ class AIScalingEngine:
         scaling_factor, direction, reason = self._adjust_for_error_rate(
             current_metrics, scaling_factor, direction, reason
         )
-        
+
         target_instances = self._calculate_target_instances(
             current_instances, scaling_factor
         )
         predicted_impact = self._calculate_predicted_impact(
             avg_util, target_instances, current_instances, scaling_factor
         )
-        
+
         return ScalingDecision(service_name=service_name, direction=
             direction, current_instances=current_instances,
             target_instances=target_instances, confidence=confidence,
@@ -83,10 +84,10 @@ class AIScalingEngine:
     def _calculate_average_utilization(self, metrics: ServiceMetrics) -> float:
         """
         حساب متوسط الاستخدام | Calculate average utilization
-        
+
         Args:
             metrics: مقاييس الخدمة | Service metrics
-            
+
         Returns:
             متوسط الاستخدام | Average utilization percentage
         """
@@ -97,16 +98,16 @@ class AIScalingEngine:
     ) -> tuple[float, ScalingDirection, str]:
         """
         تحديد اتجاه التوسع | Determine scaling direction
-        
+
         Args:
             avg_util: متوسط الاستخدام | Average utilization
             current_instances: عدد المثيلات الحالي | Current instances
-            
+
         Returns:
             (عامل التوسع، الاتجاه، السبب) | (scaling factor, direction, reason)
         """
         target_util = 65.0
-        
+
         if avg_util > 80:
             scaling_factor = avg_util / target_util
             direction = ScalingDirection.UP
@@ -119,7 +120,7 @@ class AIScalingEngine:
             scaling_factor = 1.0
             direction = ScalingDirection.STABLE
             reason = f'Optimal utilization: {avg_util:.1f}%'
-        
+
         return scaling_factor, direction, reason
 
     def _adjust_for_latency(
@@ -131,13 +132,13 @@ class AIScalingEngine:
     ) -> tuple[float, ScalingDirection, str]:
         """
         تعديل التوسع حسب الكمون | Adjust scaling for latency
-        
+
         Args:
             metrics: مقاييس الخدمة | Service metrics
             scaling_factor: عامل التوسع | Scaling factor
             direction: اتجاه التوسع | Scaling direction
             reason: السبب | Reason
-            
+
         Returns:
             (عامل التوسع المحدث، الاتجاه، السبب) | (updated scaling factor, direction, reason)
         """
@@ -145,7 +146,7 @@ class AIScalingEngine:
             scaling_factor = max(scaling_factor, 1.5)
             direction = ScalingDirection.UP
             reason += f' + High latency: P99={metrics.latency_p99:.0f}ms'
-        
+
         return scaling_factor, direction, reason
 
     def _adjust_for_error_rate(
@@ -157,13 +158,13 @@ class AIScalingEngine:
     ) -> tuple[float, ScalingDirection, str]:
         """
         تعديل التوسع حسب معدل الخطأ | Adjust scaling for error rate
-        
+
         Args:
             metrics: مقاييس الخدمة | Service metrics
             scaling_factor: عامل التوسع | Scaling factor
             direction: اتجاه التوسع | Scaling direction
             reason: السبب | Reason
-            
+
         Returns:
             (عامل التوسع المحدث، الاتجاه، السبب) | (updated scaling factor, direction, reason)
         """
@@ -171,7 +172,7 @@ class AIScalingEngine:
             scaling_factor = max(scaling_factor, 1.3)
             direction = ScalingDirection.UP
             reason += f' + High error rate: {metrics.error_rate:.1f}%'
-        
+
         return scaling_factor, direction, reason
 
     def _calculate_target_instances(
@@ -179,11 +180,11 @@ class AIScalingEngine:
     ) -> int:
         """
         حساب العدد المستهدف من المثيلات | Calculate target instances
-        
+
         Args:
             current_instances: عدد المثيلات الحالي | Current instances
             scaling_factor: عامل التوسع | Scaling factor
-            
+
         Returns:
             العدد المستهدف | Target instances (between 1 and 20)
         """
@@ -199,13 +200,13 @@ class AIScalingEngine:
     ) -> dict[str, float]:
         """
         حساب التأثير المتوقع | Calculate predicted impact
-        
+
         Args:
             avg_util: متوسط الاستخدام | Average utilization
             target_instances: العدد المستهدف | Target instances
             current_instances: العدد الحالي | Current instances
             scaling_factor: عامل التوسع | Scaling factor
-            
+
         Returns:
             التأثير المتوقع | Predicted impact metrics
         """

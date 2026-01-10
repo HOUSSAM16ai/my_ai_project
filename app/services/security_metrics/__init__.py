@@ -5,7 +5,7 @@ Simplified architecture using KISS principle - direct access to application serv
 
 Usage:
     from app.services.security_metrics import ComprehensiveMetricsCalculator
-    
+
     calculator = ComprehensiveMetricsCalculator()
     metrics = calculator.calculate_metrics(findings)
 """
@@ -27,10 +27,10 @@ PredictiveAnalytics = LinearRegressionPredictor
 RiskCalculator = AdvancedRiskCalculator
 
 __all__ = [
+    "AdvancedRiskCalculator",
     # Application Services (Direct Access - KISS)
     "ComprehensiveMetricsCalculator",
     "LinearRegressionPredictor",
-    "AdvancedRiskCalculator",
     "MetricsCalculator",  # Backward compatibility
     "PredictiveAnalytics",  # Backward compatibility
     "RiskCalculator",  # Backward compatibility

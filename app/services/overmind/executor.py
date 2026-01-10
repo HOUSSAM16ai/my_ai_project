@@ -13,8 +13,8 @@ import json
 import logging
 from collections.abc import Awaitable, Callable
 
-from app.core.protocols import MissionStateManagerProtocol
 from app.core.domain.models import Task
+from app.core.protocols import MissionStateManagerProtocol
 
 logger = logging.getLogger(__name__)
 

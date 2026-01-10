@@ -4,8 +4,8 @@
 # ======================================================================================
 """وسيط محول التحليلات - يرسل أحداث الاستخدام لمنصات الرصد التجاري."""
 
-from dataclasses import dataclass
 import time
+from dataclasses import dataclass
 
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext

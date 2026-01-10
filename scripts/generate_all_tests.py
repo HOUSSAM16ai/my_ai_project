@@ -123,7 +123,7 @@ class Test{module_name.title().replace("_", "")}Functions:
 """)
 
     # Build complete test file
-    template = f'''"""
+    return f'''"""
 Comprehensive Tests for {module_name}
 {"=" * (25 + len(module_name))}
 
@@ -174,7 +174,6 @@ class TestIntegration:
         assert True
 '''
 
-    return template
 
 
 def get_uncovered_files() -> list[tuple[Path, float, int]]:

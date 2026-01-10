@@ -68,7 +68,7 @@ class InferenceRouter:
     ) -> ModelResponse:
         """
         خدمة طلب استدلال.
-        
+
         تقوم بتوجيه الطلب إلى النموذج المناسب وتنفيذ الاستدلال.
 
         Args:
@@ -81,13 +81,13 @@ class InferenceRouter:
             ModelResponse: استجابة النموذج مع النتائج أو الخطأ.
         """
         request_id = str(uuid.uuid4())
-        
+
         # 1. Select and validate model
         model = self._select_model(model_name, version_id)
         error_response = self._validate_model(model, model_name, version_id, request_id)
         if error_response:
             return error_response
-        
+
         # Ensure model is not None (validated above)
         assert model is not None
 
@@ -98,11 +98,11 @@ class InferenceRouter:
     def _select_model(self, model_name: str, version_id: str | None) -> AIModel | None:
         """
         اختيار إصدار النموذج المناسب.
-        
+
         Args:
             model_name: اسم النموذج.
             version_id: معرف الإصدار (اختياري).
-            
+
         Returns:
             AIModel | None: النموذج المحدد أو None.
         """
@@ -119,13 +119,13 @@ class InferenceRouter:
     ) -> ModelResponse | None:
         """
         التحقق من توفر وحالة النموذج.
-        
+
         Args:
             model: النموذج للتحقق منه.
             model_name: اسم النموذج.
             version_id: معرف الإصدار.
             request_id: معرف الطلب.
-            
+
         Returns:
             ModelResponse | None: استجابة خطأ أو None إذا كان صالحاً.
         """
@@ -136,7 +136,7 @@ class InferenceRouter:
                 version_id=version_id or "unknown",
                 error=f"Model '{model_name}' not found or not ready"
             )
-        
+
         if model.status != ModelStatus.READY:
             return self._create_error_response(
                 request_id=request_id,
@@ -144,7 +144,7 @@ class InferenceRouter:
                 version_id=model.version_id,
                 error=f"Model not ready (status: {model.status.value})"
             )
-        
+
         return None
 
     def _create_error_response(
@@ -156,13 +156,13 @@ class InferenceRouter:
     ) -> ModelResponse:
         """
         إنشاء استجابة خطأ معيارية.
-        
+
         Args:
             request_id: معرف الطلب.
             model_id: معرف النموذج.
             version_id: معرف الإصدار.
             error: رسالة الخطأ.
-            
+
         Returns:
             ModelResponse: استجابة الخطأ.
         """
@@ -185,13 +185,13 @@ class InferenceRouter:
     ) -> ModelRequest:
         """
         إنشاء كائن الطلب.
-        
+
         Args:
             request_id: معرف الطلب.
             model: النموذج.
             input_data: بيانات الإدخال.
             parameters: المعاملات.
-            
+
         Returns:
             ModelRequest: كائن الطلب.
         """
@@ -211,12 +211,12 @@ class InferenceRouter:
     ) -> ModelResponse:
         """
         تنفيذ عملية الاستدلال.
-        
+
         Args:
             request: كائن الطلب.
             model: النموذج.
             request_id: معرف الطلب.
-            
+
         Returns:
             ModelResponse: استجابة النموذج.
         """
@@ -236,7 +236,7 @@ class InferenceRouter:
     def _log_inference_result(self, request_id: str, response: ModelResponse) -> None:
         """
         تسجيل نتيجة الاستدلال.
-        
+
         Args:
             request_id: معرف الطلب.
             response: استجابة النموذج.

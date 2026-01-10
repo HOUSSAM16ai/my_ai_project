@@ -1,9 +1,8 @@
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import select
 
-from app.core.security import generate_service_token
 from app.core.domain.models import AdminConversation, User
+from app.core.security import generate_service_token
 
 
 @pytest.mark.asyncio
@@ -20,10 +19,9 @@ async def test_access_control_isolation(
     await db_session.refresh(user_a)
     await db_session.refresh(user_b)
 
-    token_a = generate_service_token(str(user_a.id))
+    generate_service_token(str(user_a.id))
     token_b = generate_service_token(str(user_b.id))
 
-    headers_a = {"Authorization": f"Bearer {token_a}"}
     headers_b = {"Authorization": f"Bearer {token_b}"}
 
     # 2. User A creates a conversation manually to avoid فتح اتصال بث حي أثناء الاختبار
@@ -59,8 +57,7 @@ async def test_admin_can_access_any_conversation(
     await db_session.commit()
     await db_session.refresh(user_a)
 
-    token_a = generate_service_token(str(user_a.id))
-    headers_a = {"Authorization": f"Bearer {token_a}"}
+    generate_service_token(str(user_a.id))
 
     conversation = AdminConversation(
         title="User A secret plan", user_id=user_a.id, conversation_type="general"

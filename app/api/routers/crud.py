@@ -81,7 +81,7 @@ async def list_resources(
         )
     except ValueError as e:
         # Handle invalid resource type or other value errors gracefully
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     # Check against the imported BoundaryPaginatedResponse class (from schemas)
     if isinstance(result, BoundaryPaginatedResponse):

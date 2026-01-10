@@ -34,7 +34,7 @@ class TracingManager:
         """
         # Initialize trace parameters
         trace_params = self._initialize_trace_params(parent_context)
-        
+
         # Create span
         span = self._create_span(
             operation_name, trace_params, tags or {}
@@ -99,7 +99,7 @@ class TracingManager:
         """
         with self.lock:
             self.active_spans[span.span_id] = span
-            
+
             if trace_params['parent_span_id'] is None:
                 # Root span - create new trace
                 trace = UnifiedTrace(
@@ -145,7 +145,7 @@ class TracingManager:
         """
         End a span and return completed trace if applicable.
         إنهاء span وإرجاع التتبع المكتمل إن أمكن.
-        
+
         Returns the Trace object if the trace is completed, else None.
         """
         with self.lock:
@@ -154,13 +154,13 @@ class TracingManager:
 
             # Finalize span
             span = self._finalize_span(span_id, status, error_message, metrics)
-            
+
             # Process trace completion
             completed_trace = self._process_trace_completion(span)
-            
+
             # Cleanup
             del self.active_spans[span_id]
-            
+
             return completed_trace
 
     def _finalize_span(

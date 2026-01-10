@@ -108,14 +108,14 @@ async def test_overmind_factory_assembly(mock_db_session):
     """
     Test that the factory correctly assembles the Overmind components.
     """
-    with patch("app.services.overmind.factory.get_ai_client") as mock_get_ai, \
-         patch("app.services.overmind.factory.get_registry") as mock_get_registry, \
-         patch("app.services.overmind.factory.MissionStateManager") as mock_state_cls, \
-         patch("app.services.overmind.factory.TaskExecutor") as mock_exec_cls, \
+    with patch("app.services.overmind.factory.get_ai_client"), \
+         patch("app.services.overmind.factory.get_registry"), \
+         patch("app.services.overmind.factory.MissionStateManager"), \
+         patch("app.services.overmind.factory.TaskExecutor"), \
          patch("app.services.overmind.factory.StrategistAgent") as mock_strat, \
-         patch("app.services.overmind.factory.ArchitectAgent") as mock_arch, \
-         patch("app.services.overmind.factory.OperatorAgent") as mock_op, \
-         patch("app.services.overmind.factory.AuditorAgent") as mock_audit, \
+         patch("app.services.overmind.factory.ArchitectAgent"), \
+         patch("app.services.overmind.factory.OperatorAgent"), \
+         patch("app.services.overmind.factory.AuditorAgent"), \
          patch("app.services.overmind.factory.SuperBrain") as mock_brain_cls:
 
         mock_db = AsyncMock()

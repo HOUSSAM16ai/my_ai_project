@@ -96,18 +96,18 @@ def _safe_path(
 ) -> str:
     """
     Validate and normalize a file path with security checks.
-    
+
     التحقق من صحة وتطبيع مسار الملف مع فحوصات الأمان.
-    
+
     Args:
         path: Path to validate
         must_exist_parent: Whether parent directory must exist
         enforce_ext: List of allowed file extensions
         forbid_overwrite_large: Whether to forbid overwriting large files
-        
+
     Returns:
         Absolute, validated path
-        
+
     Raises:
         ValueError: For invalid paths
         PermissionError: For security violations
@@ -115,32 +115,32 @@ def _safe_path(
     """
     # Basic validation
     _validate_path_string(path)
-    
+
     # Normalize and check for path traversal
     abs_path = _normalize_and_check_path(path)
-    
+
     # Check for symlinks in path
     _check_symlinks_in_path(abs_path)
-    
+
     # Check parent directory
     if must_exist_parent:
         _check_parent_exists(abs_path)
-    
+
     # Check file extension
     if enforce_ext:
         _check_file_extension(abs_path, enforce_ext)
-    
+
     # Check for large file overwrite
     if forbid_overwrite_large:
         _check_large_file_overwrite(abs_path)
-    
+
     return abs_path
 
 
 def _validate_path_string(path: str) -> None:
     """
     Validate path string basics.
-    
+
     التحقق من أساسيات سلسلة المسار.
     """
     if not isinstance(path, str) or not path.strip():
@@ -152,36 +152,36 @@ def _validate_path_string(path: str) -> None:
 def _normalize_and_check_path(path: str) -> str:
     """
     Normalize path and check for traversal attempts.
-    
+
     تطبيع المسار والتحقق من محاولات الاختراق.
     """
     norm = path.replace("\\", "/")
     if norm.startswith("/") or norm.startswith("~"):
         norm = norm.lstrip("/")
-    
+
     # Check for path traversal
     if ".." in norm.split("/"):
         raise PermissionError("Path traversal detected.")
-    
+
     # Get absolute path
     abs_path = os.path.abspath(os.path.join(PROJECT_ROOT, norm))
-    
+
     # Ensure it's within project root
     if not abs_path.startswith(PROJECT_ROOT):
         raise PermissionError("Escaped project root.")
-    
+
     return abs_path
 
 
 def _check_symlinks_in_path(abs_path: str) -> None:
     """
     Check for symlinks in path components.
-    
+
     التحقق من الروابط الرمزية في مكونات المسار.
     """
     cur = PROJECT_ROOT
     rel_parts = abs_path[len(PROJECT_ROOT) :].lstrip(os.sep).split(os.sep)
-    
+
     for part in rel_parts:
         if not part:
             continue
@@ -193,7 +193,7 @@ def _check_symlinks_in_path(abs_path: str) -> None:
 def _check_parent_exists(abs_path: str) -> None:
     """
     Check if parent directory exists.
-    
+
     التحقق من وجود المجلد الأصلي.
     """
     parent = os.path.dirname(abs_path)
@@ -204,7 +204,7 @@ def _check_parent_exists(abs_path: str) -> None:
 def _check_file_extension(abs_path: str, enforce_ext: list[str]) -> None:
     """
     Check if file has allowed extension.
-    
+
     التحقق من أن الملف له امتداد مسموح.
     """
     if not any(abs_path.lower().endswith(e.lower()) for e in enforce_ext):
@@ -214,7 +214,7 @@ def _check_file_extension(abs_path: str, enforce_ext: list[str]) -> None:
 def _check_large_file_overwrite(abs_path: str) -> None:
     """
     Check if attempting to overwrite a large file.
-    
+
     التحقق من محاولة الكتابة فوق ملف كبير.
     """
     if os.path.exists(abs_path):

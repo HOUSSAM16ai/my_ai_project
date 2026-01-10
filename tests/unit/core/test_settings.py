@@ -1,7 +1,15 @@
-import pytest
 import os
 from unittest.mock import patch
-from app.core.settings.base import AppSettings, BaseServiceSettings, get_settings, _normalize_csv_or_list
+
+import pytest
+
+from app.core.settings.base import (
+    AppSettings,
+    BaseServiceSettings,
+    _normalize_csv_or_list,
+    get_settings,
+)
+
 
 class TestCoreConfig:
     """Test suite for the unified configuration system."""

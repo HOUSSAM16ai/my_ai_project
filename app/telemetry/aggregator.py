@@ -1,10 +1,10 @@
-from collections import defaultdict
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
-from app.telemetry.models import UnifiedTrace, UnifiedSpan
 from app.telemetry.metrics import MetricsManager
-from app.telemetry.tracing import TracingManager
+from app.telemetry.models import UnifiedSpan, UnifiedTrace
 from app.telemetry.structured_logging import LoggingManager
+from app.telemetry.tracing import TracingManager
+
 
 class TelemetryAggregator:
     """
@@ -157,9 +157,7 @@ class TelemetryAggregator:
             return False
         if has_errors is not None and (trace.error_count > 0) != has_errors:
             return False
-        if op_name and trace.root_span.operation_name != op_name:
-            return False
-        return True
+        return not (op_name and trace.root_span.operation_name != op_name)
 
     def _summarize_trace(self, trace: UnifiedTrace) -> dict[str, object]:
         return {

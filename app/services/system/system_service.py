@@ -50,7 +50,7 @@ class SystemIntegrityReport(TypedDict):
     secrets_ok: bool
     admin_present: bool
     database: DatabasePulse
-    timings: "DiagnosticTimings"
+    timings: DiagnosticTimings
 
 
 class DiagnosticTimings(TypedDict):
@@ -272,7 +272,7 @@ class SystemService:
                 raise
 
     @asynccontextmanager
-    async def _timed_session(self, db: AsyncSession | None, timings: "_TimingAccumulator") -> AsyncIterator[AsyncSession]:
+    async def _timed_session(self, db: AsyncSession | None, timings: _TimingAccumulator) -> AsyncIterator[AsyncSession]:
         """
         يقيس زمن الحصول على الجلسة لضبط سلوك النظام وفق مبادئ 15-213 وCS244.
 
@@ -371,7 +371,7 @@ class _PrecisionStopwatch:
         self._elapsed_ms: float | None = None
 
     @classmethod
-    def start(cls) -> "_PrecisionStopwatch":
+    def start(cls) -> _PrecisionStopwatch:
         """ينشئ مؤقتًا ويبدأه فورًا لقياس الفترات الحرجة."""
 
         return cls()

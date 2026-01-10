@@ -13,11 +13,9 @@
 - Gap-Free Streaming: دعم الاشتراك المسبق لتجنب فقدان الأحداث (Race Conditions).
 """
 
-from typing import Any
-
 import asyncio
 from collections.abc import AsyncGenerator
-from typing import Generic, TypeVar
+from typing import Any, TypeVar
 
 from app.core.di import get_logger
 
@@ -25,7 +23,7 @@ logger = get_logger(__name__)
 
 T = TypeVar("T")
 
-class EventBus(Generic[T]):
+class EventBus[T]:
     """
     ناقل أحداث غير متزامن يربط بين المنتجين (Producers) والمستهلكين (Consumers)
     داخل نفس العملية (Process) لتحقيق سرعة استجابة آنية.

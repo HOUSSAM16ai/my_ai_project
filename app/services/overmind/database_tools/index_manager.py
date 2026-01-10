@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 
 class IndexManager:
     """مدير الفهارس في قاعدة البيانات."""
-    
+
     def __init__(
         self,
         session: AsyncSession,
@@ -25,14 +25,14 @@ class IndexManager:
     ) -> None:
         """
         تهيئة مدير الفهارس.
-        
+
         Args:
             session: جلسة قاعدة البيانات
             operations_logger: مسجل العمليات
         """
         self._session = session
         self._logger = operations_logger
-    
+
     async def create_index(
         self,
         index_name: str,
@@ -42,25 +42,25 @@ class IndexManager:
     ) -> dict[str, Any]:
         """
         إنشاء فهرس على جدول.
-        
+
         Args:
             index_name: اسم الفهرس
             table_name: اسم الجدول
             columns: قائمة الأعمدة
             unique: هل الفهرس فريد (UNIQUE INDEX)
-        
+
         Returns:
             dict: نتيجة الإنشاء
         """
         try:
             unique_sql = "UNIQUE " if unique else ""
             columns_sql = ", ".join([f'"{col}"' for col in columns])
-            
+
             create_sql = f'CREATE {unique_sql}INDEX "{index_name}" ON "{table_name}" ({columns_sql})'
-            
+
             await self._session.execute(text(create_sql))
             await self._session.commit()
-            
+
             result = {
                 "success": True,
                 "index_name": index_name,
@@ -68,14 +68,14 @@ class IndexManager:
                 "columns": columns,
                 "unique": unique,
             }
-            
+
             self._logger.log_operation("create_index", result)
             return result
-            
+
         except Exception as e:
             await self._session.rollback()
             logger.error(f"Error creating index: {e}")
-            
+
             result = {
                 "success": False,
                 "index_name": index_name,
@@ -83,35 +83,35 @@ class IndexManager:
             }
             self._logger.log_operation("create_index", result, success=False)
             return result
-    
+
     async def drop_index(self, index_name: str) -> dict[str, Any]:
         """
         حذف فهرس.
-        
+
         Args:
             index_name: اسم الفهرس
-        
+
         Returns:
             dict: نتيجة الحذف
         """
         try:
             drop_sql = f'DROP INDEX IF EXISTS "{index_name}"'
-            
+
             await self._session.execute(text(drop_sql))
             await self._session.commit()
-            
+
             result = {
                 "success": True,
                 "index_name": index_name,
             }
-            
+
             self._logger.log_operation("drop_index", result)
             return result
-            
+
         except Exception as e:
             await self._session.rollback()
             logger.error(f"Error dropping index: {e}")
-            
+
             result = {
                 "success": False,
                 "index_name": index_name,

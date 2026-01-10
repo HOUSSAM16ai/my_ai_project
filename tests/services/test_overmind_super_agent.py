@@ -79,7 +79,7 @@ async def test_self_correction_loop():
     brain = SuperBrain(strategist, architect, operator, auditor)
     mission = Mission(id=2, objective="Fix bugs")
 
-    result = await brain.process_mission(mission)
+    await brain.process_mission(mission)
 
     # Should have run 2 full iterations (minus the first plan check which is once per iter)
     # Actually, logic:

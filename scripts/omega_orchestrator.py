@@ -11,7 +11,7 @@ import sys
 def run_security_checks() -> bool:
     """
     تشغيل فحوصات الأمان
-    
+
     Returns:
         bool: True إذا نجحت جميع الفحوصات
     """
@@ -24,7 +24,7 @@ def run_security_checks() -> bool:
 def run_self_healing() -> bool:
     """
     تشغيل عمليات الإصلاح الذاتي
-    
+
     Returns:
         bool: True إذا نجحت عمليات الإصلاح
     """
@@ -37,7 +37,7 @@ def run_self_healing() -> bool:
 def run_monitoring() -> bool:
     """
     تشغيل نظام المراقبة
-    
+
     Returns:
         bool: True إذا كانت جميع الأنظمة تعمل بشكل صحيح
     """
@@ -58,23 +58,23 @@ def main():
         default="all",
         help="Operation mode"
     )
-    
+
     args = parser.parse_args()
-    
+
     print("🚀 Omega Orchestrator Starting...")
     print(f"Mode: {args.mode}")
-    
+
     success = True
-    
+
     if args.mode in ["security", "all"]:
         success = success and run_security_checks()
-    
+
     if args.mode in ["heal", "all"]:
         success = success and run_self_healing()
-    
+
     if args.mode in ["monitor", "all"]:
         success = success and run_monitoring()
-    
+
     if success:
         print("\n✅ Omega Orchestrator completed successfully!")
         sys.exit(0)

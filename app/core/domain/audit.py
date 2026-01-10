@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Column, DateTime, JSON, func
+from sqlalchemy import JSON, Column, DateTime, func
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -39,7 +39,7 @@ class AuditLog(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), server_default=func.now(), index=True),
     )
 
-    actor: "User" | None = Relationship(
+    actor: User | None = Relationship(
         sa_relationship=relationship("User", back_populates="audit_logs"),
     )
 
@@ -49,7 +49,7 @@ class PromptTemplate(SQLModel, table=True):
     name: str = Field(unique=True)
     template: str
 
-    generated_prompts: list["GeneratedPrompt"] = Relationship(
+    generated_prompts: list[GeneratedPrompt] = Relationship(
         sa_relationship=relationship("GeneratedPrompt", back_populates="template")
     )
 

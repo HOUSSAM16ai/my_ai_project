@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from .models import ConfigEntry, Environment, Secret, SecretAccessLog
 
+
 class VaultBackend(ABC):
     """
     Abstract base for secret vault backends.

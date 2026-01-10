@@ -8,7 +8,7 @@ Manages the registration and execution of strategies.
 import inspect
 import logging
 from collections.abc import AsyncGenerator
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from app.core.patterns.strategy_pattern.base import Strategy
 
@@ -20,7 +20,7 @@ TInput = TypeVar("TInput")   # Strategy Input Type
 TOutput = TypeVar("TOutput")  # Strategy Output Type
 
 
-class StrategyRegistry(Generic[TInput, TOutput]):
+class StrategyRegistry[TInput, TOutput]:
     """
     Registry for Managing and Executing Strategies.
 
@@ -132,14 +132,14 @@ class StrategyRegistry(Generic[TInput, TOutput]):
                                 first_chunk = await anext(result)
                             except StopAsyncIteration:
                                 return result
-                            except Exception as stream_error:  # noqa: PERF203
+                            except Exception as stream_error:
                                 self._log_strategy_error(strategy, stream_error)
                                 continue
 
                             return self._prepend_async_chunk(first_chunk, result)
 
                         return result
-                    except Exception as execution_error:  # noqa: PERF203
+                    except Exception as execution_error:
                         self._log_strategy_error(strategy, execution_error)
                         continue
 

@@ -22,29 +22,29 @@ logger = get_logger(__name__)
 async def get_user_relations(session: AsyncSession, user_id: int) -> dict[str, Any]:
     """
     الحصول على علاقات المستخدم مع الكيانات الأخرى.
-    
+
     Args:
         session: جلسة قاعدة البيانات
         user_id: معرّف المستخدم
-        
+
     Returns:
         dict: العلاقات والروابط
-        
+
     يشمل:
         - recent_missions: قائمة المهام (آخر 5)
         - recent_messages: الرسائل الأخيرة (آخر 5)
     """
     try:
         relations = {}
-        
+
         # المهام الأخيرة (Recent Missions)
         missions_query = select(Mission).where(
             Mission.user_id == user_id
         ).order_by(Mission.created_at.desc()).limit(5)
-        
+
         missions_result = await session.execute(missions_query)
         missions = missions_result.scalars().all()
-        
+
         relations["recent_missions"] = [
             {
                 "id": m.id,
@@ -54,15 +54,15 @@ async def get_user_relations(session: AsyncSession, user_id: int) -> dict[str, A
             }
             for m in missions
         ]
-        
+
         # الرسائل الأخيرة (Recent Messages)
         messages_query = select(ChatMessage).where(
             ChatMessage.user_id == user_id
         ).order_by(ChatMessage.created_at.desc()).limit(5)
-        
+
         messages_result = await session.execute(messages_query)
         messages = messages_result.scalars().all()
-        
+
         relations["recent_messages"] = [
             {
                 "id": msg.id,
@@ -72,10 +72,10 @@ async def get_user_relations(session: AsyncSession, user_id: int) -> dict[str, A
             }
             for msg in messages
         ]
-        
+
         logger.info(f"Retrieved relations for user {user_id}")
         return relations
-        
+
     except Exception as e:
         logger.error(f"Error getting relations for user {user_id}: {e}")
         return {}

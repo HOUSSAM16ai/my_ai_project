@@ -22,7 +22,7 @@ def print_section(title: str) -> None:
 def main():
     """الدالة الرئيسية للاختبار."""
     identity = OvermindIdentity()
-    
+
     print_section("معلومات المؤسس (Founder Information)")
     founder = identity.get_founder_info()
     print(f"الاسم الكامل: {founder['name_ar']} ({founder['name']})")
@@ -31,7 +31,7 @@ def main():
     print(f"تاريخ الميلاد: {founder['birth_date']} (11 أغسطس 1997)")
     print(f"الدور: {founder['role_ar']} ({founder['role']})")
     print(f"GitHub: @{founder['github']}")
-    
+
     print_section("اختبار الأسئلة بالعربية")
     questions_ar = [
         "من هو مؤسس overmind؟",
@@ -39,12 +39,12 @@ def main():
         "ماذا تستطيع أن تفعل؟",
         "من هم الوكلاء؟",
     ]
-    
+
     for q in questions_ar:
         print(f"\n❓ السؤال: {q}")
         print(f"✅ الإجابة:\n{identity.answer_question(q)}\n")
         print("-" * 80)
-    
+
     print_section("اختبار الأسئلة بالإنجليزية")
     questions_en = [
         "who is the founder?",
@@ -52,39 +52,39 @@ def main():
         "what can you do?",
         "who are the agents?",
     ]
-    
+
     for q in questions_en:
         print(f"\n❓ Question: {q}")
         print(f"✅ Answer:\n{identity.answer_question(q)}\n")
         print("-" * 80)
-    
+
     print_section("الوكلاء الخارقين (Super Agents)")
     agents = identity.get_agents_info()
-    for key, agent in agents.items():
+    for _key, agent in agents.items():
         print(f"🤖 {agent['name']}")
         print(f"   الدور: {agent['role']}")
         print(f"   القدرات: {', '.join(agent['capabilities'])}")
         print()
-    
+
     print_section("القدرات والأدوات الخارقة")
     capabilities = identity.get_capabilities()
-    
+
     print("📚 المعرفة (Knowledge):")
     for item in capabilities["knowledge"]:
         print(f"   • {item}")
-    
+
     print("\n⚡ الإجراءات (Actions):")
     for item in capabilities["actions"]:
         print(f"   • {item}")
-    
+
     print("\n🧠 الذكاء (Intelligence):")
     for item in capabilities["intelligence"]:
         print(f"   • {item}")
-    
+
     print("\n🛠️ الأدوات الخارقة (Super Tools):")
     for item in capabilities["super_tools"]:
         print(f"   • {item}")
-    
+
     print_section("معلومات Overmind")
     overmind = identity.get_overmind_info()
     print(f"الاسم: {overmind['name_ar']} ({overmind['name']})")
@@ -92,7 +92,7 @@ def main():
     print(f"تاريخ الإنشاء: {overmind['birth_date']}")
     print(f"الإصدار: {overmind['version']}")
     print(f"المهمة: {overmind['purpose']}")
-    
+
     print_section("الخلاصة")
     print("✅ النظام يعمل بشكل صحيح!")
     print("✅ معلومات المؤسس محفوظة بدقة!")

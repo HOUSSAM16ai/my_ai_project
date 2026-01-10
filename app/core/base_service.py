@@ -10,9 +10,9 @@
 """
 
 import logging
-from abc import ABC
 
-class BaseService(ABC):
+
+class BaseService:
     """
     خدمة قاعدية لجميع خدمات التطبيق.
 

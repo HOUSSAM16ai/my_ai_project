@@ -38,4 +38,4 @@ class ChunkEmitter:
         return self.formatter.format_event(event_type, payload)
 
 
-__all__ = ["ChunkEmitter", "MS_TO_SECONDS", "SystemTimer", "Timer"]
+__all__ = ["MS_TO_SECONDS", "ChunkEmitter", "SystemTimer", "Timer"]

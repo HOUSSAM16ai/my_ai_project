@@ -121,8 +121,8 @@ class SupabaseVerificationSystem:
             self.test_results["performance"]["connection_time"] = elapsed
 
             # إنشاء Session
-            SessionLocal = sessionmaker(bind=self.engine)
-            self.session = SessionLocal()
+            session_local = sessionmaker(bind=self.engine)
+            self.session = session_local()
 
             return True
 

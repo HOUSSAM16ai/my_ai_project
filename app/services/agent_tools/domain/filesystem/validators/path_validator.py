@@ -3,7 +3,9 @@ Path validation utilities.
 """
 
 import os
+
 from app.services.agent_tools.utils import _safe_path
+
 
 def validate_path(path: str, allow_missing: bool = False) -> str:
     """

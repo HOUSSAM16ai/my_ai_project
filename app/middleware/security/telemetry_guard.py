@@ -4,13 +4,13 @@
 Collects security-related metrics, events, and audit logs.
 Integrates with observability systems for security monitoring.
 """
-from typing import Any
-
 import time
+from typing import Any
 
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
+
 
 class TelemetryGuard(BaseMiddleware):
     """

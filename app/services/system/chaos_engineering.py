@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
-
 import logging
 import random
 import threading
@@ -12,6 +9,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from typing import Any
+
 
 class FaultType(Enum):
     """Types of faults to inject"""

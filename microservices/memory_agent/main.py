@@ -8,16 +8,16 @@
 from contextlib import asynccontextmanager
 from uuid import UUID
 
-from fastapi import APIRouter, FastAPI, Depends
+from fastapi import APIRouter, Depends, FastAPI
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select, col
 from sqlalchemy.orm import selectinload
+from sqlmodel import col, select
 
+from microservices.memory_agent.database import get_session, init_db
 from microservices.memory_agent.health import HealthResponse, build_health_payload
+from microservices.memory_agent.models import Memory, Tag
 from microservices.memory_agent.settings import MemoryAgentSettings, get_settings
-from microservices.memory_agent.models import Memory, Tag, MemoryTagLink
-from microservices.memory_agent.database import init_db, get_session
 
 
 class MemoryCreateRequest(BaseModel):

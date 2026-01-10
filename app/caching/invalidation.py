@@ -6,7 +6,6 @@
 """
 
 import logging
-from typing import Protocol
 
 from app.caching.base import CacheBackend
 

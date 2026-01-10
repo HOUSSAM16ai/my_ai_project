@@ -494,9 +494,8 @@ def _to_sqlite_ddl(sql: str) -> str:
     # Replace IF NOT EXISTS in ADD COLUMN (SQLite doesn't support it in ALTER TABLE usually, removing it)
     # Postgres: ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...
     # SQLite: ALTER TABLE ... ADD COLUMN ... (fails if exists)
-    sql = re.sub(r"ADD COLUMN IF NOT EXISTS", "ADD COLUMN", sql, flags=re.IGNORECASE)
+    return re.sub(r"ADD COLUMN IF NOT EXISTS", "ADD COLUMN", sql, flags=re.IGNORECASE)
 
-    return sql
 
 def _assert_schema_whitelist_alignment() -> None:
     """Ensures schema matches whitelist."""
@@ -655,10 +654,8 @@ async def _ensure_missing_indexes(
             continue
 
         try:
-            if conn.dialect.name == "sqlite":
-                index_query = _to_sqlite_ddl(index_query)
-
-            await conn.execute(text(index_query))
+            ddl_query = _to_sqlite_ddl(index_query) if conn.dialect.name == "sqlite" else index_query
+            await conn.execute(text(ddl_query))
             fixed_indexes.append(f"{table_name}.{index_name}")
             logger.info(f"✅ Created missing index: {table_name}.{index_name}")
         except Exception as exc:

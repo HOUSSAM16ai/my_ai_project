@@ -4,7 +4,7 @@ import asyncio
 import logging
 import time
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from app.core.resilience import get_circuit_breaker
 from app.services.chat.handlers.base import ChatContext
@@ -158,13 +158,13 @@ async def _build_project_index_with_feedback() -> dict[str, Any]:
     """
     بناء فهرس المشروع مع تغذية راجعة للمستخدم.
     Build project index with user feedback.
-    
+
     Returns:
         dict: {'data': summary or None, 'feedback': generator of feedback messages}
     """
     feedback_messages = []
     feedback_messages.append("📊 جارٍ فهرسة المشروع للحصول على سياق عميق...\n")
-    
+
     try:
         from app.services.overmind.planning.deep_indexer import build_index, summarize_for_prompt
 
@@ -174,13 +174,13 @@ async def _build_project_index_with_feedback() -> dict[str, Any]:
         index = await asyncio.wait_for(_build_index_async(), timeout=30.0)
         summary = summarize_for_prompt(index, max_len=3000)
         feedback_messages.append("✅ تم بناء فهرس المشروع\n\n")
-        
+
         return {"data": summary, "feedback": _async_generator_from_list(feedback_messages)}
-        
+
     except TimeoutError:
         feedback_messages.append("⚠️ انتهت مهلة الفهرسة، سأستخدم معرفتي الحالية\n\n")
         return {"data": None, "feedback": _async_generator_from_list(feedback_messages)}
-        
+
     except Exception as e:
         logger.warning(f"Failed to build index for deep analysis: {e}")
         feedback_messages.append("⚠️ لم أتمكن من فهرسة المشروع بالكامل\n\n")

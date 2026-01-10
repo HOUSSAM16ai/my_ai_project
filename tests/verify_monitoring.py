@@ -1,18 +1,16 @@
-import asyncio
-import sys
-import unittest
-from datetime import datetime
-from unittest.mock import MagicMock
-
 # Ensure we can import the app
 import os
+import sys
+import unittest
+
 sys.path.append(os.getcwd())
 
-from app.monitoring.metrics import MetricsCollector
-from app.monitoring.exporters import JSONExporter, InfluxDBExporter, PrometheusExporter
+from app.monitoring.alerts import Alert, AlertManager, AlertSeverity
 from app.monitoring.dashboard import DashboardManager, DashboardView, DashboardWidget
-from app.monitoring.alerts import AlertManager, Alert, AlertSeverity
-from app.monitoring.performance import PerformanceTracker, PerformanceMetrics
+from app.monitoring.exporters import InfluxDBExporter, JSONExporter
+from app.monitoring.metrics import MetricsCollector
+from app.monitoring.performance import PerformanceTracker
+
 
 class TestMonitoring(unittest.TestCase):
     def test_json_exporter(self):

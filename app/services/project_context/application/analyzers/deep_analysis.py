@@ -9,6 +9,7 @@ from pathlib import Path
 
 from app.services.project_context.domain.models import FileAnalysis
 
+
 @dataclass
 class DeepFileAnalyzer:
     """Analyzer for deep file analysis."""
@@ -19,13 +20,13 @@ class DeepFileAnalyzer:
         """
         تحليل عميق لجميع الملفات.
         Deep analyze all files.
-        
+
         Returns:
             FileAnalysis: نتائج التحليل العميق | Deep analysis results
         """
         analysis = FileAnalysis()
         app_dir = self.project_root / "app"
-        
+
         if not app_dir.exists():
             return analysis
 
@@ -38,10 +39,10 @@ class DeepFileAnalyzer:
         """
         التكرار عبر ملفات Python.
         Iterate through Python files.
-        
+
         Args:
             app_dir: مسار دليل التطبيق | Application directory path
-            
+
         Yields:
             Path: مسار ملف Python | Python file path
         """
@@ -53,7 +54,7 @@ class DeepFileAnalyzer:
         """
         تحليل ملف واحد.
         Analyze a single file.
-        
+
         Args:
             py_file: مسار الملف | File path
             analysis: كائن التحليل للتحديث | Analysis object to update
@@ -70,7 +71,7 @@ class DeepFileAnalyzer:
         """
         عد عناصر الكود.
         Count code elements.
-        
+
         Args:
             content: محتوى الملف | File content
             analysis: كائن التحليل | Analysis object
@@ -83,7 +84,7 @@ class DeepFileAnalyzer:
         """
         كشف الأطر المستخدمة.
         Detect frameworks used.
-        
+
         Args:
             content: محتوى الملف | File content
             analysis: كائن التحليل | Analysis object
@@ -93,7 +94,7 @@ class DeepFileAnalyzer:
             ("sqlalchemy", "SQLAlchemy"),
             ("pydantic", "Pydantic"),
         ]
-        
+
         for keyword, framework_name in framework_checks:
             if keyword in content.lower() and framework_name not in analysis.frameworks_detected:
                 analysis.frameworks_detected.append(framework_name)
@@ -102,7 +103,7 @@ class DeepFileAnalyzer:
         """
         كشف أنماط التصميم.
         Detect design patterns.
-        
+
         Args:
             content: محتوى الملف | File content
             analysis: كائن التحليل | Analysis object
@@ -114,7 +115,7 @@ class DeepFileAnalyzer:
             ("_instance", "Singleton Pattern"),
             ("async def", "Async/Await"),
         ]
-        
+
         for keyword, pattern_name in pattern_checks:
             if keyword in content and pattern_name not in analysis.design_patterns:
                 analysis.design_patterns.append(pattern_name)

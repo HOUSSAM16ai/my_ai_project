@@ -4,22 +4,21 @@ Contains User, Role, Permission, and Auth Tokens.
 """
 from __future__ import annotations
 
-import secrets
 import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from passlib.context import CryptContext
 from sqlalchemy import Column, DateTime, String, func
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
-from app.core.domain.common import FlexibleEnum, CaseInsensitiveEnum, utc_now
+from app.core.domain.common import CaseInsensitiveEnum, FlexibleEnum, utc_now
 
 if TYPE_CHECKING:
-    from app.core.domain.mission import Mission
-    from app.core.domain.chat import AdminConversation, CustomerConversation
     from app.core.domain.audit import AuditLog
+    from app.core.domain.chat import AdminConversation, CustomerConversation
+    from app.core.domain.mission import Mission
 
 # Password Hashing
 pwd_context = CryptContext(
@@ -60,27 +59,27 @@ class User(SQLModel, table=True):
     )
 
     # Relationships
-    admin_conversations: list["AdminConversation"] = Relationship(
+    admin_conversations: list[AdminConversation] = Relationship(
         sa_relationship=relationship("AdminConversation", back_populates="user")
     )
-    customer_conversations: list["CustomerConversation"] = Relationship(
+    customer_conversations: list[CustomerConversation] = Relationship(
         sa_relationship=relationship("CustomerConversation", back_populates="user")
     )
-    missions: list["Mission"] = Relationship(
+    missions: list[Mission] = Relationship(
         sa_relationship=relationship("Mission", back_populates="initiator")
     )
-    roles: list["Role"] = Relationship(
+    roles: list[Role] = Relationship(
         back_populates="users",
         link_model="UserRole",  # type: ignore[arg-type]
         sa_relationship=relationship("Role", secondary="user_roles", back_populates="users"),
     )
-    refresh_tokens: list["RefreshToken"] = Relationship(
+    refresh_tokens: list[RefreshToken] = Relationship(
         sa_relationship=relationship("RefreshToken", back_populates="user"),
     )
-    password_reset_tokens: list["PasswordResetToken"] = Relationship(
+    password_reset_tokens: list[PasswordResetToken] = Relationship(
         sa_relationship=relationship("PasswordResetToken", back_populates="user"),
     )
-    audit_logs: list["AuditLog"] = Relationship(
+    audit_logs: list[AuditLog] = Relationship(
         sa_relationship=relationship("AuditLog", back_populates="actor"),
     )
 
@@ -118,7 +117,7 @@ class Role(SQLModel, table=True):
         link_model="UserRole",  # type: ignore[arg-type]
         sa_relationship=relationship("User", secondary="user_roles", back_populates="roles"),
     )
-    permissions: list["Permission"] = Relationship(
+    permissions: list[Permission] = Relationship(
         back_populates="roles",
         link_model="RolePermission",  # type: ignore[arg-type]
         sa_relationship=relationship("Permission", secondary="role_permissions", back_populates="roles"),

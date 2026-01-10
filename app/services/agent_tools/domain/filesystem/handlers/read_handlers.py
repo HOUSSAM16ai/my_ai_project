@@ -2,12 +2,16 @@
 Handlers for reading files.
 """
 
-import os
 import gzip
-from typing import Any
-from app.services.agent_tools.domain.filesystem.validators.path_validator import validate_file, validate_path
+import os
+
 from app.services.agent_tools.domain.filesystem.config import MAX_READ_BYTES
+from app.services.agent_tools.domain.filesystem.validators.path_validator import (
+    validate_file,
+    validate_path,
+)
 from app.services.agent_tools.tool_model import ToolResult
+
 
 def read_file_logic(
     path: str,
@@ -37,9 +41,11 @@ def read_file_logic(
             abs_path = validate_file(path)
         except (FileNotFoundError, IsADirectoryError, ValueError) as e:
             # Map Python exceptions to ToolResult errors expected by tests
-            err_str = str(e)
-            if isinstance(e, FileNotFoundError): return ToolResult(ok=False, error="FILE_NOT_FOUND")
-            if isinstance(e, IsADirectoryError): return ToolResult(ok=False, error="IS_DIRECTORY")
+            str(e)
+            if isinstance(e, FileNotFoundError):
+                return ToolResult(ok=False, error="FILE_NOT_FOUND")
+            if isinstance(e, IsADirectoryError):
+                return ToolResult(ok=False, error="IS_DIRECTORY")
             return ToolResult(ok=False, error=str(e))
 
         max_eff = min(max_bytes, MAX_READ_BYTES)

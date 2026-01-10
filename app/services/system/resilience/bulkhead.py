@@ -6,6 +6,8 @@ from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
+
 
 class PriorityLevel(Enum):
     """Request priority levels"""
@@ -16,6 +18,7 @@ class PriorityLevel(Enum):
     LOW = 4
     BACKGROUND = 5
 
+
 @dataclass
 class BulkheadConfig:
     """Bulkhead isolation configuration"""
@@ -25,10 +28,12 @@ class BulkheadConfig:
     timeout_ms: int = 30000
     priority_enabled: bool = True
 
+
 class BulkheadFullError(Exception):
     """Raised when bulkhead is at capacity"""
 
     pass
+
 
 class Bulkhead:
     """
@@ -56,15 +61,15 @@ class Bulkhead:
     ) -> dict[str, str | int | bool]:
         """
         تنفيذ دالة مع حماية الحاجز المائي | Execute function with bulkhead protection
-        
+
         يطبق حدود التزامن وإدارة قائمة الانتظار
         Applies concurrency limits and queue management
         """
         acquired = self._try_acquire_semaphore()
-        
+
         if not acquired:
             self._handle_bulkhead_full()
-        
+
         try:
             self._increment_active_calls()
             return self._execute_with_timeout(func, args, kwargs)
@@ -74,7 +79,7 @@ class Bulkhead:
     def _try_acquire_semaphore(self) -> bool:
         """
         محاولة الحصول على semaphore | Try to acquire semaphore
-        
+
         Returns:
             True إذا نجح، False إذا فشل | True if successful, False if failed
         """
@@ -83,7 +88,7 @@ class Bulkhead:
     def _handle_bulkhead_full(self) -> None:
         """
         معالجة حالة امتلاء الحاجز | Handle bulkhead full scenario
-        
+
         Raises:
             BulkheadFullError: عند امتلاء الحاجز | When bulkhead is full
         """
@@ -107,15 +112,15 @@ class Bulkhead:
     ) -> Any:
         """
         تنفيذ الدالة مع مهلة زمنية | Execute function with timeout
-        
+
         Args:
             func: الدالة المراد تنفيذها | Function to execute
             args: معاملات الدالة | Function arguments
             kwargs: معاملات مسماة | Named arguments
-            
+
         Returns:
             نتيجة تنفيذ الدالة | Function execution result
-            
+
         Raises:
             TimeoutError: إذا تجاوز وقت التنفيذ | If execution timeout exceeded
         """
@@ -133,7 +138,7 @@ class Bulkhead:
     def _release_resources(self) -> None:
         """
         تحرير موارد الحاجز | Release bulkhead resources
-        
+
         يقلل عدد الاستدعاءات النشطة ويحرر semaphore
         Decrements active calls and releases semaphore
         """

@@ -14,6 +14,7 @@ from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 from app.security.zero_trust import ZeroTrustAuthenticator
 
+
 class ZeroTrustMiddleware(ConditionalMiddleware):
     """
     Zero Trust Authentication Middleware

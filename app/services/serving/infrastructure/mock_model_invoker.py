@@ -19,6 +19,7 @@ from app.services.serving.domain.models import (
     ModelVersion,
 )
 
+
 class MockModelInvoker:
     """
     Mock implementation of ModelInvoker port.
@@ -74,7 +75,7 @@ class MockModelInvoker:
 
         # Generate successful response
         return self._create_success_response(model, request, start_time)
-    
+
     def _create_not_ready_response(
         self, model: ModelVersion, request: ModelRequest
     ) -> ModelResponse:
@@ -91,7 +92,7 @@ class MockModelInvoker:
             success=False,
             error=f"Model not ready (status: {model.status.value})",
         )
-    
+
     def _simulate_processing_delay(self) -> None:
         """
         محاكاة وقت المعالجة
@@ -100,7 +101,7 @@ class MockModelInvoker:
         if self.simulate_latency:
             latency_ms = random.uniform(self.min_latency_ms, self.max_latency_ms)
             time.sleep(latency_ms / 1000.0)
-    
+
     def _create_error_response(
         self, model: ModelVersion, request: ModelRequest, start_time: float
     ) -> ModelResponse:
@@ -118,7 +119,7 @@ class MockModelInvoker:
             success=False,
             error="Simulated random error",
         )
-    
+
     def _create_success_response(
         self, model: ModelVersion, request: ModelRequest, start_time: float
     ) -> ModelResponse:
@@ -129,7 +130,7 @@ class MockModelInvoker:
         output_data = self._generate_mock_output(model, request)
         actual_latency = (time.time() - start_time) * 1000
         total_tokens = self._calculate_token_usage(request, output_data)
-        
+
         return ModelResponse(
             request_id=request.request_id,
             model_id=model.model_name,
@@ -140,7 +141,7 @@ class MockModelInvoker:
             cost_usd=self._estimate_cost(model, total_tokens),
             success=True,
         )
-    
+
     def _calculate_token_usage(
         self, request: ModelRequest, output_data: dict
     ) -> int:
@@ -151,7 +152,7 @@ class MockModelInvoker:
         input_tokens = len(str(request.input_data)) // 4
         output_tokens = len(str(output_data)) // 4
         return input_tokens + output_tokens
-    
+
     def health_check(self, model: ModelVersion) -> bool:
         """
         فحص صحة النموذج
@@ -176,9 +177,9 @@ class MockModelInvoker:
             return self._generate_embedding_output(model)
         if model.model_type == ModelType.VISION_MODEL:
             return self._generate_vision_output(model)
-        
+
         return self._generate_generic_output(model, request)
-    
+
     def _generate_language_model_output(
         self, model: ModelVersion, request: ModelRequest
     ) -> dict[str, any]:
@@ -192,7 +193,7 @@ class MockModelInvoker:
             "finish_reason": "stop",
             "model": model.model_name,
         }
-    
+
     def _generate_embedding_output(self, model: ModelVersion) -> dict[str, any]:
         """
         إنشاء استجابة تضمين
@@ -202,7 +203,7 @@ class MockModelInvoker:
             "embedding": [random.random() for _ in range(384)],
             "model": model.model_name,
         }
-    
+
     def _generate_vision_output(self, model: ModelVersion) -> dict[str, any]:
         """
         إنشاء استجابة نموذج رؤية
@@ -216,7 +217,7 @@ class MockModelInvoker:
             ],
             "model": model.model_name,
         }
-    
+
     def _generate_generic_output(
         self, model: ModelVersion, request: ModelRequest
     ) -> dict[str, any]:

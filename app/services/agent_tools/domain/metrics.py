@@ -1,13 +1,13 @@
 """
 Domain tools for project metrics and file system statistics.
 """
-from typing import Any
-
 import os
 import subprocess
 from pathlib import Path
+from typing import Any
 
 from app.services.agent_tools.tool_model import Tool, ToolConfig
+
 
 def get_project_root() -> Path:
     """Get the project root directory."""

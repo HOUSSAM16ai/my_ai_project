@@ -63,13 +63,13 @@ class CodePatternArtist:
         )
         svg += branches
 
-        svg += '''
+        svg += f'''
             <text x="10" y="30"
-                  fill="%s"
+                  fill="{self.palette.text}"
                   font-size="16"
                   font-weight="bold">Fractal Code Tree</text>
         </svg>
-        ''' % self.palette.text
+        '''
 
         return svg
 
@@ -194,12 +194,12 @@ class CodePatternArtist:
                   opacity="0.8"/>
             '''
 
-        svg += '''
+        svg += f'''
             <text x="10" y="30"
-                  fill="%s"
+                  fill="{self.palette.text}"
                   font-size="16"
                   font-weight="bold">Code Evolution Spiral</text>
         </svg>
-        ''' % self.palette.text
+        '''
 
         return svg

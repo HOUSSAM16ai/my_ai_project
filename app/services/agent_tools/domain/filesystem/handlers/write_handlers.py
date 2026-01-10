@@ -2,14 +2,24 @@
 Handlers for writing and modifying files.
 """
 
-import os
-from app.services.agent_tools.domain.filesystem.validators.path_validator import validate_path, validate_file
 import gzip
+import os
+
 from app.services.agent_tools.domain.filesystem.config import (
-    MAX_WRITE_BYTES, MAX_APPEND_BYTES, ENFORCE_APPEND_TOTAL,
-    AUTO_CREATE_ENABLED, AUTO_CREATE_MAX_BYTES, AUTO_CREATE_DEFAULT_CONTENT, AUTO_CREATE_ALLOWED_EXTS
+    AUTO_CREATE_ALLOWED_EXTS,
+    AUTO_CREATE_DEFAULT_CONTENT,
+    AUTO_CREATE_ENABLED,
+    AUTO_CREATE_MAX_BYTES,
+    ENFORCE_APPEND_TOTAL,
+    MAX_APPEND_BYTES,
+    MAX_WRITE_BYTES,
+)
+from app.services.agent_tools.domain.filesystem.validators.path_validator import (
+    validate_file,
+    validate_path,
 )
 from app.services.agent_tools.tool_model import ToolResult
+
 
 def write_file_logic(path: str, content: str, compress_json_if_large: bool = False) -> ToolResult:
     """Writes content to a file, overwriting it."""
@@ -59,7 +69,7 @@ def write_file_if_changed_logic(path: str, content: str) -> ToolResult:
                 return ToolResult(ok=False, error="IS_DIRECTORY")
 
             try:
-                with open(abs_path, "r", encoding="utf-8") as f:
+                with open(abs_path, encoding="utf-8") as f:
                     current = f.read()
                 if current == content:
                     return ToolResult(ok=True, data={"skipped": True, "reason": "UNCHANGED", "path": abs_path})
@@ -115,8 +125,10 @@ def delete_file_logic(path: str, confirm: bool = False) -> ToolResult:
         try:
             abs_path = validate_file(path)
         except (FileNotFoundError, IsADirectoryError, ValueError) as e:
-            if isinstance(e, FileNotFoundError): return ToolResult(ok=False, error="FILE_NOT_FOUND")
-            if isinstance(e, IsADirectoryError): return ToolResult(ok=False, error="IS_DIRECTORY")
+            if isinstance(e, FileNotFoundError):
+                return ToolResult(ok=False, error="FILE_NOT_FOUND")
+            if isinstance(e, IsADirectoryError):
+                return ToolResult(ok=False, error="IS_DIRECTORY")
             return ToolResult(ok=False, error=str(e))
 
         os.remove(abs_path)

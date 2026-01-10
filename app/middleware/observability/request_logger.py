@@ -14,6 +14,7 @@ from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 from app.telemetry import StructuredLogger
 
+
 class RequestLoggerMiddleware(BaseMiddleware):
     """
     Request Logger Middleware
@@ -38,7 +39,7 @@ class RequestLoggerMiddleware(BaseMiddleware):
         self.logged_count += 1
         level = self._get_log_level(ctx.path)
         log_data = self._prepare_log_data(ctx)
-        
+
         self.logger.log(
             level=level,
             message=f"Incoming request: {ctx.method} {ctx.path}",

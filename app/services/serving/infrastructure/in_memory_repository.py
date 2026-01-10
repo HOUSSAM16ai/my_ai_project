@@ -9,13 +9,12 @@ Can be replaced with Redis/Database implementation without changing application 
 
 from __future__ import annotations
 
-from typing import Any
-
-
 import threading
 from collections import defaultdict, deque
+from typing import Any
 
 from app.services.serving.domain.models import ModelMetrics, ModelVersion
+
 
 class InMemoryModelRepository:
     """
@@ -100,10 +99,10 @@ class InMemoryMetricsRepository:
         """
         Get aggregated metrics summary
         الحصول على ملخص المقاييس المجمعة
-        
+
         Args:
             version_id: معرف نسخة النموذج | Model version ID
-            
+
         Returns:
             ملخص المقاييس | Metrics summary
         """
@@ -118,7 +117,7 @@ class InMemoryMetricsRepository:
     def _create_empty_summary(self) -> dict[str, Any]:
         """
         إنشاء ملخص فارغ | Create empty summary
-        
+
         Returns:
             ملخص فارغ | Empty summary
         """
@@ -132,16 +131,16 @@ class InMemoryMetricsRepository:
     def _calculate_metrics_summary(self, metrics_list: list[ModelMetrics]) -> dict[str, Any]:
         """
         حساب ملخص المقاييس | Calculate metrics summary
-        
+
         Args:
             metrics_list: قائمة المقاييس | Metrics list
-            
+
         Returns:
             الملخص المحسوب | Calculated summary
         """
         total_requests = sum(m.total_requests for m in metrics_list)
         successful_requests = sum(m.successful_requests for m in metrics_list)
-        
+
         avg_latency = self._calculate_average_latency(metrics_list)
         total_cost = sum(m.cost_usd for m in metrics_list)
         success_rate = self._calculate_success_rate(total_requests, successful_requests)
@@ -157,10 +156,10 @@ class InMemoryMetricsRepository:
     def _calculate_average_latency(self, metrics_list: list[ModelMetrics]) -> float:
         """
         حساب متوسط زمن الاستجابة | Calculate average latency
-        
+
         Args:
             metrics_list: قائمة المقاييس | Metrics list
-            
+
         Returns:
             متوسط زمن الاستجابة | Average latency
         """
@@ -171,11 +170,11 @@ class InMemoryMetricsRepository:
     def _calculate_success_rate(self, total_requests: int, successful_requests: int) -> float:
         """
         حساب معدل النجاح | Calculate success rate
-        
+
         Args:
             total_requests: إجمالي الطلبات | Total requests
             successful_requests: الطلبات الناجحة | Successful requests
-            
+
         Returns:
             معدل النجاح | Success rate
         """

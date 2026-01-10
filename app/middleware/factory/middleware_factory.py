@@ -17,6 +17,7 @@ from app.middleware.security import (
     WAFMiddleware,
 )
 
+
 class MiddlewareFactory:
     """يبني خطوط أنابيب جاهزة للاستخدام بحسب سياق البيئة."""
 

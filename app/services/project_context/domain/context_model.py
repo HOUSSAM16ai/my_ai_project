@@ -7,7 +7,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-
 ScalarValue = str | int | float | bool
 MetricValue = ScalarValue | list[ScalarValue]
 AnalysisMap = dict[str, MetricValue | dict[str, MetricValue]]

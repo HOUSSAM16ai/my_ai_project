@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Generator
 from dataclasses import dataclass
-from typing import Generator
 
 from app.services.admin.streaming.config import StreamingConfig
 

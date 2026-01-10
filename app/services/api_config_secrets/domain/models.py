@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 
+
 class Environment(Enum):
     """Deployment environments"""
 

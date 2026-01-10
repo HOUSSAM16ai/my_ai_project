@@ -5,14 +5,13 @@ Routes requests to multiple models and aggregates their responses.
 """
 from __future__ import annotations
 
-from typing import Any
-
-
 import threading
 import uuid
 from collections import Counter
+from typing import Any
 
 from app.services.serving.domain.models import EnsembleConfig, ModelResponse
+
 
 class EnsembleRouter:
     """
@@ -55,8 +54,7 @@ class EnsembleRouter:
         if not results:
             return None
         result_counts = Counter(str(r) for r in results)
-        most_common = result_counts.most_common(1)[0][0]
-        return most_common
+        return result_counts.most_common(1)[0][0]
 
     def _averaging_aggregation(self, responses: list[ModelResponse]) ->dict[
         str, Any]:

@@ -10,6 +10,7 @@
 """
 
 import logging
+
 from app.core.database import async_session_factory
 from app.services.overmind.factory import create_overmind
 

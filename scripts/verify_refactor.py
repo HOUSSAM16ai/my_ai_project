@@ -5,12 +5,14 @@ import sys
 # Set env before any other imports
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
-from sqlalchemy.ext.asyncio import create_async_engine
+import contextlib
+
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 # Import the module under test
 from app.core import db_schema
-from app.core.domain import models # Ensure models are loaded
+
 
 async def main():
     print("Testing schema validation with SQLite...")
@@ -62,7 +64,5 @@ async def main():
         await test_engine.dispose()
 
 if __name__ == "__main__":
-    try:
+    with contextlib.suppress(KeyboardInterrupt):
         asyncio.run(main())
-    except KeyboardInterrupt:
-        pass

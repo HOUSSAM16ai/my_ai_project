@@ -69,7 +69,7 @@ class AdminChatStreamer:
         try:
             orchestrator = get_chat_orchestrator()
             full_response: list[str] = []
-            
+
             async for chunk in self._stream_with_safety_checks(
                 orchestrator, question, user_id, conversation.id,
                 ai_client, history, session_factory_func, full_response
@@ -136,7 +136,7 @@ class AdminChatStreamer:
         # Note: We need to cast history to list[dict[str, str]] because ChatOrchestrator expects strict strings,
         # but here we deal with generic objects (usually strings).
         # In a perfect world, we'd validate, but for now we cast to satisfy type checker.
-        history_casted = list(map(lambda x: {k: str(v) for k, v in x.items()}, history))
+        history_casted = [{k: str(v) for k, v in x.items()} for x in history]
 
         async for content_part in orchestrator.process(
             question=question,

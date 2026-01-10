@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from typing import Any
-
-
 import logging
 import threading
 from collections.abc import Callable
 from enum import Enum
+from typing import Any
+
 
 class FallbackLevel(Enum):
     """Fallback chain levels"""

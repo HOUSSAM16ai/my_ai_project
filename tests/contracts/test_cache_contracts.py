@@ -1,7 +1,9 @@
 import asyncio
 import sys
-from typing import Protocol, Any
+from typing import Any
+
 from app.core.gateway.protocols.cache import CacheProviderProtocol
+
 
 class MockCacheProvider:
     def __init__(self):

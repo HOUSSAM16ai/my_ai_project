@@ -7,6 +7,7 @@ Detects architectural layers.
 from dataclasses import dataclass
 from pathlib import Path
 
+
 @dataclass
 class ArchitectureAnalyzer:
     """Analyzer for architecture layers."""
@@ -19,16 +20,16 @@ class ArchitectureAnalyzer:
         Identify architecture layers.
         """
         layers = self._initialize_layers()
-        
+
         app_dir = self.project_root / "app"
         if not app_dir.exists():
             return layers
-        
+
         dir_mapping = self._get_directory_layer_mapping()
         self._categorize_directories(app_dir, dir_mapping, layers)
-        
+
         return layers
-    
+
     def _initialize_layers(self) -> dict[str, list[str]]:
         """
         تهيئة الطبقات الفارغة
@@ -41,7 +42,7 @@ class ArchitectureAnalyzer:
             "infrastructure": [],
             "core": [],
         }
-    
+
     def _get_directory_layer_mapping(self) -> dict[str, str]:
         """
         الحصول على تعيين الدليل إلى الطبقة
@@ -60,7 +61,7 @@ class ArchitectureAnalyzer:
             "middleware": "infrastructure",
             "config": "infrastructure",
         }
-    
+
     def _categorize_directories(
         self,
         app_dir: Path,

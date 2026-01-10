@@ -10,13 +10,12 @@
 - KISS: قوالب بسيطة وواضحة
 """
 
-from typing import Any
 
 
 def _get_base_styles() -> str:
     """
     أنماط CSS الأساسية للصفحة (body, container, headings).
-    
+
     Returns:
         str: أنماط CSS الأساسية
     """
@@ -43,7 +42,7 @@ def _get_base_styles() -> str:
 def _get_summary_styles() -> str:
     """
     أنماط CSS لمنطقة الملخص والإحصائيات.
-    
+
     Returns:
         str: أنماط CSS للملخص
     """
@@ -86,7 +85,7 @@ def _get_summary_styles() -> str:
 def _get_heatmap_file_row_styles() -> str:
     """
     أنماط CSS لصفوف الملفات في الخريطة الحرارية.
-    
+
     Returns:
         str: أنماط CSS لصفوف الملفات
     """
@@ -135,7 +134,7 @@ def _get_heatmap_file_row_styles() -> str:
 def _get_severity_color_styles() -> str:
     """
     أنماط CSS لألوان مستويات الخطورة (critical, high, medium, low).
-    
+
     Returns:
         str: أنماط CSS لألوان الخطورة
     """
@@ -163,7 +162,7 @@ def _get_severity_color_styles() -> str:
 def _get_badge_styles() -> str:
     """
     أنماط CSS للشارات (badges) حسب مستوى الخطورة.
-    
+
     Returns:
         str: أنماط CSS للشارات
     """
@@ -198,7 +197,7 @@ def _get_badge_styles() -> str:
 def _get_legend_styles() -> str:
     """
     أنماط CSS لدليل الألوان (legend).
-    
+
     Returns:
         str: أنماط CSS لدليل الألوان
     """
@@ -233,10 +232,10 @@ def _get_legend_styles() -> str:
 def get_html_styles() -> str:
     """
     الحصول على أنماط CSS الكاملة للتقرير.
-    
+
     Returns:
         str: كود CSS كامل مُجمّع من جميع helper methods
-        
+
     ملاحظة:
         تم تقسيم الأنماط إلى helper methods صغيرة لتطبيق مبدأ SRP (Single Responsibility).
         كل helper method مسؤول عن مجموعة أنماط محددة فقط.
@@ -264,7 +263,7 @@ def create_file_row_html(
 ) -> str:
     """
     إنشاء HTML لصف ملف واحد في الخريطة الحرارية.
-    
+
     Args:
         relative_path: المسار النسبي للملف
         priority_tier: مستوى الأولوية (Critical, High, Medium, Low)
@@ -275,14 +274,14 @@ def create_file_row_html(
         commits_last_12months: عدد التعديلات في آخر 12 شهر
         bugfix_commits: عدد commits إصلاح الأخطاء
         smells_html: الروائح البنيوية (HTML formatted)
-        
+
     Returns:
         str: HTML كامل لصف الملف
-        
+
     ملاحظة: كل معامل له دور واضح في بناء التقرير
     """
     tier_class = priority_tier.lower()  # تحويل إلى lowercase لاستخدامه كـ CSS class
-    
+
     return f"""
         <div class="file-row {tier_class}">
             <div class="file-name">
@@ -334,7 +333,7 @@ def create_complete_html(
 ) -> str:
     """
     إنشاء HTML كامل للتقرير.
-    
+
     Args:
         timestamp: وقت إنشاء التقرير
         total_files: إجمالي عدد الملفات
@@ -344,10 +343,10 @@ def create_complete_html(
         avg_file_complexity: متوسط التعقيد
         max_file_complexity: أقصى تعقيد
         file_rows_html: HTML لجميع صفوف الملفات (مجمّعة)
-        
+
     Returns:
         str: مستند HTML كامل
-        
+
     ملاحظة: تم تقسيم الدالة إلى helper methods لتطبيق KISS
     """
     styles = get_html_styles()
@@ -357,7 +356,7 @@ def create_complete_html(
         total_classes, avg_file_complexity, max_file_complexity
     )
     legend = _create_legend_section()
-    
+
     return f"""<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
@@ -423,7 +422,7 @@ def _create_stat_items(
         ("متوسط التعقيد", f"{avg_file_complexity:.1f}"),
         ("أقصى تعقيد", max_file_complexity),
     ]
-    
+
     return "\n".join(
         f"""<div class="stat">
                     <div class="stat-label">{label}</div>
@@ -441,7 +440,7 @@ def _create_legend_section() -> str:
         ("#ffdd44", "متوسط (≥0.3)"),
         ("#44ff44", "منخفض (&lt;0.3)"),
     ]
-    
+
     items_html = "\n".join(
         f"""<div class="legend-item">
                     <div class="legend-color" style="background: {color};"></div>
@@ -449,7 +448,7 @@ def _create_legend_section() -> str:
                 </div>"""
         for color, label in legend_items
     )
-    
+
     return f"""<div class="legend">
             <h3>دليل الألوان</h3>
             <div class="legend-items">

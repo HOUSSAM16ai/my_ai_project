@@ -6,14 +6,14 @@ Defines the contract for all strategies in the application.
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 # Generic Type Variables
 TInput = TypeVar("TInput")   # Strategy Input Type
 TOutput = TypeVar("TOutput")  # Strategy Output Type
 
 
-class Strategy(ABC, Generic[TInput, TOutput]):
+class Strategy[TInput, TOutput](ABC):
     """
     Abstract Base Class for Strategies.
 

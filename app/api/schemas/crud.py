@@ -3,6 +3,7 @@ from pydantic import Field
 
 from app.core.schemas import RobustBaseModel
 
+
 class GenericResourceResponse(RobustBaseModel):
     """
     نموذج استجابة عام للموارد.

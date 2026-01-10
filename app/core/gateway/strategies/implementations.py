@@ -1,8 +1,8 @@
+from abc import ABC, abstractmethod
 from typing import Any
 
-from abc import ABC, abstractmethod
-
 from app.core.gateway.models import RoutingStrategy
+
 
 class BaseRoutingStrategy(ABC):
     @abstractmethod

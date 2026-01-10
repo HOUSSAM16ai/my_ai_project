@@ -8,6 +8,7 @@ from typing import Protocol
 
 from .models import RiskPrediction, SecurityFinding, SecurityMetrics
 
+
 class RiskCalculatorPort(ABC):
     """Port for risk calculation"""
 

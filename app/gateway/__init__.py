@@ -7,15 +7,15 @@
 
 __all__ = [
     "APIGateway",
-    "ServiceRegistry",
-    "GatewayConfig",
-    "ServiceDiscovery",
     "CircuitBreaker",
     "CircuitBreakerRegistry",
+    "GatewayConfig",
+    "ServiceDiscovery",
+    "ServiceRegistry",
 ]
 
-from app.gateway.gateway import APIGateway
-from app.gateway.registry import ServiceRegistry
+from app.gateway.circuit_breaker import CircuitBreaker, CircuitBreakerRegistry
 from app.gateway.config import GatewayConfig
 from app.gateway.discovery import ServiceDiscovery
-from app.gateway.circuit_breaker import CircuitBreaker, CircuitBreakerRegistry
+from app.gateway.gateway import APIGateway
+from app.gateway.registry import ServiceRegistry

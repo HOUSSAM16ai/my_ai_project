@@ -70,7 +70,7 @@
                 raise ValueError("الاسم مطلوب")
             if self._price <= 0:
                 raise ValueError("السعر يجب أن يكون أكبر من صفر")
-            
+
             return Product(
                 name=self._name,
                 price=self._price,
@@ -102,14 +102,14 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 # متغير النوع العام (Generic Type Variable)
 # يمثل نوع الكائن الذي سيتم بناؤه
 T = TypeVar("T")
 
 
-class FluentBuilder(ABC, Generic[T]):
+class FluentBuilder[T](ABC):
     """
     فئة أساسية مجردة للبنائين السلسين (Abstract Base Class for Fluent Builders).
 
@@ -249,7 +249,7 @@ class FluentBuilder(ABC, Generic[T]):
                     raise ValueError("البريد الإلكتروني مطلوب")
                 if not self._name:
                     raise ValueError("الاسم مطلوب")
-                
+
                 # البناء (Construction)
                 return User(
                     email=self._email,

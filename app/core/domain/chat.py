@@ -5,13 +5,13 @@ Contains AdminConversation, AdminMessage, CustomerConversation, CustomerMessage.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Column, DateTime, Text, func
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
-from app.core.domain.common import FlexibleEnum, JSONText, CaseInsensitiveEnum, utc_now
+from app.core.domain.common import CaseInsensitiveEnum, FlexibleEnum, JSONText, utc_now
 
 if TYPE_CHECKING:
     from app.core.domain.user import User
@@ -41,10 +41,10 @@ class AdminConversation(SQLModel, table=True):
     )
 
     # Relationships
-    user: "User" = Relationship(
+    user: User = Relationship(
         sa_relationship=relationship("User", back_populates="admin_conversations")
     )
-    messages: list["AdminMessage"] = Relationship(
+    messages: list[AdminMessage] = Relationship(
         sa_relationship=relationship("AdminMessage", back_populates="conversation")
     )
 
@@ -81,10 +81,10 @@ class CustomerConversation(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
 
-    user: "User" = Relationship(
+    user: User = Relationship(
         sa_relationship=relationship("User", back_populates="customer_conversations")
     )
-    messages: list["CustomerMessage"] = Relationship(
+    messages: list[CustomerMessage] = Relationship(
         sa_relationship=relationship("CustomerMessage", back_populates="conversation")
     )
 

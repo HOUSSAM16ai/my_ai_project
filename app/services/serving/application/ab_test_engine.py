@@ -6,14 +6,11 @@ Responsible for test configuration, traffic splitting, and analysis.
 """
 from __future__ import annotations
 
-from typing import Any
-
-
 import threading
 import time
 import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from app.services.serving.domain.models import ABTestConfig
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.services.admin.streaming.emission import ChunkEmitter, MS_TO_SECONDS, Timer
+from app.services.admin.streaming.emission import MS_TO_SECONDS, ChunkEmitter, Timer
 from app.services.admin.streaming.formatters import EventFormatter
 from app.services.admin.streaming.metrics import SessionRecorder, StreamingMetrics
 

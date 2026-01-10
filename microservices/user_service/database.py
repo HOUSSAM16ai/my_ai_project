@@ -3,12 +3,13 @@ User Service Database Module.
 
 Uses the Shared Kernel Factory Pattern.
 """
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from microservices.user_service.settings import get_settings
-from microservices.user_service.models import SQLModel
+
 from app.core.database import create_db_engine, create_session_factory
-from app.core.errors import AppError
+from microservices.user_service.models import SQLModel
+from microservices.user_service.settings import get_settings
 
 # 1. Initialize Settings
 settings = get_settings()

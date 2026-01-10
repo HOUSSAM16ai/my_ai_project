@@ -1,16 +1,16 @@
 """
 Standalone Tests for Architectural Guardrails.
 """
-import ast
 import unittest
 from pathlib import Path
+
 from guardrails import check_file
+
 
 class TestGuardrails(unittest.TestCase):
 
     def test_cross_service_import_detection(self):
         # Create a temporary violating file content
-        content = "from microservices.user_service import models"
 
         # We need to mock how check_file reads content or refactor check_file to accept content.
         # For simplicity, let's just write to a temp file or refactor guardrails.py slightly?
@@ -20,7 +20,6 @@ class TestGuardrails(unittest.TestCase):
     def test_check_file_logic(self):
          # Since check_file reads from disk, I will create a temp file
          import tempfile
-         import os
 
          with tempfile.TemporaryDirectory() as tmpdirname:
              # Create a fake structure

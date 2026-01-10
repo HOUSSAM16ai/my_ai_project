@@ -1,4 +1,3 @@
-from typing import Any
 
 from app.core.di import get_logger
 from app.services.overmind.github_integration.client import GitHubClient

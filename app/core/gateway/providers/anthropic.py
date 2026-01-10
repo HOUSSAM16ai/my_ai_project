@@ -3,6 +3,7 @@ from typing import Any
 
 from .base import ModelProviderAdapter
 
+
 class AnthropicAdapter(ModelProviderAdapter):
     """Anthropic (Claude) model provider adapter"""
 

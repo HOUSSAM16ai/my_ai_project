@@ -2,18 +2,19 @@
 اختبارات وحدة لنظام الذكاء الجماعي الفائق.
 """
 
-import pytest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 
+import pytest
+
+from app.services.overmind.domain.super_intelligence.analyzer import SituationAnalyzer
 from app.services.overmind.domain.super_intelligence.models import (
     Decision,
     DecisionCategory,
-    DecisionPriority,
     DecisionImpact,
+    DecisionPriority,
 )
-from app.services.overmind.domain.super_intelligence.system import SuperCollectiveIntelligence
-from app.services.overmind.domain.super_intelligence.analyzer import SituationAnalyzer
 from app.services.overmind.domain.super_intelligence.synthesizer import DecisionSynthesizer
+from app.services.overmind.domain.super_intelligence.system import SuperCollectiveIntelligence
 
 
 @pytest.fixture

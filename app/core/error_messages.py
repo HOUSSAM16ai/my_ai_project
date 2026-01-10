@@ -7,7 +7,6 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass
 
-
 ServerErrorPredicate = Callable[["ErrorContext"], bool]
 ServerErrorBuilder = Callable[["ErrorContext"], str]
 

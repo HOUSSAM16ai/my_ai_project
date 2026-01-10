@@ -15,8 +15,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Iterable
 
 ConfigPrimitive = str | int | float | bool
 """قيمة أولية مسموح بها في الإعدادات."""
@@ -36,7 +36,7 @@ class MiddlewareSettings:
     _config: dict[str, ConfigValue] = field(default_factory=dict)
 
     @classmethod
-    def from_items(cls, items: Iterable[tuple[str, ConfigValue]]) -> "MiddlewareSettings":
+    def from_items(cls, items: Iterable[tuple[str, ConfigValue]]) -> MiddlewareSettings:
         """ينشئ إعدادات من أزواج مفاتيح وقيم.
 
         يسهّل هذا المُنشئ تمرير إعدادات قادمة من مصادر بيانات متعددة مثل

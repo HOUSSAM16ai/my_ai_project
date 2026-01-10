@@ -6,8 +6,7 @@ import asyncio
 from datetime import UTC, datetime
 
 from app.services.overmind.domain.api_schemas import AgentPlanData, AgentsPlanRequest
-from app.services.overmind.plan_registry import AgentPlanRegistry
-from app.services.overmind.plan_registry import AgentPlanRecord
+from app.services.overmind.plan_registry import AgentPlanRecord, AgentPlanRegistry
 from app.services.overmind.plan_service import AgentPlanService
 
 

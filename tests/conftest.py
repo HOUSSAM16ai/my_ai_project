@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 # tests/conftest.py
 import asyncio
 import inspect
 import os
 import sys
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from fastapi.testclient import TestClient
@@ -26,10 +29,13 @@ os.environ["SECRET_KEY"] = "test-secret-key-that-is-very-long-and-secure-enough-
 # Use in-memory database for better test isolation
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
-from app.core.database import async_session_factory as TestingSessionLocal  # noqa: E402
-from app.core.database import engine  # noqa: E402
-from app.core.security import generate_service_token  # noqa: E402
-from tests.factories.base import MissionFactory, UserFactory  # noqa: E402
+from app.core.database import async_session_factory as testing_session_factory
+from app.core.database import engine
+from app.core.security import generate_service_token
+from tests.factories.base import MissionFactory, UserFactory
+
+if TYPE_CHECKING:
+    from app.core.domain.models import User
 
 
 @asynccontextmanager
@@ -42,7 +48,7 @@ async def managed_test_session() -> AsyncIterator[AsyncSession]:
     (KISS) ويعيد استخدام المنطق (DRY) عبر نقطة موحدة لإدارة الجلسات.
     """
 
-    async with TestingSessionLocal() as session:
+    async with testing_session_factory() as session:
         try:
             yield session
         finally:
@@ -127,10 +133,8 @@ def event_loop():
     except Exception:
         pass
     finally:
-        try:
+        with suppress(Exception):
             loop.close()
-        except Exception:
-            pass
 
 @pytest.fixture(scope="function", autouse=True)
 def init_db(event_loop) -> None:
@@ -186,11 +190,9 @@ def db_session(init_db, event_loop):
     try:
         yield session
     finally:
-        try:
-            event_loop.run_until_complete(session_context.__aexit__(None, None, None))
-        except Exception:
+        with suppress(Exception):
             # تجاهل أخطاء الإغلاق إذا كانت الحلقة مغلقة بالفعل
-            pass
+            event_loop.run_until_complete(session_context.__aexit__(None, None, None))
 
 @pytest.fixture
 def client():
@@ -244,7 +246,7 @@ def mission_factory() -> MissionFactory:
 
 
 @pytest.fixture
-def admin_user(db_session: AsyncSession, event_loop) -> "User":
+def admin_user(db_session: AsyncSession, event_loop) -> User:
     """إنشاء مستخدم إداري حقيقي داخل قاعدة بيانات الاختبار."""
 
     from app.core.domain.models import User
@@ -265,7 +267,7 @@ def admin_user(db_session: AsyncSession, event_loop) -> "User":
 
 
 @pytest.fixture
-def admin_auth_headers(admin_user: "User") -> dict[str, str]:
+def admin_auth_headers(admin_user: User) -> dict[str, str]:
     """ترويسات تفويض JWT للمستخدم الإداري لضمان سهولة الوصول في الاختبارات."""
 
     token = generate_service_token(str(admin_user.id))

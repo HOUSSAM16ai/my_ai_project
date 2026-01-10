@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 
+
 class ServiceType(Enum):
     """Service types"""
     MICROSERVICE = 'microservice'

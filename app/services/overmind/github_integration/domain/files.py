@@ -47,14 +47,13 @@ class FileManager:
             def _update():
                 # Get current file for SHA
                 file = self.client.repo_object.get_contents(file_path, ref=branch)
-                result = self.client.repo_object.update_file(
+                return self.client.repo_object.update_file(
                     path=file_path,
                     message=message,
                     content=content,
                     sha=file.sha,
                     branch=branch,
                 )
-                return result
 
             result = await self.client.run_async(_update)
             logger.info(f"Updated file {file_path} in branch {branch}")

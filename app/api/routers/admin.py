@@ -18,11 +18,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.schemas.admin import ChatRequest, ConversationDetailsResponse, ConversationSummaryResponse
+from app.api.schemas.admin import (
+    ChatRequest,
+    ConversationDetailsResponse,
+    ConversationSummaryResponse,
+)
 from app.core.ai_gateway import AIClient, get_ai_client
-from app.core.domain.models import User
 from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
+from app.core.domain.models import User
 from app.deps.auth import CurrentUser, require_roles
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 from app.services.chat.contracts import ChatDispatchRequest
@@ -194,7 +198,7 @@ async def list_conversations(
 ) -> list[ConversationSummaryResponse]:
     """
     استرجاع قائمة بجميع محادثات المستخدم.
-    
+
     الخدمة تعيد البيانات متوافقة مع Schema مباشرة.
     """
     results = await service.list_user_conversations(actor)

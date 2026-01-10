@@ -8,8 +8,8 @@ import jwt
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
 from app.core.ai_gateway import AIClient
+from app.core.config import get_settings
 from app.core.domain.models import AdminConversation, MessageRole, User
 from app.services.admin.chat_persistence import AdminChatPersistence
 from app.services.admin.chat_streamer import AdminChatStreamer
@@ -66,7 +66,7 @@ class AdminChatBoundaryService:
         """
         # Validate header existence and format
         token = _extract_bearer_token(auth_header)
-        
+
         # Decode and validate token
         return _decode_and_extract_user_id(token, self.settings.SECRET_KEY)
 
@@ -221,7 +221,7 @@ class AdminChatBoundaryService:
     async def list_user_conversations(self, user: User) -> list[dict[str, object]]:
         """
         سرد المحادثات للشريط الجانبي (Sidebar History).
-        
+
         Returns data compatible with ConversationSummaryResponse schema.
         """
         conversations = await self.persistence.list_conversations(user.id)
@@ -265,9 +265,9 @@ class AdminChatBoundaryService:
 def _extract_bearer_token(auth_header: str | None) -> str:
     """
     Extract Bearer token from Authorization header.
-    
+
     استخراج رمز Bearer من ترويسة التفويض.
-    
+
     Raises:
         HTTPException: If header is missing or malformed
     """
@@ -284,22 +284,22 @@ def _extract_bearer_token(auth_header: str | None) -> str:
 def _decode_and_extract_user_id(token: str, secret_key: str) -> int:
     """
     Decode JWT token and extract user ID.
-    
+
     فك تشفير رمز JWT واستخراج معرف المستخدم.
-    
+
     Returns:
         User ID as integer
-        
+
     Raises:
         HTTPException: If token is invalid or user ID is missing
     """
     try:
         payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
-        
+
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token payload")
-        
+
         return int(user_id)
 
     except jwt.PyJWTError as e:

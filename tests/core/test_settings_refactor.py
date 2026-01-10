@@ -1,6 +1,6 @@
-import pytest
 from app.core.settings.base import BaseServiceSettings
 from microservices.user_service.settings import UserServiceSettings
+
 
 def test_base_service_settings_defaults():
     """Test that BaseServiceSettings has correct defaults."""

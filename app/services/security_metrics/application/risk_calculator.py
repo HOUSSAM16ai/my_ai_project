@@ -5,8 +5,9 @@ Implements advanced risk scoring algorithms
 
 from datetime import datetime
 
-from ..domain.models import SecurityFinding
-from ..domain.ports import RiskCalculatorPort
+from app.services.security_metrics.domain.models import SecurityFinding
+from app.services.security_metrics.domain.ports import RiskCalculatorPort
+
 
 class AdvancedRiskCalculator(RiskCalculatorPort):
     """
@@ -36,7 +37,7 @@ class AdvancedRiskCalculator(RiskCalculatorPort):
     ) -> float:
         """
         حساب درجة المخاطر المتقدمة | Calculate advanced risk score
-        
+
         الصيغة: Risk = Σ(Severity × Age × Exposure × CWE_multiplier) / Normalization
         Formula: Risk = Σ(Severity × Age × Exposure × CWE_multiplier) / Normalization
         """
@@ -56,11 +57,11 @@ class AdvancedRiskCalculator(RiskCalculatorPort):
     ) -> float:
         """
         حساب إجمالي المخاطر | Calculate total risk
-        
+
         Args:
             findings: قائمة الاكتشافات الأمنية | Security findings list
             public_endpoints: عدد النقاط العامة | Number of public endpoints
-            
+
         Returns:
             إجمالي المخاطر | Total risk value
         """
@@ -80,11 +81,11 @@ class AdvancedRiskCalculator(RiskCalculatorPort):
     ) -> float:
         """
         حساب مخاطر اكتشاف واحد | Calculate risk for a single finding
-        
+
         Args:
             finding: اكتشاف أمني | Security finding
             public_endpoints: عدد النقاط العامة | Number of public endpoints
-            
+
         Returns:
             قيمة المخاطر | Risk value
         """
@@ -98,11 +99,11 @@ class AdvancedRiskCalculator(RiskCalculatorPort):
     def _normalize_risk_score(self, total_risk: float, num_findings: int) -> float:
         """
         تطبيع درجة المخاطر | Normalize risk score
-        
+
         Args:
             total_risk: إجمالي المخاطر | Total risk
             num_findings: عدد الاكتشافات | Number of findings
-            
+
         Returns:
             درجة المخاطر المطبعة (0-100) | Normalized risk score (0-100)
         """

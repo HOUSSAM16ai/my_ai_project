@@ -6,10 +6,10 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.system.system_service import (
-    SystemService,
     FEATURE_VECTOR_SCHEMA_VERSION,
-    _TimingAccumulator,
+    SystemService,
     _sanitize_duration,
+    _TimingAccumulator,
 )
 
 
