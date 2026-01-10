@@ -13,7 +13,8 @@ from typing import TypedDict
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.domain.models import Mission, Task, User
+from app.core.domain.mission import Mission, Task
+from app.core.domain.user import User
 
 
 class PaginationMeta(TypedDict):

@@ -9,19 +9,20 @@
 """
 
 from datetime import datetime, timedelta
-from typing import Any
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.di import get_logger
-from app.core.domain.models import Mission
+from app.core.domain.mission import Mission
 from app.services.overmind.user_knowledge.statistics import get_user_statistics
 
 logger = get_logger(__name__)
 
 
-async def get_user_performance(session: AsyncSession, user_id: int) -> dict[str, Any]:
+async def get_user_performance(
+    session: AsyncSession, user_id: int
+) -> dict[str, float | int | str | None]:
     """
     الحصول على مقاييس أداء المستخدم.
     Get comprehensive user performance metrics.
@@ -57,7 +58,7 @@ async def get_user_performance(session: AsyncSession, user_id: int) -> dict[str,
 
 
 async def _calculate_success_rate(
-    session: AsyncSession, user_id: int, performance: dict[str, Any]
+    session: AsyncSession, user_id: int, performance: dict[str, float | int | str | None]
 ) -> None:
     """
     حساب معدل النجاح.
@@ -74,7 +75,7 @@ async def _calculate_success_rate(
 
 
 async def _calculate_average_duration(
-    session: AsyncSession, user_id: int, performance: dict[str, Any]
+    session: AsyncSession, user_id: int, performance: dict[str, float | int | str | None]
 ) -> None:
     """
     حساب متوسط مدة المهمة.
@@ -87,7 +88,7 @@ async def _calculate_average_duration(
         ).label("avg_duration_seconds")
     ).where(
         and_(
-            Mission.user_id == user_id,
+            Mission.initiator_id == user_id,
             Mission.status == "completed"
         )
     )
@@ -103,7 +104,7 @@ async def _calculate_average_duration(
 
 
 async def _calculate_weekly_missions(
-    session: AsyncSession, user_id: int, performance: dict[str, Any]
+    session: AsyncSession, user_id: int, performance: dict[str, float | int | str | None]
 ) -> None:
     """
     حساب المهام في الأسبوع الماضي.
@@ -113,7 +114,7 @@ async def _calculate_weekly_missions(
 
     recent_missions_query = select(func.count(Mission.id)).where(
         and_(
-            Mission.user_id == user_id,
+            Mission.initiator_id == user_id,
             Mission.created_at >= seven_days_ago
         )
     )
@@ -122,7 +123,9 @@ async def _calculate_weekly_missions(
     performance["missions_per_week"] = recent_result.scalar() or 0
 
 
-def _calculate_performance_scores(performance: dict[str, Any]) -> None:
+def _calculate_performance_scores(
+    performance: dict[str, float | int | str | None]
+) -> None:
     """
     حساب درجات الإنتاجية والجودة.
     Calculate productivity and quality scores.

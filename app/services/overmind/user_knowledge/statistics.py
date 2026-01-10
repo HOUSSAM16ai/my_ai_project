@@ -8,18 +8,17 @@
 - Performance: استعلامات محسّنة
 """
 
-from typing import Any
-
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.di import get_logger
-from app.core.domain.models import ChatMessage, Mission, Task
+from app.core.domain.chat import CustomerConversation, CustomerMessage
+from app.core.domain.mission import Mission, Task
 
 logger = get_logger(__name__)
 
 
-async def get_user_statistics(session: AsyncSession, user_id: int) -> dict[str, Any]:
+async def get_user_statistics(session: AsyncSession, user_id: int) -> dict[str, int | str | None]:
     """
     الحصول على إحصائيات المستخدم.
     Get comprehensive user statistics.
@@ -55,7 +54,7 @@ async def get_user_statistics(session: AsyncSession, user_id: int) -> dict[str, 
 
 
 async def _get_missions_statistics(
-    session: AsyncSession, user_id: int, stats: dict[str, Any]
+    session: AsyncSession, user_id: int, stats: dict[str, int | str | None]
 ) -> None:
     """
     الحصول على إحصائيات المهام.
@@ -66,7 +65,7 @@ async def _get_missions_statistics(
         func.sum(func.cast(Mission.status == "completed", int)).label("completed"),
         func.sum(func.cast(Mission.status == "failed", int)).label("failed"),
         func.sum(func.cast(Mission.status == "in_progress", int)).label("active"),
-    ).where(Mission.user_id == user_id)
+    ).where(Mission.initiator_id == user_id)
 
     missions_result = await session.execute(missions_query)
     missions_row = missions_result.one_or_none()
@@ -80,7 +79,7 @@ async def _get_missions_statistics(
         _set_default_missions_stats(stats)
 
 
-def _set_default_missions_stats(stats: dict[str, Any]) -> None:
+def _set_default_missions_stats(stats: dict[str, int | str | None]) -> None:
     """
     تعيين إحصائيات المهام الافتراضية.
     Set default missions statistics.
@@ -92,7 +91,7 @@ def _set_default_missions_stats(stats: dict[str, Any]) -> None:
 
 
 async def _get_tasks_statistics(
-    session: AsyncSession, user_id: int, stats: dict[str, Any]
+    session: AsyncSession, user_id: int, stats: dict[str, int | str | None]
 ) -> None:
     """
     الحصول على إحصائيات المهام الفرعية.
@@ -101,7 +100,7 @@ async def _get_tasks_statistics(
     tasks_query = select(
         func.count(Task.id).label("total"),
         func.sum(func.cast(Task.status == "completed", int)).label("completed"),
-    ).join(Mission).where(Mission.user_id == user_id)
+    ).join(Mission).where(Mission.initiator_id == user_id)
 
     tasks_result = await session.execute(tasks_query)
     tasks_row = tasks_result.one_or_none()
@@ -113,7 +112,7 @@ async def _get_tasks_statistics(
         _set_default_tasks_stats(stats)
 
 
-def _set_default_tasks_stats(stats: dict[str, Any]) -> None:
+def _set_default_tasks_stats(stats: dict[str, int | str | None]) -> None:
     """
     تعيين إحصائيات المهام الفرعية الافتراضية.
     Set default tasks statistics.
@@ -123,29 +122,35 @@ def _set_default_tasks_stats(stats: dict[str, Any]) -> None:
 
 
 async def _get_messages_statistics(
-    session: AsyncSession, user_id: int, stats: dict[str, Any]
+    session: AsyncSession, user_id: int, stats: dict[str, int | str | None]
 ) -> None:
     """
     الحصول على إحصائيات الرسائل.
     Get chat messages statistics for user.
     """
-    messages_query = select(func.count(ChatMessage.id)).where(
-        ChatMessage.user_id == user_id
+    messages_query = (
+        select(func.count(CustomerMessage.id))
+        .join(CustomerConversation, CustomerMessage.conversation_id == CustomerConversation.id)
+        .where(CustomerConversation.user_id == user_id)
     )
     messages_result = await session.execute(messages_query)
     stats["total_chat_messages"] = messages_result.scalar() or 0
 
 
 async def _get_last_activity(
-    session: AsyncSession, user_id: int, stats: dict[str, Any]
+    session: AsyncSession, user_id: int, stats: dict[str, int | str | None]
 ) -> None:
     """
     الحصول على آخر نشاط للمستخدم.
     Get user's last activity timestamp.
     """
-    last_message_query = select(ChatMessage.created_at).where(
-        ChatMessage.user_id == user_id
-    ).order_by(ChatMessage.created_at.desc()).limit(1)
+    last_message_query = (
+        select(CustomerMessage.created_at)
+        .join(CustomerConversation, CustomerMessage.conversation_id == CustomerConversation.id)
+        .where(CustomerConversation.user_id == user_id)
+        .order_by(CustomerMessage.created_at.desc())
+        .limit(1)
+    )
 
     last_message_result = await session.execute(last_message_query)
     last_message = last_message_result.scalar_one_or_none()

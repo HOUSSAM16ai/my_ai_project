@@ -35,7 +35,7 @@ from app.services.chat.ports import IntentDetectorPort
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from app.core.domain.models import User
+    from app.core.domain.user import User
     from app.services.chat.contracts import ChatDispatchRequest, ChatDispatchResult
     from app.services.chat.dispatcher import ChatRoleDispatcher
 

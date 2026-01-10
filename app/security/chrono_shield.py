@@ -5,13 +5,11 @@ import time
 from collections import defaultdict
 
 from fastapi import HTTPException, Request, status
-from passlib.context import CryptContext
+
+from app.security.passwords import pwd_context
 
 # Use standard logging as per project convention in security module
 logger = logging.getLogger(__name__)
-
-# Dummy context for Phantom Verification
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 # A pre-computed hash for dummy verification to ensure CPU work is done
 # Optimization: Skip heavy computation in test environments

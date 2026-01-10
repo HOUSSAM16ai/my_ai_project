@@ -12,7 +12,7 @@ from collections.abc import AsyncGenerator, Callable
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ai_gateway import AIClient
-from app.core.domain.models import CustomerConversation, MessageRole
+from app.core.domain.chat import CustomerConversation, MessageRole
 from app.services.chat import get_chat_orchestrator
 from app.services.chat.orchestrator import ChatOrchestrator
 from app.services.customer.chat_persistence import CustomerChatPersistence

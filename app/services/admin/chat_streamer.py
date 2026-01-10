@@ -19,7 +19,7 @@ from collections.abc import AsyncGenerator, Callable
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ai_gateway import AIClient
-from app.core.domain.models import AdminConversation, MessageRole
+from app.core.domain.chat import AdminConversation, MessageRole
 from app.services.admin.chat_persistence import AdminChatPersistence
 from app.services.chat import get_chat_orchestrator
 from app.services.chat.orchestrator import ChatOrchestrator

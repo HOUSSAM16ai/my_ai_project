@@ -8,7 +8,7 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy import select
 
-from app.core.domain.models import Mission, MissionEvent, MissionEventType, MissionStatus
+from app.core.domain.mission import Mission, MissionEvent, MissionEventType, MissionStatus
 from app.core.patterns.strategy import Strategy
 from app.services.chat.context import ChatContext
 from app.services.chat.context_service import get_context_service

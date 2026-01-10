@@ -8,23 +8,17 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from passlib.context import CryptContext
 from sqlalchemy import Column, DateTime, String, func
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.core.domain.common import CaseInsensitiveEnum, FlexibleEnum, utc_now
+from app.security.passwords import pwd_context
 
 if TYPE_CHECKING:
     from app.core.domain.audit import AuditLog
     from app.core.domain.chat import AdminConversation, CustomerConversation
     from app.core.domain.mission import Mission
-
-# Password Hashing
-pwd_context = CryptContext(
-    schemes=["argon2", "bcrypt", "pbkdf2_sha256", "sha256_crypt"],
-    deprecated="auto",
-)
 
 class UserStatus(CaseInsensitiveEnum):
     """User Lifecycle Status."""

@@ -8,18 +8,17 @@
 - Performance: استعلامات محسّنة
 """
 
-from typing import Any
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.di import get_logger
-from app.core.domain.models import ChatMessage, Mission
+from app.core.domain.chat import CustomerConversation, CustomerMessage
+from app.core.domain.mission import Mission
 
 logger = get_logger(__name__)
 
 
-async def get_user_relations(session: AsyncSession, user_id: int) -> dict[str, Any]:
+async def get_user_relations(session: AsyncSession, user_id: int) -> dict[str, object]:
     """
     الحصول على علاقات المستخدم مع الكيانات الأخرى.
 
@@ -39,7 +38,7 @@ async def get_user_relations(session: AsyncSession, user_id: int) -> dict[str, A
 
         # المهام الأخيرة (Recent Missions)
         missions_query = select(Mission).where(
-            Mission.user_id == user_id
+            Mission.initiator_id == user_id
         ).order_by(Mission.created_at.desc()).limit(5)
 
         missions_result = await session.execute(missions_query)
@@ -56,9 +55,13 @@ async def get_user_relations(session: AsyncSession, user_id: int) -> dict[str, A
         ]
 
         # الرسائل الأخيرة (Recent Messages)
-        messages_query = select(ChatMessage).where(
-            ChatMessage.user_id == user_id
-        ).order_by(ChatMessage.created_at.desc()).limit(5)
+        messages_query = (
+            select(CustomerMessage)
+            .join(CustomerConversation, CustomerMessage.conversation_id == CustomerConversation.id)
+            .where(CustomerConversation.user_id == user_id)
+            .order_by(CustomerMessage.created_at.desc())
+            .limit(5)
+        )
 
         messages_result = await session.execute(messages_query)
         messages = messages_result.scalars().all()

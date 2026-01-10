@@ -14,7 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.di import get_logger
-from app.core.domain.models import User
+from app.core.domain.user import User
 
 logger = get_logger(__name__)
 

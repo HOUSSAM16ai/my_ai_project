@@ -12,7 +12,8 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.domain.models import PasswordResetToken, User, utc_now
+from app.core.domain.common import utc_now
+from app.core.domain.user import PasswordResetToken, User
 
 PASSWORD_RESET_EXPIRE_MINUTES: Final[int] = 30
 
