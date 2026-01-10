@@ -114,3 +114,6 @@ def setup_logging(service_name: str | None = None) -> None:
 def get_logger(name: str) -> logging.Logger:
     """Returns a logger instance with the given name."""
     return logging.getLogger(name)
+
+# Export a default logger to satisfy imports expecting 'logger' from this module
+logger = logging.getLogger("app")
