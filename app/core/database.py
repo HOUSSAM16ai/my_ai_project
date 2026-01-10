@@ -55,6 +55,11 @@ def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
         logger.info(f"🔌 Database (SQLite): {settings.SERVICE_NAME}")
 
     elif "postgresql" in url_obj.drivername or "asyncpg" in url_obj.drivername:
+        # GUARDRAIL: Force asyncpg driver if missing
+        if url_obj.drivername == "postgresql":
+            url_obj = url_obj.set(drivername="postgresql+asyncpg")
+            db_url = url_obj.render_as_string(hide_password=False)
+
         # Initialize connect_args if not exists
         if "connect_args" not in engine_args:
             engine_args["connect_args"] = {}
@@ -72,7 +77,13 @@ def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
             ssl_mode = qs.pop("sslmode")
             # Update db_url to exclude sslmode
             url_obj = url_obj.set(query=qs)
-            db_url = str(url_obj)
+
+            # [CRITICAL GUARDRAIL]
+            # Must use `render_as_string(hide_password=False)`!
+            # 1. `str(url_obj)` masks passwords as '***', causing auth failures.
+            # 2. We must PRESERVE URL encoding (e.g. '%40') for passwords.
+            #    `render_as_string` handles this correctly for the driver.
+            db_url = url_obj.render_as_string(hide_password=False)
 
             # Create SSL Context based on mode
             # 'disable' is default (no ssl arg)

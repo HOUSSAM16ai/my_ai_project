@@ -144,6 +144,7 @@ class BaseServiceSettings(BaseSettings):
         """Heals and validates the database URL."""
         env = info.data.get("ENVIRONMENT", "development")
         url = _ensure_database_url(v, env)
+        # Note: _upgrade_postgres_protocol also handles Supabase Pooler compatibility
         return _upgrade_postgres_protocol(url)
 
     @model_validator(mode="after")
