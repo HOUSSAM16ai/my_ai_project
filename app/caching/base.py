@@ -79,3 +79,15 @@ class CacheBackend(Protocol):
             bool: True إذا تم المسح بنجاح
         """
         ...
+
+    async def scan_keys(self, pattern: str) -> list[str]:
+        """
+        البحث عن مفاتيح تطابق نمطاً معيناً.
+
+        Args:
+            pattern: نمط البحث (e.g., "user:*")
+
+        Returns:
+            list[str]: قائمة المفاتيح المطابقة
+        """
+        ...

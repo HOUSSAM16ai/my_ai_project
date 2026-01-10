@@ -11,6 +11,7 @@
 """
 
 import asyncio
+import fnmatch
 import time
 from collections import OrderedDict
 from typing import Any
@@ -117,3 +118,28 @@ class InMemoryCache(CacheBackend):
         async with self._lock:
             self._cache.clear()
             return True
+
+    async def scan_keys(self, pattern: str) -> list[str]:
+        """
+        البحث عن مفاتيح تطابق نمطاً معيناً.
+
+        Args:
+            pattern: نمط البحث (e.g., "user:*"). يدعم fnmatch.
+
+        Returns:
+            list[str]: قائمة المفاتيح المطابقة الصالحة.
+        """
+        async with self._lock:
+            keys = []
+            now = time.time()
+            # ننسخ المفاتيح لتجنب مشاكل التعديل أثناء التكرار إذا احتجنا لذلك،
+            # لكننا هنا نقرأ فقط.
+            for key, (_, expire_at) in list(self._cache.items()):
+                if now > expire_at:
+                    # تنظيف الكسول (Lazy cleanup) أثناء البحث قد يكون مفيداً
+                    # لكن للحفاظ على سرعة البحث وتفادي التعديل، سنتجاوزها فقط
+                    continue
+
+                if fnmatch.fnmatch(key, pattern):
+                    keys.append(key)
+            return keys
