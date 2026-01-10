@@ -417,7 +417,9 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
     },
     "mission_events": {
         "columns": ["id", "mission_id", "event_type", "payload_json", "created_at"],
-        "auto_fix": {},
+        "auto_fix": {
+             "payload_json": 'ALTER TABLE "mission_events" ADD COLUMN "payload_json" TEXT'
+        },
         "indexes": {
              "mission_id": 'CREATE INDEX IF NOT EXISTS "ix_mission_events_mission_id" ON "mission_events"("mission_id")'
         },
@@ -434,7 +436,9 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
     },
     "prompt_templates": {
         "columns": ["id", "name", "template"],
-        "auto_fix": {},
+        "auto_fix": {
+            "template": 'ALTER TABLE "prompt_templates" ADD COLUMN "template" TEXT NOT NULL DEFAULT \'\''
+        },
         "indexes": {
             "name": 'CREATE UNIQUE INDEX IF NOT EXISTS "ix_prompt_templates_name" ON "prompt_templates"("name")'
         },
@@ -449,7 +453,9 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
     },
     "generated_prompts": {
         "columns": ["id", "prompt", "template_id"],
-        "auto_fix": {},
+        "auto_fix": {
+            "prompt": 'ALTER TABLE "generated_prompts" ADD COLUMN "prompt" TEXT NOT NULL DEFAULT \'\''
+        },
         "indexes": {
             "template_id": 'CREATE INDEX IF NOT EXISTS "ix_generated_prompts_template_id" ON "generated_prompts"("template_id")'
         },
