@@ -3,39 +3,96 @@ User Service Client.
 Provides a typed interface to the User Service.
 """
 
-import httpx
-from pydantic import BaseModel
+from __future__ import annotations
 
+from typing import Final
+from uuid import UUID
+
+import httpx
+from pydantic import BaseModel, Field
+
+from app.core.http_client_factory import HTTPClientConfig, get_http_client
 from app.core.logging import get_logger
 
 logger = get_logger("user-client")
 
+DEFAULT_USER_SERVICE_URL: Final[str] = "http://user-service:8003"
+
+
 class UserCountResponse(BaseModel):
     count: int
 
-class UserClient:
-    """Client for interacting with the User microservice."""
+class UserResponse(BaseModel):
+    user_id: UUID
+    name: str
+    email: str
 
-    def __init__(self, base_url: str = "http://user-service:8003") -> None:
+class UserCreateRequest(BaseModel):
+    name: str
+    email: str
+
+class UserClient:
+    """
+    Client for interacting with the User microservice.
+    Adheres to the Microservices Constitution (Rules 4, 11, 21).
+    """
+
+    def __init__(self, base_url: str = DEFAULT_USER_SERVICE_URL) -> None:
         self.base_url = base_url.rstrip("/")
+        self.config = HTTPClientConfig(
+            name="user-service-client",
+            timeout=10.0,  # Rule 62: Timeouts
+            max_connections=50
+        )
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        return get_http_client(self.config)
 
     async def get_user_count(self) -> int:
         """Fetch the total number of users."""
         url = f"{self.base_url}/users/count"
-        logger.info(f"Calling User Service: {url}")
+        logger.debug("Calling User Service", extra={"url": url})
 
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.get(url, timeout=5.0)
-                response.raise_for_status()
-                data = response.json()
-                return UserCountResponse(**data).count
-            except httpx.HTTPError as e:
-                logger.error(f"Failed to get user count: {e}", exc_info=True)
-                raise
-            except Exception as e:
-                logger.error(f"Unexpected error getting user count: {e}", exc_info=True)
-                raise
+        client = await self._get_client()
+        try:
+            response = await client.get(url)
+            response.raise_for_status()
+            data = response.json()
+            return UserCountResponse(**data).count
+        except httpx.HTTPError as e:
+            logger.error("Failed to get user count", exc_info=e)
+            raise
+        except Exception as e:
+            logger.error("Unexpected error getting user count", exc_info=e)
+            raise
+
+    async def create_user(self, name: str, email: str) -> UserResponse:
+        """Create a new user via API."""
+        url = f"{self.base_url}/users"
+        payload = UserCreateRequest(name=name, email=email)
+
+        client = await self._get_client()
+        try:
+            response = await client.post(url, json=payload.model_dump())
+            response.raise_for_status()
+            return UserResponse(**response.json())
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 409:
+                 logger.warning(f"User already exists: {email}")
+            raise
+        except Exception as e:
+            logger.error(f"Failed to create user: {email}", exc_info=e)
+            raise
+
+    async def get_users(self) -> list[UserResponse]:
+        """List all users."""
+        url = f"{self.base_url}/users"
+        client = await self._get_client()
+
+        response = await client.get(url)
+        response.raise_for_status()
+
+        return [UserResponse(**item) for item in response.json()]
 
 # Singleton instance
 user_client = UserClient()

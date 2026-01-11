@@ -18,15 +18,19 @@ This project adopts a unique fusion of two legendary computer science methodolog
 
 ---
 
-## 🏛️ API-First Microservice Architecture
+## 🏛️ API-First Microservice Architecture (The Constitution)
 
-The system follows a strict **API-First Microservice Architecture**. Refer to `API_FIRST_PLAN.md` for the full executive guide.
+The system is mandated to be **100% API First Microservice**.
+All agents and developers must strictly adhere to the **100 Laws of Microservices** defined in the Constitution.
 
-### Core Tenets:
-1.  **Contracts First:** Define and document API contracts (OpenAPI) *before* implementing logic. The contract is the source of truth.
-2.  **Bounded Contexts:** Each service owns its data and logic exclusively. No shared databases. No direct code coupling between services.
-3.  **Communication:** All inter-service communication happens via defined APIs or Event Bus.
-4.  **Zero Trust Security:** Authenticate and authorize every request, internal or external.
+**📜 [READ THE CONSTITUTION HERE](docs/architecture/MICROSERVICES_CONSTITUTION.md)**
+
+### Critical Laws Summary:
+1.  **Independence:** Each service is an island. Own DB, own deployment, own codebase.
+2.  **API Communication:** Services speak ONLY via HTTP/gRPC or Async Events. No direct DB access to another service's data.
+3.  **Polyglot & Containerized:** Use the best tool for the job, isolated in Docker.
+4.  **Zero Trust:** Authenticate everything.
+5.  **No Shared Libraries (Logic):** Do not share business logic libraries. Duplicate code if necessary to preserve independence (Rule 97/98).
 
 ---
 
