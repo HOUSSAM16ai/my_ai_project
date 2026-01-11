@@ -8,11 +8,13 @@
 """
 
 import os
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from app.caching.base import CacheBackend
 from app.caching.memory_cache import InMemoryCache
-from app.caching.redis_cache import RedisCache
+
+if TYPE_CHECKING:
+    from app.caching.redis_cache import RedisCache
 
 # نوع الواجهة الخلفية (Backend Type)
 CacheBackendType = Literal["memory", "redis"]
@@ -46,13 +48,28 @@ class CacheFactory:
         - 'memory' (الافتراضي): يستخدم InMemoryCache.
         """
         cache_type = os.getenv("CACHE_TYPE", "memory").lower()
+        ttl_jitter_ratio = CacheFactory._get_ttl_jitter_ratio()
 
         if cache_type == "redis":
             redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-            return RedisCache(redis_url=redis_url)
+            from app.caching.redis_cache import RedisCache
+
+            return RedisCache(redis_url=redis_url, ttl_jitter_ratio=ttl_jitter_ratio)
 
         # الافتراضي: ذاكرة
-        return InMemoryCache()
+        return InMemoryCache(ttl_jitter_ratio=ttl_jitter_ratio)
+
+    @staticmethod
+    def _get_ttl_jitter_ratio() -> float:
+        """قراءة نسبة عشوائية TTL من متغير البيئة."""
+
+        raw_value = os.getenv("CACHE_TTL_JITTER_RATIO")
+        if raw_value is None:
+            return 0.0
+        try:
+            return float(raw_value)
+        except ValueError as exc:
+            raise ValueError("CACHE_TTL_JITTER_RATIO يجب أن يكون رقماً عشرياً") from exc
 
 
 def get_cache() -> CacheBackend:

@@ -9,10 +9,13 @@
 - L2: Redis (موزع، مشترك بين جميع النسخ).
 """
 
+import asyncio
 import logging
-from typing import Any
+import inspect
+from collections.abc import Awaitable, Callable
 
 from app.caching.base import CacheBackend
+from app.caching.stats import MultiLevelCacheCounters, MultiLevelCacheStatsSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +45,22 @@ class MultiLevelCache(CacheBackend):
         self.l2 = l2_cache
         self.sync_l1 = sync_l1
         self.l1_backfill_ttl = l1_backfill_ttl
+        self._stats = MultiLevelCacheCounters()
+        self._key_locks: dict[str, asyncio.Lock] = {}
 
-    async def get(self, key: str) -> Any | None:
+    def _get_key_lock(self, key: str) -> asyncio.Lock:
+        """الحصول على قفل خاص بالمفتاح لتجميع الطلبات المتزامنة."""
+
+        if key not in self._key_locks:
+            self._key_locks[key] = asyncio.Lock()
+        return self._key_locks[key]
+
+    def _remove_key_lock(self, key: str) -> None:
+        """إزالة القفل الخاص بمفتاح عند عدم الحاجة إليه."""
+
+        self._key_locks.pop(key, None)
+
+    async def get(self, key: str) -> object | None:
         """
         استرجاع قيمة.
 
@@ -57,6 +74,7 @@ class MultiLevelCache(CacheBackend):
             val = await self.l1.get(key)
             if val is not None:
                 logger.debug(f"🎯 Cache Hit L1: {key}")
+                self._stats.record_l1_hit()
                 return val
         except Exception as e:
             logger.warning(f"⚠️ L1 Cache get error for {key}: {e}")
@@ -66,6 +84,7 @@ class MultiLevelCache(CacheBackend):
             val = await self.l2.get(key)
             if val is not None:
                 logger.debug(f"🎯 Cache Hit L2: {key}")
+                self._stats.record_l2_hit()
                 # 3. Populate L1 (Backfill)
                 if self.sync_l1:
                     try:
@@ -78,12 +97,13 @@ class MultiLevelCache(CacheBackend):
             logger.warning(f"⚠️ L2 Cache get error for {key}: {e}")
 
         logger.debug(f"💨 Cache Miss: {key}")
+        self._stats.record_miss()
         return None
 
     async def set(
         self,
         key: str,
-        value: Any,
+        value: object,
         ttl: int | None = None,
     ) -> bool:
         """
@@ -107,6 +127,7 @@ class MultiLevelCache(CacheBackend):
             except Exception as e:
                 logger.warning(f"⚠️ L1 Cache set error for {key}: {e}")
 
+            self._stats.record_set()
             # TODO: Publish invalidation event for other instances
             # (سنقوم بتنفيذ هذا في مرحلة لاحقة عبر Pub/Sub)
 
@@ -127,13 +148,17 @@ class MultiLevelCache(CacheBackend):
         try:
             l2_res = await self.l2.delete(key)
         except Exception as e:
-             logger.error(f"❌ L2 Cache delete error for {key}: {e}")
+            logger.error(f"❌ L2 Cache delete error for {key}: {e}")
 
         l1_res = False
         try:
             l1_res = await self.l1.delete(key)
         except Exception as e:
             logger.warning(f"⚠️ L1 Cache delete error for {key}: {e}")
+
+        if l1_res or l2_res:
+            self._stats.record_delete()
+            self._remove_key_lock(key)
 
         return l2_res or l1_res
 
@@ -156,7 +181,37 @@ class MultiLevelCache(CacheBackend):
         """مسح الكل."""
         l1 = await self.l1.clear()
         l2 = await self.l2.clear()
+        self._key_locks.clear()
         return l1 and l2
+
+    async def get_stats(self) -> MultiLevelCacheStatsSnapshot:
+        """الحصول على إحصائيات الكاش متعدد المستويات."""
+
+        return self._stats.snapshot()
+
+    async def get_or_set(
+        self,
+        key: str,
+        factory: Callable[[], object] | Callable[[], Awaitable[object]],
+        ttl: int | None = None,
+    ) -> object:
+        """
+        جلب أو حساب قيمة مع تجميع الطلبات لتجنب تدافع الكاش.
+        """
+        cached = await self.get(key)
+        if cached is not None:
+            return cached
+
+        lock = self._get_key_lock(key)
+        async with lock:
+            cached = await self.get(key)
+            if cached is not None:
+                return cached
+
+            result = factory()
+            value = await result if inspect.isawaitable(result) else result
+            await self.set(key, value, ttl=ttl)
+            return value
 
     async def scan_keys(self, pattern: str) -> list[str]:
         """
@@ -167,5 +222,5 @@ class MultiLevelCache(CacheBackend):
         try:
             return await self.l2.scan_keys(pattern)
         except Exception as e:
-             logger.error(f"❌ L2 Cache scan error: {e}")
-             return []
+            logger.error(f"❌ L2 Cache scan error: {e}")
+            return []

@@ -5,7 +5,7 @@
 تتبع مبدأ فصل التجريد عن التنفيذ (Berkeley SICP) وتستخدم توثيق هارفارد.
 """
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -16,7 +16,7 @@ class CacheBackend(Protocol):
     يجب أن تدعم جميع عمليات التخزين المؤقت الأساسية بشكل غير متزامن.
     """
 
-    async def get(self, key: str) -> Any | None:
+    async def get(self, key: str) -> object | None:
         """
         استرجاع قيمة من الذاكرة المؤقتة.
 
@@ -24,14 +24,14 @@ class CacheBackend(Protocol):
             key: مفتاح القيمة
 
         Returns:
-            Any | None: القيمة المخزنة أو None إذا لم تكن موجودة
+            object | None: القيمة المخزنة أو None إذا لم تكن موجودة
         """
         ...
 
     async def set(
         self,
         key: str,
-        value: Any,
+        value: object,
         ttl: int | None = None,
     ) -> bool:
         """
