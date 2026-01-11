@@ -79,11 +79,11 @@ The `scripts/ci_guardrails.py` script enforces these rules.
 | **No Print** | `print()` statements found | `QualityError` |
 | **No Any** | `Any` type hint found | `TypeError` |
 | **No Schema Auto-Create** | `create_all` used outside migrations/tests | `QualityError` |
-| **No Ad-hoc DB Factory** | `create_engine`/`sessionmaker` used outside `app.core.database` | `QualityError` |
+| **No Ad-hoc DB Factory** | `create_engine`/`sessionmaker`/`async_sessionmaker` used outside `app.core.database` | `QualityError` |
 
 > **Legacy note:** Some legacy modules are temporarily exempted via explicit path allowlists inside `scripts/ci_guardrails.py` (e.g., `app/**` for legacy `Any` usage). New code must not add `Any`, and these exemptions should shrink over time.
 
-> **Scripts/tests note:** Maintenance scripts and tests may use explicit DB factories; guardrails allow them via path allowlists.
+> **Scripts/tests note:** Maintenance scripts and tests may use explicit DB factories (including `async_sessionmaker`); guardrails allow them via path allowlists.
 
 ---
 
