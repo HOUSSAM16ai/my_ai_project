@@ -13,11 +13,12 @@
 import hashlib
 import json
 import logging
-from typing import Any
+import random
 
 import redis.asyncio as redis
 
 from app.caching.base import CacheBackend
+from app.caching.stats import CacheCounters, CacheStatsSnapshot
 from app.core.resilience.circuit_breaker import (
     CircuitBreaker,
     CircuitBreakerConfig,
@@ -41,6 +42,7 @@ class RedisCache(CacheBackend):
         self,
         redis_url: str,
         default_ttl: int = 300,
+        ttl_jitter_ratio: float = 0.0,
         breaker_config: CircuitBreakerConfig | None = None
     ) -> None:
         """
@@ -49,10 +51,16 @@ class RedisCache(CacheBackend):
         Args:
             redis_url: رابط الاتصال بـ Redis (e.g., redis://localhost:6379/0)
             default_ttl: مدة الصلاحية الافتراضية بالثواني.
+            ttl_jitter_ratio: نسبة عشوائية مضافة إلى TTL لتقليل التدافع.
             breaker_config: إعدادات قاطع الدائرة (اختياري).
         """
         self._redis = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+        if not 0.0 <= ttl_jitter_ratio <= 1.0:
+            raise ValueError("ttl_jitter_ratio يجب أن يكون بين 0.0 و 1.0")
+
         self._default_ttl = default_ttl
+        self._ttl_jitter_ratio = ttl_jitter_ratio
+        self._stats = CacheCounters()
 
         # إعداد قاطع الدائرة
         config = breaker_config or CircuitBreakerConfig(
@@ -66,7 +74,18 @@ class RedisCache(CacheBackend):
 
         logger.info(f"✅ Redis Cache initialized with URL: {redis_url}")
 
-    async def _execute_with_breaker(self, operation_name: str, func, *args, **kwargs) -> Any:
+    def _resolve_ttl(self, ttl: int | None) -> int:
+        """تحديد TTL فعلي مع عشوائية اختيارية لتفادي انتهاء متزامن."""
+
+        ttl_val = ttl if ttl is not None else self._default_ttl
+        if ttl_val <= 0:
+            return 0
+        if self._ttl_jitter_ratio == 0.0:
+            return ttl_val
+        jitter = int(ttl_val * self._ttl_jitter_ratio * random.random())
+        return ttl_val + jitter
+
+    async def _execute_with_breaker(self, operation_name: str, func, *args, **kwargs) -> object | None:
         """
         تنفيذ عملية Redis داخل قاطع الدائرة.
         """
@@ -83,7 +102,7 @@ class RedisCache(CacheBackend):
             logger.error(f"❌ Redis {operation_name} error: {e}")
             return None
 
-    async def get(self, key: str) -> Any | None:
+    async def get(self, key: str) -> object | None:
         """
         استرجاع قيمة.
         """
@@ -97,18 +116,26 @@ class RedisCache(CacheBackend):
             except json.JSONDecodeError:
                 return value
 
-        return await self._execute_with_breaker("get", _do_get)
+        result = await self._execute_with_breaker("get", _do_get)
+        if result is None:
+            self._stats.record_miss()
+        else:
+            self._stats.record_hit()
+        return result
 
     async def set(
         self,
         key: str,
-        value: Any,
+        value: object,
         ttl: int | None = None,
     ) -> bool:
         """
         تخزين قيمة.
         """
-        ttl_val = ttl if ttl is not None else self._default_ttl
+        ttl_val = self._resolve_ttl(ttl)
+        if ttl_val <= 0:
+            await self.delete(key)
+            return True
 
         async def _do_set():
             try:
@@ -120,6 +147,8 @@ class RedisCache(CacheBackend):
             return True
 
         result = await self._execute_with_breaker("set", _do_set)
+        if result is True:
+            self._stats.record_set()
         return result is True
 
     async def delete(self, key: str) -> bool:
@@ -129,6 +158,8 @@ class RedisCache(CacheBackend):
             return True
 
         result = await self._execute_with_breaker("delete", _do_delete)
+        if result is True:
+            self._stats.record_delete()
         return result is True
 
     async def exists(self, key: str) -> bool:
@@ -160,6 +191,15 @@ class RedisCache(CacheBackend):
 
         result = await self._execute_with_breaker("scan", _do_scan)
         return result if result is not None else []
+
+    async def get_stats(self) -> CacheStatsSnapshot:
+        """الحصول على لقطة إحصائية (الحجم غير متاح في Redis)."""
+
+        return self._stats.snapshot(
+            cache_type="redis",
+            size=-1,
+            max_size=-1,
+        )
 
     async def close(self) -> None:
         """إغلاق الاتصال."""

@@ -1,11 +1,13 @@
 import asyncio
+import importlib.util
 import os
 import unittest
 from unittest.mock import MagicMock, patch
 
 from app.caching.factory import CacheFactory, get_cache
 from app.caching.memory_cache import InMemoryCache
-from app.caching.redis_cache import RedisCache
+
+REDIS_AVAILABLE = importlib.util.find_spec("redis") is not None
 
 
 class TestCaching(unittest.TestCase):
@@ -36,6 +38,7 @@ class TestCaching(unittest.TestCase):
 
         asyncio.run(run_test())
 
+    @unittest.skipUnless(REDIS_AVAILABLE, "redis غير متاح في بيئة الاختبار")
     @patch("app.caching.redis_cache.redis.from_url")
     def test_redis_cache(self, mock_redis_from_url):
         async def run_test():
@@ -54,6 +57,8 @@ class TestCaching(unittest.TestCase):
 
             mock_client.get.side_effect = mock_get
             mock_client.set.side_effect = mock_set
+
+            from app.caching.redis_cache import RedisCache
 
             cache = RedisCache("redis://localhost")
 
