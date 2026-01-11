@@ -253,6 +253,32 @@ def test_guardrails_allows_sessionmaker_in_tests(tmp_path: Path) -> None:
     assert errors == []
 
 
+def test_guardrails_allows_async_sessionmaker_in_scripts(tmp_path: Path) -> None:
+    file_path = _write_python(
+        tmp_path,
+        "scripts/async_session_factory.py",
+        "from sqlalchemy.ext.asyncio import async_sessionmaker\n"
+        "SessionLocal = async_sessionmaker()\n",
+    )
+
+    errors = ci_guardrails.check_file(file_path)
+
+    assert errors == []
+
+
+def test_guardrails_allows_async_sessionmaker_in_tests(tmp_path: Path) -> None:
+    file_path = _write_python(
+        tmp_path,
+        "tests/helpers/async_session_factory.py",
+        "from sqlalchemy.ext.asyncio import async_sessionmaker\n"
+        "SessionLocal = async_sessionmaker()\n",
+    )
+
+    errors = ci_guardrails.check_file(file_path)
+
+    assert errors == []
+
+
 def test_guardrails_allows_db_factory_in_core(tmp_path: Path) -> None:
     file_path = _write_python(
         tmp_path,

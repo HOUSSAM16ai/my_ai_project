@@ -17,7 +17,7 @@ FORBIDDEN_PATTERNS = [
     },
     {
         "pattern": "async_sessionmaker",
-        "allowed_in": ["app/core/database.py"],
+        "allowed_in": ["app/core/database.py", "scripts/*", "tests/*"],
         "message": "Direct use of 'async_sessionmaker' is forbidden. Use the shared factory in app.core.database.",
     },
     {
