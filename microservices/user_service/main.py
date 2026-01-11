@@ -6,6 +6,7 @@ Standards:
 - API First: Routes defined cleanly.
 - Shared Kernel: Uses Logging, Errors, and Settings from core.
 - Bounded Context: Owns `users` table.
+- Constitution: Rule 11 (API Interfaces), Rule 5 (Own DB), Rule 56 (Polyglot).
 """
 
 import re
@@ -66,15 +67,17 @@ class UserCountResponse(BaseModel):
 def _build_router(settings: UserServiceSettings) -> APIRouter:
     router = APIRouter()
 
-    @router.get("/health", response_model=HealthResponse)
+    @router.get("/health", response_model=HealthResponse, tags=["System"])
     def health_check() -> HealthResponse:
+        """Health check endpoint for Kubernetes/Docker."""
         return build_health_payload(settings)
 
-    @router.post("/users", response_model=UserResponse)
+    @router.post("/users", response_model=UserResponse, tags=["Users"], summary="Create a new user")
     async def create_user(
         payload: UserCreateRequest,
         session: AsyncSession = Depends(get_session)
     ) -> UserResponse:
+        """Create a new user with strictly validated email."""
         logger.info("Creating user", extra={"email": payload.email})
 
         user = User(name=payload.name, email=payload.email)
@@ -89,7 +92,7 @@ def _build_router(settings: UserServiceSettings) -> APIRouter:
 
         return UserResponse(user_id=user.id, name=user.name, email=user.email)
 
-    @router.get("/users/count", response_model=UserCountResponse)
+    @router.get("/users/count", response_model=UserCountResponse, tags=["Users"], summary="Count users")
     async def count_users(
         session: AsyncSession = Depends(get_session)
     ) -> UserCountResponse:
@@ -99,10 +102,11 @@ def _build_router(settings: UserServiceSettings) -> APIRouter:
         count = result.scalar_one()
         return UserCountResponse(count=count)
 
-    @router.get("/users", response_model=list[UserResponse])
+    @router.get("/users", response_model=list[UserResponse], tags=["Users"], summary="List users")
     async def list_users(
         session: AsyncSession = Depends(get_session)
     ) -> list[UserResponse]:
+        """List all users."""
         statement = select(User)
         result = await session.execute(statement)
         users = result.scalars().all()
@@ -129,8 +133,13 @@ def create_app(settings: UserServiceSettings | None = None) -> FastAPI:
 
     app = FastAPI(
         title=effective_settings.SERVICE_NAME,
+        description="Isolated microservice for user management.",
         version=effective_settings.SERVICE_VERSION,
-        lifespan=lifespan
+        lifespan=lifespan,
+        openapi_tags=[
+            {"name": "System", "description": "System health and metrics"},
+            {"name": "Users", "description": "User management operations"}
+        ]
     )
 
     setup_exception_handlers(app)
