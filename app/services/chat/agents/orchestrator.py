@@ -1,6 +1,5 @@
 import json
 import re
-from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.core.logging import get_logger
@@ -9,6 +8,7 @@ from app.services.chat.agents.base import AgentResponse
 from app.services.chat.agents.data_access import DataAccessAgent
 from app.services.chat.agents.refactor import RefactorAgent
 from app.services.chat.agents.test_agent import TestAgent
+from app.services.chat.context_service import get_context_service
 from app.services.chat.tools import ToolRegistry
 
 logger = get_logger("orchestrator-agent")
@@ -31,7 +31,7 @@ class OrchestratorAgent:
         self.refactor_agent = RefactorAgent()
         self.test_agent = TestAgent()
 
-    async def run(self, question: str, context: dict[str, Any] | None = None) -> str:
+    async def run(self, question: str, context: dict[str, object] | None = None) -> str:
         """
         حلقة التنفيذ الرئيسية:
         1. تحليل النية.
@@ -85,6 +85,12 @@ class OrchestratorAgent:
                 "count users",
                 "عدد المستخدمين",
                 "كم عدد المستخدمين",
+                "كم مستخدم",
+                "كم شخص",
+                "كم شخص مسجل",
+                "كم مستخدم مسجل",
+                "عدد المسجلين",
+                "عدد الحسابات",
             ]
         )
 
@@ -379,13 +385,25 @@ class OrchestratorAgent:
         )
 
     async def _handle_fallback(self, _: str, __: str) -> str:
-        return (
-            "يمكنني مساعدتك في:\n"
-            "- معلومات المشروع وقاعدة البيانات\n"
-            "- عدد المستخدمين وإحصاءاتهم وتواريخ التسجيل\n"
-            "- تحديد الملف والسطر لتعديل ميزة معينة\n"
-            "قدّم سؤالك بكلمة مفتاحية أو رقم مستخدم للحصول على نتيجة دقيقة."
-        )
+        """
+        معالجة الاستفسارات العامة غير المطابقة لأوامر الأدمن الصريحة.
+        تعتمد على نموذج الذكاء الاصطناعي لتقديم إجابة واقعية بدلاً من رد ثابت.
+        """
+        try:
+            context_service = get_context_service()
+            system_prompt = context_service.get_admin_system_prompt()
+        except Exception as exc:
+            logger.error("فشل تحميل سياق الأدمن", exc_info=exc)
+            system_prompt = "أنت مساعد إداري محترف يجيب بإيجاز ودقة."
+
+        try:
+            return await self.ai_client.send_message(system_prompt, _)
+        except Exception as exc:
+            logger.error("فشل الرد عبر نموذج الذكاء الاصطناعي", exc_info=exc)
+            return (
+                "تعذر توليد إجابة دقيقة حالياً. "
+                "يرجى إعادة صياغة السؤال أو تحديد المجال المطلوب بدقة."
+            )
 
     def _extract_limit(self, lowered: str) -> int | None:
         match = re.search(r"(?:limit|أول|first)\s+(\d+)", lowered)
@@ -447,7 +465,7 @@ class OrchestratorAgent:
             return match.group(1).strip()
         return None
 
-    def _format_code_locations(self, results: list[dict[str, Any]], title: str) -> str:
+    def _format_code_locations(self, results: list[dict[str, object]], title: str) -> str:
         if not results:
             return f"{title}:\nلا توجد نتائج مطابقة."
         lines = []
