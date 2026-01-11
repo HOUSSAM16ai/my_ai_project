@@ -1,48 +1,70 @@
-"""
-Standalone Tests for Architectural Guardrails.
-"""
+"""اختبارات مستقلة للحواجز المعمارية لضمان سلامة الاستيراد والقاعدة."""
+
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 
-from guardrails import check_file
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if REPO_ROOT.as_posix() not in sys.path:
+    sys.path.insert(0, REPO_ROOT.as_posix())
+
+from scripts import ci_guardrails
 
 
 class TestGuardrails(unittest.TestCase):
+    """يتحقق من قواعد الحواجز عبر ملفات مؤقتة بسيطة."""
 
-    def test_cross_service_import_detection(self):
-        # Create a temporary violating file content
+    def _write_file(self, base: Path, relative: str, content: str) -> Path:
+        """ينشئ ملفًا مؤقتًا داخل المسار المعطى ويعيد مساره."""
+        file_path = base / relative
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(content, encoding="utf-8")
+        return file_path
 
-        # We need to mock how check_file reads content or refactor check_file to accept content.
-        # For simplicity, let's just write to a temp file or refactor guardrails.py slightly?
-        # Actually, let's refactor guardrails.py to be more testable first (Separation of IO)
-        pass
+    def test_cross_service_import_detection(self) -> None:
+        """يتأكد من حظر الاستيراد بين الخدمات المختلفة."""
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            root = Path(tmpdirname)
+            violating_file = self._write_file(
+                root,
+                "microservices/order_service/bad.py",
+                "from microservices.user_service import models\n",
+            )
 
-    def test_check_file_logic(self):
-         # Since check_file reads from disk, I will create a temp file
-         import tempfile
+            errors = ci_guardrails.check_file(violating_file)
 
-         with tempfile.TemporaryDirectory() as tmpdirname:
-             # Create a fake structure
-             ms_dir = Path(tmpdirname) / "microservices" / "order_service"
-             ms_dir.mkdir(parents=True)
+            self.assertTrue(any("Cross-service import forbidden" in e for e in errors))
 
-             violating_file = ms_dir / "bad.py"
-             with open(violating_file, "w") as f:
-                 f.write("from microservices.user_service import models\n")
+    def test_forbidden_create_async_engine(self) -> None:
+        """يتأكد من منع إنشاء المحرك مباشرة خارج المسارات المسموحة."""
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            root = Path(tmpdirname)
+            violating_file = self._write_file(
+                root,
+                "app/infrastructure/db_factory.py",
+                "from sqlalchemy.ext.asyncio import create_async_engine\n"
+                "engine = create_async_engine('sqlite+aiosqlite://')\n",
+            )
 
-             # Check it
-             errors = check_file(violating_file)
-             self.assertTrue(any("Cross-service import forbidden" in e for e in errors))
+            errors = ci_guardrails.check_file(violating_file)
 
-    def test_adhoc_db_engine(self):
-         import tempfile
-         with tempfile.TemporaryDirectory() as tmpdirname:
-             p = Path(tmpdirname) / "some_service.py"
-             with open(p, "w") as f:
-                 f.write("engine = create_async_engine('sqlite://')\n")
+            self.assertTrue(any("create_async_engine" in e for e in errors))
 
-             errors = check_file(p)
-             self.assertTrue(any("Direct use of 'create_async_engine' is forbidden" in e for e in errors))
+    def test_allow_create_engine_in_scripts(self) -> None:
+        """يسمح للمخططات والصيانة في scripts باستخدام create_engine."""
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            root = Path(tmpdirname)
+            script_file = self._write_file(
+                root,
+                "scripts/db_maintenance.py",
+                "from sqlalchemy import create_engine\nengine = create_engine('sqlite://')\n",
+            )
+
+            errors = ci_guardrails.check_file(script_file)
+
+            self.assertEqual(errors, [])
+
 
 if __name__ == "__main__":
     unittest.main()
