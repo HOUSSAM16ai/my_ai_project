@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 from app.core.http_client_factory import HTTPClientConfig, get_http_client
 from app.core.logging import get_logger
+from app.core.settings.base import get_settings
 
 logger = get_logger("user-client")
 
@@ -33,12 +34,18 @@ class UserCreateRequest(BaseModel):
 
 class UserClient:
     """
-    Client for interacting with the User microservice.
-    Adheres to the Microservices Constitution (Rules 4, 11, 21).
+    عميل للتفاعل مع خدمة المستخدمين المصغّرة.
+
+    يلتزم بدستور الخدمات المصغّرة (القواعد 4 و11 و21).
     """
 
-    def __init__(self, base_url: str = DEFAULT_USER_SERVICE_URL) -> None:
-        self.base_url = base_url.rstrip("/")
+    def __init__(self, base_url: str | None = None) -> None:
+        """
+        تهيئة عميل خدمة المستخدمين مع دعم تبديل العنوان حسب البيئة.
+        """
+        settings = get_settings()
+        resolved_url = base_url or settings.USER_SERVICE_URL or DEFAULT_USER_SERVICE_URL
+        self.base_url = resolved_url.rstrip("/")
         self.config = HTTPClientConfig(
             name="user-service-client",
             timeout=10.0,  # Rule 62: Timeouts
@@ -49,7 +56,7 @@ class UserClient:
         return get_http_client(self.config)
 
     async def get_user_count(self) -> int:
-        """Fetch the total number of users."""
+        """استرجاع العدد الإجمالي للمستخدمين."""
         url = f"{self.base_url}/users/count"
         logger.debug("Calling User Service", extra={"url": url})
 
@@ -67,7 +74,7 @@ class UserClient:
             raise
 
     async def create_user(self, name: str, email: str) -> UserResponse:
-        """Create a new user via API."""
+        """إنشاء مستخدم جديد عبر واجهة الخدمة."""
         url = f"{self.base_url}/users"
         payload = UserCreateRequest(name=name, email=email)
 
@@ -85,7 +92,7 @@ class UserClient:
             raise
 
     async def get_users(self) -> list[UserResponse]:
-        """List all users."""
+        """جلب قائمة جميع المستخدمين."""
         url = f"{self.base_url}/users"
         client = await self._get_client()
 
