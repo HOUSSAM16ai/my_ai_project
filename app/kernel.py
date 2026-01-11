@@ -214,7 +214,7 @@ class RealityKernel:
         """Returns the constructed application."""
         return self.app
 
-def _construct_app(self) -> FastAPI:
+    def _construct_app(self) -> FastAPI:
         """
         بناء التطبيق باستخدام منهجية Pipeline.
 
