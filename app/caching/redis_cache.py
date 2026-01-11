@@ -43,7 +43,10 @@ class RedisCache(CacheBackend):
         redis_url: str,
         default_ttl: int = 300,
         ttl_jitter_ratio: float = 0.0,
-        breaker_config: CircuitBreakerConfig | None = None
+        breaker_config: CircuitBreakerConfig | None = None,
+        socket_timeout: float | None = None,
+        socket_connect_timeout: float | None = None,
+        health_check_interval: int | None = None,
     ) -> None:
         """
         تهيئة عميل Redis.
@@ -53,8 +56,18 @@ class RedisCache(CacheBackend):
             default_ttl: مدة الصلاحية الافتراضية بالثواني.
             ttl_jitter_ratio: نسبة عشوائية مضافة إلى TTL لتقليل التدافع.
             breaker_config: إعدادات قاطع الدائرة (اختياري).
+            socket_timeout: مهلة القراءة/الكتابة للمقبس (اختياري).
+            socket_connect_timeout: مهلة اتصال المقبس (اختياري).
+            health_check_interval: فترة فحص الصحة للاتصال (اختياري).
         """
-        self._redis = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+        self._redis = redis.from_url(
+            redis_url,
+            encoding="utf-8",
+            decode_responses=True,
+            socket_timeout=socket_timeout,
+            socket_connect_timeout=socket_connect_timeout,
+            health_check_interval=health_check_interval,
+        )
         if not 0.0 <= ttl_jitter_ratio <= 1.0:
             raise ValueError("ttl_jitter_ratio يجب أن يكون بين 0.0 و 1.0")
 

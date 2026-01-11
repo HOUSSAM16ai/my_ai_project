@@ -106,7 +106,32 @@ class ChatOrchestrator:
 
         # Check if we should use the new Multi-Agent System (Admin/Governance tasks)
         # For this fix, we prioritize the new agent system for specific intents
-        is_admin_query = any(k in question.lower() for k in ["users", "count", "find", "locate", "search", "admin"])
+        admin_keywords = [
+            "users",
+            "count",
+            "find",
+            "locate",
+            "search",
+            "admin",
+            "database",
+            "schema",
+            "tables",
+            "project",
+            "route",
+            "endpoint",
+            "مستخدم",
+            "المستخدمين",
+            "عدد",
+            "قاعدة البيانات",
+            "قواعد البيانات",
+            "الجداول",
+            "المشروع",
+            "بنية",
+            "مسار",
+            "سطر",
+            "ملف",
+        ]
+        is_admin_query = any(k in question.lower() for k in admin_keywords)
 
         if is_admin_query:
             logger.info("Delegating to Multi-Agent Orchestrator", extra={"user_id": user_id})

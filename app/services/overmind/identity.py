@@ -16,6 +16,8 @@
 
 from typing import Any
 
+from app.core.agents.principles import get_agent_principles
+
 from app.core.di import get_logger
 
 logger = get_logger(__name__)
@@ -98,6 +100,12 @@ class OvermindIdentity:
                     "YAGNI: You Aren't Gonna Need It",
                 ],
             },
+
+            # مبادئ الوكلاء (Agent Principles)
+            "agent_principles": [
+                {"number": principle.number, "statement": principle.statement}
+                for principle in get_agent_principles()
+            ],
 
             # الوكلاء (Agents)
             "agents": {
@@ -231,6 +239,15 @@ class OvermindIdentity:
         """
         return self._identity["agents"]
 
+    def get_agent_principles(self) -> list[dict[str, int | str]]:
+        """
+        الحصول على مبادئ الوكلاء بشكل منظم.
+
+        Returns:
+            list: قائمة مبادئ الوكلاء مع الأرقام والنصوص.
+        """
+        return self._identity["agent_principles"]
+
     def get_capabilities(self) -> dict[str, Any]:
         """
         الحصول على القدرات والإمكانيات.
@@ -265,6 +282,8 @@ class OvermindIdentity:
             return self._answer_founder_question()
         if self._is_overmind_question(q):
             return self._answer_overmind_question()
+        if self._is_agent_principles_question(q):
+            return self._answer_agent_principles_question()
         if self._is_agents_question(q):
             return self._answer_agents_question()
         if self._is_capabilities_question(q):
@@ -293,6 +312,17 @@ class OvermindIdentity:
     def _is_agents_question(self, q: str) -> bool:
         """التحقق إذا كان السؤال عن الوكلاء."""
         return any(keyword in q for keyword in ["وكلاء", "agents", "الفريق"])
+
+    def _is_agent_principles_question(self, q: str) -> bool:
+        """التحقق إذا كان السؤال عن مبادئ الوكلاء."""
+        keywords = [
+            "مبادئ الوكلاء",
+            "مبادئ الوكيل",
+            "agent principles",
+            "multi-agent",
+            "multi agent",
+        ]
+        return any(keyword in q for keyword in keywords)
 
     def _is_capabilities_question(self, q: str) -> bool:
         """التحقق إذا كان السؤال عن القدرات."""
@@ -343,6 +373,12 @@ class OvermindIdentity:
         agents_list = [f"• {agent['name']}: {agent['role']}"
                       for agent in agents.values()]
         return "أنا أعمل مع فريق من 4 وكلاء متخصصة:\n" + "\n".join(agents_list)
+
+    def _answer_agent_principles_question(self) -> str:
+        """الإجابة على أسئلة مبادئ الوكلاء."""
+        principles = self._identity["agent_principles"]
+        formatted = "\n".join(f"{item['number']}. {item['statement']}" for item in principles)
+        return "مبادئ الوكلاء المعتمدة لدينا هي:\n" + formatted
 
     def _answer_capabilities_question(self) -> str:
         """الإجابة على أسئلة القدرات."""

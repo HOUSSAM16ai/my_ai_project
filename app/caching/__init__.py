@@ -12,6 +12,7 @@ from app.caching.base import CacheBackend
 from app.caching.distributed_cache import MultiLevelCache
 from app.caching.invalidation import InvalidationManager
 from app.caching.memory_cache import InMemoryCache
+from app.caching.namespace_cache import NamespacedCache
 from app.caching.stats import CacheStatsSnapshot, MultiLevelCacheStatsSnapshot
 from app.caching.strategies import (
     EvictionPolicy,
@@ -33,6 +34,7 @@ __all__ = [
     "LRUPolicy",
     "MultiLevelCacheStatsSnapshot",
     "MultiLevelCache",
+    "NamespacedCache",
     "RedisCache",
     "StrategicMemoryCache",
 ]

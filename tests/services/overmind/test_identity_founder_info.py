@@ -221,6 +221,31 @@ class TestOvermindIdentityDatabaseCapabilities:
             assert "قدرات" in answer or "المعرفة" in answer or "الإجراءات" in answer
 
 
+class TestOvermindIdentityAgentPrinciples:
+    """اختبارات مبادئ الوكلاء في نظام الهوية."""
+
+    def setup_method(self):
+        """إعداد الاختبار."""
+        self.identity = OvermindIdentity()
+
+    def test_agent_principles_are_available(self):
+        """اختبار: مبادئ الوكلاء متاحة ومنسقة."""
+        principles = self.identity.get_agent_principles()
+
+        assert isinstance(principles, list)
+        assert len(principles) >= 100
+        assert principles[0]["number"] == 1
+        assert "الوكيل الذكي" in principles[0]["statement"]
+
+    def test_answer_agent_principles_question(self):
+        """اختبار: الإجابة على سؤال مبادئ الوكلاء."""
+        answer = self.identity.answer_question("ما هي مبادئ الوكلاء؟")
+
+        assert "مبادئ الوكلاء" in answer
+        assert "1." in answer
+        assert "الوكيل الذكي" in answer
+
+
 if __name__ == "__main__":
     # تشغيل الاختبارات مباشرة
     pytest.main([__file__, "-v"])

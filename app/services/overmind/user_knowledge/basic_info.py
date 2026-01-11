@@ -32,11 +32,11 @@ async def get_user_basic_info(session: AsyncSession, user_id: int) -> dict[str, 
 
     يشمل:
         - id: المعرّف الفريد
-        - name: الاسم الكامل
+        - full_name: الاسم الكامل
         - email: البريد الإلكتروني
-        - role: الدور (admin, user, guest)
+        - is_admin: هل هو مسؤول
         - is_active: نشط أم لا
-        - is_verified: موثق أم لا
+        - status: حالة الحساب
         - created_at: تاريخ الإنشاء
         - updated_at: آخر تحديث
     """
@@ -53,13 +53,13 @@ async def get_user_basic_info(session: AsyncSession, user_id: int) -> dict[str, 
 
         return {
             "id": user.id,
-            "name": user.name,
+            "full_name": user.full_name,
             "email": user.email,
-            "role": user.role.value if hasattr(user.role, 'value') else str(user.role),
-            "is_active": user.is_active if hasattr(user, 'is_active') else True,
-            "is_verified": user.is_verified if hasattr(user, 'is_verified') else False,
-            "created_at": user.created_at.isoformat() if hasattr(user, 'created_at') else None,
-            "updated_at": user.updated_at.isoformat() if hasattr(user, 'updated_at') else None,
+            "is_admin": user.is_admin,
+            "is_active": user.is_active,
+            "status": user.status.value if hasattr(user.status, "value") else str(user.status),
+            "created_at": user.created_at.isoformat(),
+            "updated_at": user.updated_at.isoformat(),
         }
 
     except Exception as e:
@@ -89,14 +89,16 @@ async def list_all_users(
         result = await session.execute(query)
         users = result.scalars().all()
 
-        users_list = []
+        users_list: list[dict[str, Any]] = []
         for user in users:
             users_list.append({
                 "id": user.id,
-                "name": user.name,
+                "full_name": user.full_name,
                 "email": user.email,
-                "role": user.role.value if hasattr(user.role, 'value') else str(user.role),
-                "is_active": user.is_active if hasattr(user, 'is_active') else True,
+                "is_admin": user.is_admin,
+                "is_active": user.is_active,
+                "status": user.status.value if hasattr(user.status, "value") else str(user.status),
+                "created_at": user.created_at.isoformat(),
             })
 
         logger.info(f"Listed {len(users_list)} users")
