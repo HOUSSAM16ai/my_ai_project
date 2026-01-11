@@ -1055,3 +1055,492 @@ paths:
                     type: string
                     enum: [healthy, degraded, unhealthy]
                     example: "healthy"
+
+  # ==============================================================================
+  # Runtime Coverage Endpoints (Spec Alignment)
+  # ==============================================================================
+  /health:
+    get:
+      tags:
+        - Observability
+      summary: Root Health Check
+      operationId: rootHealthCheck
+      responses:
+        '200':
+          description: Service is healthy
+
+  /system/health:
+    get:
+      tags:
+        - Observability
+      summary: System Health Endpoint
+      operationId: systemHealthEndpoint
+      responses:
+        '200':
+          description: System health status
+
+  /system/healthz:
+    get:
+      tags:
+        - Observability
+      summary: System Healthz Endpoint
+      operationId: systemHealthzEndpoint
+      responses:
+        '200':
+          description: System health status
+
+  /system/info:
+    get:
+      tags:
+        - Observability
+      summary: System Info Endpoint
+      operationId: systemInfoEndpoint
+      responses:
+        '200':
+          description: System information
+
+  /api/security/token/generate:
+    post:
+      tags:
+        - Security
+      summary: Generate Security Token
+      operationId: securityTokenGenerate
+      responses:
+        '200':
+          description: Token generated
+
+  /api/security/token/verify:
+    post:
+      tags:
+        - Security
+      summary: Verify Security Token
+      operationId: securityTokenVerify
+      responses:
+        '200':
+          description: Token verification result
+
+  /api/security/user/me:
+    get:
+      tags:
+        - Security
+      summary: Get Current User
+      operationId: securityCurrentUser
+      responses:
+        '200':
+          description: Current user profile
+
+  /auth/register:
+    post:
+      tags:
+        - Security
+      summary: Register User
+      operationId: authRegister
+      responses:
+        '200':
+          description: User registered
+
+  /auth/login:
+    post:
+      tags:
+        - Security
+      summary: Login User
+      operationId: authLogin
+      responses:
+        '200':
+          description: User authenticated
+
+  /auth/logout:
+    post:
+      tags:
+        - Security
+      summary: Logout User
+      operationId: authLogout
+      responses:
+        '200':
+          description: User logged out
+
+  /auth/refresh:
+    post:
+      tags:
+        - Security
+      summary: Refresh Token
+      operationId: authRefresh
+      responses:
+        '200':
+          description: Token refreshed
+
+  /auth/reauth:
+    post:
+      tags:
+        - Security
+      summary: Re-authenticate User
+      operationId: authReauth
+      responses:
+        '200':
+          description: Re-authentication completed
+
+  /auth/password/forgot:
+    post:
+      tags:
+        - Security
+      summary: Forgot Password
+      operationId: authForgotPassword
+      responses:
+        '200':
+          description: Reset email sent
+
+  /auth/password/reset:
+    post:
+      tags:
+        - Security
+      summary: Reset Password
+      operationId: authResetPassword
+      responses:
+        '200':
+          description: Password reset
+
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Get Current User
+      operationId: usersMeGet
+      responses:
+        '200':
+          description: Current user profile
+    patch:
+      tags:
+        - Users
+      summary: Update Current User
+      operationId: usersMePatch
+      responses:
+        '200':
+          description: Current user updated
+
+  /users/me/change-password:
+    post:
+      tags:
+        - Users
+      summary: Change Password
+      operationId: usersMeChangePassword
+      responses:
+        '200':
+          description: Password updated
+
+  /api/chat/latest:
+    get:
+      tags:
+        - Agents
+      summary: Latest Chat Messages
+      operationId: chatLatest
+      responses:
+        '200':
+          description: Latest chat messages
+
+  /api/chat/stream:
+    post:
+      tags:
+        - Agents
+      summary: Chat Stream
+      operationId: chatStream
+      responses:
+        '200':
+          description: Chat stream started
+
+  /api/chat/conversations:
+    get:
+      tags:
+        - Agents
+      summary: List Conversations
+      operationId: chatConversationsList
+      responses:
+        '200':
+          description: Conversations list
+
+  /api/chat/conversations/{conversation_id}:
+    get:
+      tags:
+        - Agents
+      summary: Get Conversation
+      operationId: chatConversationGet
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conversation details
+
+  /admin/api/chat/latest:
+    get:
+      tags:
+        - Admin
+      summary: Admin Latest Chat
+      operationId: adminChatLatest
+      responses:
+        '200':
+          description: Latest admin chat messages
+
+  /admin/api/chat/stream:
+    post:
+      tags:
+        - Admin
+      summary: Admin Chat Stream
+      operationId: adminChatStream
+      responses:
+        '200':
+          description: Admin chat stream started
+
+  /admin/api/conversations:
+    get:
+      tags:
+        - Admin
+      summary: Admin Conversations
+      operationId: adminConversationsList
+      responses:
+        '200':
+          description: Admin conversations list
+
+  /admin/api/conversations/{conversation_id}:
+    get:
+      tags:
+        - Admin
+      summary: Admin Conversation Details
+      operationId: adminConversationGet
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Admin conversation details
+
+  /admin/ai-config:
+    get:
+      tags:
+        - Admin
+      summary: Get AI Config
+      operationId: adminAiConfigGet
+      responses:
+        '200':
+          description: AI configuration
+    put:
+      tags:
+        - Admin
+      summary: Update AI Config
+      operationId: adminAiConfigUpdate
+      responses:
+        '200':
+          description: AI configuration updated
+
+  /admin/audit:
+    get:
+      tags:
+        - Admin
+      summary: Audit Log
+      operationId: adminAuditLog
+      responses:
+        '200':
+          description: Audit entries
+
+  /admin/users:
+    get:
+      tags:
+        - Admin
+      summary: List Users
+      operationId: adminUsersList
+      responses:
+        '200':
+          description: Users list
+    post:
+      tags:
+        - Admin
+      summary: Create User
+      operationId: adminUsersCreate
+      responses:
+        '200':
+          description: User created
+
+  /admin/users/count:
+    get:
+      tags:
+        - Admin
+      summary: Count Users
+      operationId: adminUsersCount
+      responses:
+        '200':
+          description: Users count
+
+  /admin/users/{user_id}/roles:
+    post:
+      tags:
+        - Admin
+      summary: Update User Roles
+      operationId: adminUsersRolesUpdate
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User roles updated
+
+  /admin/users/{user_id}/status:
+    patch:
+      tags:
+        - Admin
+      summary: Update User Status
+      operationId: adminUsersStatusUpdate
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User status updated
+
+  /api/observability/aiops:
+    get:
+      tags:
+        - Observability
+      summary: AIOps Overview
+      operationId: observabilityAiops
+      responses:
+        '200':
+          description: AIOps status
+
+  /api/observability/alerts:
+    get:
+      tags:
+        - Observability
+      summary: Alerts Overview
+      operationId: observabilityAlerts
+      responses:
+        '200':
+          description: Alerts list
+
+  /api/observability/analytics/{path}:
+    get:
+      tags:
+        - Observability
+      summary: Analytics Path
+      operationId: observabilityAnalyticsPath
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Analytics response
+
+  /api/observability/gitops:
+    get:
+      tags:
+        - Observability
+      summary: GitOps Overview
+      operationId: observabilityGitops
+      responses:
+        '200':
+          description: GitOps status
+
+  /api/observability/metrics:
+    get:
+      tags:
+        - Observability
+      summary: Metrics Overview
+      operationId: observabilityMetrics
+      responses:
+        '200':
+          description: Metrics summary
+
+  /api/observability/performance:
+    get:
+      tags:
+        - Observability
+      summary: Performance Overview
+      operationId: observabilityPerformance
+      responses:
+        '200':
+          description: Performance metrics
+
+  /api/v1/data-mesh/contracts:
+    post:
+      tags:
+        - CRUD
+      summary: Create Data Contract
+      operationId: dataMeshContractsCreate
+      responses:
+        '200':
+          description: Data contract created
+
+  /api/v1/data-mesh/metrics:
+    get:
+      tags:
+        - CRUD
+      summary: Data Mesh Metrics
+      operationId: dataMeshMetrics
+      responses:
+        '200':
+          description: Data mesh metrics
+
+  /api/v1/overmind/missions:
+    post:
+      tags:
+        - Agents
+      summary: Create Overmind Mission
+      operationId: overmindMissionsCreate
+      responses:
+        '200':
+          description: Mission created
+
+  /api/v1/overmind/missions/{mission_id}:
+    get:
+      tags:
+        - Agents
+      summary: Get Overmind Mission
+      operationId: overmindMissionGet
+      parameters:
+        - name: mission_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Mission details
+
+  /api/v1/overmind/missions/{mission_id}/stream:
+    get:
+      tags:
+        - Agents
+      summary: Stream Overmind Mission
+      operationId: overmindMissionStream
+      parameters:
+        - name: mission_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Mission stream
+
+  /qa/question:
+    post:
+      tags:
+        - Agents
+      summary: Submit QA Question
+      operationId: qaQuestionSubmit
+      responses:
+        '200':
+          description: QA response

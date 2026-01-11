@@ -1,44 +1,75 @@
-"""
-API Contract Tests using Pact
+"""اختبارات عقد OpenAPI لضمان الالتزام بمنهجية API-First."""
 
-These tests verify that service contracts are maintained between consumers and providers.
-"""
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from app.main import create_app
+from app.core.openapi_contracts import load_contract_operations, load_contract_paths
+from app.services.chat.agents.api_contract import APIContractAgent
+
+
+CONTRACT_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "docs"
+    / "contracts"
+    / "openapi"
+    / "core-api-v1.yaml"
+)
 
 
 class TestAPIContracts:
-    """Test API contracts between services."""
+    """اختبارات عملية لعقود OpenAPI الأساسية."""
 
-    def test_contract_placeholder(self):
-        """Placeholder test for contract testing.
+    def test_contract_paths_are_available(self) -> None:
+        """يتحقق من أن عقد OpenAPI يعرّف مسارات أساسية."""
 
-        This test will be expanded when microservices contracts are defined.
-        """
-        assert True, "Contract tests will be implemented when services are deployed"
+        paths = load_contract_paths(CONTRACT_PATH)
+        assert paths, "يجب أن يحتوي العقد على مسارات معرفة"
+        assert "/api/security/health" in paths
 
-    def test_consumer_contract(self):
-        """Test consumer contract expectations.
+    def test_contract_paths_exist_in_runtime_openapi(self) -> None:
+        """يتحقق من توفر مسارات العقد ضمن مخطط التشغيل الفعلي."""
 
-        Basic placeholder until Pact broker is configured.
-        Verifies that contract testing infrastructure is ready.
-        """
-        # Basic contract validation - ensure we can define contract expectations
-        contract_definition = {
-            "consumer": "api-client",
-            "provider": "api-service",
-            "interactions": [],
-        }
-        assert contract_definition["consumer"] == "api-client"
-        assert contract_definition["provider"] == "api-service"
-        assert isinstance(contract_definition["interactions"], list)
+        contract_paths = load_contract_paths(CONTRACT_PATH)
+        app = create_app(enable_static_files=False)
+        runtime_paths = set(app.openapi().get("paths", {}).keys())
 
-    def test_provider_contract(self):
-        """Test provider contract compliance.
+        missing = contract_paths - runtime_paths
+        assert not missing, f"مسارات العقد غير موجودة في التطبيق: {sorted(missing)}"
 
-        Basic placeholder until Pact broker is configured.
-        Verifies that contract verification infrastructure is ready.
-        """
-        # Basic contract validation - ensure we can verify provider compliance
-        provider_config = {"name": "api-service", "version": "1.0.0", "endpoints": []}
-        assert provider_config["name"] == "api-service"
-        assert provider_config["version"] == "1.0.0"
-        assert isinstance(provider_config["endpoints"], list)
+    def test_contract_operations_exist_in_runtime_openapi(self) -> None:
+        """يتحقق من توفر عمليات العقد ضمن مخطط التشغيل الفعلي."""
+
+        contract_operations = load_contract_operations(CONTRACT_PATH)
+        app = create_app(enable_static_files=False)
+        runtime_paths = app.openapi().get("paths", {})
+
+        missing_operations: dict[str, list[str]] = {}
+        for path, methods in contract_operations.items():
+            runtime_methods = runtime_paths.get(path, {})
+            if not isinstance(runtime_methods, dict):
+                missing_operations[path] = sorted(methods)
+                continue
+            missing = {method for method in methods if method not in runtime_methods}
+            if missing:
+                missing_operations[path] = sorted(missing)
+
+        assert not missing_operations, f"عمليات العقد غير موجودة: {missing_operations}"
+
+    @pytest.mark.asyncio
+    async def test_contract_agent_validation(self) -> None:
+        """يتحقق من أن وكيل العقد يرفض المسارات غير المعرفة."""
+
+        agent = APIContractAgent(spec_path=CONTRACT_PATH)
+        success = await agent.process(
+            {"action": "validate_route_existence", "path": "/api/security/health"}
+        )
+        failure = await agent.process(
+            {"action": "validate_route_existence", "path": "/api/unknown/path"}
+        )
+
+        assert success.success is True
+        assert failure.success is False

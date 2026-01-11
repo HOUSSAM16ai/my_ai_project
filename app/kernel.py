@@ -45,6 +45,11 @@ from app.core.config import AppSettings
 from app.core.database import async_session_factory
 from app.core.db_schema import validate_schema_on_startup
 from app.core.event_bus_impl import get_event_bus
+from app.core.openapi_contracts import (
+    compare_contract_to_runtime,
+    default_contract_path,
+    load_contract_operations,
+)
 from app.gateway import APIGateway, ServiceRegistry
 from app.gateway.config import DEFAULT_GATEWAY_CONFIG
 from app.middleware.fastapi_error_handlers import add_error_handlers
@@ -209,7 +214,7 @@ class RealityKernel:
         """Returns the constructed application."""
         return self.app
 
-    def _construct_app(self) -> FastAPI:
+def _construct_app(self) -> FastAPI:
         """
         بناء التطبيق باستخدام منهجية Pipeline.
 
@@ -238,6 +243,7 @@ class RealityKernel:
         app = _apply_middleware(app, middleware_stack)
         add_error_handlers(app)  # Legacy helper
         app = _mount_routers(app, router_registry)
+        _validate_contract_alignment(app)
 
         # 4. Static Files (Optional - Frontend Support)
         # Principle: API-First - يمكن تشغيل API بدون frontend
@@ -310,3 +316,34 @@ class RealityKernel:
         logger.info("✅ System Ready")
         yield
         logger.info("👋 CogniForge System Shutting Down...")
+
+
+def _validate_contract_alignment(app: FastAPI) -> None:
+    """يتحقق من تطابق مخطط التشغيل مع عقد OpenAPI الأساسي."""
+
+    spec_path = default_contract_path()
+    contract_operations = load_contract_operations(spec_path)
+    if not contract_operations:
+        logger.warning("⚠️ لم يتم العثور على عقد OpenAPI للتحقق من التوافق.")
+        return
+
+    report = compare_contract_to_runtime(
+        contract_operations=contract_operations,
+        runtime_schema=app.openapi(),
+    )
+    if report.is_clean():
+        logger.info("✅ Contract alignment verified against runtime schema.")
+        return
+
+    if report.missing_paths:
+        logger.warning(
+            "⚠️ مسارات العقد غير موجودة في التشغيل: %s",
+            sorted(report.missing_paths),
+        )
+
+    if report.missing_operations:
+        summary = {
+            path: sorted(methods)
+            for path, methods in report.missing_operations.items()
+        }
+        logger.warning("⚠️ عمليات العقد غير موجودة في التشغيل: %s", summary)
