@@ -1,16 +1,25 @@
+"""
+سجل الأدوات المتاحة للوكلاء.
+
+يجمع أدوات الوصول إلى المعرفة والمشروع بشكل منضبط وفق فلسفة API First.
+"""
+
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from app.core.logging import get_logger
 from app.infrastructure.clients.user_client import user_client
 from app.services.codebase.introspection import introspection_service
+from app.services.overmind.knowledge import DatabaseKnowledge, ProjectKnowledge
+from app.services.overmind.user_knowledge.service import UserKnowledge
 
 logger = get_logger("tool-registry")
 
 class ToolRegistry:
     """
-    Registry for tools available to the agents.
-    Enforces "no hallucinated tools".
+    سجل الأدوات المتاحة للوكلاء.
+    يضمن عدم استخدام أدوات غير مسجلة.
     """
 
     def __init__(self) -> None:
@@ -19,8 +28,18 @@ class ToolRegistry:
 
     def _register_defaults(self) -> None:
         self.register("get_user_count", self._get_user_count)
+        self.register("list_users", self._list_users)
+        self.register("get_user_profile", self._get_user_profile)
+        self.register("get_user_statistics", self._get_user_statistics)
+        self.register("get_project_overview", self._get_project_overview)
+        self.register("get_database_tables", self._get_database_tables)
+        self.register("get_table_schema", self._get_table_schema)
+        self.register("get_table_count", self._get_table_count)
+        self.register("get_database_map", self._get_database_map)
         self.register("search_codebase", self._search_codebase)
         self.register("find_symbol", self._find_symbol)
+        self.register("find_route", self._find_route)
+        self.register("read_file_snippet", self._read_file_snippet)
 
     def register(self, name: str, func: Callable) -> None:
         self._tools[name] = func
@@ -37,6 +56,38 @@ class ToolRegistry:
     async def _get_user_count(self) -> int:
         return await user_client.get_user_count()
 
+    async def _list_users(self, limit: int = 20, offset: int = 0) -> list[dict[str, Any]]:
+        async with UserKnowledge() as user_knowledge:
+            return await user_knowledge.list_all_users(limit=limit, offset=offset)
+
+    async def _get_user_profile(self, user_id: int) -> dict[str, Any]:
+        async with UserKnowledge() as user_knowledge:
+            return await user_knowledge.get_user_complete_profile(user_id=user_id)
+
+    async def _get_user_statistics(self, user_id: int) -> dict[str, Any]:
+        async with UserKnowledge() as user_knowledge:
+            return await user_knowledge.get_user_statistics(user_id=user_id)
+
+    async def _get_project_overview(self) -> dict[str, Any]:
+        knowledge = ProjectKnowledge()
+        return await knowledge.get_complete_knowledge()
+
+    async def _get_database_tables(self) -> list[str]:
+        async with DatabaseKnowledge() as db_knowledge:
+            return await db_knowledge.get_all_tables()
+
+    async def _get_table_schema(self, table_name: str) -> dict[str, Any]:
+        async with DatabaseKnowledge() as db_knowledge:
+            return await db_knowledge.get_table_schema(table_name=table_name)
+
+    async def _get_table_count(self, table_name: str) -> int:
+        async with DatabaseKnowledge() as db_knowledge:
+            return await db_knowledge.get_table_count(table_name=table_name)
+
+    async def _get_database_map(self) -> dict[str, Any]:
+        async with DatabaseKnowledge() as db_knowledge:
+            return await db_knowledge.get_full_database_map()
+
     async def _search_codebase(self, query: str) -> list[dict[str, Any]]:
         # Map to CodeSearchService
         results = introspection_service.search_text(query)
@@ -45,3 +96,41 @@ class ToolRegistry:
     async def _find_symbol(self, symbol: str) -> list[dict[str, Any]]:
         results = introspection_service.find_symbol(symbol)
         return [r.model_dump() for r in results]
+
+    async def _find_route(self, path_fragment: str) -> list[dict[str, Any]]:
+        results = introspection_service.find_route(path_fragment)
+        return [r.model_dump() for r in results]
+
+    async def _read_file_snippet(
+        self,
+        file_path: str,
+        start_line: int,
+        end_line: int | None = None,
+        max_lines: int = 12,
+    ) -> dict[str, Any]:
+        repo_root = Path.cwd().resolve()
+        target_path = (repo_root / file_path).resolve()
+        if repo_root not in target_path.parents and target_path != repo_root:
+            raise ValueError("Invalid file path.")
+        if not target_path.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        if start_line < 1:
+            raise ValueError("start_line must be >= 1.")
+
+        raw_lines = target_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+        total_lines = len(raw_lines)
+        start = max(start_line, 1)
+        effective_end = end_line if end_line is not None else start
+        if effective_end < start:
+            effective_end = start
+        effective_end = min(effective_end, start + max_lines - 1, total_lines)
+        snippet = raw_lines[start - 1 : effective_end]
+
+        return {
+            "file_path": str(target_path.relative_to(repo_root)),
+            "start_line": start,
+            "end_line": effective_end,
+            "lines": snippet,
+            "total_lines": total_lines,
+        }
