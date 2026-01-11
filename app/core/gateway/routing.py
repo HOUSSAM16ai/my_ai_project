@@ -15,8 +15,9 @@ import logging
 import threading
 from collections import deque
 from datetime import UTC, datetime
-from typing import Any
+from typing import TypedDict
 
+from app.core.types import JSONDict, Metadata
 from .models import LoadBalancerState, ProtocolType, RoutingDecision, RoutingStrategy
 from .providers.anthropic import AnthropicAdapter
 from .providers.base import ModelProviderAdapter
@@ -24,6 +25,41 @@ from .providers.openai import OpenAIAdapter
 from .strategies.implementations import get_strategy
 
 logger = logging.getLogger(__name__)
+
+
+class CircuitBreakerState(TypedDict):
+    """
+    بنية بيانات حالة قاطع الدائرة.
+
+    Attributes:
+        failures (int): عدد مرات الفشل المتتالية.
+        last_failure (datetime | None): توقيت آخر فشل.
+        open (bool): هل الدائرة مفتوحة (محظورة)؟
+    """
+    failures: int
+    last_failure: datetime | None
+    open: bool
+
+
+class ProviderCandidate(TypedDict):
+    """
+    بنية بيانات المرشح (Provider Candidate).
+
+    تستخدم داخلياً لتمرير بيانات المرشح بين مراحل التقييم.
+    """
+    provider: str
+    cost: float
+    latency: float
+    health_score: float
+    score: float  # Added by strategy calculation
+
+
+class RoutingHistoryEntry(TypedDict):
+    """بنية سجل تاريخ التوجيه."""
+    timestamp: datetime
+    decision: RoutingDecision
+    model_type: str
+    tokens: int
 
 
 class SuperCircuitBreaker:
@@ -37,7 +73,7 @@ class SuperCircuitBreaker:
     def __init__(self, failure_threshold: int = 5, recovery_timeout: int = 30) -> None:
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
-        self.state: dict[str, dict[str, Any]] = {}
+        self.state: dict[str, CircuitBreakerState] = {}
         self.lock = threading.RLock()
 
     def report_failure(self, service_id: str) -> None:
@@ -105,7 +141,7 @@ class IntelligentRouter:
             "openai": OpenAIAdapter(),
             "anthropic": AnthropicAdapter(),
         }
-        self.routing_history: deque[dict[str, Any]] = deque(maxlen=10000)
+        self.routing_history: deque[RoutingHistoryEntry] = deque(maxlen=10000)
         self.circuit_breaker = SuperCircuitBreaker()
 
         # تهيئة ديناميكية لحالة موازن الأحمال
@@ -123,7 +159,7 @@ class IntelligentRouter:
         model_type: str,
         estimated_tokens: int,
         strategy: RoutingStrategy = RoutingStrategy.INTELLIGENT,
-        constraints: dict[str, Any] | None = None,
+        constraints: Metadata | None = None,
     ) -> RoutingDecision:
         """
         توجيه الطلب إلى أنسب مزود خدمة.
@@ -147,12 +183,12 @@ class IntelligentRouter:
         return decision
 
     def _evaluate_candidates(
-        self, model_type: str, estimated_tokens: int, constraints: dict[str, Any]
-    ) -> list[dict[str, Any]]:
+        self, model_type: str, estimated_tokens: int, constraints: Metadata
+    ) -> list[ProviderCandidate]:
         """تقييم وترشيح المزودين المتاحين بناءً على القيود."""
-        max_cost = constraints.get("max_cost", float("inf"))
-        max_latency = constraints.get("max_latency", float("inf"))
-        candidates: list[dict[str, Any]] = []
+        max_cost = float(constraints.get("max_cost", float("inf")))
+        max_latency = float(constraints.get("max_latency", float("inf")))
+        candidates: list[ProviderCandidate] = []
 
         for provider_name, adapter in self.provider_adapters.items():
             if self._is_provider_available(provider_name):
@@ -178,7 +214,7 @@ class IntelligentRouter:
         tokens: int,
         max_cost: float,
         max_latency: float,
-    ) -> dict[str, Any] | None:
+    ) -> ProviderCandidate | None:
         try:
             cost = adapter.estimate_cost(model_type, tokens)
             latency = adapter.estimate_latency(model_type, tokens)
@@ -190,27 +226,40 @@ class IntelligentRouter:
                 stats = self.provider_stats[provider_name]
             health_score = 1.0 if stats.is_healthy else 0.0
 
+            # Note: 'score' is not calculated here yet
             return {
                 "provider": provider_name,
                 "cost": cost,
                 "latency": latency,
                 "health_score": health_score,
+                "score": 0.0
             }
         except Exception as e:
             logger.warning(f"Error evaluating provider {provider_name}: {e}")
             return None
 
     def _apply_strategy_and_select_best(
-        self, candidates: list[dict[str, Any]], strategy: RoutingStrategy
-    ) -> dict[str, Any]:
+        self, candidates: list[ProviderCandidate], strategy: RoutingStrategy
+    ) -> ProviderCandidate:
         """تطبيق استراتيجية التوجيه واختيار الأفضل."""
         strategy_impl = get_strategy(strategy)
-        strategy_impl.calculate_scores(candidates)
-        return max(candidates, key=lambda x: x["score"])
+        # We need to cast candidates to List[Dict[str, Any]] for the strategy implementation
+        # or update the strategy interface. Assuming strategy updates dicts in place.
+        # Since strategy_impl is likely expecting generic dicts, we pass them.
+        # The strategy updates 'score' key.
+        candidate_dicts: list[dict[str, float | str]] = []
+        for c in candidates:
+             candidate_dicts.append(c) # type: ignore
+
+        strategy_impl.calculate_scores(candidate_dicts) # type: ignore
+
+        # Select best
+        best = max(candidates, key=lambda x: x["score"])
+        return best
 
     def _create_routing_decision(
         self,
-        best_candidate: dict[str, Any],
+        best_candidate: ProviderCandidate,
         strategy: RoutingStrategy,
         candidate_count: int,
     ) -> RoutingDecision:
@@ -234,14 +283,13 @@ class IntelligentRouter:
     ) -> None:
         """تسجيل القرار في الأرشيف."""
         with self.lock:
-            self.routing_history.append(
-                {
-                    "timestamp": datetime.now(UTC),
-                    "decision": decision,
-                    "model_type": model_type,
-                    "tokens": estimated_tokens,
-                }
-            )
+            entry: RoutingHistoryEntry = {
+                "timestamp": datetime.now(UTC),
+                "decision": decision,
+                "model_type": model_type,
+                "tokens": estimated_tokens,
+            }
+            self.routing_history.append(entry)
 
     def update_provider_stats(self, provider: str, success: bool, latency_ms: float) -> None:
         """تحديث إحصائيات المزود بعد تنفيذ الطلب."""
