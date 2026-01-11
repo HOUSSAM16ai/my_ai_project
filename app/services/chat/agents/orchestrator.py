@@ -213,6 +213,20 @@ class OrchestratorAgent:
             ]
         )
 
+    @staticmethod
+    def _format_user_lines(users: list[dict[str, object]]) -> list[str]:
+        """
+        تنسيق قائمة المستخدمين بصيغة موجزة تحتوي على الاسم والتاريخ.
+        """
+        lines: list[str] = []
+        for user in users:
+            updated_at = user.get("updated_at") or "غير متوفر"
+            lines.append(
+                f"- #{user['id']} | {user['full_name']} | {user['email']} | "
+                f"حالة: {user['status']} | إنشاء: {user['created_at']} | تحديث: {updated_at}"
+            )
+        return lines
+
     async def _handle_user_count(self, _: str, lowered: str) -> str:
         gov_response = await self.data_agent.process(
             {"entity": "user", "operation": "count", "access_method": "service_api"}
@@ -221,7 +235,29 @@ class OrchestratorAgent:
             return f"خطأ حوكمة البيانات: {gov_response.message}"
 
         count = await self.tools.execute("get_user_count", {})
-        return f"عدد المستخدمين الحاليين في المنصة هو: {count}."
+        if count == 0:
+            return "لا يوجد مستخدمون مسجلون حالياً ضمن المنصة."
+        list_gov = await self.data_agent.process(
+            {"entity": "user", "operation": "list", "access_method": "direct_db", "purpose": "admin_analytics"}
+        )
+        if not list_gov.success:
+            return (
+                f"عدد المستخدمين الحاليين في المنصة هو: {count}. "
+                f"تعذر جلب التفاصيل لأسباب حوكمة البيانات: {list_gov.message}"
+            )
+
+        limit = self._extract_limit(lowered) or max(10, min(count, 50))
+        users = await self.tools.execute("list_users", {"limit": limit, "offset": 0})
+        if not users:
+            return f"عدد المستخدمين الحاليين في المنصة هو: {count}."
+
+        lines = self._format_user_lines(users)
+        summary = f"عدد المستخدمين الحاليين في المنصة هو: {count}."
+        if count > limit:
+            summary += f" فيما يلي أول {limit} مستخدمًا:"
+        else:
+            summary += " فيما يلي التفاصيل:"
+        return "\n".join([summary, *lines])
 
     async def _handle_user_list(self, question: str, lowered: str) -> str:
         gov_response = await self.data_agent.process(
@@ -235,13 +271,8 @@ class OrchestratorAgent:
         if not users:
             return "لا يوجد مستخدمون متاحون حالياً."
 
-        lines = []
-        for user in users:
-            lines.append(
-                f"- #{user['id']} | {user['full_name']} | {user['email']} | "
-                f"حالة: {user['status']} | إنشاء: {user['created_at']}"
-            )
-        return "قائمة المستخدمين:\n" + "\n".join(lines)
+        lines = self._format_user_lines(users)
+        return "قائمة المستخدمين (موجز):\n" + "\n".join(lines)
 
     async def _handle_user_profile(self, question: str, lowered: str) -> str:
         user_id = self._extract_user_id(question)

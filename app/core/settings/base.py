@@ -193,6 +193,9 @@ class AppSettings(BaseServiceSettings):
     ADMIN_PASSWORD: str = "change_me_please_123!"
     ADMIN_NAME: str = "Supreme Administrator"
 
+    # Service URLs
+    USER_SERVICE_URL: str | None = Field(None, description="User service base URL")
+
     # AI (Missing fields restored)
     OPENAI_API_KEY: str | None = Field(None, description="OpenAI API Key")
     OPENROUTER_API_KEY: str | None = Field(None, description="OpenRouter API Key")
@@ -219,6 +222,33 @@ class AppSettings(BaseServiceSettings):
         if v is not None:
             return bool(v)
         return os.getenv("CODESPACES") == "true"
+
+    @field_validator("USER_SERVICE_URL", mode="before")
+    @classmethod
+    def default_user_service_url(cls, v: str | None, info: ValidationInfo) -> str:
+        """
+        ضمان عنوان خدمة المستخدمين الافتراضي وفق بيئة التشغيل.
+
+        يعتمد على قيمة CODESPACES لتجنب مشاكل DNS في البيئات المستضافة.
+        """
+        if v:
+            return v
+        is_codespaces = info.data.get("CODESPACES")
+        if is_codespaces is None:
+            is_codespaces = os.getenv("CODESPACES") == "true"
+        return cls._default_user_service_url(is_codespaces=bool(is_codespaces))
+
+    @staticmethod
+    def _default_user_service_url(*, is_codespaces: bool) -> str:
+        """
+        تحديد عنوان خدمة المستخدمين الافتراضي وفق بيئة التشغيل.
+
+        يتم توجيه بيئات Codespaces إلى localhost لتفادي مشاكل DNS،
+        بينما تستخدم البيئات الأخرى اسم خدمة الشبكة الداخلية.
+        """
+        if is_codespaces:
+            return "http://localhost:8003"
+        return "http://user-service:8003"
 
     @model_validator(mode="after")
     def validate_production_security(self) -> "AppSettings":

@@ -8,8 +8,6 @@
 - Error Handling: معالجة شاملة للأخطاء
 """
 
-from typing import Any
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,7 +17,7 @@ from app.core.domain.user import User
 logger = get_logger(__name__)
 
 
-async def get_user_basic_info(session: AsyncSession, user_id: int) -> dict[str, Any]:
+async def get_user_basic_info(session: AsyncSession, user_id: int) -> dict[str, object]:
     """
     الحصول على المعلومات الأساسية للمستخدم.
 
@@ -71,9 +69,9 @@ async def list_all_users(
     session: AsyncSession,
     limit: int = 50,
     offset: int = 0,
-) -> list[dict[str, Any]]:
+) -> list[dict[str, object]]:
     """
-    عرض قائمة جميع المستخدمين مع معلومات مختصرة.
+    عرض قائمة جميع المستخدمين مع معلومات مختصرة مرتبة بالأحدث.
 
     Args:
         session: جلسة قاعدة البيانات
@@ -84,12 +82,12 @@ async def list_all_users(
         list[dict]: قائمة المستخدمين
     """
     try:
-        # الاستعلام عن المستخدمين
-        query = select(User).limit(limit).offset(offset)
+        # الاستعلام عن المستخدمين بترتيب الأحدث
+        query = select(User).order_by(User.created_at.desc()).limit(limit).offset(offset)
         result = await session.execute(query)
         users = result.scalars().all()
 
-        users_list: list[dict[str, Any]] = []
+        users_list: list[dict[str, object]] = []
         for user in users:
             users_list.append({
                 "id": user.id,
@@ -99,6 +97,7 @@ async def list_all_users(
                 "is_active": user.is_active,
                 "status": user.status.value if hasattr(user.status, "value") else str(user.status),
                 "created_at": user.created_at.isoformat(),
+                "updated_at": user.updated_at.isoformat(),
             })
 
         logger.info(f"Listed {len(users_list)} users")
