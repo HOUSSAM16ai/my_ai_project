@@ -5,10 +5,13 @@
 يسمح بتبديل الخوارزميات (Strategy Pattern) بناءً على متطلبات الاستخدام.
 """
 
+import asyncio
 import time
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from typing import Any, TypeVar
+
+from app.caching.base import CacheBackend
 
 # نوع المفتاح والقيمة
 K = TypeVar("K")
@@ -83,8 +86,6 @@ class LFUPolicy(EvictionPolicy[K]):
     def __init__(self, capacity: int) -> None:
         self.capacity = capacity
         self._counts: dict[K, int] = {}
-        # لتجنب كسر التعادل (تاريخ الإضافة)، يمكن تعقيد المنطق،
-        # هنا سنستخدم التنفيذ البسيط.
 
     def on_access(self, key: K) -> None:
         self._counts[key] = self._counts.get(key, 0) + 1
@@ -96,7 +97,7 @@ class LFUPolicy(EvictionPolicy[K]):
 
         victim = None
         if len(self._counts) >= self.capacity:
-            # البحث عن العنصر الأقل تكراراً من العناصر الموجودة
+            # البحث عن العنصر الأقل تكراراً
             victim = min(self._counts, key=self._counts.get) # type: ignore
             del self._counts[victim]
 
@@ -108,42 +109,113 @@ class LFUPolicy(EvictionPolicy[K]):
             del self._counts[key]
 
 
-class StrategicMemoryCache:
+class StrategicMemoryCache(CacheBackend):
     """
     ذاكرة مؤقتة استراتيجية (Strategic Cache Wrapper).
 
     تغلف التخزين الفعلي وتفوض منطق الطرد لسياسة محددة.
+    تنفذ واجهة CacheBackend وتدعم العمليات غير المتزامنة.
     """
 
     def __init__(self, policy: EvictionPolicy[str], default_ttl: int = 300) -> None:
         self._storage: dict[str, tuple[Any, float]] = {}
         self._policy = policy
         self._default_ttl = default_ttl
+        self._lock = asyncio.Lock()
 
-    def get(self, key: str) -> Any | None:
-        if key not in self._storage:
-            return None
+    async def get(self, key: str) -> Any | None:
+        """استرجاع قيمة مع تحديث السياسة."""
+        async with self._lock:
+            if key not in self._storage:
+                return None
 
-        val, expire_at = self._storage[key]
-        if time.time() > expire_at:
-            self.delete(key)
-            return None
+            val, expire_at = self._storage[key]
+            if time.time() > expire_at:
+                await self._delete_internal(key)
+                return None
 
-        self._policy.on_access(key)
-        return val
+            self._policy.on_access(key)
+            return val
 
-    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
+    async def set(
+        self,
+        key: str,
+        value: Any,
+        ttl: int | None = None,
+    ) -> bool:
+        """تخزين قيمة وتطبيق سياسة الطرد."""
         ttl_val = ttl if ttl is not None else self._default_ttl
         expire_at = time.time() + ttl_val
 
-        self._storage[key] = (value, expire_at)
-        evicted = self._policy.on_add(key)
+        async with self._lock:
+            self._storage[key] = (value, expire_at)
 
-        if evicted and evicted != key and evicted in self._storage:
-            # إذا طُلب طرد عنصر وكان موجوداً في التخزين
-            del self._storage[evicted]
+            # إبلاغ السياسة بالإضافة والحصول على العنصر المطرود (إن وجد)
+            evicted = self._policy.on_add(key)
 
-    def delete(self, key: str) -> None:
+            if evicted and evicted != key:
+                 # إذا طُلب طرد عنصر وكان موجوداً في التخزين
+                if evicted in self._storage:
+                    del self._storage[evicted]
+
+            return True
+
+    async def delete(self, key: str) -> bool:
+        """حذف عنصر."""
+        async with self._lock:
+            return await self._delete_internal(key)
+
+    async def _delete_internal(self, key: str) -> bool:
+        """حذف داخلي (بدون قفل) لتجنب القفل المزدوج."""
         if key in self._storage:
             del self._storage[key]
             self._policy.on_remove(key)
+            return True
+        return False
+
+    async def exists(self, key: str) -> bool:
+        """التحقق من الوجود."""
+        async with self._lock:
+            if key not in self._storage:
+                return False
+
+            _, expire_at = self._storage[key]
+            if time.time() > expire_at:
+                await self._delete_internal(key)
+                return False
+
+            return True
+
+    async def clear(self) -> bool:
+        """مسح الكل."""
+        async with self._lock:
+            self._storage.clear()
+            # ملاحظة: السياسات الحالية (LRU/LFU) قد تحتاج لطريقة reset
+            # لكن يمكننا ببساطة إعادة تعيينها يدوياً إذا لزم الأمر،
+            # أو الاعتماد على أن `on_remove` سيتم استدعاؤه لكل عنصر (مكلف)
+            # الحل الأسرع: إعادة إنشاء هياكل السياسة إذا كانت تدعم ذلك،
+            # أو هنا نفترض أن السياسة ستبدأ من جديد مع الإضافات الجديدة.
+            # *تصحيح*: السياسات تحتفظ بحالة (مثل access_order). يجب تصفيرها.
+            # بما أن EvictionPolicy لا تملك طريقة clear، سنقوم بحذف العناصر واحد تلو الآخر
+            # لتحديث السياسة بشكل صحيح، أو نعتمد على أن المنسق سيعيد إنشاء الكاش.
+            # سنقوم بالتنفيذ الأبسط هنا:
+            keys = list(self._storage.keys())
+            for key in keys:
+                 if key in self._storage:
+                    del self._storage[key]
+                    self._policy.on_remove(key)
+            return True
+
+    async def scan_keys(self, pattern: str) -> list[str]:
+        """البحث عن مفاتيح (غير مدعوم بشكل كامل للبحث بالنمط في هذا التنفيذ البسيط)."""
+        # يمكن استخدام fnmatch إذا لزم الأمر
+        import fnmatch
+        async with self._lock:
+            keys = []
+            now = time.time()
+            for key, (_, expire_at) in list(self._storage.items()):
+                if now > expire_at:
+                    continue
+                if fnmatch.fnmatch(key, pattern):
+                    keys.append(key)
+            return keys

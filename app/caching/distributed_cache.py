@@ -26,7 +26,8 @@ class MultiLevelCache(CacheBackend):
         self,
         l1_cache: CacheBackend,
         l2_cache: CacheBackend,
-        sync_l1: bool = True
+        sync_l1: bool = True,
+        l1_backfill_ttl: int = 60
     ) -> None:
         """
         تهيئة المنسق.
@@ -35,10 +36,12 @@ class MultiLevelCache(CacheBackend):
             l1_cache: المستوى الأول (Memory).
             l2_cache: المستوى الثاني (Redis).
             sync_l1: هل نقوم بملء L1 عند العثور على القيمة في L2؟
+            l1_backfill_ttl: مدة صلاحية L1 عند التعبئة من L2 (بالثواني).
         """
         self.l1 = l1_cache
         self.l2 = l2_cache
         self.sync_l1 = sync_l1
+        self.l1_backfill_ttl = l1_backfill_ttl
 
     async def get(self, key: str) -> Any | None:
         """
@@ -50,19 +53,31 @@ class MultiLevelCache(CacheBackend):
         3. إذا وجدت في L2، تحديث L1 (Read-Through).
         """
         # 1. Check L1
-        val = await self.l1.get(key)
-        if val is not None:
-            return val
+        try:
+            val = await self.l1.get(key)
+            if val is not None:
+                logger.debug(f"🎯 Cache Hit L1: {key}")
+                return val
+        except Exception as e:
+            logger.warning(f"⚠️ L1 Cache get error for {key}: {e}")
 
         # 2. Check L2
-        val = await self.l2.get(key)
-        if val is not None:
-            # 3. Populate L1 (Backfill)
-            if self.sync_l1:
-                # نستخدم TTL افتراضي قصير للـ L1 لتجنب البيانات القديمة
-                await self.l1.set(key, val, ttl=60)
-            return val
+        try:
+            val = await self.l2.get(key)
+            if val is not None:
+                logger.debug(f"🎯 Cache Hit L2: {key}")
+                # 3. Populate L1 (Backfill)
+                if self.sync_l1:
+                    try:
+                        # نستخدم TTL القابل للتكوين للـ L1 لتجنب البيانات القديمة
+                        await self.l1.set(key, val, ttl=self.l1_backfill_ttl)
+                    except Exception as e:
+                        logger.warning(f"⚠️ Failed to populate L1 for {key}: {e}")
+                return val
+        except Exception as e:
+            logger.warning(f"⚠️ L2 Cache get error for {key}: {e}")
 
+        logger.debug(f"💨 Cache Miss: {key}")
         return None
 
     async def set(
@@ -78,17 +93,29 @@ class MultiLevelCache(CacheBackend):
         1. الكتابة في L2 أولاً (لضمان التوزيع).
         2. الكتابة في L1 (أو إبطالها).
         """
-        # Write to L2 (Source of Truth for distribution)
-        l2_success = await self.l2.set(key, value, ttl=ttl)
+        l2_success = False
+        try:
+            # Write to L2 (Source of Truth for distribution)
+            l2_success = await self.l2.set(key, value, ttl=ttl)
+        except Exception as e:
+            logger.error(f"❌ L2 Cache set error for {key}: {e}")
 
         if l2_success:
-            # Write to L1
-            await self.l1.set(key, value, ttl=ttl)
+            try:
+                # Write to L1
+                await self.l1.set(key, value, ttl=ttl)
+            except Exception as e:
+                logger.warning(f"⚠️ L1 Cache set error for {key}: {e}")
 
             # TODO: Publish invalidation event for other instances
             # (سنقوم بتنفيذ هذا في مرحلة لاحقة عبر Pub/Sub)
 
-        return l2_success
+            return True
+
+        # If L2 fails, we generally consider the write failed for consistency,
+        # unless we want to operate in "degraded mode" (L1 only).
+        # For now, strict consistency implies L2 is required.
+        return False
 
     async def delete(self, key: str) -> bool:
         """
@@ -96,15 +123,34 @@ class MultiLevelCache(CacheBackend):
 
         يحذف من كلا المستويين.
         """
-        l2_res = await self.l2.delete(key)
-        l1_res = await self.l1.delete(key)
+        l2_res = False
+        try:
+            l2_res = await self.l2.delete(key)
+        except Exception as e:
+             logger.error(f"❌ L2 Cache delete error for {key}: {e}")
+
+        l1_res = False
+        try:
+            l1_res = await self.l1.delete(key)
+        except Exception as e:
+            logger.warning(f"⚠️ L1 Cache delete error for {key}: {e}")
+
         return l2_res or l1_res
 
     async def exists(self, key: str) -> bool:
         """التحقق من الوجود (في أي مستوى)."""
-        if await self.l1.exists(key):
-            return True
-        return await self.l2.exists(key)
+        try:
+            if await self.l1.exists(key):
+                return True
+        except Exception:
+            pass
+
+        try:
+            return await self.l2.exists(key)
+        except Exception:
+            pass
+
+        return False
 
     async def clear(self) -> bool:
         """مسح الكل."""
@@ -118,4 +164,8 @@ class MultiLevelCache(CacheBackend):
 
         يعتمد بشكل أساسي على L2 لأنه يحتوي على المجموعة الشاملة.
         """
-        return await self.l2.scan_keys(pattern)
+        try:
+            return await self.l2.scan_keys(pattern)
+        except Exception as e:
+             logger.error(f"❌ L2 Cache scan error: {e}")
+             return []
