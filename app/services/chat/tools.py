@@ -6,10 +6,8 @@
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 
 from app.core.logging import get_logger
-from app.infrastructure.clients.user_client import user_client
 from app.services.codebase.introspection import introspection_service
 from app.services.overmind.knowledge import DatabaseKnowledge, ProjectKnowledge
 from app.services.overmind.user_knowledge.service import UserKnowledge
@@ -44,7 +42,7 @@ class ToolRegistry:
     def register(self, name: str, func: Callable) -> None:
         self._tools[name] = func
 
-    async def execute(self, tool_name: str, args: dict[str, Any]) -> Any:
+    async def execute(self, tool_name: str, args: dict[str, object]) -> object:
         if tool_name not in self._tools:
             raise ValueError(f"Tool '{tool_name}' not found.")
 
@@ -54,21 +52,22 @@ class ToolRegistry:
     # --- Tool Implementations ---
 
     async def _get_user_count(self) -> int:
-        return await user_client.get_user_count()
+        async with UserKnowledge() as user_knowledge:
+            return await user_knowledge.count_users()
 
-    async def _list_users(self, limit: int = 20, offset: int = 0) -> list[dict[str, Any]]:
+    async def _list_users(self, limit: int = 20, offset: int = 0) -> list[dict[str, object]]:
         async with UserKnowledge() as user_knowledge:
             return await user_knowledge.list_all_users(limit=limit, offset=offset)
 
-    async def _get_user_profile(self, user_id: int) -> dict[str, Any]:
+    async def _get_user_profile(self, user_id: int) -> dict[str, object]:
         async with UserKnowledge() as user_knowledge:
             return await user_knowledge.get_user_complete_profile(user_id=user_id)
 
-    async def _get_user_statistics(self, user_id: int) -> dict[str, Any]:
+    async def _get_user_statistics(self, user_id: int) -> dict[str, object]:
         async with UserKnowledge() as user_knowledge:
             return await user_knowledge.get_user_statistics(user_id=user_id)
 
-    async def _get_project_overview(self) -> dict[str, Any]:
+    async def _get_project_overview(self) -> dict[str, object]:
         knowledge = ProjectKnowledge()
         return await knowledge.get_complete_knowledge()
 
@@ -76,7 +75,7 @@ class ToolRegistry:
         async with DatabaseKnowledge() as db_knowledge:
             return await db_knowledge.get_all_tables()
 
-    async def _get_table_schema(self, table_name: str) -> dict[str, Any]:
+    async def _get_table_schema(self, table_name: str) -> dict[str, object]:
         async with DatabaseKnowledge() as db_knowledge:
             return await db_knowledge.get_table_schema(table_name=table_name)
 
@@ -84,20 +83,20 @@ class ToolRegistry:
         async with DatabaseKnowledge() as db_knowledge:
             return await db_knowledge.get_table_count(table_name=table_name)
 
-    async def _get_database_map(self) -> dict[str, Any]:
+    async def _get_database_map(self) -> dict[str, object]:
         async with DatabaseKnowledge() as db_knowledge:
             return await db_knowledge.get_full_database_map()
 
-    async def _search_codebase(self, query: str) -> list[dict[str, Any]]:
+    async def _search_codebase(self, query: str) -> list[dict[str, object]]:
         # Map to CodeSearchService
         results = introspection_service.search_text(query)
         return [r.model_dump() for r in results]
 
-    async def _find_symbol(self, symbol: str) -> list[dict[str, Any]]:
+    async def _find_symbol(self, symbol: str) -> list[dict[str, object]]:
         results = introspection_service.find_symbol(symbol)
         return [r.model_dump() for r in results]
 
-    async def _find_route(self, path_fragment: str) -> list[dict[str, Any]]:
+    async def _find_route(self, path_fragment: str) -> list[dict[str, object]]:
         results = introspection_service.find_route(path_fragment)
         return [r.model_dump() for r in results]
 
@@ -107,7 +106,7 @@ class ToolRegistry:
         start_line: int,
         end_line: int | None = None,
         max_lines: int = 12,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         repo_root = Path.cwd().resolve()
         target_path = (repo_root / file_path).resolve()
         if repo_root not in target_path.parents and target_path != repo_root:

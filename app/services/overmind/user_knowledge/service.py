@@ -10,12 +10,13 @@ Facade Pattern يوفر واجهة موحدة لجميع عمليات معرفة
 """
 
 from datetime import datetime
-from typing import Any
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
+from app.core.database import async_session_factory
 from app.core.di import get_logger
+from app.core.domain.user import User
 from app.services.overmind.user_knowledge.basic_info import (
     get_user_basic_info,
     list_all_users,
@@ -50,23 +51,25 @@ class UserKnowledge:
         """تهيئة نظام معرفة المستخدمين."""
         self._session: AsyncSession | None = None
 
-    async def __aenter__(self):
-        """فتح الجلسة (Context Manager)."""
-        async for session in get_db():
-            self._session = session
-            break
+    async def __aenter__(self) -> "UserKnowledge":
+        """فتح جلسة قاعدة بيانات مستقلة."""
+        self._session = async_session_factory()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """إغلاق الجلسة."""
-        if self._session:
-            await self._session.close()
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """إغلاق الجلسة مع التراجع عند الخطأ."""
+        if not self._session:
+            return
+        if exc_type is not None:
+            await self._session.rollback()
+        await self._session.close()
+        self._session = None
 
     # =========================================================================
     # المعلومات الأساسية (Basic Information)
     # =========================================================================
 
-    async def get_user_basic_info(self, user_id: int) -> dict[str, Any]:
+    async def get_user_basic_info(self, user_id: int) -> dict[str, object]:
         """
         الحصول على المعلومات الأساسية للمستخدم.
 
@@ -84,7 +87,7 @@ class UserKnowledge:
     # الإحصائيات والنشاطات (Statistics & Activities)
     # =========================================================================
 
-    async def get_user_statistics(self, user_id: int) -> dict[str, Any]:
+    async def get_user_statistics(self, user_id: int) -> dict[str, object]:
         """
         الحصول على إحصائيات المستخدم.
 
@@ -102,7 +105,7 @@ class UserKnowledge:
     # السلوك والأداء (Behavior & Performance)
     # =========================================================================
 
-    async def get_user_performance(self, user_id: int) -> dict[str, Any]:
+    async def get_user_performance(self, user_id: int) -> dict[str, object]:
         """
         الحصول على مقاييس أداء المستخدم.
 
@@ -120,7 +123,7 @@ class UserKnowledge:
     # العلاقات والروابط (Relations & Connections)
     # =========================================================================
 
-    async def get_user_relations(self, user_id: int) -> dict[str, Any]:
+    async def get_user_relations(self, user_id: int) -> dict[str, object]:
         """
         الحصول على علاقات المستخدم مع الكيانات الأخرى.
 
@@ -138,7 +141,7 @@ class UserKnowledge:
     # الملف الشامل (Complete Profile)
     # =========================================================================
 
-    async def get_user_complete_profile(self, user_id: int) -> dict[str, Any]:
+    async def get_user_complete_profile(self, user_id: int) -> dict[str, object]:
         """
         الحصول على الملف الشخصي الكامل والشامل للمستخدم.
 
@@ -190,7 +193,7 @@ class UserKnowledge:
         self,
         limit: int = 50,
         offset: int = 0,
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, object]]:
         """
         عرض قائمة جميع المستخدمين مع معلومات مختصرة.
 
@@ -205,6 +208,18 @@ class UserKnowledge:
             return []
         return await list_all_users(self._session, limit, offset)
 
+    async def count_users(self) -> int:
+        """
+        عد جميع المستخدمين المسجلين بدقة عبر قاعدة البيانات.
+
+        Returns:
+            int: إجمالي عدد المستخدمين.
+        """
+        if not self._session:
+            return 0
+        result = await self._session.execute(select(func.count()).select_from(User))
+        return int(result.scalar() or 0)
+
     # =========================================================================
     # البحث (Search)
     # =========================================================================
@@ -213,7 +228,7 @@ class UserKnowledge:
         self,
         query: str,
         limit: int = 10,
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, object]]:
         """
         البحث عن مستخدمين.
 
