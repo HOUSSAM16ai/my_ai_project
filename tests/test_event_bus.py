@@ -214,20 +214,16 @@ class TestEventBus:
         assert "event.type1" in event_types
         assert "event.type2" in event_types
 
-    def test_clear_history(self) -> None:
+    @pytest.mark.asyncio
+    async def test_clear_history(self) -> None:
         """يختبر مسح السجل."""
         bus = EventBus()
 
-        # إضافة حدث يدوياً
-        from uuid import uuid4
-        event = Event(
-            event_id=uuid4(),
-            event_type="test",
+        await bus.publish(
+            event_type="test.clear",
             payload={},
-            timestamp=datetime.utcnow(),
             source="test",
         )
-        bus._event_history.append(event)
 
         assert len(bus.get_history()) == 1
 

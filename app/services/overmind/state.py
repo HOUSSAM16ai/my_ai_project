@@ -22,7 +22,8 @@ from app.core.domain.mission import (
     Task,
     TaskStatus,
 )
-from app.core.event_bus import event_bus
+from app.core.event_bus import get_event_bus
+from app.core.protocols import EventBusProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +32,15 @@ def utc_now() -> datetime:
 
 class MissionStateManager:
     """
-    Manages the persistent state of Missions and Tasks within the Reality Kernel.
-    Uses Async I/O for maximum throughput and scalability.
-    Implements PACELC optimizations: Using EventBus for Low Latency (L) updates
-    while maintaining Database Consistency (C).
+    يدير الحالة الدائمة للمهام والخطط داخل نواة الواقع.
+
+    يعتمد الإدخال/الإخراج غير المتزامن لتعظيم الأداء،
+    ويستخدم ناقل الأحداث لتوفير استجابة منخفضة مع الحفاظ على الاتساق.
     """
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, event_bus: EventBusProtocol | None = None) -> None:
         self.session = session
+        self.event_bus = event_bus or get_event_bus()
 
     async def create_mission(
         self, objective: str, initiator_id: int, context: dict[str, object] | None = None
@@ -108,7 +110,7 @@ class MissionStateManager:
         await self.session.commit()
 
         # Broadcast immediately for Streaming (Latency)
-        await event_bus.publish(f"mission:{mission_id}", event)
+        await self.event_bus.publish(f"mission:{mission_id}", event)
 
     async def persist_plan(
         self,

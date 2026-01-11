@@ -10,7 +10,7 @@ from collections import defaultdict
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Final
+from typing import Final
 from uuid import UUID, uuid4
 
 logger = logging.getLogger(__name__)
@@ -32,13 +32,56 @@ class Event:
 
     event_id: UUID
     event_type: str
-    payload: dict[str, Any]
+    payload: dict[str, object]
     timestamp: datetime
     source: str
     correlation_id: UUID | None = None
 
 
-type EventHandler = Callable[[Event], Coroutine[Any, Any, None]]
+type EventHandler = Callable[[Event], Coroutine[object, object, None]]
+
+
+@dataclass(slots=True)
+class EventHistory:
+    """
+    سجل الأحداث المسؤول عن التخزين والتصفية.
+
+    يحافظ على حجم محدود للسجل مع توفير عمليات القراءة والتصفية.
+    """
+
+    max_size: int
+    _events: list[Event]
+
+    def add(self, event: Event) -> None:
+        """
+        يضيف حدثًا جديدًا إلى السجل مع ضبط الحجم.
+
+        Args:
+            event: الحدث المراد إضافته.
+        """
+        self._events.append(event)
+        if len(self._events) > self.max_size:
+            self._events = self._events[-self.max_size:]
+
+    def list(self, event_type: str | None = None, limit: int = 100) -> list[Event]:
+        """
+        يعيد قائمة بالأحداث وفق التصفية والحد الأقصى.
+
+        Args:
+            event_type: نوع الحدث للتصفية (اختياري).
+            limit: الحد الأقصى للأحداث المعادة.
+
+        Returns:
+            list[Event]: قائمة الأحداث.
+        """
+        events = self._events
+        if event_type:
+            events = [event for event in events if event.event_type == event_type]
+        return events[-limit:]
+
+    def clear(self) -> None:
+        """يمسح السجل بالكامل."""
+        self._events.clear()
 
 
 class EventBus:
@@ -72,8 +115,11 @@ class EventBus:
     def __init__(self) -> None:
         """تهيئة ناقل الأحداث."""
         self._handlers: dict[str, list[EventHandler]] = defaultdict(list)
-        self._event_history: list[Event] = []
         self._max_history_size: Final[int] = 1000
+        self._event_history = EventHistory(
+            max_size=self._max_history_size,
+            _events=[],
+        )
 
         logger.info("✅ Event Bus initialized")
 
@@ -132,7 +178,7 @@ class EventBus:
     async def publish(
         self,
         event_type: str,
-        payload: dict[str, Any],
+        payload: dict[str, object],
         source: str,
         correlation_id: UUID | None = None,
     ) -> Event:
@@ -158,7 +204,7 @@ class EventBus:
         )
 
         # حفظ في السجل
-        self._add_to_history(event)
+        self._event_history.add(event)
 
         # إرسال إلى المعالجات
         handlers = self._handlers.get(event_type, [])
@@ -191,19 +237,6 @@ class EventBus:
                 exc_info=True,
             )
 
-    def _add_to_history(self, event: Event) -> None:
-        """
-        يضيف حدثاً إلى السجل.
-
-        Args:
-            event: الحدث
-        """
-        self._event_history.append(event)
-
-        # الحفاظ على حجم السجل
-        if len(self._event_history) > self._max_history_size:
-            self._event_history = self._event_history[-self._max_history_size:]
-
     def get_history(
         self,
         event_type: str | None = None,
@@ -219,12 +252,7 @@ class EventBus:
         Returns:
             list[Event]: قائمة الأحداث
         """
-        events = self._event_history
-
-        if event_type:
-            events = [e for e in events if e.event_type == event_type]
-
-        return events[-limit:]
+        return self._event_history.list(event_type=event_type, limit=limit)
 
     def get_subscribers(self, event_type: str) -> list[str]:
         """

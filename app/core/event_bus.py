@@ -7,7 +7,6 @@
 لبث أحداث المهمة مباشرة للمستمعين دون انتظار التزام قاعدة البيانات (Database Commit).
 
 المميزات:
-- Singleton Pattern: ضمان وجود ناقل واحد لكل عملية.
 - AsyncIO Queues: استخدام طوابير غير متزامنة لعدم حجب التنفيذ.
 - Type Safety: تعامل صارم مع الأنواع.
 - Gap-Free Streaming: دعم الاشتراك المسبق لتجنب فقدان الأحداث (Race Conditions).
@@ -15,30 +14,25 @@
 
 import asyncio
 from collections.abc import AsyncGenerator
-from typing import Any, TypeVar
 
 from app.core.di import get_logger
+from app.core.protocols import EventBusProtocol
 
 logger = get_logger(__name__)
 
-T = TypeVar("T")
+type EventPayload = object
 
-class EventBus[T]:
+class EventBus(EventBusProtocol):
     """
     ناقل أحداث غير متزامن يربط بين المنتجين (Producers) والمستهلكين (Consumers)
     داخل نفس العملية (Process) لتحقيق سرعة استجابة آنية.
     """
 
-    _instance = None
-    _subscribers: dict[str, set[asyncio.Queue]]
+    def __init__(self) -> None:
+        """يهيئ الناقل مع سجل اشتراكات فارغ."""
+        self._subscribers: dict[str, set[asyncio.Queue[EventPayload]]] = {}
 
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._subscribers = {}
-        return cls._instance
-
-    async def publish(self, channel: str, event: dict[str, str | int | bool]) -> None:
+    async def publish(self, channel: str, event: EventPayload) -> None:
         """
         نشر حدث جديد في قناة معينة.
         يتم توزيع الحدث على جميع المشتركين الحاليين فوراً.
@@ -47,16 +41,17 @@ class EventBus[T]:
             channel: اسم القناة (مثل mission_id).
             event: الحدث المراد نشره.
         """
-        if channel in self._subscribers:
-            # نستخدم list() لإنشاء نسخة لتجنب أخطاء التعديل أثناء الدوران
-            queues = list(self._subscribers[channel])
-            for q in queues:
-                try:
-                    await q.put(event)
-                except Exception as e:
-                    logger.error(f"Failed to push to queue in channel {channel}: {e}")
+        queues = self._subscribers.get(channel)
+        if not queues:
+            return
+        # نستخدم list() لإنشاء نسخة لتجنب أخطاء التعديل أثناء الدوران
+        for queue in list(queues):
+            try:
+                await queue.put(event)
+            except Exception as exc:
+                logger.error(f"Failed to push to queue in channel {channel}: {exc}")
 
-    def subscribe_queue(self, channel: str) -> asyncio.Queue:
+    def subscribe_queue(self, channel: str) -> asyncio.Queue[EventPayload]:
         """
         إنشاء صف اشتراك للقناة يدوياً.
         مفيد للحالات التي تتطلب ضمان عدم فقدان البيانات قبل بدء التكرار (Start Iteration).
@@ -67,14 +62,14 @@ class EventBus[T]:
         Returns:
             asyncio.Queue: صف الأحداث الجديد.
         """
-        queue = asyncio.Queue()
+        queue: asyncio.Queue[EventPayload] = asyncio.Queue()
         if channel not in self._subscribers:
             self._subscribers[channel] = set()
         self._subscribers[channel].add(queue)
         logger.debug(f"New queue subscriber joined channel: {channel}")
         return queue
 
-    def unsubscribe_queue(self, channel: str, queue: asyncio.Queue) -> None:
+    def unsubscribe_queue(self, channel: str, queue: asyncio.Queue[EventPayload]) -> None:
         """
         إلغاء اشتراك صف يدوياً.
 
@@ -88,7 +83,7 @@ class EventBus[T]:
                 del self._subscribers[channel]
             logger.debug(f"Queue subscriber left channel: {channel}")
 
-    async def subscribe(self, channel: str) -> AsyncGenerator[Any, None]:
+    async def subscribe(self, channel: str) -> AsyncGenerator[EventPayload, None]:
         """
         الاشتراك في قناة واستقبال الأحداث كتدفق (Stream).
         ملاحظة: إذا كنت بحاجة لضمان عدم وجود فجوة زمنية (Race Condition) مع قاعدة البيانات،
@@ -98,7 +93,7 @@ class EventBus[T]:
             channel: اسم القناة المراد الاستماع إليها.
 
         Yields:
-            Any: الأحداث المتدفقة.
+            EventPayload: الأحداث المتدفقة.
         """
         queue = self.subscribe_queue(channel)
         try:
@@ -109,5 +104,17 @@ class EventBus[T]:
         finally:
             self.unsubscribe_queue(channel, queue)
 
-# Global Instance
-event_bus = EventBus()
+_global_event_bus: EventBus | None = None
+
+
+def get_event_bus() -> EventBus:
+    """
+    يوفر مثيلاً واحداً لناقل الأحداث مع السماح بالحقن في الاختبارات.
+
+    Returns:
+        EventBus: ناقل الأحداث.
+    """
+    global _global_event_bus
+    if _global_event_bus is None:
+        _global_event_bus = EventBus()
+    return _global_event_bus
