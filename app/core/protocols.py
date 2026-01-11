@@ -15,6 +15,7 @@
             self.repo = repo  # يعمل مع أي تطبيق للبروتوكول
 """
 
+import asyncio
 from collections.abc import AsyncGenerator
 from typing import Protocol, runtime_checkable
 
@@ -74,6 +75,26 @@ class PluginProtocol(BaseService, Protocol):
 
     def configure(self, config: dict[str, object]) -> None:
         """Configure the plugin"""
+        ...
+
+@runtime_checkable
+class EventBusProtocol(Protocol):
+    """
+    بروتوكول ناقل الأحداث (Event Bus Protocol).
+
+    يحدد واجهة بسيطة للنشر والاشتراك لضمان عزل الطبقات العليا
+    عن التنفيذ الفعلي لناقل الأحداث.
+    """
+    async def publish(self, channel: str, event: object) -> None:
+        """ينشر حدثاً داخل قناة محددة."""
+        ...
+
+    def subscribe_queue(self, channel: str) -> asyncio.Queue[object]:
+        """ينشئ اشتراكاً عبر صف لهذه القناة."""
+        ...
+
+    async def subscribe(self, channel: str) -> AsyncGenerator[object, None]:
+        """يشترك في القناة كتدفق غير متزامن."""
         ...
 
 @runtime_checkable
