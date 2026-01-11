@@ -21,12 +21,11 @@
 """
 
 from pathlib import Path
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.core.database import get_db
+from app.core.database import async_session_factory
 from app.core.di import get_logger
 from app.services.overmind.knowledge_environment import build_environment_info
 from app.services.overmind.knowledge_mapping import build_database_map
@@ -66,17 +65,19 @@ class DatabaseKnowledge:
         self.settings = get_settings()
         self._session: AsyncSession | None = None
 
-    async def __aenter__(self):
-        """فتح الجلسة عند الدخول للسياق (context manager)."""
-        async for session in get_db():
-            self._session = session
-            break
+    async def __aenter__(self) -> "DatabaseKnowledge":
+        """فتح جلسة قاعدة بيانات مستقلة عند الدخول للسياق."""
+        self._session = async_session_factory()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """إغلاق الجلسة عند الخروج من السياق."""
-        if self._session:
-            await self._session.close()
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """إغلاق الجلسة عند الخروج من السياق مع معالجة الأخطاء."""
+        if not self._session:
+            return
+        if exc_type is not None:
+            await self._session.rollback()
+        await self._session.close()
+        self._session = None
 
     async def get_all_tables(self) -> list[str]:
         """
@@ -110,7 +111,7 @@ class DatabaseKnowledge:
             logger.error(f"Error getting tables: {e}")
             return []
 
-    async def get_table_schema(self, table_name: str) -> dict[str, Any]:
+    async def get_table_schema(self, table_name: str) -> dict[str, object]:
         """
         الحصول على البنية الكاملة لجدول معين.
 
@@ -183,7 +184,7 @@ class DatabaseKnowledge:
             logger.error(f"Error counting rows in '{table_name}': {e}")
             return 0
 
-    async def get_full_database_map(self) -> dict[str, Any]:
+    async def get_full_database_map(self) -> dict[str, object]:
         """
         الحصول على خريطة كاملة لقاعدة البيانات.
 
@@ -234,7 +235,7 @@ class ProjectKnowledge:
         self.settings = get_settings()
         self.project_root = Path.cwd()
 
-    async def get_database_info(self) -> dict[str, Any]:
+    async def get_database_info(self) -> dict[str, object]:
         """
         الحصول على معلومات قاعدة البيانات.
 
@@ -244,7 +245,7 @@ class ProjectKnowledge:
         async with DatabaseKnowledge() as db_knowledge:
             return await db_knowledge.get_full_database_map()
 
-    def get_environment_info(self) -> dict[str, Any]:
+    def get_environment_info(self) -> dict[str, object]:
         """
         الحصول على معلومات البيئة والإعدادات.
 
@@ -257,7 +258,7 @@ class ProjectKnowledge:
         """
         return build_environment_info(self.settings)
 
-    def get_project_structure(self) -> dict[str, Any]:
+    def get_project_structure(self) -> dict[str, object]:
         """
         الحصول على بنية المشروع (الملفات والمجلدات).
 
@@ -266,7 +267,7 @@ class ProjectKnowledge:
         """
         return build_project_structure(self.project_root)
 
-    async def get_complete_knowledge(self) -> dict[str, Any]:
+    async def get_complete_knowledge(self) -> dict[str, object]:
         """
         الحصول على المعرفة الكاملة والشاملة عن المشروع.
 
