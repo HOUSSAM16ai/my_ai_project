@@ -14,7 +14,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
+
+from app.core.types import JSONDict, Metadata
 
 
 class ProtocolType(Enum):
@@ -94,7 +95,7 @@ class GatewayRoute:
     auth_required: bool = True
     rate_limit: int | None = None
     cache_ttl: int | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: Metadata = field(default_factory=dict)
 
 
 @dataclass
@@ -115,7 +116,7 @@ class UpstreamService:
     max_connections: int = 1000
     timeout_ms: int = 30000
     circuit_breaker_threshold: int = 5
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: Metadata = field(default_factory=dict)
 
 
 @dataclass
@@ -134,7 +135,7 @@ class RoutingDecision:
     estimated_cost: float
     confidence_score: float
     reasoning: str
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: JSONDict = field(default_factory=dict)
 
 
 @dataclass
@@ -170,4 +171,4 @@ class PolicyRule:
     action: str  # allow, deny, rate_limit, transform
     priority: int = 100
     enabled: bool = True
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: Metadata = field(default_factory=dict)

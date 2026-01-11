@@ -9,10 +9,11 @@ import json
 import logging
 import time
 from collections.abc import AsyncGenerator
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import httpx
 
+from app.core.types import JSONDict
 # Config imports
 from app.core.ai_config import get_ai_config
 from app.core.cognitive_cache import get_cognitive_engine
@@ -65,7 +66,7 @@ def get_omni_router(nodes_map: dict[str, "NeuralNode"] | None = None) -> OmniRou
 
 @runtime_checkable
 class AIClient(Protocol):
-    def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]: ...
+    def stream_chat(self, messages: list[JSONDict]) -> AsyncGenerator[JSONDict, None]: ...
 
     async def send_message(
         self,
@@ -181,11 +182,11 @@ class NeuralRoutingMesh:
             f"AI Request: {node.model_id} | Success: {success} | Latency: {duration_ms:.2f}ms"
         )
 
-    async def stream_chat(self, messages: list[dict]) -> AsyncGenerator[dict, None]:
+    async def stream_chat(self, messages: list[JSONDict]) -> AsyncGenerator[JSONDict, None]:
         if not messages:
             raise ValueError("Messages list cannot be empty")
 
-        prompt = messages[-1].get("content", "")
+        prompt = str(messages[-1].get("content", ""))
         context_hash = self._get_context_hash(messages)
 
         # 1. Check Cache
@@ -193,7 +194,7 @@ class NeuralRoutingMesh:
             cached_memory = get_cognitive_engine().recall(prompt, context_hash)
             if cached_memory:
                 async for chunk in self._yield_cached_response(cached_memory, prompt):
-                    yield chunk
+                    yield chunk # type: ignore
                 return
 
         # 2. Get Prioritized Nodes
@@ -230,12 +231,12 @@ class NeuralRoutingMesh:
 
         raise AIAllModelsExhaustedError(f"All models failed. Errors: {errors}")
 
-    def _get_context_hash(self, messages: list[dict]) -> str:
+    def _get_context_hash(self, messages: list[JSONDict]) -> str:
         """Calculate hash of the conversation context"""
         context_str = json.dumps(list(messages[:-1]), sort_keys=True)
         return hashlib.sha256(context_str.encode()).hexdigest()
 
-    async def _yield_cached_response(self, cached_memory: list[Any], prompt: str) -> AsyncGenerator[dict, None]:
+    async def _yield_cached_response(self, cached_memory: list[JSONDict], prompt: str) -> AsyncGenerator[JSONDict, None]:
         """Yield cached response chunks"""
         logger.info(f"⚡️ Cognitive Recall: Serving cached response for '{prompt[:20]}...'")
         for chunk in cached_memory:
@@ -244,10 +245,10 @@ class NeuralRoutingMesh:
     async def _attempt_node_stream(
         self,
         node: NeuralNode,
-        messages: list[dict],
+        messages: list[JSONDict],
         prompt: str,
         context_hash: str
-    ) -> AsyncGenerator[dict, None]:
+    ) -> AsyncGenerator[JSONDict, None]:
         """
         Attempt to stream from a specific node.
         Handles success recording and error recording/raising.
@@ -267,7 +268,7 @@ class NeuralRoutingMesh:
             self._record_metrics(node, prompt, duration, True)
 
             if node.model_id != SAFETY_NET_MODEL_ID:
-                get_cognitive_engine().memorize(prompt, context_hash, full_response_chunks)
+                get_cognitive_engine().memorize(prompt, context_hash, full_response_chunks) # type: ignore
 
         except AIRateLimitError as e:
             duration = (time.time() - start_time) * 1000
@@ -292,8 +293,8 @@ class NeuralRoutingMesh:
             raise e
 
     async def _stream_from_node_with_retry(
-        self, node: NeuralNode, messages: list[dict]
-    ) -> AsyncGenerator[dict, None]:
+        self, node: NeuralNode, messages: list[JSONDict]
+    ) -> AsyncGenerator[JSONDict, None]:
         """
         Streams from a node with retry logic.
         """
@@ -323,20 +324,20 @@ class NeuralRoutingMesh:
 
                 await asyncio.sleep(0.5 * attempt)
 
-    async def _stream_safety_net(self) -> AsyncGenerator[dict, None]:
+    async def _stream_safety_net(self) -> AsyncGenerator[JSONDict, None]:
         """Stream safety net response"""
         logger.warning("⚠️ Engaging Safety Net Protocol.")
         safety_msg = "⚠️ System Alert: Unable to reach external intelligence providers."
         for word in safety_msg.split(" "):
-            yield {"choices": [{"delta": {"content": word + " "}}]}
+            yield {"choices": [{"delta": {"content": word + " "}}]} # type: ignore
             await asyncio.sleep(0.05)
 
     async def _execute_stream_request(
         self,
         client: httpx.AsyncClient,
         node: NeuralNode,
-        messages: list[dict]
-    ) -> AsyncGenerator[dict, None]:
+        messages: list[JSONDict]
+    ) -> AsyncGenerator[JSONDict, None]:
         """Execute the HTTP request and yield chunks"""
         stream_started = False
         try:
@@ -397,7 +398,7 @@ class NeuralRoutingMesh:
         """
         دالة مساعدة لإرسال رسالة وتلقي رد كامل (غير متدفق).
         """
-        messages = [
+        messages: list[JSONDict] = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
         ]
@@ -405,7 +406,9 @@ class NeuralRoutingMesh:
         full_response = []
         try:
             async for chunk in self.stream_chat(messages):
-                content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                content = str(
+                    chunk.get("choices", [{}])[0].get("delta", {}).get("content", "") # type: ignore
+                )
                 if content:
                     full_response.append(content)
         except Exception as e:
