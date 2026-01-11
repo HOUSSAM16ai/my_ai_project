@@ -40,7 +40,7 @@ def test_guardrails_allows_print_in_scripts(tmp_path: Path) -> None:
 def test_guardrails_flags_any_usage(tmp_path: Path) -> None:
     file_path = _write_python(
         tmp_path,
-        "app/services/typing_violation.py",
+        "microservices/service_a/typing_violation.py",
         "from typing import Any\nvalue: Any = 1\n",
     )
 
@@ -135,6 +135,20 @@ def test_guardrails_flags_schema_autocreate(tmp_path: Path) -> None:
     assert any("create_all" in error for error in errors)
 
 
+def test_guardrails_flags_schema_autocreate_reference(tmp_path: Path) -> None:
+    file_path = _write_python(
+        tmp_path,
+        "app/infrastructure/schema.py",
+        "from sqlmodel import SQLModel\n"
+        "async def init(conn):\n"
+        "    await conn.run_sync(SQLModel.metadata.create_all)\n",
+    )
+
+    errors = ci_guardrails.check_file(file_path)
+
+    assert any("create_all" in error for error in errors)
+
+
 def test_guardrails_allows_schema_autocreate_in_migrations(tmp_path: Path) -> None:
     file_path = _write_python(
         tmp_path,
@@ -174,6 +188,32 @@ def test_guardrails_allows_create_engine_in_scripts(tmp_path: Path) -> None:
     assert errors == []
 
 
+def test_guardrails_allows_create_engine_in_tests(tmp_path: Path) -> None:
+    file_path = _write_python(
+        tmp_path,
+        "tests/helpers/test_db.py",
+        "from sqlalchemy import create_engine\n"
+        "engine = create_engine('sqlite://')\n",
+    )
+
+    errors = ci_guardrails.check_file(file_path)
+
+    assert errors == []
+
+
+def test_guardrails_allows_create_async_engine_in_scripts(tmp_path: Path) -> None:
+    file_path = _write_python(
+        tmp_path,
+        "scripts/async_db_maintenance.py",
+        "from sqlalchemy.ext.asyncio import create_async_engine\n"
+        "engine = create_async_engine('sqlite+aiosqlite://')\n",
+    )
+
+    errors = ci_guardrails.check_file(file_path)
+
+    assert errors == []
+
+
 def test_guardrails_flags_sessionmaker_usage(tmp_path: Path) -> None:
     file_path = _write_python(
         tmp_path,
@@ -185,6 +225,32 @@ def test_guardrails_flags_sessionmaker_usage(tmp_path: Path) -> None:
     errors = ci_guardrails.check_file(file_path)
 
     assert any("sessionmaker" in error for error in errors)
+
+
+def test_guardrails_allows_sessionmaker_in_scripts(tmp_path: Path) -> None:
+    file_path = _write_python(
+        tmp_path,
+        "scripts/seed_db.py",
+        "from sqlalchemy.orm import sessionmaker\n"
+        "SessionLocal = sessionmaker()\n",
+    )
+
+    errors = ci_guardrails.check_file(file_path)
+
+    assert errors == []
+
+
+def test_guardrails_allows_sessionmaker_in_tests(tmp_path: Path) -> None:
+    file_path = _write_python(
+        tmp_path,
+        "tests/helpers/session_factory.py",
+        "from sqlalchemy.orm import sessionmaker\n"
+        "SessionLocal = sessionmaker()\n",
+    )
+
+    errors = ci_guardrails.check_file(file_path)
+
+    assert errors == []
 
 
 def test_guardrails_allows_db_factory_in_core(tmp_path: Path) -> None:
