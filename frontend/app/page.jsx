@@ -1,29 +1,36 @@
 "use client";
 
-import { useMemo } from "react";
-
-const DEFAULT_LEGACY_PORT = 8000;
+import Script from "next/script";
 
 export default function Home() {
-  const legacyUrl = useMemo(() => {
-    if (process.env.NEXT_PUBLIC_LEGACY_URL) {
-      return process.env.NEXT_PUBLIC_LEGACY_URL;
-    }
-    if (typeof window !== "undefined") {
-      const protocol = window.location.protocol === "https:" ? "https" : "http";
-      const hostname = window.location.hostname;
-      return `${protocol}://${hostname}:${DEFAULT_LEGACY_PORT}`;
-    }
-    return `http://localhost:${DEFAULT_LEGACY_PORT}`;
-  }, []);
-
   return (
     <main>
-      <iframe
-        src={legacyUrl}
-        title="CogniForge Legacy UI"
-        loading="lazy"
-        referrerPolicy="no-referrer"
+      <div id="root"></div>
+      <Script
+        src="https://cdn.jsdelivr.net/npm/react@17/umd/react.production.min.js"
+        strategy="beforeInteractive"
+      />
+      <Script
+        src="https://cdn.jsdelivr.net/npm/react-dom@17/umd/react-dom.production.min.js"
+        strategy="beforeInteractive"
+      />
+      <Script
+        src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"
+        strategy="beforeInteractive"
+      />
+      <Script
+        src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"
+        strategy="afterInteractive"
+      />
+      <Script
+        src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"
+        strategy="afterInteractive"
+      />
+      <Script src="/performance-monitor.js" strategy="afterInteractive" />
+      <Script
+        src="/js/legacy-app.jsx"
+        type="text/babel"
+        strategy="afterInteractive"
       />
     </main>
   );
