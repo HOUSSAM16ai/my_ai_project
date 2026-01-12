@@ -1,0 +1,23 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+  background: #0f1115;
+}
+
+main {
+  height: 100vh;
+  width: 100vw;
+}
+
+iframe {
+  height: 100%;
+  width: 100%;
+  border: none;
+  background: #0f1115;
+}

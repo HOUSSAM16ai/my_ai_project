@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ai_gateway import AIClient
 
+type ChatStreamEvent = dict[str, object]
+
 
 @dataclass(frozen=True, slots=True)
 class ChatDispatchRequest:
@@ -29,4 +31,4 @@ class ChatDispatchResult:
     """نتيجة التفريع مع كود الحالة وتدفق الاستجابة."""
 
     status_code: int
-    stream: AsyncGenerator[str, None]
+    stream: AsyncGenerator[ChatStreamEvent, None]

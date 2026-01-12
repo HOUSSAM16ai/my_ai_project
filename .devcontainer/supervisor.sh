@@ -31,6 +31,7 @@ set -Eeuo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly APP_ROOT="/app"
 readonly APP_PORT="${PORT:-8000}"
+readonly FRONTEND_PORT="${FRONTEND_PORT:-3000}"
 readonly HEALTH_ENDPOINT="http://localhost:${APP_PORT}/health"
 
 cd "$APP_ROOT"
@@ -213,6 +214,36 @@ else
     lifecycle_info "Uvicorn started (PID: $UVICORN_PID)"
     
     lifecycle_release_lock "uvicorn_launch"
+fi
+
+# ==============================================================================
+# STEP 4B: Frontend Launch (Next.js Gateway)
+# ==============================================================================
+
+if [ -f "frontend/package.json" ]; then
+    lifecycle_info "Starting Next.js frontend..."
+
+    if command -v npm >/dev/null 2>&1; then
+        if ! lifecycle_has_state "frontend_dependencies_installed"; then
+            lifecycle_info "Installing frontend dependencies..."
+            (cd frontend && npm install) && lifecycle_set_state "frontend_dependencies_installed" "$(date +%s)"
+        else
+            lifecycle_info "Frontend dependencies already installed (skipping)"
+        fi
+
+        if lifecycle_check_process "next.*dev"; then
+            lifecycle_info "Next.js dev server already running"
+        else
+            (cd frontend && npm run dev -- --hostname 0.0.0.0 --port "$FRONTEND_PORT") &
+            FRONTEND_PID=$!
+            lifecycle_set_state "next_pid" "$FRONTEND_PID"
+            lifecycle_info "Next.js dev server started (PID: $FRONTEND_PID)"
+        fi
+    else
+        lifecycle_warn "npm not available - skipping frontend startup"
+    fi
+else
+    lifecycle_info "Frontend directory not found - skipping Next.js startup"
 fi
 
 # ==============================================================================

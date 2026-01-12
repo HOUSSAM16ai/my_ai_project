@@ -1,7 +1,7 @@
 """
 بث محادثات المسؤول (Admin Chat Streamer).
 
-هذه الخدمة مسؤولة عن إدارة تدفق البيانات الحية (Server-Sent Events) بين النواة المركزية
+هذه الخدمة مسؤولة عن إدارة تدفق البيانات الحية عبر WebSocket بين النواة المركزية
 وواجهة المستخدم الخاصة بالمسؤول.
 
 المبادئ المعمارية:
@@ -13,7 +13,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from collections.abc import AsyncGenerator, Callable
 
@@ -23,6 +22,7 @@ from app.core.ai_gateway import AIClient
 from app.core.domain.chat import AdminConversation, MessageRole
 from app.services.admin.chat_persistence import AdminChatPersistence
 from app.services.chat import get_chat_orchestrator
+from app.services.chat.contracts import ChatStreamEvent
 from app.services.chat.orchestrator import ChatOrchestrator
 
 logger = logging.getLogger(__name__)
@@ -53,12 +53,12 @@ class AdminChatStreamer:
         history: list[dict[str, object]],
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[ChatStreamEvent, None]:
         """
         تنفيذ عملية البث الحي للاستجابة.
 
         Yields:
-            str: أحداث SSE بتنسيق `event: type\\ndata: json\\n\\n`.
+            ChatStreamEvent: أحداث WebSocket منظمة على شكل قاموس.
         """
         # 1. إعداد السياق والتاريخ
         self._inject_system_context_if_missing(history)
@@ -86,7 +86,7 @@ class AdminChatStreamer:
 
             # 4. حفظ وإنهاء
             await self._persist_response(conversation.id, full_response, session_factory_func)
-            yield "data: [DONE]\n\n"
+            yield {"type": "complete", "payload": {"status": "done"}}
 
         except Exception as e:
             logger.error(f"🔥 Streaming error: {e}")
@@ -116,7 +116,7 @@ class AdminChatStreamer:
         if not history or history[-1].get("content") != question:
             history.append({"role": "user", "content": question})
 
-    def _create_init_event(self, conversation: AdminConversation) -> str:
+    def _create_init_event(self, conversation: AdminConversation) -> ChatStreamEvent:
         """
         إنشاء حدث التهيئة.
         """
@@ -124,7 +124,7 @@ class AdminChatStreamer:
             "conversation_id": conversation.id,
             "title": conversation.title,
         }
-        return f"event: conversation_init\ndata: {json.dumps(init_payload)}\n\n"
+        return {"type": "conversation_init", "payload": init_payload}
 
     async def _stream_with_safety_checks(
         self,
@@ -136,7 +136,7 @@ class AdminChatStreamer:
         history: list[dict[str, object]],
         session_factory_func: Callable[[], AsyncSession],
         full_response: list[str],
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[ChatStreamEvent, None]:
         """
         بث مع فحوصات السلامة (الحد الأقصى للحجم).
         """
@@ -171,29 +171,26 @@ class AdminChatStreamer:
         current_size = sum(len(x) for x in response_parts)
         return current_size > 100000
 
-    def _create_chunk_event(self, content: str) -> str:
+    def _create_chunk_event(self, content: str) -> ChatStreamEvent:
         """
         إنشاء حدث جزء محتوى (OpenAI style).
         """
-        chunk_data = {"choices": [{"delta": {"content": content}}]}
-        return f"data: {json.dumps(chunk_data)}\n\n"
+        return {"type": "delta", "payload": {"content": content}}
 
-    def _create_size_limit_error(self) -> str:
+    def _create_size_limit_error(self) -> ChatStreamEvent:
         """
         إنشاء حدث خطأ تجاوز الحجم.
         """
-        error_payload = {
+        return {
             "type": "error",
-            "payload": {"error": "Response exceeded safety limit (100k chars). Aborting stream."},
+            "payload": {"details": "Response exceeded safety limit (100k chars). Aborting stream."},
         }
-        return f"event: error\ndata: {json.dumps(error_payload)}\n\n"
 
-    def _create_error_event(self, error_details: str) -> str:
+    def _create_error_event(self, error_details: str) -> ChatStreamEvent:
         """
         إنشاء حدث خطأ عام.
         """
-        error_payload = {"type": "error", "payload": {"details": error_details}}
-        return f"event: error\ndata: {json.dumps(error_payload)}\n\n"
+        return {"type": "error", "payload": {"details": error_details}}
 
     async def _persist_response(
         self,

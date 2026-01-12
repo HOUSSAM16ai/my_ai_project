@@ -1,51 +1,72 @@
 from unittest.mock import patch
 
 import pytest
+from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
+
+from app.core.ai_gateway import get_ai_client
+from app.core.database import get_db
+from app.core.domain.user import User
+from app.core.security import generate_service_token
 
 
 @pytest.mark.asyncio
-async def test_chat_error_handling_no_auth(async_client):
-    """Test that chat without auth returns 401."""
-    # When no auth header is provided, we expect 401 Unauthorized
-    response = await async_client.post(
-        "/admin/api/chat/stream",
-        json={"question": "Hello"},
-    )
-    assert response.status_code == 401
+async def test_chat_error_handling_no_auth(test_app):
+    """Test that chat without auth closes the WebSocket."""
+    with TestClient(test_app) as client:
+        with pytest.raises(WebSocketDisconnect) as exc:
+            with client.websocket_connect("/admin/api/chat/ws"):
+                pass
+        assert exc.value.code == 4401
 
 
 @pytest.mark.asyncio
-async def test_chat_error_handling_with_auth_but_service_error(async_client, admin_auth_headers):
-    """Test that chat with auth but internal service error returns 200 with error details."""
+async def test_chat_error_handling_with_auth_but_service_error(test_app, db_session):
+    """Test that chat with auth but internal service error returns error details."""
+    admin_user = User(email="admin-error@example.com", full_name="Admin", is_admin=True)
+    admin_user.set_password("Secret123!")
+    db_session.add(admin_user)
+    await db_session.commit()
+    await db_session.refresh(admin_user)
 
-    with patch(
-        "app.services.boundaries.admin_chat_boundary_service.AdminChatBoundaryService.stream_chat_response"
-    ) as mock_stream:
-        # To test the safe_stream_generator, we need to mock stream_chat_response
-        # such that it's an async generator that raises an exception *during iteration*.
+    token = generate_service_token(str(admin_user.id))
 
-        async def mock_generator(*args, **kwargs):
-            yield "some data"
-            raise Exception("AI Service Down")
+    def override_get_ai_client():
+        return object()
 
-        mock_stream.side_effect = mock_generator
+    async def override_get_db():
+        yield db_session
 
-        # Need to include user_id in body to satisfy strict schema validation
-        response = await async_client.post(
-            "/admin/api/chat/stream",
-            json={"question": "Hello", "user_id": 1},
-            headers=admin_auth_headers,
-        )
+    overrides = {
+        get_ai_client: override_get_ai_client,
+        get_db: override_get_db,
+    }
 
-        assert response.status_code == 200
+    with patch.dict(test_app.dependency_overrides, overrides):
+        with patch(
+            "app.services.boundaries.admin_chat_boundary_service.AdminChatBoundaryService.stream_chat_response"
+        ) as mock_stream:
+            async def mock_generator(*args, **kwargs):
+                yield {"type": "delta", "payload": {"content": "some data"}}
+                raise Exception("AI Service Down")
 
-        # Consume the streaming response
-        content = ""
-        async for chunk in response.aiter_text():
-            content += chunk
+            mock_stream.side_effect = mock_generator
 
-        assert "AI Service Down" in content
-        assert "type" in content and "error" in content
+            with TestClient(test_app) as client:
+                with client.websocket_connect(f"/admin/api/chat/ws?token={token}") as websocket:
+                    websocket.send_json({"question": "Hello"})
+
+                    error_payload = None
+                    while True:
+                        payload = websocket.receive_json()
+                        if payload.get("type") == "error":
+                            error_payload = payload
+                            break
+                        if payload.get("type") == "complete":
+                            break
+
+            assert error_payload is not None
+            assert "AI Service Down" in str(error_payload.get("payload", {}).get("details"))
 
 
 @pytest.mark.asyncio

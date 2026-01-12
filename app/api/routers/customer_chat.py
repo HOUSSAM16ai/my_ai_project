@@ -7,16 +7,12 @@
 
 from collections.abc import Callable
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.schemas.customer_chat import (
-    CustomerChatRequest,
-    CustomerConversationDetails,
-    CustomerConversationSummary,
-)
+from app.api.schemas.customer_chat import CustomerConversationDetails, CustomerConversationSummary
 from app.core.ai_gateway import AIClient, get_ai_client
+from app.core.config import get_settings
 from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
 from app.core.domain.user import User
@@ -26,6 +22,7 @@ from app.services.chat.contracts import ChatDispatchRequest
 from app.services.chat.dispatcher import ChatRoleDispatcher, build_chat_dispatcher
 from app.services.chat.orchestrator import ChatOrchestrator
 from app.services.rbac import QA_SUBMIT
+from app.services.auth.token_decoder import decode_user_id
 
 logger = get_logger(__name__)
 
@@ -79,51 +76,94 @@ def get_chat_dispatcher(db: AsyncSession = Depends(get_db)) -> ChatRoleDispatche
     return build_chat_dispatcher(db)
 
 
-@router.post("/stream", summary="بث محادثة تعليمية")
-async def chat_stream(
-    request: Request,
-    chat_request: CustomerChatRequest,
+@router.websocket("/ws")
+async def chat_stream_ws(
+    websocket: WebSocket,
     ai_client: AIClient = Depends(get_ai_client),
-    actor: User = Depends(get_actor_user),
     dispatcher: ChatRoleDispatcher = Depends(get_chat_dispatcher),
     session_factory: Callable[[], AsyncSession] = Depends(get_session_factory),
-) -> StreamingResponse:
+    db: AsyncSession = Depends(get_db),
+) -> None:
     """
-    بث محادثة العميل القياسي مع الذكاء الاصطناعي.
+    قناة WebSocket لبث محادثة تعليمية للمستخدم القياسي.
     """
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=4401)
+        return
+
+    try:
+        user_id = decode_user_id(token, get_settings().SECRET_KEY)
+    except HTTPException:
+        await websocket.close(code=4401)
+        return
+
+    actor = await db.get(User, user_id)
+    if actor is None or not actor.is_active:
+        await websocket.close(code=4401)
+        return
+
+    await websocket.accept()
+
     if actor.is_admin:
-        raise HTTPException(
-            status_code=403,
-            detail="Admin accounts must use the admin chat endpoint.",
+        await websocket.send_json(
+            {
+                "type": "error",
+                "payload": {
+                    "details": "Admin accounts must use the admin chat endpoint.",
+                    "status_code": 403,
+                },
+            }
         )
-    client_ip = request.client.host if request.client else None
-    user_agent = request.headers.get("User-Agent")
+        await websocket.close(code=4403)
+        return
 
-    dispatch_request = ChatDispatchRequest(
-        question=chat_request.question,
-        conversation_id=chat_request.conversation_id,
-        ai_client=ai_client,
-        session_factory=session_factory,
-        ip=client_ip,
-        user_agent=user_agent,
-    )
-    dispatch_result = await ChatOrchestrator.dispatch(
-        user=actor,
-        request=dispatch_request,
-        dispatcher=dispatcher,
-    )
+    try:
+        while True:
+            payload = await websocket.receive_json()
+            question = str(payload.get("question", "")).strip()
+            if not question:
+                await websocket.send_json(
+                    {"type": "error", "payload": {"details": "Question is required."}}
+                )
+                continue
 
-    return StreamingResponse(
-        dispatch_result.stream,
-        media_type="text/event-stream",
-        status_code=dispatch_result.status_code,
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "Content-Encoding": "identity",
-            "X-Accel-Buffering": "no",
-        },
-    )
+            client_ip = websocket.client.host if websocket.client else None
+            user_agent = websocket.headers.get("user-agent")
+
+            dispatch_request = ChatDispatchRequest(
+                question=question,
+                conversation_id=payload.get("conversation_id"),
+                ai_client=ai_client,
+                session_factory=session_factory,
+                ip=client_ip,
+                user_agent=user_agent,
+            )
+
+            try:
+                dispatch_result = await ChatOrchestrator.dispatch(
+                    user=actor,
+                    request=dispatch_request,
+                    dispatcher=dispatcher,
+                )
+            except HTTPException as exc:
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "payload": {"details": exc.detail, "status_code": exc.status_code},
+                    }
+                )
+                continue
+
+            await websocket.send_json(
+                {"type": "status", "payload": {"status_code": dispatch_result.status_code}}
+            )
+
+            async for event in dispatch_result.stream:
+                await websocket.send_json(event)
+
+    except WebSocketDisconnect:
+        logger.info("Customer WebSocket disconnected")
 
 
 @router.get(

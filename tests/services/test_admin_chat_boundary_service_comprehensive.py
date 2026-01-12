@@ -233,9 +233,15 @@ async def test_stream_chat_response_flow(service):
             events.append(event)
 
         # Verify events
-        assert any("conversation_init" in e for e in events)
-        assert any("World" in e for e in events)
-        assert any("!" in e for e in events)
+        assert any(event.get("type") == "conversation_init" for event in events)
+        assert any(
+            event.get("type") == "delta" and event.get("payload", {}).get("content") == "World"
+            for event in events
+        )
+        assert any(
+            event.get("type") == "delta" and event.get("payload", {}).get("content") == "!"
+            for event in events
+        )
 
         # Verify history update
         assert history[-1]["content"] == "Hello"
@@ -279,4 +285,8 @@ async def test_stream_chat_response_error_handling(service):
         async for event in generator:
             events.append(event)
 
-        assert any("error" in e and "Orchestrator Failure" in e for e in events)
+        assert any(
+            event.get("type") == "error"
+            and "Orchestrator Failure" in str(event.get("payload", {}).get("details"))
+            for event in events
+        )

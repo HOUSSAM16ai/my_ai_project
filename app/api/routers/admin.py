@@ -15,17 +15,13 @@
 import inspect
 from collections.abc import Callable
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.schemas.admin import (
-    ChatRequest,
-    ConversationDetailsResponse,
-    ConversationSummaryResponse,
-)
+from app.api.schemas.admin import ConversationDetailsResponse, ConversationSummaryResponse
 from app.core.ai_gateway import AIClient, get_ai_client
+from app.core.config import get_settings
 from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
 from app.core.domain.user import User
@@ -36,6 +32,7 @@ from app.services.chat.contracts import ChatDispatchRequest
 from app.services.chat.dispatcher import ChatRoleDispatcher, build_chat_dispatcher
 from app.services.chat.orchestrator import ChatOrchestrator
 from app.services.rbac import ADMIN_ROLE
+from app.services.auth.token_decoder import decode_user_id
 
 logger = get_logger(__name__)
 
@@ -163,60 +160,89 @@ async def get_admin_user_count() -> AdminUserCountResponse:
         raise HTTPException(status_code=503, detail="User Service unavailable") from e
 
 
-@router.post("/api/chat/stream", summary="بث محادثة المسؤول (Admin Chat Stream)")
-async def chat_stream(
-    chat_request: ChatRequest,
+@router.websocket("/api/chat/ws")
+async def chat_stream_ws(
+    websocket: WebSocket,
     ai_client: AIClient = Depends(get_ai_client),
-    actor: User = Depends(get_actor_user),
     dispatcher: ChatRoleDispatcher = Depends(get_chat_dispatcher),
     session_factory: Callable[[], AsyncSession] = Depends(get_session_factory),
-) -> StreamingResponse:
+    db: AsyncSession = Depends(get_db),
+) -> None:
     """
-    نقطة نهاية لبدء بث محادثة مع الذكاء الاصطناعي (Overmind).
-
-    التدفق:
-    1. استقبال السؤال.
-    2. تفويض المعالجة لخدمة الحدود (Boundary Service).
-    3. إرجاع استجابة تدفقية (StreamingResponse) بتنسيق SSE.
-
-    Args:
-        chat_request: نموذج طلب المحادثة.
-        ai_client: عميل الذكاء الاصطناعي المحقون.
-        user_id: معرف المستخدم الحالي.
-        service: خدمة الحدود.
-        session_factory: مصنع الجلسات للعمليات الخلفية.
-
-    Returns:
-        StreamingResponse: تدفق أحداث الخادم (SSE).
+    قناة WebSocket لبث محادثة المسؤول بشكل حي وآمن.
     """
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=4401)
+        return
+
+    try:
+        user_id = decode_user_id(token, get_settings().SECRET_KEY)
+    except HTTPException:
+        await websocket.close(code=4401)
+        return
+
+    actor = await db.get(User, user_id)
+    if actor is None or not actor.is_active:
+        await websocket.close(code=4401)
+        return
+
+    await websocket.accept()
+
     if not actor.is_admin:
-        raise HTTPException(
-            status_code=403, detail="Standard accounts must use the customer chat endpoint."
+        await websocket.send_json(
+            {
+                "type": "error",
+                "payload": {
+                    "details": "Standard accounts must use the customer chat endpoint.",
+                    "status_code": 403,
+                },
+            }
         )
-    # تنسيق تدفق المحادثة بالكامل عبر خدمة الحدود
-    dispatch_request = ChatDispatchRequest(
-        question=chat_request.question,
-        conversation_id=chat_request.conversation_id,
-        ai_client=ai_client,
-        session_factory=session_factory,
-    )
-    dispatch_result = await ChatOrchestrator.dispatch(
-        user=actor,
-        request=dispatch_request,
-        dispatcher=dispatcher,
-    )
+        await websocket.close(code=4403)
+        return
 
-    return StreamingResponse(
-        dispatch_result.stream,
-        media_type="text/event-stream",
-        status_code=dispatch_result.status_code,
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "Content-Encoding": "identity",  # منع الضغط (GZip) لضمان الوصول الفوري
-            "X-Accel-Buffering": "no",  # تعطيل التخزين المؤقت في Nginx
-        },
-    )
+    try:
+        while True:
+            payload = await websocket.receive_json()
+            question = str(payload.get("question", "")).strip()
+            if not question:
+                await websocket.send_json(
+                    {"type": "error", "payload": {"details": "Question is required."}}
+                )
+                continue
+
+            dispatch_request = ChatDispatchRequest(
+                question=question,
+                conversation_id=payload.get("conversation_id"),
+                ai_client=ai_client,
+                session_factory=session_factory,
+            )
+
+            try:
+                dispatch_result = await ChatOrchestrator.dispatch(
+                    user=actor,
+                    request=dispatch_request,
+                    dispatcher=dispatcher,
+                )
+            except HTTPException as exc:
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "payload": {"details": exc.detail, "status_code": exc.status_code},
+                    }
+                )
+                continue
+
+            await websocket.send_json(
+                {"type": "status", "payload": {"status_code": dispatch_result.status_code}}
+            )
+
+            async for event in dispatch_result.stream:
+                await websocket.send_json(event)
+
+    except WebSocketDisconnect:
+        logger.info("Admin WebSocket disconnected")
 
 
 @router.get(
