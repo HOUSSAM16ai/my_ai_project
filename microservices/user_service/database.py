@@ -18,9 +18,7 @@ from microservices.user_service.settings import get_settings
 settings = get_settings()
 runtime_settings = settings
 if os.getenv("ENVIRONMENT") == "testing":
-    runtime_settings = settings.model_copy(
-        update={"DATABASE_URL": "sqlite+aiosqlite:///:memory:"}
-    )
+    runtime_settings = settings.model_copy(update={"DATABASE_URL": "sqlite+aiosqlite:///:memory:"})
 
 # 2. Create Engine using Shared Kernel Factory
 engine = create_db_engine(runtime_settings)
