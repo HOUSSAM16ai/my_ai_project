@@ -1,7 +1,7 @@
-import json
 from unittest.mock import MagicMock
 
 import pytest
+from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
@@ -45,18 +45,20 @@ async def test_tool_access_blocked_and_logged(test_app, db_session) -> None:
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
             token = await _register_and_login(ac, "tool-block@example.com")
 
-            response = await ac.post(
-                "/api/chat/stream",
-                json={"question": "read file secrets.txt"},
-                headers={"Authorization": f"Bearer {token}"},
-            )
-            assert response.status_code == 403
             refusal_text = ""
-            for line in response.text.splitlines():
-                if line.startswith("data: ") and "choices" in line:
-                    payload = json.loads(line.replace("data: ", "", 1))
-                    refusal_text = payload["choices"][0]["delta"]["content"]
-                    break
+            status_code = None
+            with TestClient(test_app) as client:
+                with client.websocket_connect(f"/api/chat/ws?token={token}") as websocket:
+                    websocket.send_json({"question": "read file secrets.txt"})
+                    while True:
+                        payload = websocket.receive_json()
+                        if payload.get("type") == "status":
+                            status_code = payload.get("payload", {}).get("status_code")
+                        if payload.get("type") == "delta":
+                            refusal_text = payload.get("payload", {}).get("content", "")
+                        if payload.get("type") == "complete":
+                            break
+            assert status_code == 403
             assert "لا يمكنني" in refusal_text
 
         audit_entries = (

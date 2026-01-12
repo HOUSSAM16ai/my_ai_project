@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
@@ -54,12 +55,13 @@ async def test_customer_chat_persists_messages(test_app, db_session) -> None:
             async with AsyncClient(transport=transport, base_url="http://test") as ac:
                 token = await _register_and_login(ac, "student-chat@example.com")
 
-                response = await ac.post(
-                    "/api/chat/stream",
-                    json={"question": "Explain math vectors"},
-                    headers={"Authorization": f"Bearer {token}"},
-                )
-                assert response.status_code == 200
+                with TestClient(test_app) as client:
+                    with client.websocket_connect(f"/api/chat/ws?token={token}") as websocket:
+                        websocket.send_json({"question": "Explain math vectors"})
+                        while True:
+                            payload = websocket.receive_json()
+                            if payload.get("type") == "complete":
+                                break
     finally:
         test_app.dependency_overrides.clear()
 
@@ -101,12 +103,15 @@ async def test_customer_chat_enforces_ownership(test_app, db_session) -> None:
                 token_owner = await _register_and_login(ac, "owner@example.com")
                 token_other = await _register_and_login(ac, "other@example.com")
 
-                response = await ac.post(
-                    "/api/chat/stream",
-                    json={"question": "Explain math vectors"},
-                    headers={"Authorization": f"Bearer {token_owner}"},
-                )
-                assert response.status_code == 200
+                with TestClient(test_app) as client:
+                    with client.websocket_connect(
+                        f"/api/chat/ws?token={token_owner}"
+                    ) as websocket:
+                        websocket.send_json({"question": "Explain math vectors"})
+                        while True:
+                            payload = websocket.receive_json()
+                            if payload.get("type") == "complete":
+                                break
 
                 conversation = (
                     (
@@ -158,12 +163,13 @@ async def test_customer_chat_falls_back_on_stream_error(test_app, db_session) ->
             async with AsyncClient(transport=transport, base_url="http://test") as ac:
                 token = await _register_and_login(ac, "fallback@example.com")
 
-                response = await ac.post(
-                    "/api/chat/stream",
-                    json={"question": "Explain math vectors"},
-                    headers={"Authorization": f"Bearer {token}"},
-                )
-                assert response.status_code == 200
+                with TestClient(test_app) as client:
+                    with client.websocket_connect(f"/api/chat/ws?token={token}") as websocket:
+                        websocket.send_json({"question": "Explain math vectors"})
+                        while True:
+                            payload = websocket.receive_json()
+                            if payload.get("type") == "complete":
+                                break
     finally:
         test_app.dependency_overrides.clear()
 

@@ -1,4 +1,6 @@
+import pytest
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from app.main import app
 
@@ -7,21 +9,15 @@ client = TestClient(app)
 
 def test_chat_stream_is_real_implementation():
     """
-    Verifies that the /admin/api/chat/stream endpoint is the real implementation
-    and not a stub. The real implementation requires authentication, so a request
-    without headers should return 401 Unauthorized.
+    Verifies that the WebSocket chat endpoint enforces authentication.
 
-    The stub implementation (the bug) allowed unauthenticated access and returned
-    fake data for specific trigger questions.
+    If a stub existed, it would accept unauthenticated connections.
     """
-    # Try to hit the endpoint without auth headers
-    response = client.post(
-        "/admin/api/chat/stream",
-        json={"question": "trigger empty stream", "conversation_id": "test_123"},
-    )
+    with pytest.raises(WebSocketDisconnect) as exc:
+        with client.websocket_connect("/admin/api/chat/ws"):
+            pass
 
-    # If the stub is active (BUG), it returns 200 OK.
-    # If the real implementation is active (FIXED), it returns 401 Unauthorized.
-    assert response.status_code == 401, (
-        f"Expected 401 Unauthorized, but got {response.status_code}. The stub implementation might still be active."
+    assert exc.value.code == 4401, (
+        f"Expected 4401 Unauthorized, but got {exc.value.code}. "
+        "The stub implementation might still be active."
     )

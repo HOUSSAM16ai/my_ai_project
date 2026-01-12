@@ -722,12 +722,12 @@
             const [input, setInput] = useState('');
             const [isLoadingConversation, setIsLoadingConversation] = useState(false);
             const messagesEndRef = useRef(null);
-            const abortControllerRef = useRef(null);
+            const socketRef = useRef(null);
 
             useEffect(() => {
                 return () => {
-                    if (abortControllerRef.current) {
-                        abortControllerRef.current.abort();
+                    if (socketRef.current) {
+                        socketRef.current.close();
                     }
                 };
             }, []);
@@ -840,114 +840,114 @@
             const handleSend = async () => {
                 if (!input.trim()) return;
 
-                if (abortControllerRef.current) {
-                    abortControllerRef.current.abort();
+                if (socketRef.current) {
+                    socketRef.current.close();
                 }
-                abortControllerRef.current = new AbortController();
 
                 const userMsgId = generateId();
                 const question = input;
                 safeSetMessages(prev => [...prev, { id: userMsgId, role: 'user', content: question }]);
                 setInput('');
 
-                try {
-                    const payload = { question };
-                    if (conversationId) {
-                        payload.conversation_id = String(conversationId);
-                    }
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Error: Missing auth token.' }]);
+                    return;
+                }
 
-                        const response = await fetch('/api/chat/stream', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        },
-                        body: JSON.stringify(payload),
-                        signal: abortControllerRef.current.signal
-                    });
+                const payload = { question };
+                if (conversationId) {
+                    payload.conversation_id = String(conversationId);
+                }
 
-                    if (!response.ok) {
-                        const errorText = await response.text().catch(() => 'Unknown error');
-                        throw new Error(`Server error: ${response.status} - ${errorText}`);
-                    }
+                const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+                const wsUrl = `${protocol}://${window.location.host}/api/chat/ws?token=${encodeURIComponent(token)}`;
+                const socket = new WebSocket(wsUrl);
+                socketRef.current = socket;
 
-                    if (!response.body) {
-                        throw new Error('Response body is not available for streaming');
-                    }
+                let assistantMessage = '';
+                let isNewMessage = true;
+                let lastUpdateTimestamp = 0;
+                const assistantMsgId = generateId();
 
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
-                    let assistantMessage = '';
-                    let isNewMessage = true;
-                    let lastUpdateTimestamp = 0;
-                    const assistantMsgId = generateId();
+                socket.onopen = () => {
+                    socket.send(JSON.stringify(payload));
+                };
 
+                socket.onmessage = async (event) => {
                     try {
-                        while (true) {
-                            const { value, done } = await reader.read();
-                            if (done) break;
-
-                            await new Promise(resolve => setTimeout(resolve, STREAM_MICRO_DELAY));
-
-                            const chunk = decoder.decode(value, { stream: true });
-                            const lines = chunk.split('\n\n');
-
-                            lines.forEach(line => {
-                                if (line.startsWith('data: ')) {
-                                    const dataContent = line.substring(6);
-                                    if (dataContent === '[DONE]') {
-                                        return;
-                                    }
-                                    try {
-                                        const parsed = JSON.parse(dataContent);
-                                        if (parsed.conversation_id && parsed.title) {
-                                            setConversationId(parsed.conversation_id);
-                                            isNewMessage = true;
-                                            const token = localStorage.getItem('token');
-                                            fetch('/api/chat/conversations', {
-                                                headers: { 'Authorization': `Bearer ${token}` }
-                                            }).then(res => res.ok ? res.json() : [])
-                                              .then(data => setConversations(Array.isArray(data) ? data : []))
-                                              .catch(() => {});
-                                        } else if (parsed.choices && parsed.choices[0]) {
-                                            const delta = parsed.choices[0].delta || {};
-                                            const content = delta.content || '';
-
-                                            if (content) {
-                                                if (isNewMessage) {
-                                                    assistantMessage = content;
-                                                    safeSetMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: assistantMessage }]);
-                                                    isNewMessage = false;
-                                                    lastUpdateTimestamp = Date.now();
-                                                } else {
-                                                    if (assistantMessage.length < 50000) {
-                                                        assistantMessage += content;
-                                                    }
-
-                                                    const now = Date.now();
-                                                    if (now - lastUpdateTimestamp > STREAM_UPDATE_THROTTLE) {
-                                                        safeSetMessages(prev =>
-                                                            prev.map(msg =>
-                                                                msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
-                                                            )
-                                                        );
-                                                        lastUpdateTimestamp = now;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    } catch (parseError) {
-                                        console.error('Parse error:', parseError);
-                                    }
-                                }
-                            });
+                        const parsed = JSON.parse(event.data);
+                        if (parsed.type === 'status') {
+                            return;
                         }
-                    } finally {
-                        try {
-                            reader.releaseLock();
-                        } catch (e) {}
-                    }
+                        if (parsed.type === 'conversation_init') {
+                            const initPayload = parsed.payload || {};
+                            if (initPayload.conversation_id) {
+                                setConversationId(initPayload.conversation_id);
+                            }
+                            isNewMessage = true;
+                            const refreshToken = localStorage.getItem('token');
+                            fetch('/api/chat/conversations', {
+                                headers: { 'Authorization': `Bearer ${refreshToken}` }
+                            }).then(res => res.ok ? res.json() : [])
+                              .then(data => setConversations(Array.isArray(data) ? data : []))
+                              .catch(() => {});
+                            return;
+                        }
 
+                        if (parsed.type === 'delta') {
+                            const content = parsed?.payload?.content || '';
+                            if (!content) return;
+
+                            if (isNewMessage) {
+                                assistantMessage = content;
+                                safeSetMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: assistantMessage }]);
+                                isNewMessage = false;
+                                lastUpdateTimestamp = Date.now();
+                            } else {
+                                if (assistantMessage.length < 50000) {
+                                    assistantMessage += content;
+                                }
+
+                                const now = Date.now();
+                                if (now - lastUpdateTimestamp > STREAM_UPDATE_THROTTLE) {
+                                    safeSetMessages(prev =>
+                                        prev.map(msg =>
+                                            msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
+                                        )
+                                    );
+                                    lastUpdateTimestamp = now;
+                                }
+                            }
+                            return;
+                        }
+
+                        if (parsed.type === 'complete') {
+                            if (!isNewMessage) {
+                                safeSetMessages(prev =>
+                                    prev.map(msg =>
+                                        msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
+                                    )
+                                );
+                            }
+                            socket.close();
+                            return;
+                        }
+
+                        if (parsed.type === 'error') {
+                            const details = parsed?.payload?.details || 'Unexpected error.';
+                            safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Error: ${details}` }]);
+                        }
+                    } catch (parseError) {
+                        console.error('Parse error:', parseError);
+                    }
+                };
+
+                socket.onerror = () => {
+                    safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Sorry, I encountered a connection error.' }]);
+                };
+
+                socket.onclose = () => {
                     if (!isNewMessage) {
                         safeSetMessages(prev =>
                             prev.map(msg =>
@@ -955,13 +955,7 @@
                             )
                         );
                     }
-                } catch (error) {
-                    if (error.name === 'AbortError') {
-                        return;
-                    }
-                    console.error('Streaming Error:', error);
-                    safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Sorry, I encountered an error.' }]);
-                }
+                };
             };
 
             const handleKeyPress = (e) => {
@@ -1058,14 +1052,13 @@
             const [input, setInput] = useState('');
             const [isLoadingConversation, setIsLoadingConversation] = useState(false);
             const messagesEndRef = useRef(null);
-            const abortControllerRef = useRef(null); // For aborting in-flight requests
+            const socketRef = useRef(null); // For managing WebSocket sessions
 
             // CRITICAL FIX: Cleanup on unmount to prevent memory leaks
             useEffect(() => {
                 return () => {
-                    // Abort any in-flight requests when component unmounts
-                    if (abortControllerRef.current) {
-                        abortControllerRef.current.abort();
+                    if (socketRef.current) {
+                        socketRef.current.close();
                     }
                 };
             }, []);
@@ -1185,192 +1178,126 @@
             };
 
             const handleSend = async () => {
-                if (input.trim()) {
-                    // Abort any previous request
-                    if (abortControllerRef.current) {
-                        abortControllerRef.current.abort();
-                    }
-                    
-                    // Create new AbortController for this request
-                    abortControllerRef.current = new AbortController();
-                    
-                    // Optimistically add user message with a unique ID
-                    const userMsgId = generateId();
-                    safeSetMessages(prev => [...prev, { id: userMsgId, role: 'user', content: input }]);
-                    setInput('');
+                if (!input.trim()) return;
 
+                if (socketRef.current) {
+                    socketRef.current.close();
+                }
+
+                const userMsgId = generateId();
+                const question = input;
+                safeSetMessages(prev => [...prev, { id: userMsgId, role: 'user', content: input }]);
+                setInput('');
+
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Error: Missing auth token.' }]);
+                    return;
+                }
+
+                const payload = { question };
+                if (conversationId) {
+                    payload.conversation_id = String(conversationId);
+                }
+
+                const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+                const wsUrl = `${protocol}://${window.location.host}/admin/api/chat/ws?token=${encodeURIComponent(token)}`;
+                const socket = new WebSocket(wsUrl);
+                socketRef.current = socket;
+
+                let assistantMessage = '';
+                let isNewMessage = true;
+                let lastUpdateTimestamp = 0;
+                const assistantMsgId = generateId();
+
+                socket.onopen = () => {
+                    socket.send(JSON.stringify(payload));
+                };
+
+                socket.onmessage = (event) => {
                     try {
-                        const payload = { question: input };
-                        if (conversationId) {
-                            payload.conversation_id = String(conversationId);
-                        }
-
-                        const response = await fetch('/admin/api/chat/stream', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`
-                            },
-                            body: JSON.stringify(payload),
-                            signal: abortControllerRef.current.signal // Add abort signal
-                        });
-
-                        if (!response.ok) {
-                            const errorText = await response.text().catch(() => 'Unknown error');
-                            throw new Error(`Server error: ${response.status} - ${errorText}`);
-                        }
-
-                        // SAFETY CHECK: Ensure response.body exists
-                        if (!response.body) {
-                            throw new Error('Response body is not available for streaming');
-                        }
-
-                        const reader = response.body.getReader();
-                        const decoder = new TextDecoder();
-                        let assistantMessage = '';
-                        let isNewMessage = true;
-                        let lastUpdateTimestamp = 0;
-                        let assistantMsgId = generateId(); // Stable ID for the stream
-                        let loopCount = 0;
-
-                        try {
-                            while (true) {
-                                const { value, done } = await reader.read();
-                                if (done) break;
-
-                                // BROWSER SAFETY VALVE: Prevent infinite loop crash
-                                loopCount++;
-                                if (loopCount > 10000) {
-                                    console.error("⚠️ Emergency Brake: Stream loop limit reached.");
-                                    break;
-                                }
-
-                                // CODESPACES OPTIMIZATION: Slightly longer delay for cloud environments
-                                // This prevents browser overload in resource-constrained environments
-                                await new Promise(resolve => setTimeout(resolve, STREAM_MICRO_DELAY));
-
-                                const chunk = decoder.decode(value, { stream: true });
-                                const lines = chunk.split('\n\n');
-
-                            lines.forEach(line => {
-                                if (line.startsWith('data: ')) {
-                                    const dataContent = line.substring(6);
-                                    if (dataContent === '[DONE]') {
-                                        return;
-                                    }
-                                    try {
-                                        const parsed = JSON.parse(dataContent);
-
-                                        if (parsed.conversation_id && parsed.title) {
-                                             setConversationId(parsed.conversation_id);
-                                             safeSetMessages(prev => [...prev, { id: generateId(), role: 'init', content: `Conversation ${parsed.conversation_id} - ${parsed.title}` }]);
-                                             isNewMessage = true;
-                                             fetchConversations();
-                                        }
-                                        else if (parsed.choices && parsed.choices[0]) {
-                                             const delta = parsed.choices[0].delta || {};
-                                             const content = delta.content || '';
-
-                                             if (content) {
-                                                 if (isNewMessage) {
-                                                     assistantMessage = content;
-                                                     // Create new message block
-                                                     safeSetMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: assistantMessage }]);
-                                                     isNewMessage = false;
-                                                     lastUpdateTimestamp = Date.now();
-                                                 } else {
-                                                     // BROWSER SAFETY VALVE: Prevent OOM from massive streams
-                                                     if (assistantMessage.length < 50000) {
-                                                         assistantMessage += content;
-                                                     } else if (!assistantMessage.endsWith("... [Truncated by Browser Safeguard]")) {
-                                                         assistantMessage += "\n\n... [Truncated by Browser Safeguard]";
-                                                         console.warn("Stream truncated to prevent browser crash (50k limit reached)");
-                                                     }
-
-                                                     // Throttled update: Better for Codespaces
-                                                     const now = Date.now();
-                                                     if (now - lastUpdateTimestamp > STREAM_UPDATE_THROTTLE) {
-                                                         safeSetMessages(prev =>
-                                                             prev.map(msg =>
-                                                                 msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
-                                                             )
-                                                         );
-                                                         lastUpdateTimestamp = now;
-                                                     }
-                                                 }
-                                             }
-                                        }
-                                        else if (parsed.content) {
-                                            // Handle other formats similar to above...
-                                            if (isNewMessage) {
-                                                 assistantMessage = parsed.content;
-                                                 safeSetMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: assistantMessage }]);
-                                                 isNewMessage = false;
-                                                 lastUpdateTimestamp = Date.now();
-                                             } else {
-                                                 assistantMessage += parsed.content;
-                                                 const now = Date.now();
-                                                 if (now - lastUpdateTimestamp > STREAM_UPDATE_THROTTLE) {
-                                                     safeSetMessages(prev =>
-                                                         prev.map(msg =>
-                                                             msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
-                                                         )
-                                                     );
-                                                     lastUpdateTimestamp = now;
-                                                 }
-                                             }
-                                        }
-                                        else if (parsed.type === 'error') {
-                                            safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Error: ${parsed.payload.error}` }]);
-                                        }
-
-                                    } catch (e) {
-                                        console.error('Error parsing stream data:', e);
-                                    }
-                                }
-                            });
-                        }
-
-                        // Final update
-                        if (!isNewMessage) {
-                             safeSetMessages(prev =>
-                                 prev.map(msg =>
-                                     msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
-                                 )
-                             );
-                        }
-
-                        } catch (streamError) {
-                            // Ignore abort errors - they're expected when requests are cancelled
-                            if (streamError.name === 'AbortError') {
-                                console.log('Stream aborted by user');
-                                return;
-                            }
-                            console.error('Stream reading error:', streamError);
-                            // Add error message to chat
-                            safeSetMessages(prev => [
-                                ...prev,
-                                { id: generateId(), role: 'assistant', content: `Stream error: ${streamError.message || 'Connection interrupted'}. Please try again.` }
-                            ]);
-                        } finally {
-                            // Always clean up the reader
-                            try {
-                                reader.releaseLock();
-                            } catch (e) {
-                                // Ignore cleanup errors
-                            }
-                        }
-
-                    } catch (error) {
-                        // Ignore abort errors - they're expected when user cancels
-                        if (error.name === 'AbortError') {
-                            console.log('Request aborted by user');
+                        const parsed = JSON.parse(event.data);
+                        if (parsed.type === 'status') {
                             return;
                         }
-                        console.error('Streaming Error:', error);
-                        safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'Sorry, I encountered an error.' }]);
+                        if (parsed.type === 'conversation_init') {
+                            const initPayload = parsed.payload || {};
+                            if (initPayload.conversation_id) {
+                                setConversationId(initPayload.conversation_id);
+                            }
+                            safeSetMessages(prev => [...prev, { id: generateId(), role: 'init', content: `Conversation ${initPayload.conversation_id} - ${initPayload.title || ''}` }]);
+                            isNewMessage = true;
+                            fetchConversations();
+                            return;
+                        }
+
+                        if (parsed.type === 'delta') {
+                            const content = parsed?.payload?.content || '';
+                            if (!content) return;
+
+                            if (isNewMessage) {
+                                assistantMessage = content;
+                                safeSetMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: assistantMessage }]);
+                                isNewMessage = false;
+                                lastUpdateTimestamp = Date.now();
+                            } else {
+                                if (assistantMessage.length < 50000) {
+                                    assistantMessage += content;
+                                } else if (!assistantMessage.endsWith("... [Truncated by Browser Safeguard]")) {
+                                    assistantMessage += "\n\n... [Truncated by Browser Safeguard]";
+                                    console.warn("Stream truncated to prevent browser crash (50k limit reached)");
+                                }
+
+                                const now = Date.now();
+                                if (now - lastUpdateTimestamp > STREAM_UPDATE_THROTTLE) {
+                                    safeSetMessages(prev =>
+                                        prev.map(msg =>
+                                            msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
+                                        )
+                                    );
+                                    lastUpdateTimestamp = now;
+                                }
+                            }
+                            return;
+                        }
+
+                        if (parsed.type === 'complete') {
+                            if (!isNewMessage) {
+                                safeSetMessages(prev =>
+                                    prev.map(msg =>
+                                        msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
+                                    )
+                                );
+                            }
+                            socket.close();
+                            return;
+                        }
+
+                        if (parsed.type === 'error') {
+                            const details = parsed?.payload?.details || 'Unexpected error.';
+                            safeSetMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: `Error: ${details}` }]);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing stream data:', e);
                     }
-                }
+                };
+
+                socket.onerror = () => {
+                    safeSetMessages(prev => [
+                        ...prev,
+                        { id: generateId(), role: 'assistant', content: 'Sorry, I encountered a connection error.' }
+                    ]);
+                };
+
+                socket.onclose = () => {
+                    if (!isNewMessage) {
+                        safeSetMessages(prev =>
+                            prev.map(msg =>
+                                msg.id === assistantMsgId ? { ...msg, content: assistantMessage } : msg
+                            )
+                        );
+                    }
+                };
             };
 
             const handleKeyPress = (e) => {

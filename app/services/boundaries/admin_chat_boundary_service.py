@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import json
 import logging
 from collections.abc import AsyncGenerator, Callable
 
-import jwt
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,12 +12,10 @@ from app.core.domain.chat import AdminConversation, MessageRole
 from app.core.domain.user import User
 from app.services.admin.chat_persistence import AdminChatPersistence
 from app.services.admin.chat_streamer import AdminChatStreamer
-from app.services.chat.contracts import ChatDispatchResult
+from app.services.auth.token_decoder import decode_user_id, extract_bearer_token
+from app.services.chat.contracts import ChatDispatchResult, ChatStreamEvent
 
 logger = logging.getLogger(__name__)
-
-ALGORITHM = "HS256"
-
 
 class AdminChatBoundaryService:
     """
@@ -66,10 +62,8 @@ class AdminChatBoundaryService:
             HTTPException: في حال فشل المصادقة (401) | On authentication failure (401)
         """
         # Validate header existence and format
-        token = _extract_bearer_token(auth_header)
-
-        # Decode and validate token
-        return _decode_and_extract_user_id(token, self.settings.SECRET_KEY)
+        token = extract_bearer_token(auth_header)
+        return decode_user_id(token, self.settings.SECRET_KEY)
 
     async def verify_conversation_access(
         self, user: User, conversation_id: int
@@ -129,7 +123,7 @@ class AdminChatBoundaryService:
         history: list[dict[str, object]],
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[ChatStreamEvent, None]:
         """
         تفويض عملية البث إلى Streamer.
         """
@@ -146,7 +140,7 @@ class AdminChatBoundaryService:
         history: list[dict[str, object]],
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[ChatStreamEvent, None]:
         """
         تغليف عملية البث بشبكة أمان (Safety Net).
         تضمن التقاط الاستثناءات وإرجاعها كأحداث JSON بدلاً من قطع الاتصال.
@@ -158,11 +152,10 @@ class AdminChatBoundaryService:
                 yield chunk
         except Exception as e:
             logger.error(f"Stream interrupted: {e}", exc_info=True)
-            error_payload = {
+            yield {
                 "type": "error",
                 "payload": {"details": f"Service Error: {e}"},
             }
-            yield f"data: {json.dumps(error_payload)}\n\n"
 
     async def orchestrate_chat_stream(
         self,
@@ -267,49 +260,3 @@ class AdminChatBoundaryService:
                 for msg in messages
             ],
         }
-
-
-def _extract_bearer_token(auth_header: str | None) -> str:
-    """
-    Extract Bearer token from Authorization header.
-
-    استخراج رمز Bearer من ترويسة التفويض.
-
-    Raises:
-        HTTPException: If header is missing or malformed
-    """
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Authorization header missing")
-
-    parts = auth_header.split(" ")
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise HTTPException(status_code=401, detail="Invalid Authorization header format")
-
-    return parts[1]
-
-
-def _decode_and_extract_user_id(token: str, secret_key: str) -> int:
-    """
-    Decode JWT token and extract user ID.
-
-    فك تشفير رمز JWT واستخراج معرف المستخدم.
-
-    Returns:
-        User ID as integer
-
-    Raises:
-        HTTPException: If token is invalid or user ID is missing
-    """
-    try:
-        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
-        user_id = payload.get("sub")
-
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token payload")
-
-        return int(user_id)
-
-    except jwt.PyJWTError as e:
-        raise HTTPException(status_code=401, detail="Invalid token") from e
-    except ValueError as e:
-        raise HTTPException(status_code=401, detail="Invalid user ID in token") from e

@@ -7,7 +7,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from collections.abc import AsyncGenerator, Callable
 
@@ -18,7 +17,7 @@ from app.core.ai_gateway import AIClient
 from app.core.domain.chat import CustomerConversation, MessageRole
 from app.core.domain.user import User
 from app.services.audit import AuditService
-from app.services.chat.contracts import ChatDispatchResult
+from app.services.chat.contracts import ChatDispatchResult, ChatStreamEvent
 from app.services.chat.education_policy_gate import EducationPolicyDecision, EducationPolicyGate
 from app.services.chat.intent_detector import IntentDetector
 from app.services.chat.tool_router import ToolRouter
@@ -100,7 +99,7 @@ class CustomerChatBoundaryService:
         history: list[dict[str, str]],
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[ChatStreamEvent, None]:
         """
         تفويض عملية البث إلى Streamer.
         """
@@ -273,17 +272,16 @@ class CustomerChatBoundaryService:
         self,
         conversation: CustomerConversation,
         message: str | None,
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[ChatStreamEvent, None]:
         """
-        بث رد الرفض بشكل متوافق مع SSE.
+        بث رد الرفض بشكل متوافق مع WebSocket.
         """
         init_payload = {"conversation_id": conversation.id, "title": conversation.title}
-        yield f"event: conversation_init\ndata: {json.dumps(init_payload)}\n\n"
+        yield {"type": "conversation_init", "payload": init_payload}
 
         refusal_text = message or "عذرًا، لا يمكنني المساعدة في هذا الطلب."
-        chunk_data = {"choices": [{"delta": {"content": refusal_text}}]}
-        yield f"data: {json.dumps(chunk_data)}\n\n"
-        yield "data: [DONE]\n\n"
+        yield {"type": "delta", "payload": {"content": refusal_text}}
+        yield {"type": "complete", "payload": {"status": "refused"}}
 
     async def get_latest_conversation_details(self, user: User) -> dict[str, object] | None:
         """

@@ -3,13 +3,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.services.chat.contracts import ChatDispatchRequest, ChatDispatchResult
+from app.services.chat.contracts import ChatDispatchRequest, ChatDispatchResult, ChatStreamEvent
 from app.services.chat.dispatcher import ChatRoleDispatcher
 from tests.factories.base import UserFactory
 
 
-async def _fake_stream(label: str) -> AsyncGenerator[str, None]:
-    yield label
+async def _fake_stream(label: str) -> AsyncGenerator[ChatStreamEvent, None]:
+    yield {"type": "delta", "payload": {"content": label}}
 
 
 @pytest.mark.asyncio
@@ -40,7 +40,7 @@ async def test_dispatcher_routes_admin_to_admin_boundary() -> None:
     async for chunk in dispatch_result.stream:
         result.append(chunk)
 
-    assert result == ["admin"]
+    assert result == [{"type": "delta", "payload": {"content": "admin"}}]
     admin_boundary.orchestrate_chat_stream.assert_called_once()
     customer_boundary.orchestrate_chat_stream.assert_not_called()
 
@@ -75,6 +75,6 @@ async def test_dispatcher_routes_customer_to_customer_boundary() -> None:
     async for chunk in dispatch_result.stream:
         result.append(chunk)
 
-    assert result == ["customer"]
+    assert result == [{"type": "delta", "payload": {"content": "customer"}}]
     customer_boundary.orchestrate_chat_stream.assert_called_once()
     admin_boundary.orchestrate_chat_stream.assert_not_called()

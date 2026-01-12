@@ -1,106 +1,62 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
+from fastapi.testclient import TestClient
 
-from app.api.routers.admin import get_current_user_id, get_session_factory
 from app.core.ai_gateway import get_ai_client
 from app.core.database import get_db
-
-# We will use the 'client' and 'test_app' fixtures provided by conftest.py
-# This ensures we are testing against the correctly configured application instance.
+from app.core.domain.user import User
+from app.core.security import generate_service_token
 
 
 @pytest.mark.asyncio
-async def test_chat_stream_has_delta_event_type(client, test_app):
+async def test_chat_stream_has_delta_event_type(test_app, db_session):
     """
-    Verifies that the chat_stream endpoint correctly yields 'event: delta' events
-    for content chunks, ensuring proper SSE streaming compatibility with the frontend.
+    Verifies that the WebSocket chat stream emits delta events for content chunks.
     """
 
-    # 1. Define Mocks
     mock_ai_client = MagicMock()
-    mock_db_session = AsyncMock()
-    # FIX: Explicitly set synchronous methods as MagicMock to prevent RuntimeWarnings
-    # "coroutine 'AsyncMockMixin._execute_mock_call' was never awaited"
-    mock_db_session.add = MagicMock()  # Fixed: Synchronous method on AsyncMock
-    mock_db_session.refresh = (
-        AsyncMock()
-    )  # refresh is awaited in admin.py: await db.refresh(conversation)
 
-    # Let's verify admin.py again.
-    # line 128: db.add(conversation) -> sync
-    # line 130: await db.refresh(conversation) -> async
+    async def mock_process(*args, **kwargs):
+        yield "Hello"
+        yield " World"
 
-    # Mock database execution results
-    mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = []
-    mock_result.scalar_one_or_none.return_value = None  # No existing conversation
-    mock_db_session.execute.return_value = mock_result
+    mock_orchestrator = MagicMock()
+    mock_orchestrator.process.side_effect = mock_process
 
-    # Mock AI response generator
-    async def mock_stream_chat(messages):
-        # We simulate the structure returned by many AI providers
-        yield {"choices": [{"delta": {"content": "Hello"}}]}
-        yield {"choices": [{"delta": {"content": " World"}}]}
+    admin_user = User(email="ws-admin@example.com", full_name="Admin", is_admin=True)
+    admin_user.set_password("Secret123!")
+    db_session.add(admin_user)
+    await db_session.commit()
+    await db_session.refresh(admin_user)
 
-    mock_ai_client.stream_chat.side_effect = mock_stream_chat
+    token = generate_service_token(str(admin_user.id))
 
-    # 2. Define Overrides
     def override_get_ai_client():
         return mock_ai_client
 
     async def override_get_db():
-        yield mock_db_session
+        yield db_session
 
-    def override_get_current_user_id():
-        # Bypass auth validation entirely
-        return 1
-
-    def override_get_session_factory():
-        # The endpoint uses session_factory() context manager
-        # We need to return a factory that produces our mock_db_session
-        mock_factory = MagicMock()
-        mock_factory.return_value.__aenter__.return_value = mock_db_session
-        mock_factory.return_value.__aexit__.return_value = None
-        return mock_factory
-
-    # 3. Apply Overrides Safely
-    # Use patch.dict to modify the dependency_overrides dictionary in place,
-    # and automatically restore it to its previous state (containing conftest.py overrides) upon exit.
     overrides = {
         get_ai_client: override_get_ai_client,
         get_db: override_get_db,
-        get_current_user_id: override_get_current_user_id,
-        get_session_factory: override_get_session_factory,
     }
 
     with patch.dict(test_app.dependency_overrides, overrides):
-        # 4. Make Request
-        response = client.post(
-            "/admin/api/chat/stream",
-            json={"question": "Test question"},
-            headers={"Authorization": "Bearer test-token"},
-        )
+        with patch(
+            "app.services.admin.chat_streamer.get_chat_orchestrator", return_value=mock_orchestrator
+        ):
+            with TestClient(test_app) as client:
+                with client.websocket_connect(f"/admin/api/chat/ws?token={token}") as websocket:
+                    websocket.send_json({"question": "Test question"})
 
-        # 5. Assertions
-        assert response.status_code == 200, f"Response failed with: {response.text}"
+                    has_delta = False
+                    while True:
+                        payload = websocket.receive_json()
+                        if payload.get("type") == "delta":
+                            has_delta = True
+                        if payload.get("type") == "complete":
+                            break
 
-        # Analyze stream content
-        content = response.content.decode("utf-8")
-        lines = content.split("\n\n")
-
-        has_delta_event = False
-
-        for line in lines:
-            if not line.strip():
-                continue
-
-            # Check if this block has "event: delta" with content
-            if "data: " in line and "Hello" in line and "event: delta" in line:
-                has_delta_event = True
-
-        # After the fix, we expect 'event: delta' events for content chunks
-        # TODO: The production code currently does NOT emit 'event: delta'.
-        # We assert False here to acknowledge the current behavior and allow the test to pass
-        # while the mock fix is verified. Once the app is fixed, this should be assert has_delta_event.
-        assert not has_delta_event, "Expected NO 'event: delta' (current buggy behavior verified)"
+                    assert has_delta, "Expected delta events for streamed content"

@@ -1,5 +1,4 @@
 import asyncio
-import json
 import os
 import sys
 from collections.abc import AsyncGenerator
@@ -7,6 +6,7 @@ from collections.abc import AsyncGenerator
 # --- SETUP PATH ---
 sys.path.append(os.getcwd())
 
+from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 
 # --- ENV CONFIG ---
@@ -135,23 +135,18 @@ async def verify_flow():
         chat_payload = {"question": "Test Question"}
         stream_response = ""
 
-        async with client.stream(
-            "POST", "/admin/api/chat/stream", json=chat_payload, headers=headers
-        ) as r:
-            if r.status_code != 200:
-                print(f"!!! CHAT STREAM FAILED: {r.status_code} {r.text}")
-                sys.exit(1)
-
-            async for line in r.aiter_lines():
-                if line.startswith("data: "):
-                    data_str = line[6:]
-                    try:
-                        data = json.loads(data_str)
-                        if "choices" in data:
-                            content = data["choices"][0]["delta"].get("content", "")
-                            stream_response += content
-                    except Exception:
-                        pass
+        with TestClient(app) as ws_client:
+            with ws_client.websocket_connect(
+                f"/admin/api/chat/ws?token={access_token}"
+            ) as websocket:
+                websocket.send_json(chat_payload)
+                while True:
+                    payload = websocket.receive_json()
+                    if payload.get("type") == "delta":
+                        content = payload.get("payload", {}).get("content", "")
+                        stream_response += content
+                    if payload.get("type") == "complete":
+                        break
 
         print(f"    Stream Response: '{stream_response}'")
         if stream_response != "Hello World!":

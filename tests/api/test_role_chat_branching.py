@@ -1,4 +1,5 @@
 import pytest
+from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,11 +29,11 @@ async def test_admin_blocked_from_customer_chat(test_app, db_session: AsyncSessi
             assert login_resp.status_code == 200
             token = login_resp.json()["access_token"]
 
-            response = await ac.post(
-                "/api/chat/stream",
-                json={"question": "اشرح التكامل"},
-                headers={"Authorization": f"Bearer {token}"},
-            )
-            assert response.status_code == 403
+            with TestClient(test_app) as client:
+                with client.websocket_connect(f"/api/chat/ws?token={token}") as websocket:
+                    websocket.send_json({"question": "اشرح التكامل"})
+                    payload = websocket.receive_json()
+                    assert payload.get("type") == "error"
+                    assert payload.get("payload", {}).get("status_code") == 403
     finally:
         test_app.dependency_overrides.clear()

@@ -1,12 +1,11 @@
 """
 بث محادثات العملاء القياسيين (Customer Chat Streamer).
 
-يوفر قناة SSE آمنة مع حفظ الاستجابات بعد اكتمال البث.
+يوفر قناة WebSocket آمنة مع حفظ الاستجابات بعد اكتمال البث.
 """
 
 from __future__ import annotations
 
-import json
 import logging
 from collections.abc import AsyncGenerator, Callable
 
@@ -15,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.ai_gateway import AIClient
 from app.core.domain.chat import CustomerConversation, MessageRole
 from app.services.chat import get_chat_orchestrator
+from app.services.chat.contracts import ChatStreamEvent
 from app.services.chat.orchestrator import ChatOrchestrator
 from app.services.customer.chat_persistence import CustomerChatPersistence
 
@@ -36,7 +36,7 @@ class CustomerChatStreamer:
         history: list[dict[str, str]],
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[ChatStreamEvent, None]:
         """
         بث استجابة الذكاء الاصطناعي مع حفظ الرسالة النهائية.
         """
@@ -65,15 +65,14 @@ class CustomerChatStreamer:
             yield self._create_chunk_event(fallback_message)
         finally:
             await self._persist_response(conversation.id, full_response, session_factory_func)
-            yield "data: [DONE]\n\n"
+            yield {"type": "complete", "payload": {"status": "done"}}
 
-    def _create_init_event(self, conversation: CustomerConversation) -> str:
+    def _create_init_event(self, conversation: CustomerConversation) -> ChatStreamEvent:
         payload = {"conversation_id": conversation.id, "title": conversation.title}
-        return f"event: conversation_init\ndata: {json.dumps(payload)}\n\n"
+        return {"type": "conversation_init", "payload": payload}
 
-    def _create_chunk_event(self, content: str) -> str:
-        chunk_data = {"choices": [{"delta": {"content": content}}]}
-        return f"data: {json.dumps(chunk_data)}\n\n"
+    def _create_chunk_event(self, content: str) -> ChatStreamEvent:
+        return {"type": "delta", "payload": {"content": content}}
 
     def _inject_system_context_if_missing(self, history: list[dict[str, str]]) -> None:
         """

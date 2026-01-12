@@ -65,7 +65,7 @@ def test_api_404_no_fallback(app_with_static):
 
 def test_nested_api_404_no_fallback(app_with_static):
     client = TestClient(app_with_static)
-    response = client.get("/admin/api/chat/stream")
+    response = client.get("/admin/api/chat/ws")
     assert response.status_code == 404
     assert response.text != "<html>Index</html>"
 
