@@ -17,6 +17,7 @@
 from typing import Any
 
 from app.core.agents.principles import get_agent_principles
+from app.core.agents.system_principles import format_system_principles, get_system_principles
 
 from app.core.di import get_logger
 
@@ -105,6 +106,10 @@ class OvermindIdentity:
             "agent_principles": [
                 {"number": principle.number, "statement": principle.statement}
                 for principle in get_agent_principles()
+            ],
+            "system_principles": [
+                {"number": principle.number, "statement": principle.statement}
+                for principle in get_system_principles()
             ],
 
             # الوكلاء (Agents)
@@ -248,6 +253,15 @@ class OvermindIdentity:
         """
         return self._identity["agent_principles"]
 
+    def get_system_principles(self) -> list[dict[str, int | str]]:
+        """
+        الحصول على مبادئ النظام الصارمة بشكل منظم.
+
+        Returns:
+            list: قائمة مبادئ النظام مع الأرقام والنصوص.
+        """
+        return self._identity["system_principles"]
+
     def get_capabilities(self) -> dict[str, Any]:
         """
         الحصول على القدرات والإمكانيات.
@@ -284,6 +298,8 @@ class OvermindIdentity:
             return self._answer_overmind_question()
         if self._is_agent_principles_question(q):
             return self._answer_agent_principles_question()
+        if self._is_system_principles_question(q):
+            return self._answer_system_principles_question()
         if self._is_agents_question(q):
             return self._answer_agents_question()
         if self._is_capabilities_question(q):
@@ -321,6 +337,16 @@ class OvermindIdentity:
             "agent principles",
             "multi-agent",
             "multi agent",
+        ]
+        return any(keyword in q for keyword in keywords)
+
+    def _is_system_principles_question(self, q: str) -> bool:
+        """التحقق إذا كان السؤال عن مبادئ النظام الصارمة."""
+        keywords = [
+            "المبادئ الصارمة",
+            "المبادئ الصارمة للنظام",
+            "system principles",
+            "strict system principles",
         ]
         return any(keyword in q for keyword in keywords)
 
@@ -380,6 +406,15 @@ class OvermindIdentity:
         formatted = "\n".join(f"{item['number']}. {item['statement']}" for item in principles)
         return "مبادئ الوكلاء المعتمدة لدينا هي:\n" + formatted
 
+    def _answer_system_principles_question(self) -> str:
+        """الإجابة على أسئلة مبادئ النظام الصارمة."""
+        formatted = format_system_principles(
+            header="المبادئ الصارمة للنظام هي:",
+            bullet="",
+            include_header=True,
+        )
+        return formatted
+
     def _answer_capabilities_question(self) -> str:
         """الإجابة على أسئلة القدرات."""
         caps = self._identity["capabilities"]
@@ -433,6 +468,7 @@ class OvermindIdentity:
             "• المؤسس (من مؤسس overmind؟)\n"
             "• نفسي (ما هو overmind؟)\n"
             "• الوكلاء (من هم الوكلاء؟)\n"
+            "• المبادئ الصارمة للنظام (ما هي المبادئ الصارمة؟)\n"
             "• القدرات (ماذا تستطيع أن تفعل؟)\n"
             "• المشروع (ما هو المشروع؟)\n"
             "• الفلسفة (ما هي الفلسفة؟)\n"

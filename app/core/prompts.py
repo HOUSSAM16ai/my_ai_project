@@ -7,6 +7,8 @@ import logging
 import os
 from datetime import datetime
 
+from app.core.agents.system_principles import format_system_principles
+
 # Import for type checking mostly, or inside function to avoid heavy load
 # from app.services.agent_tools.domain.metrics import get_project_metrics_handler
 
@@ -45,6 +47,21 @@ def _get_static_structure() -> str:
 - **AI**: Neural Routing Mesh
 - **Frontend**: Static HTML/JS (No Build)
 """
+
+
+def _get_system_principles_prompt() -> str:
+    """
+    بناء مقطع المبادئ الصارمة للنظام ضمن موجه النظام.
+
+    Returns:
+        str: نص المبادئ الصارمة المهيأ للإدراج في السياق.
+    """
+    formatted = format_system_principles(
+        header="## 📜 المبادئ الصارمة للنظام",
+        bullet="-",
+        include_header=True,
+    )
+    return formatted
 
 # =============================================================================
 # DYNAMIC CONTEXT HELPERS (Refactored for Low Complexity)
@@ -121,6 +138,7 @@ def get_static_system_prompt(include_health=True) -> str:
     parts = [
         "You are OVERMIND CLI MINDGATE.",
         OVERMIND_IDENTITY.strip(),
+        _get_system_principles_prompt(),
     ]
 
     if include_health:
@@ -137,6 +155,7 @@ async def get_system_prompt(include_health=True, include_dynamic=False) -> str:
     parts = [
         "You are OVERMIND CLI MINDGATE.",
         OVERMIND_IDENTITY.strip(),
+        _get_system_principles_prompt(),
     ]
 
     if include_dynamic:

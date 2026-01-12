@@ -45,6 +45,7 @@ from app.core.config import AppSettings
 from app.core.database import async_session_factory
 from app.core.db_schema import validate_schema_on_startup
 from app.core.event_bus_impl import get_event_bus
+from app.core.agents.system_principles import validate_system_principles
 from app.core.openapi_contracts import (
     compare_contract_to_runtime,
     default_contract_path,
@@ -198,6 +199,7 @@ class RealityKernel:
             enable_static_files (bool): تفعيل خدمة الملفات الثابتة (افتراضي: True).
                                        يمكن تعطيله لوضع API-only.
         """
+        validate_system_principles()
         if isinstance(settings, dict):
             self.settings_obj = AppSettings(**settings)
             self.settings_dict = self.settings_obj.model_dump()

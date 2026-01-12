@@ -246,6 +246,31 @@ class TestOvermindIdentityAgentPrinciples:
         assert "الوكيل الذكي" in answer
 
 
+class TestOvermindIdentitySystemPrinciples:
+    """اختبارات مبادئ النظام الصارمة في نظام الهوية."""
+
+    def setup_method(self):
+        """إعداد الاختبار."""
+        self.identity = OvermindIdentity()
+
+    def test_system_principles_are_available(self):
+        """اختبار: مبادئ النظام الصارمة متاحة ومنسقة."""
+        principles = self.identity.get_system_principles()
+
+        assert isinstance(principles, list)
+        assert len(principles) == 100
+        assert principles[0]["number"] == 1
+        assert "تعدد الأشكال" in principles[0]["statement"]
+
+    def test_answer_system_principles_question(self):
+        """اختبار: الإجابة على سؤال مبادئ النظام الصارمة."""
+        answer = self.identity.answer_question("ما هي المبادئ الصارمة للنظام؟")
+
+        assert "المبادئ الصارمة للنظام" in answer
+        assert "1." in answer
+        assert "تعدد الأشكال" in answer
+
+
 if __name__ == "__main__":
     # تشغيل الاختبارات مباشرة
     pytest.main([__file__, "-v"])
