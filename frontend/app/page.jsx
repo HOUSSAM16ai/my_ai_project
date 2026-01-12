@@ -28,9 +28,19 @@ export default function Home() {
       />
       <Script src="/performance-monitor.js" strategy="afterInteractive" />
       <Script
-        src="/js/legacy-app.jsx"
-        type="text/babel"
+        id="legacy-app-loader"
         strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              var script = document.createElement('script');
+              script.type = 'text/babel';
+              script.setAttribute('data-presets', 'env,react');
+              script.src = '/js/legacy-app.jsx';
+              document.body.appendChild(script);
+            })();
+          `
+        }}
       />
     </main>
   );
