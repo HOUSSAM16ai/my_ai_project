@@ -230,11 +230,15 @@ if [ -f "frontend/package.json" ]; then
     lifecycle_info "Starting Next.js frontend..."
 
     if command -v npm >/dev/null 2>&1; then
-        if ! lifecycle_has_state "frontend_dependencies_installed"; then
+        if [ ! -d "frontend/node_modules" ]; then
             lifecycle_info "Installing frontend dependencies..."
-            (cd frontend && npm install) && lifecycle_set_state "frontend_dependencies_installed" "$(date +%s)"
+            if (cd frontend && npm install); then
+                lifecycle_set_state "frontend_dependencies_installed" "$(date +%s)"
+            else
+                lifecycle_warn "Frontend dependency install failed (will still attempt to start)"
+            fi
         else
-            lifecycle_info "Frontend dependencies already installed (skipping)"
+            lifecycle_info "Frontend dependencies already installed (node_modules exists)"
         fi
 
         if lifecycle_check_process "next.*dev"; then
@@ -272,6 +276,13 @@ fi
 if ! lifecycle_wait_for_port "$APP_PORT" "$PORT_TIMEOUT"; then
     lifecycle_error "Port $APP_PORT did not become available"
     exit 1
+fi
+
+# Wait for frontend port when Next.js is present
+if [ -f "frontend/package.json" ]; then
+    if ! lifecycle_wait_for_port "$FRONTEND_PORT" "$PORT_TIMEOUT"; then
+        lifecycle_warn "Frontend port $FRONTEND_PORT did not become available yet"
+    fi
 fi
 
 # Wait for health endpoint
