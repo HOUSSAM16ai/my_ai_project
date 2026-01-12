@@ -1,6 +1,51 @@
 # ملاحظة: حذفنا رقم الإصدار version لأنه لم يعد مطلوباً
 
 services:
+  # Core Kernel - The Monolith Core (Reality Kernel)
+  core-kernel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cogniforge-core-kernel
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    networks:
+      - appnet
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://user:pass@db:5432/cogniforge}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      # Point to microservices
+      ORCHESTRATOR_URL: http://orchestrator-service:8000
+    depends_on:
+      - orchestrator-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    volumes:
+      - .:/app
+      - /app/__pycache__
+
+  # Frontend - Next.js Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cogniforge-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      - appnet
+    environment:
+      # API_URL tells the Next.js server side proxy where to find the backend
+      API_URL: http://core-kernel:8000
+    depends_on:
+      - core-kernel
+
   # Orchestrator Service - Coordinates agents
   orchestrator-service:
     build:
