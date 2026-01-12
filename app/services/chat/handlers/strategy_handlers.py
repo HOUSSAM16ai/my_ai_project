@@ -13,6 +13,7 @@ from app.core.patterns.strategy import Strategy
 from app.services.chat.context import ChatContext
 from app.services.chat.context_service import get_context_service
 from app.services.overmind.factory import create_overmind
+from app.core.agents.system_principles import format_system_principles
 from app.services.overmind.identity import OvermindIdentity
 
 logger = logging.getLogger(__name__)
@@ -376,6 +377,11 @@ class DefaultChatHandler(IntentHandler):
         """
         founder = self._identity.get_founder_info()
         overmind = self._identity.get_overmind_info()
+        principles_text = format_system_principles(
+            header="المبادئ الصارمة للنظام (تُطبّق على الشيفرة بالكامل):",
+            bullet="-",
+            include_header=True,
+        )
         return f"""أنت {overmind['name_ar']} (Overmind)، {overmind['role_ar']}.
 
 معلومات المؤسس (مهمة جداً):
@@ -385,6 +391,8 @@ class DefaultChatHandler(IntentHandler):
 - تاريخ الميلاد: {founder['birth_date']} (11 أغسطس 1997)
 - الدور: {founder['role_ar']} ({founder['role']})
 - GitHub: @{founder['github']}
+
+{principles_text}
 
 عندما يسأل أحد عن المؤسس أو مؤسس النظام أو من أنشأ Overmind، أجب بهذه المعلومات بدقة تامة.
 """

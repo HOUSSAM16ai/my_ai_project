@@ -8,6 +8,7 @@ from app.core.prompts import OVERMIND_SYSTEM_PROMPT, get_static_system_prompt, g
 async def test_get_system_prompt_static():
     prompt = get_static_system_prompt(include_health=True)
     assert "OVERMIND CLI MINDGATE" in prompt
+    assert "المبادئ الصارمة للنظام" in prompt
     assert "## ⏰ Time:" in prompt
     assert "PROJECT METRICS" not in prompt
 
@@ -15,6 +16,7 @@ async def test_get_system_prompt_static():
 async def test_get_system_prompt_async_default():
     prompt = await get_system_prompt(include_health=True, include_dynamic=False)
     assert "OVERMIND CLI MINDGATE" in prompt
+    assert "المبادئ الصارمة للنظام" in prompt
     assert "## ⏰ Time:" in prompt
     assert "PROJECT METRICS" not in prompt
 
@@ -24,6 +26,7 @@ async def test_get_system_prompt_async_dynamic():
     # The actual content of metrics depends on environment, but the header should be there.
     prompt = await get_system_prompt(include_health=True, include_dynamic=True)
     assert "OVERMIND CLI MINDGATE" in prompt
+    assert "المبادئ الصارمة للنظام" in prompt
     # Structure is included in dynamic
     assert "PROJECT STRUCTURE" in prompt
     # Metrics might fail gracefully (returning empty string) if git is not present or other issues,
