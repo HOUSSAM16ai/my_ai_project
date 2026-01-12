@@ -1058,7 +1058,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                                     return (
                                         <div key={key} className={`message ${msg.role}`}>
                                             <div className="message-bubble">
-                                                <Markdown content={msg.content} />
+                                                {msg.content}
                                             </div>
                                         </div>
                                     );
