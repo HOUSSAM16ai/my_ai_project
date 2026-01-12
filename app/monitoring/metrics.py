@@ -8,8 +8,10 @@ import logging
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, Final
+from datetime import datetime, timezone
+from typing import Final
+
+from app.core.types import JSONDict
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,7 @@ class Metric:
     name: str
     value: float
     labels: dict[str, str] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     metric_type: str = "gauge"
 
 
@@ -226,12 +228,12 @@ class MetricsCollector:
             "p99": sorted_values[int(count * 0.99)],
         }
 
-    def get_all_metrics(self) -> dict[str, Any]:
+    def get_all_metrics(self) -> JSONDict:
         """
         يحصل على جميع المقاييس.
 
         Returns:
-            dict[str, Any]: جميع المقاييس
+            JSONDict: جميع المقاييس
         """
         histograms: dict[str, dict[str, float]] = {}
         for key in self._histograms:
@@ -366,12 +368,12 @@ class PrometheusExporter:
 
         return "\n".join(lines) + "\n"
 
-    def export_json(self) -> dict[str, Any]:
+    def export_json(self) -> JSONDict:
         """
         يصدر المقاييس بتنسيق JSON.
 
         Returns:
-            dict[str, Any]: مقاييس بتنسيق JSON
+            JSONDict: مقاييس بتنسيق JSON
         """
         return self.collector.get_all_metrics()
 

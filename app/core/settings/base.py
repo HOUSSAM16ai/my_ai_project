@@ -273,7 +273,7 @@ class AppSettings(BaseServiceSettings):
 
     @field_validator("CODESPACES", mode="before")
     @classmethod
-    def detect_codespaces(cls, v: dict[str, str | int | bool]) -> bool:
+    def detect_codespaces(cls, v: object) -> bool:
         if v is not None:
             return bool(v)
         return os.getenv("CODESPACES") == "true"
