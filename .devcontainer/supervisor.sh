@@ -36,6 +36,12 @@ readonly HEALTH_ENDPOINT="http://localhost:${APP_PORT}/health"
 
 cd "$APP_ROOT"
 
+if [ -f "frontend/package.json" ]; then
+    export ENABLE_STATIC_FILES="${ENABLE_STATIC_FILES:-0}"
+else
+    export ENABLE_STATIC_FILES="${ENABLE_STATIC_FILES:-1}"
+fi
+
 # Load core library
 if [ -f "$SCRIPT_DIR/lib/lifecycle_core.sh" ]; then
     source "$SCRIPT_DIR/lib/lifecycle_core.sh"

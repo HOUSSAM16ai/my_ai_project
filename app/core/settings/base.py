@@ -261,6 +261,9 @@ class AppSettings(BaseServiceSettings):
     CODESPACE_NAME: str | None = Field(None, description="Codespace Name")
     GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: str | None = Field(None)
     FRONTEND_URL: str = Field(default="http://localhost:3000", description="Frontend URL")
+    ENABLE_STATIC_FILES: bool = Field(
+        True, description="Enable backend static file serving (disable for Next.js-only UI)."
+    )
 
     # Security (Tokens)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(60 * 24 * 8, description="Access Token Expiry")
