@@ -317,7 +317,8 @@ const LoginForm = ({ onLogin, onToggle }) => {
                 setError(errorData.detail || 'Login failed');
             }
         } catch (err) {
-            setError('An error occurred. Please try again.');
+            console.error("Login error:", err);
+            setError('Connection failed. Please check if the backend is running.');
         } finally {
             setIsSubmitting(false);
         }
