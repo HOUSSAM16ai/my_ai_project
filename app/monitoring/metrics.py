@@ -342,7 +342,7 @@ class PrometheusExporter:
 
             label_parts = [f'{k}="{v}"' for k, v in labels.items()]
 
-            def _bucket_labels(value: str) -> str:
+            def _bucket_labels(value: str, label_parts=label_parts) -> str:
                 parts = [f'le="{value}"']
                 parts.extend(label_parts)
                 return "{" + ",".join(parts) + "}"

@@ -2,7 +2,6 @@ import os
 from unittest.mock import patch
 
 import pytest
-from pydantic import ValidationError
 
 from app.core.settings.base import (
     AppSettings,
