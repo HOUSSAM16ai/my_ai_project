@@ -8,7 +8,7 @@ import logging
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Final
 
 from app.core.types import JSONDict
@@ -32,7 +32,7 @@ class Metric:
     name: str
     value: float
     labels: dict[str, str] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(datetime.UTC))
     metric_type: str = "gauge"
 
 
