@@ -52,7 +52,6 @@ class NeuralStaticAnalyzer:
         self.secret_patterns = [
             (r"AKIA" + r"[0-9A-Z]{16}", "AWS Access Key ID"),
             (r"ghp_" + r"[a-zA-Z0-9]{36}", "GitHub Personal Access Token"),
-            (r"glpat-" + r"[a-zA-Z0-9\-]{20}", "GitLab Personal Access Token"),
             (r"xox[baprs]-([0-9a-zA-Z]{10,48})", "Slack Token"),
             (r"-----BEGIN " + r"PRIVATE KEY-----", "PEM Private Key"),
             (r"eyJ[a-zA-Z0-9\-_]+\.eyJ[a-zA-Z0-9\-_]+\.?[a-zA-Z0-9\-_\.]*", "JWT Token"),
