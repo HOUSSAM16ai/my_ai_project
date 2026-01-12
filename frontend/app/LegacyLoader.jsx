@@ -36,6 +36,8 @@ const LEGACY_APP_SCRIPT = {
   attributes: { "data-presets": "env,react" }
 };
 
+const LEGACY_MOUNT_TIMEOUT_MS = 12000;
+
 const ensureScript = (script) =>
   new Promise((resolve, reject) => {
     if (typeof window === "undefined") {
@@ -84,6 +86,58 @@ const ensureScript = (script) =>
     document.head.appendChild(element);
   });
 
+const waitForLegacyMount = () =>
+  new Promise((resolve, reject) => {
+    if (typeof window === "undefined") {
+      resolve();
+      return;
+    }
+
+    if (window.__legacyAppMounted) {
+      resolve();
+      return;
+    }
+
+    const root = document.getElementById("root");
+    if (root && root.childElementCount > 0) {
+      window.__legacyAppMounted = true;
+      resolve();
+      return;
+    }
+
+    let timeoutId;
+
+    const cleanup = () => {
+      window.removeEventListener("legacy-app-mounted", handleMounted);
+      window.removeEventListener("legacy-app-error", handleError);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+
+    const handleMounted = () => {
+      cleanup();
+      window.__legacyAppMounted = true;
+      resolve();
+    };
+
+    const handleError = (event) => {
+      cleanup();
+      const message = event?.detail?.message || "تعذر تشغيل الواجهة.";
+      reject(new Error(message));
+    };
+
+    window.addEventListener("legacy-app-mounted", handleMounted, { once: true });
+    window.addEventListener("legacy-app-error", handleError, { once: true });
+
+    timeoutId = setTimeout(() => {
+      cleanup();
+      reject(
+        new Error("انتهت مهلة تحميل الواجهة. تحقق من الاتصال ثم أعد المحاولة.")
+      );
+    }, LEGACY_MOUNT_TIMEOUT_MS);
+  });
+
 export default function LegacyLoader() {
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState(null);
@@ -100,7 +154,7 @@ export default function LegacyLoader() {
       return;
     }
 
-    if (window.__legacyAppLoaded || window.__legacyAppLoading) {
+    if (window.__legacyAppLoaded && window.__legacyAppMounted) {
       setStatus("ready");
       return;
     }
@@ -112,8 +166,11 @@ export default function LegacyLoader() {
         for (const script of LEGACY_SCRIPTS) {
           await ensureScript(script);
         }
-        await ensureScript(LEGACY_APP_SCRIPT);
-        window.__legacyAppLoaded = true;
+        if (!window.__legacyAppLoaded) {
+          await ensureScript(LEGACY_APP_SCRIPT);
+          window.__legacyAppLoaded = true;
+        }
+        await waitForLegacyMount();
         setStatus("ready");
       } catch (loadError) {
         console.error(loadError);
@@ -135,7 +192,14 @@ export default function LegacyLoader() {
     <div aria-live="polite" className="legacy-loader">
       <p>{loadingMessage}</p>
       {error ? (
-        <p className="legacy-loader__error">{String(error.message || error)}</p>
+        <>
+          <p className="legacy-loader__error">
+            {String(error.message || error)}
+          </p>
+          <button type="button" onClick={() => window.location.reload()}>
+            إعادة تحميل الواجهة
+          </button>
+        </>
       ) : null}
     </div>
   );
