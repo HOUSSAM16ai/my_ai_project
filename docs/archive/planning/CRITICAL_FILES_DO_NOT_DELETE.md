@@ -61,11 +61,9 @@
 ## 🔄 4. CI/CD الأخرى
 
 ```
-✅ .gitlab-ci.yml                           - GitLab CI
 ✅ .cicd/gate_checks.yaml                   - فحوصات الجودة
 ```
 
-**السبب**: ضرورية لـ GitLab CI
 
 ---
 
@@ -269,7 +267,7 @@
 
 1. **هل يستخدم في CI/CD؟**
    ```bash
-   grep -r "filename" .github/ .gitlab-ci.yml .cicd/
+   grep -r "filename" .github/ .cicd/
    ```
 
 2. **هل يستخدم في Docker؟**

@@ -51,15 +51,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
       - name: 📦 Install Spectral CLI (Optional)
         continue-on-error: true
-        run: npm install -g @stoplight/spectral-cli
+        run: |
+          if command -v npm >/dev/null 2>&1; then
+            npm install -g @stoplight/spectral-cli
+          else
+            echo "⚠️ npm not available - skipping Spectral installation."
+          fi
 
       - name: 🔎 Check Spectral Availability
         run: |
