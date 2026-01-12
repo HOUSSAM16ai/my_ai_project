@@ -12,6 +12,7 @@
 - اعتماد كامل على حقن التبعيات (Dependency Injection).
 """
 
+import inspect
 from collections.abc import Callable
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -28,7 +29,7 @@ from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
 from app.core.domain.user import User
-from app.deps.auth import CurrentUser, require_roles
+from app.deps.auth import CurrentUser, get_current_user, require_roles
 from app.infrastructure.clients.user_client import user_client
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 from app.services.chat.contracts import ChatDispatchRequest
@@ -65,9 +66,9 @@ def get_session_factory() -> Callable[[], AsyncSession]:
 
 
 def get_chat_actor(
-    current: CurrentUser = Depends(require_roles(ADMIN_ROLE)),
+    current: CurrentUser = Depends(get_current_user),
 ) -> CurrentUser:
-    """تبعية تُلزم صفة الإداري قبل استخدام قنوات الدردشة الإدارية."""
+    """تبعية تُعيد المستخدم الحالي لاستخدام قنوات الدردشة الإدارية."""
 
     return current
 
@@ -121,7 +122,9 @@ async def get_actor_user(
 
     # فصل الكائن عن الجلسة لضمان توفر بياناته أثناء البث الطويل دون الاصطدام بإغلاق الجلسة.
     await db.refresh(user)
-    db.expunge(user)
+    expunge_result = db.expunge(user)
+    if inspect.isawaitable(expunge_result):
+        await expunge_result
 
     return user
 
@@ -186,6 +189,10 @@ async def chat_stream(
     Returns:
         StreamingResponse: تدفق أحداث الخادم (SSE).
     """
+    if not actor.is_admin:
+        raise HTTPException(
+            status_code=403, detail="Standard accounts must use the customer chat endpoint."
+        )
     # تنسيق تدفق المحادثة بالكامل عبر خدمة الحدود
     dispatch_request = ChatDispatchRequest(
         question=chat_request.question,
@@ -225,6 +232,8 @@ async def get_latest_chat(
     استرجاع تفاصيل آخر محادثة للمستخدم الحالي.
     مفيد لاستعادة الحالة عند إعادة تحميل الصفحة.
     """
+    if not actor.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
     conversation_data = await service.get_latest_conversation_details(actor)
     if not conversation_data:
         return None

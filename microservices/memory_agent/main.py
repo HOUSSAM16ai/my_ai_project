@@ -71,7 +71,7 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
         # Eager load tags for response
         # Since we just created it and added tags, they are in session, but refresh might not load relation
         # We construct response from payload/entry
-        tag_names = [t.name for t in entry.tags]
+        tag_names = [tag.name for tag in db_tags]
 
         return MemoryResponse(entry_id=entry.id, content=entry.content, tags=tag_names)
 

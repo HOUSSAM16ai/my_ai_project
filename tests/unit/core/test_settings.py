@@ -2,6 +2,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+from pydantic import ValidationError
 
 from app.core.settings.base import (
     AppSettings,
@@ -14,8 +15,10 @@ from app.core.settings.base import (
 class TestCoreConfig:
     """Test suite for the unified configuration system."""
 
-    def test_settings_defaults(self):
+    def test_settings_defaults(self, monkeypatch):
         """Verify default settings are correct."""
+        get_settings.cache_clear()
+        monkeypatch.setenv("ENVIRONMENT", "development")
         settings = get_settings()
         assert settings.SERVICE_NAME == "CogniForge-Core"
         assert settings.ENVIRONMENT == "development"
@@ -39,14 +42,14 @@ class TestCoreConfig:
             # but here we rely on defaults or explicit instantiation
             settings = AppSettings(ENVIRONMENT="development", DATABASE_URL=None)
             assert "sqlite" in settings.DATABASE_URL
-            assert "dev.db" in settings.DATABASE_URL
+            assert "backup_storage.db" in settings.DATABASE_URL
 
     def test_production_security_check(self):
         """Verify production security guardrails."""
         from pydantic import ValidationError
 
         # Should fail if DEBUG is True in Prod
-        with pytest.raises(ValueError, match="DEBUG must be False"):
+        with pytest.raises(ValidationError, match="DEBUG must be False"):
             BaseServiceSettings(
                 SERVICE_NAME="test",
                 ENVIRONMENT="production",
@@ -56,7 +59,7 @@ class TestCoreConfig:
             )
 
         # Should fail if weak secret (length) - Enforced globally by Pydantic
-        with pytest.raises(ValidationError, match="String should have at least 32 characters"):
+        with pytest.raises(ValidationError, match="Production SECRET_KEY is too weak"):
             BaseServiceSettings(
                 SERVICE_NAME="test",
                 ENVIRONMENT="production",

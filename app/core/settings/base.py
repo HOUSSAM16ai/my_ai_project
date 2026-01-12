@@ -51,7 +51,7 @@ def _ensure_database_url(value: str | None, environment: str) -> str:
         return "sqlite+aiosqlite:///:memory:"
 
     logger.warning("⚠️ No DATABASE_URL found! Activating Fallback (SQLite).")
-    return "sqlite+aiosqlite:///./dev.db"
+    return "sqlite+aiosqlite:///./backup_storage.db"
 
 
 def _upgrade_postgres_protocol(url: str) -> str:
@@ -60,7 +60,38 @@ def _upgrade_postgres_protocol(url: str) -> str:
         return url.replace("postgres://", "postgresql+asyncpg://", 1)
     if url.startswith("postgresql://") and "asyncpg" not in url:
         return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    if url.startswith("sqlite://") and "aiosqlite" not in url:
+        return url.replace("sqlite://", "sqlite+aiosqlite://", 1)
     return url
+
+
+def _normalize_postgres_ssl(url: str) -> str:
+    """Normalizes Postgres SSL query parameters to a single `ssl=` entry."""
+    if not url.startswith(("postgres://", "postgresql://", "postgresql+asyncpg://")):
+        return url
+
+    from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+
+    parsed = urlparse(url)
+    if not parsed.query:
+        return url
+
+    query_items = parse_qsl(parsed.query, keep_blank_values=True)
+    sslmode_value: str | None = None
+    filtered_items: list[tuple[str, str]] = []
+    for key, value in query_items:
+        if key == "sslmode":
+            sslmode_value = value
+            continue
+        if key == "ssl":
+            continue
+        filtered_items.append((key, value))
+
+    if sslmode_value is not None:
+        filtered_items.append(("ssl", sslmode_value))
+
+    new_query = urlencode(filtered_items, doseq=True)
+    return urlunparse(parsed._replace(query=new_query))
 
 
 def _normalize_csv_or_list(value: list[str] | str | None) -> list[str]:
@@ -68,8 +99,18 @@ def _normalize_csv_or_list(value: list[str] | str | None) -> list[str]:
     if value is None:
         return []
 
+    def _deduplicate(items: list[str]) -> list[str]:
+        seen: set[str] = set()
+        normalized: list[str] = []
+        for item in items:
+            if item not in seen:
+                seen.add(item)
+                normalized.append(item)
+        return normalized
+
     if isinstance(value, list):
-        return [str(item).strip() for item in value if str(item).strip()]
+        cleaned = [str(item).strip() for item in value if str(item).strip()]
+        return _deduplicate(cleaned)
 
     if isinstance(value, str):
         candidate = value.strip()
@@ -81,12 +122,14 @@ def _normalize_csv_or_list(value: list[str] | str | None) -> list[str]:
             try:
                 parsed = json.loads(candidate)
                 if isinstance(parsed, list):
-                    return [str(item).strip() for item in parsed if str(item).strip()]
+                    cleaned = [str(item).strip() for item in parsed if str(item).strip()]
+                    return _deduplicate(cleaned)
             except json.JSONDecodeError:
                 pass
 
         # Fallback to CSV
-        return [item.strip() for item in candidate.split(",") if item.strip()]
+        cleaned = [item.strip() for item in candidate.split(",") if item.strip()]
+        return _deduplicate(cleaned)
 
     return []
 
@@ -131,7 +174,6 @@ class BaseServiceSettings(BaseSettings):
     # Security
     SECRET_KEY: str = Field(
         default_factory=_get_or_create_dev_secret_key,
-        min_length=32,
         description="Master secret key",
     )
 
@@ -150,12 +192,15 @@ class BaseServiceSettings(BaseSettings):
         env = info.data.get("ENVIRONMENT", "development")
         url = _ensure_database_url(v, env)
         # Note: _upgrade_postgres_protocol also handles Supabase Pooler compatibility
-        return _upgrade_postgres_protocol(url)
+        upgraded = _upgrade_postgres_protocol(url)
+        return _normalize_postgres_ssl(upgraded)
 
     @model_validator(mode="after")
     def validate_security(self) -> "BaseServiceSettings":
         """Enforces security rules based on environment."""
         if self.ENVIRONMENT == "production":
+            if "SECRET_KEY" not in self.__pydantic_fields_set__:
+                raise ValueError("SECRET_KEY must be set in production")
             if self.DEBUG:
                 raise ValueError("DEBUG must be False in production")
             if self.SECRET_KEY == "changeme" or len(self.SECRET_KEY) < 32:

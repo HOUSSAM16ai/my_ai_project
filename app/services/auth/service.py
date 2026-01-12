@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base_service import BaseService
 from app.core.config import AppSettings, get_settings
-from app.core.domain.user import User, UserStatus
+from app.core.domain.user import RefreshToken, User, UserStatus
 from app.security.passwords import pwd_context
 from app.services.audit import AuditService
 from app.services.auth.crypto import AuthCrypto
@@ -138,6 +138,14 @@ class AuthService(BaseService):
             "refresh_token": refresh_value,
             "token_type": "Bearer",
         }
+
+    def _split_refresh_token(self, refresh_token: str) -> tuple[str, str]:
+        """يفصل رمز التحديث إلى معرّف وسر للتحقق الداخلي."""
+        return self.crypto.split_refresh_token(refresh_token)
+
+    async def _get_refresh_record(self, token_id: str) -> RefreshToken | None:
+        """يجلب سجل رمز التحديث بالمعرّف من مدير الرموز."""
+        return await self.token_manager.get_refresh_record(token_id)
 
     async def update_profile(
         self,

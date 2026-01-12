@@ -231,37 +231,12 @@ class OrchestratorAgent:
             {"entity": "user", "operation": "count", "access_method": "service_api"}
         )
         if not gov_response.success:
-            return f"خطأ حوكمة البيانات: {gov_response.message}"
+            return f"Governance Error: {gov_response.message}"
 
         count = await self.tools.execute("get_user_count", {})
         if count == 0:
-            return "لا يوجد مستخدمون مسجلون حالياً ضمن المنصة."
-        list_gov = await self.data_agent.process(
-            {
-                "entity": "user",
-                "operation": "list",
-                "access_method": "direct_db",
-                "purpose": "admin_analytics",
-            }
-        )
-        if not list_gov.success:
-            return (
-                f"عدد المستخدمين الحاليين في المنصة هو: {count}. "
-                f"تعذر جلب التفاصيل لأسباب حوكمة البيانات: {list_gov.message}"
-            )
-
-        limit = self._extract_limit(lowered) or max(10, min(count, 50))
-        users = await self.tools.execute("list_users", {"limit": limit, "offset": 0})
-        if not users:
-            return f"عدد المستخدمين الحاليين في المنصة هو: {count}."
-
-        lines = self._format_user_lines(users)
-        summary = f"عدد المستخدمين الحاليين في المنصة هو: {count}."
-        if count > limit:
-            summary += f" فيما يلي أول {limit} مستخدمًا:"
-        else:
-            summary += " فيما يلي التفاصيل:"
-        return "\n".join([summary, *lines])
+            return "لا يوجد مستخدمون مسجلون حالياً ضمن المنصة. (0 users)"
+        return f"عدد المستخدمين الحاليين في المنصة هو: {count}. ({count} users)"
 
     async def _handle_user_list(self, question: str, lowered: str) -> str:
         gov_response = await self.data_agent.process(

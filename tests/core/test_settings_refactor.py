@@ -2,8 +2,12 @@ from app.core.settings.base import BaseServiceSettings
 from microservices.user_service.settings import UserServiceSettings
 
 
-def test_base_service_settings_defaults():
+def test_base_service_settings_defaults(monkeypatch):
     """Test that BaseServiceSettings has correct defaults."""
+
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("LOG_LEVEL", raising=False)
 
     class TestSettings(BaseServiceSettings):
         SERVICE_NAME: str = "test-service"

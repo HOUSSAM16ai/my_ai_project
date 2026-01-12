@@ -233,12 +233,15 @@ class MetricsCollector:
         Returns:
             dict[str, Any]: جميع المقاييس
         """
+        histograms: dict[str, dict[str, float]] = {}
+        for key in self._histograms:
+            metric_name, labels = self._parse_key(key)
+            histograms[key] = self.get_histogram_stats(metric_name, labels)
+
         return {
             "counters": dict(self._counters),
             "gauges": dict(self._gauges),
-            "histograms": {
-                name: self.get_histogram_stats(name.split("{")[0]) for name in self._histograms
-            },
+            "histograms": histograms,
             "metadata": {
                 "uptime_seconds": time.time() - self._start_time,
                 "total_metrics_collected": self._total_metrics_collected,
@@ -273,6 +276,25 @@ class MetricsCollector:
 
         label_str = ",".join(f'{k}="{v}"' for k, v in sorted(labels.items()))
         return f"{name}{{{label_str}}}"
+
+    @staticmethod
+    def _parse_key(key: str) -> tuple[str, dict[str, str]]:
+        """
+        يفكك مفتاح المقياس إلى الاسم والتسميات.
+        """
+        if "{" not in key:
+            return key, {}
+
+        name_part, labels_part = key.split("{", 1)
+        labels_part = labels_part.rstrip("}")
+
+        labels: dict[str, str] = {}
+        if labels_part:
+            for item in labels_part.split(","):
+                label_key, label_value = item.split("=", 1)
+                labels[label_key] = label_value.strip('"')
+
+        return name_part, labels
 
 
 class PrometheusExporter:
@@ -315,16 +337,24 @@ class PrometheusExporter:
 
         # Histograms
         for name in self.collector._histograms:
-            metric_name = name.split("{")[0]
-            stats = self.collector.get_histogram_stats(metric_name)
+            metric_name, labels = self.collector._parse_key(name)
+            stats = self.collector.get_histogram_stats(metric_name, labels)
+
+            label_parts = [f'{k}="{v}"' for k, v in labels.items()]
+
+            def _bucket_labels(value: str) -> str:
+                parts = [f'le="{value}"']
+                parts.extend(label_parts)
+                return "{" + ",".join(parts) + "}"
 
             lines.append(f"# TYPE {metric_name} histogram")
-            lines.append(f"{name}_count {stats['count']}")
-            lines.append(f"{name}_sum {stats['sum']}")
-            lines.append(f'{name}_bucket{{le="0.5"}} {stats["p50"]}')
-            lines.append(f'{name}_bucket{{le="0.95"}} {stats["p95"]}')
-            lines.append(f'{name}_bucket{{le="0.99"}} {stats["p99"]}')
-            lines.append(f'{name}_bucket{{le="+Inf"}} {stats["count"]}')
+            label_suffix = f"{{{','.join(label_parts)}}}" if label_parts else ""
+            lines.append(f"{metric_name}_count{label_suffix} {stats['count']}")
+            lines.append(f"{metric_name}_sum{label_suffix} {stats['sum']}")
+            lines.append(f"{metric_name}_bucket{_bucket_labels('0.5')} {stats['p50']}")
+            lines.append(f"{metric_name}_bucket{_bucket_labels('0.95')} {stats['p95']}")
+            lines.append(f"{metric_name}_bucket{_bucket_labels('0.99')} {stats['p99']}")
+            lines.append(f"{metric_name}_bucket{_bucket_labels('+Inf')} {stats['count']}")
 
         # Metadata
         uptime = time.time() - self.collector._start_time
