@@ -42,7 +42,7 @@ class AuditLog(SQLModel, table=True):
     )
 
     actor: User | None = Relationship(
-        sa_relationship=relationship("User", back_populates="audit_logs"),
+        sa_relationship=relationship("app.core.domain.user.User", back_populates="audit_logs"),
     )
 
 
