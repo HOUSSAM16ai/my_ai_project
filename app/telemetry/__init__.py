@@ -13,6 +13,7 @@ Features surpassing tech giants:
 - Performance monitoring
 - Event tracking with correlation
 """
+
 import logging
 import sys
 
@@ -33,18 +34,20 @@ from app.telemetry.unified_observability import (
 _std_logger = logging.getLogger("app.telemetry")
 if not _std_logger.handlers:
     handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     handler.setFormatter(formatter)
     _std_logger.addHandler(handler)
     _std_logger.setLevel(logging.INFO)
 
 # Aliases for backward compatibility with functional adapters
 
+
 class StructuredLogger(LoggingManager):
     """
     Adapter for StructuredLogger to match existing usage.
     Delegates to LoggingManager for correlation AND writes to standard output.
     """
+
     def info(self, message: str, **kwargs) -> None:
         self.log(LogRecord(level="INFO", message=message, context=kwargs))
         _std_logger.info(message, extra=kwargs)
@@ -65,10 +68,12 @@ class StructuredLogger(LoggingManager):
         self.log(LogRecord(level="CRITICAL", message=message, context=kwargs))
         _std_logger.critical(message, extra=kwargs)
 
+
 class MetricsCollector(MetricsManager):
     """
     Adapter for MetricsCollector.
     """
+
     def increment(self, name: str, amount: float = 1.0, tags: dict[str, str] | None = None) -> None:
         self.increment_counter(name, amount, labels=tags)
 
@@ -78,10 +83,12 @@ class MetricsCollector(MetricsManager):
     def histogram(self, name: str, value: float, tags: dict[str, str] | None = None) -> None:
         self.record_metric(MetricRecord(name=name, value=value, labels=tags or {}))
 
+
 class DistributedTracer(TracingManager):
     """
     Adapter for DistributedTracer.
     """
+
     # Assuming the original DistributedTracer might have had methods like 'trace' context manager
     # or 'start_span'. My TracingManager has 'start_trace'.
 
@@ -91,6 +98,7 @@ class DistributedTracer(TracingManager):
 
     def start_span(self, operation_name: str, parent_context=None, tags=None) -> None:
         return self.start_trace(operation_name, parent_context, tags)
+
 
 __all__ = [
     "DistributedTracer",
@@ -102,5 +110,5 @@ __all__ = [
     "StructuredLogger",
     "TracingManager",
     "UnifiedObservabilityService",
-    "get_unified_observability"
+    "get_unified_observability",
 ]

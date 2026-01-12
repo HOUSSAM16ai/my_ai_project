@@ -109,8 +109,14 @@ async def test_customer_chat_enforces_ownership(test_app, db_session) -> None:
                 assert response.status_code == 200
 
                 conversation = (
-                    await db_session.execute(select(CustomerConversation).order_by(CustomerConversation.id.desc()))
-                ).scalars().first()
+                    (
+                        await db_session.execute(
+                            select(CustomerConversation).order_by(CustomerConversation.id.desc())
+                        )
+                    )
+                    .scalars()
+                    .first()
+                )
                 assert conversation is not None
 
                 detail_resp = await ac.get(

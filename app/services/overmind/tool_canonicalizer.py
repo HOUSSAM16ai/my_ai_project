@@ -31,6 +31,7 @@ class CanonicalResult:
         """Create result for unmatched tool name."""
         return cls(canonical_name=original_name, notes=[], matched_by=None)
 
+
 class CanonicalStrategy(ABC):
     """Base strategy for tool name canonicalization."""
 
@@ -46,6 +47,7 @@ class CanonicalStrategy(ABC):
     @abstractmethod
     def priority(self) -> int:
         """Strategy priority (lower = higher priority)."""
+
 
 class DottedNameStrategy(CanonicalStrategy):
     """Handle dotted tool names (e.g., 'file.write')."""
@@ -72,6 +74,7 @@ class DottedNameStrategy(CanonicalStrategy):
             return CanonicalResult("read_file", notes, "DottedNameStrategy")
 
         return CanonicalResult.unmatched(name)
+
 
 class AliasStrategy(CanonicalStrategy):
     """Handle tool name aliases."""
@@ -117,6 +120,7 @@ class AliasStrategy(CanonicalStrategy):
 
         return CanonicalResult.unmatched(name)
 
+
 class DirectMatchStrategy(CanonicalStrategy):
     """Handle direct canonical name matches."""
 
@@ -133,6 +137,7 @@ class DirectMatchStrategy(CanonicalStrategy):
     def canonicalize(self, name: str, description: str) -> CanonicalResult:
         name_lower = name.lower()
         return CanonicalResult(name_lower, [f"direct_{name_lower}"], "DirectMatchStrategy")
+
 
 class KeywordStrategy(CanonicalStrategy):
     """Handle tool names containing specific keywords."""
@@ -170,6 +175,7 @@ class KeywordStrategy(CanonicalStrategy):
 
         return CanonicalResult.unmatched(name)
 
+
 class DescriptionIntentStrategy(CanonicalStrategy):
     """Infer intent from tool description when name is ambiguous."""
 
@@ -204,6 +210,7 @@ class DescriptionIntentStrategy(CanonicalStrategy):
             )
 
         return CanonicalResult.unmatched(name)
+
 
 class ToolCanonicalizer:
     """
@@ -257,8 +264,10 @@ class ToolCanonicalizer:
         """Remove a strategy from the chain."""
         self.strategies = [s for s in self.strategies if not isinstance(s, strategy_type)]
 
+
 # Singleton instance for backward compatibility
 _default_canonicalizer: ToolCanonicalizer | None = None
+
 
 def get_canonicalizer() -> ToolCanonicalizer:
     """Get or create default canonicalizer instance."""
@@ -266,6 +275,7 @@ def get_canonicalizer() -> ToolCanonicalizer:
     if _default_canonicalizer is None:
         _default_canonicalizer = ToolCanonicalizer()
     return _default_canonicalizer
+
 
 def canonicalize_tool_name(raw_name: str, description: str = "") -> tuple[str, list[str]]:
     """

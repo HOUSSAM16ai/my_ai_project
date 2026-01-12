@@ -81,9 +81,7 @@ class RemoveBlockingHeadersMiddleware(BaseHTTPMiddleware):
 
         return False
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """معالجة الطلب وإزالة الترويسات وفقاً للبيئة."""
         response = await call_next(request)
         self._remove_always_blocked_headers(response)

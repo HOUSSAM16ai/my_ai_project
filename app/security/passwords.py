@@ -4,6 +4,7 @@
 يوفر هذا الملف سياق التشفير المركزي لكلمات المرور بحيث يتم استخدامه
 عبر جميع طبقات التطبيق دون تسريب المنطق الأمني إلى النماذج.
 """
+
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(

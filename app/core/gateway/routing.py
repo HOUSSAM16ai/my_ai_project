@@ -9,6 +9,7 @@
 - Intelligence: اتخاذ قرارات التوجيه بناءً على البيانات.
 - KISS: تقسيم المنطق المعقد إلى دوال صغيرة ومفهومة.
 """
+
 from __future__ import annotations
 
 import logging
@@ -37,6 +38,7 @@ class CircuitBreakerState(TypedDict):
         last_failure (datetime | None): توقيت آخر فشل.
         open (bool): هل الدائرة مفتوحة (محظورة)؟
     """
+
     failures: int
     last_failure: datetime | None
     open: bool
@@ -48,6 +50,7 @@ class ProviderCandidate(TypedDict):
 
     تستخدم داخلياً لتمرير بيانات المرشح بين مراحل التقييم.
     """
+
     provider: str
     cost: float
     latency: float
@@ -57,6 +60,7 @@ class ProviderCandidate(TypedDict):
 
 class RoutingHistoryEntry(TypedDict):
     """بنية سجل تاريخ التوجيه."""
+
     timestamp: datetime
     decision: RoutingDecision
     model_type: str
@@ -233,7 +237,7 @@ class IntelligentRouter:
                 "cost": cost,
                 "latency": latency,
                 "health_score": health_score,
-                "score": 0.0
+                "score": 0.0,
             }
         except Exception as e:
             logger.warning(f"Error evaluating provider {provider_name}: {e}")
@@ -250,9 +254,9 @@ class IntelligentRouter:
         # The strategy updates 'score' key.
         candidate_dicts: list[dict[str, float | str]] = []
         for c in candidates:
-             candidate_dicts.append(c) # type: ignore
+            candidate_dicts.append(c)  # type: ignore
 
-        strategy_impl.calculate_scores(candidate_dicts) # type: ignore
+        strategy_impl.calculate_scores(candidate_dicts)  # type: ignore
 
         # Select best
         return max(candidates, key=lambda x: x["score"])
@@ -313,7 +317,5 @@ class IntelligentRouter:
             stats.avg_latency_ms * (stats.total_requests - 1) + latency_ms
         ) / stats.total_requests
 
-        error_rate = (
-            stats.total_errors / stats.total_requests if stats.total_requests > 0 else 0
-        )
+        error_rate = stats.total_errors / stats.total_requests if stats.total_requests > 0 else 0
         stats.is_healthy = error_rate < 0.1

@@ -20,6 +20,7 @@ from app.core.protocols import AgentArchitect, CollaborationContext
 
 logger = get_logger(__name__)
 
+
 class ArchitectAgent(AgentArchitect):
     """
     المهندس المعماري للنظام.
@@ -33,7 +34,9 @@ class ArchitectAgent(AgentArchitect):
     def __init__(self, ai_client: AIClient) -> None:
         self.ai = ai_client
 
-    async def design_solution(self, plan: dict[str, Any], context: CollaborationContext) -> dict[str, Any]:
+    async def design_solution(
+        self, plan: dict[str, Any], context: CollaborationContext
+    ) -> dict[str, Any]:
         """
         تحويل الخطة الاستراتيجية إلى تصميم تقني.
         Convert strategic plan to technical design.
@@ -53,9 +56,7 @@ class ArchitectAgent(AgentArchitect):
 
         # 2. استدعاء AI للتصميم | Call AI for design
         try:
-            design_data = await self._generate_design_with_ai(
-                system_prompt, user_content
-            )
+            design_data = await self._generate_design_with_ai(system_prompt, user_content)
 
             # 3. تخزين في السياق | Store in context
             context.update("last_design", design_data)
@@ -124,7 +125,7 @@ class ArchitectAgent(AgentArchitect):
         response_text = await self.ai.send_message(
             system_prompt=system_prompt,
             user_message=user_content,
-            temperature=0.1  # دقة قصوى
+            temperature=0.1,  # دقة قصوى
         )
         logger.info(f"Architect: Received AI response ({len(response_text)} chars)")
 
@@ -148,7 +149,7 @@ class ArchitectAgent(AgentArchitect):
         return {
             "design_name": "Failed Design - JSON Error",
             "error": f"JSON parsing failed: {error}",
-            "tasks": []
+            "tasks": [],
         }
 
     def _create_general_error_design(self, error: Exception) -> dict[str, Any]:
@@ -160,7 +161,7 @@ class ArchitectAgent(AgentArchitect):
         return {
             "design_name": "Failed Design",
             "error": f"{type(error).__name__}: {error!s}",
-            "tasks": []
+            "tasks": [],
         }
 
     def _clean_json_block(self, text: str) -> str:
@@ -206,9 +207,7 @@ class ArchitectAgent(AgentArchitect):
 
         try:
             response_text = await self.ai.send_message(
-                system_prompt=system_prompt,
-                user_message=user_message,
-                temperature=0.3
+                system_prompt=system_prompt, user_message=user_message, temperature=0.3
             )
 
             clean_json = self._clean_json_block(response_text)
@@ -217,5 +216,5 @@ class ArchitectAgent(AgentArchitect):
             logger.warning(f"Architect consultation failed: {e}")
             return {
                 "recommendation": "Ensure technical feasibility and scalability (AI consultation failed).",
-                "confidence": 50.0
+                "confidence": 50.0,
             }

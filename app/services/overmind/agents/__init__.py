@@ -101,10 +101,10 @@ class AgentCouncil(NamedTuple):
         - كل وكيل يتبع بروتوكولاً محدداً (AgentPlanner, AgentArchitect, إلخ)
     """
 
-    strategist: AgentPlanner      # المخطط: يفكك الأهداف إلى خطوات
-    architect: AgentArchitect     # المصمم: يحول الخطوات إلى مهام تقنية
-    operator: AgentExecutor       # المنفذ: ينفذ المهام الواحدة تلو الأخرى
-    auditor: AgentReflector       # المدقق: يراجع النتائج ويتأكد من الجودة
+    strategist: AgentPlanner  # المخطط: يفكك الأهداف إلى خطوات
+    architect: AgentArchitect  # المصمم: يحول الخطوات إلى مهام تقنية
+    operator: AgentExecutor  # المنفذ: ينفذ المهام الواحدة تلو الأخرى
+    auditor: AgentReflector  # المدقق: يراجع النتائج ويتأكد من الجودة
 
 
 async def create_agent_council(
@@ -139,15 +139,15 @@ async def create_agent_council(
     # إنشاء كل وكيل مع التبعيات المناسبة
     # كل سطر يُنشئ كائن وكيل جديد
     strategist = StrategistAgent(ai_client)  # يحتاج AI لإنشاء الخطط
-    architect = ArchitectAgent(ai_client)    # يحتاج AI لتصميم المهام
+    architect = ArchitectAgent(ai_client)  # يحتاج AI لتصميم المهام
     operator = OperatorAgent(task_executor, ai_client)  # يحتاج executor و AI للاستشارة
-    auditor = AuditorAgent(ai_client)        # يحتاج AI لمراجعة النتائج
+    auditor = AuditorAgent(ai_client)  # يحتاج AI لمراجعة النتائج
 
     # إرجاع المجلس كـ NamedTuple
     # القوس () هنا ينشئ instance من AgentCouncil
     return AgentCouncil(
         strategist=strategist,  # المخطط
-        architect=architect,    # المصمم
-        operator=operator,      # المنفذ
-        auditor=auditor,        # المدقق
+        architect=architect,  # المصمم
+        operator=operator,  # المنفذ
+        auditor=auditor,  # المدقق
     )

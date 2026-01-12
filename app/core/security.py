@@ -9,15 +9,17 @@
 - Framework Agnostic: يمكن استخدامه في أي جزء من التطبيق.
 - CS50 2025: توثيق عربي واضح.
 """
+
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
 import jwt
 
-if not hasattr(bcrypt, '__about__'):
+if not hasattr(bcrypt, "__about__"):
     import contextlib
+
     with contextlib.suppress(Exception):
-        bcrypt.__about__ = type('about', (object,), {'__version__': bcrypt.__version__})
+        bcrypt.__about__ = type("about", (object,), {"__version__": bcrypt.__version__})
 from app.core.config import get_settings
 from app.security.passwords import pwd_context
 
@@ -36,12 +38,13 @@ def generate_service_token(user_id: str) -> str:
         str: رمز JWT موقع ومشفر باستخدام خوارزمية HS256.
     """
     payload = {
-        'exp': datetime.now(UTC) + timedelta(minutes=5),
-        'iat': datetime.now(UTC),
-        'sub': user_id
+        "exp": datetime.now(UTC) + timedelta(minutes=5),
+        "iat": datetime.now(UTC),
+        "sub": user_id,
     }
     current_settings = get_settings()
-    return jwt.encode(payload, current_settings.SECRET_KEY, algorithm='HS256')
+    return jwt.encode(payload, current_settings.SECRET_KEY, algorithm="HS256")
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """

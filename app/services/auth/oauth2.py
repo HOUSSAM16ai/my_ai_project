@@ -21,6 +21,7 @@ GrantType = Literal["authorization_code", "client_credentials", "refresh_token"]
 @dataclass
 class OAuth2Client:
     """تعريف تطبيق عميل (Client Application)."""
+
     client_id: str
     client_secret_hash: str
     redirect_uris: list[str]
@@ -28,9 +29,11 @@ class OAuth2Client:
     name: str
     is_confidential: bool = True
 
+
 @dataclass
 class ClientRegistration:
     """نتيجة تسجيل العميل (تحتوي على السر الخام)."""
+
     client: OAuth2Client
     raw_secret: str | None
 
@@ -79,7 +82,7 @@ class OAuth2Provider:
             redirect_uris=redirect_uris,
             allowed_grant_types=resolved_grant_types,
             name=name,
-            is_confidential=is_confidential
+            is_confidential=is_confidential,
         )
         self._clients[client_id] = client
 
@@ -91,15 +94,21 @@ class OAuth2Provider:
 
         client = self._clients.get(client_id)
         if not client:
-             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid client_id")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid client_id"
+            )
 
         if client.is_confidential:
             if not client_secret:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Client secret required")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Client secret required"
+                )
 
             input_hash = hashlib.sha256(client_secret.encode()).hexdigest()
             if input_hash != client.client_secret_hash:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid client_secret")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid client_secret"
+                )
 
         return client
 
@@ -110,17 +119,19 @@ class OAuth2Provider:
         scope: str,
         redirect_uri: str,
         code_challenge: str | None = None,
-        code_challenge_method: str | None = None
+        code_challenge_method: str | None = None,
     ) -> str:
         """إنشاء رمز ترخيص (Auth Code)."""
         import secrets
 
         client = self._clients.get(client_id)
         if not client:
-             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid client_id")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid client_id")
 
         if redirect_uri not in client.redirect_uris:
-             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid redirect_uri")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid redirect_uri"
+            )
 
         code = secrets.token_urlsafe(32)
         self._auth_codes[code] = {
@@ -129,41 +140,44 @@ class OAuth2Provider:
             "scope": scope,
             "redirect_uri": redirect_uri,
             "code_challenge": code_challenge,
-            "code_challenge_method": code_challenge_method
+            "code_challenge_method": code_challenge_method,
         }
         return code
 
     def exchange_code_for_token(
-        self,
-        code: str,
-        client_id: str,
-        redirect_uri: str,
-        code_verifier: str | None = None
+        self, code: str, client_id: str, redirect_uri: str, code_verifier: str | None = None
     ) -> dict:
         """استبدال الرمز بالتوكن."""
         data = self._auth_codes.get(code)
         if not data:
-             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired code")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired code"
+            )
 
         if data["client_id"] != client_id:
-             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid client for this code")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid client for this code"
+            )
 
         if data["redirect_uri"] != redirect_uri:
-             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Redirect URI mismatch")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Redirect URI mismatch"
+            )
 
         # PKCE Check
         if data.get("code_challenge"):
             if not code_verifier:
-                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Code verifier required (PKCE)")
-            self._verify_pkce(code_verifier, data["code_challenge"], data.get("code_challenge_method"))
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="Code verifier required (PKCE)"
+                )
+            self._verify_pkce(
+                code_verifier, data["code_challenge"], data.get("code_challenge_method")
+            )
 
         # Burn the code
         del self._auth_codes[code]
 
-        return {
-            "user_id": data["user_id"],
-            "scope": data["scope"]
-        }
+        return {"user_id": data["user_id"], "scope": data["scope"]}
 
     def _verify_pkce(self, verifier: str, challenge: str, method: str | None) -> None:
         import base64
@@ -174,7 +188,11 @@ class OAuth2Provider:
             hashed = hashlib.sha256(verifier.encode("ascii")).digest()
             encoded = base64.urlsafe_b64encode(hashed).decode("ascii").rstrip("=")
             if encoded != challenge:
-                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="PKCE verification failed")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="PKCE verification failed"
+                )
         # plain
         elif verifier != challenge:
-             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="PKCE verification failed")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="PKCE verification failed"
+            )

@@ -3,7 +3,6 @@
 Tests for CS73 Art Visualizer Module
 """
 
-
 from app.services.overmind.art.styles import ArtStyle
 from app.services.overmind.art.visualizer import (
     CodeArtVisualizer,
@@ -29,11 +28,7 @@ class TestCodeArtVisualizer:
         """Test creating complexity art"""
         visualizer = CodeArtVisualizer(ArtStyle.MODERN)
 
-        complexity_data = {
-            "avg_complexity": 5.2,
-            "max_complexity": 15,
-            "functions": 42
-        }
+        complexity_data = {"avg_complexity": 5.2, "max_complexity": 15, "functions": 42}
 
         svg = visualizer.create_complexity_art(complexity_data)
 
@@ -50,8 +45,7 @@ class TestCodeArtVisualizer:
         visualizer = CodeArtVisualizer()
 
         svg = visualizer.create_complexity_art(
-            {"avg_complexity": 3.0, "max_complexity": 10, "functions": 20},
-            title="My Custom Title"
+            {"avg_complexity": 3.0, "max_complexity": 10, "functions": 20}, title="My Custom Title"
         )
 
         assert "My Custom Title" in svg
@@ -60,12 +54,7 @@ class TestCodeArtVisualizer:
         """Test creating metrics dashboard"""
         visualizer = CodeArtVisualizer(ArtStyle.NATURE)
 
-        metrics = {
-            "lines": 1500,
-            "classes": 12,
-            "functions": 42,
-            "complexity": 5.2
-        }
+        metrics = {"lines": 1500, "classes": 12, "functions": 42, "complexity": 5.2}
 
         html = visualizer.create_metrics_dashboard(metrics)
 
@@ -104,7 +93,7 @@ class TestMissionFlowArtist:
             "events": [
                 {"name": "Start", "type": "start"},
                 {"name": "Planning", "type": "info"},
-                {"name": "Success", "type": "success"}
+                {"name": "Success", "type": "success"},
             ]
         }
 
@@ -127,11 +116,7 @@ class TestDataArtGenerator:
         """Test generating code pattern"""
         generator = DataArtGenerator()
 
-        code_data = {
-            "functions": 42,
-            "classes": 12,
-            "lines": 1500
-        }
+        code_data = {"functions": 42, "classes": 12, "lines": 1500}
 
         svg = generator.generate_code_pattern(code_data, size=(400, 400))
 
@@ -152,11 +137,7 @@ class TestDataArtGenerator:
         """Test data sculpture with data"""
         generator = DataArtGenerator(ArtStyle.DARK)
 
-        data = {
-            "performance": 8.5,
-            "quality": 9.0,
-            "maintainability": 7.8
-        }
+        data = {"performance": 8.5, "quality": 9.0, "maintainability": 7.8}
 
         svg = generator.create_data_sculpture(data, title="Test Sculpture")
 

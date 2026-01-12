@@ -14,6 +14,7 @@
 ملاحظة: الدوال المستقلة في نهاية الملف توفر واجهة استخدام مريحة (Facade) للسكربتات
 وأدوات سطر الأوامر (CLI) التي تعمل خارج نطاق حاوية الخدمات.
 """
+
 from __future__ import annotations
 
 import logging
@@ -28,6 +29,7 @@ from app.core.domain.user import User
 from app.services.bootstrap import bootstrap_admin_account
 
 logger = logging.getLogger(__name__)
+
 
 class UserService:
     """
@@ -147,14 +149,14 @@ class UserService:
             }
         except Exception as operation_error:
             await self.session.rollback()
-            logger.error(
-                f"خطأ أثناء التأكد من وجود المسؤول: {operation_error}", exc_info=True
-            )
+            logger.error(f"خطأ أثناء التأكد من وجود المسؤول: {operation_error}", exc_info=True)
             return {"status": "error", "message": str(operation_error)}
+
 
 # =============================================================================
 # واجهات الاستخدام المستقلة (Standalone Facades)
 # =============================================================================
+
 
 async def get_all_users_async() -> list[User]:
     """
@@ -165,6 +167,7 @@ async def get_all_users_async() -> list[User]:
         service = UserService(session)
         users = await service.get_all_users()
         return list(users)
+
 
 async def create_new_user_async(
     full_name: str, email: str, password: str, is_admin: bool = False

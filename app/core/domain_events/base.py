@@ -16,6 +16,7 @@ from typing import Any, ClassVar
 
 class EventCategory(Enum):
     """تصنيف الأحداث (Event Categories)."""
+
     SYSTEM = "system"
     USER = "user"
     MISSION = "mission"
@@ -24,6 +25,7 @@ class EventCategory(Enum):
 
 class BoundedContext(Enum):
     """السياقات المحددة (Bounded Contexts)."""
+
     USER_MANAGEMENT = "user_management"
     MISSION_ORCHESTRATION = "mission_orchestration"
     TASK_EXECUTION = "task_execution"
@@ -59,6 +61,7 @@ class DomainEvent:
         """تهيئة الحدث بعد الإنشاء."""
         if self.event_id is None:
             import uuid
+
             self.event_id = str(uuid.uuid4())
         if not self.event_type:
             self.event_type = self.__class__.__name__

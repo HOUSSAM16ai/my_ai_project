@@ -18,6 +18,7 @@ from app.services.overmind.identity import OvermindIdentity
 
 logger = logging.getLogger(__name__)
 
+
 class IntentHandler(Strategy[ChatContext, AsyncGenerator[str, None]]):
     """Base intent handler."""
 
@@ -32,6 +33,7 @@ class IntentHandler(Strategy[ChatContext, AsyncGenerator[str, None]]):
     @property
     def priority(self) -> int:
         return self._priority
+
 
 class FileReadHandler(IntentHandler):
     """Handle file read requests."""
@@ -70,6 +72,7 @@ class FileReadHandler(IntentHandler):
         with open(path, encoding="utf-8") as f:
             return f.read()
 
+
 class FileWriteHandler(IntentHandler):
     """Handle file write requests."""
 
@@ -86,6 +89,7 @@ class FileWriteHandler(IntentHandler):
 
         yield f"📝 لإنشاء ملف `{path}`، يرجى تحديد المحتوى.\n"
         yield "يمكنك كتابة المحتوى في الرسالة التالية.\n"
+
 
 class CodeSearchHandler(IntentHandler):
     """Handle code search requests."""
@@ -117,6 +121,7 @@ class CodeSearchHandler(IntentHandler):
         logger.info(f"Code search: {query}", extra={"user_id": user_id})
         return []
 
+
 class ProjectIndexHandler(IntentHandler):
     """Handle project indexing requests."""
 
@@ -137,6 +142,7 @@ class ProjectIndexHandler(IntentHandler):
         logger.info("Project indexing started", extra={"user_id": user_id})
         return {"files": 0, "lines": 0}
 
+
 class DeepAnalysisHandler(IntentHandler):
     """Handle deep analysis requests."""
 
@@ -154,6 +160,7 @@ class DeepAnalysisHandler(IntentHandler):
     async def _analyze(self, question: str, ai_client) -> str:
         """Perform deep analysis."""
         return "تحليل عميق (قيد التطوير)"
+
 
 class MissionComplexHandler(IntentHandler):
     """
@@ -182,7 +189,7 @@ class MissionComplexHandler(IntentHandler):
             mission = Mission(
                 objective=context.question,
                 status=MissionStatus.PENDING,
-                initiator_id=context.user_id or 1 # Fallback if user_id missing
+                initiator_id=context.user_id or 1,  # Fallback if user_id missing
             )
             session.add(mission)
             await session.commit()
@@ -200,13 +207,13 @@ class MissionComplexHandler(IntentHandler):
         running = True
 
         while running:
-            await asyncio.sleep(1.0) # Poll interval
+            await asyncio.sleep(1.0)  # Poll interval
 
             # Check if background task crashed or finished
             if task.done():
                 running = False
                 try:
-                    await task # Check for exceptions
+                    await task  # Check for exceptions
                 except Exception as e:
                     yield f"❌ **خطأ غير متوقع في النظام:** {e}\n"
                     logger.error(f"Background mission task failed: {e}")
@@ -268,6 +275,7 @@ class MissionComplexHandler(IntentHandler):
         except Exception:
             return "ℹ️ حدث جديد...\n"
 
+
 class HelpHandler(IntentHandler):
     """Handle help requests."""
 
@@ -283,6 +291,7 @@ class HelpHandler(IntentHandler):
         yield "- البحث: `ابحث عن query`\n"
         yield "- فهرسة: `فهرس المشروع`\n"
         yield "- مهمة معقدة: (أي سؤال معقد سيتم تحويله للوكيل الخارق)\n"
+
 
 class DefaultChatHandler(IntentHandler):
     """Default chat handler (fallback)."""
@@ -382,15 +391,15 @@ class DefaultChatHandler(IntentHandler):
             bullet="-",
             include_header=True,
         )
-        return f"""أنت {overmind['name_ar']} (Overmind)، {overmind['role_ar']}.
+        return f"""أنت {overmind["name_ar"]} (Overmind)، {overmind["role_ar"]}.
 
 معلومات المؤسس (مهمة جداً):
-- الاسم الكامل: {founder['name_ar']} ({founder['name']})
-- الاسم الأول: {founder['first_name_ar']} ({founder['first_name']})
-- اللقب: {founder['last_name_ar']} ({founder['last_name']})
-- تاريخ الميلاد: {founder['birth_date']} (11 أغسطس 1997)
-- الدور: {founder['role_ar']} ({founder['role']})
-- GitHub: @{founder['github']}
+- الاسم الكامل: {founder["name_ar"]} ({founder["name"]})
+- الاسم الأول: {founder["first_name_ar"]} ({founder["first_name"]})
+- اللقب: {founder["last_name_ar"]} ({founder["last_name"]})
+- تاريخ الميلاد: {founder["birth_date"]} (11 أغسطس 1997)
+- الدور: {founder["role_ar"]} ({founder["role"]})
+- GitHub: @{founder["github"]}
 
 {principles_text}
 

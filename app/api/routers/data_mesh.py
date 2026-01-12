@@ -17,9 +17,11 @@ from app.services.data_mesh.service import DataMeshBoundaryService
 
 router = APIRouter(tags=["Data Mesh"])
 
+
 def get_data_mesh_service() -> DataMeshBoundaryService:
     """تبعية للحصول على خدمة شبكة البيانات الحدية (Data Mesh Boundary Service)."""
     return DataMeshBoundaryService()
+
 
 @router.post(
     "/contracts",
@@ -39,6 +41,7 @@ async def create_data_contract(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return DataContractResponse.model_validate(result)
+
 
 @router.get(
     "/metrics",

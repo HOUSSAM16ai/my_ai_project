@@ -109,7 +109,9 @@ def test_database_url_sslmode_disable_converts_to_ssl(monkeypatch: pytest.Monkey
     assert settings.DATABASE_URL.endswith("?ssl=disable")
 
 
-def test_secret_key_defaults_to_secure_value_in_development(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_secret_key_defaults_to_secure_value_in_development(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Generates a strong SECRET_KEY automatically when not provided in development."""
 
     monkeypatch.delenv("SECRET_KEY", raising=False)
@@ -130,7 +132,9 @@ def test_secret_key_must_be_explicit_in_production(monkeypatch: pytest.MonkeyPat
         AppSettings()
 
 
-def test_secret_key_remains_stable_across_settings_instances(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_secret_key_remains_stable_across_settings_instances(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """يتأكد من ثبات المفتاح التلقائي بين إنشاءات الإعدادات ضمن نفس العملية التطويرية."""
 
     monkeypatch.delenv("SECRET_KEY", raising=False)

@@ -28,6 +28,7 @@ from app.services.serving.domain.models import (
 
 _LOG = logging.getLogger(__name__)
 
+
 class ExperimentManager:
     """
     Manages experimental model serving strategies.
@@ -147,11 +148,7 @@ class ExperimentManager:
             self._ab_tests[test_id] = config
 
     def _log_ab_test_start(
-        self,
-        test_id: str,
-        model_a_id: str,
-        model_b_id: str,
-        split_percentage: float
+        self, test_id: str, model_a_id: str, model_b_id: str, split_percentage: float
     ) -> None:
         """
         تسجيل بدء اختبار A/B.
@@ -166,7 +163,7 @@ class ExperimentManager:
         _LOG.info(
             f"Started A/B test {test_id}: "
             f"{model_a_id} ({split_percentage}%) vs "
-            f"{model_b_id} ({100-split_percentage}%)"
+            f"{model_b_id} ({100 - split_percentage}%)"
         )
 
     def _schedule_auto_end(self, test_id: str, duration_hours: int) -> None:
@@ -286,6 +283,7 @@ class ExperimentManager:
         from app.services.serving.infrastructure.in_memory_repository import (
             InMemoryMetricsRepository,
         )
+
         metrics_repo = InMemoryMetricsRepository()
 
         metrics_a = metrics_repo.get_summary(config.model_a_id)
@@ -305,9 +303,7 @@ class ExperimentManager:
             "winner": winner,
             "model_a_metrics": metrics_a,
             "model_b_metrics": metrics_b,
-            "duration_hours": (
-                (datetime.now(UTC) - config.started_at).total_seconds() / 3600
-            ),
+            "duration_hours": ((datetime.now(UTC) - config.started_at).total_seconds() / 3600),
         }
 
     def _determine_winner(
@@ -405,10 +401,7 @@ class ExperimentManager:
             self._shadow_deployments[shadow_id] = deployment
 
     def _log_shadow_deployment_start(
-        self,
-        shadow_id: str,
-        shadow_model_id: str,
-        primary_model_id: str
+        self, shadow_id: str, shadow_model_id: str, primary_model_id: str
     ) -> None:
         """
         تسجيل بدء نشر الظل.
@@ -420,8 +413,7 @@ class ExperimentManager:
             primary_model_id: معرف النموذج الأساسي | Primary model ID
         """
         _LOG.info(
-            f"Started shadow deployment {shadow_id}: "
-            f"{shadow_model_id} shadowing {primary_model_id}"
+            f"Started shadow deployment {shadow_id}: {shadow_model_id} shadowing {primary_model_id}"
         )
 
     def get_ab_test(self, test_id: str) -> ABTestConfig | None:

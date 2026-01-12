@@ -36,8 +36,8 @@ class TestMonitoring(unittest.TestCase):
         exporter = InfluxDBExporter(c)
         output = exporter.export()
 
-        self.assertIn('requests_total,method=GET value=10', output)
-        self.assertIn('memory_usage,host=server1 value=512', output)
+        self.assertIn("requests_total,method=GET value=10", output)
+        self.assertIn("memory_usage,host=server1 value=512", output)
         print("✅ InfluxDBExporter test passed")
 
     def test_dashboard_manager(self):
@@ -49,7 +49,7 @@ class TestMonitoring(unittest.TestCase):
             alert_id="alert1",
             name="High CPU",
             severity=AlertSeverity.CRITICAL,
-            message="CPU is high"
+            message="CPU is high",
         )
         # Manually injecting for synchronous test simplicity
         alerts._alerts["alert1"] = alert
@@ -69,14 +69,20 @@ class TestMonitoring(unittest.TestCase):
             name="Custom",
             description="Custom",
             widgets=[
-                DashboardWidget(id="custom_w", title="Requests", type="metric", data_source="metrics.operation_total")
-            ]
+                DashboardWidget(
+                    id="custom_w",
+                    title="Requests",
+                    type="metric",
+                    data_source="metrics.operation_total",
+                )
+            ],
         )
         dm.create_view(view)
 
         data = dm.get_dashboard_data("custom")
         self.assertEqual(data["widgets"]["custom_w"]["data"], 100)
         print("✅ DashboardManager test passed")
+
 
 if __name__ == "__main__":
     unittest.main()

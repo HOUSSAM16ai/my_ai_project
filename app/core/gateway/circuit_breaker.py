@@ -9,11 +9,13 @@ from enum import Enum
 
 logger = logging.getLogger(__name__)
 
+
 class CircuitState(Enum):
     CLOSED = "CLOSED"  # Normal operation
     OPEN = "OPEN"  # Failing, reject requests
     HALF_OPEN = "HALF_OPEN"  # Testing recovery
     SATURATED = "SATURATED"  # Rate limited, temporary backoff (V7.2)
+
 
 class CircuitBreaker:
     """

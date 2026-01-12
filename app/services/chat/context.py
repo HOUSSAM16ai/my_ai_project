@@ -1,6 +1,7 @@
 """
 Chat context for intent handlers.
 """
+
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
@@ -10,9 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 if TYPE_CHECKING:
     from app.core.protocols import AIClientProtocol
 
+
 @dataclass
 class ChatContext:
     """Context passed to intent handlers."""
+
     question: str
     user_id: int
     conversation_id: int

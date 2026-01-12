@@ -80,7 +80,8 @@ class ShellOperations:
             logger.info(f"Executing command: {command}")
             result = subprocess.run(
                 command,
-                check=False, shell=True,
+                check=False,
+                shell=True,
                 cwd=cwd,
                 timeout=timeout,
                 capture_output=True,

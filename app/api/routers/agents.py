@@ -69,7 +69,9 @@ async def create_agent_plan(
     """
     plan_record = await plan_service.create_plan(payload)
     registry.store(plan_record)
-    logger.info("Agent plan stored", extra={"user_id": current.user.id, "plan_id": plan_record.data.plan_id})
+    logger.info(
+        "Agent plan stored", extra={"user_id": current.user.id, "plan_id": plan_record.data.plan_id}
+    )
     return AgentsPlanResponse(status="success", data=plan_record.data)
 
 
@@ -93,5 +95,8 @@ async def get_agent_plan(
     plan_record = registry.get(plan_id)
     if plan_record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan not found")
-    logger.info("Agent plan retrieved", extra={"user_id": current.user.id, "plan_id": plan_record.data.plan_id})
+    logger.info(
+        "Agent plan retrieved",
+        extra={"user_id": current.user.id, "plan_id": plan_record.data.plan_id},
+    )
     return AgentsPlanResponse(status="success", data=plan_record.data)

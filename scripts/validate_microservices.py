@@ -18,6 +18,7 @@ GREEN = "\033[92m"
 YELLOW = "\033[93m"
 RESET = "\033[0m"
 
+
 def log(msg: str, color: str = RESET):
     print(f"{color}{msg}{RESET}")
 
@@ -90,7 +91,7 @@ def check_direct_imports():
                     if line.strip().startswith("#"):
                         continue
 
-                    violations.append(f"{path}:{i+1} -> {line.strip()}")
+                    violations.append(f"{path}:{i + 1} -> {line.strip()}")
 
     if violations:
         log("❌ Found Direct Import Violations (Rule 2):", RED)
@@ -115,6 +116,7 @@ def main():
         sys.exit(0)
     log("\n❌❌❌ COMPLIANCE FAILURES DETECTED. ❌❌❌", RED)
     sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -67,8 +67,7 @@ def _build_router(settings: OrchestratorSettings, registry: list[AgentEndpoint])
 
     @router.post("/orchestrator/tasks", response_model=TaskResponse)
     async def create_task(
-        description: str,
-        session: AsyncSession = Depends(get_session)
+        description: str, session: AsyncSession = Depends(get_session)
     ) -> TaskResponse:
         """Create a new task."""
         task = Task(description=description)
@@ -100,7 +99,7 @@ def create_app(settings: OrchestratorSettings | None = None) -> FastAPI:
         title="Orchestrator Service",
         version=effective_settings.SERVICE_VERSION,
         description="خدمة مستقلة لتنسيق الوكلاء عبر واجهات API",
-        lifespan=lifespan
+        lifespan=lifespan,
     )
 
     app.include_router(_build_router(effective_settings, registry))

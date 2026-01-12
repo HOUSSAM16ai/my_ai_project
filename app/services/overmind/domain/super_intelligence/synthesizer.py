@@ -62,8 +62,7 @@ class DecisionSynthesizer:
         decision.calculate_confidence()
 
         logger.info(
-            f"Decision synthesized: {decision.title} "
-            f"(confidence: {decision.confidence_score:.1f}%)"
+            f"Decision synthesized: {decision.title} (confidence: {decision.confidence_score:.1f}%)"
         )
 
         return decision

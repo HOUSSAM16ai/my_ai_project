@@ -43,11 +43,7 @@ class OrchestratorSettings(BaseServiceSettings):
         description="عنوان خدمة المستخدمين",
     )
 
-    model_config = SettingsConfigDict(
-        env_prefix="ORCHESTRATOR_",
-        env_file=".env",
-        extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_prefix="ORCHESTRATOR_", env_file=".env", extra="ignore")
 
 
 @functools.lru_cache(maxsize=1)

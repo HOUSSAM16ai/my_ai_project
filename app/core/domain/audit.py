@@ -2,6 +2,7 @@
 Audit Domain Models.
 Contains AuditLog, PromptTemplate, GeneratedPrompt.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -15,6 +16,7 @@ from app.core.domain.common import utc_now
 
 if TYPE_CHECKING:
     from app.core.domain.user import User
+
 
 class AuditLog(SQLModel, table=True):
     """
@@ -43,6 +45,7 @@ class AuditLog(SQLModel, table=True):
         sa_relationship=relationship("User", back_populates="audit_logs"),
     )
 
+
 class PromptTemplate(SQLModel, table=True):
     __tablename__ = "prompt_templates"
     id: int | None = Field(default=None, primary_key=True)
@@ -52,6 +55,7 @@ class PromptTemplate(SQLModel, table=True):
     generated_prompts: list[GeneratedPrompt] = Relationship(
         sa_relationship=relationship("GeneratedPrompt", back_populates="template")
     )
+
 
 class GeneratedPrompt(SQLModel, table=True):
     __tablename__ = "generated_prompts"

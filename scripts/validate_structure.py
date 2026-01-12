@@ -3,6 +3,7 @@ Pre-commit Structure Validation Script
 
 هذا السكريبت يفحص البنية قبل كل commit لمنع أخطاء المسافات البادئة
 """
+
 import ast
 import sys
 from pathlib import Path
@@ -18,12 +19,12 @@ class ServiceStructureValidator:
     def validate_file(self, filepath: Path) -> bool:
         """Validate a Python service file"""
         try:
-            with open(filepath, encoding='utf-8') as f:
+            with open(filepath, encoding="utf-8") as f:
                 tree = ast.parse(f.read(), filename=str(filepath))
 
             # Find service classes
             for node in ast.walk(tree):
-                if isinstance(node, ast.ClassDef) and node.name.endswith('Service'):
+                if isinstance(node, ast.ClassDef) and node.name.endswith("Service"):
                     self._validate_service_class(node, filepath)
 
             return len(self.errors) == 0
@@ -37,8 +38,10 @@ class ServiceStructureValidator:
         class_name = class_node.name
 
         # Get all methods in the class
-        methods = [n for n in class_node.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
-        public_methods = [m for m in methods if not m.name.startswith('_')]
+        methods = [
+            n for n in class_node.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+        ]
+        public_methods = [m for m in methods if not m.name.startswith("_")]
 
         if len(public_methods) < 3:
             self.warnings.append(
@@ -47,15 +50,13 @@ class ServiceStructureValidator:
             )
 
         # Check for proper __init__ method
-        init_methods = [m for m in methods if m.name == '__init__']
+        init_methods = [m for m in methods if m.name == "__init__"]
         if not init_methods:
-            self.warnings.append(
-                f"{filepath} - {class_name}: No __init__ method found"
-            )
+            self.warnings.append(f"{filepath} - {class_name}: No __init__ method found")
 
     def validate_indentation_consistency(self, filepath: Path) -> bool:
         """Validate indentation consistency in service files"""
-        with open(filepath, encoding='utf-8') as f:
+        with open(filepath, encoding="utf-8") as f:
             lines = f.readlines()
 
         in_class = False
@@ -68,10 +69,10 @@ class ServiceStructureValidator:
             indent = len(line) - len(stripped)
 
             # Detect class definition
-            if stripped.startswith('class ') and 'Service' in stripped:
+            if stripped.startswith("class ") and "Service" in stripped:
                 in_class = True
                 class_indent = indent
-                class_name = stripped.split('(')[0].replace('class ', '').strip()
+                class_name = stripped.split("(")[0].replace("class ", "").strip()
                 method_indent = None
                 continue
 
@@ -79,19 +80,21 @@ class ServiceStructureValidator:
                 continue
 
             # Detect method definitions inside class
-            if stripped.startswith(('def ', 'async def ')):
+            if stripped.startswith(("def ", "async def ")):
                 # Skip private helper functions (they're allowed at module level)
-                if indent == 0 and (stripped.startswith('def _') or stripped.startswith('async def _')):
+                if indent == 0 and (
+                    stripped.startswith("def _") or stripped.startswith("async def _")
+                ):
                     continue
 
                 # Skip singleton getter functions at module level (pattern: def get_xxx_service())
-                if indent == 0 and 'def get_' in stripped and '_service()' in stripped:
+                if indent == 0 and "def get_" in stripped and "_service()" in stripped:
                     continue
 
                 # Skip decorator functions at module level
-                if indent == 0 and stripped.startswith('def ') and '(' in stripped:
-                    func_name = stripped.split('(')[0].replace('def ', '').strip()
-                    if func_name in ['resilient', 'cached', 'retry', 'with_timeout']:
+                if indent == 0 and stripped.startswith("def ") and "(" in stripped:
+                    func_name = stripped.split("(")[0].replace("def ", "").strip()
+                    if func_name in ["resilient", "cached", "retry", "with_timeout"]:
                         continue
 
                 if method_indent is None and indent > class_indent:
@@ -111,7 +114,7 @@ class ServiceStructureValidator:
                     )
 
             # Check for class end
-            if stripped.startswith('class ') and indent == class_indent:
+            if stripped.startswith("class ") and indent == class_indent:
                 in_class = False
                 class_indent = None
                 method_indent = None
@@ -121,20 +124,20 @@ class ServiceStructureValidator:
     def print_report(self):
         """Print validation report"""
         if self.errors:
-            print("\n" + "="*80)
+            print("\n" + "=" * 80)
             print("❌ CRITICAL STRUCTURE ERRORS FOUND:")
-            print("="*80)
+            print("=" * 80)
             for error in self.errors:
                 print(f"  ❌ {error}")
-            print("="*80)
+            print("=" * 80)
 
         if self.warnings:
-            print("\n" + "="*80)
+            print("\n" + "=" * 80)
             print("⚠️  WARNINGS:")
-            print("="*80)
+            print("=" * 80)
             for warning in self.warnings:
                 print(f"  ⚠️  {warning}")
-            print("="*80)
+            print("=" * 80)
 
         if not self.errors and not self.warnings:
             print("✅ All structure validations passed!")

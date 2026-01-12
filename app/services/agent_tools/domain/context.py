@@ -7,7 +7,9 @@ from typing import Any
 from app.services.agent_tools.tool_model import Tool, ToolConfig
 
 
-async def context_awareness_handler(metadata: dict[str, Any] | None = None, **kwargs) -> dict[str, Any]:
+async def context_awareness_handler(
+    metadata: dict[str, Any] | None = None, **kwargs
+) -> dict[str, Any]:
     """
     Extracts context from the incoming request metadata.
     """
@@ -28,8 +30,9 @@ async def context_awareness_handler(metadata: dict[str, Any] | None = None, **kw
         "active_file": active_file,
         "cursor_line": cursor_line,
         "selection": selection,
-        "message": f"User is at {active_file}:{cursor_line}"
+        "message": f"User is at {active_file}:{cursor_line}",
     }
+
 
 class ContextAwarenessTool(Tool):
     """
@@ -42,6 +45,6 @@ class ContextAwarenessTool(Tool):
             description="Retrieves the user's current active file, line number, and selection.",
             category="context",
             aliases=["active_file", "current_context"],
-            handler=context_awareness_handler
+            handler=context_awareness_handler,
         )
         super().__init__(config)

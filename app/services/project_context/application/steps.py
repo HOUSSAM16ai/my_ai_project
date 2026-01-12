@@ -2,6 +2,7 @@
 Analysis Steps - Individual responsibilities
 Each step has single responsibility and low complexity (~2-3).
 """
+
 import ast
 
 from .context import AnalysisContext
@@ -22,6 +23,7 @@ class FileReadStep:
             context.add_error(f"Failed to read file: {e}")
         return context
 
+
 class ParseStep:
     """
     Parses Python code into AST.
@@ -41,6 +43,7 @@ class ParseStep:
         except Exception as e:
             context.add_error(f"Parse error: {e}")
         return context
+
 
 class ComplexityAnalysisStep:
     """
@@ -72,6 +75,7 @@ class ComplexityAnalysisStep:
             "functions": functions,
             "lines": lines,
         }
+
 
 class FormatStep:
     """

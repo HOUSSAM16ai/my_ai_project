@@ -27,7 +27,7 @@ class NetworkArtist:
         self,
         nodes: list[dict[str, Any]],
         edges: list[tuple[str, str]],
-        title: str = "Code Dependencies"
+        title: str = "Code Dependencies",
     ) -> str:
         """
         Create an artistic dependency web.
@@ -51,14 +51,12 @@ class NetworkArtist:
         svg = self._create_network_header(width, height, title)
 
         if not nodes:
-            return svg + '</svg>'
+            return svg + "</svg>"
 
-        node_positions = self._calculate_node_positions(
-            nodes, center_x, center_y, radius
-        )
+        node_positions = self._calculate_node_positions(nodes, center_x, center_y, radius)
         svg += self._draw_edges(edges, node_positions)
         svg += self._draw_nodes(nodes, node_positions)
-        svg += '</svg>'
+        svg += "</svg>"
 
         return svg
 
@@ -68,7 +66,7 @@ class NetworkArtist:
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
 
-            <text x="{width//2}" y="30"
+            <text x="{width // 2}" y="30"
                   text-anchor="middle"
                   fill="{self.palette.text}"
                   font-size="20"
@@ -76,11 +74,7 @@ class NetworkArtist:
         '''
 
     def _calculate_node_positions(
-        self,
-        nodes: list[dict[str, Any]],
-        center_x: int,
-        center_y: int,
-        radius: int
+        self, nodes: list[dict[str, Any]], center_x: int, center_y: int, radius: int
     ) -> dict[str, tuple[float, float]]:
         """Calculate node positions in a circle."""
         num_nodes = len(nodes)
@@ -100,9 +94,7 @@ class NetworkArtist:
         return node_positions
 
     def _draw_edges(
-        self,
-        edges: list[tuple[str, str]],
-        node_positions: dict[str, tuple[float, float]]
+        self, edges: list[tuple[str, str]], node_positions: dict[str, tuple[float, float]]
     ) -> str:
         """Draw connections between nodes."""
         svg = ""
@@ -121,16 +113,12 @@ class NetworkArtist:
         return svg
 
     def _draw_nodes(
-        self,
-        nodes: list[dict[str, Any]],
-        node_positions: dict[str, tuple[float, float]]
+        self, nodes: list[dict[str, Any]], node_positions: dict[str, tuple[float, float]]
     ) -> str:
         """Draw nodes with labels."""
         num_nodes = len(nodes)
         gradient = VisualTheme.create_gradient(
-            self.palette.primary,
-            self.palette.accent,
-            steps=num_nodes
+            self.palette.primary, self.palette.accent, steps=num_nodes
         )
 
         svg = ""

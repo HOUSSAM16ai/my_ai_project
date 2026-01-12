@@ -19,9 +19,8 @@ class ABTestTracker:
         result = self.ab_tests[variant]
         result.total_requests += 1
         result.avg_latency_ms = (
-            (result.avg_latency_ms * (result.total_requests - 1) + metric.latency_ms)
-            / result.total_requests
-        )
+            result.avg_latency_ms * (result.total_requests - 1) + metric.latency_ms
+        ) / result.total_requests
 
     def results_by_name(self) -> dict[str, ABTestResult]:
         """يعيد النتائج مع مفاتيح نصية توافق واجهات العرض."""

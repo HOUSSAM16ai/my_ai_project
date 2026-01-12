@@ -60,10 +60,14 @@ async def test_tool_access_blocked_and_logged(test_app, db_session) -> None:
             assert "لا يمكنني" in refusal_text
 
         audit_entries = (
-            await db_session.execute(
-                select(AuditLog).where(AuditLog.action == "TOOL_ACCESS_BLOCKED")
+            (
+                await db_session.execute(
+                    select(AuditLog).where(AuditLog.action == "TOOL_ACCESS_BLOCKED")
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         assert len(audit_entries) == 1
     finally:
         test_app.dependency_overrides.clear()

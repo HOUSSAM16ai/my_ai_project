@@ -9,6 +9,7 @@
 - **Strict Typing**: استخدام أنواع محددة وتجنب `Any`.
 - **Fail Fast**: التحقق المبكر من صحة البيانات والصلاحيات.
 """
+
 from __future__ import annotations
 
 import logging
@@ -21,6 +22,7 @@ from app.core.domain.user import User
 from app.core.prompts import get_system_prompt
 
 logger = logging.getLogger(__name__)
+
 
 class AdminChatPersistence:
     """
@@ -115,7 +117,9 @@ class AdminChatPersistence:
         await self.db.commit()
         return message
 
-    async def get_chat_history(self, conversation_id: int, limit: int = 20) -> list[dict[str, object]]:
+    async def get_chat_history(
+        self, conversation_id: int, limit: int = 20
+    ) -> list[dict[str, object]]:
         """
         استرجاع تاريخ المحادثة بتنسيق جاهز للنموذج (LLM).
 
@@ -136,7 +140,9 @@ class AdminChatPersistence:
         history_messages = list(result.scalars().all())
         history_messages.reverse()
 
-        messages: list[dict[str, object]] = [{"role": "system", "content": await get_system_prompt()}]
+        messages: list[dict[str, object]] = [
+            {"role": "system", "content": await get_system_prompt()}
+        ]
         for msg in history_messages:
             messages.append({"role": msg.role.value, "content": msg.content})
 

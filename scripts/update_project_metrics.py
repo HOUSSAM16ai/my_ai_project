@@ -17,12 +17,13 @@ def main():
     # Run the quality metrics script
     result = subprocess.run(
         ["python", "scripts/quality_metrics.py", "--json"],
-        check=False, capture_output=True,
-        text=True
+        check=False,
+        capture_output=True,
+        text=True,
     )
 
     output = result.stdout
-    json_start = output.find('{')
+    json_start = output.find("{")
 
     if json_start == -1:
         print("❌ Failed to find JSON in output")
@@ -80,6 +81,7 @@ def main():
     print("------------------------------------------------")
     print(content)
     print("------------------------------------------------")
+
 
 if __name__ == "__main__":
     main()

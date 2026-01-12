@@ -35,6 +35,7 @@ class EncryptionStatistics(TypedDict):
     current_key_id: str | None
     oldest_key: datetime | None
 
+
 class QuantumSafeEncryption:
     """
     التشفير المقاوم للكم - Quantum-Safe Encryption
@@ -86,7 +87,6 @@ class QuantumSafeEncryption:
         # Layer 1: Fernet decrypt
         return self.fernet.decrypt(decrypted)
 
-
     def _xor_encrypt(self, data: bytes, key: bytes) -> bytes:
         """طبقة XOR المساعدة كمحاكاة لخوارزمية كمومية مستقبلية."""
         # Extend key to match data length
@@ -128,7 +128,7 @@ class QuantumSafeEncryption:
     def get_statistics(self) -> EncryptionStatistics:
         """يقدم إحصائيات إدارة المفاتيح بصورة مضبوطة الأنواع."""
         return {
-            'total_keys': len(self.keys),
-            'current_key_id': self.current_key_id,
-            'oldest_key': min((k.created_at for k in self.keys.values()), default=None),
+            "total_keys": len(self.keys),
+            "current_key_id": self.current_key_id,
+            "oldest_key": min((k.created_at for k in self.keys.values()), default=None),
         }

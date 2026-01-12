@@ -28,10 +28,12 @@ def get_project_context_service() -> ProjectContextService:
     """Factory to get the singleton instance of ProjectContextService."""
     return ProjectContextService()
 
+
 async def get_project_context_for_ai() -> dict:
     """Convenience function to get AI-ready context summary."""
     service = get_project_context_service()
     return await service.get_ai_context_summary()
+
 
 __all__ = [
     "CodeStatistics",

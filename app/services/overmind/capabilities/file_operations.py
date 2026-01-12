@@ -106,9 +106,7 @@ class FileOperations:
             raise ValueError(f"Unsafe path: {path}")
 
         if path.exists() and not overwrite:
-            raise FileExistsError(
-                f"File already exists: {path}. Use overwrite=True to replace it."
-            )
+            raise FileExistsError(f"File already exists: {path}. Use overwrite=True to replace it.")
 
         path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -129,8 +127,7 @@ class FileOperations:
 
         if old_text not in content:
             raise ValueError(
-                f"Old text not found in file: {file_path}\n"
-                f"Looking for: {old_text[:100]}..."
+                f"Old text not found in file: {file_path}\nLooking for: {old_text[:100]}..."
             )
 
         new_content = content.replace(old_text, new_text)

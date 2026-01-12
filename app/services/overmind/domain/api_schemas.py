@@ -22,12 +22,13 @@ from app.core.schemas import RobustBaseModel
 
 class MissionStatusEnum(str, Enum):
     """حالات المهمة الممكنة."""
+
     # Ensure values match app.models.MissionStatus (lowercase)
     PENDING = "pending"
     PLANNING = "planning"
     PLANNED = "planned"
     RUNNING = "running"
-    PAUSED = "paused" # Not in DB yet? DB has ADAPTING.
+    PAUSED = "paused"  # Not in DB yet? DB has ADAPTING.
     ADAPTING = "adapting"
     SUCCESS = "success"
     FAILED = "failed"
@@ -35,45 +36,67 @@ class MissionStatusEnum(str, Enum):
     # Backwards compatibility if needed, or to handle mixed case
     # Pydantic 2 Enums are strict by default on value
 
+
 class StepStatusEnum(str, Enum):
     """حالات خطوة التنفيذ."""
+
     # Aligned with app.models.TaskStatus
     PENDING = "pending"
     RUNNING = "running"
-    COMPLETED = "success" # DB uses success
+    COMPLETED = "success"  # DB uses success
     SUCCESS = "success"
     FAILED = "failed"
     SKIPPED = "skipped"
     RETRY = "retry"
 
+
 class MissionStepResponse(RobustBaseModel):
     """
     نموذج استجابة لخطوة واحدة داخل المهمة (Task).
     """
+
     id: int | None = Field(None, description="معرف الخطوة")
-    name: str = Field(..., validation_alias=AliasChoices("task_key", "name"), description="اسم الخطوة أو الإجراء")
+    name: str = Field(
+        ..., validation_alias=AliasChoices("task_key", "name"), description="اسم الخطوة أو الإجراء"
+    )
     description: str | None = Field(None, description="وصف تفصيلي للخطوة")
     status: StepStatusEnum = Field(StepStatusEnum.PENDING, description="حالة الخطوة الحالية")
-    result: str | None = Field(None, validation_alias=AliasChoices("result_text", "result"), description="نتيجة تنفيذ الخطوة")
-    tool_used: str | None = Field(None, validation_alias=AliasChoices("tool_name", "tool_used"), description="اسم الأداة المستخدمة إن وجد")
+    result: str | None = Field(
+        None,
+        validation_alias=AliasChoices("result_text", "result"),
+        description="نتيجة تنفيذ الخطوة",
+    )
+    tool_used: str | None = Field(
+        None,
+        validation_alias=AliasChoices("tool_name", "tool_used"),
+        description="اسم الأداة المستخدمة إن وجد",
+    )
     created_at: datetime = Field(..., description="توقيت إنشاء الخطوة")
-    completed_at: datetime | None = Field(None, validation_alias=AliasChoices("finished_at", "completed_at"), description="توقيت اكتمال الخطوة")
+    completed_at: datetime | None = Field(
+        None,
+        validation_alias=AliasChoices("finished_at", "completed_at"),
+        description="توقيت اكتمال الخطوة",
+    )
+
 
 class MissionCreate(RobustBaseModel):
     """
     نموذج إنشاء مهمة جديدة.
     يطلب هذا النموذج الهدف الأساسي والسياق الاختياري.
     """
+
     objective: str = Field(..., min_length=5, max_length=5000, description="الهدف الرئيسي للمهمة")
     context: dict[str, str | int | float | bool | None] = Field(
         default_factory=dict, description="سياق إضافي للمهمة (مثل بيئة العمل، قيود)"
     )
     priority: int = Field(1, ge=1, le=5, description="أولوية المهمة (1-5)")
 
+
 class MissionResponse(RobustBaseModel):
     """
     نموذج الاستجابة الكاملة للمهمة.
     """
+
     id: int = Field(..., description="معرف المهمة الفريد")
     objective: str = Field(..., description="الهدف الرئيسي")
     status: MissionStatusEnum = Field(..., description="الحالة العامة للمهمة")
@@ -87,13 +110,15 @@ class MissionResponse(RobustBaseModel):
     steps: list[MissionStepResponse] = Field(
         default_factory=list,
         validation_alias=AliasChoices("tasks", "steps"),
-        description="قائمة خطوات التنفيذ"
+        description="قائمة خطوات التنفيذ",
     )
+
 
 class MissionEventResponse(RobustBaseModel):
     """
     نموذج لحدث واحد في تدفق البث (SSE).
     """
+
     event_type: str = Field(..., description="نوع الحدث (مثلاً: step_start, log, completion)")
     mission_id: int = Field(..., description="معرف المهمة")
     timestamp: datetime = Field(default_factory=lambda: datetime.now(), description="توقيت الحدث")

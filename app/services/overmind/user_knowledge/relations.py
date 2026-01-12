@@ -37,9 +37,12 @@ async def get_user_relations(session: AsyncSession, user_id: int) -> dict[str, o
         relations = {}
 
         # المهام الأخيرة (Recent Missions)
-        missions_query = select(Mission).where(
-            Mission.initiator_id == user_id
-        ).order_by(Mission.created_at.desc()).limit(5)
+        missions_query = (
+            select(Mission)
+            .where(Mission.initiator_id == user_id)
+            .order_by(Mission.created_at.desc())
+            .limit(5)
+        )
 
         missions_result = await session.execute(missions_query)
         missions = missions_result.scalars().all()
@@ -48,8 +51,8 @@ async def get_user_relations(session: AsyncSession, user_id: int) -> dict[str, o
             {
                 "id": m.id,
                 "objective": m.objective,
-                "status": m.status.value if hasattr(m.status, 'value') else str(m.status),
-                "created_at": m.created_at.isoformat() if hasattr(m, 'created_at') else None,
+                "status": m.status.value if hasattr(m.status, "value") else str(m.status),
+                "created_at": m.created_at.isoformat() if hasattr(m, "created_at") else None,
             }
             for m in missions
         ]
@@ -69,9 +72,9 @@ async def get_user_relations(session: AsyncSession, user_id: int) -> dict[str, o
         relations["recent_messages"] = [
             {
                 "id": msg.id,
-                "role": msg.role if hasattr(msg, 'role') else "user",
+                "role": msg.role if hasattr(msg, "role") else "user",
                 "content": msg.content[:100] + "..." if len(msg.content) > 100 else msg.content,
-                "created_at": msg.created_at.isoformat() if hasattr(msg, 'created_at') else None,
+                "created_at": msg.created_at.isoformat() if hasattr(msg, "created_at") else None,
             }
             for msg in messages
         ]

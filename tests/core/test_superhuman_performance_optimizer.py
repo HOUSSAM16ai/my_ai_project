@@ -17,10 +17,14 @@ def test_request_telemetry_validation() -> None:
         RequestTelemetry(model_id="model-alpha", success=True, latency_ms=-1.0).ensure_valid()
 
     with pytest.raises(ValueError):
-        RequestTelemetry(model_id="model-alpha", success=True, latency_ms=1.0, tokens=-2).ensure_valid()
+        RequestTelemetry(
+            model_id="model-alpha", success=True, latency_ms=1.0, tokens=-2
+        ).ensure_valid()
 
     with pytest.raises(ValueError):
-        RequestTelemetry(model_id="model-alpha", success=True, latency_ms=1.0, quality_score=1.5).ensure_valid()
+        RequestTelemetry(
+            model_id="model-alpha", success=True, latency_ms=1.0, quality_score=1.5
+        ).ensure_valid()
 
 
 def test_record_request_updates_metrics() -> None:

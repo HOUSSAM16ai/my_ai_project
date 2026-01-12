@@ -52,7 +52,7 @@ class NamespacedCache(CacheBackend):
     def _strip_prefix(self, key: str) -> str:
         """إزالة بادئة Namespace لإرجاع المفاتيح بصيغة منطقية."""
         if key.startswith(self._prefix):
-            return key[len(self._prefix):]
+            return key[len(self._prefix) :]
         return key
 
     async def get(self, key: str) -> object | None:

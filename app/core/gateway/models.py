@@ -9,6 +9,7 @@
 - Documentation: توثيق عربي احترافي يشرح الغرض من كل نموذج.
 - Abstraction: فصل تعريف البيانات عن المنطق التنفيذي.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

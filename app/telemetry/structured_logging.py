@@ -30,7 +30,7 @@ class LoggingManager:
         self.logs_buffer: deque[CorrelatedLog] = deque(maxlen=50000)
         self.trace_logs: dict[str, list[CorrelatedLog]] = defaultdict(list)
         self.lock = threading.RLock()
-        self.stats = {'logs_recorded': 0}
+        self.stats = {"logs_recorded": 0}
 
     def log(self, record: LogRecord) -> None:
         """يسجل رسالة واحدة باستخدام حمولة مهيكلة بدلاً من معلمات متعددة."""
@@ -45,13 +45,13 @@ class LoggingManager:
         )
         if record.exception:
             log_entry.exception = {
-                'type': type(record.exception).__name__,
-                'message': str(record.exception),
+                "type": type(record.exception).__name__,
+                "message": str(record.exception),
             }
 
         with self.lock:
             self.logs_buffer.append(log_entry)
-            self.stats['logs_recorded'] += 1
+            self.stats["logs_recorded"] += 1
             if record.trace_id:
                 self.trace_logs[record.trace_id].append(log_entry)
 

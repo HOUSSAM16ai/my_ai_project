@@ -16,22 +16,28 @@ RED = "\033[91m"
 BLUE = "\033[94m"
 RESET = "\033[0m"
 
+
 def print_header(text):
     print(f"\n{BLUE}{'=' * 70}{RESET}")
     print(f"{BLUE}{text.center(70)}{RESET}")
     print(f"{BLUE}{'=' * 70}{RESET}\n")
 
+
 def print_success(text):
     print(f"{GREEN}✅ {text}{RESET}")
+
 
 def print_warning(text):
     print(f"{YELLOW}⚠️  {text}{RESET}")
 
+
 def print_error(text):
     print(f"{RED}❌ {text}{RESET}")
 
+
 def print_info(text):
     print(f"{BLUE}ℹ️  {text}{RESET}")
+
 
 print_header("GitLab Sync Comprehensive Diagnostic")
 print_info(f"Diagnostic Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -42,6 +48,7 @@ all_ok = True
 print_header("Test 1: Sync Script Validation")
 try:
     import sys
+
     sys.path.insert(0, ".")
     print_success("Sync script imports successfully")
     print_success("check_workload_identity() function available")
@@ -73,7 +80,9 @@ try:
         print_warning("GitHub remote not found")
 
     # Check current branch
-    result = subprocess.run(["git", "branch", "--show-current"], capture_output=True, text=True, check=True)
+    result = subprocess.run(
+        ["git", "branch", "--show-current"], capture_output=True, text=True, check=True
+    )
     branch = result.stdout.strip()
     if branch:
         print_success(f"Current branch: {branch}")

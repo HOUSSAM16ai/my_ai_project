@@ -114,7 +114,9 @@ def inspect_file(file_path: Path) -> DocstringReport:
     )
 
 
-def inspect_design(file_path: Path, max_lines: int, max_complexity: int) -> tuple[DesignReport, list[FunctionObservation]]:
+def inspect_design(
+    file_path: Path, max_lines: int, max_complexity: int
+) -> tuple[DesignReport, list[FunctionObservation]]:
     """يفحص التوازن التصميمي للتوابع ضمن الملف وفق مبادئ SOLID/KISS/DRY."""
 
     source_text = file_path.read_text(encoding="utf-8")
@@ -231,7 +233,9 @@ def _function_fingerprint(node: ast.AST, source_text: str) -> str | None:
     return "|".join(normalized_lines)
 
 
-def _register_fingerprints(registry: dict[str, list[str]], observations: list[FunctionObservation]) -> None:
+def _register_fingerprints(
+    registry: dict[str, list[str]], observations: list[FunctionObservation]
+) -> None:
     """يحفظ البصمات المكررة لتقييم مبدأ DRY عبر المشروع."""
 
     for observation in observations:
@@ -251,7 +255,9 @@ def build_summary(files: list[Path], max_lines: int, max_complexity: int) -> Aud
 
     for path in files:
         doc_report = inspect_file(path)
-        design_report, observations = inspect_design(path, max_lines=max_lines, max_complexity=max_complexity)
+        design_report, observations = inspect_design(
+            path, max_lines=max_lines, max_complexity=max_complexity
+        )
         docstring_reports.append(doc_report)
         design_reports.append(design_report)
         _register_fingerprints(fingerprints, observations)
@@ -369,9 +375,15 @@ def parse_arguments() -> argparse.Namespace:
     """يحلل خيارات سطر الأوامر لتهيئة معلمات التدقيق."""
 
     parser = argparse.ArgumentParser(description="تدقيق شامل للتوثيق وتعليقات الأنواع")
-    parser.add_argument("--root", type=Path, default=Path.cwd(), help="مسار جذر المشروع المراد فحصه")
-    parser.add_argument("--limit", type=int, default=20, help="عدد الملفات التي سيتم عرض تفاصيلها (0 لإظهار الجميع)")
-    parser.add_argument("--max-lines", type=int, default=80, help="أقصى طول للتوابع قبل اعتبارها مخالفة لمبدأ KISS")
+    parser.add_argument(
+        "--root", type=Path, default=Path.cwd(), help="مسار جذر المشروع المراد فحصه"
+    )
+    parser.add_argument(
+        "--limit", type=int, default=20, help="عدد الملفات التي سيتم عرض تفاصيلها (0 لإظهار الجميع)"
+    )
+    parser.add_argument(
+        "--max-lines", type=int, default=80, help="أقصى طول للتوابع قبل اعتبارها مخالفة لمبدأ KISS"
+    )
     parser.add_argument(
         "--max-complexity",
         type=int,
@@ -389,7 +401,9 @@ def main() -> None:
     limit = arguments.limit if arguments.limit != 0 else None
 
     files = gather_python_files(target_root)
-    summary = build_summary(files, max_lines=arguments.max_lines, max_complexity=arguments.max_complexity)
+    summary = build_summary(
+        files, max_lines=arguments.max_lines, max_complexity=arguments.max_complexity
+    )
     report_text = render_report(summary, limit)
     print(report_text)
 

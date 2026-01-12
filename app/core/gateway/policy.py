@@ -7,6 +7,7 @@ from .models import PolicyRule
 
 logger = logging.getLogger(__name__)
 
+
 class PolicyEngine:
     """
     محرك تنفيذ السياسات - Policy enforcement engine

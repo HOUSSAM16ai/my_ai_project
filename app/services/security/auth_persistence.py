@@ -15,6 +15,7 @@ from app.core.domain.user import User
 
 logger = logging.getLogger(__name__)
 
+
 class AuthPersistence:
     """
     Encapsulates all Data Access Logic for Authentication.
@@ -38,7 +39,9 @@ class AuthPersistence:
         """
         return await self.db.get(User, user_id)
 
-    async def create_user(self, full_name: str, email: str, password: str, is_admin: bool = False) -> User:
+    async def create_user(
+        self, full_name: str, email: str, password: str, is_admin: bool = False
+    ) -> User:
         """
         Create a new user in the database.
         """

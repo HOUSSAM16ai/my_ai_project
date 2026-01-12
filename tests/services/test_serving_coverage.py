@@ -24,9 +24,11 @@ from app.services.serving.infrastructure.metrics_collector import MetricsCollect
 
 # --- Fixtures ---
 
+
 @pytest.fixture
 def mock_registry():
     return MagicMock(spec=ModelRegistry)
+
 
 @pytest.fixture
 def model_version():
@@ -37,10 +39,12 @@ def model_version():
         model_type=ModelType.LANGUAGE_MODEL,
         status=ModelStatus.READY,
         parameters={},
-        metadata={"description": "test", "file_path": "/tmp/model"}
+        metadata={"description": "test", "file_path": "/tmp/model"},
     )
 
+
 # --- ABTestEngine Tests ---
+
 
 def test_ab_test_engine(mock_registry):
     engine = ABTestEngine(mock_registry)
@@ -57,25 +61,23 @@ def test_ab_test_engine(mock_registry):
     assert config.model_b_percentage == 40.0
 
     # Analyze Test
-    mock_metrics_getter = MagicMock(side_effect=lambda mid: {
-        "avg_latency": 100 if mid == "model-a" else 200,
-        "total_cost": 1.0
-    })
+    mock_metrics_getter = MagicMock(
+        side_effect=lambda mid: {"avg_latency": 100 if mid == "model-a" else 200, "total_cost": 1.0}
+    )
 
     result = engine.analyze_ab_test(test_id, mock_metrics_getter)
-    assert result["winner"] == "A" # Lower latency wins by default
+    assert result["winner"] == "A"  # Lower latency wins by default
     assert result["test_id"] == test_id
 
     # Test Not Found
-    assert engine.analyze_ab_test("invalid", mock_metrics_getter) == {'error': 'Test not found'}
+    assert engine.analyze_ab_test("invalid", mock_metrics_getter) == {"error": "Test not found"}
     assert engine.get_ab_test_status("invalid") is None
 
     # Test Cost Metric
     config.success_metric = "cost"
-    mock_metrics_getter_cost = MagicMock(side_effect=lambda mid: {
-        "avg_latency": 100,
-        "total_cost": 2.0 if mid == "model-a" else 1.0
-    })
+    mock_metrics_getter_cost = MagicMock(
+        side_effect=lambda mid: {"avg_latency": 100, "total_cost": 2.0 if mid == "model-a" else 1.0}
+    )
     result_cost = engine.analyze_ab_test(test_id, mock_metrics_getter_cost)
     assert result_cost["winner"] == "B"
 
@@ -87,6 +89,7 @@ def test_ab_test_engine(mock_registry):
 
 # --- EnsembleRouter Tests ---
 
+
 def test_ensemble_router():
     router = EnsembleRouter()
 
@@ -95,18 +98,56 @@ def test_ensemble_router():
     assert ensemble_id is not None
 
     # Test Aggregations
-    r1 = ModelResponse(request_id="1", model_id="m1", version_id="v1", output_data="yes", latency_ms=10, success=True, tokens_used=10, cost_usd=0.01)
-    r2 = ModelResponse(request_id="1", model_id="m2", version_id="v1", output_data="yes", latency_ms=10, success=True, tokens_used=10, cost_usd=0.01)
-    r3 = ModelResponse(request_id="1", model_id="m3", version_id="v1", output_data="no", latency_ms=10, success=True, tokens_used=10, cost_usd=0.01)
-    r_fail = ModelResponse(request_id="1", model_id="m4", version_id="v1", output_data=None, latency_ms=0, success=False)
+    r1 = ModelResponse(
+        request_id="1",
+        model_id="m1",
+        version_id="v1",
+        output_data="yes",
+        latency_ms=10,
+        success=True,
+        tokens_used=10,
+        cost_usd=0.01,
+    )
+    r2 = ModelResponse(
+        request_id="1",
+        model_id="m2",
+        version_id="v1",
+        output_data="yes",
+        latency_ms=10,
+        success=True,
+        tokens_used=10,
+        cost_usd=0.01,
+    )
+    r3 = ModelResponse(
+        request_id="1",
+        model_id="m3",
+        version_id="v1",
+        output_data="no",
+        latency_ms=10,
+        success=True,
+        tokens_used=10,
+        cost_usd=0.01,
+    )
+    r_fail = ModelResponse(
+        request_id="1",
+        model_id="m4",
+        version_id="v1",
+        output_data=None,
+        latency_ms=0,
+        success=False,
+    )
 
     # Voting
     assert router._voting_aggregation([r1, r2, r3, r_fail]) == "yes"
     assert router._voting_aggregation([r_fail]) is None
 
     # Averaging
-    r_num1 = ModelResponse(request_id="1", model_id="m1", version_id="v1", output_data=10, latency_ms=10, success=True)
-    r_num2 = ModelResponse(request_id="1", model_id="m2", version_id="v1", output_data=20, latency_ms=10, success=True)
+    r_num1 = ModelResponse(
+        request_id="1", model_id="m1", version_id="v1", output_data=10, latency_ms=10, success=True
+    )
+    r_num2 = ModelResponse(
+        request_id="1", model_id="m2", version_id="v1", output_data=20, latency_ms=10, success=True
+    )
     avg_res = router._averaging_aggregation([r_num1, r_num2])
     assert avg_res["averaged_results"] == [10, 20]
 
@@ -121,7 +162,9 @@ def test_ensemble_router():
     assert final.cost_usd == 0.03
     assert final.tokens_used == 30
 
+
 # --- ModelInvoker Tests ---
+
 
 def test_model_invoker(model_version):
     invoker = ModelInvoker()
@@ -146,7 +189,7 @@ def test_model_invoker(model_version):
 
     # Test Exception during invoke
     model_version.status = ModelStatus.READY
-    with patch.object(invoker, '_invoke_model', side_effect=Exception("Boom")):
+    with patch.object(invoker, "_invoke_model", side_effect=Exception("Boom")):
         resp = invoker.serve_request(model_version, {})
         assert resp.success is False
         assert resp.error == "Boom"
@@ -154,12 +197,15 @@ def test_model_invoker(model_version):
     # Test Cost Calc & Metrics
     mock_calc = MagicMock(return_value=0.05)
     mock_updater = MagicMock()
-    resp = invoker.serve_request(model_version, {"prompt": "hi"}, cost_calculator=mock_calc, metrics_updater=mock_updater)
+    resp = invoker.serve_request(
+        model_version, {"prompt": "hi"}, cost_calculator=mock_calc, metrics_updater=mock_updater
+    )
     assert resp.cost_usd == 0.05
     mock_updater.assert_called_once()
 
 
 # --- ShadowDeploymentManager Tests ---
+
 
 def test_shadow_deployment_manager():
     manager = ShadowDeploymentManager()
@@ -174,12 +220,22 @@ def test_shadow_deployment_manager():
 
     # Populate comparisons manually
     with manager._lock:
-        manager._shadow_deployments[sid].comparison_results.append({
-            "primary_latency": 100, "shadow_latency": 200, "primary_success": True, "shadow_success": True
-        })
-        manager._shadow_deployments[sid].comparison_results.append({
-            "primary_latency": 300, "shadow_latency": 200, "primary_success": True, "shadow_success": True
-        })
+        manager._shadow_deployments[sid].comparison_results.append(
+            {
+                "primary_latency": 100,
+                "shadow_latency": 200,
+                "primary_success": True,
+                "shadow_success": True,
+            }
+        )
+        manager._shadow_deployments[sid].comparison_results.append(
+            {
+                "primary_latency": 300,
+                "shadow_latency": 200,
+                "primary_success": True,
+                "shadow_success": True,
+            }
+        )
 
     stats = manager.get_shadow_deployment_stats(sid)
     assert stats["total_comparisons"] == 2
@@ -188,7 +244,9 @@ def test_shadow_deployment_manager():
 
     assert manager.get_shadow_deployment_stats("invalid") is None
 
+
 # --- MetricsCollector Tests ---
+
 
 def test_metrics_collector(model_version):
     collector = MetricsCollector()
@@ -198,19 +256,23 @@ def test_metrics_collector(model_version):
     assert cost >= 0.001
 
     # Update Metrics
-    resp = ModelResponse(request_id="1", model_id="m", version_id="v", output_data="", latency_ms=10, success=True)
-    collector.update_metrics("v", resp) # Should not crash
+    resp = ModelResponse(
+        request_id="1", model_id="m", version_id="v", output_data="", latency_ms=10, success=True
+    )
+    collector.update_metrics("v", resp)  # Should not crash
 
     # Get Metrics
     metrics = collector.get_all_metrics("v")
     assert isinstance(metrics, list)
 
-    collector.collect_all_metrics() # Should not crash
+    collector.collect_all_metrics()  # Should not crash
+
 
 # --- ModelRegistry Tests ---
 
+
 def test_model_registry(model_version):
-    registry = ModelRegistry() # Uses InMemoryModelRepository by default
+    registry = ModelRegistry()  # Uses InMemoryModelRepository by default
 
     # Register
     assert registry.register_model(model_version) is True
@@ -247,7 +309,9 @@ def test_model_registry(model_version):
     # The registry starts a thread. We can sleep briefly or check logs if we had log capture.
     # Since we manually manipulated status above, let's just trust the thread logic is triggered.
 
+
 # --- InferenceRouter Tests ---
+
 
 def test_inference_router(model_version):
     registry = ModelRegistry()
@@ -282,12 +346,14 @@ def test_inference_router(model_version):
     # Invoker Error
     model_version.status = ModelStatus.READY
     registry._repository.update(model_version)
-    with patch.object(router._invoker, 'invoke', side_effect=Exception("Fail")):
+    with patch.object(router._invoker, "invoke", side_effect=Exception("Fail")):
         resp_err = router.serve_request("gpt-4", {})
         assert resp_err.success is False
         assert "Inference failed" in resp_err.error
 
+
 # --- InMemoryRepository Tests ---
+
 
 def test_in_memory_repos(model_version):
     # Model Repo
@@ -297,11 +363,17 @@ def test_in_memory_repos(model_version):
     assert len(repo.list_all()) == 1
     assert repo.delete(model_version.version_id) is True
     assert repo.get(model_version.version_id) is None
-    assert repo.update(model_version) is False # Deleted
+    assert repo.update(model_version) is False  # Deleted
 
     # Metrics Repo
     m_repo = InMemoryMetricsRepository()
-    metric = ModelMetrics(version_id="v1", total_requests=10, successful_requests=10, avg_latency_ms=100.0, cost_usd=0.01)
+    metric = ModelMetrics(
+        version_id="v1",
+        total_requests=10,
+        successful_requests=10,
+        avg_latency_ms=100.0,
+        cost_usd=0.01,
+    )
     m_repo.record(metric)
 
     recent = m_repo.get_recent("v1")
@@ -314,7 +386,9 @@ def test_in_memory_repos(model_version):
     empty_summary = m_repo.get_summary("v2")
     assert empty_summary["total_requests"] == 0
 
+
 # --- ExperimentManager Tests ---
+
 
 def test_experiment_manager(model_version):
     registry = ModelRegistry()
@@ -330,7 +404,7 @@ def test_experiment_manager(model_version):
         model_type=ModelType.LANGUAGE_MODEL,
         status=ModelStatus.READY,
         parameters={},
-        metadata={}
+        metadata={},
     )
     registry.register_model(model_v2)
     model_v2.status = ModelStatus.READY
@@ -356,11 +430,13 @@ def test_experiment_manager(model_version):
     assert manager.get_shadow_deployment(shadow_id) is not None
 
     # Analyze A/B (Mock metrics)
-    with patch('app.services.serving.infrastructure.in_memory_repository.InMemoryMetricsRepository.get_summary') as mock_get:
+    with patch(
+        "app.services.serving.infrastructure.in_memory_repository.InMemoryMetricsRepository.get_summary"
+    ) as mock_get:
         mock_get.side_effect = lambda vid: {
             "avg_latency": 100 if vid == "v1" else 200,
             "total_cost": 1.0,
-            "success_rate": 100.0
+            "success_rate": 100.0,
         }
         res = manager.analyze_ab_test(test_id)
         assert res["winner"] == "A"
@@ -371,7 +447,7 @@ def test_experiment_manager(model_version):
     # Auto-end (Testing logic, not thread wait)
     # The auto_end thread runs time.sleep, skipping it for unit test speed.
     # But we can verify _auto_end_test logic safely:
-    with patch.object(manager, 'analyze_ab_test') as mock_analyze:
-        with patch('time.sleep'):
+    with patch.object(manager, "analyze_ab_test") as mock_analyze:
+        with patch("time.sleep"):
             manager._auto_end_test(test_id, 1)
             mock_analyze.assert_called_with(test_id)

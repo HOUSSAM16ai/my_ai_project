@@ -33,7 +33,9 @@ class BaseService:
         """تسجيل رسالة معلومات."""
         self._logger.info(message, extra=kwargs)
 
-    def _log_error(self, message: str, exc: Exception | None = None, **kwargs: dict[str, str | int | bool]) -> None:
+    def _log_error(
+        self, message: str, exc: Exception | None = None, **kwargs: dict[str, str | int | bool]
+    ) -> None:
         """تسجيل رسالة خطأ."""
         if exc:
             self._logger.error(message, exc_info=exc, extra=kwargs)

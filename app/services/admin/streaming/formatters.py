@@ -1,4 +1,5 @@
 """مهيئات تدفق Server-Sent Events لضمان فصل التقديم عن المنطق."""
+
 from __future__ import annotations
 
 import json
@@ -19,7 +20,9 @@ class StreamFormatter(Protocol):
 class EventFormatter(Protocol):
     """بروتوكول لتنسيق أحداث SSE العامة مع اسم الحدث والبيانات."""
 
-    def format_event(self, event_type: str, payload: dict[str, str | int | float | bool]) -> str:  # pragma: no cover - بروتوكول
+    def format_event(
+        self, event_type: str, payload: dict[str, str | int | float | bool]
+    ) -> str:  # pragma: no cover - بروتوكول
         """يحزم الحدث في شكل SSE قياسي."""
 
 

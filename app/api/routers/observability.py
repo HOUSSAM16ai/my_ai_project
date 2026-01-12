@@ -5,6 +5,7 @@
 يوفر نقاط نهاية للمراقبة الموحدة ويعتمد على خدمات الحدود لعزل المنطق وتبسيط
 طبقة العرض وفق مبادئ البنية النظيفة.
 """
+
 from fastapi import APIRouter, Depends
 
 from app.api.schemas.observability import (
@@ -20,9 +21,11 @@ from app.services.boundaries.observability_boundary_service import Observability
 
 router = APIRouter(tags=["Observability"])
 
+
 def get_observability_service() -> ObservabilityBoundaryService:
     """تبعية لاسترجاع خدمة المراقبة الحدية الموحدة."""
     return ObservabilityBoundaryService()
+
 
 @router.get(
     "/health",
@@ -39,6 +42,7 @@ async def health_check(
     result = await service.get_system_health()
     return HealthResponse.model_validate(result)
 
+
 @router.get(
     "/metrics",
     summary="Get Golden Signals",
@@ -52,6 +56,7 @@ async def get_metrics(
     """
     result = await service.get_golden_signals()
     return GoldenSignalsResponse.model_validate(result)
+
 
 @router.get(
     "/aiops",
@@ -67,6 +72,7 @@ async def get_aiops_metrics(
     result = await service.get_aiops_metrics()
     return AIOpsMetricsResponse.model_validate(result)
 
+
 @router.get(
     "/gitops",
     summary="Get GitOps Status",
@@ -79,6 +85,7 @@ async def get_gitops_metrics() -> GitOpsMetricsResponse:
     """
     # Placeholder for GitOps metrics
     return GitOpsMetricsResponse(status="gitops_active", sync_rate=100)
+
 
 @router.get(
     "/performance",
@@ -94,6 +101,7 @@ async def get_performance_snapshot(
     result = await service.get_performance_snapshot()
     return PerformanceSnapshotResponse.model_validate(result)
 
+
 @router.get(
     "/analytics/{path:path}",
     summary="Get Endpoint Analytics",
@@ -108,6 +116,7 @@ async def get_endpoint_analytics(
     """
     result = await service.get_endpoint_analytics(path)
     return [EndpointAnalyticsResponse.model_validate(item) for item in result]
+
 
 @router.get(
     "/alerts",

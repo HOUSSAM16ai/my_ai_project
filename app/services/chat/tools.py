@@ -14,6 +14,7 @@ from app.services.overmind.user_knowledge.service import UserKnowledge
 
 logger = get_logger("tool-registry")
 
+
 class ToolRegistry:
     """
     سجل الأدوات المتاحة للوكلاء.

@@ -37,18 +37,19 @@ router = APIRouter(
     tags=["Overmind (Super Agent)"],
 )
 
+
 def get_session_factory() -> Callable[[], AsyncSession]:
     """تبعية للحصول على مصنع الجلسات."""
     return async_session_factory
 
-async def get_orchestrator(
-    db: AsyncSession = Depends(get_db)
-) -> OvermindOrchestrator:
+
+async def get_orchestrator(db: AsyncSession = Depends(get_db)) -> OvermindOrchestrator:
     """
     تبعية لإنشاء واسترجاع أوركسترا العقل المدبر.
     يتم حقن قاعدة البيانات الحالية لتهيئة إدارة الحالة.
     """
     return await create_overmind(db)
+
 
 def _serialize_mission(mission: Mission) -> MissionResponse:
     """تحويل كيان المهمة إلى نموذج استجابة آمن بدون عمليات Lazy Loading."""
@@ -113,6 +114,7 @@ async def create_mission(
         logger.error(f"Failed to create mission: {e}")
         raise HTTPException(status_code=500, detail="فشل في إنشاء المهمة") from e
 
+
 @router.get("/missions/{mission_id}", response_model=MissionResponse, summary="استرجاع حالة مهمة")
 async def get_mission(
     mission_id: int,
@@ -125,6 +127,7 @@ async def get_mission(
     if not mission:
         raise HTTPException(status_code=404, detail="المهمة غير موجودة")
     return _serialize_mission(mission)
+
 
 @router.get("/missions/{mission_id}/stream", summary="بث أحداث المهمة (Live Stream)")
 async def stream_mission(
@@ -155,7 +158,7 @@ async def stream_mission(
                 try:
                     data_str = json.dumps(event.payload_json)
                 except Exception:
-                    data_str = "{}" # Fallback
+                    data_str = "{}"  # Fallback
 
                 # إرسال الحدث بتنسيق SSE
                 yield f"event: {event.event_type.value}\ndata: {data_str}\n\n"

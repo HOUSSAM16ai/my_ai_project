@@ -16,7 +16,7 @@ from app.core.patterns.strategy_pattern.base import Strategy
 logger = logging.getLogger(__name__)
 
 # Generic Type Variables
-TInput = TypeVar("TInput")   # Strategy Input Type
+TInput = TypeVar("TInput")  # Strategy Input Type
 TOutput = TypeVar("TOutput")  # Strategy Output Type
 
 
@@ -80,13 +80,12 @@ class StrategyRegistry[TInput, TOutput]:
         self._strategies.sort(key=lambda s: s.priority, reverse=True)
 
         logger.debug(
-            f"Registered strategy: {strategy.__class__.__name__} "
-            f"(Priority={strategy.priority})",
+            f"Registered strategy: {strategy.__class__.__name__} (Priority={strategy.priority})",
             extra={
                 "strategy_class": strategy.__class__.__name__,
                 "priority": strategy.priority,
-                "total_strategies": len(self._strategies)
-            }
+                "total_strategies": len(self._strategies),
+            },
         )
 
     async def execute(self, context: TInput) -> TOutput | None:
@@ -152,9 +151,7 @@ class StrategyRegistry[TInput, TOutput]:
         return None
 
     async def _execute_strategy(
-        self,
-        strategy: Strategy[TInput, TOutput],
-        context: TInput
+        self, strategy: Strategy[TInput, TOutput], context: TInput
     ) -> TOutput:
         """
         Execute a specific strategy and handle its result.
@@ -189,9 +186,7 @@ class StrategyRegistry[TInput, TOutput]:
             yield chunk
 
     async def _process_strategy_result(
-        self,
-        strategy: Strategy[TInput, TOutput],
-        result: TOutput
+        self, strategy: Strategy[TInput, TOutput], result: TOutput
     ) -> TOutput:
         """
         Process strategy result based on its type.
@@ -205,9 +200,7 @@ class StrategyRegistry[TInput, TOutput]:
         """
         # 1. Async Generator - return directly for streaming
         if inspect.isasyncgen(result):
-            logger.debug(
-                f"✅ Returning async generator from {strategy.__class__.__name__}"
-            )
+            logger.debug(f"✅ Returning async generator from {strategy.__class__.__name__}")
             return result
 
         # 2. Coroutine - await result then check again
@@ -217,9 +210,7 @@ class StrategyRegistry[TInput, TOutput]:
         return result
 
     async def _await_coroutine_result(
-        self,
-        strategy: Strategy[TInput, TOutput],
-        result: TOutput
+        self, strategy: Strategy[TInput, TOutput], result: TOutput
     ) -> TOutput:
         """
         Await coroutine result and check its type.
@@ -231,9 +222,7 @@ class StrategyRegistry[TInput, TOutput]:
         Returns:
             Result after await
         """
-        logger.debug(
-            f"⏳ Awaiting coroutine from {strategy.__class__.__name__}"
-        )
+        logger.debug(f"⏳ Awaiting coroutine from {strategy.__class__.__name__}")
         awaited_result = await result
 
         # Check again if result is async generator
@@ -253,17 +242,10 @@ class StrategyRegistry[TInput, TOutput]:
         """
         logger.debug(
             f"Executing strategy: {strategy.__class__.__name__}",
-            extra={
-                "strategy_class": strategy.__class__.__name__,
-                "priority": strategy.priority
-            }
+            extra={"strategy_class": strategy.__class__.__name__, "priority": strategy.priority},
         )
 
-    def _log_strategy_success(
-        self,
-        strategy: Strategy[TInput, TOutput],
-        result: TOutput
-    ) -> None:
+    def _log_strategy_success(self, strategy: Strategy[TInput, TOutput], result: TOutput) -> None:
         """
         Log successful strategy execution.
 
@@ -275,15 +257,11 @@ class StrategyRegistry[TInput, TOutput]:
             f"✅ Successfully executed: {strategy.__class__.__name__}",
             extra={
                 "strategy_class": strategy.__class__.__name__,
-                "result_type": type(result).__name__
-            }
+                "result_type": type(result).__name__,
+            },
         )
 
-    def _log_strategy_error(
-        self,
-        strategy: Strategy[TInput, TOutput],
-        error: Exception
-    ) -> None:
+    def _log_strategy_error(self, strategy: Strategy[TInput, TOutput], error: Exception) -> None:
         """
         Log strategy execution failure.
 
@@ -297,8 +275,8 @@ class StrategyRegistry[TInput, TOutput]:
             extra={
                 "strategy_class": strategy.__class__.__name__,
                 "error_type": type(error).__name__,
-                "error_message": str(error)
-            }
+                "error_message": str(error),
+            },
         )
 
     def _log_no_strategy_found(self, context: TInput) -> None:
@@ -312,8 +290,8 @@ class StrategyRegistry[TInput, TOutput]:
             f"⚠️ No strategy found to handle context: {context}",
             extra={
                 "context_type": type(context).__name__,
-                "total_strategies_tried": len(self._strategies)
-            }
+                "total_strategies_tried": len(self._strategies),
+            },
         )
 
     def get_strategies(self) -> list[Strategy[TInput, TOutput]]:
@@ -348,6 +326,5 @@ class StrategyRegistry[TInput, TOutput]:
         """
         self._strategies.clear()
         logger.debug(
-            "All strategies cleared from registry",
-            extra={"action": "clear_all_strategies"}
+            "All strategies cleared from registry", extra={"action": "clear_all_strategies"}
         )

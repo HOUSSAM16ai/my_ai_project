@@ -10,21 +10,26 @@ from enum import Enum
 
 class Severity(str, Enum):
     """Security finding severity levels"""
+
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
     INFO = "INFO"
 
+
 class TrendDirection(str, Enum):
     """Security trend direction"""
+
     IMPROVING = "IMPROVING"
     DEGRADING = "DEGRADING"
     STABLE = "STABLE"
 
+
 @dataclass
 class SecurityFinding:
     """Security finding entity"""
+
     id: str
     severity: Severity
     rule_id: str
@@ -46,9 +51,11 @@ class SecurityFinding:
         if not self.last_seen:
             self.last_seen = datetime.now()
 
+
 @dataclass
 class SecurityMetrics:
     """Security metrics aggregate"""
+
     total_findings: int
     critical_count: int
     high_count: int
@@ -71,9 +78,11 @@ class SecurityMetrics:
         if not self.timestamp:
             self.timestamp = datetime.now()
 
+
 @dataclass
 class RiskPrediction:
     """Risk prediction result"""
+
     predicted_risk: float
     confidence: float
     trend: TrendDirection

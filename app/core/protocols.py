@@ -27,6 +27,7 @@ class LifecycleProtocol(Protocol):
     """
     بروتوكول دورة الحياة (Lifecycle Protocol).
     """
+
     async def initialize(self) -> None:
         """Initialize the component"""
         ...
@@ -35,6 +36,7 @@ class LifecycleProtocol(Protocol):
         """Shutdown the component"""
         ...
 
+
 @runtime_checkable
 class BaseService(LifecycleProtocol, Protocol):
     """
@@ -42,6 +44,7 @@ class BaseService(LifecycleProtocol, Protocol):
 
     يحدد الواجهة الأساسية التي يجب أن تلتزم بها جميع الخدمات.
     """
+
     @property
     def name(self) -> str:
         """Service unique name"""
@@ -56,6 +59,7 @@ class BaseService(LifecycleProtocol, Protocol):
         """Check service health"""
         ...
 
+
 @runtime_checkable
 class PluginProtocol(BaseService, Protocol):
     """
@@ -63,6 +67,7 @@ class PluginProtocol(BaseService, Protocol):
 
     يحل محل IPlugin القديم.
     """
+
     @property
     def plugin_type(self) -> str:
         """Type of plugin (service, processor, etc.)"""
@@ -77,6 +82,7 @@ class PluginProtocol(BaseService, Protocol):
         """Configure the plugin"""
         ...
 
+
 @runtime_checkable
 class EventBusProtocol(Protocol):
     """
@@ -85,6 +91,7 @@ class EventBusProtocol(Protocol):
     يحدد واجهة بسيطة للنشر والاشتراك لضمان عزل الطبقات العليا
     عن التنفيذ الفعلي لناقل الأحداث.
     """
+
     async def publish(self, channel: str, event: object) -> None:
         """ينشر حدثاً داخل قناة محددة."""
         ...
@@ -97,6 +104,7 @@ class EventBusProtocol(Protocol):
         """يشترك في القناة كتدفق غير متزامن."""
         ...
 
+
 @runtime_checkable
 class PlannerProtocol(Protocol):
     """
@@ -104,6 +112,7 @@ class PlannerProtocol(Protocol):
 
     يحل محل PlannerInterface القديم.
     """
+
     def generate_plan(
         self,
         objective: str,
@@ -121,6 +130,7 @@ class PlannerProtocol(Protocol):
         """Get planner capabilities."""
         ...
 
+
 @runtime_checkable
 class StrategyProtocol[TInput, TOutput](Protocol):
     """
@@ -128,6 +138,7 @@ class StrategyProtocol[TInput, TOutput](Protocol):
 
     يحل محل StrategyInterface القديم.
     """
+
     def execute(self, input_data: TInput) -> TOutput:
         """Execute strategy algorithm."""
         ...
@@ -140,6 +151,7 @@ class StrategyProtocol[TInput, TOutput](Protocol):
         """Check if strategy is applicable in given context."""
         ...
 
+
 @runtime_checkable
 class RepositoryProtocol[T](Protocol):
     """
@@ -148,6 +160,7 @@ class RepositoryProtocol[T](Protocol):
     يحدد الواجهة الأساسية لعمليات الوصول للبيانات (Data Access Layer).
     يحل محل RepositoryInterface القديم.
     """
+
     def save(self, entity: T) -> T:
         """Save an entity."""
         ...
@@ -168,6 +181,7 @@ class RepositoryProtocol[T](Protocol):
         """Update entity fields."""
         ...
 
+
 @runtime_checkable
 class CollaborationContext(Protocol):
     """
@@ -176,50 +190,57 @@ class CollaborationContext(Protocol):
     يوفر آلية آمنة للخيوط (thread-safe) لتخزين واسترجاع السياق المشترك
     بين الوكلاء المختلفين في النظام.
     """
+
     shared_memory: dict[str, object]
 
-    def update(self, key: str, value: dict[str, str | int | bool]) -> None:
-        ...
+    def update(self, key: str, value: dict[str, str | int | bool]) -> None: ...
 
-    def get(self, key: str) -> object | None:
-        ...
+    def get(self, key: str) -> object | None: ...
+
 
 @runtime_checkable
 class AgentPlanner(Protocol):
     """
     بروتوكول وكيل التخطيط الاستراتيجي (Strategist Agent).
     """
-    async def create_plan(self, objective: str, context: CollaborationContext) -> dict[str, object]:
-        ...
+
+    async def create_plan(
+        self, objective: str, context: CollaborationContext
+    ) -> dict[str, object]: ...
+
 
 @runtime_checkable
 class AgentArchitect(Protocol):
     """
     بروتوكول وكيل التصميم المعماري (Architect Agent).
     """
-    async def design_solution(self, plan: dict[str, object], context: CollaborationContext) -> dict[str, object]:
-        ...
+
+    async def design_solution(
+        self, plan: dict[str, object], context: CollaborationContext
+    ) -> dict[str, object]: ...
+
 
 @runtime_checkable
 class AgentExecutor(Protocol):
     """
     بروتوكول وكيل التنفيذ (Operator Agent).
     """
-    async def execute_tasks(self, design: dict[str, object], context: CollaborationContext) -> dict[str, object]:
-        ...
+
+    async def execute_tasks(
+        self, design: dict[str, object], context: CollaborationContext
+    ) -> dict[str, object]: ...
+
 
 @runtime_checkable
 class AgentReflector(Protocol):
     """
     بروتوكول وكيل المراجعة والتدقيق (Auditor Agent).
     """
+
     async def review_work(
-        self,
-        result: dict[str, object],
-        original_objective: str,
-        context: CollaborationContext
-    ) -> dict[str, object]:
-        ...
+        self, result: dict[str, object], original_objective: str, context: CollaborationContext
+    ) -> dict[str, object]: ...
+
 
 @runtime_checkable
 class MissionStateManagerProtocol(Protocol):
@@ -228,6 +249,7 @@ class MissionStateManagerProtocol(Protocol):
 
     يحدد العمليات اللازمة لإدارة حالة المهمة دون الاعتماد على التطبيق المباشر.
     """
+
     async def get_mission(self, mission_id: int) -> Mission | None:
         """استرجاع المهمة بواسطة المعرف."""
         ...
@@ -248,7 +270,9 @@ class MissionStateManagerProtocol(Protocol):
         """تحديث حالة المهمة إلى قيد التشغيل."""
         ...
 
-    async def mark_task_complete(self, task_id: int, result_text: str, meta: dict[str, object] | None = None) -> None:
+    async def mark_task_complete(
+        self, task_id: int, result_text: str, meta: dict[str, object] | None = None
+    ) -> None:
         """تحديث حالة المهمة إلى مكتملة."""
         ...
 
@@ -262,32 +286,38 @@ class MissionStateManagerProtocol(Protocol):
         """مراقبة أحداث المهمة."""
         ...
 
+
 @runtime_checkable
 class TaskExecutorProtocol(Protocol):
     """
     بروتوكول منفذ المهام (Task Executor Protocol).
     """
+
     async def execute_task(self, task: Task) -> dict[str, object]:
         """تنفيذ مهمة واحدة."""
         ...
+
 
 @runtime_checkable
 class AIClientProtocol(Protocol):
     """
     بروتوكول عميل الذكاء الاصطناعي (AI Client Protocol).
     """
-    async def generate(self, prompt: str, **kwargs) -> str:
-        ...
 
-    async def stream(self, prompt: str, **kwargs) -> AsyncGenerator[str, None]:
-        ...
+    async def generate(self, prompt: str, **kwargs) -> str: ...
+
+    async def stream(self, prompt: str, **kwargs) -> AsyncGenerator[str, None]: ...
+
 
 @runtime_checkable
 class HealthCheckService(Protocol):
     """بروتوكول خدمة فحص الصحة."""
+
     async def check_health(self) -> dict[str, object]: ...
+
 
 @runtime_checkable
 class SystemService(Protocol):
     """بروتوكول خدمة النظام."""
+
     async def get_system_info(self) -> dict[str, object]: ...

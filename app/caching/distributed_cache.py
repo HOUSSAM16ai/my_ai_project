@@ -30,7 +30,7 @@ class MultiLevelCache(CacheBackend):
         l1_cache: CacheBackend,
         l2_cache: CacheBackend,
         sync_l1: bool = True,
-        l1_backfill_ttl: int = 60
+        l1_backfill_ttl: int = 60,
     ) -> None:
         """
         تهيئة المنسق.

@@ -93,9 +93,7 @@ class DeepLearningThreatDetector:
             threats.append(threat)
 
     def _create_sql_injection_detection(
-        self,
-        event: SecurityEvent,
-        evidence: list[str]
+        self, event: SecurityEvent, evidence: list[str]
     ) -> ThreatDetection:
         """
         إنشاء كشف حقن SQL.
@@ -121,11 +119,7 @@ class DeepLearningThreatDetector:
             detected_at=datetime.now(),
         )
 
-    def _create_xss_detection(
-        self,
-        event: SecurityEvent,
-        evidence: list[str]
-    ) -> ThreatDetection:
+    def _create_xss_detection(self, event: SecurityEvent, evidence: list[str]) -> ThreatDetection:
         """
         إنشاء كشف XSS.
         Create XSS detection.
@@ -186,5 +180,6 @@ class DeepLearningThreatDetector:
                 findings.append(f"XSS pattern detected: {pattern}")
 
         return findings
+
 
 __all__ = ["DeepLearningThreatDetector"]

@@ -12,16 +12,16 @@ from pathlib import Path
 
 # ⚠️ PROTECTED FILES - DO NOT TOUCH!
 PROTECTED_PATTERNS = [
-    '.devcontainer',
-    '.gitpod',
-    'docker-compose',
-    'Dockerfile',
-    '.env',
-    'entrypoint.sh',
-    'setup_dev.sh',
-    '.github/workflows',
-    '.vscode',
-    'requirements',
+    ".devcontainer",
+    ".gitpod",
+    "docker-compose",
+    "Dockerfile",
+    ".env",
+    "entrypoint.sh",
+    "setup_dev.sh",
+    ".github/workflows",
+    ".vscode",
+    "requirements",
 ]
 
 
@@ -87,7 +87,7 @@ def analyze_file(filepath: Path) -> tuple[set, set, set]:
         (defined_functions, called_functions, classes)
     """
     try:
-        with open(filepath, encoding='utf-8') as f:
+        with open(filepath, encoding="utf-8") as f:
             content = f.read()
 
         tree = ast.parse(content, filename=str(filepath))
@@ -137,7 +137,7 @@ def find_dead_code():
     for filepath, defined in all_defined.items():
         dead = defined - all_called
         # Exclude special methods and tests
-        dead = {f for f in dead if not f.startswith('_') and not f.startswith('test_')}
+        dead = {f for f in dead if not f.startswith("_") and not f.startswith("test_")}
 
         if dead:
             dead_functions.append((filepath, dead))
@@ -162,7 +162,7 @@ def find_dead_code():
             continue
 
         defined, _, _ = analyze_file(test_file)
-        test_funcs = {f for f in defined if f.startswith('test_')}
+        test_funcs = {f for f in defined if f.startswith("test_")}
 
         if not test_funcs:
             empty_tests.append(test_file)
@@ -182,11 +182,11 @@ def find_dead_code():
     # Group by topic
     doc_topics = defaultdict(list)
     redundant_patterns = [
-        'BROWSER_CRASH_FIX',
-        'CODESPACES_',
-        'IMPLEMENTATION_',
-        'PHASE',
-        'WAVE',
+        "BROWSER_CRASH_FIX",
+        "CODESPACES_",
+        "IMPLEMENTATION_",
+        "PHASE",
+        "WAVE",
     ]
 
     for doc in doc_files:

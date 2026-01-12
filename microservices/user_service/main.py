@@ -40,6 +40,7 @@ _EMAIL_PATTERN = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 # DTOs (Data Transfer Objects)
 # -----------------------------------------------------------------------------
 
+
 class UserCreateRequest(BaseModel):
     name: str = Field(..., description="User's full name")
     email: str = Field(..., description="Valid email address")
@@ -52,17 +53,21 @@ class UserCreateRequest(BaseModel):
             raise ValueError("Invalid email format")
         return normalized
 
+
 class UserResponse(BaseModel):
     user_id: UUID
     name: str
     email: str
 
+
 class UserCountResponse(BaseModel):
     count: int
+
 
 # -----------------------------------------------------------------------------
 # Router
 # -----------------------------------------------------------------------------
+
 
 def _build_router(settings: UserServiceSettings) -> APIRouter:
     router = APIRouter()
@@ -74,8 +79,7 @@ def _build_router(settings: UserServiceSettings) -> APIRouter:
 
     @router.post("/users", response_model=UserResponse, tags=["Users"], summary="Create a new user")
     async def create_user(
-        payload: UserCreateRequest,
-        session: AsyncSession = Depends(get_session)
+        payload: UserCreateRequest, session: AsyncSession = Depends(get_session)
     ) -> UserResponse:
         """Create a new user with strictly validated email."""
         logger.info("Creating user", extra={"email": payload.email})
@@ -92,10 +96,10 @@ def _build_router(settings: UserServiceSettings) -> APIRouter:
 
         return UserResponse(user_id=user.id, name=user.name, email=user.email)
 
-    @router.get("/users/count", response_model=UserCountResponse, tags=["Users"], summary="Count users")
-    async def count_users(
-        session: AsyncSession = Depends(get_session)
-    ) -> UserCountResponse:
+    @router.get(
+        "/users/count", response_model=UserCountResponse, tags=["Users"], summary="Count users"
+    )
+    async def count_users(session: AsyncSession = Depends(get_session)) -> UserCountResponse:
         """Get the total number of users."""
         statement = select(func.count(User.id))
         result = await session.execute(statement)
@@ -103,9 +107,7 @@ def _build_router(settings: UserServiceSettings) -> APIRouter:
         return UserCountResponse(count=count)
 
     @router.get("/users", response_model=list[UserResponse], tags=["Users"], summary="List users")
-    async def list_users(
-        session: AsyncSession = Depends(get_session)
-    ) -> list[UserResponse]:
+    async def list_users(session: AsyncSession = Depends(get_session)) -> list[UserResponse]:
         """List all users."""
         statement = select(User)
         result = await session.execute(statement)
@@ -114,9 +116,11 @@ def _build_router(settings: UserServiceSettings) -> APIRouter:
 
     return router
 
+
 # -----------------------------------------------------------------------------
 # App Factory
 # -----------------------------------------------------------------------------
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -128,6 +132,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Service Shutting Down...")
 
+
 def create_app(settings: UserServiceSettings | None = None) -> FastAPI:
     effective_settings = settings or get_settings()
 
@@ -138,13 +143,14 @@ def create_app(settings: UserServiceSettings | None = None) -> FastAPI:
         lifespan=lifespan,
         openapi_tags=[
             {"name": "System", "description": "System health and metrics"},
-            {"name": "Users", "description": "User management operations"}
-        ]
+            {"name": "Users", "description": "User management operations"},
+        ],
     )
 
     setup_exception_handlers(app)
     app.include_router(_build_router(effective_settings))
 
     return app
+
 
 app = create_app()

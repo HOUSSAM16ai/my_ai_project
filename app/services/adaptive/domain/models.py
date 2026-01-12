@@ -23,12 +23,14 @@ class ServiceHealth(Enum):
     CRITICAL = "critical"
     RECOVERING = "recovering"
 
+
 class ScalingDirection(Enum):
     """اتجاه التوسع"""
 
     UP = "scale_up"
     DOWN = "scale_down"
     STABLE = "stable"
+
 
 @dataclass
 class ServiceMetrics:
@@ -61,6 +63,7 @@ class ServiceMetrics:
             "queue_depth": self.queue_depth,
         }
 
+
 @dataclass
 class ScalingDecision:
     """قرار التوسع الذكي"""
@@ -73,6 +76,7 @@ class ScalingDecision:
     reason: str
     predicted_impact: dict[str, float]
     timestamp: datetime
+
 
 @dataclass
 class ServiceInstance:

@@ -126,8 +126,7 @@ def test_guardrails_flags_schema_autocreate(tmp_path: Path) -> None:
     file_path = _write_python(
         tmp_path,
         "app/infrastructure/schema.py",
-        "from sqlmodel import SQLModel\n"
-        "SQLModel.metadata.create_all()\n",
+        "from sqlmodel import SQLModel\nSQLModel.metadata.create_all()\n",
     )
 
     errors = ci_guardrails.check_file(file_path)
@@ -153,8 +152,7 @@ def test_guardrails_allows_schema_autocreate_in_migrations(tmp_path: Path) -> No
     file_path = _write_python(
         tmp_path,
         "migrations/versions/1234_init.py",
-        "from sqlmodel import SQLModel\n"
-        "SQLModel.metadata.create_all()\n",
+        "from sqlmodel import SQLModel\nSQLModel.metadata.create_all()\n",
     )
 
     errors = ci_guardrails.check_file(file_path)
@@ -166,8 +164,7 @@ def test_guardrails_flags_direct_engine_creation_sync(tmp_path: Path) -> None:
     file_path = _write_python(
         tmp_path,
         "app/infrastructure/sync_db.py",
-        "from sqlalchemy import create_engine\n"
-        "engine = create_engine('sqlite://')\n",
+        "from sqlalchemy import create_engine\nengine = create_engine('sqlite://')\n",
     )
 
     errors = ci_guardrails.check_file(file_path)
@@ -179,8 +176,7 @@ def test_guardrails_allows_create_engine_in_scripts(tmp_path: Path) -> None:
     file_path = _write_python(
         tmp_path,
         "scripts/db_maintenance.py",
-        "from sqlalchemy import create_engine\n"
-        "engine = create_engine('sqlite://')\n",
+        "from sqlalchemy import create_engine\nengine = create_engine('sqlite://')\n",
     )
 
     errors = ci_guardrails.check_file(file_path)
@@ -192,8 +188,7 @@ def test_guardrails_allows_create_engine_in_tests(tmp_path: Path) -> None:
     file_path = _write_python(
         tmp_path,
         "tests/helpers/test_db.py",
-        "from sqlalchemy import create_engine\n"
-        "engine = create_engine('sqlite://')\n",
+        "from sqlalchemy import create_engine\nengine = create_engine('sqlite://')\n",
     )
 
     errors = ci_guardrails.check_file(file_path)
@@ -218,8 +213,7 @@ def test_guardrails_flags_sessionmaker_usage(tmp_path: Path) -> None:
     file_path = _write_python(
         tmp_path,
         "app/infrastructure/session_factory.py",
-        "from sqlalchemy.orm import sessionmaker\n"
-        "SessionLocal = sessionmaker()\n",
+        "from sqlalchemy.orm import sessionmaker\nSessionLocal = sessionmaker()\n",
     )
 
     errors = ci_guardrails.check_file(file_path)
@@ -231,8 +225,7 @@ def test_guardrails_allows_sessionmaker_in_scripts(tmp_path: Path) -> None:
     file_path = _write_python(
         tmp_path,
         "scripts/seed_db.py",
-        "from sqlalchemy.orm import sessionmaker\n"
-        "SessionLocal = sessionmaker()\n",
+        "from sqlalchemy.orm import sessionmaker\nSessionLocal = sessionmaker()\n",
     )
 
     errors = ci_guardrails.check_file(file_path)
@@ -244,8 +237,7 @@ def test_guardrails_allows_sessionmaker_in_tests(tmp_path: Path) -> None:
     file_path = _write_python(
         tmp_path,
         "tests/helpers/session_factory.py",
-        "from sqlalchemy.orm import sessionmaker\n"
-        "SessionLocal = sessionmaker()\n",
+        "from sqlalchemy.orm import sessionmaker\nSessionLocal = sessionmaker()\n",
     )
 
     errors = ci_guardrails.check_file(file_path)
@@ -298,8 +290,7 @@ def test_guardrails_allows_create_engine_in_migrations_env(tmp_path: Path) -> No
     file_path = _write_python(
         tmp_path,
         "migrations/env.py",
-        "from sqlalchemy import create_engine\n"
-        "engine = create_engine('sqlite://')\n",
+        "from sqlalchemy import create_engine\nengine = create_engine('sqlite://')\n",
     )
 
     errors = ci_guardrails.check_file(file_path)

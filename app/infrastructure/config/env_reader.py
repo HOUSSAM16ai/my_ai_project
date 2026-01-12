@@ -12,6 +12,7 @@ def read_int_env(name: str, default: int) -> int:
     except Exception:
         return default
 
+
 def read_bool_env(name: str, default: bool = False) -> bool:
     """Read boolean from environment variable with fallback."""
     return os.getenv(name, str(1 if default else 0)).strip().lower() in (
@@ -21,9 +22,11 @@ def read_bool_env(name: str, default: bool = False) -> bool:
         "on",
     )
 
+
 def read_str_env(name: str, default: str = "") -> str:
     """Read string from environment variable with fallback."""
     return os.getenv(name, default)
+
 
 def read_float_env(name: str, default: float) -> float:
     """Read float from environment variable with fallback."""

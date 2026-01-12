@@ -103,9 +103,7 @@ class WorkflowValidator:
         if has_self_skip:
             self.print_success(f"{workflow_file.name}: Has self-monitoring prevention")
             return True
-        self.print_warning(
-            f"{workflow_file.name}: No explicit self-monitoring prevention found"
-        )
+        self.print_warning(f"{workflow_file.name}: No explicit self-monitoring prevention found")
         return True  # Not critical for non-monitor workflows
 
     def check_status_verification(self, workflow_file: Path, workflow_data: dict) -> bool:

@@ -3,6 +3,7 @@ Shadow Deployment Manager
 ==========================
 Manages shadow deployments for testing new models in production without affecting users.
 """
+
 from __future__ import annotations
 
 import threading
@@ -13,6 +14,7 @@ from app.services.serving.domain.models import ShadowDeployment
 
 if TYPE_CHECKING:
     pass
+
 
 class ShadowDeploymentManager:
     """
@@ -28,8 +30,9 @@ class ShadowDeploymentManager:
         self._shadow_deployments: dict[str, ShadowDeployment] = {}
         self._lock = threading.RLock()
 
-    def start_shadow_deployment(self, primary_model_id: str,
-        shadow_model_id: str, traffic_percentage: float=100.0) ->str:
+    def start_shadow_deployment(
+        self, primary_model_id: str, shadow_model_id: str, traffic_percentage: float = 100.0
+    ) -> str:
         """
         بدء نشر في الوضع الخفي (Shadow Mode)
 
@@ -42,9 +45,12 @@ class ShadowDeploymentManager:
             معرف النشر الخفي
         """
         shadow_id = str(uuid.uuid4())
-        deployment = ShadowDeployment(shadow_id=shadow_id, primary_model_id
-            =primary_model_id, shadow_model_id=shadow_model_id,
-            traffic_percentage=traffic_percentage)
+        deployment = ShadowDeployment(
+            shadow_id=shadow_id,
+            primary_model_id=primary_model_id,
+            shadow_model_id=shadow_model_id,
+            traffic_percentage=traffic_percentage,
+        )
         with self._lock:
             self._shadow_deployments[shadow_id] = deployment
         return shadow_id
@@ -96,17 +102,10 @@ class ShadowDeploymentManager:
         Returns:
             استجابة فارغة | Empty response
         """
-        return {
-            'shadow_id': shadow_id,
-            'total_comparisons': 0,
-            'message': 'No comparisons yet'
-        }
+        return {"shadow_id": shadow_id, "total_comparisons": 0, "message": "No comparisons yet"}
 
     def _calculate_deployment_statistics(
-        self,
-        shadow_id: str,
-        deployment: ShadowDeployment,
-        comparisons: list[dict[str, Any]]
+        self, shadow_id: str, deployment: ShadowDeployment, comparisons: list[dict[str, Any]]
     ) -> dict[str, Any]:
         """
         حساب إحصائيات النشر | Calculate deployment statistics
@@ -122,28 +121,21 @@ class ShadowDeploymentManager:
         total = len(comparisons)
 
         # Calculate speed comparison
-        primary_faster = sum(
-            1 for c in comparisons
-            if c['primary_latency'] < c['shadow_latency']
-        )
+        primary_faster = sum(1 for c in comparisons if c["primary_latency"] < c["shadow_latency"])
         shadow_faster = total - primary_faster
 
         # Calculate success rates
-        primary_success_rate = (
-            sum(1 for c in comparisons if c['primary_success']) / total * 100
-        )
-        shadow_success_rate = (
-            sum(1 for c in comparisons if c['shadow_success']) / total * 100
-        )
+        primary_success_rate = sum(1 for c in comparisons if c["primary_success"]) / total * 100
+        shadow_success_rate = sum(1 for c in comparisons if c["shadow_success"]) / total * 100
 
         return {
-            'shadow_id': shadow_id,
-            'primary_model_id': deployment.primary_model_id,
-            'shadow_model_id': deployment.shadow_model_id,
-            'total_comparisons': total,
-            'primary_faster_count': primary_faster,
-            'shadow_faster_count': shadow_faster,
-            'primary_success_rate': primary_success_rate,
-            'shadow_success_rate': shadow_success_rate,
-            'started_at': deployment.started_at.isoformat()
+            "shadow_id": shadow_id,
+            "primary_model_id": deployment.primary_model_id,
+            "shadow_model_id": deployment.shadow_model_id,
+            "total_comparisons": total,
+            "primary_faster_count": primary_faster,
+            "shadow_faster_count": shadow_faster,
+            "primary_success_rate": primary_success_rate,
+            "shadow_success_rate": shadow_success_rate,
+            "started_at": deployment.started_at.isoformat(),
         }

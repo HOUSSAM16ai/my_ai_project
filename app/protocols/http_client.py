@@ -9,7 +9,9 @@ from importlib import import_module
 from typing import Protocol
 
 JsonPrimitive = str | int | float | bool | None | datetime
-JsonObject = dict[str, JsonPrimitive | dict[str, JsonPrimitive] | list[JsonPrimitive | dict[str, JsonPrimitive]]]
+JsonObject = dict[
+    str, JsonPrimitive | dict[str, JsonPrimitive] | list[JsonPrimitive | dict[str, JsonPrimitive]]
+]
 JsonValue = JsonPrimitive | JsonObject | list[JsonPrimitive | JsonObject]
 JsonPayload = Mapping[str, JsonValue]
 

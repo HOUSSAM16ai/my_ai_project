@@ -77,8 +77,7 @@ class TestTableManager:
         manager = TableManager(mock_session, MagicMock(), operations_logger)
 
         result = await manager.create_table(
-            "test_table",
-            {"id": "INTEGER PRIMARY KEY", "name": "VARCHAR(255)"}
+            "test_table", {"id": "INTEGER PRIMARY KEY", "name": "VARCHAR(255)"}
         )
 
         assert result["success"] is True
@@ -260,7 +259,7 @@ class TestSuperDatabaseToolsFacade:
     @pytest.mark.asyncio
     async def test_facade_context_manager(self):
         """اختبار استخدام الواجهة كـ Context Manager."""
-        with patch('app.services.overmind.database_tools.facade.get_db') as mock_get_db:
+        with patch("app.services.overmind.database_tools.facade.get_db") as mock_get_db:
             mock_session = AsyncMock()
 
             async def mock_db_generator():

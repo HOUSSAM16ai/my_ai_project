@@ -2,7 +2,6 @@
 Tests for Project Context Analyzers.
 """
 
-
 import pytest
 
 from app.services.project_context.application.analyzers.issues import IssueAnalyzer
@@ -34,6 +33,7 @@ def project_root(tmp_path):
 
     return tmp_path
 
+
 def test_code_stats_analyzer(project_root):
     """Test statistics calculation."""
     analyzer = CodeStatsAnalyzer(project_root)
@@ -54,6 +54,7 @@ def test_code_stats_analyzer(project_root):
     assert stats.test_files == 1
     assert stats.app_lines > 0
 
+
 def test_structure_analyzer(project_root):
     """Test structure analysis."""
     analyzer = StructureAnalyzer(project_root)
@@ -62,11 +63,12 @@ def test_structure_analyzer(project_root):
     # Should see 'services' directory in app
     service_dir_found = False
     for d in structure.directories:
-        if d.name == 'services':
+        if d.name == "services":
             service_dir_found = True
-            assert d.file_count == 1 # service.py
+            assert d.file_count == 1  # service.py
 
     assert service_dir_found
+
 
 def test_issue_analyzer(project_root):
     """Test issue detection."""
@@ -78,6 +80,6 @@ def test_issue_analyzer(project_root):
     issues = analyzer.deep_search_issues()
 
     # Should find print statement
-    found_print = any(issue.issue_type == 'print_statement' for issue in issues.style_issues)
+    found_print = any(issue.issue_type == "print_statement" for issue in issues.style_issues)
 
     assert found_print

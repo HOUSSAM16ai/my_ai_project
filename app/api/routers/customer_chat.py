@@ -4,6 +4,7 @@
 توفر نقاط النهاية الخاصة بالمستخدمين القياسيين للوصول إلى محادثة تعليمية
 مع فرض سياسات الأمان والملكية.
 """
+
 from collections.abc import Callable
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -71,6 +72,7 @@ async def get_actor_user(
 def get_customer_service(db: AsyncSession = Depends(get_db)) -> CustomerChatBoundaryService:
     """تبعية للحصول على خدمة حدود محادثة العملاء."""
     return CustomerChatBoundaryService(db)
+
 
 def get_chat_dispatcher(db: AsyncSession = Depends(get_db)) -> ChatRoleDispatcher:
     """تبعية للحصول على موزّع الدردشة حسب الدور."""

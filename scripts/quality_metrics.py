@@ -41,7 +41,8 @@ def run_command(cmd: str, capture_output: bool = True) -> tuple[int, str]:
     try:
         result = subprocess.run(
             cmd,
-            check=False, shell=True,  # Safe: All commands are hardcoded, no user input
+            check=False,
+            shell=True,  # Safe: All commands are hardcoded, no user input
             capture_output=capture_output,
             text=True,
             timeout=120,

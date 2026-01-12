@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 
 _LOG = logging.getLogger(__name__)
 
+
 class InferenceRouter:
     """
     تدير وتوجه طلبات الاستدلال.
@@ -111,11 +112,7 @@ class InferenceRouter:
         return self._registry.get_latest_ready_model(model_name)
 
     def _validate_model(
-        self,
-        model: AIModel | None,
-        model_name: str,
-        version_id: str | None,
-        request_id: str
+        self, model: AIModel | None, model_name: str, version_id: str | None, request_id: str
     ) -> ModelResponse | None:
         """
         التحقق من توفر وحالة النموذج.
@@ -134,7 +131,7 @@ class InferenceRouter:
                 request_id=request_id,
                 model_id=model_name,
                 version_id=version_id or "unknown",
-                error=f"Model '{model_name}' not found or not ready"
+                error=f"Model '{model_name}' not found or not ready",
             )
 
         if model.status != ModelStatus.READY:
@@ -142,17 +139,13 @@ class InferenceRouter:
                 request_id=request_id,
                 model_id=model.model_name,
                 version_id=model.version_id,
-                error=f"Model not ready (status: {model.status.value})"
+                error=f"Model not ready (status: {model.status.value})",
             )
 
         return None
 
     def _create_error_response(
-        self,
-        request_id: str,
-        model_id: str,
-        version_id: str,
-        error: str
+        self, request_id: str, model_id: str, version_id: str, error: str
     ) -> ModelResponse:
         """
         إنشاء استجابة خطأ معيارية.
@@ -181,7 +174,7 @@ class InferenceRouter:
         request_id: str,
         model: AIModel,
         input_data: dict[str, object],
-        parameters: dict[str, object] | None
+        parameters: dict[str, object] | None,
     ) -> ModelRequest:
         """
         إنشاء كائن الطلب.
@@ -204,10 +197,7 @@ class InferenceRouter:
         )
 
     def _execute_inference(
-        self,
-        request: ModelRequest,
-        model: AIModel,
-        request_id: str
+        self, request: ModelRequest, model: AIModel, request_id: str
     ) -> ModelResponse:
         """
         تنفيذ عملية الاستدلال.
@@ -230,7 +220,7 @@ class InferenceRouter:
                 request_id=request_id,
                 model_id=model.model_name,
                 version_id=model.version_id,
-                error=f"Inference failed: {e!s}"
+                error=f"Inference failed: {e!s}",
             )
 
     def _log_inference_result(self, request_id: str, response: ModelResponse) -> None:
@@ -248,6 +238,4 @@ class InferenceRouter:
                 f"{response.tokens_used} tokens"
             )
         else:
-            _LOG.warning(
-                f"Request {request_id} failed: {response.error}"
-            )
+            _LOG.warning(f"Request {request_id} failed: {response.error}")

@@ -58,9 +58,7 @@ class PredictiveHealthMonitor:
 
         return ServiceHealth.HEALTHY, []
 
-    def _store_metrics_history(
-        self, service_name: str, current_metrics: ServiceMetrics
-    ) -> None:
+    def _store_metrics_history(self, service_name: str, current_metrics: ServiceMetrics) -> None:
         """
         تخزين وصيانة تاريخ المقاييس | Store and maintain metrics history
 
@@ -74,9 +72,7 @@ class PredictiveHealthMonitor:
         if len(self.health_patterns[service_name]) > 1000:
             self.health_patterns[service_name] = self.health_patterns[service_name][-1000:]
 
-    def _check_critical_conditions(
-        self, current_metrics: ServiceMetrics
-    ) -> list[str]:
+    def _check_critical_conditions(self, current_metrics: ServiceMetrics) -> list[str]:
         """
         فحص الظروف الحرجة | Check critical conditions
 
@@ -97,9 +93,7 @@ class PredictiveHealthMonitor:
 
         return warnings
 
-    def _check_degraded_conditions(
-        self, current_metrics: ServiceMetrics
-    ) -> list[str]:
+    def _check_degraded_conditions(self, current_metrics: ServiceMetrics) -> list[str]:
         """
         فحص ظروف التدهور | Check degraded conditions
 

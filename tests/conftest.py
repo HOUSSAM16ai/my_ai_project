@@ -95,9 +95,7 @@ def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> bool | None:
 
     signature = inspect.signature(test_func)
     accepted_args = {
-        name: value
-        for name, value in pyfuncitem.funcargs.items()
-        if name in signature.parameters
+        name: value for name, value in pyfuncitem.funcargs.items() if name in signature.parameters
     }
 
     event_loop = accepted_args.get("event_loop")
@@ -114,6 +112,7 @@ def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> bool | None:
 
     pyfuncitem._store["_async_result"] = result
     return True
+
 
 @pytest.fixture(scope="function")
 def event_loop():
@@ -135,6 +134,7 @@ def event_loop():
     finally:
         with suppress(Exception):
             loop.close()
+
 
 @pytest.fixture(scope="function", autouse=True)
 def init_db(event_loop) -> None:
@@ -163,6 +163,7 @@ def reset_secret_key(monkeypatch: pytest.MonkeyPatch) -> None:
     get_settings.cache_clear()
     monkeypatch.setenv("SECRET_KEY", current_key)
 
+
 async def _reset_database(session: AsyncSession) -> None:
     """تفريغ كافة الجداول قبل كل اختبار لضمان العزل الكامل للبيانات."""
 
@@ -179,6 +180,7 @@ async def _reset_database(session: AsyncSession) -> None:
     await session.execute(text("PRAGMA foreign_keys=ON"))
     await session.commit()
 
+
 @pytest.fixture
 def db_session(init_db, event_loop):
     """
@@ -194,18 +196,23 @@ def db_session(init_db, event_loop):
             # تجاهل أخطاء الإغلاق إذا كانت الحلقة مغلقة بالفعل
             event_loop.run_until_complete(session_context.__aexit__(None, None, None))
 
+
 @pytest.fixture
 def client():
     # LIGHTWEIGHT CLIENT: Does not depend on DB unless needed
     import app.main
+
     with TestClient(app.main.app) as test_client:
         yield test_client
+
 
 @pytest.fixture
 def test_app():
     """إرجاع تطبيق FastAPI الأساسي لتمكين تجاوز التبعيات أثناء الاختبار."""
     import app.main
+
     return app.main.app
+
 
 @pytest.fixture
 def async_client(init_db, event_loop):

@@ -16,14 +16,17 @@ class BranchManager:
             return []
 
         try:
+
             def _fetch():
                 branches = []
                 for branch in self.client.repo_object.get_branches():
-                    branches.append(GitHubBranch(
-                        name=branch.name,
-                        sha=branch.commit.sha,
-                        protected=branch.protected,
-                    ))
+                    branches.append(
+                        GitHubBranch(
+                            name=branch.name,
+                            sha=branch.commit.sha,
+                            protected=branch.protected,
+                        )
+                    )
                 return branches
 
             result = await self.client.run_async(_fetch)
@@ -39,6 +42,7 @@ class BranchManager:
             return {"success": False, "error": "Repository not initialized"}
 
         try:
+
             def _create():
                 source_branch = self.client.repo_object.get_branch(from_branch)
                 source_sha = source_branch.commit.sha

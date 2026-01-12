@@ -17,10 +17,12 @@ def mock_subprocess_run():
     with patch("subprocess.run") as mock:
         yield mock
 
+
 @pytest.fixture
 def mock_os_walk():
     with patch("os.walk") as mock:
         yield mock
+
 
 @pytest.mark.asyncio
 async def test_count_files_handler_git(mock_subprocess_run):
@@ -43,15 +45,14 @@ async def test_count_files_handler_git(mock_subprocess_run):
     result_dir = await count_files_handler(directory=".")
     assert result_dir["count"] == 3
 
+
 @pytest.mark.asyncio
 async def test_count_files_handler_fallback(mock_subprocess_run, mock_os_walk):
     """Test fallback to os.walk when git fails."""
     mock_subprocess_run.side_effect = subprocess.CalledProcessError(1, ["git", "ls-files"])
 
     # Mock os.walk structure: (root, dirs, files)
-    mock_os_walk.return_value = [
-        (".", [], ["file1.py", "file2.py", "file3.txt"])
-    ]
+    mock_os_walk.return_value = [(".", [], ["file1.py", "file2.py", "file3.txt"])]
 
     result = await count_files_handler()
     assert result["count"] == 3
@@ -59,6 +60,7 @@ async def test_count_files_handler_fallback(mock_subprocess_run, mock_os_walk):
     # Test extension filtering in fallback
     result_py = await count_files_handler(extension=".py")
     assert result_py["count"] == 2
+
 
 @pytest.mark.asyncio
 async def test_get_project_metrics_handler(mock_subprocess_run):
@@ -74,6 +76,7 @@ async def test_get_project_metrics_handler(mock_subprocess_run):
             assert metrics["content"] == "# Metrics"
             assert metrics["live_stats"]["python_files"] == 2
             assert metrics["live_stats"]["total_files"] == 3
+
 
 @pytest.mark.asyncio
 async def test_context_awareness_handler():
@@ -93,6 +96,7 @@ async def test_context_awareness_handler():
     # Test missing context
     result_empty = await context_awareness_handler()
     assert "error" in result_empty
+
 
 @pytest.mark.asyncio
 async def test_tool_classes():

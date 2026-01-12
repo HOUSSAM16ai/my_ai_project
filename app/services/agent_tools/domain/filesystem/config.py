@@ -12,5 +12,16 @@ AUTO_CREATE_DEFAULT_CONTENT: str = ""
 # If empty/None, all extensions allowed (unless blacklisted elsewhere).
 # If set, only these are allowed for auto-creation.
 AUTO_CREATE_ALLOWED_EXTS: list[str] | None = [
-    ".txt", ".md", ".json", ".py", ".js", ".ts", ".html", ".css", ".csv", ".yml", ".yaml", ".sh"
+    ".txt",
+    ".md",
+    ".json",
+    ".py",
+    ".js",
+    ".ts",
+    ".html",
+    ".css",
+    ".csv",
+    ".yml",
+    ".yaml",
+    ".sh",
 ]

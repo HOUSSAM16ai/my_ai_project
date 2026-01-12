@@ -30,12 +30,14 @@ logger = logging.getLogger("app.core.settings")
 
 _DEV_SECRET_KEY_CACHE: str | None = None
 
+
 def _get_or_create_dev_secret_key() -> str:
     """Generates a stable development secret key to avoid session invalidation on restart."""
     global _DEV_SECRET_KEY_CACHE
     if _DEV_SECRET_KEY_CACHE is None:
         _DEV_SECRET_KEY_CACHE = secrets.token_urlsafe(64)
     return _DEV_SECRET_KEY_CACHE
+
 
 def _ensure_database_url(value: str | None, environment: str) -> str:
     """Ensures a valid database URL exists, falling back to SQLite in Dev/Test."""
@@ -51,6 +53,7 @@ def _ensure_database_url(value: str | None, environment: str) -> str:
     logger.warning("⚠️ No DATABASE_URL found! Activating Fallback (SQLite).")
     return "sqlite+aiosqlite:///./dev.db"
 
+
 def _upgrade_postgres_protocol(url: str) -> str:
     """Upgrades synchronous Postgres URLs to asyncpg."""
     if url.startswith("postgres://"):
@@ -58,6 +61,7 @@ def _upgrade_postgres_protocol(url: str) -> str:
     if url.startswith("postgresql://") and "asyncpg" not in url:
         return url.replace("postgresql://", "postgresql+asyncpg://", 1)
     return url
+
 
 def _normalize_csv_or_list(value: list[str] | str | None) -> list[str]:
     """Normalizes comma-separated strings or JSON lists into a strict list[str]."""
@@ -86,6 +90,7 @@ def _normalize_csv_or_list(value: list[str] | str | None) -> list[str]:
 
     return []
 
+
 def _lenient_json_loads(value: str) -> object:
     """Parses environment values as JSON, allowing simple strings on failure."""
     try:
@@ -93,9 +98,11 @@ def _lenient_json_loads(value: str) -> object:
     except json.JSONDecodeError:
         return value
 
+
 # -----------------------------------------------------------------------------
 # Base Settings (Shared across all services)
 # -----------------------------------------------------------------------------
+
 
 class BaseServiceSettings(BaseSettings):
     """
@@ -125,7 +132,7 @@ class BaseServiceSettings(BaseSettings):
     SECRET_KEY: str = Field(
         default_factory=_get_or_create_dev_secret_key,
         min_length=32,
-        description="Master secret key"
+        description="Master secret key",
     )
 
     model_config = SettingsConfigDict(
@@ -133,7 +140,7 @@ class BaseServiceSettings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=True,
         env_json_loads=_lenient_json_loads,
-        extra="ignore"
+        extra="ignore",
     )
 
     @field_validator("DATABASE_URL", mode="before")
@@ -152,7 +159,7 @@ class BaseServiceSettings(BaseSettings):
             if self.DEBUG:
                 raise ValueError("DEBUG must be False in production")
             if self.SECRET_KEY == "changeme" or len(self.SECRET_KEY) < 32:
-                 raise ValueError("Production SECRET_KEY is too weak")
+                raise ValueError("Production SECRET_KEY is too weak")
         return self
 
     @computed_field
@@ -161,15 +168,18 @@ class BaseServiceSettings(BaseSettings):
         """Returns True if we are in production mode."""
         return self.ENVIRONMENT == "production"
 
+
 # -----------------------------------------------------------------------------
 # Main App Settings (Legacy Monolith + Gateway)
 # -----------------------------------------------------------------------------
+
 
 class AppSettings(BaseServiceSettings):
     """
     Configuration for the main application (Monolith/Gateway).
     Inherits from BaseServiceSettings for consistency.
     """
+
     SERVICE_NAME: str = "CogniForge-Core"
     PROJECT_NAME: str = Field("CogniForge", description="Project Name")
     VERSION: str = Field("4.0.0-legendary", description="System Version")
@@ -254,10 +264,10 @@ class AppSettings(BaseServiceSettings):
     def validate_production_security(self) -> "AppSettings":
         """Strict Production Guardrails"""
         if self.ENVIRONMENT == "production":
-             if self.ALLOWED_HOSTS == ["*"]:
-                 raise ValueError("SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production.")
-             if self.BACKEND_CORS_ORIGINS == ["*"]:
-                 raise ValueError("SECURITY RISK: BACKEND_CORS_ORIGINS cannot be '*' in production.")
+            if self.ALLOWED_HOSTS == ["*"]:
+                raise ValueError("SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production.")
+            if self.BACKEND_CORS_ORIGINS == ["*"]:
+                raise ValueError("SECURITY RISK: BACKEND_CORS_ORIGINS cannot be '*' in production.")
         return self
 
 

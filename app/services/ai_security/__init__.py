@@ -29,6 +29,7 @@ from .domain import (
 # Singleton instance
 _manager_instance: SecurityManager | None = None
 
+
 def get_security_manager() -> SecurityManager:
     """
     Get singleton Security Manager instance.
@@ -56,6 +57,7 @@ def get_security_manager() -> SecurityManager:
 
         _manager_instance = SecurityManager(config)
     return _manager_instance
+
 
 # Backward compatibility
 get_superhuman_security_system = get_security_manager

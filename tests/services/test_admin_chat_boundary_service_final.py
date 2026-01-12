@@ -19,9 +19,12 @@ class TestAdminChatBoundaryService:
     def service(self, mock_settings):
         # Correctly patch dependencies using the new path
         with (
-            patch("app.services.boundaries.admin_chat_boundary_service.get_settings", return_value=mock_settings),
+            patch(
+                "app.services.boundaries.admin_chat_boundary_service.get_settings",
+                return_value=mock_settings,
+            ),
             patch("app.services.boundaries.admin_chat_boundary_service.AdminChatPersistence"),
-            patch("app.services.boundaries.admin_chat_boundary_service.AdminChatStreamer")
+            patch("app.services.boundaries.admin_chat_boundary_service.AdminChatStreamer"),
         ):
             svc = AdminChatBoundaryService(db=AsyncMock())
             svc.settings = mock_settings
@@ -47,7 +50,7 @@ class TestAdminChatBoundaryService:
             "  Bearer 123",
             "Bearer  123",
             "",
-            "   "
+            "   ",
         ]
         for inp in malformed_inputs:
             with pytest.raises(HTTPException):
@@ -73,7 +76,9 @@ class TestAdminChatBoundaryService:
             await service.verify_conversation_access(actor, 100)
         assert exc.value.status_code == 401
 
-        service.persistence.verify_access = AsyncMock(side_effect=ValueError("Conversation not found"))
+        service.persistence.verify_access = AsyncMock(
+            side_effect=ValueError("Conversation not found")
+        )
         with pytest.raises(HTTPException) as exc:
             actor = User(id=1, email="a@example.com", full_name="test", is_admin=True)
             await service.verify_conversation_access(actor, 100)

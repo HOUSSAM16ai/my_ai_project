@@ -37,22 +37,25 @@ async def search_users(
     """
     try:
         # البحث في الاسم أو البريد
-        search_query = select(User).where(
-            (User.name.ilike(f"%{query}%")) |
-            (User.email.ilike(f"%{query}%"))
-        ).limit(limit)
+        search_query = (
+            select(User)
+            .where((User.name.ilike(f"%{query}%")) | (User.email.ilike(f"%{query}%")))
+            .limit(limit)
+        )
 
         result = await session.execute(search_query)
         users = result.scalars().all()
 
         results = []
         for user in users:
-            results.append({
-                "id": user.id,
-                "name": user.name,
-                "email": user.email,
-                "role": user.role.value if hasattr(user.role, 'value') else str(user.role),
-            })
+            results.append(
+                {
+                    "id": user.id,
+                    "name": user.name,
+                    "email": user.email,
+                    "role": user.role.value if hasattr(user.role, "value") else str(user.role),
+                }
+            )
 
         logger.info(f"Found {len(results)} users matching '{query}'")
         return results

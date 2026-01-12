@@ -30,8 +30,8 @@ def write_file_logic(path: str, content: str, compress_json_if_large: bool = Fal
         # Check size limit
         # The test patches MAX_WRITE_BYTES but the previous code didn't check it.
         # We need to respect the constant.
-        if len(content.encode('utf-8')) > MAX_WRITE_BYTES:
-             return ToolResult(ok=False, error="WRITE_TOO_LARGE")
+        if len(content.encode("utf-8")) > MAX_WRITE_BYTES:
+            return ToolResult(ok=False, error="WRITE_TOO_LARGE")
 
         abs_path = validate_path(path, allow_missing=True)
 
@@ -41,10 +41,13 @@ def write_file_logic(path: str, content: str, compress_json_if_large: bool = Fal
 
         # Compression logic
         if compress_json_if_large and path.endswith(".json") and len(content) > 400_000:
-             abs_path += ".gz"
-             with gzip.open(abs_path, "wt", encoding="utf-8") as f:
-                 f.write(content)
-             return ToolResult(ok=True, data={"written": True, "path": abs_path, "bytes": len(content), "compressed": True})
+            abs_path += ".gz"
+            with gzip.open(abs_path, "wt", encoding="utf-8") as f:
+                f.write(content)
+            return ToolResult(
+                ok=True,
+                data={"written": True, "path": abs_path, "bytes": len(content), "compressed": True},
+            )
 
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
 
@@ -72,7 +75,9 @@ def write_file_if_changed_logic(path: str, content: str) -> ToolResult:
                 with open(abs_path, encoding="utf-8") as f:
                     current = f.read()
                 if current == content:
-                    return ToolResult(ok=True, data={"skipped": True, "reason": "UNCHANGED", "path": abs_path})
+                    return ToolResult(
+                        ok=True, data={"skipped": True, "reason": "UNCHANGED", "path": abs_path}
+                    )
             except Exception:
                 # If read fails (e.g. binary), we might overwrite or error.
                 # Original logic didn't handle binary check specifically for this, so we proceed.
@@ -109,7 +114,10 @@ def append_file_logic(path: str, content: str) -> ToolResult:
         with open(abs_path, "a", encoding="utf-8") as f:
             f.write(content)
 
-        return ToolResult(ok=True, data={"appended": True, "path": abs_path, "new_size": current_size + len(content)})
+        return ToolResult(
+            ok=True,
+            data={"appended": True, "path": abs_path, "new_size": current_size + len(content)},
+        )
 
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
@@ -153,7 +161,9 @@ def ensure_file_logic(
         if enforce_ext:
             if not lowered.endswith(enforce_ext.lower()):
                 return ToolResult(ok=False, error="EXTENSION_MISMATCH")
-        elif AUTO_CREATE_ALLOWED_EXTS and not any(lowered.endswith(x) for x in AUTO_CREATE_ALLOWED_EXTS):
+        elif AUTO_CREATE_ALLOWED_EXTS and not any(
+            lowered.endswith(x) for x in AUTO_CREATE_ALLOWED_EXTS
+        ):
             return ToolResult(ok=False, error="EXT_NOT_ALLOWED")
 
         abs_path = validate_path(path, allow_missing=True)
@@ -174,14 +184,17 @@ def ensure_file_logic(
                 preview = ""
                 truncated = False
 
-            return ToolResult(ok=True, data={
-                "path": abs_path,
-                "content": preview,
-                "truncated": truncated,
-                "exists": True,
-                "missing": False,
-                "created": False
-            })
+            return ToolResult(
+                ok=True,
+                data={
+                    "path": abs_path,
+                    "content": preview,
+                    "truncated": truncated,
+                    "exists": True,
+                    "missing": False,
+                    "created": False,
+                },
+            )
 
         # Create if needed
         if not path_exists and (not allow_create or not AUTO_CREATE_ENABLED):
@@ -195,17 +208,21 @@ def ensure_file_logic(
         with open(abs_path, "w", encoding="utf-8") as f:
             f.write(content)
 
-        return ToolResult(ok=True, data={
-            "path": abs_path,
-            "content": content[:max_bytes],
-            "truncated": len(content) > max_bytes,
-            "exists": True,
-            "missing": False,
-            "created": True
-        })
+        return ToolResult(
+            ok=True,
+            data={
+                "path": abs_path,
+                "content": content[:max_bytes],
+                "truncated": len(content) > max_bytes,
+                "exists": True,
+                "missing": False,
+                "created": True,
+            },
+        )
 
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
+
 
 def ensure_directory_logic(path: str) -> ToolResult:
     """Ensures a directory exists."""

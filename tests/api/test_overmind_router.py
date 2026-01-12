@@ -9,11 +9,7 @@ async def test_create_mission_endpoint(async_client: AsyncClient, db_session):
     """
     Test creating a mission via the API.
     """
-    payload = {
-        "objective": "Build a Dyson Sphere",
-        "context": {"radius": "1AU"},
-        "priority": 1
-    }
+    payload = {"objective": "Build a Dyson Sphere", "context": {"radius": "1AU"}, "priority": 1}
 
     response = await async_client.post("/api/v1/overmind/missions", json=payload)
 

@@ -22,6 +22,7 @@ from app.services.overmind.executor import TaskExecutor
 
 logger = get_logger(__name__)
 
+
 class OperatorAgent(AgentExecutor):
     """
     المنفذ الميداني (The Executioner).
@@ -44,7 +45,9 @@ class OperatorAgent(AgentExecutor):
         self.executor = task_executor
         self.ai = ai_client
 
-    async def execute_tasks(self, design: dict[str, Any], context: CollaborationContext) -> dict[str, Any]:
+    async def execute_tasks(
+        self, design: dict[str, Any], context: CollaborationContext
+    ) -> dict[str, Any]:
         """
         تنفيذ المهام الواردة في التصميم.
         Execute tasks from the design plan.
@@ -70,9 +73,7 @@ class OperatorAgent(AgentExecutor):
 
         # 3. تنفيذ المهام | Execute tasks
         logger.info(f"Operator: Executing {len(tasks_data)} tasks")
-        results, overall_status = await self._execute_task_list(
-            tasks_data, context
-        )
+        results, overall_status = await self._execute_task_list(tasks_data, context)
 
         # 4. إنشاء التقرير النهائي | Create final report
         report = self._create_execution_report(overall_status, results)
@@ -99,7 +100,7 @@ class OperatorAgent(AgentExecutor):
         # Fallback if no AI is available
         return {
             "recommendation": "Check system resources and task queue availability.",
-            "confidence": 80.0
+            "confidence": 80.0,
         }
 
     async def _consult_with_ai(self, situation: str, analysis: dict[str, Any]) -> dict[str, Any]:
@@ -125,9 +126,7 @@ class OperatorAgent(AgentExecutor):
 
         try:
             response_text = await self.ai.send_message(
-                system_prompt=system_prompt,
-                user_message=user_message,
-                temperature=0.3
+                system_prompt=system_prompt, user_message=user_message, temperature=0.3
             )
 
             clean_json = self._clean_json_block(response_text)
@@ -136,7 +135,7 @@ class OperatorAgent(AgentExecutor):
             logger.warning(f"Operator consultation failed: {e}")
             return {
                 "recommendation": "Proceed with caution (AI consultation failed)",
-                "confidence": 50.0
+                "confidence": 50.0,
             }
 
     def _validate_design(self, design: dict[str, Any]) -> dict[str, Any] | None:
@@ -153,7 +152,7 @@ class OperatorAgent(AgentExecutor):
                 "status": "failed",
                 "tasks_executed": 0,
                 "results": [],
-                "error": f"Design failed: {design.get('error')}"
+                "error": f"Design failed: {design.get('error')}",
             }
         return None
 
@@ -167,7 +166,7 @@ class OperatorAgent(AgentExecutor):
             "status": "success",
             "tasks_executed": 0,
             "results": [],
-            "note": "No tasks to execute"
+            "note": "No tasks to execute",
         }
 
     async def _execute_task_list(
@@ -184,9 +183,7 @@ class OperatorAgent(AgentExecutor):
         overall_status = "success"
 
         for i, task_def in enumerate(tasks_data):
-            result = await self._execute_single_task(
-                i, task_def, tasks_data, context
-            )
+            result = await self._execute_single_task(i, task_def, tasks_data, context)
             results.append(result)
 
             if result.get("status") == "skipped":
@@ -216,21 +213,17 @@ class OperatorAgent(AgentExecutor):
             logger.warning(f"Skipping task '{task_name}': No tool_name provided.")
             return {"name": task_name, "status": "skipped", "reason": "no_tool_name"}
 
-        logger.info(f"Executing Task [{index+1}/{len(tasks_data)}]: {task_name} using {tool_name}")
+        logger.info(
+            f"Executing Task [{index + 1}/{len(tasks_data)}]: {task_name} using {tool_name}"
+        )
 
         # إنشاء المهمة وتنفيذها | Create and execute task
         temp_task = self._create_task_object(task_def, context)
         exec_result = await self._execute_task_safely(temp_task, task_name)
 
-        return {
-            "name": task_name,
-            "tool": tool_name,
-            "result": exec_result
-        }
+        return {"name": task_name, "tool": tool_name, "result": exec_result}
 
-    def _create_task_object(
-        self, task_def: dict[str, Any], context: CollaborationContext
-    ) -> Task:
+    def _create_task_object(self, task_def: dict[str, Any], context: CollaborationContext) -> Task:
         """
         إنشاء كائن مهمة مؤقت.
         Create ephemeral task object for execution.
@@ -244,7 +237,7 @@ class OperatorAgent(AgentExecutor):
             name=task_def.get("name", "Unnamed Task"),
             tool_name=task_def.get("tool_name"),
             tool_args_json=args_json,
-            status=TaskStatus.PENDING
+            status=TaskStatus.PENDING,
         )
 
     def _extract_mission_id(self, context: CollaborationContext) -> int:
@@ -256,23 +249,20 @@ class OperatorAgent(AgentExecutor):
             return context.shared_memory.get("mission_id", 0)
         return 0
 
-    async def _execute_task_safely(
-        self, task: Task, task_name: str
-    ) -> dict[str, Any]:
+    async def _execute_task_safely(self, task: Task, task_name: str) -> dict[str, Any]:
         """
         تنفيذ المهمة مع معالجة الأخطاء.
         Execute task with error handling.
         """
         try:
             exec_result = await self.executor.execute_task(task)
-            logger.info(f"Task '{task_name}' completed with status: {exec_result.get('status', 'unknown')}")
+            logger.info(
+                f"Task '{task_name}' completed with status: {exec_result.get('status', 'unknown')}"
+            )
             return exec_result
         except Exception as e:
             logger.exception(f"Task '{task_name}' raised exception: {e}")
-            return {
-                "status": "failed",
-                "error": f"{type(e).__name__}: {e!s}"
-            }
+            return {"status": "failed", "error": f"{type(e).__name__}: {e!s}"}
 
     def _create_execution_report(
         self, overall_status: str, results: list[dict[str, Any]]
@@ -281,11 +271,7 @@ class OperatorAgent(AgentExecutor):
         إنشاء تقرير التنفيذ النهائي.
         Create final execution report.
         """
-        return {
-            "status": overall_status,
-            "tasks_executed": len(results),
-            "results": results
-        }
+        return {"status": overall_status, "tasks_executed": len(results), "results": results}
 
     def _clean_json_block(self, text: str) -> str:
         """استخراج JSON من نص قد يحتوي على Markdown code blocks."""

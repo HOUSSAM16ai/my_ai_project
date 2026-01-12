@@ -108,14 +108,14 @@ def generate_heatmap_html(analysis: ProjectAnalysis, output_path: Path) -> None:
     # إنشاء المستند HTML الكامل
     # كل معامل له دور واضح ومحدد
     html_content = create_complete_html(
-        timestamp=analysis.timestamp,                    # وقت الإنشاء
-        total_files=analysis.total_files,                # إجمالي الملفات
-        total_code_lines=analysis.total_code_lines,      # إجمالي الأسطر
-        total_functions=analysis.total_functions,        # إجمالي الدوال
-        total_classes=analysis.total_classes,            # إجمالي الكلاسات
+        timestamp=analysis.timestamp,  # وقت الإنشاء
+        total_files=analysis.total_files,  # إجمالي الملفات
+        total_code_lines=analysis.total_code_lines,  # إجمالي الأسطر
+        total_functions=analysis.total_functions,  # إجمالي الدوال
+        total_classes=analysis.total_classes,  # إجمالي الكلاسات
         avg_file_complexity=analysis.avg_file_complexity,  # متوسط التعقيد
         max_file_complexity=analysis.max_file_complexity,  # أقصى تعقيد
-        file_rows_html=file_rows_html,                   # HTML للملفات
+        file_rows_html=file_rows_html,  # HTML للملفات
     )
 
     # كتابة المحتوى إلى الملف

@@ -171,9 +171,7 @@ class CrudBoundaryService:
         """Generic update item stub."""
         return {"status": "updated", "resource": resource_type}
 
-    async def delete_item(
-        self, resource_type: str, item_id: str
-    ) -> dict[str, str | int | bool]:
+    async def delete_item(self, resource_type: str, item_id: str) -> dict[str, str | int | bool]:
         """Generic delete item stub."""
         return {"status": "deleted", "resource": resource_type}
 
@@ -194,5 +192,5 @@ class CrudBoundaryService:
         if sort_by not in allowed:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid sort column '{sort_by}' for resource '{resource_type}'"
+                detail=f"Invalid sort column '{sort_by}' for resource '{resource_type}'",
             )

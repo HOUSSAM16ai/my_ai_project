@@ -61,4 +61,5 @@ class SimpleResponseSystem:
         """Check if IP is blocked"""
         return ip_address in self.blocked_ips
 
+
 __all__ = ["SimpleResponseSystem"]

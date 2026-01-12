@@ -25,6 +25,7 @@ from app.services.overmind.state import MissionStateManager
 
 __all__ = ["create_overmind"]
 
+
 async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
     """
     دالة المصنع لتجميع العقل المدبر مع مجلس الحكمة.
@@ -58,16 +59,9 @@ async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
     # 5. The SuperBrain (Cognitive Domain)
     # Refactoring: Using keyword arguments for Static Connascence
     brain = SuperBrain(
-        strategist=strategist,
-        architect=architect,
-        operator=operator,
-        auditor=auditor
+        strategist=strategist, architect=architect, operator=operator, auditor=auditor
     )
 
     # 6. The Orchestrator
     # Refactoring: Using keyword arguments for Static Connascence
-    return OvermindOrchestrator(
-        state_manager=state_manager,
-        executor=executor,
-        brain=brain
-    )
+    return OvermindOrchestrator(state_manager=state_manager, executor=executor, brain=brain)

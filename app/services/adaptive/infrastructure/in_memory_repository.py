@@ -50,6 +50,7 @@ class InMemoryServiceInstanceRepository:
         instance_ids = self._services.get(service_name, [])
         return [self._instances[iid] for iid in instance_ids if iid in self._instances]
 
+
 class InMemoryMetricsRepository:
     """In-memory repository for metrics"""
 
@@ -63,9 +64,7 @@ class InMemoryMetricsRepository:
         if len(self._metrics[metrics.service_name]) > 1000:
             self._metrics[metrics.service_name] = self._metrics[metrics.service_name][-1000:]
 
-    def get_recent_metrics(
-        self, service_name: str, count: int = 100
-    ) -> list[ServiceMetrics]:
+    def get_recent_metrics(self, service_name: str, count: int = 100) -> list[ServiceMetrics]:
         """Get recent metrics for a service"""
         metrics_list = self._metrics.get(service_name, [])
         return metrics_list[-count:] if metrics_list else []
@@ -75,8 +74,4 @@ class InMemoryMetricsRepository:
     ) -> list[ServiceMetrics]:
         """Get metrics within a time range"""
         all_metrics = self._metrics.get(service_name, [])
-        return [
-            m
-            for m in all_metrics
-            if start_time <= m.timestamp.timestamp() <= end_time
-        ]
+        return [m for m in all_metrics if start_time <= m.timestamp.timestamp() <= end_time]

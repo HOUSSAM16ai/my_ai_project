@@ -11,5 +11,4 @@ class AgentResponse(BaseModel):
 
 @runtime_checkable
 class AgentProtocol(Protocol):
-    async def process(self, input_data: Any) -> AgentResponse:
-        ...
+    async def process(self, input_data: Any) -> AgentResponse: ...

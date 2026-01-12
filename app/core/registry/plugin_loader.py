@@ -7,6 +7,7 @@ Load plugins with dependency resolution
 
 مبدأ البساطة: Simple dependency resolution
 """
+
 import logging
 from typing import Any
 
@@ -14,6 +15,7 @@ from app.core.protocols import PluginProtocol as IPlugin
 from app.core.registry.plugin_registry import registry
 
 logger = logging.getLogger(__name__)
+
 
 class PluginLoader:
     """
@@ -24,8 +26,7 @@ class PluginLoader:
     def __init__(self):
         self._loaded: set[str] = set()
 
-    async def load(self, plugin: IPlugin, config: dict[str, Any] | None=None
-        ) ->bool:
+    async def load(self, plugin: IPlugin, config: dict[str, Any] | None = None) -> bool:
         """
         تحميل إضافة
         Load a plugin with its dependencies
@@ -38,8 +39,7 @@ class PluginLoader:
         for dep_name in deps:
             dep_plugin = registry.get(dep_name)
             if not dep_plugin:
-                logger.error(
-                    f"Missing dependency '{dep_name}' for plugin '{name}'")
+                logger.error(f"Missing dependency '{dep_name}' for plugin '{name}'")
                 return False
             if not await self.load(dep_plugin):
                 return False

@@ -31,6 +31,7 @@ class SecretEncryption:
         """Decrypt ciphertext"""
         return self.cipher.decrypt(ciphertext.encode()).decode()
 
+
 class LocalVaultBackend(VaultBackend):
     """
     Local vault backend for development
@@ -71,6 +72,7 @@ class LocalVaultBackend(VaultBackend):
         # For local backend, rotation just marks the secret for update
         return True
 
+
 class HashiCorpVaultBackend(VaultBackend):
     """
     HashiCorp Vault backend
@@ -94,6 +96,7 @@ class HashiCorpVaultBackend(VaultBackend):
 
     def rotate_secret(self, secret_id: str) -> bool:
         raise NotImplementedError("HashiCorp Vault integration requires hvac library")
+
 
 class AWSSecretsManagerBackend(VaultBackend):
     """

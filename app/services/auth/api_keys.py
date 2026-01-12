@@ -25,9 +25,11 @@ from app.core.domain.common import utc_now
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class APIKey:
     """تمثيل مفتاح API (DTO)."""
+
     id: str
     name: str
     prefix: str
@@ -39,8 +41,10 @@ class APIKey:
     expires_at: datetime | None = None
     last_used_at: datetime | None = None
 
+
 # Simulated DB for Monolith Phase
 _API_KEY_STORE: dict[str, APIKey] = {}
+
 
 class APIKeyManager:
     """
@@ -51,14 +55,10 @@ class APIKeyManager:
     """
 
     def __init__(self, session: AsyncSession) -> None:
-        self.session = session # Reserved for future DB usage
+        self.session = session  # Reserved for future DB usage
 
     async def create_key(
-        self,
-        user_id: int,
-        name: str,
-        scopes: list[str],
-        expires_at: datetime | None = None
+        self, user_id: int, name: str, scopes: list[str], expires_at: datetime | None = None
     ) -> tuple[APIKey, str]:
         """
         إنشاء مفتاح جديد.
@@ -81,7 +81,7 @@ class APIKeyManager:
             expires_at=expires_at,
             created_at=utc_now(),
             last_used_at=None,
-            user_id=user_id
+            user_id=user_id,
         )
 
         # Simulate DB Insert

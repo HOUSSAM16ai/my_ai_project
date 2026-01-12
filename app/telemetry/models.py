@@ -4,15 +4,17 @@ from enum import Enum
 
 
 class SamplingDecision(Enum):
-    SAMPLE = 'sample'
-    DROP = 'drop'
-    DEFER = 'defer'
+    SAMPLE = "sample"
+    DROP = "drop"
+    DEFER = "defer"
+
 
 class AlertSeverity(Enum):
-    LOW = 'low'
-    MEDIUM = 'medium'
-    HIGH = 'high'
-    CRITICAL = 'critical'
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
 
 @dataclass
 class TraceContext:
@@ -23,29 +25,29 @@ class TraceContext:
     baggage: dict[str, str] = field(default_factory=dict)
 
     def to_headers(self) -> dict[str, str]:
-        flags = '01' if self.sampled else '00'
-        headers = {'traceparent': f'00-{self.trace_id}-{self.span_id}-{flags}'}
+        flags = "01" if self.sampled else "00"
+        headers = {"traceparent": f"00-{self.trace_id}-{self.span_id}-{flags}"}
         if self.baggage:
-            tracestate = ','.join(f'{k}={v}' for k, v in self.baggage.items())
-            headers['tracestate'] = tracestate
+            tracestate = ",".join(f"{k}={v}" for k, v in self.baggage.items())
+            headers["tracestate"] = tracestate
         return headers
 
     @classmethod
-    def from_headers(cls, headers: dict[str, str]) -> 'TraceContext | None':
-        traceparent = headers.get('traceparent') or headers.get('Traceparent')
+    def from_headers(cls, headers: dict[str, str]) -> "TraceContext | None":
+        traceparent = headers.get("traceparent") or headers.get("Traceparent")
         if not traceparent:
             return None
         try:
-            parts = traceparent.split('-')
+            parts = traceparent.split("-")
             if len(parts) != 4:
                 return None
             _version, trace_id, parent_span_id, flags = parts
-            sampled = flags == '01'
+            sampled = flags == "01"
             baggage = {}
-            tracestate = headers.get('tracestate') or headers.get('Tracestate', '')
-            for item in tracestate.split(','):
-                if '=' in item:
-                    k, v = item.split('=', 1)
+            tracestate = headers.get("tracestate") or headers.get("Tracestate", "")
+            for item in tracestate.split(","):
+                if "=" in item:
+                    k, v = item.split("=", 1)
                     baggage[k.strip()] = v.strip()
 
             # Create a NEW span_id for the incoming context representation?
@@ -55,9 +57,16 @@ class TraceContext:
             # but I must preserve behavior.
             span_id = uuid.uuid4().hex[:16]
 
-            return cls(trace_id=trace_id, span_id=span_id, parent_span_id=parent_span_id, sampled=sampled, baggage=baggage)
+            return cls(
+                trace_id=trace_id,
+                span_id=span_id,
+                parent_span_id=parent_span_id,
+                sampled=sampled,
+                baggage=baggage,
+            )
         except Exception:
             return None
+
 
 @dataclass
 class UnifiedSpan:
@@ -71,7 +80,7 @@ class UnifiedSpan:
     duration_ms: float | None = None
     tags: dict[str, object] = field(default_factory=dict)
     events: list[dict[str, object]] = field(default_factory=list)
-    status: str = 'OK'
+    status: str = "OK"
     error_message: str | None = None
     metrics: dict[str, float] = field(default_factory=dict)
     baggage: dict[str, str] = field(default_factory=dict)
@@ -79,6 +88,7 @@ class UnifiedSpan:
     def finalize(self) -> None:
         if self.end_time:
             self.duration_ms = (self.end_time - self.start_time) * 1000
+
 
 @dataclass
 class UnifiedTrace:
@@ -104,6 +114,7 @@ class UnifiedTrace:
         self.critical_path_ms = max_duration
         self.bottleneck_span_id = bottleneck
 
+
 @dataclass
 class MetricSample:
     value: float
@@ -111,6 +122,7 @@ class MetricSample:
     labels: dict[str, str] = field(default_factory=dict)
     exemplar_trace_id: str | None = None
     exemplar_span_id: str | None = None
+
 
 @dataclass
 class CorrelatedLog:
@@ -122,6 +134,7 @@ class CorrelatedLog:
     context: dict[str, object] = field(default_factory=dict)
     exception: dict[str, object] | None = None
 
+
 @dataclass
 class AnomalyAlert:
     alert_id: str
@@ -131,5 +144,5 @@ class AnomalyAlert:
     description: str
     metrics: dict[str, object]
     trace_ids: list[str] = field(default_factory=list)
-    recommended_action: str = ''
+    recommended_action: str = ""
     resolved: bool = False

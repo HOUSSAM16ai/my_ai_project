@@ -67,8 +67,7 @@ def _build_router(settings: PlanningAgentSettings) -> APIRouter:
 
     @router.post("/plans", response_model=PlanResponse)
     async def create_plan(
-        payload: PlanRequest,
-        session: AsyncSession = Depends(get_session)
+        payload: PlanRequest, session: AsyncSession = Depends(get_session)
     ) -> PlanResponse:
         """ينشئ خطة تعليمية جديدة بناءً على الهدف والسياق ويحفظها."""
 
@@ -82,19 +81,14 @@ def _build_router(settings: PlanningAgentSettings) -> APIRouter:
         return PlanResponse(plan_id=plan.id, goal=plan.goal, steps=plan.steps)
 
     @router.get("/plans", response_model=list[PlanResponse])
-    async def list_plans(
-        session: AsyncSession = Depends(get_session)
-    ) -> list[PlanResponse]:
+    async def list_plans(session: AsyncSession = Depends(get_session)) -> list[PlanResponse]:
         """يعرض جميع الخطط المحفوظة."""
 
         statement = select(Plan)
         result = await session.execute(statement)
         plans = result.scalars().all()
 
-        return [
-            PlanResponse(plan_id=p.id, goal=p.goal, steps=p.steps)
-            for p in plans
-        ]
+        return [PlanResponse(plan_id=p.id, goal=p.goal, steps=p.steps) for p in plans]
 
     return router
 
@@ -114,7 +108,7 @@ def create_app(settings: PlanningAgentSettings | None = None) -> FastAPI:
         title="Planning Agent",
         version=effective_settings.SERVICE_VERSION,
         description="وكيل مستقل لتوليد الخطط التعليمية",
-        lifespan=lifespan
+        lifespan=lifespan,
     )
     app.include_router(_build_router(effective_settings))
 

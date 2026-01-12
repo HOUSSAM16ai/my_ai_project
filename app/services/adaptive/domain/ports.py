@@ -35,6 +35,7 @@ class ServiceInstanceRepository(Protocol):
         """List all instances for a service"""
         ...
 
+
 class MetricsRepository(Protocol):
     """Repository for metrics storage and retrieval"""
 
@@ -42,9 +43,7 @@ class MetricsRepository(Protocol):
         """Store service metrics"""
         ...
 
-    def get_recent_metrics(
-        self, service_name: str, count: int = 100
-    ) -> list[ServiceMetrics]:
+    def get_recent_metrics(self, service_name: str, count: int = 100) -> list[ServiceMetrics]:
         """Get recent metrics for a service"""
         ...
 

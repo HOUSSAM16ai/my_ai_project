@@ -19,9 +19,7 @@ class MetricStore:
         """يضيف مقياسًا جديدًا إلى المخزن."""
         self.metrics.append(metric)
 
-    def filter_by_time(
-        self, category: str | None, hours: int
-    ) -> list[PerformanceMetric]:
+    def filter_by_time(self, category: str | None, hours: int) -> list[PerformanceMetric]:
         """يعيد المقاييس الواقعة ضمن النافذة الزمنية المحددة."""
         cutoff_time = datetime.now(UTC).timestamp() - hours * 3600
         return [

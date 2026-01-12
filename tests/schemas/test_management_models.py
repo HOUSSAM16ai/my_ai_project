@@ -20,7 +20,9 @@ def test_generic_response_keeps_payload_type():
 
 
 def test_paginated_response_shapes_payload_consistently():
-    pagination = PaginationMeta(page=1, per_page=5, total_items=12, total_pages=3, has_next=True, has_prev=False)
+    pagination = PaginationMeta(
+        page=1, per_page=5, total_items=12, total_pages=3, has_next=True, has_prev=False
+    )
     tasks = [TaskResponse(id=idx, name=f"Task {idx}") for idx in range(2)]
 
     payload = PaginatedResponse[TaskResponse](items=tasks, pagination=pagination)

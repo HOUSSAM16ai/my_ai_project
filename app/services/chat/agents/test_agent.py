@@ -5,6 +5,7 @@ from app.services.chat.agents.base import AgentResponse
 
 logger = get_logger("test-agent")
 
+
 class TestAgent:
     """
     Ensures testing coverage and determinism.

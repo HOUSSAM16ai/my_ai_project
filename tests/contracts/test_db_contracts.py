@@ -9,10 +9,12 @@ from app.core.settings.base import BaseServiceSettings
 
 class TestDBSettings(BaseServiceSettings):
     """Test settings for DB contract."""
+
     DATABASE_URL: str = "sqlite+aiosqlite:///:memory:"
     SERVICE_NAME: str = "TestService"
     DEBUG: bool = True
     ENVIRONMENT: str = "testing"
+
 
 async def test_db_factory_contract_engine_creation():
     """
@@ -31,6 +33,7 @@ async def test_db_factory_contract_engine_creation():
     await engine.dispose()
     print("✅ DB Engine Creation Passed")
 
+
 async def test_db_factory_contract_session_factory():
     """
     Contract: create_session_factory must return a callable that produces AsyncSessions.
@@ -45,17 +48,18 @@ async def test_db_factory_contract_session_factory():
     async with factory() as session:
         assert isinstance(session, AsyncSession)
         # Verify simple query works
-        result = await session.execute(
-             _get_select_one()
-        )
+        result = await session.execute(_get_select_one())
         assert result.scalar() == 1
 
     await engine.dispose()
     print("✅ DB Session Factory Passed")
 
+
 def _get_select_one():
     from sqlalchemy import text
+
     return text("SELECT 1")
+
 
 async def main():
     try:
@@ -65,6 +69,7 @@ async def main():
     except Exception as e:
         print(f"\n❌ DB Contracts Failed: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

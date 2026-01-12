@@ -37,14 +37,18 @@ class _AIOpsServiceStub:
     def get_aiops_metrics(self) -> dict[str, float | int]:
         return {"total_telemetry_points": 1, "resolution_rate": 0.5}
 
-    def forecast_load(self, service_name: str, metric_type: MetricType, hours_ahead: int) -> _ForecastStub:
+    def forecast_load(
+        self, service_name: str, metric_type: MetricType, hours_ahead: int
+    ) -> _ForecastStub:
         return _ForecastStub(
             forecast_id="forecast-1",
             predicted_load=1.5,
             confidence_interval=(1.2, 1.8),
         )
 
-    def generate_capacity_plan(self, service_name: str, forecast_horizon_hours: int) -> _CapacityPlanStub:
+    def generate_capacity_plan(
+        self, service_name: str, forecast_horizon_hours: int
+    ) -> _CapacityPlanStub:
         return _CapacityPlanStub(
             plan_id="plan-1",
             service_name=service_name,
@@ -57,7 +61,9 @@ class _AIOpsServiceStub:
         )
 
     @staticmethod
-    def _serialize_capacity_plan(plan: _CapacityPlanStub | None) -> dict[str, float | int | str] | None:
+    def _serialize_capacity_plan(
+        plan: _CapacityPlanStub | None,
+    ) -> dict[str, float | int | str] | None:
         if plan is None:
             return None
         return {
@@ -109,9 +115,7 @@ def test_metrics_endpoint() -> None:
     response = client.get("/metrics")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "metrics": {"total_telemetry_points": 1, "resolution_rate": 0.5}
-    }
+    assert response.json() == {"metrics": {"total_telemetry_points": 1, "resolution_rate": 0.5}}
 
 
 def test_forecast_endpoint() -> None:

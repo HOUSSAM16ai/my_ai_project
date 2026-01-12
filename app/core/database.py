@@ -26,7 +26,14 @@ from app.core.settings.base import BaseServiceSettings, get_settings
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["async_session_factory", "create_db_engine", "create_session_factory", "engine", "get_db"]
+__all__ = [
+    "async_session_factory",
+    "create_db_engine",
+    "create_session_factory",
+    "engine",
+    "get_db",
+]
+
 
 def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
     """
@@ -64,10 +71,9 @@ def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
             engine_args["connect_args"] = {}
 
         # PgBouncer Compatibility (Supabase)
-        engine_args["connect_args"].update({
-            "statement_cache_size": 0,
-            "prepared_statement_cache_size": 0
-        })
+        engine_args["connect_args"].update(
+            {"statement_cache_size": 0, "prepared_statement_cache_size": 0}
+        )
 
         # Handle 'sslmode' which asyncpg does not accept as a kwarg
         # We strip it from the URL and convert it to an 'ssl' context
@@ -88,6 +94,7 @@ def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
             # 'disable' is default (no ssl arg)
             if ssl_mode in ("require", "verify-ca", "verify-full"):
                 import ssl
+
                 # Create a default context that verifies certificates
                 ctx = ssl.create_default_context()
 
@@ -112,6 +119,7 @@ def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
 
     return create_async_engine(db_url, **engine_args)
 
+
 def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
     """Creates a configured sessionmaker for the given engine."""
     return async_sessionmaker(
@@ -122,6 +130,7 @@ def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSessi
         autoflush=False,
     )
 
+
 # -----------------------------------------------------------------------------
 # Global Singleton (For Legacy App/Core usage only)
 # -----------------------------------------------------------------------------
@@ -131,6 +140,7 @@ def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSessi
 _legacy_settings = get_settings()
 engine: AsyncEngine = create_db_engine(_legacy_settings)
 async_session_factory = create_session_factory(engine)
+
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """

@@ -31,6 +31,7 @@ class InMemoryConfigRepository(ConfigRepository):
         with self._lock:
             return self._store.get(environment, {}).copy()
 
+
 class InMemorySecretMetadataRepository(SecretMetadataRepository):
     def __init__(self):
         self._registry: dict[str, Secret] = {}
@@ -48,6 +49,7 @@ class InMemorySecretMetadataRepository(SecretMetadataRepository):
         with self._lock:
             return list(self._registry.values())
 
+
 class InMemoryAuditLogger(AuditLogger):
     def __init__(self, maxlen: int = 10000):
         self._logs: deque = deque(maxlen=maxlen)
@@ -57,7 +59,9 @@ class InMemoryAuditLogger(AuditLogger):
         with self._lock:
             self._logs.append(log)
 
-    def get_logs(self, secret_id: str | None = None, accessed_by: str | None = None, limit: int = 1000) -> list[SecretAccessLog]:
+    def get_logs(
+        self, secret_id: str | None = None, accessed_by: str | None = None, limit: int = 1000
+    ) -> list[SecretAccessLog]:
         with self._lock:
             logs = list(self._logs)
 

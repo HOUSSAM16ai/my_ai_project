@@ -94,11 +94,7 @@ class AuthorizationHandler(Handler[RequestContext, RequestContext]):
 
         required_permission = request.data.get("required_permission")
         user_permissions_raw = request.data.get("user_permissions", [])
-        user_permissions = (
-            user_permissions_raw
-            if isinstance(user_permissions_raw, list)
-            else []
-        )
+        user_permissions = user_permissions_raw if isinstance(user_permissions_raw, list) else []
 
         if isinstance(required_permission, str) and required_permission not in user_permissions:
             request.add_error(f"Missing permission: {required_permission}")

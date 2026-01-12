@@ -59,7 +59,6 @@ class OvermindIdentity:
                 "github": "HOUSSAM16ai",
                 "email": "houssam.benmerah@example.com",
             },
-
             # معلومات المشروع (Project Information)
             "project": {
                 "name": "CogniForge",
@@ -69,7 +68,6 @@ class OvermindIdentity:
                 "repository": "https://github.com/ai-for-solution-labs/my_ai_project",
                 "license": "MIT",
             },
-
             # معلومات Overmind (Overmind Information)
             "overmind": {
                 "name": "Overmind",
@@ -81,7 +79,6 @@ class OvermindIdentity:
                 "purpose": "تنسيق وإدارة الوكلاء الذكية لتنفيذ المهام المعقدة",
                 "purpose_en": "Coordinate and manage intelligent agents to execute complex tasks",
             },
-
             # الفلسفة والمبادئ (Philosophy & Principles)
             "philosophy": {
                 "heritage": "The Dual Heritage - Harvard CS50 2025 + Berkeley SICP",
@@ -100,7 +97,6 @@ class OvermindIdentity:
                     "YAGNI: You Aren't Gonna Need It",
                 ],
             },
-
             # مبادئ الوكلاء (Agent Principles)
             "agent_principles": [
                 {"number": principle.number, "statement": principle.statement}
@@ -110,18 +106,25 @@ class OvermindIdentity:
                 {"number": principle.number, "statement": principle.statement}
                 for principle in get_system_principles()
             ],
-
             # الوكلاء (Agents)
             "agents": {
                 "strategist": {
                     "name": "الاستراتيجي (Strategist)",
                     "role": "المخطط - يحلل الأهداف ويفككها إلى خطوات",
-                    "capabilities": ["Tree of Thoughts", "Recursive Decomposition", "Intent Analysis"],
+                    "capabilities": [
+                        "Tree of Thoughts",
+                        "Recursive Decomposition",
+                        "Intent Analysis",
+                    ],
                 },
                 "architect": {
                     "name": "المعماري (Architect)",
                     "role": "المصمم - يحول الخطط إلى تصميم تقني",
-                    "capabilities": ["Tool Selection", "Technical Design", "Specification Creation"],
+                    "capabilities": [
+                        "Tool Selection",
+                        "Technical Design",
+                        "Specification Creation",
+                    ],
                 },
                 "operator": {
                     "name": "المنفذ (Operator)",
@@ -134,7 +137,6 @@ class OvermindIdentity:
                     "capabilities": ["Quality Review", "Loop Detection", "Security Audit"],
                 },
             },
-
             # القدرات (Capabilities)
             "capabilities": {
                 "knowledge": [
@@ -176,7 +178,6 @@ class OvermindIdentity:
                     "ProjectKnowledge: معرفة شاملة بالمشروع",
                 ],
             },
-
             # التاريخ (History)
             "history": {
                 "milestones": [
@@ -315,8 +316,16 @@ class OvermindIdentity:
 
     def _is_founder_question(self, q: str) -> bool:
         """التحقق إذا كان السؤال عن المؤسس."""
-        keywords = ["مؤسس", "founder", "creator", "من أنشأ", "من بنى",
-                   "who is the", "who founded", "who created"]
+        keywords = [
+            "مؤسس",
+            "founder",
+            "creator",
+            "من أنشأ",
+            "من بنى",
+            "who is the",
+            "who founded",
+            "who created",
+        ]
         return any(keyword in q for keyword in keywords)
 
     def _is_overmind_question(self, q: str) -> bool:
@@ -364,8 +373,12 @@ class OvermindIdentity:
 
     def _is_birth_date_question(self, q: str) -> bool:
         """التحقق إذا كان السؤال عن تاريخ الميلاد."""
-        return ("تاريخ ميلاد" in q or "birth date" in q or "متى ولد" in q or
-                ("when was" in q and ("born" in q or "birthday" in q)))
+        return (
+            "تاريخ ميلاد" in q
+            or "birth date" in q
+            or "متى ولد" in q
+            or ("when was" in q and ("born" in q or "birthday" in q))
+        )
 
     def _is_history_question(self, q: str) -> bool:
         """التحقق إذا كان السؤال عن التاريخ."""
@@ -395,8 +408,7 @@ class OvermindIdentity:
     def _answer_agents_question(self) -> str:
         """الإجابة على أسئلة الوكلاء."""
         agents = self._identity["agents"]
-        agents_list = [f"• {agent['name']}: {agent['role']}"
-                      for agent in agents.values()]
+        agents_list = [f"• {agent['name']}: {agent['role']}" for agent in agents.values()]
         return "أنا أعمل مع فريق من 4 وكلاء متخصصة:\n" + "\n".join(agents_list)
 
     def _answer_agent_principles_question(self) -> str:
@@ -420,13 +432,12 @@ class OvermindIdentity:
             ("📚 المعرفة", caps["knowledge"]),
             ("⚡ الإجراءات", caps["actions"]),
             ("🧠 الذكاء", caps["intelligence"]),
-            ("🛠️ الأدوات الخارقة (Super Tools)", caps["super_tools"])
+            ("🛠️ الأدوات الخارقة (Super Tools)", caps["super_tools"]),
         ]
 
         response = "لدي قدرات واسعة وفائقة التطور:\n\n"
         response += "\n\n".join(
-            f"{title}:\n" + "\n".join(f"• {item}" for item in items)
-            for title, items in sections
+            f"{title}:\n" + "\n".join(f"• {item}" for item in items) for title, items in sections
         )
         return response
 

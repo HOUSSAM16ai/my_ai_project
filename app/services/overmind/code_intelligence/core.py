@@ -74,10 +74,7 @@ class StructuralCodeIntelligence:
 
         return code_lines, comment_lines, blank_lines
 
-    def _calculate_complexity_stats(
-        self,
-        functions: list[dict]
-    ) -> tuple[float, int, str, float]:
+    def _calculate_complexity_stats(self, functions: list[dict]) -> tuple[float, int, str, float]:
         """
         حساب إحصائيات التعقيد.
 
@@ -105,7 +102,9 @@ class StructuralCodeIntelligence:
         # Calculate standard deviation
         if len(function_complexities) > 1:
             mean = avg_complexity
-            variance = sum((x - mean) ** 2 for x in function_complexities) / len(function_complexities)
+            variance = sum((x - mean) ** 2 for x in function_complexities) / len(
+                function_complexities
+            )
             std_dev = variance**0.5
         else:
             std_dev = 0.0
@@ -137,7 +136,7 @@ class StructuralCodeIntelligence:
         max_complexity: int,
         max_func_name: str,
         std_dev: float,
-        avg_nesting: float
+        avg_nesting: float,
     ) -> FileMetrics:
         """
         إنشاء كائن FileMetrics الأساسي.
@@ -196,11 +195,7 @@ class StructuralCodeIntelligence:
         metrics.bugfix_commits = git_metrics["bugfix_commits"]
         metrics.branches_modified = git_metrics["branches_modified"]
 
-    def _enrich_with_smells(
-        self,
-        metrics: FileMetrics,
-        imports: list[dict]
-    ) -> None:
+    def _enrich_with_smells(self, metrics: FileMetrics, imports: list[dict]) -> None:
         """
         إثراء المقاييس بالروائح البنيوية.
 
@@ -208,11 +203,7 @@ class StructuralCodeIntelligence:
             metrics: كائن المقاييس للإثراء
             imports: قائمة الاستيرادات
         """
-        smells = self.smell_detector.detect_smells(
-            metrics.relative_path,
-            metrics,
-            imports
-        )
+        smells = self.smell_detector.detect_smells(metrics.relative_path, metrics, imports)
         metrics.is_god_class = smells["is_god_class"]
         metrics.has_layer_mixing = smells["has_layer_mixing"]
         metrics.has_cross_layer_imports = smells["has_cross_layer_imports"]
@@ -244,15 +235,24 @@ class StructuralCodeIntelligence:
             analyzer.visit(tree)
 
             # حساب الإحصائيات
-            avg_complexity, max_complexity, max_func_name, std_dev = \
+            avg_complexity, max_complexity, max_func_name, std_dev = (
                 self._calculate_complexity_stats(analyzer.functions)
+            )
             avg_nesting = self._calculate_nesting_stats(analyzer.functions)
 
             # إنشاء كائن المقاييس الأساسي
             metrics = self._create_base_metrics(
-                file_path, lines, code_lines, comment_lines, blank_lines,
-                analyzer, avg_complexity, max_complexity, max_func_name,
-                std_dev, avg_nesting
+                file_path,
+                lines,
+                code_lines,
+                comment_lines,
+                blank_lines,
+                analyzer,
+                avg_complexity,
+                max_complexity,
+                max_func_name,
+                std_dev,
+                avg_nesting,
             )
 
             # إثراء بمقاييس Git
@@ -303,9 +303,9 @@ class StructuralCodeIntelligence:
 
         # Normalize
         return {
-            'complexity': self._normalize_values(complexities),
-            'volatility': self._normalize_values(volatilities),
-            'smell': self._normalize_values(smells),
+            "complexity": self._normalize_values(complexities),
+            "volatility": self._normalize_values(volatilities),
+            "smell": self._normalize_values(smells),
         }
 
     def _count_smells(self, metrics: FileMetrics) -> int:
@@ -319,9 +319,9 @@ class StructuralCodeIntelligence:
             عدد الروائح | Number of smells
         """
         return (
-            (1 if metrics.is_god_class else 0) +
-            (1 if metrics.has_layer_mixing else 0) +
-            (1 if metrics.has_cross_layer_imports else 0)
+            (1 if metrics.is_god_class else 0)
+            + (1 if metrics.has_layer_mixing else 0)
+            + (1 if metrics.has_cross_layer_imports else 0)
         )
 
     def _normalize_values(self, values: list[float]) -> list[float]:
@@ -339,11 +339,7 @@ class StructuralCodeIntelligence:
         max_val = max(values)
         return [v / max_val for v in values]
 
-    def _calculate_weighted_scores(
-        self,
-        all_metrics: list[FileMetrics],
-        ranks: dict
-    ) -> None:
+    def _calculate_weighted_scores(self, all_metrics: list[FileMetrics], ranks: dict) -> None:
         """
         حساب الدرجات الموزونة | Calculate weighted scores
 
@@ -356,15 +352,13 @@ class StructuralCodeIntelligence:
 
         for i, metrics in enumerate(all_metrics):
             # Store individual ranks
-            metrics.complexity_rank = round(ranks['complexity'][i], 4)
-            metrics.volatility_rank = round(ranks['volatility'][i], 4)
-            metrics.smell_rank = round(ranks['smell'][i], 4)
+            metrics.complexity_rank = round(ranks["complexity"][i], 4)
+            metrics.volatility_rank = round(ranks["volatility"][i], 4)
+            metrics.smell_rank = round(ranks["smell"][i], 4)
 
             # Calculate weighted hotspot score
             score = (
-                w1 * ranks['complexity'][i] +
-                w2 * ranks['volatility'][i] +
-                w3 * ranks['smell'][i]
+                w1 * ranks["complexity"][i] + w2 * ranks["volatility"][i] + w3 * ranks["smell"][i]
             )
             metrics.hotspot_score = round(score, 4)
 
@@ -483,14 +477,14 @@ class StructuralCodeIntelligence:
         return ProjectAnalysis(
             timestamp=datetime.now().isoformat(),
             total_files=len(all_metrics),
-            total_lines=stats['total_lines'],
-            total_code_lines=stats['total_code'],
-            total_functions=stats['total_functions'],
-            total_classes=stats['total_classes'],
-            avg_file_complexity=stats['avg_complexity'],
-            max_file_complexity=stats['max_complexity'],
-            critical_hotspots=hotspots['critical'],
-            high_hotspots=hotspots['high'],
+            total_lines=stats["total_lines"],
+            total_code_lines=stats["total_code"],
+            total_functions=stats["total_functions"],
+            total_classes=stats["total_classes"],
+            avg_file_complexity=stats["avg_complexity"],
+            max_file_complexity=stats["max_complexity"],
+            critical_hotspots=hotspots["critical"],
+            high_hotspots=hotspots["high"],
             files=all_metrics,
         )
 
@@ -505,19 +499,17 @@ class StructuralCodeIntelligence:
             معجم الإحصائيات | Statistics dictionary
         """
         return {
-            'total_lines': sum(m.total_lines for m in all_metrics),
-            'total_code': sum(m.code_lines for m in all_metrics),
-            'total_functions': sum(m.num_functions for m in all_metrics),
-            'total_classes': sum(m.num_classes for m in all_metrics),
-            'avg_complexity': round(
+            "total_lines": sum(m.total_lines for m in all_metrics),
+            "total_code": sum(m.code_lines for m in all_metrics),
+            "total_functions": sum(m.num_functions for m in all_metrics),
+            "total_classes": sum(m.num_classes for m in all_metrics),
+            "avg_complexity": round(
                 sum(m.file_complexity for m in all_metrics) / len(all_metrics)
-                if all_metrics else 0,
-                2
+                if all_metrics
+                else 0,
+                2,
             ),
-            'max_complexity': max(
-                (m.file_complexity for m in all_metrics),
-                default=0
-            ),
+            "max_complexity": max((m.file_complexity for m in all_metrics), default=0),
         }
 
     def _identify_hotspots(self, all_metrics: list) -> dict:
@@ -531,6 +523,6 @@ class StructuralCodeIntelligence:
             معجم النقاط الساخنة | Hotspots dictionary
         """
         return {
-            'critical': [m.relative_path for m in all_metrics[:20]],
-            'high': [m.relative_path for m in all_metrics[20:40]],
+            "critical": [m.relative_path for m in all_metrics[:20]],
+            "high": [m.relative_path for m in all_metrics[20:40]],
         }

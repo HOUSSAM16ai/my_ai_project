@@ -20,6 +20,7 @@ class ThreatLevel(Enum):
     LOW = "low"  # منخفض - انحراف بسيط
     INFO = "info"  # معلومات فقط
 
+
 class ThreatType(Enum):
     """نوع التهديد - Type of security threat"""
 
@@ -33,6 +34,7 @@ class ThreatType(Enum):
     RATE_LIMIT_VIOLATION = "rate_limit_violation"
     ANOMALOUS_BEHAVIOR = "anomalous_behavior"
     UNAUTHORIZED_ACCESS = "unauthorized_access"
+
 
 @dataclass
 class SecurityEvent:
@@ -67,6 +69,7 @@ class SecurityEvent:
             "response_code": self.response_code,
             "response_time": self.response_time,
         }
+
 
 @dataclass
 class ThreatDetection:
@@ -104,6 +107,7 @@ class ThreatDetection:
             "detected_at": self.detected_at.isoformat(),
         }
 
+
 @dataclass
 class UserBehaviorProfile:
     """
@@ -121,6 +125,7 @@ class UserBehaviorProfile:
     typical_user_agents: list[str]
     risk_score: float = 0.0  # 0-100
     last_updated: datetime = field(default_factory=datetime.now)
+
 
 __all__ = [
     "SecurityEvent",

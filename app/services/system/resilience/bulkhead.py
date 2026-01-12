@@ -107,9 +107,7 @@ class Bulkhead:
         with self._lock:
             self.active_calls += 1
 
-    def _execute_with_timeout(
-        self, func: Callable, args: tuple, kwargs: dict
-    ) -> Any:
+    def _execute_with_timeout(self, func: Callable, args: tuple, kwargs: dict) -> Any:
         """
         تنفيذ الدالة مع مهلة زمنية | Execute function with timeout
 

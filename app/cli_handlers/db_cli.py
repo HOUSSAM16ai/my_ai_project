@@ -75,7 +75,9 @@ def _run_seed_plan(plan: AdminSeedPlan, context: CLIContext, dry_run: bool) -> N
     """ينفّذ خطة تهيئة المشرف مع دعم التراجع التجريبي."""
 
     async def _seed() -> None:
-        async with transactional_session(context.session_provider, context.logger, dry_run=dry_run) as session:
+        async with transactional_session(
+            context.session_provider, context.logger, dry_run=dry_run
+        ) as session:
             await _ensure_admin_user(session, context.logger, plan)
 
     asyncio.run(_seed())
@@ -85,7 +87,9 @@ def _validate_seed_flags(confirm: bool, dry_run: bool) -> None:
     """يتحقق من سلامة خيارات التنفيذ لتجنب الحذف غير المقصود."""
 
     if not confirm and not dry_run:
-        raise click.UsageError("إضافة --confirm مطلوبة للتنفيذ الفعلي (أو استخدم --dry-run للتجربة).")
+        raise click.UsageError(
+            "إضافة --confirm مطلوبة للتنفيذ الفعلي (أو استخدم --dry-run للتجربة)."
+        )
 
 
 def _build_admin_seed_plan(settings: AppSettings) -> AdminSeedPlan:

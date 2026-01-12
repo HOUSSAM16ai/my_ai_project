@@ -11,6 +11,7 @@
 
 __all__ = ["extract_first_json_object", "strip_markdown_fences"]
 
+
 def strip_markdown_fences(text: str | None) -> str:
     """
     إزالة علامات Markdown (```) من النص.
@@ -30,6 +31,7 @@ def strip_markdown_fences(text: str | None) -> str:
     t = text.strip()
     return _remove_markdown_markers(t)
 
+
 def _remove_markdown_markers(text: str) -> str:
     """
     إزالة علامات Markdown من بداية ونهاية النص.
@@ -47,6 +49,7 @@ def _remove_markdown_markers(text: str) -> str:
         text = text[:-3].strip()
 
     return text
+
 
 def extract_first_json_object(text: str | None) -> str | None:
     """
@@ -72,6 +75,7 @@ def extract_first_json_object(text: str | None) -> str | None:
         return None
 
     return _find_balanced_json_block(t, start_index)
+
 
 def _find_balanced_json_block(text: str, start_index: int) -> str | None:
     """

@@ -85,8 +85,16 @@ LEGACY_EXEMPTIONS = {
     "app/services/admin/chat_persistence.py": ["db_import"],
     "app/services/admin/chat_streamer.py": ["db_import"],
     "infra/pipelines/data_quality_checkpoint.py": ["Any"],
-    "microservices/orchestrator_service/database.py": ["create_async_engine", "create_all", "sessionmaker"],
-    "microservices/planning_agent/database.py": ["create_async_engine", "create_all", "sessionmaker"],
+    "microservices/orchestrator_service/database.py": [
+        "create_async_engine",
+        "create_all",
+        "sessionmaker",
+    ],
+    "microservices/planning_agent/database.py": [
+        "create_async_engine",
+        "create_all",
+        "sessionmaker",
+    ],
     "microservices/memory_agent/database.py": ["create_async_engine", "create_all", "sessionmaker"],
     "microservices/user_service/database.py": ["create_all"],
     "app/cli_handlers/db_cli.py": ["create_all"],
@@ -204,7 +212,9 @@ def _check_forbidden_calls(
             continue
         if check["pattern"] in exemptions:
             return
-        allowed = any(_match_path(filepath, allowed_pattern) for allowed_pattern in check["allowed_in"])
+        allowed = any(
+            _match_path(filepath, allowed_pattern) for allowed_pattern in check["allowed_in"]
+        )
         if not allowed:
             errors.append(f"{filepath}:{node.lineno} - {check['message']}")
 
@@ -222,7 +232,9 @@ def _check_forbidden_attribute_access(
             continue
         if check["pattern"] in exemptions:
             return
-        allowed = any(_match_path(filepath, allowed_pattern) for allowed_pattern in check["allowed_in"])
+        allowed = any(
+            _match_path(filepath, allowed_pattern) for allowed_pattern in check["allowed_in"]
+        )
         if not allowed:
             errors.append(f"{filepath}:{node.lineno} - {check['message']}")
 
@@ -278,7 +290,9 @@ def _check_admin_db_imports(
 def _check_any_usage(tree: ast.AST, filepath: Path, errors: list[str]) -> None:
     for node in ast.walk(tree):
         if isinstance(node, ast.Name) and node.id == "Any":
-            errors.append(f"{filepath}:{node.lineno} - Use of 'Any' is forbidden. Use specific types or 'object'.")
+            errors.append(
+                f"{filepath}:{node.lineno} - Use of 'Any' is forbidden. Use specific types or 'object'."
+            )
         elif isinstance(node, ast.Attribute) and node.attr == "Any":
             errors.append(f"{filepath}:{node.lineno} - Use of 'Any' is forbidden.")
 
@@ -306,7 +320,9 @@ def _check_microservice_imports(
         if module_name == "microservices" or module_name.startswith("microservices."):
             parts = module_name.split(".")
             if len(parts) == 1:
-                errors.append(f"{filepath}:{node.lineno} - Direct import of 'microservices' package is forbidden.")
+                errors.append(
+                    f"{filepath}:{node.lineno} - Direct import of 'microservices' package is forbidden."
+                )
                 continue
             imported_service = parts[1]
             if imported_service != current_service:
@@ -315,10 +331,14 @@ def _check_microservice_imports(
                 )
 
         if module_name.startswith("app.services"):
-            errors.append(f"{filepath}:{node.lineno} - Microservice cannot import 'app.services' (Monolith Leak).")
+            errors.append(
+                f"{filepath}:{node.lineno} - Microservice cannot import 'app.services' (Monolith Leak)."
+            )
 
         if module_name.startswith("app.api"):
-            errors.append(f"{filepath}:{node.lineno} - Microservice cannot import 'app.api' (Layer Violation).")
+            errors.append(
+                f"{filepath}:{node.lineno} - Microservice cannot import 'app.api' (Layer Violation)."
+            )
 
         if module_name.startswith("app.") and not module_name.startswith("app.core"):
             errors.append(
@@ -326,11 +346,15 @@ def _check_microservice_imports(
             )
 
 
-def _check_monolith_imports(node: ast.Import | ast.ImportFrom, filepath: Path, errors: list[str]) -> None:
+def _check_monolith_imports(
+    node: ast.Import | ast.ImportFrom, filepath: Path, errors: list[str]
+) -> None:
     modules = _get_modules_from_import(node)
     for module_name in modules:
         if module_name == "microservices" or module_name.startswith("microservices."):
-            errors.append(f"{filepath}:{node.lineno} - Monolith cannot import 'microservices' directly. Use APIs.")
+            errors.append(
+                f"{filepath}:{node.lineno} - Monolith cannot import 'microservices' directly. Use APIs."
+            )
 
 
 if __name__ == "__main__":

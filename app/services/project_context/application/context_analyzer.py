@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 # Project root detection
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent.parent
 
+
 class ProjectContextService:
     """
     خدمة سياق المشروع (Project Context Service).
@@ -182,13 +183,13 @@ class ProjectContextService:
     def _gather_project_data(self) -> dict[str, object]:
         """جمع جميع بيانات المشروع."""
         return {
-            'stats': self.get_code_statistics(),
-            'structure': self.get_project_structure(),
-            'models': self.get_models_info(),
-            'services': self.get_services_info(),
-            'routes': self.get_api_routes_info(),
-            'issues': self.get_recent_issues(),
-            'strengths': self.get_strengths(),
+            "stats": self.get_code_statistics(),
+            "structure": self.get_project_structure(),
+            "models": self.get_models_info(),
+            "services": self.get_services_info(),
+            "routes": self.get_api_routes_info(),
+            "issues": self.get_recent_issues(),
+            "strengths": self.get_strengths(),
         }
 
     def _build_context_sections(self, data: dict[str, object]) -> list[str]:
@@ -196,13 +197,13 @@ class ProjectContextService:
         sections = ["# 📊 REAL-TIME PROJECT ANALYSIS", ""]
 
         # Casting needed because data is dict[str, object]
-        stats = data['stats']
-        structure = data['structure']
-        models = data['models']
-        services = data['services']
-        routes = data['routes']
-        issues = data['issues']
-        strengths = data['strengths']
+        stats = data["stats"]
+        structure = data["structure"]
+        models = data["models"]
+        services = data["services"]
+        routes = data["routes"]
+        issues = data["issues"]
+        strengths = data["strengths"]
 
         if isinstance(stats, CodeStatistics):
             sections.extend(self._build_statistics_section(stats))
@@ -216,8 +217,8 @@ class ProjectContextService:
         i_list = issues if isinstance(issues, list) else []
         str_list = strengths if isinstance(strengths, list) else []
 
-        sections.extend(self._build_components_section(m_list, s_list, r_list)) # type: ignore
-        sections.extend(self._build_analysis_section(i_list, str_list)) # type: ignore
+        sections.extend(self._build_components_section(m_list, s_list, r_list))  # type: ignore
+        sections.extend(self._build_analysis_section(i_list, str_list))  # type: ignore
         sections.append(f"## ⏰ Analysis Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
         return sections
@@ -242,10 +243,7 @@ class ProjectContextService:
         return lines
 
     def _build_components_section(
-        self,
-        models: list[str],
-        services: list[str],
-        routes: list[str]
+        self, models: list[str], services: list[str], routes: list[str]
     ) -> list[str]:
         """بناء قسم المكونات."""
         return [
@@ -298,6 +296,7 @@ class ProjectContextService:
             "strengths": self.get_strengths(),
             "analyzed_at": datetime.now().isoformat(),
         }
+
 
 __all__ = [
     "ProjectContextService",

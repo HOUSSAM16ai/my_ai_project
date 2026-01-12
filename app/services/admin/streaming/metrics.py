@@ -1,4 +1,5 @@
 """حساب مؤشرات أداء البث بطريقة واضحة وقابلة للاختبار."""
+
 from __future__ import annotations
 
 import time

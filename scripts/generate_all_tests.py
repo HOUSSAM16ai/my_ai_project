@@ -175,7 +175,6 @@ class TestIntegration:
 '''
 
 
-
 def get_uncovered_files() -> list[tuple[Path, float, int]]:
     """Get list of files with <100% coverage"""
     # Run coverage

@@ -77,7 +77,7 @@ class TaskCreated(DomainEvent):
             category=EventCategory.MISSION,
             aggregate_id=task_id,
             aggregate_type="Task",
-            payload={"mission_id": mission_id, "description": description}
+            payload={"mission_id": mission_id, "description": description},
         )
 
 
@@ -147,7 +147,11 @@ class MissionCreatedFromChat(DomainEvent):
             category=EventCategory.MISSION,
             aggregate_id=mission_id,
             aggregate_type="Mission",
-            payload={"conversation_id": conversation_id, "user_id": user_id, "objective": objective}
+            payload={
+                "conversation_id": conversation_id,
+                "user_id": user_id,
+                "objective": objective,
+            },
         )
 
 
@@ -161,19 +165,33 @@ class ToolExecutionStarted(DomainEvent):
             category=EventCategory.MISSION,
             aggregate_id=context_id,
             aggregate_type="Context",
-            payload={"tool_name": tool_name, "executed_by": executed_by, "args": args}
+            payload={"tool_name": tool_name, "executed_by": executed_by, "args": args},
         )
 
 
 @DomainEventRegistry.register
 @dataclass
 class ToolExecutionCompleted(DomainEvent):
-    def __init__(self, tool_name: str, executed_by: str, context_id: str, success: bool, duration_ms: float, result: dict[str, str | int | bool] | None = None):
+    def __init__(
+        self,
+        tool_name: str,
+        executed_by: str,
+        context_id: str,
+        success: bool,
+        duration_ms: float,
+        result: dict[str, str | int | bool] | None = None,
+    ):
         super().__init__(
             event_type="ToolExecutionCompleted",
             bounded_context=BoundedContext.TASK_EXECUTION,
             category=EventCategory.MISSION,
             aggregate_id=context_id,
             aggregate_type="Context",
-            payload={"tool_name": tool_name, "executed_by": executed_by, "success": success, "duration_ms": duration_ms, "result": str(result)[:500] if result else None}
+            payload={
+                "tool_name": tool_name,
+                "executed_by": executed_by,
+                "success": success,
+                "duration_ms": duration_ms,
+                "result": str(result)[:500] if result else None,
+            },
         )

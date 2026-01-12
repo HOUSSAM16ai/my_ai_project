@@ -44,7 +44,9 @@ def test_cache_factory_falls_back_to_service_name(monkeypatch: pytest.MonkeyPatc
         ("AGENT_ID", "agent-42"),
     ],
 )
-def test_cache_factory_uses_agent_identity(monkeypatch: pytest.MonkeyPatch, env_key: str, expected: str) -> None:
+def test_cache_factory_uses_agent_identity(
+    monkeypatch: pytest.MonkeyPatch, env_key: str, expected: str
+) -> None:
     _clear_namespace_env()
     monkeypatch.setenv(env_key, expected)
 

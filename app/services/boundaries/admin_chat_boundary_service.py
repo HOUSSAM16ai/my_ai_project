@@ -109,11 +109,15 @@ class AdminChatBoundaryService:
         except ValueError as e:
             raise HTTPException(status_code=404, detail="Invalid conversation ID") from e
 
-    async def save_message(self, conversation_id: int, role: MessageRole, content: str) -> dict[str, str | int | bool]:
+    async def save_message(
+        self, conversation_id: int, role: MessageRole, content: str
+    ) -> dict[str, str | int | bool]:
         """حفظ رسالة في قاعدة البيانات."""
         return await self.persistence.save_message(conversation_id, role, content)
 
-    async def get_chat_history(self, conversation_id: int, limit: int = 20) -> list[dict[str, object]]:
+    async def get_chat_history(
+        self, conversation_id: int, limit: int = 20
+    ) -> list[dict[str, object]]:
         """استرجاع سجل المحادثة."""
         return await self.persistence.get_chat_history(conversation_id, limit)
 
@@ -232,13 +236,15 @@ class AdminChatBoundaryService:
             u_at = c_at
             if hasattr(conv, "updated_at") and conv.updated_at:
                 u_at = conv.updated_at.isoformat()
-            results.append({
-                "id": conv.id,
-                "conversation_id": conv.id,
-                "title": conv.title,
-                "created_at": c_at,
-                "updated_at": u_at,
-            })
+            results.append(
+                {
+                    "id": conv.id,
+                    "conversation_id": conv.id,
+                    "title": conv.title,
+                    "created_at": c_at,
+                    "updated_at": u_at,
+                }
+            )
         return results
 
     async def get_conversation_details(self, user: User, conversation_id: int) -> dict[str, object]:

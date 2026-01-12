@@ -76,9 +76,7 @@ class AdvancedRiskCalculator(RiskCalculatorPort):
 
         return total_risk
 
-    def _calculate_finding_risk(
-        self, finding: SecurityFinding, public_endpoints: int
-    ) -> float:
+    def _calculate_finding_risk(self, finding: SecurityFinding, public_endpoints: int) -> float:
         """
         حساب مخاطر اكتشاف واحد | Calculate risk for a single finding
 

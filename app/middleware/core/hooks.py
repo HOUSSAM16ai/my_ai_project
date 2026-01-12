@@ -92,12 +92,15 @@ class LifecycleHooks:
         """Get number of registered hooks for an event"""
         return len(self._hooks.get(event, []))
 
+
 # Global hooks instance
 _global_hooks = LifecycleHooks()
+
 
 def get_global_hooks() -> LifecycleHooks:
     """Get the global lifecycle hooks manager"""
     return _global_hooks
+
 
 def on_before_execution(callback: Callable) -> None:
     """
@@ -111,6 +114,7 @@ def on_before_execution(callback: Callable) -> None:
     _global_hooks.register("before_execution", callback)
     return callback
 
+
 def on_after_success(callback: Callable) -> None:
     """
     Decorator to register an after_success hook
@@ -123,6 +127,7 @@ def on_after_success(callback: Callable) -> None:
     _global_hooks.register("after_success", callback)
     return callback
 
+
 def on_after_failure(callback: Callable) -> None:
     """
     Decorator to register an after_failure hook
@@ -134,6 +139,7 @@ def on_after_failure(callback: Callable) -> None:
     """
     _global_hooks.register("after_failure", callback)
     return callback
+
 
 def on_after_execution(callback: Callable) -> None:
     """

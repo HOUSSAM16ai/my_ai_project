@@ -4,6 +4,7 @@
 تنسق هذه الخدمة البث والتخزين وبوابة السياسات لضمان أن المحادثات
 تبقى ضمن النطاق التعليمي المسموح.
 """
+
 from __future__ import annotations
 
 import json
@@ -86,9 +87,7 @@ class CustomerChatBoundaryService:
         """
         await self.persistence.save_message(conversation_id, role, content, policy_flags)
 
-    async def get_chat_history(
-        self, conversation_id: int, limit: int = 20
-    ) -> list[dict[str, str]]:
+    async def get_chat_history(self, conversation_id: int, limit: int = 20) -> list[dict[str, str]]:
         """
         استرجاع سجل المحادثة.
         """
@@ -328,9 +327,7 @@ class CustomerChatBoundaryService:
             )
         return results
 
-    async def get_conversation_details(
-        self, user: User, conversation_id: int
-    ) -> dict[str, object]:
+    async def get_conversation_details(self, user: User, conversation_id: int) -> dict[str, object]:
         """
         استرجاع تفاصيل محادثة محددة مع التحقق من الملكية.
         """

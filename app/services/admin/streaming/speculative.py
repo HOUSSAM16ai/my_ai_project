@@ -1,4 +1,5 @@
 """تنبؤات بسيطة لدعم ميزات التفريغ الاستباقي في البث."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

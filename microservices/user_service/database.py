@@ -3,6 +3,7 @@ User Service Database Module.
 
 Uses the Shared Kernel Factory Pattern.
 """
+
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +21,7 @@ engine = create_db_engine(settings)
 # 3. Create Session Factory using Shared Kernel Factory
 async_session_factory = create_session_factory(engine)
 
+
 async def init_db() -> None:
     """
     Initialize database schema.
@@ -29,17 +31,18 @@ async def init_db() -> None:
     - FORBIDDEN: Production (Must use Alembic)
     """
     if settings.ENVIRONMENT not in ("development", "testing"):
-         # Hard fail if someone tries to auto-create in production
-         # But usually init_db is called on startup.
-         # We should probably log a warning and skip, or strictly do nothing.
-         # Standards say: "PROD hard fail always" if they try to auto-create.
-         # But if the app calls init_db() on startup, we don't want to crash the app
-         # if the DB is already there. We just want to ensure we DON'T run create_all.
-         # The best way is to strict check.
-         return
+        # Hard fail if someone tries to auto-create in production
+        # But usually init_db is called on startup.
+        # We should probably log a warning and skip, or strictly do nothing.
+        # Standards say: "PROD hard fail always" if they try to auto-create.
+        # But if the app calls init_db() on startup, we don't want to crash the app
+        # if the DB is already there. We just want to ensure we DON'T run create_all.
+        # The best way is to strict check.
+        return
 
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
+
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """Dependency for DB Session."""

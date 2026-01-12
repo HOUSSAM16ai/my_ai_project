@@ -8,7 +8,6 @@ from app.kernel import RealityKernel
 
 
 class TestRealityKernel:
-
     @pytest.fixture
     def mock_settings(self):
         """Returns a valid AppSettings dictionary/object for testing."""
@@ -22,7 +21,7 @@ class TestRealityKernel:
             "ALLOWED_HOSTS": ["*"],
             "BACKEND_CORS_ORIGINS": ["http://localhost:3000"],
             "FRONTEND_URL": "http://localhost:3000",
-            "DATABASE_URL": "sqlite:///:memory:"
+            "DATABASE_URL": "sqlite:///:memory:",
         }
 
     def test_kernel_initialization(self, mock_settings):
@@ -101,11 +100,11 @@ class TestRealityKernel:
 
         # STARTUP
         with patch("app.core.db_schema.validate_schema_on_startup") as mock_validate:
-             await anext(lifespan_gen)
-             # In testing environment, validate_schema might be skipped or mocked
-             # The code says: if env != testing: validate...
-             # Our mock_settings has ENVIRONMENT=testing, so it skips.
-             mock_validate.assert_not_called()
+            await anext(lifespan_gen)
+            # In testing environment, validate_schema might be skipped or mocked
+            # The code says: if env != testing: validate...
+            # Our mock_settings has ENVIRONMENT=testing, so it skips.
+            mock_validate.assert_not_called()
 
         # SHUTDOWN
         with suppress(StopAsyncIteration):
@@ -122,8 +121,8 @@ class TestRealityKernel:
             "PROJECT_NAME": "Dev",
             "ENVIRONMENT": "development",
             "SECRET_KEY": "s",
-            "BACKEND_CORS_ORIGINS": [], # Empty implies default logic
-            "FRONTEND_URL": "http://localhost:3000"
+            "BACKEND_CORS_ORIGINS": [],  # Empty implies default logic
+            "FRONTEND_URL": "http://localhost:3000",
         }
         RealityKernel(settings=dev_settings)
         # Verify middleware configuration (complex to inspect directly in FastAPI,
@@ -136,7 +135,7 @@ class TestRealityKernel:
             "SECRET_KEY": "super_secret_key_that_is_long_enough_for_production_security_validation_32_chars",
             "ALLOWED_HOSTS": ["myprod.com"],
             "BACKEND_CORS_ORIGINS": ["https://myprod.com"],
-            "FRONTEND_URL": "https://myprod.com"
+            "FRONTEND_URL": "https://myprod.com",
         }
         kernel_prod = RealityKernel(settings=prod_settings)
         assert kernel_prod.app.title == "Prod"
@@ -155,16 +154,18 @@ class TestRealityKernel:
         import typing
 
         from app import kernel
-        assert hasattr(typing, 'Any'), "typing.Any should exist"
+
+        assert hasattr(typing, "Any"), "typing.Any should exist"
 
         # Verify the kernel module loads successfully (no NameError)
-        assert hasattr(kernel, 'RealityKernel'), "RealityKernel should be available"
+        assert hasattr(kernel, "RealityKernel"), "RealityKernel should be available"
 
         # Verify we can inspect the __init__ signature which uses dict[str, Any]
         import inspect
+
         sig = inspect.signature(kernel.RealityKernel.__init__)
         params = sig.parameters
 
         # The settings parameter should have the union type hint
-        assert 'settings' in params, "settings parameter should exist"
+        assert "settings" in params, "settings parameter should exist"
         # If we got this far without NameError, the Any import is working

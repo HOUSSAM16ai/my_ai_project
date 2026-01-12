@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
+
 class CompositeResiliencePolicy:
     """
     Composite policy combining multiple resilience patterns.

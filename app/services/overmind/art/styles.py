@@ -38,6 +38,7 @@ class ColorPalette(NamedTuple):
         error: لون الخطأ (أحمر)
         info: لون المعلومات (أزرق)
     """
+
     primary: str
     secondary: str
     accent: str
@@ -215,10 +216,11 @@ class VisualTheme:
 
         Complexity: O(steps)
         """
+
         def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
             """تحويل hex إلى RGB"""
-            hex_color = hex_color.lstrip('#')
-            return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))  # type: ignore
+            hex_color = hex_color.lstrip("#")
+            return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))  # type: ignore
 
         def rgb_to_hex(rgb: tuple[int, int, int]) -> str:
             """تحويل RGB إلى hex"""
@@ -253,8 +255,8 @@ class VisualTheme:
         Complexity: O(1)
         """
         # حساب السطوع (Luminance)
-        hex_color = color.lstrip('#')
-        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        hex_color = color.lstrip("#")
+        r, g, b = tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
 
         # صيغة السطوع النسبي (Relative Luminance)
         luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255

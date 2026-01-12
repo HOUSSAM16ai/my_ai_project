@@ -18,6 +18,7 @@ class RetryStrategy(Enum):
     FIBONACCI = "fibonacci"
     CUSTOM = "custom"
 
+
 @dataclass
 class RetryConfig:
     """Retry configuration"""
@@ -28,6 +29,7 @@ class RetryConfig:
     jitter_percent: float = 0.5  # ±50% randomization
     retry_budget_percent: float = 10.0  # Max 10% retries
     strategy: RetryStrategy = RetryStrategy.EXPONENTIAL_BACKOFF
+
 
 @dataclass
 class IdempotencyKey:
@@ -40,6 +42,7 @@ class IdempotencyKey:
     result: dict[str, str | int | bool] = None
     completed: bool = False
 
+
 @dataclass
 class RetryAttempt:
     """Single retry attempt record"""
@@ -50,15 +53,18 @@ class RetryAttempt:
     error: str | None = None
     success: bool = False
 
+
 class RetryableError(Exception):
     """Indicates error is retryable"""
 
     pass
 
+
 class RetryBudgetExhaustedError(Exception):
     """Raised when retry budget is exhausted"""
 
     pass
+
 
 class RetryBudget:
     """
@@ -125,6 +131,7 @@ class RetryBudget:
                 "within_budget": retry_rate < self.budget_percent,
             }
 
+
 class RetryManager:
     """
     Advanced Retry Manager with:
@@ -181,9 +188,7 @@ class RetryManager:
         retry_on_status = retry_on_status or [500, 502, 503, 504]
 
         for attempt in range(self.config.max_retries + 1):
-            result = self._execute_attempt(
-                func, args, kwargs, attempt, retry_on_status, attempts
-            )
+            result = self._execute_attempt(func, args, kwargs, attempt, retry_on_status, attempts)
 
             if result is not None:
                 # Success - cache if idempotent
@@ -301,9 +306,7 @@ class RetryManager:
 
         # Check budget again before sleeping (Double Check Pattern)
         if not self.retry_budget.can_retry():
-            raise RetryBudgetExhaustedError(
-                "Retry budget exhausted during attempts."
-            ) from None
+            raise RetryBudgetExhaustedError("Retry budget exhausted during attempts.") from None
 
         # Wait before retry
         time.sleep(delay_ms / 1000.0)

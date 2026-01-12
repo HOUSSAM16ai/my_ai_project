@@ -10,6 +10,7 @@
 - Observability: تسجيل المقاييس والأخطاء بدقة.
 - SOLID - Dependency Inversion: حقن التبعيات (Router, Cache, Policy) بدلاً من إنشائها داخلياً.
 """
+
 from __future__ import annotations
 
 import logging
@@ -54,7 +55,7 @@ class APIGatewayService:
         router: IntelligentRouter,
         policy_engine: PolicyEngine,
         cache_provider: CacheProviderProtocol,
-        adapters: dict[str, ProtocolAdapter] | None = None
+        adapters: dict[str, ProtocolAdapter] | None = None,
     ) -> None:
         """
         تهيئة البوابة مع حقن التبعيات.
@@ -203,9 +204,7 @@ class APIGatewayService:
             "cache_hit": False,
         }
 
-    async def _update_cache_if_needed(
-        self, method: str, key: str, data: JSONDict
-    ) -> None:
+    async def _update_cache_if_needed(self, method: str, key: str, data: JSONDict) -> None:
         if method == "GET":
             await self.cache.put(key, data, ttl=300)
 
@@ -224,6 +223,7 @@ class APIGatewayService:
 # FACTORY & SINGLETON
 # ======================================================================================
 
+
 def create_default_gateway() -> APIGatewayService:
     """
     إنشاء مثيل افتراضي من البوابة (Factory Method).
@@ -233,17 +233,12 @@ def create_default_gateway() -> APIGatewayService:
     policy_engine = PolicyEngine()
 
     # تهيئة التخزين المؤقت باستخدام Factory
-    cache_provider = CacheFactory.get_provider(
-        provider_type="memory",
-        max_size_items=1000,
-        ttl=300
-    )
+    cache_provider = CacheFactory.get_provider(provider_type="memory", max_size_items=1000, ttl=300)
 
     return APIGatewayService(
-        router=router,
-        policy_engine=policy_engine,
-        cache_provider=cache_provider
+        router=router, policy_engine=policy_engine, cache_provider=cache_provider
     )
+
 
 api_gateway_service = create_default_gateway()
 
@@ -251,6 +246,7 @@ api_gateway_service = create_default_gateway()
 # ======================================================================================
 # DECORATOR FOR GATEWAY PROCESSING
 # ======================================================================================
+
 
 def gateway_process(
     protocol: ProtocolType = ProtocolType.REST, _cacheable: bool = False
@@ -276,9 +272,7 @@ def gateway_process(
     return decorator
 
 
-async def _process_gateway_request(
-    request: Request, protocol: ProtocolType
-) -> JSONResponse | None:
+async def _process_gateway_request(request: Request, protocol: ProtocolType) -> JSONResponse | None:
     """
     معالجة الطلب عبر خدمة البوابة.
 
@@ -299,9 +293,7 @@ async def _execute_endpoint(f: Callable, request: Request, *args: Any, **kwargs:
         return await f(request, *args, **kwargs)
     except Exception as e:
         logger.error(f"Endpoint error: {e}", exc_info=True)
-        return JSONResponse(
-            content={"error": "Internal error", "message": str(e)}, status_code=500
-        )
+        return JSONResponse(content={"error": "Internal error", "message": str(e)}, status_code=500)
 
 
 def get_gateway_service() -> APIGatewayService:

@@ -14,13 +14,16 @@ from app.caching.distributed_cache import MultiLevelCache
 def l1_mock():
     return AsyncMock(spec=CacheBackend)
 
+
 @pytest.fixture
 def l2_mock():
     return AsyncMock(spec=CacheBackend)
 
+
 @pytest.fixture
 def multi_cache(l1_mock, l2_mock):
     return MultiLevelCache(l1_mock, l2_mock, sync_l1=True)
+
 
 @pytest.mark.asyncio
 async def test_get_hit_l1(multi_cache, l1_mock, l2_mock):
@@ -32,6 +35,7 @@ async def test_get_hit_l1(multi_cache, l1_mock, l2_mock):
     assert val == "val_l1"
     l1_mock.get.assert_awaited_once_with("key")
     l2_mock.get.assert_not_awaited()
+
 
 @pytest.mark.asyncio
 async def test_get_miss_l1_hit_l2(multi_cache, l1_mock, l2_mock):
@@ -47,6 +51,7 @@ async def test_get_miss_l1_hit_l2(multi_cache, l1_mock, l2_mock):
 
     # Verify Backfill
     l1_mock.set.assert_awaited_once_with("key", "val_l2", ttl=60)
+
 
 @pytest.mark.asyncio
 async def test_set_propagates(multi_cache, l1_mock, l2_mock):

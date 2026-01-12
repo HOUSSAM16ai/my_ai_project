@@ -2,6 +2,7 @@
 User Domain Models.
 Contains User, Role, Permission, and Auth Tokens.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -20,12 +21,15 @@ if TYPE_CHECKING:
     from app.core.domain.chat import AdminConversation, CustomerConversation
     from app.core.domain.mission import Mission
 
+
 class UserStatus(CaseInsensitiveEnum):
     """User Lifecycle Status."""
+
     ACTIVE = "active"
     SUSPENDED = "suspended"
     PENDING = "pending"
     DISABLED = "disabled"
+
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -91,6 +95,7 @@ class User(SQLModel, table=True):
     def __repr__(self):
         return f"<User id={self.id} email={self.email}>"
 
+
 class Role(SQLModel, table=True):
     __tablename__ = "roles"
 
@@ -114,8 +119,11 @@ class Role(SQLModel, table=True):
     permissions: list[Permission] = Relationship(
         back_populates="roles",
         link_model="RolePermission",  # type: ignore[arg-type]
-        sa_relationship=relationship("Permission", secondary="role_permissions", back_populates="roles"),
+        sa_relationship=relationship(
+            "Permission", secondary="role_permissions", back_populates="roles"
+        ),
     )
+
 
 class Permission(SQLModel, table=True):
     __tablename__ = "permissions"
@@ -135,8 +143,11 @@ class Permission(SQLModel, table=True):
     roles: list[Role] = Relationship(
         back_populates="permissions",
         link_model="RolePermission",  # type: ignore[arg-type]
-        sa_relationship=relationship("Role", secondary="role_permissions", back_populates="permissions"),
+        sa_relationship=relationship(
+            "Role", secondary="role_permissions", back_populates="permissions"
+        ),
     )
+
 
 class UserRole(SQLModel, table=True):
     __tablename__ = "user_roles"
@@ -148,6 +159,7 @@ class UserRole(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
 
+
 class RolePermission(SQLModel, table=True):
     __tablename__ = "role_permissions"
 
@@ -157,6 +169,7 @@ class RolePermission(SQLModel, table=True):
         default_factory=utc_now,
         sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
+
 
 class RefreshToken(SQLModel, table=True):
     __tablename__ = "refresh_tokens"
@@ -201,6 +214,7 @@ class RefreshToken(SQLModel, table=True):
 
         return self.revoked_at is None and current_time < expiry
 
+
 class PasswordResetToken(SQLModel, table=True):
     __tablename__ = "password_resets"
 
@@ -220,7 +234,9 @@ class PasswordResetToken(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
 
-    user: User = Relationship(sa_relationship=relationship("User", back_populates="password_reset_tokens"))
+    user: User = Relationship(
+        sa_relationship=relationship("User", back_populates="password_reset_tokens")
+    )
 
     def is_active(self, *, now: datetime | None = None) -> bool:
         moment = now or utc_now()

@@ -31,22 +31,27 @@ logger = logging.getLogger(__name__)
 # تعريف نوع عام للنتيجة
 T = TypeVar("T")
 
+
 # بروتوكول استدعاء تسجيل الأحداث
 class EventLogger(Protocol):
     async def __call__(self, event_type: str, payload: dict[str, Any]) -> None: ...
+
 
 class CognitiveCritique(BaseModel):
     """
     نموذج نتيجة المراجعة والتدقيق.
     """
+
     approved: bool = Field(..., description="هل تمت الموافقة على العمل؟")
     feedback: str = Field(..., description="ملاحظات المراجعة أو أسباب الرفض")
     score: float = Field(0.0, description="درجة الجودة من 0 إلى 1")
+
 
 class CognitiveState(BaseModel):
     """
     يحتفظ بالحالة المعرفية الحالية للمهمة.
     """
+
     mission_id: int
     objective: str
     plan: dict[str, Any] | None = None
@@ -59,6 +64,7 @@ class CognitiveState(BaseModel):
 
     # الذاكرة التجميعية (Cumulative Memory) لمنع الحلقات المفرغة
     history_hashes: list[str] = Field(default_factory=list, description="سجل بصمات الخطط السابقة")
+
 
 class SuperBrain:
     """
@@ -84,8 +90,7 @@ class SuperBrain:
         self.auditor = auditor
 
     async def _create_safe_logger(
-        self,
-        log_event: Callable[[str, dict[str, Any]], Awaitable[None]] | None
+        self, log_event: Callable[[str, dict[str, Any]], Awaitable[None]] | None
     ) -> Callable[[str, dict[str, Any]], Awaitable[None]]:
         """
         إنشاء دالة تسجيل آمنة.
@@ -96,16 +101,18 @@ class SuperBrain:
         Returns:
             دالة تسجيل آمنة
         """
+
         async def safe_log(evt_type: str, data: dict[str, Any]) -> None:
             if log_event:
                 await log_event(evt_type, data)
+
         return safe_log
 
     async def _handle_planning_phase(
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]]
+        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
     ) -> CognitiveCritique:
         """
         معالجة مرحلة التخطيط والمراجعة.
@@ -127,7 +134,7 @@ class SuperBrain:
             agent_name="Strategist",
             action=lambda: self.strategist.create_plan(state.objective, collab_context),
             timeout=120.0,
-            log_func=safe_log
+            log_func=safe_log,
         )
 
         # الكشف عن الحلقات المفرغة (Loop Detection)
@@ -138,18 +145,16 @@ class SuperBrain:
             phase_name=CognitivePhase.REVIEW_PLAN,
             agent_name="Auditor",
             action=lambda: self.auditor.review_work(
-                state.plan,
-                f"Plan for: {state.objective}",
-                collab_context
+                state.plan, f"Plan for: {state.objective}", collab_context
             ),
             timeout=60.0,
-            log_func=safe_log
+            log_func=safe_log,
         )
 
         critique = CognitiveCritique(
             approved=raw_critique.get("approved", False),
             feedback=raw_critique.get("feedback", "No feedback provided"),
-            score=raw_critique.get("score", 0.0)
+            score=raw_critique.get("score", 0.0),
         )
 
         if not critique.approved:
@@ -166,7 +171,7 @@ class SuperBrain:
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]]
+        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
     ) -> None:
         """
         الكشف عن الحلقات المفرغة ومعالجتها.
@@ -195,7 +200,7 @@ class SuperBrain:
             collab_context.update(
                 "system_override",
                 "Warning: You are repeating failed plans. CHANGE STRATEGY IMMEDIATELY. "
-                "Do not use the same tools or logic."
+                "Do not use the same tools or logic.",
             )
             # إعادة رفع الخطأ للمعالجة في المستوى الأعلى
             raise
@@ -204,7 +209,7 @@ class SuperBrain:
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]]
+        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
     ) -> None:
         """
         تنفيذ مرحلة التصميم.
@@ -219,14 +224,14 @@ class SuperBrain:
             agent_name="Architect",
             action=lambda: self.architect.design_solution(state.plan, collab_context),
             timeout=120.0,
-            log_func=safe_log
+            log_func=safe_log,
         )
 
     async def _execute_execution_phase(
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]]
+        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
     ) -> None:
         """
         تنفيذ مرحلة التنفيذ.
@@ -241,14 +246,14 @@ class SuperBrain:
             agent_name="Operator",
             action=lambda: self.operator.execute_tasks(state.design, collab_context),
             timeout=300.0,
-            log_func=safe_log
+            log_func=safe_log,
         )
 
     async def _execute_reflection_phase(
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]]
+        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
     ) -> None:
         """
         تنفيذ مرحلة الانعكاس والمراجعة النهائية.
@@ -262,18 +267,16 @@ class SuperBrain:
             phase_name=CognitivePhase.REFLECTION,
             agent_name="Auditor",
             action=lambda: self.auditor.review_work(
-                state.execution_result,
-                state.objective,
-                collab_context
+                state.execution_result, state.objective, collab_context
             ),
             timeout=60.0,
-            log_func=safe_log
+            log_func=safe_log,
         )
 
         state.critique = CognitiveCritique(
             approved=raw_final_critique.get("approved", False),
             feedback=raw_final_critique.get("feedback", "No feedback provided"),
-            score=raw_final_critique.get("score", 0.0)
+            score=raw_final_critique.get("score", 0.0),
         )
 
     async def process_mission(
@@ -281,7 +284,7 @@ class SuperBrain:
         mission: Mission,
         *,
         context: dict[str, Any] | None = None,
-        log_event: Callable[[str, dict[str, Any]], Awaitable[None]] | None = None
+        log_event: Callable[[str, dict[str, Any]], Awaitable[None]] | None = None,
     ) -> dict[str, Any]:
         """
         تنفيذ الحلقة المعرفية الكاملة للمهمة.
@@ -398,8 +401,7 @@ class SuperBrain:
         Prepare state for retry after failed critique.
         """
         await safe_log(
-            CognitiveEvent.MISSION_CRITIQUE_FAILED,
-            {"critique": state.critique.model_dump()}
+            CognitiveEvent.MISSION_CRITIQUE_FAILED, {"critique": state.critique.model_dump()}
         )
         state.current_phase = CognitivePhase.RE_PLANNING
         collab_context.update("feedback_from_execution", state.critique.feedback)
@@ -418,7 +420,7 @@ class SuperBrain:
         logger.error(f"Stalemate trapped in main loop: {error}")
         collab_context.update(
             "system_override",
-            "CRITICAL: INFINITE LOOP DETECTED. TRY SOMETHING DRASTICALLY DIFFERENT."
+            "CRITICAL: INFINITE LOOP DETECTED. TRY SOMETHING DRASTICALLY DIFFERENT.",
         )
         state.current_phase = CognitivePhase.RE_PLANNING
 
@@ -433,10 +435,9 @@ class SuperBrain:
         Handle errors during phase execution.
         """
         logger.error(f"Error in phase {state.current_phase}: {error}")
-        await safe_log(CognitiveEvent.PHASE_ERROR, {
-            "phase": state.current_phase,
-            "error": str(error)
-        })
+        await safe_log(
+            CognitiveEvent.PHASE_ERROR, {"phase": state.current_phase, "error": str(error)}
+        )
         # Continue the loop to retry
 
     async def _execute_phase(
@@ -446,7 +447,7 @@ class SuperBrain:
         agent_name: str,
         action: Callable[[], Awaitable[T]],
         timeout: float,
-        log_func: Callable[[str, dict[str, Any]], Awaitable[None]]
+        log_func: Callable[[str, dict[str, Any]], Awaitable[None]],
     ) -> T:
         """
         منفذ المرحلة المعرفي العام (Generic Cognitive Phase Executor).

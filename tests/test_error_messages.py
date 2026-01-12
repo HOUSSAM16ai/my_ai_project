@@ -33,9 +33,10 @@ def test_specific_routes_precede_generic() -> None:
     no_response = build_bilingual_error_message("no_response", prompt_length=1, max_tokens=1)
     assert "لم يتم استلام رد" in no_response
 
-    rate_limited = build_bilingual_error_message("Rate limit exceeded", prompt_length=1, max_tokens=1)
+    rate_limited = build_bilingual_error_message(
+        "Rate limit exceeded", prompt_length=1, max_tokens=1
+    )
     assert "حد الطلبات" in rate_limited
 
     generic = build_bilingual_error_message("unexpected", prompt_length=1, max_tokens=1)
     assert "⚠️" in generic
-

@@ -42,6 +42,7 @@ class ThreatDetectorPort(Protocol):
         """
         ...
 
+
 class BehavioralAnalyzerPort(Protocol):
     """
     محلل السلوك - Behavioral analysis interface
@@ -74,6 +75,7 @@ class BehavioralAnalyzerPort(Protocol):
         """
         ...
 
+
 class ResponseSystemPort(Protocol):
     """
     نظام الاستجابة - Automated response interface
@@ -105,6 +107,7 @@ class ResponseSystemPort(Protocol):
         """
         ...
 
+
 class ProfileRepositoryPort(Protocol):
     """
     مستودع الملفات الشخصية - User profile storage interface
@@ -118,6 +121,7 @@ class ProfileRepositoryPort(Protocol):
         """Save user behavioral profile"""
         ...
 
+
 class ThreatLoggerPort(Protocol):
     """
     مسجل التهديدات - Threat logging interface
@@ -130,6 +134,7 @@ class ThreatLoggerPort(Protocol):
     def get_recent_threats(self, limit: int = 100) -> list[ThreatDetection]:
         """Get recently detected threats"""
         ...
+
 
 __all__ = [
     "BehavioralAnalyzerPort",

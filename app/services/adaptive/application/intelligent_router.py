@@ -53,9 +53,7 @@ class IntelligentRouter:
 
         return selected_instance
 
-    def _select_healthy_instance(
-        self, instances: list[ServiceInstance]
-    ) -> ServiceInstance | None:
+    def _select_healthy_instance(self, instances: list[ServiceInstance]) -> ServiceInstance | None:
         """
         تصفية واختيار instance صحي | Filter and select healthy instance
 
@@ -75,9 +73,7 @@ class IntelligentRouter:
         # Score and select best
         return self._select_best_scored_instance(healthy_instances)
 
-    def _select_degraded_instance(
-        self, instances: list[ServiceInstance]
-    ) -> ServiceInstance | None:
+    def _select_degraded_instance(self, instances: list[ServiceInstance]) -> ServiceInstance | None:
         """
         اختيار instance متدهور كحل بديل | Select degraded instance as fallback
 
@@ -90,9 +86,7 @@ class IntelligentRouter:
         degraded = [i for i in instances if i.status == ServiceHealth.DEGRADED]
         return degraded[0] if degraded else None
 
-    def _select_best_scored_instance(
-        self, instances: list[ServiceInstance]
-    ) -> ServiceInstance:
+    def _select_best_scored_instance(self, instances: list[ServiceInstance]) -> ServiceInstance:
         """
         تسجيل واختيار أفضل instance | Score and select best instance
 
@@ -104,8 +98,7 @@ class IntelligentRouter:
         """
         # Score each instance
         scored_instances = [
-            (self._calculate_instance_score(instance, None), instance)
-            for instance in instances
+            (self._calculate_instance_score(instance, None), instance) for instance in instances
         ]
 
         # Sort by score (higher is better) and return best
@@ -170,7 +163,6 @@ class IntelligentRouter:
             + load_score * 0.15
             + historical_score * 0.1
         )
-
 
     def update_instance_score(self, instance_id: str, success: bool, response_time: float) -> None:
         """

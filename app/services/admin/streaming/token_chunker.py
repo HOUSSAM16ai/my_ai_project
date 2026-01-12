@@ -1,4 +1,5 @@
 """منطق تقسيم النصوص مع الحفاظ على المسافات والكتل البرمجية."""
+
 from __future__ import annotations
 
 import re

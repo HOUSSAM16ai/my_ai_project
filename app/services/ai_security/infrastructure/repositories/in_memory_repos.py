@@ -34,6 +34,7 @@ class InMemoryProfileRepository:
         """Delete user profile"""
         self._profiles.pop(user_id, None)
 
+
 class InMemoryThreatLogger:
     """
     مسجل التهديدات في الذاكرة
@@ -63,6 +64,7 @@ class InMemoryThreatLogger:
     def clear(self) -> None:
         """Clear all logged threats"""
         self._threats.clear()
+
 
 __all__ = [
     "InMemoryProfileRepository",

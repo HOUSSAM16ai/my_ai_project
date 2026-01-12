@@ -14,9 +14,11 @@ from app.caching.invalidation import InvalidationManager
 def backend_mock():
     return AsyncMock(spec=CacheBackend)
 
+
 @pytest.fixture
 def manager(backend_mock):
     return InvalidationManager(backend_mock)
+
 
 @pytest.mark.asyncio
 async def test_invalidate_pattern(manager, backend_mock):
@@ -31,6 +33,7 @@ async def test_invalidate_pattern(manager, backend_mock):
     backend_mock.scan_keys.assert_awaited_once_with("user:1:*")
     # تأكد من حذف كل مفتاح
     assert backend_mock.delete.await_count == 2
+
 
 @pytest.mark.asyncio
 async def test_invalidate_user_cache(manager, backend_mock):

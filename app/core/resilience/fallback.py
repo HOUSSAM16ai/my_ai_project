@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
+
 class FallbackPolicy:
     """
     Fallback policy for graceful degradation.

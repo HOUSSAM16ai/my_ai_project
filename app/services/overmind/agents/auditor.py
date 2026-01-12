@@ -21,6 +21,7 @@ from app.services.overmind.domain.exceptions import StalemateError
 
 logger = get_logger(__name__)
 
+
 class AuditorAgent(AgentReflector):
     """
     الناقد الداخلي (Internal Critic).
@@ -69,10 +70,7 @@ class AuditorAgent(AgentReflector):
             return "unknown_hash"
 
     async def review_work(
-        self,
-        result: dict[str, Any],
-        original_objective: str,
-        context: CollaborationContext
+        self, result: dict[str, Any], original_objective: str, context: CollaborationContext
     ) -> dict[str, Any]:
         """
         مراجعة نتائج العمل ومقارنتها بالهدف الأصلي باستخدام الذكاء الاصطناعي.
@@ -82,12 +80,12 @@ class AuditorAgent(AgentReflector):
         # 1. التحقق السريع (Fast Fail)
         result_str = str(result).lower()
         if "error" in result_str and len(result_str) < 200:
-             # أخطاء قصيرة وواضحة نرفضها فوراً
+            # أخطاء قصيرة وواضحة نرفضها فوراً
             logger.warning("Auditor detected explicit errors (Fast Fail).")
             return {
                 "approved": False,
                 "feedback": "تم اكتشاف رسالة خطأ صريحة في التنفيذ. يرجى تحليل الخطأ ومحاولة استراتيجية بديلة.",
-                "confidence": 0.9
+                "confidence": 0.9,
             }
 
         # 2. المراجعة العميقة (Deep Review via AI)
@@ -121,7 +119,7 @@ class AuditorAgent(AgentReflector):
             response_json = await self.ai.send_message(
                 system_prompt=system_prompt,
                 user_message=user_message,
-                temperature=0.1 # درجة حرارة منخفضة للدقة
+                temperature=0.1,  # درجة حرارة منخفضة للدقة
             )
 
             # تنظيف الرد من أي نصوص زائدة (Markdown fences)
@@ -131,7 +129,7 @@ class AuditorAgent(AgentReflector):
             return {
                 "approved": review_data.get("approved", False),
                 "feedback": review_data.get("feedback", "لم يتم تقديم ملاحظات."),
-                "score": review_data.get("score", 0.0)
+                "score": review_data.get("score", 0.0),
             }
 
         except Exception as e:
@@ -140,7 +138,7 @@ class AuditorAgent(AgentReflector):
             return {
                 "approved": False,
                 "feedback": f"فشل نظام التدقيق الذكي. يرجى إعادة المحاولة. الخطأ: {e!s}",
-                "confidence": 0.0
+                "confidence": 0.0,
             }
 
     async def consult(self, situation: str, analysis: dict[str, Any]) -> dict[str, Any]:
@@ -178,9 +176,7 @@ class AuditorAgent(AgentReflector):
 
         try:
             response_text = await self.ai.send_message(
-                system_prompt=system_prompt,
-                user_message=user_message,
-                temperature=0.3
+                system_prompt=system_prompt, user_message=user_message, temperature=0.3
             )
 
             clean_json = self._clean_json_block(response_text)
@@ -189,7 +185,7 @@ class AuditorAgent(AgentReflector):
             logger.warning(f"Auditor consultation failed: {e}")
             return {
                 "recommendation": "Maintain high safety standards and verify risks (AI consultation failed).",
-                "confidence": 50.0
+                "confidence": 50.0,
             }
 
     def _clean_json_block(self, text: str) -> str:

@@ -4,6 +4,7 @@
 هذه الخدمة مسؤولة عن استرجاع وإدارة سجلات المحادثات وتقييمات الرسائل.
 تم تحديثها لتدعم العمليات غير المتزامنة (Async) بالكامل باستخدام SQLAlchemy Async.
 """
+
 from __future__ import annotations
 
 import logging
@@ -49,15 +50,11 @@ async def get_recent_conversations(user_id: int, limit: int = 5) -> list[AdminCo
             conversations = result.scalars().all()
             return list(conversations)
     except Exception as e:
-        logger.error(
-            f"فشل في استرجاع المحادثات الأخيرة للمستخدم {user_id}: {e}", exc_info=True
-        )
+        logger.error(f"فشل في استرجاع المحادثات الأخيرة للمستخدم {user_id}: {e}", exc_info=True)
         return []
 
 
-async def rate_message_in_db(
-    message_id: int, rating: str, user_id: int
-) -> dict[str, object]:
+async def rate_message_in_db(message_id: int, rating: str, user_id: int) -> dict[str, object]:
     """
     تقييم رسالة محددة في قاعدة البيانات.
 
@@ -97,10 +94,7 @@ async def rate_message_in_db(
             # التحقق من أن المستخدم يملك المحادثة التي تحتوي الرسالة
             # ملاحظة: message_to_rate.conversation لا يمكن أن يكون None بسبب العلاقة الإلزامية،
             # ولكن قد نحتاج للتحقق الدفاعي إذا كان الـ Schema يسمح بـ NULL.
-            if (
-                not message_to_rate.conversation
-                or message_to_rate.conversation.user_id != user_id
-            ):
+            if not message_to_rate.conversation or message_to_rate.conversation.user_id != user_id:
                 logger.warning(
                     f"تنبيه أمني: حاول المستخدم {user_id} تقييم الرسالة {message_id} التي لا يملكها."
                 )

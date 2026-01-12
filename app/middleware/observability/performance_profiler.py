@@ -110,9 +110,13 @@ class PerformanceProfiler(BaseMiddleware):
         p50 = self.get_percentile(50)
         p95 = self.get_percentile(95)
         p99 = self.get_percentile(99)
-        average_ms = self.total_duration * 1000 / self.profiled_count if self.profiled_count > 0 else 0.0
+        average_ms = (
+            self.total_duration * 1000 / self.profiled_count if self.profiled_count > 0 else 0.0
+        )
         throughput = self.profiled_count / self.total_duration if self.total_duration > 0 else 0.0
-        endpoint_profiles = {path: profile.to_dict() for path, profile in self.endpoint_stats.items()}
+        endpoint_profiles = {
+            path: profile.to_dict() for path, profile in self.endpoint_stats.items()
+        }
 
         stats.update(
             {

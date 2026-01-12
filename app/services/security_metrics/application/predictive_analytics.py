@@ -67,9 +67,7 @@ class LinearRegressionPredictor(PredictiveAnalyticsPort):
             current_risk=0.0,
         )
 
-    def _calculate_linear_regression(
-        self, risk_scores: list[float]
-    ) -> tuple[float, float]:
+    def _calculate_linear_regression(self, risk_scores: list[float]) -> tuple[float, float]:
         """
         حساب الانحدار الخطي | Calculate linear regression
 
@@ -94,9 +92,7 @@ class LinearRegressionPredictor(PredictiveAnalyticsPort):
 
         return slope, intercept
 
-    def _predict_risk_value(
-        self, slope: float, intercept: float, n: int, days_ahead: int
-    ) -> float:
+    def _predict_risk_value(self, slope: float, intercept: float, n: int, days_ahead: int) -> float:
         """
         حساب قيمة المخاطر المتوقعة | Calculate predicted risk value
 

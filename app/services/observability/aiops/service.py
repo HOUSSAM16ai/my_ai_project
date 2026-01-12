@@ -38,14 +38,17 @@ from .repositories import (
 @dataclass
 class AIOpsConfig:
     """تهيئة اعتماديات خدمة AIOps بطريقة واضحة للمبتدئين."""
+
     telemetry_repo: TelemetryRepository | None = None
     anomaly_repo: AnomalyRepository | None = None
     healing_repo: HealingDecisionRepository | None = None
     forecast_repo: ForecastRepository | None = None
     capacity_repo: CapacityPlanRepository | None = None
 
+
 class AIOpsService:
     """خدمة AIOps خارقة بمعمارية مبسطة وتوثيق عربي للممارسين الجدد."""
+
     def __init__(
         self,
         config: AIOpsConfig | None = None,
@@ -83,7 +86,9 @@ class AIOpsService:
 
     def _update_baseline(self, data: TelemetryData) -> None:
         """تحديث خطوط الأساس الإحصائية للمقاييس لمقارنة الانحرافات."""
-        values = [d.value for d in self.telemetry_repo.get_by_service(data.service_name, data.metric_type)]
+        values = [
+            d.value for d in self.telemetry_repo.get_by_service(data.service_name, data.metric_type)
+        ]
         key = f"{data.service_name}:{data.metric_type.value}"
 
         if len(values) >= 10:
@@ -291,9 +296,7 @@ class AIOpsService:
 
         return forecast
 
-    def _get_recent_metric_values(
-        self, service_name: str, metric_type: MetricType
-    ) -> list[float]:
+    def _get_recent_metric_values(self, service_name: str, metric_type: MetricType) -> list[float]:
         """جلب آخر قيم المقياس للخدمة بهدف بناء التوقعات."""
         data_points = self.telemetry_repo.get_by_service(service_name, metric_type)
         return [d.value for d in data_points[-168:]]
@@ -520,9 +523,11 @@ class HealingPlan:
     reason: str
     parameters: dict[str, float | int]
 
+
 # Singleton Instance
 _aiops_instance: AIOpsService | None = None
 _aiops_lock = threading.Lock()
+
 
 def get_aiops_service() -> AIOpsService:
     global _aiops_instance

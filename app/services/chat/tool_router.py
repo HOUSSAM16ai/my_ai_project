@@ -3,6 +3,7 @@
 
 يفرض قائمة سماح واضحة للأدوات/النوايا ويمنع أي تجاوز غير مصرح به.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

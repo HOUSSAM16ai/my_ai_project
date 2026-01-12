@@ -17,6 +17,7 @@ Reduction: 90%
 
 Status: ✅ Wave 10 Refactored
 """
+
 from __future__ import annotations
 
 # Import from new modular structure

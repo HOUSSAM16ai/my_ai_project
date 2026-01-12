@@ -81,6 +81,7 @@ type RouterSpec = tuple[APIRouter, str]
 # SICP: Functional Core (الجوهر الوظيفي)
 # ==============================================================================
 
+
 def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
     """
     تكوين قائمة البرمجيات الوسيطة كبيانات وصفية (Declarative Data).
@@ -101,22 +102,28 @@ def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
     stack: list[MiddlewareSpec] = [
         # 1. المضيف الموثوق (Trusted Host)
         (TrustedHostMiddleware, {"allowed_hosts": settings.ALLOWED_HOSTS}),
-
         # 2. CORS
-        (CORSMiddleware, {
-            "allow_origins": allow_origins,
-            "allow_credentials": True,
-            "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
-            "allow_headers": ["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "X-CSRF-Token"],
-            "expose_headers": ["Content-Length", "Content-Range"],
-        }),
-
+        (
+            CORSMiddleware,
+            {
+                "allow_origins": allow_origins,
+                "allow_credentials": True,
+                "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
+                "allow_headers": [
+                    "Authorization",
+                    "Content-Type",
+                    "Accept",
+                    "Origin",
+                    "X-Requested-With",
+                    "X-CSRF-Token",
+                ],
+                "expose_headers": ["Content-Length", "Content-Range"],
+            },
+        ),
         # 3. ترويسات الأمان (Security Headers)
         (SecurityHeadersMiddleware, {}),
-
         # 4. تنظيف الترويسات (Clean Headers)
         (RemoveBlockingHeadersMiddleware, {}),
-
         # 5. ضغط البيانات (GZip)
         (GZipMiddleware, {"minimum_size": 1000}),
     ]
@@ -126,6 +133,7 @@ def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
         stack.insert(3, (RateLimitMiddleware, {}))
 
     return stack
+
 
 def _get_router_registry(gateway_router: APIRouter | None = None) -> list[RouterSpec]:
     """
@@ -138,8 +146,8 @@ def _get_router_registry(gateway_router: APIRouter | None = None) -> list[Router
         list[RouterSpec]: قائمة (الموجه، البادئة).
     """
     routers = [
-        (system.root_router, ""), # Root Level (e.g., /health)
-        (system.router, ""),      # /system prefix is inside the router
+        (system.root_router, ""),  # Root Level (e.g., /health)
+        (system.router, ""),  # /system prefix is inside the router
         (admin.router, ""),
         (ums.router, ""),
         (security.router, "/api/security"),
@@ -157,6 +165,7 @@ def _get_router_registry(gateway_router: APIRouter | None = None) -> list[Router
 
     return routers
 
+
 def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
     """
     Combinator: تطبيق قائمة الميدل وير على التطبيق.
@@ -164,6 +173,7 @@ def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
     for mw_cls, mw_options in reversed(stack):
         app.add_middleware(mw_cls, **mw_options)
     return app
+
 
 def _mount_routers(app: FastAPI, registry: list[RouterSpec]) -> FastAPI:
     """
@@ -173,9 +183,11 @@ def _mount_routers(app: FastAPI, registry: list[RouterSpec]) -> FastAPI:
         app.include_router(router, prefix=prefix)
     return app
 
+
 # ==============================================================================
 # The Evaluator (مُنفذ النظام)
 # ==============================================================================
+
 
 class RealityKernel:
     """
@@ -230,9 +242,7 @@ class RealityKernel:
         app = self._create_base_app_instance()
 
         # 2. Data Acquisition (Pure)
-        middleware_stack = (
-            _get_middleware_stack(self.settings_obj) if self.settings_obj else []
-        )
+        middleware_stack = _get_middleware_stack(self.settings_obj) if self.settings_obj else []
 
         # إضافة موجه البوابة إذا كان متاحاً
         gateway_router = None
@@ -265,6 +275,7 @@ class RealityKernel:
         """
         إنشاء مثيل FastAPI الخام مع مدير دورة الحياة.
         """
+
         @asynccontextmanager
         async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             """Lifecycle Manager Closure."""
@@ -344,8 +355,5 @@ def _validate_contract_alignment(app: FastAPI) -> None:
         )
 
     if report.missing_operations:
-        summary = {
-            path: sorted(methods)
-            for path, methods in report.missing_operations.items()
-        }
+        summary = {path: sorted(methods) for path, methods in report.missing_operations.items()}
         logger.warning("⚠️ عمليات العقد غير موجودة في التشغيل: %s", summary)

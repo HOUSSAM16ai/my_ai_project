@@ -2,6 +2,7 @@
 Smoke Test for Reality Kernel and Overmind Assembly.
 This test verifies that the core components can be instantiated without runtime errors.
 """
+
 from unittest.mock import AsyncMock
 
 import pytest
@@ -13,12 +14,17 @@ from app.services.overmind.factory import create_overmind
 @pytest.mark.asyncio
 async def test_kernel_initialization():
     """Verify RealityKernel initializes with valid settings."""
-    settings = {"DATABASE_URL": "sqlite+aiosqlite:///:memory:", "SECRET_KEY": "x" * 32, "ENVIRONMENT": "testing"}
+    settings = {
+        "DATABASE_URL": "sqlite+aiosqlite:///:memory:",
+        "SECRET_KEY": "x" * 32,
+        "ENVIRONMENT": "testing",
+    }
     # Fix: RealityKernel requires keyword-only arguments (*)
     kernel = RealityKernel(settings=settings)
     app = kernel.get_app()
     # Adjust expectation based on testing environment override
     assert "CogniForge" in app.title
+
 
 @pytest.mark.asyncio
 async def test_overmind_assembly():

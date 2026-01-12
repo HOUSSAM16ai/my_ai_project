@@ -35,11 +35,11 @@ class TestCoreConfig:
         """Verify DB URL fallback logic."""
         # Test default fallback for dev
         with patch.dict(os.environ, {}, clear=True):
-             # Force environment to development in logic simulation if needed,
-             # but here we rely on defaults or explicit instantiation
-             settings = AppSettings(ENVIRONMENT="development", DATABASE_URL=None)
-             assert "sqlite" in settings.DATABASE_URL
-             assert "dev.db" in settings.DATABASE_URL
+            # Force environment to development in logic simulation if needed,
+            # but here we rely on defaults or explicit instantiation
+            settings = AppSettings(ENVIRONMENT="development", DATABASE_URL=None)
+            assert "sqlite" in settings.DATABASE_URL
+            assert "dev.db" in settings.DATABASE_URL
 
     def test_production_security_check(self):
         """Verify production security guardrails."""
@@ -52,7 +52,7 @@ class TestCoreConfig:
                 ENVIRONMENT="production",
                 DEBUG=True,
                 SECRET_KEY="x" * 64,
-                DATABASE_URL="postgresql+asyncpg://user:pass@localhost/db"
+                DATABASE_URL="postgresql+asyncpg://user:pass@localhost/db",
             )
 
         # Should fail if weak secret (length) - Enforced globally by Pydantic
@@ -62,15 +62,12 @@ class TestCoreConfig:
                 ENVIRONMENT="production",
                 DEBUG=False,
                 SECRET_KEY="weak",
-                DATABASE_URL="postgresql+asyncpg://user:pass@localhost/db"
+                DATABASE_URL="postgresql+asyncpg://user:pass@localhost/db",
             )
 
     def test_base_service_settings(self):
         """Verify BaseServiceSettings works for microservices."""
-        settings = BaseServiceSettings(
-            SERVICE_NAME="UserService",
-            ENVIRONMENT="testing"
-        )
+        settings = BaseServiceSettings(SERVICE_NAME="UserService", ENVIRONMENT="testing")
         assert settings.SERVICE_NAME == "UserService"
         assert settings.ENVIRONMENT == "testing"
         # Testing usually falls back to in-memory sqlite

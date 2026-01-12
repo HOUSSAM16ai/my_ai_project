@@ -92,11 +92,7 @@ def _runtime_operations_from_openapi(schema: dict[str, object]) -> dict[str, set
     for path, details in paths_node.items():
         if not isinstance(path, str) or not isinstance(details, dict):
             continue
-        methods = {
-            method.lower()
-            for method in details
-            if isinstance(method, str)
-        }
+        methods = {method.lower() for method in details if isinstance(method, str)}
         operations[path] = methods
 
     return operations
@@ -132,11 +128,7 @@ def default_contract_path() -> Path:
     """يبني المسار الافتراضي لعقد OpenAPI الأساسي."""
 
     return (
-        Path(__file__).resolve().parents[3]
-        / "docs"
-        / "contracts"
-        / "openapi"
-        / "core-api-v1.yaml"
+        Path(__file__).resolve().parents[3] / "docs" / "contracts" / "openapi" / "core-api-v1.yaml"
     )
 
 

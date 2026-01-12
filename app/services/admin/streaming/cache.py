@@ -1,4 +1,5 @@
 """تخزين مؤقت تكيفي يعتمد على مبادئ DIP وISP."""
+
 from __future__ import annotations
 
 import inspect

@@ -1,6 +1,7 @@
 """
 مدير رموز التحديث (Token Persistence Manager).
 """
+
 from __future__ import annotations
 
 import secrets

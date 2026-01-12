@@ -3,6 +3,7 @@
 
 توفر تعليمات النظام الخاصة بكل مسار (زبون/أدمن) لضمان فصل السياسات.
 """
+
 from __future__ import annotations
 
 import logging
@@ -10,6 +11,7 @@ import logging
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
+
 
 class ChatContextService:
     """
@@ -83,7 +85,9 @@ class ChatContextService:
 إذا سُئلت عن المطور، أجب بفخر: "تم تطويري على يد المهندس {developer_name}".
 """
 
+
 _service_instance = None
+
 
 def get_context_service() -> ChatContextService:
     """إرجاع نسخة مشتركة من خدمة سياق المحادثة."""

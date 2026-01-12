@@ -15,6 +15,7 @@ class RateLimitConfig:
     refill_rate: int = 100  # per second
     priority_enabled: bool = True
 
+
 class TokenBucket:
     """
     Token Bucket Algorithm
@@ -52,6 +53,7 @@ class TokenBucket:
             self.tokens = min(self.capacity, self.tokens + tokens_to_add)
             self.last_refill = now
 
+
 class SlidingWindowCounter:
     """
     Sliding Window Algorithm
@@ -80,6 +82,7 @@ class SlidingWindowCounter:
                 self.requests.append(now)
                 return True
             return False
+
 
 class LeakyBucket:
     """

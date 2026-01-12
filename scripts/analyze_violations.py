@@ -31,35 +31,41 @@ class CodeAnalyzer(ast.NodeVisitor):
         # Check function length (KISS)
         func_lines = node.end_lineno - node.lineno
         if func_lines > 30:
-            self.violations.append(Violation(
-                file=self.filepath,
-                line=node.lineno,
-                type='KISS',
-                description=f"Function '{node.name}' is too long ({func_lines} lines). Split into smaller functions.",
-                severity='medium'
-            ))
+            self.violations.append(
+                Violation(
+                    file=self.filepath,
+                    line=node.lineno,
+                    type="KISS",
+                    description=f"Function '{node.name}' is too long ({func_lines} lines). Split into smaller functions.",
+                    severity="medium",
+                )
+            )
 
         # Check number of parameters (KISS)
         if len(node.args.args) > 5:
-            self.violations.append(Violation(
-                file=self.filepath,
-                line=node.lineno,
-                type='KISS',
-                description=f"Function '{node.name}' has {len(node.args.args)} parameters. Consider using a config object.",
-                severity='medium'
-            ))
+            self.violations.append(
+                Violation(
+                    file=self.filepath,
+                    line=node.lineno,
+                    type="KISS",
+                    description=f"Function '{node.name}' has {len(node.args.args)} parameters. Consider using a config object.",
+                    severity="medium",
+                )
+            )
 
         # Check for Any type usage (SOLID - Interface Segregation)
         for arg in node.args.args:
             if getattr(arg, "annotation", None) and self._has_any_type(arg.annotation):
                 self.any_count += 1
-                self.violations.append(Violation(
-                    file=self.filepath,
-                    line=node.lineno,
-                    type='SOLID',
-                    description=f"Function '{node.name}' uses Any type. Define specific types.",
-                    severity='high'
-                ))
+                self.violations.append(
+                    Violation(
+                        file=self.filepath,
+                        line=node.lineno,
+                        type="SOLID",
+                        description=f"Function '{node.name}' uses Any type. Define specific types.",
+                        severity="high",
+                    )
+                )
 
         self.functions.append(node.name)
         self.generic_visit(node)
@@ -68,24 +74,28 @@ class CodeAnalyzer(ast.NodeVisitor):
         # Check class size (KISS)
         class_lines = node.end_lineno - node.lineno
         if class_lines > 200:
-            self.violations.append(Violation(
-                file=self.filepath,
-                line=node.lineno,
-                type='KISS',
-                description=f"Class '{node.name}' is too large ({class_lines} lines). Consider splitting.",
-                severity='high'
-            ))
+            self.violations.append(
+                Violation(
+                    file=self.filepath,
+                    line=node.lineno,
+                    type="KISS",
+                    description=f"Class '{node.name}' is too large ({class_lines} lines). Consider splitting.",
+                    severity="high",
+                )
+            )
 
         # Count methods (Single Responsibility)
         methods = [n for n in node.body if isinstance(n, ast.FunctionDef)]
         if len(methods) > 15:
-            self.violations.append(Violation(
-                file=self.filepath,
-                line=node.lineno,
-                type='SOLID',
-                description=f"Class '{node.name}' has {len(methods)} methods. May violate Single Responsibility Principle.",
-                severity='medium'
-            ))
+            self.violations.append(
+                Violation(
+                    file=self.filepath,
+                    line=node.lineno,
+                    type="SOLID",
+                    description=f"Class '{node.name}' has {len(methods)} methods. May violate Single Responsibility Principle.",
+                    severity="medium",
+                )
+            )
 
         self.classes.append(node.name)
         self.generic_visit(node)
@@ -93,30 +103,32 @@ class CodeAnalyzer(ast.NodeVisitor):
     def visit_Import(self, node):
         # Check for old typing imports
         for _alias in node.names:
-            if 'typing' in node.module if hasattr(node, 'module') else '':
+            if "typing" in node.module if hasattr(node, "module") else "":
                 self.old_typing_count += 1
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node):
         # Check for old typing imports
-        if node.module == 'typing':
-            old_types = ['Optional', 'Union', 'List', 'Dict', 'Tuple', 'Set', 'Any']
+        if node.module == "typing":
+            old_types = ["Optional", "Union", "List", "Dict", "Tuple", "Set", "Any"]
             for alias in node.names:
                 if alias.name in old_types:
                     self.old_typing_count += 1
-                    if alias.name == 'Any':
-                        self.violations.append(Violation(
-                            file=self.filepath,
-                            line=node.lineno,
-                            type='SOLID',
-                            description="Import of 'Any' type. Use specific types instead.",
-                            severity='high'
-                        ))
+                    if alias.name == "Any":
+                        self.violations.append(
+                            Violation(
+                                file=self.filepath,
+                                line=node.lineno,
+                                type="SOLID",
+                                description="Import of 'Any' type. Use specific types instead.",
+                                severity="high",
+                            )
+                        )
         self.generic_visit(node)
 
     def _has_any_type(self, node):
         """Check if node contains Any type"""
-        if isinstance(node, ast.Name) and node.id == 'Any':
+        if isinstance(node, ast.Name) and node.id == "Any":
             return True
         if isinstance(node, ast.Subscript):
             return self._has_any_type(node.value) or self._has_any_type(node.slice)
@@ -126,7 +138,7 @@ class CodeAnalyzer(ast.NodeVisitor):
 def analyze_file(filepath: Path) -> CodeAnalyzer:
     """Analyze a single Python file."""
     try:
-        with open(filepath, encoding='utf-8') as f:
+        with open(filepath, encoding="utf-8") as f:
             content = f.read()
 
         tree = ast.parse(content, filename=str(filepath))
@@ -185,16 +197,16 @@ def main():
     print(f"\n{'─' * 70}")
     print("VIOLATIONS BY TYPE:")
     print(f"{'─' * 70}")
-    for vtype in ['SOLID', 'DRY', 'KISS']:
+    for vtype in ["SOLID", "DRY", "KISS"]:
         count = len(violations_by_type[vtype])
         print(f"  {vtype:10} : {count:4} violations")
 
     print(f"\n{'─' * 70}")
     print("VIOLATIONS BY SEVERITY:")
     print(f"{'─' * 70}")
-    for severity in ['high', 'medium', 'low']:
+    for severity in ["high", "medium", "low"]:
         count = len(violations_by_severity[severity])
-        icon = '🔴' if severity == 'high' else '🟡' if severity == 'medium' else '🟢'
+        icon = "🔴" if severity == "high" else "🟡" if severity == "medium" else "🟢"
         print(f"  {icon} {severity.capitalize():10} : {count:4} violations")
 
     print(f"\n{'─' * 70}")
@@ -208,7 +220,7 @@ def main():
     print("🔝 TOP 10 HIGH-SEVERITY VIOLATIONS:")
     print(f"{'=' * 70}\n")
 
-    high_violations = violations_by_severity['high'][:10]
+    high_violations = violations_by_severity["high"][:10]
     for i, v in enumerate(high_violations, 1):
         print(f"{i}. [{v.type}] {v.file}:{v.line}")
         print(f"   {v.description}\n")

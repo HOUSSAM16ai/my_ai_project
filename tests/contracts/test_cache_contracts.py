@@ -22,6 +22,7 @@ class MockCacheProvider:
     async def clear(self) -> None:
         self._store.clear()
 
+
 async def test_cache_provider_contract_methods():
     """
     Contract: Any CacheProvider must implement get, set, delete, clear
@@ -31,7 +32,7 @@ async def test_cache_provider_contract_methods():
     provider = MockCacheProvider()
 
     # Verify it strictly adheres to protocol (runtime check)
-    assert isinstance(provider, CacheProviderProtocol) or hasattr(provider, 'get')
+    assert isinstance(provider, CacheProviderProtocol) or hasattr(provider, "get")
 
     # Test Set/Get
     await provider.set("test_key", "test_value")
@@ -51,6 +52,7 @@ async def test_cache_provider_contract_methods():
     assert await provider.get("k2") is None
     print("✅ Cache Provider Contract Passed")
 
+
 async def main():
     try:
         await test_cache_provider_contract_methods()
@@ -58,6 +60,7 @@ async def main():
     except Exception as e:
         print(f"\n❌ Cache Contracts Failed: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

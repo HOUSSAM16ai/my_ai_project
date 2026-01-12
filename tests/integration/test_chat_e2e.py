@@ -4,6 +4,7 @@ End-to-End Integration Tests for Chat Functionality
 هذه الاختبارات تضمن أن المحادثات تعمل من البداية للنهاية
 وتكتشف أي مشاكل في البنية أو الوصول للدوال
 """
+
 import sys
 from pathlib import Path
 
@@ -31,16 +32,16 @@ class TestServiceMethodsAccessibility:
         from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 
         required_methods = [
-            'verify_conversation_access',
-            'get_or_create_conversation',
-            'save_message',
-            'get_chat_history',
-            'stream_chat_response',
-            'stream_chat_response_safe',
-            'orchestrate_chat_stream',
-            'get_latest_conversation_details',
-            'list_user_conversations',
-            'get_conversation_details'
+            "verify_conversation_access",
+            "get_or_create_conversation",
+            "save_message",
+            "get_chat_history",
+            "stream_chat_response",
+            "stream_chat_response_safe",
+            "orchestrate_chat_stream",
+            "get_latest_conversation_details",
+            "list_user_conversations",
+            "get_conversation_details",
         ]
 
         # Create service with mock db
@@ -48,12 +49,14 @@ class TestServiceMethodsAccessibility:
         service = AdminChatBoundaryService(db=mock_db)
 
         for method_name in required_methods:
-            assert hasattr(service, method_name), \
+            assert hasattr(service, method_name), (
                 f"CRITICAL: Method '{method_name}' not found in AdminChatBoundaryService! Check class indentation."
+            )
 
             method = getattr(service, method_name)
-            assert callable(method), \
+            assert callable(method), (
                 f"CRITICAL: '{method_name}' is not callable! Check class indentation."
+            )
 
     def test_methods_are_instance_methods_not_module_functions(self):
         """
@@ -71,17 +74,18 @@ class TestServiceMethodsAccessibility:
 
         # Test a few critical methods
         critical_methods = [
-            'orchestrate_chat_stream',
-            'get_latest_conversation_details',
-            'list_user_conversations'
+            "orchestrate_chat_stream",
+            "get_latest_conversation_details",
+            "list_user_conversations",
         ]
 
         for method_name in critical_methods:
             method = getattr(service, method_name)
 
             # Verify it's a bound method
-            assert inspect.ismethod(method), \
+            assert inspect.ismethod(method), (
                 f"CRITICAL: '{method_name}' is not a bound method! It might be defined outside the class."
+            )
 
             # Verify it has 'self' as first parameter (excluding first param which is self)
             sig = inspect.signature(method)
@@ -89,8 +93,9 @@ class TestServiceMethodsAccessibility:
 
             # For bound methods, 'self' is already bound and won't appear in signature
             # But we can check that the method is bound to the instance
-            assert method.__self__ is service, \
+            assert method.__self__ is service, (
                 f"CRITICAL: '{method_name}' is not bound to service instance!"
+            )
 
 
 class TestStructureValidation:
@@ -103,7 +108,10 @@ class TestStructureValidation:
         Verify no async def functions exist at module level in service file
         (All should be methods inside the class)
         """
-        service_file = Path(__file__).resolve().parents[2] / "app/services/boundaries/admin_chat_boundary_service.py"
+        service_file = (
+            Path(__file__).resolve().parents[2]
+            / "app/services/boundaries/admin_chat_boundary_service.py"
+        )
 
         with open(service_file) as f:
             lines = f.readlines()
@@ -117,23 +125,26 @@ class TestStructureValidation:
             indent = len(line) - len(stripped)
 
             # Track when we're inside the class
-            if stripped.startswith('class AdminChatBoundaryService'):
+            if stripped.startswith("class AdminChatBoundaryService"):
                 in_class = True
                 class_indent = indent
                 continue
 
             # If we find a class at same level, we're out of the previous class
-            if in_class and stripped.startswith('class ') and indent == class_indent:
+            if in_class and stripped.startswith("class ") and indent == class_indent:
                 in_class = False
 
             # Check for async def at wrong indentation
-            if stripped.startswith('async def '):
+            if stripped.startswith("async def "):
                 # Methods should be indented inside class (at least class_indent + 4)
                 if in_class and indent <= class_indent:
-                    issues.append(f"Line {i}: Method '{stripped[:40]}' appears to be outside class (indent: {indent}, class: {class_indent})")
-                elif not in_class and not stripped.startswith('async def _'):
+                    issues.append(
+                        f"Line {i}: Method '{stripped[:40]}' appears to be outside class (indent: {indent}, class: {class_indent})"
+                    )
+                elif not in_class and not stripped.startswith("async def _"):
                     # Module-level functions should be private (start with _)
-                    issues.append(f"Line {i}: Public async function at module level: '{stripped[:40]}'")
+                    issues.append(
+                        f"Line {i}: Public async function at module level: '{stripped[:40]}'"
+                    )
 
-        assert len(issues) == 0, \
-            "CRITICAL STRUCTURE ERRORS FOUND:\n" + "\n".join(issues)
+        assert len(issues) == 0, "CRITICAL STRUCTURE ERRORS FOUND:\n" + "\n".join(issues)

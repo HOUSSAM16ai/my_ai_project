@@ -58,7 +58,11 @@ class UserFactory:
 class MissionFactory:
     """مصنع مهام يضبط القيم الافتراضية وفق حالات العمل الشائعة."""
 
-    def __init__(self, sequencer: _Sequence | None = None, objective_generator: Callable[[int], str] | None = None):
+    def __init__(
+        self,
+        sequencer: _Sequence | None = None,
+        objective_generator: Callable[[int], str] | None = None,
+    ):
         self._sequencer = sequencer or _Sequence()
         self._objective_generator = objective_generator or (lambda idx: f"Mission Objective {idx}")
 
@@ -72,7 +76,9 @@ class MissionFactory:
         """إنشاء كائن مهمة جديد مع دعم تحويل حالة المهمة النصية إلى Enum."""
 
         index = self._sequencer.next()
-        resolved_status = MissionStatus(status) if isinstance(status, str) else status or MissionStatus.PENDING
+        resolved_status = (
+            MissionStatus(status) if isinstance(status, str) else status or MissionStatus.PENDING
+        )
         return Mission(
             objective=objective or self._objective_generator(index),
             status=resolved_status,

@@ -18,9 +18,7 @@ async def test_get_or_set_coalesces_requests():
         await asyncio.sleep(0.01)
         return "value"
 
-    results = await asyncio.gather(
-        *[cache.get_or_set("key", compute) for _ in range(5)]
-    )
+    results = await asyncio.gather(*[cache.get_or_set("key", compute) for _ in range(5)])
 
     assert results == ["value"] * 5
     assert counter["calls"] == 1

@@ -1,4 +1,3 @@
-
 import pytest
 
 from app.services.api_config_secrets.application.config_secrets_manager import (
@@ -17,6 +16,7 @@ from app.services.api_config_secrets.service import (
 def service():
     return ConfigSecretsService()
 
+
 def test_config_crud(service):
     """Test Create, Read for Configuration"""
     service.set_config(
@@ -32,6 +32,7 @@ def test_config_crud(service):
 
     # Test default
     assert service.get_config(Environment.DEVELOPMENT, "missing", "default") == "default"
+
 
 def test_secret_lifecycle(service):
     """Test Create, Read, Rotate for Secrets"""
@@ -56,6 +57,7 @@ def test_secret_lifecycle(service):
     val_new = service.get_secret(secret_id)
     assert val_new == "secret-456"
 
+
 def test_audit_logs(service):
     """Test that actions generate audit logs"""
     service.create_secret(
@@ -68,7 +70,8 @@ def test_audit_logs(service):
     )
     logs = service.get_audit_report()
     assert len(logs) > 0
-    assert logs[-1]['action'] == 'write'
+    assert logs[-1]["action"] == "write"
+
 
 def test_singleton():
     """Test singleton accessor"""

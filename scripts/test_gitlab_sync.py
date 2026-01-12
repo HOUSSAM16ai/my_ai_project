@@ -56,10 +56,7 @@ def check_git_config() -> tuple[bool, list[str]]:
     try:
         # Check if we're in a git repository
         subprocess.run(
-            ["git", "rev-parse", "--git-dir"],
-            check=True,
-            capture_output=True,
-            text=True
+            ["git", "rev-parse", "--git-dir"], check=True, capture_output=True, text=True
         )
         print_success("Git repository detected")
     except subprocess.CalledProcessError:
@@ -68,12 +65,7 @@ def check_git_config() -> tuple[bool, list[str]]:
 
     # Check for remotes
     try:
-        result = subprocess.run(
-            ["git", "remote", "-v"],
-            check=True,
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["git", "remote", "-v"], check=True, capture_output=True, text=True)
         remotes = result.stdout.strip()
         if remotes:
             print_success("Git remotes configured")
@@ -86,10 +78,7 @@ def check_git_config() -> tuple[bool, list[str]]:
     # Check current branch
     try:
         result = subprocess.run(
-            ["git", "branch", "--show-current"],
-            check=True,
-            capture_output=True,
-            text=True
+            ["git", "branch", "--show-current"], check=True, capture_output=True, text=True
         )
         branch = result.stdout.strip()
         if branch:
@@ -118,6 +107,7 @@ def check_sync_script() -> tuple[bool, list[str]]:
     try:
         sys.path.insert(0, ".")
         from scripts.universal_repo_sync import check_workload_identity, sync_remotes
+
         print_success("Sync script imports successfully")
         _ = sync_remotes
 
@@ -188,22 +178,12 @@ def test_sync_dry_run() -> tuple[bool, list[str]]:
     # Check what would be pushed
     try:
         # Get all local branches
-        result = subprocess.run(
-            ["git", "branch", "-a"],
-            check=True,
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["git", "branch", "-a"], check=True, capture_output=True, text=True)
         branches = [b.strip() for b in result.stdout.split("\n") if b.strip()]
         print_info(f"Branches that would be synced: {len(branches)}")
 
         # Get all tags
-        result = subprocess.run(
-            ["git", "tag"],
-            check=True,
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["git", "tag"], check=True, capture_output=True, text=True)
         tags = [t.strip() for t in result.stdout.split("\n") if t.strip()]
         print_info(f"Tags that would be synced: {len(tags)}")
 

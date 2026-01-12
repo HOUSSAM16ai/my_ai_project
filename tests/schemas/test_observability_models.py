@@ -30,7 +30,10 @@ def test_metrics_response_accepts_plain_dict_for_aiops():
 
     metrics = MetricsResponse(
         timestamp=datetime(2024, 5, 1),
-        metrics=MetricsData(api_performance=snapshot, aiops_health={"anomalies_detected": 0, "system_health_score": 99.5}),
+        metrics=MetricsData(
+            api_performance=snapshot,
+            aiops_health={"anomalies_detected": 0, "system_health_score": 99.5},
+        ),
     )
 
     assert metrics.metrics.aiops_health["system_health_score"] == 99.5

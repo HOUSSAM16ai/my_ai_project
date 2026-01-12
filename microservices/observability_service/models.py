@@ -11,6 +11,7 @@ JsonValue = JsonPrimitive | dict[str, "JsonValue"] | list["JsonValue"]
 # ENUMERATIONS
 # ======================================================================================
 
+
 class AnomalyType(str, Enum):
     """أنواع الشذوذ المحتملة في بيانات المراقبة."""
 
@@ -21,6 +22,7 @@ class AnomalyType(str, Enum):
     CAPACITY_LIMIT = "capacity_limit"
     PATTERN_DEVIATION = "pattern_deviation"
 
+
 class AnomalySeverity(str, Enum):
     """درجات خطورة الشذوذ التي تساعد على ترتيب الأولويات."""
 
@@ -29,6 +31,7 @@ class AnomalySeverity(str, Enum):
     MEDIUM = "medium"
     LOW = "low"
     INFO = "info"
+
 
 class HealingAction(str, Enum):
     """إجراءات المعالجة الذاتية المتاحة لتحسين استقرار الخدمات."""
@@ -42,6 +45,7 @@ class HealingAction(str, Enum):
     CLEAR_CACHE = "clear_cache"
     ADJUST_RATE_LIMIT = "adjust_rate_limit"
 
+
 class MetricType(str, Enum):
     """أنواع المقاييس المستخدمة في نقاط القياس التشغيلية."""
 
@@ -53,9 +57,11 @@ class MetricType(str, Enum):
     DISK_USAGE = "disk_usage"
     NETWORK_IO = "network_io"
 
+
 # ======================================================================================
 # DATA STRUCTURES
 # ======================================================================================
+
 
 @dataclass
 class TelemetryData:
@@ -68,6 +74,7 @@ class TelemetryData:
     timestamp: datetime
     labels: dict[str, str] = field(default_factory=dict)
     unit: str = ""
+
 
 @dataclass
 class AnomalyDetection:
@@ -86,6 +93,7 @@ class AnomalyDetection:
     resolved: bool = False
     resolved_at: datetime | None = None
 
+
 @dataclass
 class LoadForecast:
     """توقع الحمل المستقبلي للخدمة مع معلومات الدقة."""
@@ -97,6 +105,7 @@ class LoadForecast:
     confidence_interval: tuple[float, float]
     model_accuracy: float
     generated_at: datetime
+
 
 @dataclass
 class HealingDecision:
@@ -111,6 +120,7 @@ class HealingDecision:
     executed_at: datetime | None = None
     success: bool | None = None
     impact: dict[str, JsonValue] = field(default_factory=dict)
+
 
 @dataclass
 class CapacityPlan:

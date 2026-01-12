@@ -21,11 +21,13 @@ from app.services.agent_tools.fs_tools import (
 # However, PROJECT_ROOT is a constant in definitions.py.
 # The best way to test fs_tools safely is to make _safe_path point to our tmp_path.
 
+
 @pytest.fixture
 def mock_project_root(tmp_path):
     # We patch PROJECT_ROOT in app.services.agent_tools.utils
     with patch("app.services.agent_tools.utils.PROJECT_ROOT", str(tmp_path)):
         yield tmp_path
+
 
 # class TestEnsureDirectory:
 #     def test_ensure_new_directory(self, mock_project_root):
@@ -84,7 +86,9 @@ class TestWriteFile:
         with patch("app.services.agent_tools.core.AUTOFILL", False):
             result = write_file(path="test.txt", content=123)
             assert not result.ok
-            assert "must be of type 'string'" in result.error or result.error == "CONTENT_NOT_STRING"
+            assert (
+                "must be of type 'string'" in result.error or result.error == "CONTENT_NOT_STRING"
+            )
 
     def test_write_file_json_compression(self, mock_project_root):
         """Test automatic compression for large JSON files."""
@@ -108,7 +112,9 @@ class TestWriteFile:
         # Mock MAX_WRITE_BYTES to be small for testing.
         # Note: the decorator or handler implementation must import MAX_WRITE_BYTES from config,
         # so we patch the config module used by the handler.
-        with patch("app.services.agent_tools.domain.filesystem.handlers.write_handlers.MAX_WRITE_BYTES", 10):
+        with patch(
+            "app.services.agent_tools.domain.filesystem.handlers.write_handlers.MAX_WRITE_BYTES", 10
+        ):
             result = write_file(path="large.txt", content="This is too long")
             assert not result.ok
             assert result.error == "WRITE_TOO_LARGE"
@@ -181,9 +187,16 @@ class TestAppendFile:
 
     def test_append_total_limit(self, mock_project_root):
         """Test MAX_APPEND_BYTES enforcement."""
-        with patch("app.services.agent_tools.domain.filesystem.handlers.write_handlers.ENFORCE_APPEND_TOTAL", True), \
-             patch("app.services.agent_tools.domain.filesystem.handlers.write_handlers.MAX_APPEND_BYTES", 10):
-
+        with (
+            patch(
+                "app.services.agent_tools.domain.filesystem.handlers.write_handlers.ENFORCE_APPEND_TOTAL",
+                True,
+            ),
+            patch(
+                "app.services.agent_tools.domain.filesystem.handlers.write_handlers.MAX_APPEND_BYTES",
+                10,
+            ),
+        ):
             path = "test.txt"
             (mock_project_root / path).write_text("12345", encoding="utf-8")
 

@@ -44,6 +44,7 @@ class InMemoryFindingsRepository:
                 if hasattr(finding, key):
                     setattr(finding, key, value)
 
+
 class InMemoryMetricsRepository:
     """In-memory metrics repository"""
 

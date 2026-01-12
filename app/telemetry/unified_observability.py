@@ -26,7 +26,12 @@ class UnifiedObservabilityService:
     Acts as a central Facade for managing tracing, metrics, and logs, as well as analysis and aggregation.
     """
 
-    def __init__(self, service_name: str = 'cogniforge', sample_rate: float = 1.0, sla_target_ms: float = 100.0):
+    def __init__(
+        self,
+        service_name: str = "cogniforge",
+        sample_rate: float = 1.0,
+        sla_target_ms: float = 100.0,
+    ):
         # 1. المكونات الأساسية (Core Managers)
         self.tracing = TracingManager(service_name, sample_rate, sla_target_ms)
         self.metrics = MetricsManager()
@@ -36,15 +41,10 @@ class UnifiedObservabilityService:
 
         # 2. المكونات الذكية (Smart Components)
         self.analyzer = TelemetryAnalyzer(
-            self.tracing,
-            self.metrics,
-            latency_p99_target=sla_target_ms
+            self.tracing, self.metrics, latency_p99_target=sla_target_ms
         )
         self.aggregator = TelemetryAggregator(
-            self.tracing,
-            self.metrics,
-            self.logging,
-            service_name
+            self.tracing, self.metrics, self.logging, service_name
         )
 
         # قفل للتوافق مع الواجهة القديمة
@@ -67,19 +67,31 @@ class UnifiedObservabilityService:
         """سجل التتبعات المكتملة"""
         return self.tracing.completed_traces
 
-    def start_trace(self, operation_name: str, parent_context: TraceContext | None = None,
-                    tags: dict[str, object] | None = None, request: Request | None = None) -> TraceContext:
+    def start_trace(
+        self,
+        operation_name: str,
+        parent_context: TraceContext | None = None,
+        tags: dict[str, object] | None = None,
+        request: Request | None = None,
+    ) -> TraceContext:
         """بدء تتبع جديد"""
         return self.tracing.start_trace(operation_name, parent_context, tags, request)
 
-    def end_span(self, span_id: str, status: str = 'OK', error_message: str | None = None,
-                 metrics: dict[str, float] | None = None) -> None:
+    def end_span(
+        self,
+        span_id: str,
+        status: str = "OK",
+        error_message: str | None = None,
+        metrics: dict[str, float] | None = None,
+    ) -> None:
         """إنهاء نطاق تتبع"""
         self.tracing.end_span(span_id, status, error_message, metrics)
         # منطق الارتباط (Correlation) يتم الآن ضمنياً عبر المعرفات المشتركة
         # لا حاجة لاستدعاء _correlate_trace يدوياً هنا
 
-    def add_span_event(self, span_id: str, event_name: str, attributes: dict[str, object] | None = None) -> None:
+    def add_span_event(
+        self, span_id: str, event_name: str, attributes: dict[str, object] | None = None
+    ) -> None:
         """إضافة حدث إلى نطاق تتبع"""
         self.tracing.add_span_event(span_id, event_name, attributes)
 
@@ -105,8 +117,14 @@ class UnifiedObservabilityService:
     def trace_metrics(self) -> dict[str, list[MetricSample]]:
         return self.metrics.trace_metrics
 
-    def record_metric(self, name: str, value: float, labels: dict[str, str] | None = None,
-                      trace_id: str | None = None, span_id: str | None = None) -> None:
+    def record_metric(
+        self,
+        name: str,
+        value: float,
+        labels: dict[str, str] | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+    ) -> None:
         """تسجيل مقياس جديد"""
         self.metrics.record_metric(
             MetricRecord(
@@ -118,7 +136,9 @@ class UnifiedObservabilityService:
             )
         )
 
-    def increment_counter(self, name: str, amount: float = 1.0, labels: dict[str, str] | None = None) -> None:
+    def increment_counter(
+        self, name: str, amount: float = 1.0, labels: dict[str, str] | None = None
+    ) -> None:
         """زيادة عداد"""
         self.metrics.increment_counter(name, amount, labels)
 
@@ -144,9 +164,15 @@ class UnifiedObservabilityService:
     def trace_logs(self) -> dict[str, list[CorrelatedLog]]:
         return self.logging.trace_logs
 
-    def log(self, level: str, message: str, context: dict[str, object] | None = None,
-            exception: Exception | None = None, trace_id: str | None = None,
-            span_id: str | None = None) -> None:
+    def log(
+        self,
+        level: str,
+        message: str,
+        context: dict[str, object] | None = None,
+        exception: Exception | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+    ) -> None:
         """تسجيل رسالة سجل مترابطة"""
         self.logging.log(
             LogRecord(
@@ -165,12 +191,17 @@ class UnifiedObservabilityService:
         """استرجاع تتبع كامل مع البيانات المترابطة"""
         return self.aggregator.get_trace_with_correlation(trace_id)
 
-    def find_traces_by_criteria(self, min_duration_ms: float | None = None,
-                                has_errors: bool | None = None,
-                                operation_name: str | None = None,
-                                limit: int = 100) -> list[dict[str, object]]:
+    def find_traces_by_criteria(
+        self,
+        min_duration_ms: float | None = None,
+        has_errors: bool | None = None,
+        operation_name: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, object]]:
         """البحث عن التتبعات"""
-        return self.aggregator.find_traces_by_criteria(min_duration_ms, has_errors, operation_name, limit)
+        return self.aggregator.find_traces_by_criteria(
+            min_duration_ms, has_errors, operation_name, limit
+        )
 
     def get_service_dependencies(self) -> dict[str, list[str]]:
         """استنتاج اعتماديات الخدمة"""
@@ -202,22 +233,24 @@ class UnifiedObservabilityService:
     def get_statistics(self) -> dict[str, object]:
         """إحصائيات مجمعة للنظام"""
         with self.lock, self.tracing.lock, self.metrics.lock, self.logging.lock:
-             return {
-                'anomalies_detected': self.analyzer.anomalies_detected_count,
+            return {
+                "anomalies_detected": self.analyzer.anomalies_detected_count,
                 **self.tracing.stats,
                 **self.metrics.stats,
                 **self.logging.stats,
-                'active_traces': len(self.tracing.active_traces),
-                'active_spans': len(self.tracing.active_spans),
-                'completed_traces': len(self.tracing.completed_traces),
-                'metrics_buffer_size': len(self.metrics.metrics_buffer),
-                'logs_buffer_size': len(self.logging.logs_buffer),
-                'anomaly_alerts': len(self.analyzer.anomaly_alerts)
+                "active_traces": len(self.tracing.active_traces),
+                "active_spans": len(self.tracing.active_spans),
+                "completed_traces": len(self.tracing.completed_traces),
+                "metrics_buffer_size": len(self.metrics.metrics_buffer),
+                "logs_buffer_size": len(self.logging.logs_buffer),
+                "anomaly_alerts": len(self.analyzer.anomaly_alerts),
             }
+
 
 # Singleton Instance Management
 _unified_observability: UnifiedObservabilityService | None = None
 _obs_lock = threading.Lock()
+
 
 def get_unified_observability() -> UnifiedObservabilityService:
     global _unified_observability

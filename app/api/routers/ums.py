@@ -1,6 +1,7 @@
 """
 موجه واجهة نظام إدارة المستخدمين مع حراسة RBAC وبوابة السياسات.
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -79,7 +80,9 @@ async def _enforce_recent_auth(
     if password and current.user.check_password(password):
         return
 
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Re-authentication required")
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Re-authentication required"
+    )
 
 
 @router.post("/auth/register", response_model=TokenPair, status_code=status.HTTP_201_CREATED)
@@ -222,7 +225,9 @@ async def logout(
     auth_service: AuthService = Depends(get_auth_service),
 ) -> dict[str, str]:
     client_ip, user_agent = _audit_context(request)
-    await auth_service.logout(refresh_token=payload.refresh_token, ip=client_ip, user_agent=user_agent)
+    await auth_service.logout(
+        refresh_token=payload.refresh_token, ip=client_ip, user_agent=user_agent
+    )
     return {"status": "logged_out"}
 
 
@@ -428,7 +433,9 @@ async def list_audit(
 
 
 @router.get("/admin/ai-config")
-async def get_ai_config(_: CurrentUser = Depends(require_permissions(AI_CONFIG_READ))) -> dict[str, str]:
+async def get_ai_config(
+    _: CurrentUser = Depends(require_permissions(AI_CONFIG_READ)),
+) -> dict[str, str]:
     return {"status": "ok", "message": "AI config readable"}
 
 

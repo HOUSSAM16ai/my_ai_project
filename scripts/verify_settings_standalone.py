@@ -32,6 +32,7 @@ def test_settings():
     assert user_settings_env.DATABASE_URL == "sqlite+aiosqlite:///env.db"
     print("Env Overrides OK.")
 
+
 if __name__ == "__main__":
     try:
         test_settings()

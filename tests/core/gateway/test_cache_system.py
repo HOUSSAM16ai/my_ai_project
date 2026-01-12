@@ -24,6 +24,7 @@ async def test_in_memory_cache_basic_ops():
     # Test Missing
     assert await cache.get("missing") is None
 
+
 @pytest.mark.asyncio
 async def test_cache_expiration():
     """Verify TTL expiration."""
@@ -43,6 +44,7 @@ async def test_cache_expiration():
 
     # Verify it's gone
     assert await cache.get(key) is None
+
 
 @pytest.mark.asyncio
 async def test_lru_eviction():
@@ -73,6 +75,7 @@ async def test_lru_eviction():
     assert await cache.get("k1") == "v1"
     assert await cache.get("k2") is None
 
+
 @pytest.mark.asyncio
 async def test_cache_factory():
     """Verify Factory creates correct instance."""
@@ -80,11 +83,12 @@ async def test_cache_factory():
     assert isinstance(provider, InMemoryCacheProvider)
     assert isinstance(provider, CacheProviderProtocol)
 
+
 @pytest.mark.asyncio
 async def test_generate_cache_key():
     """Verify key generation consistency."""
     data1 = {"a": 1, "b": 2}
-    data2 = {"b": 2, "a": 1} # Different order
+    data2 = {"b": 2, "a": 1}  # Different order
 
     key1 = generate_cache_key(data1)
     key2 = generate_cache_key(data2)

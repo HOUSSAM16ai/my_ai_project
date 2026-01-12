@@ -90,16 +90,16 @@ class SuperCollectiveIntelligence:
         # (Duck Typing).
 
         # 1. الاستراتيجي
-        strategist_res = await self.council.strategist.consult(situation, analysis) # type: ignore
+        strategist_res = await self.council.strategist.consult(situation, analysis)  # type: ignore
 
         # 2. المعماري
-        architect_res = await self.council.architect.consult(situation, analysis) # type: ignore
+        architect_res = await self.council.architect.consult(situation, analysis)  # type: ignore
 
         # 3. المشغل
-        operator_res = await self.council.operator.consult(situation, analysis) # type: ignore
+        operator_res = await self.council.operator.consult(situation, analysis)  # type: ignore
 
         # 4. المدقق
-        auditor_res = await self.council.auditor.consult(situation, analysis) # type: ignore
+        auditor_res = await self.council.auditor.consult(situation, analysis)  # type: ignore
 
         consultations = {
             "strategist": strategist_res,

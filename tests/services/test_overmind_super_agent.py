@@ -1,4 +1,3 @@
-
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -30,10 +29,7 @@ async def test_council_of_wisdom_flow():
     auditor = MagicMock(spec=AuditorAgent)
     # First review (Plan): Approved
     # Second review (Result): Approved
-    auditor.review_work = AsyncMock(side_effect=[
-        {"approved": True},
-        {"approved": True}
-    ])
+    auditor.review_work = AsyncMock(side_effect=[{"approved": True}, {"approved": True}])
 
     # 2. Setup Brain
     brain = SuperBrain(strategist, architect, operator, auditor)
@@ -49,6 +45,7 @@ async def test_council_of_wisdom_flow():
     assert operator.execute_tasks.called
     assert auditor.review_work.call_count == 2
     assert result["status"] == "success"
+
 
 @pytest.mark.asyncio
 async def test_self_correction_loop():
@@ -69,12 +66,14 @@ async def test_self_correction_loop():
     # 2. Result Review: REJECTED
     # 3. Plan Review (Iter 2): Approved
     # 4. Result Review (Iter 2): Approved
-    auditor.review_work = AsyncMock(side_effect=[
-        {"approved": True},
-        {"approved": False, "feedback": "Try harder"},
-        {"approved": True},
-        {"approved": True}
-    ])
+    auditor.review_work = AsyncMock(
+        side_effect=[
+            {"approved": True},
+            {"approved": False, "feedback": "Try harder"},
+            {"approved": True},
+            {"approved": True},
+        ]
+    )
 
     brain = SuperBrain(strategist, architect, operator, auditor)
     mission = Mission(id=2, objective="Fix bugs")

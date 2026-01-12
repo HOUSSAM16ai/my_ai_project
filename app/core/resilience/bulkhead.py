@@ -11,10 +11,12 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
+
 class BulkheadFullError(Exception):
     """Raised when bulkhead is at capacity."""
 
     pass
+
 
 class Bulkhead:
     """

@@ -61,9 +61,7 @@ class AdminChatPerformanceService:
         self._alert_policy.check(metric)
         return metric
 
-    def get_statistics(
-        self, category: str | None = None, hours: int = 24
-    ) -> PerformanceStatistics:
+    def get_statistics(self, category: str | None = None, hours: int = 24) -> PerformanceStatistics:
         """يعيد إحصائيات الأداء ضمن النافذة الزمنية المطلوبة."""
         filtered_metrics = self._metric_store.filter_by_time(category, hours)
         return self._statistics_calculator.build_statistics(filtered_metrics, hours)

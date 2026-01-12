@@ -16,6 +16,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
         },
     )
 
+
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> None:
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -27,6 +28,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         },
     )
 
+
 async def general_exception_handler(request: Request, exc: Exception) -> None:
     return JSONResponse(
         status_code=500,
@@ -37,6 +39,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> None:
             "timestamp": "2024-01-01T00:00:00Z",
         },
     )
+
 
 def add_error_handlers(app) -> None:
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)

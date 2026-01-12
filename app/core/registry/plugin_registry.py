@@ -7,6 +7,7 @@ Central registration and management of all plugins
 
 مبدأ البساطة: Singleton Pattern بسيط وواضح
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -36,11 +37,7 @@ class PluginRegistry:
             self._metadata: dict[str, dict[str, Any]] = {}
             self._initialized = True
 
-    def register(
-        self,
-        plugin: IPlugin,
-        metadata: dict[str, Any] | None = None
-    ) -> None:
+    def register(self, plugin: IPlugin, metadata: dict[str, Any] | None = None) -> None:
         """
         تسجيل إضافة جديدة
         Register a new plugin
@@ -63,10 +60,7 @@ class PluginRegistry:
 
     def get_by_type(self, plugin_type: str) -> list[IPlugin]:
         """Get all plugins of specific type"""
-        return [
-            p for p in self._plugins.values()
-            if p.plugin_type == plugin_type
-        ]
+        return [p for p in self._plugins.values() if p.plugin_type == plugin_type]
 
     def unregister(self, name: str) -> bool:
         """Unregister plugin"""
@@ -84,6 +78,7 @@ class PluginRegistry:
     def get_metadata(self, name: str) -> dict[str, Any]:
         """Get plugin metadata"""
         return self._metadata.get(name, {})
+
 
 # Global registry instance
 registry = PluginRegistry()

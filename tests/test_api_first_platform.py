@@ -40,6 +40,7 @@ def api_first_client() -> TestClient:
     app.dependency_overrides.clear()
     asyncio.run(engine.dispose())
 
+
 class TestAPIFirstPlatform:
     """
     اختبارات لضمان تطبيق معايير 'API First'.

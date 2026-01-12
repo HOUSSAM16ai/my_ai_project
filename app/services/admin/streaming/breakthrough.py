@@ -1,4 +1,5 @@
 """خدمة البث الإداري مع واجهات قابلة للتمديد ومتوافقة مع SOLID."""
+
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
@@ -34,4 +35,9 @@ class BreakthroughStreamingService:
         return []
 
 
-__all__ = ["DEFAULT_STREAMING_CONFIG", "AdaptiveCache", "BreakthroughStreamingService", "StreamingConfig"]
+__all__ = [
+    "DEFAULT_STREAMING_CONFIG",
+    "AdaptiveCache",
+    "BreakthroughStreamingService",
+    "StreamingConfig",
+]

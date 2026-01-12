@@ -14,9 +14,7 @@ from app.services.agent_tools.tool_model import ToolResult
 
 
 def read_file_logic(
-    path: str,
-    max_bytes: int = MAX_READ_BYTES,
-    ignore_missing: bool = False
+    path: str, max_bytes: int = MAX_READ_BYTES, ignore_missing: bool = False
 ) -> ToolResult:
     """
     Reads content from a file with safety limits.
@@ -27,12 +25,10 @@ def read_file_logic(
             try:
                 abs_path = validate_path(path, allow_missing=True)
                 if not os.path.exists(abs_path):
-                    return ToolResult(ok=True, data={
-                        "path": abs_path,
-                        "content": "",
-                        "exists": False,
-                        "missing": True
-                    })
+                    return ToolResult(
+                        ok=True,
+                        data={"path": abs_path, "content": "", "exists": False, "missing": True},
+                    )
             except ValueError as e:
                 return ToolResult(ok=False, error=str(e))
 
@@ -65,13 +61,16 @@ def read_file_logic(
                 content = raw.decode("utf-8", errors="replace")
 
             truncated = len(content) > max_eff
-            return ToolResult(ok=True, data={
-                "path": abs_path,
-                "content": content[:max_eff],
-                "truncated": truncated,
-                "exists": True,
-                "binary_mode": True
-            })
+            return ToolResult(
+                ok=True,
+                data={
+                    "path": abs_path,
+                    "content": content[:max_eff],
+                    "truncated": truncated,
+                    "exists": True,
+                    "binary_mode": True,
+                },
+            )
 
         # Normal Text
         with open(abs_path, encoding="utf-8", errors="replace") as f:
@@ -80,12 +79,10 @@ def read_file_logic(
         truncated = len(content) > max_eff
         preview = content[:max_eff]
 
-        return ToolResult(ok=True, data={
-            "path": abs_path,
-            "content": preview,
-            "truncated": truncated,
-            "exists": True
-        })
+        return ToolResult(
+            ok=True,
+            data={"path": abs_path, "content": preview, "truncated": truncated, "exists": True},
+        )
 
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
@@ -127,12 +124,9 @@ def read_bulk_files_logic(
                 truncated = False
 
             total_chars += len(content)
-            out.append({
-                "path": abs_path,
-                "exists": True,
-                "truncated": truncated,
-                "content": content
-            })
+            out.append(
+                {"path": abs_path, "exists": True, "truncated": truncated, "content": content}
+            )
 
             if total_chars > 1_500_000:
                 break
@@ -146,7 +140,7 @@ def read_bulk_files_logic(
         merged = "\n\n".join(
             f"# {os.path.basename(o['path'])}\n{o.get('content', '')}"
             for o in out
-            if o.get('content')
+            if o.get("content")
         )
         return ToolResult(
             ok=True,

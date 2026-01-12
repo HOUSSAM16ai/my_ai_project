@@ -26,8 +26,8 @@ class MetricRecord:
 
         if not self.labels:
             return self.name
-        label_str = ','.join(f'{k}={v}' for k, v in sorted(self.labels.items()))
-        return f'{self.name}{{{label_str}}}'
+        label_str = ",".join(f"{k}={v}" for k, v in sorted(self.labels.items()))
+        return f"{self.name}{{{label_str}}}"
 
 
 class MetricsManager:
@@ -40,7 +40,7 @@ class MetricsManager:
         self.histograms: dict[str, deque[float]] = defaultdict(lambda: deque(maxlen=10000))
         self.trace_metrics: dict[str, list[MetricSample]] = defaultdict(list)
         self.lock = threading.RLock()
-        self.stats = {'metrics_recorded': 0}
+        self.stats = {"metrics_recorded": 0}
 
     def record_metric(self, record: MetricRecord) -> None:
         """
@@ -59,7 +59,7 @@ class MetricsManager:
         )
         with self.lock:
             self.metrics_buffer.append(sample)
-            self.stats['metrics_recorded'] += 1
+            self.stats["metrics_recorded"] += 1
             self.histograms[record.name].append(record.value)
             if record.trace_id:
                 self.trace_metrics[record.trace_id].append(sample)
@@ -84,7 +84,9 @@ class MetricsManager:
             )
         )
 
-    def increment_counter(self, name: str, amount: float = 1.0, labels: dict[str, str] | None = None) -> None:
+    def increment_counter(
+        self, name: str, amount: float = 1.0, labels: dict[str, str] | None = None
+    ) -> None:
         key = self._metric_key(name, labels)
         with self.lock:
             self.counters[key] += amount
@@ -99,22 +101,22 @@ class MetricsManager:
             values = list(self.histograms.get(metric_name, []))
 
         if not values:
-            return {'p50': 0, 'p90': 0, 'p95': 0, 'p99': 0, 'p99.9': 0}
+            return {"p50": 0, "p90": 0, "p95": 0, "p99": 0, "p99.9": 0}
 
         sorted_values = sorted(values)
         return {
-            'p50': self._percentile(sorted_values, 50),
-            'p90': self._percentile(sorted_values, 90),
-            'p95': self._percentile(sorted_values, 95),
-            'p99': self._percentile(sorted_values, 99),
-            'p99.9': self._percentile(sorted_values, 99.9),
+            "p50": self._percentile(sorted_values, 50),
+            "p90": self._percentile(sorted_values, 90),
+            "p95": self._percentile(sorted_values, 95),
+            "p99": self._percentile(sorted_values, 99),
+            "p99.9": self._percentile(sorted_values, 99.9),
         }
 
     def _metric_key(self, name: str, labels: dict[str, str] | None) -> str:
         if not labels:
             return name
-        label_str = ','.join(f'{k}={v}' for k, v in sorted(labels.items()))
-        return f'{name}{{{label_str}}}'
+        label_str = ",".join(f"{k}={v}" for k, v in sorted(labels.items()))
+        return f"{name}{{{label_str}}}"
 
     def _percentile(self, sorted_data: list[float], percentile: float) -> float:
         if not sorted_data:
@@ -130,7 +132,7 @@ class MetricsManager:
         lines: list[str] = []
         with self.lock:
             for key, value in self.counters.items():
-                lines.append(f'{key} {value}')
+                lines.append(f"{key} {value}")
             for key, value in self.gauges.items():
-                lines.append(f'{key} {value}')
-        return '\n'.join(lines)
+                lines.append(f"{key} {value}")
+        return "\n".join(lines)

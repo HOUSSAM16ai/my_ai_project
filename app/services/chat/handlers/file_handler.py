@@ -11,6 +11,7 @@ from app.services.chat.security import ErrorSanitizer, PathValidator
 
 logger = logging.getLogger(__name__)
 
+
 async def handle_file_read(
     context: ChatContext,
     path: str,
@@ -76,6 +77,7 @@ async def handle_file_read(
         yield f"❌ خطأ: {error}\n"
 
     logger.debug(f"read_file completed in {(time.time() - start_time) * 1000:.2f}ms")
+
 
 async def handle_file_write(
     context: ChatContext,

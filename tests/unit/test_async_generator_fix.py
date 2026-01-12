@@ -18,6 +18,7 @@ from app.core.patterns.strategy import Strategy, StrategyRegistry
 
 class SimpleContext:
     """Simple context for testing."""
+
     def __init__(self, value: str):
         self.value = value
 

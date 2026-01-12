@@ -4,6 +4,7 @@ Hyper-Unified Agent Tool Registry
 The Facade that exposes tools.
 Refactored to minimize import side-effects and circular dependencies.
 """
+
 from app.services.agent_tools.domain.context import ContextAwarenessTool
 from app.services.agent_tools.domain.metrics import FileCountTool, ProjectMetricsTool
 from app.services.agent_tools.registry import get_tool_registry
@@ -71,8 +72,10 @@ _metrics_tool = ProjectMetricsTool()
 _file_count_tool = FileCountTool()
 _context_tool = ContextAwarenessTool()
 
+
 async def _legacy_wrapper(tool, **kwargs):
     return await tool.execute(**kwargs)
+
 
 # Register manually to avoid complex loop logic in global scope
 _TOOL_REGISTRY[_metrics_tool.name] = lambda **k: _legacy_wrapper(_metrics_tool, **k)
@@ -84,6 +87,7 @@ get_tool_registry().register(_metrics_tool)
 get_tool_registry().register(_file_count_tool)
 get_tool_registry().register(_context_tool)
 
+
 def get_registry() -> None:
     """
     Returns the legacy dict registry.
@@ -91,34 +95,108 @@ def get_registry() -> None:
     """
     return _TOOL_REGISTRY
 
+
 # Aliases for explicit export
-async def get_project_metrics_tool(**kwargs) -> None: return await _metrics_tool.execute(**kwargs)
-async def count_files_tool(**kwargs) -> None: return await _file_count_tool.execute(**kwargs)
-async def get_active_context_tool(**kwargs) -> None: return await _context_tool.execute(**kwargs)
+async def get_project_metrics_tool(**kwargs) -> None:
+    return await _metrics_tool.execute(**kwargs)
+
+
+async def count_files_tool(**kwargs) -> None:
+    return await _file_count_tool.execute(**kwargs)
+
+
+async def get_active_context_tool(**kwargs) -> None:
+    return await _context_tool.execute(**kwargs)
+
 
 # Legacy Aliases
-def generic_think_tool(**kwargs) -> None: return generic_think(**kwargs)
-def summarize_text_tool(**kwargs) -> None: return summarize_text(**kwargs)
-def refine_text_tool(**kwargs) -> None: return refine_text(**kwargs)
-def write_file_tool(**kwargs) -> None: return write_file(**kwargs)
-def write_file_if_changed_tool(**kwargs) -> None: return write_file_if_changed(**kwargs)
-def append_file_tool(**kwargs) -> None: return append_file(**kwargs)
-def read_file_tool(**kwargs) -> None: return read_file(**kwargs)
-def file_exists_tool(**kwargs) -> None: return file_exists(**kwargs)
-def list_dir_tool(**kwargs) -> None: return list_dir(**kwargs)
-def delete_file_tool(**kwargs) -> None: return delete_file(**kwargs)
-def ensure_file_tool(**kwargs) -> None: return ensure_file(**kwargs)
-def ensure_directory_tool(**kwargs) -> None: return ensure_directory(**kwargs)
-def introspect_tools_tool(**kwargs) -> None: return introspect_tools(**kwargs)
-def memory_put_tool(**kwargs) -> None: return memory_put(**kwargs)
-def memory_get_tool(**kwargs) -> None: return memory_get(**kwargs)
-def dispatch_tool_tool(**kwargs) -> None: return dispatch_tool(**kwargs)
-def analyze_path_semantics_tool(**kwargs) -> None: return analyze_path_semantics(**kwargs)
-def reload_deep_struct_map_tool(**kwargs) -> None: return reload_deep_struct_map(**kwargs)
-def read_bulk_files_tool(**kwargs) -> None: return read_bulk_files(**kwargs)
-def code_index_project_tool(**kwargs) -> None: return code_index_project(**kwargs)
-def code_search_lexical_tool(**kwargs) -> None: return code_search_lexical(**kwargs)
-def code_search_semantic_tool(**kwargs) -> None: return code_search_semantic(**kwargs)
+def generic_think_tool(**kwargs) -> None:
+    return generic_think(**kwargs)
+
+
+def summarize_text_tool(**kwargs) -> None:
+    return summarize_text(**kwargs)
+
+
+def refine_text_tool(**kwargs) -> None:
+    return refine_text(**kwargs)
+
+
+def write_file_tool(**kwargs) -> None:
+    return write_file(**kwargs)
+
+
+def write_file_if_changed_tool(**kwargs) -> None:
+    return write_file_if_changed(**kwargs)
+
+
+def append_file_tool(**kwargs) -> None:
+    return append_file(**kwargs)
+
+
+def read_file_tool(**kwargs) -> None:
+    return read_file(**kwargs)
+
+
+def file_exists_tool(**kwargs) -> None:
+    return file_exists(**kwargs)
+
+
+def list_dir_tool(**kwargs) -> None:
+    return list_dir(**kwargs)
+
+
+def delete_file_tool(**kwargs) -> None:
+    return delete_file(**kwargs)
+
+
+def ensure_file_tool(**kwargs) -> None:
+    return ensure_file(**kwargs)
+
+
+def ensure_directory_tool(**kwargs) -> None:
+    return ensure_directory(**kwargs)
+
+
+def introspect_tools_tool(**kwargs) -> None:
+    return introspect_tools(**kwargs)
+
+
+def memory_put_tool(**kwargs) -> None:
+    return memory_put(**kwargs)
+
+
+def memory_get_tool(**kwargs) -> None:
+    return memory_get(**kwargs)
+
+
+def dispatch_tool_tool(**kwargs) -> None:
+    return dispatch_tool(**kwargs)
+
+
+def analyze_path_semantics_tool(**kwargs) -> None:
+    return analyze_path_semantics(**kwargs)
+
+
+def reload_deep_struct_map_tool(**kwargs) -> None:
+    return reload_deep_struct_map(**kwargs)
+
+
+def read_bulk_files_tool(**kwargs) -> None:
+    return read_bulk_files(**kwargs)
+
+
+def code_index_project_tool(**kwargs) -> None:
+    return code_index_project(**kwargs)
+
+
+def code_search_lexical_tool(**kwargs) -> None:
+    return code_search_lexical(**kwargs)
+
+
+def code_search_semantic_tool(**kwargs) -> None:
+    return code_search_semantic(**kwargs)
+
 
 __all__ = [
     "PROJECT_ROOT",

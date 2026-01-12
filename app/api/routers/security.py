@@ -30,20 +30,23 @@ logger = logging.getLogger(__name__)
 # Dependencies
 # ==============================================================================
 
+
 def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthBoundaryService:
     """Dependency to get the Auth Boundary Service."""
     return AuthBoundaryService(db)
+
 
 # ==============================================================================
 # Endpoints
 # ==============================================================================
 
+
 @router.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
     return HealthResponse(
-        status="success",
-        data={"status": "healthy", "features": ["jwt", "argon2"]}
+        status="success", data={"status": "healthy", "features": ["jwt", "argon2"]}
     )
+
 
 @router.post("/register", summary="Register a New User", response_model=RegisterResponse)
 async def register(
@@ -60,6 +63,7 @@ async def register(
         password=register_data.password,
     )
     return RegisterResponse.model_validate(result)
+
 
 @router.post("/login", summary="Authenticate User and Get Token", response_model=AuthResponse)
 async def login(
@@ -79,6 +83,7 @@ async def login(
     )
     return AuthResponse.model_validate(result)
 
+
 @router.post(
     "/token/generate",
     summary="Generate Token (Mock)",
@@ -95,15 +100,18 @@ async def generate_token(request: TokenRequest) -> TokenGenerateResponse:
         token_type="Bearer",
     )
 
+
 @router.post("/token/verify", response_model=TokenVerifyResponse)
 async def verify_token(request: TokenVerifyRequest) -> TokenVerifyResponse:
     if not request.token:
         raise HTTPException(status_code=400, detail="token required")
     return TokenVerifyResponse(status="success", data={"valid": True})
 
+
 def get_current_user_token(request: Request) -> str:
     """Extract JWT token from Authorization header."""
     return AuthBoundaryService.extract_token_from_request(request)
+
 
 @router.get("/user/me", summary="Get Current User", response_model=UserResponse)
 async def get_current_user_endpoint(

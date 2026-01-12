@@ -40,6 +40,7 @@ def memory_put(key: str, value: str) -> ToolResult:
         _MEMORY_STORE[key] = value
     return ToolResult(ok=True, data={"stored": True, "key": key})
 
+
 @tool(
     name="memory_get",
     description="Retrieve a value by key from ephemeral memory.",

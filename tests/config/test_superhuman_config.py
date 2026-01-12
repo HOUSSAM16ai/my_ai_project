@@ -20,9 +20,9 @@ class TestSuperhumanConfiguration:
             "SECRET_KEY": "superhuman-secret-key-that-is-very-long-and-secure",
             "OPENAI_API_KEY": "sk-123456789",
             "ENVIRONMENT": "production",
-            "DEBUG": "False", # Strict validation requires False in prod
-            "ALLOWED_HOSTS": '["api.cogniforge.com", "admin.cogniforge.com"]', # Must not be * in prod
-            "BACKEND_CORS_ORIGINS": '["https://legendary-codespace.github.dev"]'
+            "DEBUG": "False",  # Strict validation requires False in prod
+            "ALLOWED_HOSTS": '["api.cogniforge.com", "admin.cogniforge.com"]',  # Must not be * in prod
+            "BACKEND_CORS_ORIGINS": '["https://legendary-codespace.github.dev"]',
         }
         with patch.dict(os.environ, env_vars, clear=True):
             yield
@@ -49,7 +49,9 @@ class TestSuperhumanConfiguration:
     def test_sqlite_fallback(self):
         """Verifies SQLite injection when DB URL is missing (Safe-Fail)."""
         # Note: In production, missing DB URL raises error. So we test in development.
-        with patch.dict(os.environ, {"SECRET_KEY": "test-key-safe", "ENVIRONMENT": "development"}, clear=True):
+        with patch.dict(
+            os.environ, {"SECRET_KEY": "test-key-safe", "ENVIRONMENT": "development"}, clear=True
+        ):
             settings = AppSettings(_env_file=None)
             assert settings.DATABASE_URL == "sqlite+aiosqlite:///./backup_storage.db"
 
@@ -73,7 +75,7 @@ class TestSuperhumanConfiguration:
                 "SECRET_KEY": "test-key-safe",
                 "DATABASE_URL": "sqlite:///",
                 "BACKEND_CORS_ORIGINS": cors_json,
-                "ENVIRONMENT": "development"
+                "ENVIRONMENT": "development",
             },
             clear=True,
         ):
@@ -92,37 +94,49 @@ class TestSuperhumanConfiguration:
     def test_production_strict_validation(self):
         """Verifies that production environment enforces strict security."""
         # Case 1: DEBUG is True in Production -> Should Fail
-        with patch.dict(os.environ, {
-            "ENVIRONMENT": "production",
-            "DEBUG": "True",
-            "SECRET_KEY": "superhuman-secret-key-that-is-very-long-and-secure",
-            "DATABASE_URL": "postgres://...",
-            "ALLOWED_HOSTS": '["my.site"]'
-        }, clear=True):
+        with patch.dict(
+            os.environ,
+            {
+                "ENVIRONMENT": "production",
+                "DEBUG": "True",
+                "SECRET_KEY": "superhuman-secret-key-that-is-very-long-and-secure",
+                "DATABASE_URL": "postgres://...",
+                "ALLOWED_HOSTS": '["my.site"]',
+            },
+            clear=True,
+        ):
             with pytest.raises(ValidationError) as exc:
                 AppSettings()
             assert "DEBUG must be False in production" in str(exc.value)
 
         # Case 2: Weak Secret Key -> Should Fail
-        with patch.dict(os.environ, {
-            "ENVIRONMENT": "production",
-            "DEBUG": "False",
-            "SECRET_KEY": "weak",
-            "DATABASE_URL": "postgres://...",
-             "ALLOWED_HOSTS": '["my.site"]'
-        }, clear=True):
+        with patch.dict(
+            os.environ,
+            {
+                "ENVIRONMENT": "production",
+                "DEBUG": "False",
+                "SECRET_KEY": "weak",
+                "DATABASE_URL": "postgres://...",
+                "ALLOWED_HOSTS": '["my.site"]',
+            },
+            clear=True,
+        ):
             with pytest.raises(ValidationError) as exc:
                 AppSettings()
             assert "Production SECRET_KEY is too weak" in str(exc.value)
 
         # Case 3: Wildcard Host -> Should Fail
-        with patch.dict(os.environ, {
-            "ENVIRONMENT": "production",
-            "DEBUG": "False",
-            "SECRET_KEY": "superhuman-secret-key-that-is-very-long-and-secure",
-            "DATABASE_URL": "postgres://...",
-            "ALLOWED_HOSTS": '["*"]'
-        }, clear=True):
+        with patch.dict(
+            os.environ,
+            {
+                "ENVIRONMENT": "production",
+                "DEBUG": "False",
+                "SECRET_KEY": "superhuman-secret-key-that-is-very-long-and-secure",
+                "DATABASE_URL": "postgres://...",
+                "ALLOWED_HOSTS": '["*"]',
+            },
+            clear=True,
+        ):
             with pytest.raises(ValidationError) as exc:
                 AppSettings()
             assert "ALLOWED_HOSTS cannot be '*' in production" in str(exc.value)

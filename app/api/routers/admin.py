@@ -43,15 +43,18 @@ router = APIRouter(
     tags=["Admin"],
 )
 
+
 # -----------------------------------------------------------------------------
 # DTOs
 # -----------------------------------------------------------------------------
 class AdminUserCountResponse(BaseModel):
     count: int
 
+
 # -----------------------------------------------------------------------------
 # Dependencies
 # -----------------------------------------------------------------------------
+
 
 def get_session_factory() -> Callable[[], AsyncSession]:
     """
@@ -122,23 +125,27 @@ async def get_actor_user(
 
     return user
 
+
 def get_admin_service(db: AsyncSession = Depends(get_db)) -> AdminChatBoundaryService:
     """تبعية للحصول على خدمة حدود محادثة المسؤول."""
     return AdminChatBoundaryService(db)
+
 
 def get_chat_dispatcher(db: AsyncSession = Depends(get_db)) -> ChatRoleDispatcher:
     """تبعية للحصول على موزّع الدردشة حسب الدور."""
     return build_chat_dispatcher(db)
 
+
 # -----------------------------------------------------------------------------
 # Endpoints
 # -----------------------------------------------------------------------------
+
 
 @router.get(
     "/users/count",
     summary="User Count (Admin)",
     response_model=AdminUserCountResponse,
-    dependencies=[Depends(require_roles(ADMIN_ROLE))]
+    dependencies=[Depends(require_roles(ADMIN_ROLE))],
 )
 async def get_admin_user_count() -> AdminUserCountResponse:
     """
@@ -151,6 +158,7 @@ async def get_admin_user_count() -> AdminUserCountResponse:
     except Exception as e:
         logger.error(f"Failed to retrieve user count: {e}")
         raise HTTPException(status_code=503, detail="User Service unavailable") from e
+
 
 @router.post("/api/chat/stream", summary="بث محادثة المسؤول (Admin Chat Stream)")
 async def chat_stream(
@@ -203,6 +211,7 @@ async def chat_stream(
         },
     )
 
+
 @router.get(
     "/api/chat/latest",
     summary="استرجاع آخر محادثة (Get Latest Conversation)",
@@ -221,6 +230,7 @@ async def get_latest_chat(
         return None
     return ConversationDetailsResponse.model_validate(conversation_data)
 
+
 @router.get(
     "/api/conversations",
     summary="سرد المحادثات (List Conversations)",
@@ -237,6 +247,7 @@ async def list_conversations(
     """
     results = await service.list_user_conversations(actor)
     return [ConversationSummaryResponse.model_validate(r) for r in results]
+
 
 @router.get(
     "/api/conversations/{conversation_id}",

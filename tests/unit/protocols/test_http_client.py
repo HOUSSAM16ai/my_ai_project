@@ -19,13 +19,15 @@ def test_requests_adapter_post_passes_arguments():
             return {}
 
     def fake_post(url: str, *, headers=None, json=None, stream=False, timeout=None):
-        captured.update({
-            "url": url,
-            "headers": headers,
-            "json": json,
-            "stream": stream,
-            "timeout": timeout,
-        })
+        captured.update(
+            {
+                "url": url,
+                "headers": headers,
+                "json": json,
+                "stream": stream,
+                "timeout": timeout,
+            }
+        )
         return DummyResponse()
 
     adapter = RequestsAdapter(requester=fake_post)

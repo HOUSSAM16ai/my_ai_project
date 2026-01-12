@@ -104,9 +104,7 @@ class DocumentationGenerator:
             except Exception as e:
                 print(f"   ❌ Error: {e}")
 
-    def _generate_openapi_markdown(
-        self, spec: dict, title: str, version: str
-    ) -> str:
+    def _generate_openapi_markdown(self, spec: dict, title: str, version: str) -> str:
         """Generate Markdown documentation from OpenAPI spec"""
         lines = [
             f"# {title}",
@@ -141,9 +139,7 @@ class DocumentationGenerator:
                 if method in ["get", "post", "put", "patch", "delete"]:
                     lines.append(f"#### {method.upper()}")
                     lines.append("")
-                    lines.append(
-                        f"**Summary**: {operation.get('summary', 'No summary')}"
-                    )
+                    lines.append(f"**Summary**: {operation.get('summary', 'No summary')}")
                     lines.append("")
 
                     if "description" in operation:
@@ -175,9 +171,7 @@ class DocumentationGenerator:
                     lines.append("**Responses**:")
                     lines.append("")
                     for status, response in operation.get("responses", {}).items():
-                        lines.append(
-                            f"- `{status}`: {response.get('description', '')}"
-                        )
+                        lines.append(f"- `{status}`: {response.get('description', '')}")
                     lines.append("")
 
         return "\n".join(lines)
@@ -259,9 +253,7 @@ class DocumentationGenerator:
 
             if "subscribe" in config:
                 lines.append("**Subscribe**")
-                lines.append(
-                    f"- Summary: {config['subscribe'].get('summary', '')}"
-                )
+                lines.append(f"- Summary: {config['subscribe'].get('summary', '')}")
                 lines.append("")
 
             if "publish" in config:

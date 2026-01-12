@@ -3,7 +3,6 @@
 Tests for CS73 Art Styles Module
 """
 
-
 from app.services.overmind.art.styles import (
     ArtStyle,
     ColorPalette,

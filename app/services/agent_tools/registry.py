@@ -1,6 +1,7 @@
 """
 Tool registry with thread-safe operations.
 """
+
 import logging
 import threading
 from typing import Any
@@ -8,6 +9,7 @@ from typing import Any
 from app.services.agent_tools.tool_model import Tool
 
 logger = logging.getLogger(__name__)
+
 
 class ToolRegistry:
     """
@@ -21,13 +23,13 @@ class ToolRegistry:
         self._aliases: dict[str, str] = {}
         self._lock = threading.RLock()
 
-    def register(self, tool: Tool) ->None:
+    def register(self, tool: Tool) -> None:
         """Register a tool. Complexity: 3"""
         with self._lock:
             self._validate_registration(tool)
             self._register_tool(tool)
             self._register_aliases(tool)
-            logger.info(f'Tool registered: {tool.name}')
+            logger.info(f"Tool registered: {tool.name}")
 
     def _validate_registration(self, tool: Tool) -> None:
         """Validate tool can be registered. Complexity: 2"""
@@ -46,7 +48,7 @@ class ToolRegistry:
         for alias in tool.config.aliases:
             self._aliases[alias] = tool.name
 
-    def unregister(self, name: str) ->None:
+    def unregister(self, name: str) -> None:
         """Unregister a tool."""
         with self._lock:
             if name not in self._tools:
@@ -55,9 +57,9 @@ class ToolRegistry:
             for alias in tool.config.aliases:
                 self._aliases.pop(alias, None)
             del self._tools[name]
-            logger.info(f'Tool unregistered: {name}')
+            logger.info(f"Tool unregistered: {name}")
 
-    def get(self, name: str) ->(Tool | None):
+    def get(self, name: str) -> Tool | None:
         """Get tool by name or alias."""
         with self._lock:
             if name in self._tools:
@@ -67,14 +69,14 @@ class ToolRegistry:
                 return self._tools.get(canonical)
             return None
 
-    def get_canonical_name(self, name: str) ->(str | None):
+    def get_canonical_name(self, name: str) -> str | None:
         """Get canonical name for tool or alias."""
         with self._lock:
             if name in self._tools:
                 return name
             return self._aliases.get(name)
 
-    def list_tools(self, category: (str | None)=None) ->list[Tool]:
+    def list_tools(self, category: (str | None) = None) -> list[Tool]:
         """List all tools, optionally filtered by category."""
         with self._lock:
             tools = list(self._tools.values())
@@ -82,22 +84,26 @@ class ToolRegistry:
                 tools = [t for t in tools if t.config.category == category]
             return tools
 
-    def get_stats(self) ->dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get registry statistics."""
         with self._lock:
-            return {'total_tools': len(self._tools), 'total_aliases': len(
-                self._aliases), 'tools': [tool.get_stats() for tool in self
-                ._tools.values()]}
+            return {
+                "total_tools": len(self._tools),
+                "total_aliases": len(self._aliases),
+                "tools": [tool.get_stats() for tool in self._tools.values()],
+            }
 
-    def clear(self) ->None:
+    def clear(self) -> None:
         """Clear all tools."""
         with self._lock:
             self._tools.clear()
             self._aliases.clear()
-            logger.info('Tool registry cleared')
+            logger.info("Tool registry cleared")
+
 
 _global_registry = ToolRegistry()
 
-def get_tool_registry() ->ToolRegistry:
+
+def get_tool_registry() -> ToolRegistry:
     """Get global tool registry."""
     return _global_registry

@@ -23,7 +23,11 @@ def reset_rate_limits() -> None:
 async def test_password_reset_flow_revokes_sessions(async_client: AsyncClient) -> None:
     register = await async_client.post(
         "/auth/register",
-        json={"full_name": "Recover User", "email": "recover@example.com", "password": "OldPass123!"},
+        json={
+            "full_name": "Recover User",
+            "email": "recover@example.com",
+            "password": "OldPass123!",
+        },
     )
     assert register.status_code == 201
     initial_refresh = register.json()["refresh_token"]
@@ -59,4 +63,3 @@ async def test_password_reset_flow_revokes_sessions(async_client: AsyncClient) -
         "/auth/login", json={"email": "recover@example.com", "password": "NewPass123!"}
     )
     assert new_login.status_code == 200
-
