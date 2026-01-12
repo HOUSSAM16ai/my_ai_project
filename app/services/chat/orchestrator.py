@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from app.services.chat.contracts import ChatDispatchRequest, ChatDispatchResult
     from app.services.chat.dispatcher import ChatRoleDispatcher
 
+
 class ChatOrchestrator:
     """
     المنسق المركزي للمحادثات (Central Chat Orchestrator).
@@ -60,9 +61,7 @@ class ChatOrchestrator:
     ) -> None:
         """يبني المنسق مع دعم حقن مكونات الكشف والمعالجة."""
         self._intent_detector = intent_detector or IntentDetector()
-        self._handlers = (
-            registry or StrategyRegistry[ChatContext, AsyncGenerator[str, None]]()
-        )
+        self._handlers = registry or StrategyRegistry[ChatContext, AsyncGenerator[str, None]]()
         self._initialize_handlers(handlers)
 
         # Multi-Agent System Initialization

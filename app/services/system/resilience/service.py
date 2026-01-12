@@ -91,6 +91,7 @@ class DistributedResilienceService:
 
         return stats
 
+
 # ======================================================================================
 # GLOBAL INSTANCE
 # ======================================================================================
@@ -151,12 +152,13 @@ def resilient(
 
     return decorator
 
+
 def _apply_circuit_breaker(
     service: DistributedResilienceService,
     circuit_breaker_name: str,
     func: Callable,
     args: tuple,
-    kwargs: dict
+    kwargs: dict,
 ) -> Any:
     """
     تطبيق نمط قاطع الدائرة | Apply circuit breaker pattern
@@ -178,12 +180,13 @@ def _apply_circuit_breaker(
 
     return cb.call(func_to_call)
 
+
 def _apply_retry(
     service: DistributedResilienceService,
     retry_config: RetryConfig,
     func: Callable,
     args: tuple,
-    kwargs: dict
+    kwargs: dict,
 ) -> Any:
     """
     تطبيق نمط إعادة المحاولة | Apply retry pattern
@@ -201,12 +204,13 @@ def _apply_retry(
     rm = service.get_or_create_retry_manager("default", retry_config)
     return rm.execute_with_retry(func, *args, **kwargs)
 
+
 def _apply_bulkhead(
     service: DistributedResilienceService,
     bulkhead_name: str,
     func: Callable,
     args: tuple,
-    kwargs: dict
+    kwargs: dict,
 ) -> Any:
     """
     تطبيق نمط الحاجز المائي | Apply bulkhead pattern

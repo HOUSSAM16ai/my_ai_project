@@ -243,6 +243,6 @@ class APIGateway:
         # إزالة البادئة إذا لزم الأمر
         service_path = path
         if route.strip_prefix:
-            service_path = path[len(route.path_prefix):].lstrip("/")
+            service_path = path[len(route.path_prefix) :].lstrip("/")
 
         return await self._proxy_to_service(route.service_name, service_path, request)

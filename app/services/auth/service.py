@@ -4,6 +4,7 @@
 تجمع هذه الخدمة بين المكونات الفرعية (Crypto, TokenManager, PasswordManager)
 لتوفير واجهة موحدة للتعامل مع المصادقة.
 """
+
 from __future__ import annotations
 
 from fastapi import HTTPException, status
@@ -67,7 +68,9 @@ class AuthService(BaseService):
             )
             return user
         except Exception as e:
-            self._log_error("Failed to register user", exc=e, email_hash=self.crypto.hash_identifier(email))
+            self._log_error(
+                "Failed to register user", exc=e, email_hash=self.crypto.hash_identifier(email)
+            )
             raise
 
     async def authenticate(
@@ -85,7 +88,9 @@ class AuthService(BaseService):
         user = result.scalar_one_or_none()
 
         if not user or not user.password_hash or not user.check_password(password):
-            self._log_warning("Authentication failed", email_hash=self.crypto.hash_identifier(normalized_email))
+            self._log_warning(
+                "Authentication failed", email_hash=self.crypto.hash_identifier(normalized_email)
+            )
             await self.audit.record(
                 actor_user_id=None,
                 action="AUTH_FAILED",
@@ -95,7 +100,9 @@ class AuthService(BaseService):
                 ip=ip,
                 user_agent=user_agent,
             )
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+            )
 
         if not user.is_active or user.status in {UserStatus.SUSPENDED, UserStatus.DISABLED}:
             self._log_warning("Authentication rejected: Account disabled", user_id=str(user.id))
@@ -272,10 +279,14 @@ class AuthService(BaseService):
                 ip=ip,
                 user_agent=user_agent,
             )
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+            )
 
         if record.revoked_at is not None or record.replaced_by_token_id is not None:
-            self._log_warning("Refresh token replay detected", user_id=str(record.user_id), token_id=token_id)
+            self._log_warning(
+                "Refresh token replay detected", user_id=str(record.user_id), token_id=token_id
+            )
             await self.token_manager.revoke_family(record.family_id)
             await self.audit.record(
                 actor_user_id=record.user_id,
@@ -295,7 +306,9 @@ class AuthService(BaseService):
                 ip=ip,
                 user_agent=user_agent,
             )
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+            )
 
         if not record.is_active():
             await self.token_manager.revoke_record(record)
@@ -308,7 +321,9 @@ class AuthService(BaseService):
                 ip=ip,
                 user_agent=user_agent,
             )
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+            )
 
         if not pwd_context.verify(secret, record.hashed_token):
             await self.token_manager.revoke_record(record)
@@ -321,7 +336,9 @@ class AuthService(BaseService):
                 ip=ip,
                 user_agent=user_agent,
             )
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+            )
 
         user = await self.session.get(User, record.user_id)
         if user is None or not user.is_active:
@@ -417,7 +434,10 @@ class AuthService(BaseService):
 
         if not user:
             # Note: We do not log error here to avoid user enumeration, but we can log debug
-            self._log_debug("Password reset requested for unknown email", email_hash=self.crypto.hash_identifier(normalized_email))
+            self._log_debug(
+                "Password reset requested for unknown email",
+                email_hash=self.crypto.hash_identifier(normalized_email),
+            )
             await self.audit.record(
                 actor_user_id=None,
                 action="PASSWORD_RESET_REQUESTED",
@@ -512,9 +532,7 @@ class AuthService(BaseService):
         await self.rbac.ensure_seed()
         await self.rbac.assign_role(user, ADMIN_ROLE)
         if not user.is_admin:
-            await self.session.execute(
-                update(User).where(User.id == user.id).values(is_admin=True)
-            )
+            await self.session.execute(update(User).where(User.id == user.id).values(is_admin=True))
             await self.session.commit()
 
     # Proxy methods for backward compatibility or direct usage

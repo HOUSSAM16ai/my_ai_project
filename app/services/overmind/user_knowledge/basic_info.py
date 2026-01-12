@@ -40,9 +40,7 @@ async def get_user_basic_info(session: AsyncSession, user_id: int) -> dict[str, 
     """
     try:
         # الاستعلام عن المستخدم
-        result = await session.execute(
-            select(User).where(User.id == user_id)
-        )
+        result = await session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
 
         if not user:
@@ -89,16 +87,20 @@ async def list_all_users(
 
         users_list: list[dict[str, object]] = []
         for user in users:
-            users_list.append({
-                "id": user.id,
-                "full_name": user.full_name,
-                "email": user.email,
-                "is_admin": user.is_admin,
-                "is_active": user.is_active,
-                "status": user.status.value if hasattr(user.status, "value") else str(user.status),
-                "created_at": user.created_at.isoformat(),
-                "updated_at": user.updated_at.isoformat(),
-            })
+            users_list.append(
+                {
+                    "id": user.id,
+                    "full_name": user.full_name,
+                    "email": user.email,
+                    "is_admin": user.is_admin,
+                    "is_active": user.is_active,
+                    "status": user.status.value
+                    if hasattr(user.status, "value")
+                    else str(user.status),
+                    "created_at": user.created_at.isoformat(),
+                    "updated_at": user.updated_at.isoformat(),
+                }
+            )
 
         logger.info(f"Listed {len(users_list)} users")
         return users_list

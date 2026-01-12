@@ -11,6 +11,7 @@ from app.core.gateway.protocols.cache import CacheProviderProtocol
 
 logger = logging.getLogger(__name__)
 
+
 class InMemoryCacheProvider(CacheProviderProtocol):
     """
     موفر التخزين المؤقت في الذاكرة - In-Memory Cache Provider
@@ -44,12 +45,7 @@ class InMemoryCacheProvider(CacheProviderProtocol):
         self._storage: OrderedDict[str, tuple[Any, float]] = OrderedDict()
 
         # Statistics
-        self._stats = {
-            "hits": 0,
-            "misses": 0,
-            "evictions": 0,
-            "sets": 0
-        }
+        self._stats = {"hits": 0, "misses": 0, "evictions": 0, "sets": 0}
 
         # Async lock for thread safety in async context
         self._lock = asyncio.Lock()
@@ -148,7 +144,7 @@ class InMemoryCacheProvider(CacheProviderProtocol):
                 "hit_rate": round(hit_rate, 4),
                 "hits": self._stats["hits"],
                 "misses": self._stats["misses"],
-                "evictions": self._stats["evictions"]
+                "evictions": self._stats["evictions"],
             }
 
 
@@ -165,11 +161,12 @@ class CacheFactory:
         if provider_type == "memory":
             return InMemoryCacheProvider(
                 max_size_items=kwargs.get("max_size_items", 1000),
-                default_ttl=kwargs.get("ttl", 300)
+                default_ttl=kwargs.get("ttl", 300),
             )
         # Future: elif provider_type == "redis": ...
         logger.warning(f"Unknown provider type '{provider_type}', falling back to memory.")
         return InMemoryCacheProvider()
+
 
 # Backwards compatibility helper for key generation
 def generate_cache_key(data: Any) -> str:

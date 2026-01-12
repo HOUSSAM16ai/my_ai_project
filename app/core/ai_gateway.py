@@ -55,6 +55,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 _performance_optimizer = get_performance_optimizer()
 
+
 def get_performance_report() -> dict[str, object]:
     """
     الحصول على تقرير أداء شامل من محسن الأداء.
@@ -65,6 +66,7 @@ def get_performance_report() -> dict[str, object]:
         تقرير مفصل عن أداء النماذج المختلفة
     """
     return _performance_optimizer.get_detailed_report()
+
 
 def get_recommended_model(available_models: list[str], context: str = "") -> str:
     """
@@ -80,6 +82,7 @@ def get_recommended_model(available_models: list[str], context: str = "") -> str
         اسم النموذج الموصى به
     """
     return _performance_optimizer.get_recommended_model(available_models, context)
+
 
 class AIGatewayFacade:
     """
@@ -103,6 +106,7 @@ class AIGatewayFacade:
 
     def __getattr__(self, name: str) -> object:
         return getattr(self.client, name)
+
 
 # Singleton instance
 ai_gateway = AIGatewayFacade()

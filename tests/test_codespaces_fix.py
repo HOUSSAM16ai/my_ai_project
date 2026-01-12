@@ -13,7 +13,9 @@ from collections.abc import Iterable
 from pathlib import Path
 
 
-def _scan_patterns(content: str, checks: Iterable[tuple[str, str]], *, flags: int = 0) -> tuple[int, int]:
+def _scan_patterns(
+    content: str, checks: Iterable[tuple[str, str]], *, flags: int = 0
+) -> tuple[int, int]:
     """
     يجري مطابقة تعبيرات نمطية على نص محدد ويعيد عدد النتائج الإيجابية والسلبية.
 
@@ -58,6 +60,7 @@ def _validate_performance_monitor() -> tuple[int, int]:
 
     return _scan_patterns(content, checks)
 
+
 def _validate_index_html() -> tuple[int, int]:
     """يتأكد من تكيّف index.html مع بيئات Codespaces والسحابة."""
 
@@ -79,6 +82,7 @@ def _validate_index_html() -> tuple[int, int]:
 
     return _scan_patterns(content, checks, flags=re.DOTALL)
 
+
 def _validate_supervisor_script() -> tuple[int, int]:
     """يفحص تضمين معالجات Codespaces داخل supervisor.sh."""
 
@@ -95,6 +99,7 @@ def _validate_supervisor_script() -> tuple[int, int]:
     ]
 
     return _scan_patterns(content, checks)
+
 
 def _validate_diagnostic_script() -> tuple[int, int]:
     """يتحقق من جاهزية وتشغيلية نص التشخيص Codespaces."""
@@ -165,6 +170,7 @@ def test_diagnostic_script():
     _passed, failed = _validate_diagnostic_script()
     assert failed == 0, f"codespaces_diagnostic.sh missing {failed} diagnostics"
 
+
 def main():
     print("╔══════════════════════════════════════════════════════════════════╗")
     print("║     Codespaces Crash Fix - Verification Tests                   ║")
@@ -192,9 +198,9 @@ def main():
     total_failed += failed
 
     # Summary
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("SUMMARY")
-    print("="*70)
+    print("=" * 70)
     print(f"✅ Passed: {total_passed}")
     print(f"❌ Failed: {total_failed}")
     print(f"📊 Total:  {total_passed + total_failed}")
@@ -211,6 +217,7 @@ def main():
         return 0
     print("⚠️  Some tests failed. Please review the output above.")
     return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

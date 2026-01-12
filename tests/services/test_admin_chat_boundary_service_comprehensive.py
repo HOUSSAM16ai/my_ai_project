@@ -20,7 +20,10 @@ def mock_settings():
 @pytest.fixture
 def service(mock_settings):
     db_session = AsyncMock()
-    with patch("app.services.boundaries.admin_chat_boundary_service.get_settings", return_value=mock_settings):
+    with patch(
+        "app.services.boundaries.admin_chat_boundary_service.get_settings",
+        return_value=mock_settings,
+    ):
         service = AdminChatBoundaryService(db_session)
         service.settings = mock_settings  # Ensure settings are set
         return service
@@ -130,7 +133,9 @@ async def test_get_or_create_conversation_not_found(service):
     service.db.get = AsyncMock(side_effect=[mock_user, None])
 
     with pytest.raises(HTTPException) as exc:
-        await service.get_or_create_conversation(user=mock_user, question="Q", conversation_id="999")
+        await service.get_or_create_conversation(
+            user=mock_user, question="Q", conversation_id="999"
+        )
 
     assert exc.value.status_code == 404
     # The actual implementation raises "Invalid conversation ID" wrapping the ValueError
@@ -141,7 +146,9 @@ async def test_get_or_create_conversation_not_found(service):
 async def test_get_or_create_conversation_invalid_id(service):
     with pytest.raises(HTTPException) as exc:
         actor = User(id=1, email="u@example.com", full_name="Test", is_admin=True)
-        await service.get_or_create_conversation(user=actor, question="Q", conversation_id="invalid")
+        await service.get_or_create_conversation(
+            user=actor, question="Q", conversation_id="invalid"
+        )
 
     assert exc.value.status_code == 400
     assert exc.value.detail == "Invalid conversation ID format"

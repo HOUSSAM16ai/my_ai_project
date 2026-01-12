@@ -184,8 +184,7 @@ class TestOvermindIdentityDatabaseCapabilities:
         # التحقق من وجود معرفة بقاعدة البيانات
         knowledge_items = capabilities["knowledge"]
         has_db_knowledge = any(
-            "قاعدة البيانات" in item or "database" in item.lower()
-            for item in knowledge_items
+            "قاعدة البيانات" in item or "database" in item.lower() for item in knowledge_items
         )
         assert has_db_knowledge, "النظام يجب أن يعرف عن قاعدة البيانات"
 

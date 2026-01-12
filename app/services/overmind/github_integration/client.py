@@ -18,6 +18,7 @@ logger = get_logger(__name__)
 # Try to import PyGithub
 try:
     from github import Github, GithubException, Repository
+
     PYGITHUB_AVAILABLE = True
 except ImportError:
     PYGITHUB_AVAILABLE = False
@@ -55,9 +56,7 @@ class GitHubClient:
             self.repo_name = self._detect_repo_name_sync()
 
         self.repo_full_name = (
-            f"{self.repo_owner}/{self.repo_name}"
-            if self.repo_owner and self.repo_name
-            else None
+            f"{self.repo_owner}/{self.repo_name}" if self.repo_owner and self.repo_name else None
         )
 
         # Initialize immediately if token exists
@@ -102,7 +101,8 @@ class GitHubClient:
         try:
             result = subprocess.run(
                 ["git", "remote", "-v"],
-                check=False, capture_output=True,
+                check=False,
+                capture_output=True,
                 text=True,
                 timeout=5,
             )
@@ -121,7 +121,8 @@ class GitHubClient:
         try:
             result = subprocess.run(
                 ["git", "remote", "-v"],
-                check=False, capture_output=True,
+                check=False,
+                capture_output=True,
                 text=True,
                 timeout=5,
             )
@@ -140,7 +141,7 @@ class GitHubClient:
             return RepoInfo(
                 owner=self.repo_owner or "unknown",
                 name=self.repo_name or "unknown",
-                error="Repository not initialized"
+                error="Repository not initialized",
             )
 
         try:
@@ -170,7 +171,5 @@ class GitHubClient:
         except Exception as e:
             logger.error(f"Error getting repo info: {e}")
             return RepoInfo(
-                owner=self.repo_owner or "unknown",
-                name=self.repo_name or "unknown",
-                error=str(e)
+                owner=self.repo_owner or "unknown", name=self.repo_name or "unknown", error=str(e)
             )

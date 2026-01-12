@@ -44,7 +44,9 @@ class UsersPage(TypedDict):
     items: list[User]
     pagination: PaginationMeta
 
+
 logger = logging.getLogger(__name__)
+
 
 class CrudPersistence:
     """

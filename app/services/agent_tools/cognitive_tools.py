@@ -19,6 +19,7 @@ from .definitions import (
 
 logger = logging.getLogger("agent_tools")
 
+
 @tool(
     name=CANON_THINK,
     description="Primary cognitive tool (reasoning / analysis). Returns data.answer & data.content.",
@@ -60,7 +61,7 @@ async def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
                 "mode": mode,
                 "fallback": True,
                 "truncated_input": truncated,
-                "error": str(e)
+                "error": str(e),
             },
         )
 
@@ -78,6 +79,7 @@ async def generic_think(prompt: str, mode: str = "analysis") -> ToolResult:
             "truncated_input": truncated,
         },
     )
+
 
 @tool(
     name="summarize_text",
@@ -100,6 +102,7 @@ async def summarize_text(text: str, style: str = "concise") -> ToolResult:
     snippet = t[:8000]
     prompt = f"Summarize the following text in a {style} manner. Provide key bullet points:\n---\n{snippet}\n---"
     return await generic_think(prompt=prompt, mode="summary")
+
 
 @tool(
     name="refine_text",

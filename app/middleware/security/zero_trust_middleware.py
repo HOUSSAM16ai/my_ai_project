@@ -63,9 +63,7 @@ class ZeroTrustMiddleware(ConditionalMiddleware):
 
     def _create_missing_session_response(self) -> MiddlewareResult:
         """Create response for missing session ID"""
-        return MiddlewareResult.unauthorized(
-            message="Zero Trust session required"
-        ).with_details(
+        return MiddlewareResult.unauthorized(message="Zero Trust session required").with_details(
             reason="Missing session ID",
             required_header="X-Session-ID",
         )
@@ -80,9 +78,7 @@ class ZeroTrustMiddleware(ConditionalMiddleware):
     def _create_invalid_session_response(self, session_id: str) -> MiddlewareResult:
         """Create response for invalid session"""
         self.failed_count += 1
-        return MiddlewareResult.unauthorized(
-            message="Continuous verification failed"
-        ).with_details(
+        return MiddlewareResult.unauthorized(message="Continuous verification failed").with_details(
             reason="Session validation failed",
             session_id=session_id,
         )

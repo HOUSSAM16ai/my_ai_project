@@ -67,7 +67,9 @@ class AIThreatMiddleware(BaseMiddleware):
             ctx.ip_address,
         )
 
-    def _handle_threat(self, detection, threat_score: float, ctx: RequestContext) -> MiddlewareResult:
+    def _handle_threat(
+        self, detection, threat_score: float, ctx: RequestContext
+    ) -> MiddlewareResult:
         """Handle detected threat based on severity"""
         self.threats_detected += 1
 

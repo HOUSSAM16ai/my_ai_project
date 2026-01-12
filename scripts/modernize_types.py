@@ -25,50 +25,42 @@ def modernize_type_hints(content: str) -> str:
     # Track if we need to keep any typing imports
 
     # Step 1: Convert Optional[X] to X | None
-    content = re.sub(
-        r'Optional\[([^\]]+)\]',
-        r'\1 | None',
-        content
-    )
+    content = re.sub(r"Optional\[([^\]]+)\]", r"\1 | None", content)
 
     # Step 2: Convert Union[X, Y, ...] to X | Y | ...
     def replace_union(match):
         types = match.group(1)
         # Split by comma but respect nested brackets
-        return ' | '.join([t.strip() for t in split_types(types)])
+        return " | ".join([t.strip() for t in split_types(types)])
 
-    content = re.sub(
-        r'Union\[([^\]]+(?:\[[^\]]*\])*[^\]]*)\]',
-        replace_union,
-        content
-    )
+    content = re.sub(r"Union\[([^\]]+(?:\[[^\]]*\])*[^\]]*)\]", replace_union, content)
 
     # Step 3: Convert List[X] to list[X]
-    content = re.sub(r'\bList\[', 'list[', content)
+    content = re.sub(r"\bList\[", "list[", content)
 
     # Step 4: Convert Dict[X, Y] to dict[X, Y]
-    content = re.sub(r'\bDict\[', 'dict[', content)
+    content = re.sub(r"\bDict\[", "dict[", content)
 
     # Step 5: Convert Tuple[X, Y] to tuple[X, Y]
-    content = re.sub(r'\bTuple\[', 'tuple[', content)
+    content = re.sub(r"\bTuple\[", "tuple[", content)
 
     # Step 6: Convert Set[X] to set[X]
-    content = re.sub(r'\bSet\[', 'set[', content)
+    content = re.sub(r"\bSet\[", "set[", content)
 
     # Step 7: Update imports
-    lines = content.split('\n')
+    lines = content.split("\n")
     new_lines = []
 
     for line in lines:
         # Remove unused typing imports
-        if 'from typing import' in line:
-            imports = re.search(r'from typing import (.+)', line)
+        if "from typing import" in line:
+            imports = re.search(r"from typing import (.+)", line)
             if imports:
-                import_list = [i.strip() for i in imports.group(1).split(',')]
+                import_list = [i.strip() for i in imports.group(1).split(",")]
                 # Keep only necessary imports (Protocol, Generic, etc.)
                 keep_imports = []
                 for imp in import_list:
-                    if imp not in ['Optional', 'Union', 'List', 'Dict', 'Tuple', 'Set']:
+                    if imp not in ["Optional", "Union", "List", "Dict", "Tuple", "Set"]:
                         keep_imports.append(imp)
 
                 if keep_imports:
@@ -78,7 +70,7 @@ def modernize_type_hints(content: str) -> str:
 
         new_lines.append(line)
 
-    return '\n'.join(new_lines)
+    return "\n".join(new_lines)
 
 
 def split_types(types_str: str) -> list[str]:
@@ -88,13 +80,13 @@ def split_types(types_str: str) -> list[str]:
     depth = 0
 
     for char in types_str:
-        if char == '[':
+        if char == "[":
             depth += 1
             current += char
-        elif char == ']':
+        elif char == "]":
             depth -= 1
             current += char
-        elif char == ',' and depth == 0:
+        elif char == "," and depth == 0:
             result.append(current.strip())
             current = ""
         else:
@@ -114,11 +106,11 @@ def process_file(file_path: Path) -> tuple[bool, str]:
         (changed, message) tuple
     """
     try:
-        content = file_path.read_text(encoding='utf-8')
+        content = file_path.read_text(encoding="utf-8")
         new_content = modernize_type_hints(content)
 
         if content != new_content:
-            file_path.write_text(new_content, encoding='utf-8')
+            file_path.write_text(new_content, encoding="utf-8")
             return True, f"✅ Updated: {file_path}"
         return False, f"⏭️  No changes: {file_path}"
 
@@ -153,12 +145,12 @@ def main():
         else:
             skipped += 1
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("📊 Summary:")
     print(f"   ✅ Updated: {updated} files")
     print(f"   ⏭️  Skipped: {skipped} files")
     print(f"   ❌ Errors: {errors} files")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
 
 if __name__ == "__main__":

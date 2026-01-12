@@ -20,6 +20,7 @@ MAX_READ_BYTES = 100_000
 # Handlers
 # ======================================================================================
 
+
 async def write_file_handler(path: str, content: str, **kwargs) -> dict[str, Any]:
     """Write content to a file."""
     if not isinstance(content, str):
@@ -33,6 +34,7 @@ async def write_file_handler(path: str, content: str, **kwargs) -> dict[str, Any
 
     return {"written": abs_path, "bytes": len(content)}
 
+
 async def read_file_handler(path: str, max_bytes: int = 20000, **kwargs) -> dict[str, Any]:
     """Read content from a file."""
     abs_path = _safe_path(path)
@@ -45,6 +47,7 @@ async def read_file_handler(path: str, max_bytes: int = 20000, **kwargs) -> dict
 
     return {"content": content, "path": abs_path, "truncated": len(content) == max_bytes}
 
+
 async def list_dir_handler(path: str = ".", **kwargs) -> dict[str, Any]:
     """List directory contents."""
     abs_path = _safe_path(path)
@@ -53,6 +56,7 @@ async def list_dir_handler(path: str = ".", **kwargs) -> dict[str, Any]:
 
     entries = os.listdir(abs_path)
     return {"entries": sorted(entries), "path": abs_path}
+
 
 async def delete_file_handler(path: str, confirm: bool = False, **kwargs) -> dict[str, Any]:
     """Delete a file."""
@@ -66,46 +70,59 @@ async def delete_file_handler(path: str, confirm: bool = False, **kwargs) -> dic
     os.remove(abs_path)
     return {"deleted": True, "path": abs_path}
 
+
 # ======================================================================================
 # Tool Classes
 # ======================================================================================
 
+
 class WriteFileTool(Tool):
     def __init__(self):
-        super().__init__(ToolConfig(
-            name="write_file",
-            description="Write content to a file.",
-            category="fs",
-            aliases=["write", "create_file"],
-            handler=write_file_handler
-        ))
+        super().__init__(
+            ToolConfig(
+                name="write_file",
+                description="Write content to a file.",
+                category="fs",
+                aliases=["write", "create_file"],
+                handler=write_file_handler,
+            )
+        )
+
 
 class ReadFileTool(Tool):
     def __init__(self):
-        super().__init__(ToolConfig(
-            name="read_file",
-            description="Read content from a file.",
-            category="fs",
-            aliases=["read", "cat"],
-            handler=read_file_handler
-        ))
+        super().__init__(
+            ToolConfig(
+                name="read_file",
+                description="Read content from a file.",
+                category="fs",
+                aliases=["read", "cat"],
+                handler=read_file_handler,
+            )
+        )
+
 
 class ListDirTool(Tool):
     def __init__(self):
-        super().__init__(ToolConfig(
-            name="list_dir",
-            description="List directory contents.",
-            category="fs",
-            aliases=["ls", "dir"],
-            handler=list_dir_handler
-        ))
+        super().__init__(
+            ToolConfig(
+                name="list_dir",
+                description="List directory contents.",
+                category="fs",
+                aliases=["ls", "dir"],
+                handler=list_dir_handler,
+            )
+        )
+
 
 class DeleteFileTool(Tool):
     def __init__(self):
-        super().__init__(ToolConfig(
-            name="delete_file",
-            description="Delete a file.",
-            category="fs",
-            aliases=["rm", "delete"],
-            handler=delete_file_handler
-        ))
+        super().__init__(
+            ToolConfig(
+                name="delete_file",
+                description="Delete a file.",
+                category="fs",
+                aliases=["rm", "delete"],
+                handler=delete_file_handler,
+            )
+        )

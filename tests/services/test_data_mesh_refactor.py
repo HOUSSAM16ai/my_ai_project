@@ -1,4 +1,3 @@
-
 import pytest
 from httpx import AsyncClient
 
@@ -20,7 +19,7 @@ async def test_data_mesh_refactor_verification():
             "name": "Customer 360",
             "description": "Unified Customer View",
             "schema_version": "1.0",
-            "schema_definition": {"type": "record", "fields": []}
+            "schema_definition": {"type": "record", "fields": []},
         }
 
         response = await client.post("/api/v1/data-mesh/contracts", json=contract_payload)
@@ -38,14 +37,14 @@ async def test_data_mesh_refactor_verification():
 
         # 4. Verify AIOps Telemetry (POST /api/v1/platform/aiops/telemetry)
         # Verify legacy endpoint is removed (Dead Code Cleanup)
-        telemetry_payload = {
-            "service_name": "test-service",
-            "metric_type": "gauge",
-            "value": 42.0
-        }
+        telemetry_payload = {"service_name": "test-service", "metric_type": "gauge", "value": 42.0}
         response = await client.post("/api/v1/platform/aiops/telemetry", json=telemetry_payload)
-        assert response.status_code == 404, "Legacy Telemetry endpoint should be removed (Dead Code Cleanup)"
+        assert response.status_code == 404, (
+            "Legacy Telemetry endpoint should be removed (Dead Code Cleanup)"
+        )
 
         # 5. Verify that legacy endpoints are gone
         response = await client.post("/api/v1/platform/data-mesh/contracts", json=contract_payload)
-        assert response.status_code == 404, "Legacy Data Mesh endpoint should be removed from Platform router"
+        assert response.status_code == 404, (
+            "Legacy Data Mesh endpoint should be removed from Platform router"
+        )

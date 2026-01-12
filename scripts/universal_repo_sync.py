@@ -124,7 +124,9 @@ def check_workload_identity():
               for secure authentication in the current execution context.
     """
     # Check for GitHub OIDC token
-    if os.environ.get("ACTIONS_ID_TOKEN_REQUEST_URL") and os.environ.get("ACTIONS_ID_TOKEN_REQUEST_TOKEN"):
+    if os.environ.get("ACTIONS_ID_TOKEN_REQUEST_URL") and os.environ.get(
+        "ACTIONS_ID_TOKEN_REQUEST_TOKEN"
+    ):
         return True
     # Check for GitLab OIDC token
     return bool(os.environ.get("CI_JOB_JWT_V2"))
@@ -175,7 +177,10 @@ def ensure_complete_history():
                 # git branch --track <local> <remote>
                 # We use --force to update it if it exists but is stale
                 logger.info(f"Tracking branch: {local_branch_name} -> {branch}")
-                run_command(["git", "branch", "--track", "-f", local_branch_name, branch], ignore_errors=True)
+                run_command(
+                    ["git", "branch", "--track", "-f", local_branch_name, branch],
+                    ignore_errors=True,
+                )
 
     except Exception as e:
         logger.warning(f"Failed to hydrate some branches: {e}")
@@ -217,8 +222,16 @@ def sync_remotes():
             # and --tags to sync tags.
             # Now that we have hydrated local branches, this is safe.
             run_command(
-                ["git", "push", "--prune", "--force", target_url, "+refs/heads/*:refs/heads/*", "+refs/tags/*:refs/tags/*"],
-                sensitive_inputs=[gitlab_token]
+                [
+                    "git",
+                    "push",
+                    "--prune",
+                    "--force",
+                    target_url,
+                    "+refs/heads/*:refs/heads/*",
+                    "+refs/tags/*:refs/tags/*",
+                ],
+                sensitive_inputs=[gitlab_token],
             )
             logger.info("✅ Sync to GitLab Successful (Exit Code 0).")
 
@@ -234,8 +247,16 @@ def sync_remotes():
             logger.info("Initiating Mirror Push to GitHub...")
 
             run_command(
-                ["git", "push", "--prune", "--force", target_url, "+refs/heads/*:refs/heads/*", "+refs/tags/*:refs/tags/*"],
-                sensitive_inputs=[github_token]
+                [
+                    "git",
+                    "push",
+                    "--prune",
+                    "--force",
+                    target_url,
+                    "+refs/heads/*:refs/heads/*",
+                    "+refs/tags/*:refs/tags/*",
+                ],
+                sensitive_inputs=[github_token],
             )
             logger.info("✅ Sync to GitHub Successful (Exit Code 0).")
 

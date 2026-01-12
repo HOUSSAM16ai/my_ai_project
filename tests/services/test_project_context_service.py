@@ -93,6 +93,7 @@ class TestProjectContextService:
         with patch.object(service, "get_code_statistics") as mock_stats:
             # Create a real CodeStatistics object
             from app.services.project_context.domain.models import CodeStatistics
+
             stats = CodeStatistics()
             stats.test_files = 60
             stats.python_files = 110

@@ -19,12 +19,14 @@ from app.services.chat.telemetry import ChatTelemetry
 # Singleton Instance
 _orchestrator_instance = ChatOrchestrator()
 
+
 def get_chat_orchestrator() -> ChatOrchestrator:
     """
     Returns the singleton instance of the new Strategy-based Orchestrator.
     Maintains the same function signature name as the legacy service for compatibility.
     """
     return _orchestrator_instance
+
 
 __all__ = [
     "ChatContext",

@@ -29,11 +29,13 @@ class SecurityManagerConfig:
 
     Holds all dependencies required by the Security Manager.
     """
+
     threat_detector: ThreatDetectorPort
     behavioral_analyzer: BehavioralAnalyzerPort
     response_system: ResponseSystemPort
     profile_repo: ProfileRepositoryPort
     threat_logger: ThreatLoggerPort
+
 
 class SecurityManager:
     """
@@ -80,7 +82,9 @@ class SecurityManager:
 
         return all_threats
 
-    def _detect_pattern_threats(self, event: SecurityEvent, all_threats: list[ThreatDetection]) -> None:
+    def _detect_pattern_threats(
+        self, event: SecurityEvent, all_threats: list[ThreatDetection]
+    ) -> None:
         """
         كشف التهديدات بناءً على الأنماط.
         Detect pattern-based threats.
@@ -92,7 +96,9 @@ class SecurityManager:
         pattern_threats = self.threat_detector.detect_threats(event)
         all_threats.extend(pattern_threats)
 
-    def _analyze_user_behavior(self, event: SecurityEvent, all_threats: list[ThreatDetection]) -> None:
+    def _analyze_user_behavior(
+        self, event: SecurityEvent, all_threats: list[ThreatDetection]
+    ) -> None:
         """
         تحليل سلوك المستخدم.
         Analyze user behavior.
@@ -173,5 +179,6 @@ class SecurityManager:
             User profile or None if not found
         """
         return self.profile_repo.get_profile(user_id)
+
 
 __all__ = ["SecurityManager", "SecurityManagerConfig"]

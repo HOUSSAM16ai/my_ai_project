@@ -9,6 +9,7 @@ from microservices.observability_service.service import get_aiops_service
 
 app = FastAPI(title="Observability Service", version="1.0.0")
 
+
 class TelemetryRequest(BaseModel):
     """حمولة قياس قادمة من خدمة مراقبة."""
 
@@ -20,6 +21,7 @@ class TelemetryRequest(BaseModel):
     labels: dict[str, str] = Field(default_factory=dict)
     unit: str = ""
 
+
 class ForecastRequest(BaseModel):
     """طلب توقع الحمل المستقبلي."""
 
@@ -27,11 +29,13 @@ class ForecastRequest(BaseModel):
     metric_type: MetricType
     hours_ahead: int = 24
 
+
 class CapacityPlanRequest(BaseModel):
     """طلب إنشاء خطة سعة مستقبلية."""
 
     service_name: str
     forecast_horizon_hours: int = 72
+
 
 class TelemetryResponse(BaseModel):
     """استجابة استقبال القياس."""
@@ -39,15 +43,18 @@ class TelemetryResponse(BaseModel):
     status: str
     metric_id: str
 
+
 class RootResponse(BaseModel):
     """رسالة الجذر لخدمة المراقبة."""
 
     message: str
 
+
 class MetricsResponse(BaseModel):
     """استجابة المقاييس الإجمالية."""
 
     metrics: dict[str, float | int]
+
 
 class ForecastResponse(BaseModel):
     """استجابة توقع الحمل مع فاصل الثقة."""
@@ -55,6 +62,7 @@ class ForecastResponse(BaseModel):
     forecast_id: str
     predicted_load: float
     confidence_interval: tuple[float, float]
+
 
 class CapacityPlanPayload(BaseModel):
     """تفاصيل خطة السعة الناتجة عن التحليل."""
@@ -68,18 +76,22 @@ class CapacityPlanPayload(BaseModel):
     confidence: float
     created_at: str
 
+
 class CapacityPlanResponse(BaseModel):
     """استجابة خطة السعة بعد التوليد."""
 
     plan: CapacityPlanPayload
 
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
     return build_health_payload(service_name="observability-service")
 
+
 @app.get("/", response_model=RootResponse)
 async def root() -> RootResponse:
     return RootResponse(message="Observability Service is running")
+
 
 @app.post("/telemetry", response_model=TelemetryResponse)
 async def collect_telemetry(request: TelemetryRequest) -> TelemetryResponse:
@@ -91,20 +103,23 @@ async def collect_telemetry(request: TelemetryRequest) -> TelemetryResponse:
         value=request.value,
         timestamp=request.timestamp,
         labels=request.labels,
-        unit=request.unit
+        unit=request.unit,
     )
     service.collect_telemetry(data)
     return TelemetryResponse(status="collected", metric_id=request.metric_id)
+
 
 @app.get("/metrics", response_model=MetricsResponse)
 async def get_metrics() -> MetricsResponse:
     service = get_aiops_service()
     return MetricsResponse(metrics=service.get_aiops_metrics())
 
+
 @app.get("/health/{service_name}", response_model=dict[str, object])
 async def get_service_health(service_name: str) -> dict[str, object]:
     service = get_aiops_service()
     return service.get_service_health(service_name)
+
 
 @app.post("/forecast", response_model=ForecastResponse)
 async def forecast_load(request: ForecastRequest) -> ForecastResponse:
@@ -119,6 +134,7 @@ async def forecast_load(request: ForecastRequest) -> ForecastResponse:
         confidence_interval=forecast.confidence_interval,
     )
 
+
 @app.post("/capacity", response_model=CapacityPlanResponse)
 async def generate_capacity_plan(request: CapacityPlanRequest) -> CapacityPlanResponse:
     service = get_aiops_service()
@@ -129,6 +145,7 @@ async def generate_capacity_plan(request: CapacityPlanRequest) -> CapacityPlanRe
     if serialized is None:
         raise HTTPException(status_code=400, detail="Could not serialize capacity plan")
     return CapacityPlanResponse(plan=CapacityPlanPayload(**serialized))
+
 
 @app.get("/anomalies/{anomaly_id}/root_cause", response_model=dict[str, object])
 async def analyze_root_cause(anomaly_id: str) -> dict[str, object]:

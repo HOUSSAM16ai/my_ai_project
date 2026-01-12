@@ -34,6 +34,7 @@ class VaultBackend(ABC):
         """Rotate secret"""
         ...
 
+
 class ConfigRepository(ABC):
     """Port for configuration storage"""
 
@@ -51,6 +52,7 @@ class ConfigRepository(ABC):
     def get_all_config(self, environment: Environment) -> dict[str, ConfigEntry]:
         """Get all configuration entries for an environment"""
         ...
+
 
 class SecretMetadataRepository(ABC):
     """Port for storing secret metadata (not the values)"""
@@ -70,6 +72,7 @@ class SecretMetadataRepository(ABC):
         """Get all secret metadata"""
         ...
 
+
 class AuditLogger(ABC):
     """Port for audit logging"""
 
@@ -79,6 +82,8 @@ class AuditLogger(ABC):
         ...
 
     @abstractmethod
-    def get_logs(self, secret_id: str | None = None, accessed_by: str | None = None, limit: int = 1000) -> list[SecretAccessLog]:
+    def get_logs(
+        self, secret_id: str | None = None, accessed_by: str | None = None, limit: int = 1000
+    ) -> list[SecretAccessLog]:
         """Retrieve logs"""
         ...

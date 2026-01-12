@@ -1,4 +1,3 @@
-
 from app.core.di import get_logger
 from app.services.overmind.github_integration.client import GitHubClient
 from app.services.overmind.github_integration.models import GitHubCommit
@@ -15,16 +14,19 @@ class CommitManager:
             return []
 
         try:
+
             def _fetch():
                 commits = []
                 for commit in self.client.repo_object.get_commits(sha=branch)[:limit]:
-                    commits.append(GitHubCommit(
-                        sha=commit.sha[:7],
-                        message=commit.commit.message,
-                        author=commit.commit.author.name,
-                        date=commit.commit.author.date.isoformat(),
-                        url=commit.html_url,
-                    ))
+                    commits.append(
+                        GitHubCommit(
+                            sha=commit.sha[:7],
+                            message=commit.commit.message,
+                            author=commit.commit.author.name,
+                            date=commit.commit.author.date.isoformat(),
+                            url=commit.html_url,
+                        )
+                    )
                 return commits
 
             result = await self.client.run_async(_fetch)
@@ -40,6 +42,7 @@ class CommitManager:
             return {"error": "Repository not initialized"}
 
         try:
+
             def _fetch():
                 commit = self.client.repo_object.get_commit(sha)
                 return GitHubCommit(

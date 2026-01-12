@@ -87,8 +87,7 @@ class TableManager:
             row_count = await self._get_row_count(table_name)
 
             details = self._build_table_details(
-                table_name, columns, primary_keys,
-                foreign_keys, indexes, row_count
+                table_name, columns, primary_keys, foreign_keys, indexes, row_count
             )
 
             self._logger.log_operation("get_table_details", {"table": table_name})
@@ -126,18 +125,18 @@ class TableManager:
             ORDER BY ordinal_position
         """)
 
-        result = await self._session.execute(
-            columns_query, {"table_name": table_name}
-        )
+        result = await self._session.execute(columns_query, {"table_name": table_name})
 
         columns = []
         for row in result:
-            columns.append({
-                "name": row[0],
-                "type": row[1],
-                "nullable": row[2] == "YES",
-                "default": row[3],
-            })
+            columns.append(
+                {
+                    "name": row[0],
+                    "type": row[1],
+                    "nullable": row[2] == "YES",
+                    "default": row[3],
+                }
+            )
 
         return columns
 
@@ -195,11 +194,13 @@ class TableManager:
 
         foreign_keys = []
         for row in result:
-            foreign_keys.append({
-                "column": row[0],
-                "references_table": row[1],
-                "references_column": row[2],
-            })
+            foreign_keys.append(
+                {
+                    "column": row[0],
+                    "references_table": row[1],
+                    "references_column": row[2],
+                }
+            )
 
         return foreign_keys
 
@@ -227,10 +228,12 @@ class TableManager:
 
         indexes = []
         for row in result:
-            indexes.append({
-                "name": row[0],
-                "definition": row[1],
-            })
+            indexes.append(
+                {
+                    "name": row[0],
+                    "definition": row[1],
+                }
+            )
 
         return indexes
 
@@ -257,7 +260,7 @@ class TableManager:
         primary_keys: list[str],
         foreign_keys: list[dict[str, str]],
         indexes: list[dict[str, str]],
-        row_count: int
+        row_count: int,
     ) -> dict[str, Any]:
         """
         بناء كائن التفاصيل من المكونات المجمعة.

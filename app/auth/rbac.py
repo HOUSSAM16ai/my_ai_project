@@ -66,36 +66,42 @@ PREDEFINED_ROLES: dict[str, Role] = {
     ),
     "user": Role(
         name="user",
-        permissions=frozenset([
-            Permission.USER_READ,
-            Permission.PLAN_READ,
-            Permission.PLAN_WRITE,
-            Permission.MEMORY_READ,
-            Permission.MEMORY_WRITE,
-        ]),
+        permissions=frozenset(
+            [
+                Permission.USER_READ,
+                Permission.PLAN_READ,
+                Permission.PLAN_WRITE,
+                Permission.MEMORY_READ,
+                Permission.MEMORY_WRITE,
+            ]
+        ),
         description="مستخدم عادي - صلاحيات محدودة",
     ),
     "viewer": Role(
         name="viewer",
-        permissions=frozenset([
-            Permission.USER_READ,
-            Permission.PLAN_READ,
-            Permission.MEMORY_READ,
-        ]),
+        permissions=frozenset(
+            [
+                Permission.USER_READ,
+                Permission.PLAN_READ,
+                Permission.MEMORY_READ,
+            ]
+        ),
         description="مشاهد - قراءة فقط",
     ),
     "moderator": Role(
         name="moderator",
-        permissions=frozenset([
-            Permission.USER_READ,
-            Permission.USER_WRITE,
-            Permission.PLAN_READ,
-            Permission.PLAN_WRITE,
-            Permission.PLAN_DELETE,
-            Permission.MEMORY_READ,
-            Permission.MEMORY_WRITE,
-            Permission.SYSTEM_MONITOR,
-        ]),
+        permissions=frozenset(
+            [
+                Permission.USER_READ,
+                Permission.USER_WRITE,
+                Permission.PLAN_READ,
+                Permission.PLAN_WRITE,
+                Permission.PLAN_DELETE,
+                Permission.MEMORY_READ,
+                Permission.MEMORY_WRITE,
+                Permission.SYSTEM_MONITOR,
+            ]
+        ),
         description="مشرف - صلاحيات إدارية محدودة",
     ),
 }

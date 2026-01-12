@@ -37,9 +37,7 @@ class CodeArtVisualizer:
         self.palette = VisualTheme.get_palette(style)
 
     def create_complexity_art(
-        self,
-        complexity_data: dict[str, Any],
-        title: str = "Code Complexity Landscape"
+        self, complexity_data: dict[str, Any], title: str = "Code Complexity Landscape"
     ) -> str:
         """
         إنشاء فن بصري من بيانات التعقيد.
@@ -68,30 +66,18 @@ class CodeArtVisualizer:
         # إنشاء تدرج لوني يمثل التعقيد
         complexity_ratio = min(avg_complexity / 10, 1.0)
         gradient_colors = VisualTheme.create_gradient(
-            self.palette.success,
-            self.palette.error,
-            steps=10
+            self.palette.success, self.palette.error, steps=10
         )
         color_index = int(complexity_ratio * (len(gradient_colors) - 1))
         complexity_color = gradient_colors[color_index]
 
         # SVG Art: دوائر متحدة المركز تمثل التعقيد
         return self._generate_complexity_circles_svg(
-            avg_complexity,
-            max_complexity,
-            functions,
-            complexity_color,
-            title
+            avg_complexity, max_complexity, functions, complexity_color, title
         )
 
-
     def _generate_complexity_circles_svg(
-        self,
-        avg: float,
-        max_val: float,
-        count: int,
-        color: str,
-        title: str
+        self, avg: float, max_val: float, count: int, color: str, title: str
     ) -> str:
         """
         توليد دوائر SVG تمثل التعقيد.
@@ -110,7 +96,7 @@ class CodeArtVisualizer:
                        style="background: {self.palette.background};">
 
             <!-- Title -->
-            <text x="{width//2}" y="30"
+            <text x="{width // 2}" y="30"
                   text-anchor="middle"
                   fill="{self.palette.text}"
                   font-size="20"
@@ -137,7 +123,7 @@ class CodeArtVisualizer:
                     fill="{self.palette.accent}"/>
 
             <!-- Function Count Visualization -->
-            <text x="{width//2}" y="{height - 30}"
+            <text x="{width // 2}" y="{height - 30}"
                   text-anchor="middle"
                   fill="{self.palette.text}"
                   font-size="14">
@@ -146,11 +132,8 @@ class CodeArtVisualizer:
 
         </svg>'''
 
-
     def create_metrics_dashboard(
-        self,
-        metrics: dict[str, Any],
-        title: str = "Code Metrics Art"
+        self, metrics: dict[str, Any], title: str = "Code Metrics Art"
     ) -> str:
         """
         إنشاء لوحة فنية من المقاييس البرمجية.
@@ -164,7 +147,7 @@ class CodeArtVisualizer:
         Returns:
             str: HTML dashboard
         """
-        html = f'''
+        html = f"""
         <div style="background: {self.palette.background};
                     padding: 20px;
                     border-radius: 10px;
@@ -179,7 +162,7 @@ class CodeArtVisualizer:
                         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                         gap: 20px;
                         margin-top: 20px;">
-        '''
+        """
 
         # إنشاء بطاقة لكل مقياس
         for key, value in metrics.items():
@@ -187,10 +170,10 @@ class CodeArtVisualizer:
             card_html = self._create_metric_card(key, value, color)
             html += card_html
 
-        html += '''
+        html += """
             </div>
         </div>
-        '''
+        """
 
         return html
 
@@ -216,7 +199,7 @@ class CodeArtVisualizer:
         """إنشاء بطاقة فنية لمقياس واحد"""
         text_color = VisualTheme.get_contrasting_color(color)
 
-        return f'''
+        return f"""
         <div style="background: {color};
                     padding: 20px;
                     border-radius: 8px;
@@ -229,7 +212,7 @@ class CodeArtVisualizer:
                         opacity: 0.9;
                         text-transform: uppercase;
                         letter-spacing: 1px;">
-                {name.replace('_', ' ')}
+                {name.replace("_", " ")}
             </div>
 
             <div style="font-size: 32px;
@@ -239,7 +222,7 @@ class CodeArtVisualizer:
                 {value}
             </div>
         </div>
-        '''
+        """
 
 
 class MissionFlowArtist:
@@ -255,9 +238,7 @@ class MissionFlowArtist:
         self.palette = VisualTheme.get_palette(style)
 
     def create_mission_timeline(
-        self,
-        mission_data: dict[str, Any],
-        title: str = "Mission Journey"
+        self, mission_data: dict[str, Any], title: str = "Mission Journey"
     ) -> str:
         """
         إنشاء خط زمني فني للمهمة.
@@ -278,15 +259,15 @@ class MissionFlowArtist:
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
 
-            <text x="{width//2}" y="30"
+            <text x="{width // 2}" y="30"
                   text-anchor="middle"
                   fill="{self.palette.text}"
                   font-size="24"
                   font-weight="bold">{title}</text>
 
             <!-- Timeline Line -->
-            <line x1="50" y1="{height//2}"
-                  x2="{width-50}" y2="{height//2}"
+            <line x1="50" y1="{height // 2}"
+                  x2="{width - 50}" y2="{height // 2}"
                   stroke="{self.palette.primary}"
                   stroke-width="4"/>
         '''
@@ -298,7 +279,7 @@ class MissionFlowArtist:
                 x = 50 + i * step
                 y = height // 2
 
-                event_name = event.get("name", f"Event {i+1}")
+                event_name = event.get("name", f"Event {i + 1}")
                 event_color = self._get_event_color(event.get("type", "info"))
 
                 svg += f'''
@@ -316,7 +297,7 @@ class MissionFlowArtist:
                       font-size="12">{event_name}</text>
                 '''
 
-        svg += '</svg>'
+        svg += "</svg>"
         return svg
 
     def _get_event_color(self, event_type: str) -> str:
@@ -344,9 +325,7 @@ class DataArtGenerator:
         self.palette = VisualTheme.get_palette(style)
 
     def generate_code_pattern(
-        self,
-        code_data: dict[str, Any],
-        size: tuple[int, int] = (600, 600)
+        self, code_data: dict[str, Any], size: tuple[int, int] = (600, 600)
     ) -> str:
         """
         توليد نمط فني من بنية الكود.
@@ -380,9 +359,7 @@ class DataArtGenerator:
                 # حساب لون بناءً على الموقع والبيانات
                 color_index = ((i + j + functions + classes) % 100) / 100
                 colors = VisualTheme.create_gradient(
-                    self.palette.primary,
-                    self.palette.accent,
-                    steps=100
+                    self.palette.primary, self.palette.accent, steps=100
                 )
                 color = colors[int(color_index * (len(colors) - 1))]
 
@@ -390,20 +367,16 @@ class DataArtGenerator:
                 opacity = 0.3 + (lines % 7) / 10
                 svg += f'''
                 <rect x="{i}" y="{j}"
-                      width="{grid_size-2}"
-                      height="{grid_size-2}"
+                      width="{grid_size - 2}"
+                      height="{grid_size - 2}"
                       fill="{color}"
                       opacity="{opacity}"/>
                 '''
 
-        svg += '</svg>'
+        svg += "</svg>"
         return svg
 
-    def create_data_sculpture(
-        self,
-        data: dict[str, float],
-        title: str = "Data Sculpture"
-    ) -> str:
+    def create_data_sculpture(self, data: dict[str, float], title: str = "Data Sculpture") -> str:
         """
         إنشاء منحوتة بيانات ثلاثية الأبعاد (pseudo-3D).
 
@@ -423,7 +396,7 @@ class DataArtGenerator:
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
 
-            <text x="{width//2}" y="30"
+            <text x="{width // 2}" y="30"
                   text-anchor="middle"
                   fill="{self.palette.text}"
                   font-size="20"
@@ -440,9 +413,7 @@ class DataArtGenerator:
 
             # اختيار لون من التدرج
             gradient = VisualTheme.create_gradient(
-                self.palette.primary,
-                self.palette.secondary,
-                steps=len(data)
+                self.palette.primary, self.palette.secondary, steps=len(data)
             )
             color = gradient[i] if i < len(gradient) else self.palette.accent
 
@@ -461,5 +432,5 @@ class DataArtGenerator:
                   font-size="12">{key}: {value:.2f}</text>
             '''
 
-        svg += '</svg>'
+        svg += "</svg>"
         return svg

@@ -31,9 +31,7 @@ class TestSuperhumanAIGateway:
             if ModelProvider.ANTHROPIC not in client.nodes_map:
                 client.nodes_map[ModelProvider.ANTHROPIC] = NeuralNode(
                     model_id=ModelProvider.ANTHROPIC,
-                    circuit_breaker=CircuitBreaker(
-                        "Test-Synapse", 5, 30.0
-                    ),
+                    circuit_breaker=CircuitBreaker("Test-Synapse", 5, 30.0),
                 )
 
             client._stream_from_node_with_retry = MagicMock()

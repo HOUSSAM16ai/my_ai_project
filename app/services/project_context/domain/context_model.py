@@ -11,6 +11,7 @@ ScalarValue = str | int | float | bool
 MetricValue = ScalarValue | list[ScalarValue]
 AnalysisMap = dict[str, MetricValue | dict[str, MetricValue]]
 
+
 @dataclass
 class AnalysisContext:
     """سياق متكامل يُمرَّر عبر سلسلة التحليل لتحليل الملفات بدقة."""

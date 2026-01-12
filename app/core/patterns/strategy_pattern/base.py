@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import TypeVar
 
 # Generic Type Variables
-TInput = TypeVar("TInput")   # Strategy Input Type
+TInput = TypeVar("TInput")  # Strategy Input Type
 TOutput = TypeVar("TOutput")  # Strategy Output Type
 
 

@@ -22,9 +22,7 @@ class PerformanceStatisticsCalculator:
         latencies = sorted(metric.latency_ms for metric in metrics)
         category_counts = self._calculate_category_breakdown(metrics)
         perf_dist = self._calculate_performance_distribution(metrics)
-        return self._build_statistics_dict(
-            metrics, latencies, category_counts, perf_dist, hours
-        )
+        return self._build_statistics_dict(metrics, latencies, category_counts, perf_dist, hours)
 
     @staticmethod
     def _empty_statistics() -> PerformanceStatistics:

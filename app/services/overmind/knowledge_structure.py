@@ -23,8 +23,7 @@ def build_project_structure(project_root: Path) -> dict[str, object]:
 
     if app_dir.exists():
         structure["main_modules"] = [
-            d.name for d in app_dir.iterdir()
-            if d.is_dir() and not d.name.startswith("__")
+            d.name for d in app_dir.iterdir() if d.is_dir() and not d.name.startswith("__")
         ]
 
     return structure

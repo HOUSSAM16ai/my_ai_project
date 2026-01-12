@@ -32,6 +32,7 @@ class InMemoryTelemetryRepository(TelemetryRepository):
     def get_all(self) -> dict[str, deque[TelemetryData]]:
         return self._data
 
+
 class InMemoryAnomalyRepository(AnomalyRepository):
     def __init__(self):
         self._data: dict[str, AnomalyDetection] = {}
@@ -48,6 +49,7 @@ class InMemoryAnomalyRepository(AnomalyRepository):
     def update(self, anomaly: AnomalyDetection) -> None:
         self._data[anomaly.anomaly_id] = anomaly
 
+
 class InMemoryHealingDecisionRepository(HealingDecisionRepository):
     def __init__(self):
         self._data: dict[str, HealingDecision] = {}
@@ -57,6 +59,7 @@ class InMemoryHealingDecisionRepository(HealingDecisionRepository):
 
     def get_all(self) -> dict[str, HealingDecision]:
         return self._data
+
 
 class InMemoryForecastRepository(ForecastRepository):
     def __init__(self):
@@ -70,6 +73,7 @@ class InMemoryForecastRepository(ForecastRepository):
 
     def get_all(self) -> dict[str, deque[LoadForecast]]:
         return self._data
+
 
 class InMemoryCapacityPlanRepository(CapacityPlanRepository):
     def __init__(self):

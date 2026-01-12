@@ -1,4 +1,5 @@
 """منطق تقسيم تدفقات النص إلى حزم متسقة قابلة للبث."""
+
 from __future__ import annotations
 
 import asyncio

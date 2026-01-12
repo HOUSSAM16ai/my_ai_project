@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -34,12 +33,8 @@ from app.core.domain_events import (
 
 
 class TestDomainEvents:
-
     def test_base_event_initialization(self):
-        event = DomainEvent(
-            event_type="TestEvent",
-            payload={"key": "value"}
-        )
+        event = DomainEvent(event_type="TestEvent", payload={"key": "value"})
         assert event.event_id is not None
         assert isinstance(event.occurred_at, datetime)
         assert event.event_type == "TestEvent"
@@ -150,5 +145,6 @@ class TestDomainEvents:
         @dataclass
         class ManualEvent(DomainEvent):
             pass
+
         DomainEventRegistry.register(ManualEvent)
         assert DomainEventRegistry.get_event_class("ManualEvent") == ManualEvent

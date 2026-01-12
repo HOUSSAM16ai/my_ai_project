@@ -48,6 +48,7 @@ class HTTPClientConfig:
 
     Replaces 6 parameters with a single config object (KISS + SOLID).
     """
+
     name: str = "default"
     timeout: float = 30.0
     max_connections: int = 100
@@ -59,6 +60,7 @@ class HTTPClientConfig:
         """Generate cache key for this config."""
         return f"{self.name}:{self.timeout}:{self.max_connections}"
 
+
 class HTTPClientFactory:
     """
     Factory for creating and managing HTTP clients.
@@ -67,7 +69,9 @@ class HTTPClientFactory:
     """
 
     @staticmethod
-    def create_client(config: HTTPClientConfig | None = None, **kwargs) -> dict[str, str | int | bool]:
+    def create_client(
+        config: HTTPClientConfig | None = None, **kwargs
+    ) -> dict[str, str | int | bool]:
         """
         Create or retrieve an HTTP client.
         إنشاء أو استرجاع عميل HTTP.
@@ -223,13 +227,14 @@ class HTTPClientFactory:
 
         return MockHTTPClient(name)
 
+
 # =============================================================================
 # PUBLIC API
 # =============================================================================
 
+
 def get_http_client(
-    config: HTTPClientConfig | None = None,
-    **kwargs
+    config: HTTPClientConfig | None = None, **kwargs
 ) -> dict[str, str | int | bool]:
     """
     Get an HTTP client instance.
@@ -261,17 +266,21 @@ def get_http_client(
     """
     return HTTPClientFactory.create_client(config=config, **kwargs)
 
+
 async def close_http_client(name: str = "default") -> None:
     """Close a specific HTTP client"""
     await HTTPClientFactory.close_client(name)
+
 
 async def close_all_http_clients() -> None:
     """Close all HTTP clients"""
     await HTTPClientFactory.close_all()
 
+
 def get_http_client_stats() -> dict[str, Any]:
     """Get statistics about cached HTTP clients"""
     return HTTPClientFactory.get_cached_clients()
+
 
 __all__ = [
     "HTTPClientConfig",

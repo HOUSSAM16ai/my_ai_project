@@ -2,6 +2,7 @@
 Mission Domain Models.
 Contains Mission, MissionPlan, Task, MissionEvent, and related Enums.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
 
 class MissionStatus(CaseInsensitiveEnum):
     """Mission Status Enum."""
+
     PENDING = "pending"
     PLANNING = "planning"
     PLANNED = "planned"
@@ -28,12 +30,14 @@ class MissionStatus(CaseInsensitiveEnum):
     FAILED = "failed"
     CANCELED = "canceled"
 
+
 class PlanStatus(CaseInsensitiveEnum):
     DRAFT = "draft"
     VALID = "valid"
     INVALID = "invalid"
     SELECTED = "selected"
     ABANDONED = "abandoned"
+
 
 class TaskStatus(CaseInsensitiveEnum):
     PENDING = "pending"
@@ -42,6 +46,7 @@ class TaskStatus(CaseInsensitiveEnum):
     FAILED = "failed"
     RETRY = "retry"
     SKIPPED = "skipped"
+
 
 class MissionEventType(CaseInsensitiveEnum):
     CREATED = "mission_created"
@@ -139,9 +144,7 @@ class Task(SQLModel, table=True):
     task_key: str = Field(max_length=50)
     description: str | None = Field(sa_column=Column(Text))
     tool_name: str | None = Field(max_length=100)
-    tool_args_json: Any | None = Field(
-        default=None, sa_column=Column(JSONText)
-    )
+    tool_args_json: Any | None = Field(default=None, sa_column=Column(JSONText))
     status: TaskStatus = Field(
         default=TaskStatus.PENDING,
         sa_column=Column(FlexibleEnum(TaskStatus)),
@@ -202,13 +205,16 @@ class MissionEvent(SQLModel, table=True):
 
 
 # Helpers
-def log_mission_event(mission: Mission, event_type: MissionEventType, payload: dict, session=None) -> None:
+def log_mission_event(
+    mission: Mission, event_type: MissionEventType, payload: dict, session=None
+) -> None:
     """
     Log a mission event to the database.
     """
     evt = MissionEvent(mission_id=mission.id, event_type=event_type, payload_json=payload)
     if session:
         session.add(evt)
+
 
 def update_mission_status(
     mission: Mission, status: MissionStatus, note: str | None = None, session=None

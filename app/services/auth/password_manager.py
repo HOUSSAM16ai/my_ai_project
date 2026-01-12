@@ -1,6 +1,7 @@
 """
 مدير كلمات المرور واستعادة الحساب.
 """
+
 from __future__ import annotations
 
 import secrets

@@ -1,4 +1,5 @@
 """خدمة بث المحادثات الإدارية بتجميع واضح وقابل للاستبدال."""
+
 from __future__ import annotations
 
 import asyncio
@@ -77,7 +78,6 @@ class AdminChatStreamingService:
         )
         self.sleep = sleep or asyncio.sleep
         self.pacing_strategy = pacing_strategy or AdaptivePacingStrategy()
-
 
     async def stream_response(
         self, text: str, metadata: EventPayload | None = None
@@ -159,7 +159,9 @@ class AdminChatStreamingService:
             delay_ms = self.pacing_strategy.delay_ms(self.metrics, self.config)
             await self.sleep(delay_ms / MS_TO_SECONDS)
 
-    async def _iterate_chunks(self, text: str, session: SessionRecorder) -> AsyncGenerator[str, None]:
+    async def _iterate_chunks(
+        self, text: str, session: SessionRecorder
+    ) -> AsyncGenerator[str, None]:
         """ينتج الدفعات المهيئة للإرسال من النص الخام."""
 
         for chunk in self.chunker.smart_chunk(text):

@@ -30,15 +30,19 @@ if not logger.handlers:
 else:
     logger.setLevel(os.getenv("AGENT_TOOLS_LOG_LEVEL", "INFO"))
 
+
 def _dbg(msg: str):
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(msg)
 
+
 def _now() -> float:
     return time.time()
 
+
 def _generate_trace_id() -> str:
     return uuid.uuid4().hex[:16]
+
 
 def _coerce_to_tool_result(obj: dict[str, str | int | bool]) -> ToolResult:
     if isinstance(obj, ToolResult):
@@ -54,8 +58,10 @@ def _coerce_to_tool_result(obj: dict[str, str | int | bool]) -> ToolResult:
         return ToolResult(ok=True, data={"text": obj})
     return ToolResult(ok=True, data=obj)
 
+
 def _lower(s: dict[str, str | int | bool]) -> str:
     return str(s or "").strip().lower()
+
 
 def _safe_json_dumps(obj: dict[str, str | int | bool], max_bytes: int = 2_000_000) -> str:
     raw = json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
@@ -71,6 +77,7 @@ def _safe_json_dumps(obj: dict[str, str | int | bool], max_bytes: int = 2_000_00
             if not trimmed:
                 return "{}"
 
+
 def _file_hash(path: str) -> str | None:
     try:
         h = hashlib.sha256()
@@ -81,8 +88,10 @@ def _file_hash(path: str) -> str | None:
     except Exception:
         return None
 
+
 def _content_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8", errors="ignore")).hexdigest()
+
 
 # ======================================================================================
 # Path Safety

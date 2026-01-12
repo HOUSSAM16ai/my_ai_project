@@ -36,7 +36,7 @@ async def test_chat_orchestrator_passes_session_factory():
         history_messages=[],
         intent="TEST",
         confidence=1.0,
-        session_factory=mock_session_factory
+        session_factory=mock_session_factory,
     )
     assert ctx.session_factory == mock_session_factory
 
@@ -52,7 +52,7 @@ async def test_chat_orchestrator_passes_session_factory():
         history_messages=[],
         intent="MISSION_COMPLEX",
         confidence=1.0,
-        session_factory=None
+        session_factory=None,
     )
 
     response_gen = handler.execute(ctx_missing)
@@ -81,7 +81,7 @@ async def test_chat_orchestrator_passes_session_factory():
         history_messages=[],
         intent="MISSION_COMPLEX",
         confidence=1.0,
-        session_factory=mock_session_factory
+        session_factory=mock_session_factory,
     )
 
     # This might still fail if it tries to do DB operations, but at least it shouldn't fail on "Missing Session Factory"
@@ -98,6 +98,7 @@ async def test_chat_orchestrator_passes_session_factory():
     except Exception:
         # It might fail later due to DB mocks, but we want to ensure it passes the first check
         pass
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

@@ -142,9 +142,7 @@ class MockModelInvoker:
             success=True,
         )
 
-    def _calculate_token_usage(
-        self, request: ModelRequest, output_data: dict
-    ) -> int:
+    def _calculate_token_usage(self, request: ModelRequest, output_data: dict) -> int:
         """
         حساب استخدام الرموز
         Calculate token usage (simplified estimation).

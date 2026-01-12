@@ -178,10 +178,7 @@ class IssueAnalyzer:
                 yield py_file
 
     def _scan_file_for_issues(
-        self,
-        py_file: Path,
-        issues: IssuesReport,
-        patterns: dict[str, str]
+        self, py_file: Path, issues: IssuesReport, patterns: dict[str, str]
     ) -> None:
         """فحص ملف بحثًا عن المشاكل المحتملة."""
         content = py_file.read_text(encoding="utf-8")
@@ -189,11 +186,7 @@ class IssueAnalyzer:
         self._check_syntax_errors(py_file, content, issues)
 
     def _check_style_issues(
-        self,
-        py_file: Path,
-        content: str,
-        issues: IssuesReport,
-        patterns: dict[str, str]
+        self, py_file: Path, content: str, issues: IssuesReport, patterns: dict[str, str]
     ) -> None:
         """فحص مشاكل الأسلوب والتعليقات والتنظيم."""
         for pattern_name, pattern in patterns.items():
@@ -210,12 +203,7 @@ class IssueAnalyzer:
                 )
                 issues.total_issues_found += 1
 
-    def _check_syntax_errors(
-        self,
-        py_file: Path,
-        content: str,
-        issues: IssuesReport
-    ) -> None:
+    def _check_syntax_errors(self, py_file: Path, content: str, issues: IssuesReport) -> None:
         """فحص أخطاء الصياغة في ملف Python."""
         try:
             ast.parse(content)
@@ -253,10 +241,7 @@ class IssueAnalyzer:
         self._detect_deep_nesting(lines, rel_path, smells)
 
     def _detect_long_methods(
-        self,
-        lines: list[str],
-        rel_path: str,
-        smells: CodeSmellsReport
+        self, lines: list[str], rel_path: str, smells: CodeSmellsReport
     ) -> None:
         """كشف الدوال الطويلة التي تتجاوز الحد المسموح."""
         method_pattern = r"^\s*(async\s+)?def\s+(\w+)"
@@ -279,10 +264,7 @@ class IssueAnalyzer:
                 method_start = index
 
     def _detect_magic_numbers(
-        self,
-        lines: list[str],
-        rel_path: str,
-        smells: CodeSmellsReport
+        self, lines: list[str], rel_path: str, smells: CodeSmellsReport
     ) -> None:
         """كشف الأرقام السحرية غير المبررة."""
         magic_pattern = r"[=<>!]=?\s*(\d{2,})"
@@ -298,10 +280,7 @@ class IssueAnalyzer:
                 smells.total_smells += 1
 
     def _detect_deep_nesting(
-        self,
-        lines: list[str],
-        rel_path: str,
-        smells: CodeSmellsReport
+        self, lines: list[str], rel_path: str, smells: CodeSmellsReport
     ) -> None:
         """كشف مستويات التداخل العميقة في الملف."""
         max_indent = 0

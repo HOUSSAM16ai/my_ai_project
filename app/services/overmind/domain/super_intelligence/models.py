@@ -16,11 +16,12 @@ class DecisionPriority(str, Enum):
 
     تحدد مدى إلحاح وأهمية القرار.
     """
-    CRITICAL = "critical"      # حرج - تأثير فوري على النظام
-    HIGH = "high"             # عالي - يحتاج اتخاذ قرار سريع
-    MEDIUM = "medium"         # متوسط - يمكن التأجيل قليلاً
-    LOW = "low"               # منخفض - ليس عاجلاً
-    STRATEGIC = "strategic"   # استراتيجي - للمستقبل البعيد
+
+    CRITICAL = "critical"  # حرج - تأثير فوري على النظام
+    HIGH = "high"  # عالي - يحتاج اتخاذ قرار سريع
+    MEDIUM = "medium"  # متوسط - يمكن التأجيل قليلاً
+    LOW = "low"  # منخفض - ليس عاجلاً
+    STRATEGIC = "strategic"  # استراتيجي - للمستقبل البعيد
 
 
 class DecisionCategory(str, Enum):
@@ -29,14 +30,15 @@ class DecisionCategory(str, Enum):
 
     تصنف نوع القرار المطلوب اتخاذه.
     """
-    TECHNICAL = "technical"               # تقني - يتعلق بالكود والبنية
-    ARCHITECTURAL = "architectural"       # معماري - تصميم النظام
-    STRATEGIC = "strategic"               # استراتيجي - الاتجاه العام
-    OPERATIONAL = "operational"           # تشغيلي - العمليات اليومية
-    RESOURCE_ALLOCATION = "resource"      # تخصيص الموارد
-    RISK_MANAGEMENT = "risk"             # إدارة المخاطر
-    INNOVATION = "innovation"            # الابتكار والتطوير
-    HUMAN_BENEFIT = "human_benefit"      # فائدة البشرية
+
+    TECHNICAL = "technical"  # تقني - يتعلق بالكود والبنية
+    ARCHITECTURAL = "architectural"  # معماري - تصميم النظام
+    STRATEGIC = "strategic"  # استراتيجي - الاتجاه العام
+    OPERATIONAL = "operational"  # تشغيلي - العمليات اليومية
+    RESOURCE_ALLOCATION = "resource"  # تخصيص الموارد
+    RISK_MANAGEMENT = "risk"  # إدارة المخاطر
+    INNOVATION = "innovation"  # الابتكار والتطوير
+    HUMAN_BENEFIT = "human_benefit"  # فائدة البشرية
 
 
 class DecisionImpact(str, Enum):
@@ -45,11 +47,12 @@ class DecisionImpact(str, Enum):
 
     يقيس مدى تأثير القرار على المدى البعيد.
     """
-    IMMEDIATE = "immediate"               # فوري - أقل من يوم
-    SHORT_TERM = "short_term"            # قصير المدى - أسبوع إلى شهر
-    MEDIUM_TERM = "medium_term"          # متوسط المدى - شهر إلى سنة
-    LONG_TERM = "long_term"              # طويل المدى - سنة إلى 5 سنوات
-    GENERATIONAL = "generational"        # جيلي - أكثر من 5 سنوات
+
+    IMMEDIATE = "immediate"  # فوري - أقل من يوم
+    SHORT_TERM = "short_term"  # قصير المدى - أسبوع إلى شهر
+    MEDIUM_TERM = "medium_term"  # متوسط المدى - شهر إلى سنة
+    LONG_TERM = "long_term"  # طويل المدى - سنة إلى 5 سنوات
+    GENERATIONAL = "generational"  # جيلي - أكثر من 5 سنوات
 
 
 class Decision(BaseModel):
@@ -58,6 +61,7 @@ class Decision(BaseModel):
 
     يمثل قراراً اتخذه الوكلاء بشكل مستقل مع كل التفاصيل.
     """
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     category: DecisionCategory
     priority: DecisionPriority

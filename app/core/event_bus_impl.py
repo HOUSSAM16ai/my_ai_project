@@ -61,7 +61,7 @@ class EventHistory:
         """
         self._events.append(event)
         if len(self._events) > self.max_size:
-            self._events = self._events[-self.max_size:]
+            self._events = self._events[-self.max_size :]
 
     def list(self, event_type: str | None = None, limit: int = 100) -> list[Event]:
         """
@@ -151,6 +151,7 @@ class EventBus:
             bus.subscribe("user.created", handle_user_created)
             ```
         """
+
         def decorator(func: EventHandler) -> EventHandler:
             self._handlers[event_type].append(func)
             logger.info(f"✅ Subscribed to event: {event_type}")

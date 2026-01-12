@@ -2,6 +2,7 @@
 Common domain utilities and base classes.
 Part of the 'Harvard Standard' refactoring for domain separation.
 """
+
 from __future__ import annotations
 
 import enum

@@ -31,6 +31,7 @@ from pathlib import Path
 @dataclass
 class CleanupStats:
     """إحصائيات التنظيف."""
+
     files_removed: int = 0
     dirs_removed: int = 0
     space_freed_mb: float = 0.0
@@ -62,11 +63,11 @@ class SuperCleanup:
 
         # الأنماط المراد تنظيفها
         self.patterns = {
-            'python_cache': ['**/__pycache__', '**/*.pyc', '**/*.pyo'],
-            'build': ['**/build', '**/dist', '**/*.egg-info'],
-            'temp': ['**/*.tmp', '**/*.log', '**/.DS_Store'],
-            'coverage': ['**/.coverage', '**/htmlcov', '**/.pytest_cache'],
-            'mypy': ['**/.mypy_cache', '**/.dmypy.json'],
+            "python_cache": ["**/__pycache__", "**/*.pyc", "**/*.pyo"],
+            "build": ["**/build", "**/dist", "**/*.egg-info"],
+            "temp": ["**/*.tmp", "**/*.log", "**/.DS_Store"],
+            "coverage": ["**/.coverage", "**/htmlcov", "**/.pytest_cache"],
+            "mypy": ["**/.mypy_cache", "**/.dmypy.json"],
         }
 
     def _get_size_mb(self, path: Path) -> float:
@@ -75,7 +76,7 @@ class SuperCleanup:
             return path.stat().st_size / (1024 * 1024)
 
         total = 0
-        for item in path.rglob('*'):
+        for item in path.rglob("*"):
             if item.is_file():
                 with contextlib.suppress(OSError, PermissionError):
                     total += item.stat().st_size
@@ -124,9 +125,9 @@ class SuperCleanup:
         print("\n🐍 تنظيف Python cache...")
         count = 0
 
-        for pattern in self.patterns['python_cache']:
+        for pattern in self.patterns["python_cache"]:
             for path in self.project_root.glob(pattern):
-                if self._safe_remove(path, 'python_cache'):
+                if self._safe_remove(path, "python_cache"):
                     count += 1
 
         print(f"  ✅ تم تنظيف {count} عنصر Python cache")
@@ -142,9 +143,9 @@ class SuperCleanup:
         print("\n🔨 تنظيف Build artifacts...")
         count = 0
 
-        for pattern in self.patterns['build']:
+        for pattern in self.patterns["build"]:
             for path in self.project_root.glob(pattern):
-                if self._safe_remove(path, 'build'):
+                if self._safe_remove(path, "build"):
                     count += 1
 
         print(f"  ✅ تم تنظيف {count} عنصر build")
@@ -160,9 +161,9 @@ class SuperCleanup:
         print("\n🗑️  تنظيف Temp files...")
         count = 0
 
-        for pattern in self.patterns['temp']:
+        for pattern in self.patterns["temp"]:
             for path in self.project_root.glob(pattern):
-                if self._safe_remove(path, 'temp'):
+                if self._safe_remove(path, "temp"):
                     count += 1
 
         print(f"  ✅ تم تنظيف {count} ملف مؤقت")
@@ -178,9 +179,9 @@ class SuperCleanup:
         print("\n🧪 تنظيف Test artifacts...")
         count = 0
 
-        for pattern in self.patterns['coverage']:
+        for pattern in self.patterns["coverage"]:
             for path in self.project_root.glob(pattern):
-                if self._safe_remove(path, 'test'):
+                if self._safe_remove(path, "test"):
                     count += 1
 
         print(f"  ✅ تم تنظيف {count} عنصر test")
@@ -196,9 +197,9 @@ class SuperCleanup:
         print("\n📝 تنظيف Type checking cache...")
         count = 0
 
-        for pattern in self.patterns['mypy']:
+        for pattern in self.patterns["mypy"]:
             for path in self.project_root.glob(pattern):
-                if self._safe_remove(path, 'mypy'):
+                if self._safe_remove(path, "mypy"):
                     count += 1
 
         print(f"  ✅ تم تنظيف {count} عنصر mypy")
@@ -212,18 +213,18 @@ class SuperCleanup:
 
         try:
             result = subprocess.run(
-                ['isort', '--check-only', str(self.project_root / 'app')],
-                check=False, capture_output=True,
+                ["isort", "--check-only", str(self.project_root / "app")],
+                check=False,
+                capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode != 0:
                 print("  ℹ️  الاستيرادات تحتاج تنظيم")
                 if not self.dry_run:
                     subprocess.run(
-                        ['isort', str(self.project_root / 'app')],
-                        check=False, timeout=60
+                        ["isort", str(self.project_root / "app")], check=False, timeout=60
                     )
                     print("  ✅ تم تنظيم الاستيرادات")
             else:
@@ -239,15 +240,16 @@ class SuperCleanup:
 
         try:
             result = subprocess.run(
-                ['vulture', str(self.project_root / 'app'), '--min-confidence', '80'],
-                check=False, capture_output=True,
+                ["vulture", str(self.project_root / "app"), "--min-confidence", "80"],
+                check=False,
+                capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.stdout.strip():
                 print("  ⚠️  وُجد كود ميت محتمل:")
-                lines = result.stdout.strip().split('\n')[:10]
+                lines = result.stdout.strip().split("\n")[:10]
                 for line in lines:
                     print(f"    {line}")
             else:
@@ -320,19 +322,10 @@ def main():
     """الدالة الرئيسية."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description='🧹 نظام التنظيف والتنظيم الخارق'
-    )
+    parser = argparse.ArgumentParser(description="🧹 نظام التنظيف والتنظيم الخارق")
+    parser.add_argument("--dry-run", action="store_true", help="تشغيل تجريبي بدون حذف فعلي")
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='تشغيل تجريبي بدون حذف فعلي'
-    )
-    parser.add_argument(
-        '--project-root',
-        type=Path,
-        default=Path.cwd(),
-        help='المسار الجذري للمشروع'
+        "--project-root", type=Path, default=Path.cwd(), help="المسار الجذري للمشروع"
     )
 
     args = parser.parse_args()
@@ -345,5 +338,5 @@ def main():
     return 0 if stats.files_removed > 0 or stats.dirs_removed > 0 else 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

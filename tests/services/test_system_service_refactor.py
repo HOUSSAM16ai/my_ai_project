@@ -39,6 +39,7 @@ async def test_verify_system_integrity_healthy():
     assert result["timings"]["admin_lookup_ms"] >= 0
     mock_session.rollback.assert_awaited_once()
 
+
 @pytest.mark.asyncio
 async def test_verify_system_integrity_db_down():
     @asynccontextmanager

@@ -13,9 +13,11 @@ from app.core.static_handler import setup_static_files
 def init_db():
     pass
 
+
 @pytest.fixture(autouse=True)
 def clean_db():
     pass
+
 
 @pytest.fixture
 def app_with_static(tmp_path):
@@ -30,17 +32,20 @@ def app_with_static(tmp_path):
     setup_static_files(app, static_dir=str(static_dir))
     return app
 
+
 def test_serve_index_at_root(app_with_static):
     client = TestClient(app_with_static)
     response = client.get("/")
     assert response.status_code == 200
     assert response.text == "<html>Index</html>"
 
+
 def test_serve_static_asset(app_with_static):
     client = TestClient(app_with_static)
     response = client.get("/css/style.css")
     assert response.status_code == 200
     assert response.text == "body {}"
+
 
 def test_spa_fallback_for_routes(app_with_static):
     client = TestClient(app_with_static)
@@ -49,6 +54,7 @@ def test_spa_fallback_for_routes(app_with_static):
     assert response.status_code == 200
     assert response.text == "<html>Index</html>"
 
+
 def test_api_404_no_fallback(app_with_static):
     client = TestClient(app_with_static)
     response = client.get("/api/v1/missing")
@@ -56,11 +62,13 @@ def test_api_404_no_fallback(app_with_static):
     # Should NOT return index.html
     assert response.text != "<html>Index</html>"
 
+
 def test_nested_api_404_no_fallback(app_with_static):
     client = TestClient(app_with_static)
     response = client.get("/admin/api/chat/stream")
     assert response.status_code == 404
     assert response.text != "<html>Index</html>"
+
 
 def test_directory_traversal_protection(app_with_static):
     """

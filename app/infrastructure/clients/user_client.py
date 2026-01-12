@@ -23,14 +23,17 @@ DEFAULT_USER_SERVICE_URL: Final[str] = "http://user-service:8003"
 class UserCountResponse(BaseModel):
     count: int
 
+
 class UserResponse(BaseModel):
     user_id: UUID
     name: str
     email: str
 
+
 class UserCreateRequest(BaseModel):
     name: str
     email: str
+
 
 class UserClient:
     """
@@ -49,7 +52,7 @@ class UserClient:
         self.config = HTTPClientConfig(
             name="user-service-client",
             timeout=10.0,  # Rule 62: Timeouts
-            max_connections=50
+            max_connections=50,
         )
 
     async def _get_client(self) -> httpx.AsyncClient:
@@ -85,7 +88,7 @@ class UserClient:
             return UserResponse(**response.json())
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 409:
-                 logger.warning(f"User already exists: {email}")
+                logger.warning(f"User already exists: {email}")
             raise
         except Exception as e:
             logger.error(f"Failed to create user: {email}", exc_info=e)
@@ -100,6 +103,7 @@ class UserClient:
         response.raise_for_status()
 
         return [UserResponse(**item) for item in response.json()]
+
 
 # Singleton instance
 user_client = UserClient()

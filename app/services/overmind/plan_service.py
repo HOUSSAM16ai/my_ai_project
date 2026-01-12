@@ -95,7 +95,9 @@ class AgentPlanService:
                     title=step_name,
                     description=description,
                     dependencies=dependencies,
-                    estimated_effort=str(estimated_effort) if estimated_effort is not None else None,
+                    estimated_effort=str(estimated_effort)
+                    if estimated_effort is not None
+                    else None,
                 )
             )
 

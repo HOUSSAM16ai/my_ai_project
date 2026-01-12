@@ -4,6 +4,7 @@
 تعزل عمليات القراءة والكتابة الخاصة بالمحادثات التعليمية لضمان وضوح الحدود
 بين طبقة العرض والمنطق التطبيقي.
 """
+
 from __future__ import annotations
 
 import logging
@@ -98,7 +99,9 @@ class CustomerChatPersistence:
         messages = list(result.scalars().all())
         messages.reverse()
 
-        history: list[dict[str, str]] = [{"role": "system", "content": get_customer_system_prompt()}]
+        history: list[dict[str, str]] = [
+            {"role": "system", "content": get_customer_system_prompt()}
+        ]
         for msg in messages:
             history.append({"role": msg.role.value, "content": msg.content})
 

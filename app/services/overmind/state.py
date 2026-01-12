@@ -27,8 +27,10 @@ from app.core.protocols import EventBusProtocol
 
 logger = logging.getLogger(__name__)
 
+
 def utc_now() -> datetime:
     return datetime.now(UTC)
+
 
 class MissionStateManager:
     """
@@ -132,7 +134,7 @@ class MissionStateManager:
 
         raw_data = {
             "objective": str(objective),
-            "tasks_count": len(list(tasks)), # Ensure it's iterable
+            "tasks_count": len(list(tasks)),  # Ensure it's iterable
         }
 
         mp = MissionPlan(
@@ -193,7 +195,9 @@ class MissionStateManager:
         await self.session.flush()
         await self.session.commit()
 
-    async def mark_task_complete(self, task_id: int, result_text: str, meta: dict[str, object] | None = None) -> None:
+    async def mark_task_complete(
+        self, task_id: int, result_text: str, meta: dict[str, object] | None = None
+    ) -> None:
         if meta is None:
             meta = {}
         stmt = select(Task).where(Task.id == task_id)

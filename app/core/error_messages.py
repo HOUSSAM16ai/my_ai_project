@@ -85,6 +85,7 @@ def _format_timeout_error(max_tokens: int) -> str:
         f"4. Or ask a more specific question"
     )
 
+
 def _format_rate_limit_error(error: str) -> str:
     """يصوغ رسالة تجاوز حد الطلبات بطريقة واضحة."""
     return (
@@ -100,6 +101,7 @@ def _format_rate_limit_error(error: str) -> str:
         f"**Technical Details:**\n"
         f"- Error: {error}"
     )
+
 
 def _format_context_error(prompt_length: int, max_tokens: int, error: str) -> str:
     """يصوغ رسالة خطأ طول السياق مع اقتراحات مختصرة."""
@@ -129,6 +131,7 @@ def _format_context_error(prompt_length: int, max_tokens: int, error: str) -> st
         f"- Error: {error}"
     )
 
+
 def _format_auth_error(error: str) -> str:
     """يصوغ رسالة خطأ المصادقة بمستوى إرشاد للمبتدئين."""
     return (
@@ -145,6 +148,7 @@ def _format_auth_error(error: str) -> str:
         f"- Error: {error}"
     )
 
+
 def _format_server_error(prompt_length: int, max_tokens: int, error: str) -> str:
     """يبني رسالة خطأ الخادم 500 مع إبراز وضع ULTIMATE/EXTREME."""
     return (
@@ -153,6 +157,7 @@ def _format_server_error(prompt_length: int, max_tokens: int, error: str) -> str
         f"{SERVER_ERROR_GUIDANCE}"
         f"{_technical_details_block(prompt_length, max_tokens, error)}"
     )
+
 
 def _format_no_response_error(prompt_length: int, max_tokens: int) -> str:
     """يصوغ رسالة عدم وجود استجابة مع حلول مختصرة."""
@@ -175,6 +180,7 @@ def _format_no_response_error(prompt_length: int, max_tokens: int) -> str:
         f"- Max tokens: {max_tokens:,}"
     )
 
+
 def _format_generic_error(prompt_length: int, max_tokens: int, error: str) -> str:
     """يصوغ رسالة خطأ عامة عند عدم تطابق أي حالة أخرى."""
     return (
@@ -196,6 +202,7 @@ def _format_generic_error(prompt_length: int, max_tokens: int, error: str) -> st
         f"- Max tokens: {max_tokens:,}\n"
         f"- Error: {error}"
     )
+
 
 def build_bilingual_error_message(error: str, prompt_length: int, max_tokens: int) -> str:
     """يجمع رسالة خطأ ثنائية اللغة عبر قواعد واضحة وبسيطة."""

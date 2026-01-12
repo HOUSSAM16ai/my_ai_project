@@ -1,6 +1,7 @@
 """
 وحدة التشفير والتعامل مع الرموز (Crypto/Token Logic).
 """
+
 from __future__ import annotations
 
 import secrets
@@ -80,4 +81,6 @@ class AuthCrypto:
             # Note: The original code casts the result of jwt.decode (which is Any) to dict.
             return jwt.decode(token, self.settings.SECRET_KEY, algorithms=["HS256"])
         except jwt.PyJWTError as exc:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+            ) from exc

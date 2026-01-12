@@ -9,12 +9,14 @@ from typing import TypeVar
 
 T = TypeVar("T")
 
+
 class CircuitState(Enum):
     """Circuit breaker states."""
 
     CLOSED = auto()  # Normal operation
     OPEN = auto()  # Failing, reject requests
     HALF_OPEN = auto()  # Testing if service recovered
+
 
 @dataclass
 class CircuitBreakerConfig:
@@ -25,8 +27,10 @@ class CircuitBreakerConfig:
     timeout_seconds: float = 60.0
     expected_exception: type[Exception] = Exception
 
+
 class CircuitBreakerError(Exception):
     """Circuit breaker is open."""
+
 
 class CircuitBreaker:
     """Circuit breaker for fault tolerance."""
@@ -38,7 +42,12 @@ class CircuitBreaker:
         self.success_count = 0
         self.last_failure_time = 0.0
 
-    def call(self, func: Callable[..., T], *args: dict[str, str | int | bool], **kwargs: dict[str, str | int | bool]) -> T:
+    def call(
+        self,
+        func: Callable[..., T],
+        *args: dict[str, str | int | bool],
+        **kwargs: dict[str, str | int | bool],
+    ) -> T:
         """Execute function with circuit breaker protection."""
         if self.state == CircuitState.OPEN:
             if self._should_attempt_reset():
@@ -88,6 +97,7 @@ class CircuitBreaker:
     def get_state(self) -> CircuitState:
         """Get current state."""
         return self.state
+
 
 def circuit_breaker(
     failure_threshold: int = 5,

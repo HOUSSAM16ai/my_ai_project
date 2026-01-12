@@ -1,4 +1,3 @@
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -11,14 +10,16 @@ def app_settings():
     return AppSettings(
         DATABASE_URL="sqlite+aiosqlite:///:memory:",
         SECRET_KEY="test_secret_key_must_be_very_long_to_pass_validation",
-        ENVIRONMENT="testing"
+        ENVIRONMENT="testing",
     )
+
 
 @pytest.fixture
 def client(app_settings):
     kernel = RealityKernel(settings=app_settings)
     app = kernel.get_app()
     return TestClient(app)
+
 
 def test_robustness_flexible_input_security_endpoint(client):
     """
@@ -30,16 +31,19 @@ def test_robustness_flexible_input_security_endpoint(client):
     payload = {
         "token": "some_token",
         "garbage_field_1": "should_be_ignored",
-        "nested_garbage": {"foo": "bar"}
+        "nested_garbage": {"foo": "bar"},
     }
 
     # We expect 200 OK because verify_token endpoint mock logic just returns success if token is present
     response = client.post("/api/security/token/verify", json=payload)
 
-    assert response.status_code == 200, f"Expected 200 OK, got {response.status_code}. Response: {response.text}"
+    assert response.status_code == 200, (
+        f"Expected 200 OK, got {response.status_code}. Response: {response.text}"
+    )
     data = response.json()
     assert data["status"] == "success"
     assert "data" in data
+
 
 def test_strict_output_json(client):
     """

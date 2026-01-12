@@ -1,6 +1,7 @@
 """
 مخططات محادثة العملاء القياسيين (Customer Chat Schemas).
 """
+
 from pydantic import Field
 
 from app.core.schemas import RobustBaseModel

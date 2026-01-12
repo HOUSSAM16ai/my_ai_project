@@ -11,14 +11,18 @@ class FileManager:
     def __init__(self, client: GitHubClient):
         self.client = client
 
-    async def get_file_content(self, file_path: str, branch: str = "main") -> GitHubFileContent | dict[str, Any]:
+    async def get_file_content(
+        self, file_path: str, branch: str = "main"
+    ) -> GitHubFileContent | dict[str, Any]:
         if not self.client.repo_object:
             return {"success": False, "error": "Repository not initialized"}
 
         try:
+
             def _fetch():
                 file = self.client.repo_object.get_contents(file_path, ref=branch)
                 import base64
+
                 content = base64.b64decode(file.content).decode("utf-8")
                 return GitHubFileContent(
                     path=file.path,
@@ -44,6 +48,7 @@ class FileManager:
             return {"success": False, "error": "Repository not initialized"}
 
         try:
+
             def _update():
                 # Get current file for SHA
                 file = self.client.repo_object.get_contents(file_path, ref=branch)

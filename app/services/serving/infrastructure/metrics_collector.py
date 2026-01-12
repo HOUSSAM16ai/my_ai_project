@@ -3,6 +3,7 @@ Metrics Collector
 =================
 Collects and manages performance metrics for model serving.
 """
+
 from __future__ import annotations
 
 import random
@@ -24,8 +25,7 @@ class MetricsCollector:
     """
 
     def __init__(self):
-        self._metrics: dict[str, deque[ModelMetrics]] = defaultdict(lambda :
-            deque(maxlen=10000))
+        self._metrics: dict[str, deque[ModelMetrics]] = defaultdict(lambda: deque(maxlen=10000))
         self._lock = threading.RLock()
         self._monitoring_active = False
 
@@ -45,7 +45,7 @@ class MetricsCollector:
         with self._lock:
             pass
 
-    def calculate_cost(self, model: ModelVersion, output: dict[str, str | int | bool]) ->float:
+    def calculate_cost(self, model: ModelVersion, output: dict[str, str | int | bool]) -> float:
         """
         حساب تكلفة الطلب
 
@@ -58,7 +58,7 @@ class MetricsCollector:
         """
         return random.uniform(0.001, 0.01)
 
-    def get_all_metrics(self, version_id: str) ->list[ModelMetrics]:
+    def get_all_metrics(self, version_id: str) -> list[ModelMetrics]:
         """
         الحصول على جميع مقاييس النموذج
 

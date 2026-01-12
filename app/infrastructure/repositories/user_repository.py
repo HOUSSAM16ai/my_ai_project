@@ -22,17 +22,13 @@ class SQLAlchemyUserRepository:
 
     async def find_by_id(self, user_id: int) -> User | None:
         """يجلب المستخدم بالمعرّف الأساسي أو يعيد None عند عدم الوجود."""
-        result = await self._session.execute(
-            select(User).where(User.id == user_id)
-        )
+        result = await self._session.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
 
     async def find_by_email(self, email: str) -> User | None:
         """يجلب المستخدم وفق البريد الإلكتروني بعد تحويله إلى أحرف صغيرة."""
         normalized = email.lower().strip()
-        result = await self._session.execute(
-            select(User).where(User.email == normalized)
-        )
+        result = await self._session.execute(select(User).where(User.email == normalized))
         return result.scalar_one_or_none()
 
     async def create(self, user_data: UserUpdatePayload) -> User:

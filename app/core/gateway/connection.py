@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 BASE_TIMEOUT = 30.0
 
+
 class ConnectionManager:
     """
     Manages a singleton HTTP client to ensure TCP connection reuse.

@@ -17,10 +17,12 @@ class ObservabilityClientSettings(BaseSettings):
         extra="ignore",
     )
 
+
 class ObservabilityServiceClient:
     """
     عميل للتعامل مع خدمة المراقبة الدقيقة.
     """
+
     def __init__(self, base_url: str | None = None):
         settings = ObservabilityClientSettings()
         self.base_url = base_url or settings.OBSERVABILITY_SERVICE_URL
@@ -44,7 +46,7 @@ class ObservabilityServiceClient:
             "value": data.value,
             "timestamp": data.timestamp.isoformat(),
             "labels": data.labels,
-            "unit": data.unit
+            "unit": data.unit,
         }
         response = await self.client.post("/telemetry", json=payload)
         response.raise_for_status()

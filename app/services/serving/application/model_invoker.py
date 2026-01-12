@@ -3,6 +3,7 @@ Model Invoker
 =============
 Handles the actual invocation of models and request processing.
 """
+
 from __future__ import annotations
 
 import random
@@ -40,7 +41,7 @@ class ModelInvoker:
         input_data: dict[str, Any],
         parameters: dict[str, Any] | None = None,
         cost_calculator: callable | None = None,
-        metrics_updater: callable | None = None
+        metrics_updater: callable | None = None,
     ) -> ModelResponse:
         """
         خدمة طلب للنموذج | Serve model request
@@ -62,14 +63,16 @@ class ModelInvoker:
 
         # Validate model status
         if model.status != ModelStatus.READY:
-            return self._create_error_response(request_id, model, 'Model not ready')
+            return self._create_error_response(request_id, model, "Model not ready")
 
         # Create and store request
         request = self._create_request(request_id, model, input_data, parameters)
         self._request_history.append(request)
 
         # Execute inference
-        response = self._execute_inference(request_id, model, input_data, parameters, cost_calculator)
+        response = self._execute_inference(
+            request_id, model, input_data, parameters, cost_calculator
+        )
 
         # Store response and update metrics
         self._response_history.append(response)
@@ -79,10 +82,7 @@ class ModelInvoker:
         return response
 
     def _create_error_response(
-        self,
-        request_id: str,
-        model: ModelVersion,
-        error: str
+        self, request_id: str, model: ModelVersion, error: str
     ) -> ModelResponse:
         """
         إنشاء استجابة خطأ | Create error response
@@ -102,7 +102,7 @@ class ModelInvoker:
             output_data=None,
             latency_ms=0,
             success=False,
-            error=error
+            error=error,
         )
 
     def _create_request(
@@ -110,7 +110,7 @@ class ModelInvoker:
         request_id: str,
         model: ModelVersion,
         input_data: dict[str, Any],
-        parameters: dict[str, Any] | None
+        parameters: dict[str, Any] | None,
     ) -> ModelRequest:
         """
         إنشاء كائن الطلب | Create request object
@@ -129,7 +129,7 @@ class ModelInvoker:
             model_id=model.model_name,
             version_id=model.version_id,
             input_data=input_data,
-            parameters=parameters or {}
+            parameters=parameters or {},
         )
 
     def _execute_inference(
@@ -138,7 +138,7 @@ class ModelInvoker:
         model: ModelVersion,
         input_data: dict[str, Any],
         parameters: dict[str, Any] | None,
-        cost_calculator: callable | None
+        cost_calculator: callable | None,
     ) -> ModelResponse:
         """
         تنفيذ الاستدلال | Execute inference
@@ -170,7 +170,7 @@ class ModelInvoker:
                 latency_ms=latency_ms,
                 tokens_used=len(str(input_data)) + len(str(output)),
                 cost_usd=cost,
-                success=True
+                success=True,
             )
         except Exception as e:
             latency_ms = (time.time() - start_time) * 1000
@@ -181,11 +181,12 @@ class ModelInvoker:
                 output_data=None,
                 latency_ms=latency_ms,
                 success=False,
-                error=str(e)
+                error=str(e),
             )
 
-    def _invoke_model(self, model: ModelVersion, input_data: dict[str, Any],
-        parameters: dict[str, Any]) ->dict[str, str | int | bool]:
+    def _invoke_model(
+        self, model: ModelVersion, input_data: dict[str, Any], parameters: dict[str, Any]
+    ) -> dict[str, str | int | bool]:
         """
         استدعاء النموذج الفعلي
 
@@ -197,7 +198,9 @@ class ModelInvoker:
         """
         time.sleep(random.uniform(0.1, 0.5))
         if model.model_type == ModelType.LANGUAGE_MODEL:
-            return {'text':
-                f"Generated response for: {input_data.get('prompt', '')}",
-                'model': model.model_name, 'version': model.version_number}
-        return {'result': 'processed', 'model': model.model_name}
+            return {
+                "text": f"Generated response for: {input_data.get('prompt', '')}",
+                "model": model.model_name,
+                "version": model.version_number,
+            }
+        return {"result": "processed", "model": model.model_name}

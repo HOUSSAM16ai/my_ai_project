@@ -39,6 +39,7 @@ def analyze_path_semantics(path: str) -> ToolResult:
     except Exception as e:
         return ToolResult(ok=False, error=str(e))
 
+
 @tool(
     name="reload_deep_struct_map",
     description="Force reload of deep structural map. Returns reloaded + entry count.",

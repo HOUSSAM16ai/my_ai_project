@@ -59,12 +59,12 @@ class AgentContribution:
             - -> None تعني أن الدالة لا تُرجع قيمة
             - | تعني "أو" في type hints (str أو None)
         """
-        self.agent_name = agent_name      # اسم الوكيل
-        self.action = action              # الإجراء
-        self.timestamp = time.time()      # الوقت الحالي
-        self.input_data = input_data      # المدخلات
-        self.output_data = output_data    # المخرجات
-        self.success = success            # النجاح/الفشل
+        self.agent_name = agent_name  # اسم الوكيل
+        self.action = action  # الإجراء
+        self.timestamp = time.time()  # الوقت الحالي
+        self.input_data = input_data  # المدخلات
+        self.output_data = output_data  # المخرجات
+        self.success = success  # النجاح/الفشل
         self.error_message = error_message  # رسالة الخطأ
 
     def to_dict(self) -> dict[str, Any]:
@@ -124,9 +124,9 @@ class CollaborationHub:
 
         # إحصائيات الأداء
         self.stats: dict[str, int] = {
-            "total_contributions": 0,      # إجمالي المساهمات
+            "total_contributions": 0,  # إجمالي المساهمات
             "successful_contributions": 0,  # المساهمات الناجحة
-            "failed_contributions": 0,      # المساهمات الفاشلة
+            "failed_contributions": 0,  # المساهمات الفاشلة
         }
 
     def store_data(self, key: str, value: Any) -> None:
@@ -224,10 +224,7 @@ class CollaborationHub:
         else:
             self.stats["failed_contributions"] += 1
 
-        logger.info(
-            f"Agent '{agent_name}' contributed: {action} "
-            f"({'✓' if success else '✗'})"
-        )
+        logger.info(f"Agent '{agent_name}' contributed: {action} ({'✓' if success else '✗'})")
 
     def notify_agent(self, target_agent: str, message: dict[str, Any]) -> None:
         """
@@ -276,10 +273,7 @@ class CollaborationHub:
         # استرجاع وحذف الإشعارات دفعة واحدة
         notifications = self.pending_notifications.pop(agent_name, [])
         if notifications:
-            logger.debug(
-                f"Retrieved {len(notifications)} notification(s) "
-                f"for '{agent_name}'"
-            )
+            logger.debug(f"Retrieved {len(notifications)} notification(s) for '{agent_name}'")
         return notifications
 
     def get_agent_summary(self, agent_name: str) -> dict[str, Any]:
@@ -302,10 +296,7 @@ class CollaborationHub:
             - الفاصلة (,) في list comprehension تفصل الشروط
         """
         # جمع جميع مساهمات هذا الوكيل
-        agent_contributions = [
-            c for c in self.contributions
-            if c.agent_name == agent_name
-        ]
+        agent_contributions = [c for c in self.contributions if c.agent_name == agent_name]
 
         # حساب النجاحات والفشل
         successes = sum(1 for c in agent_contributions if c.success)

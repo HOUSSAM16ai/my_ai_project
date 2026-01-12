@@ -27,6 +27,7 @@ RESONANCE_THRESHOLD = 0.60  # Tuned for high-recall in V1 (Caveman-speak compati
 CACHE_TTL = 3600  # 1 Hour
 MAX_MEMORY_SLOTS = 1000  # Max number of semantic patterns to hold
 
+
 @dataclass
 class SemanticEngram:
     """
@@ -43,6 +44,7 @@ class SemanticEngram:
     @property
     def is_expired(self) -> bool:
         return (time.time() - self.created_at) > CACHE_TTL
+
 
 class CognitiveResonanceEngine:
     """
@@ -98,7 +100,6 @@ class CognitiveResonanceEngine:
         # Weighted Average:
         # Jaccard: 30%, Containment: 30%, Structure: 40%
         return (jaccard_score * 0.3) + (containment_score * 0.3) + (structural_score * 0.4)
-
 
     def _find_best_match(
         self, input_tokens: set[str], prompt: str, context_hash: str
@@ -172,8 +173,10 @@ class CognitiveResonanceEngine:
     def get_stats(self) -> None:
         return {**self._stats, "memory_usage": len(self.memory), "capacity": MAX_MEMORY_SLOTS}
 
+
 # Singleton Instance
 _cognitive_engine = CognitiveResonanceEngine()
+
 
 def get_cognitive_engine() -> CognitiveResonanceEngine:
     return _cognitive_engine

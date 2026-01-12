@@ -1,4 +1,5 @@
 """طبقة إخراج الدُفعات لفصل تنسيق الأحداث عن منطق التنسيق الأعلى."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

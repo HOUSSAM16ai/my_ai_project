@@ -21,6 +21,7 @@ from app.services.serving.infrastructure.in_memory_repository import (
 
 _LOG = logging.getLogger(__name__)
 
+
 class ModelRegistry:
     """
     Application service for model registration and lifecycle management.

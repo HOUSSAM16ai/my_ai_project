@@ -8,6 +8,7 @@ from enum import Enum
 
 class ChatIntent(str, Enum):
     """نوايا المحادثة المعتمدة في طبقة التوجيه."""
+
     FILE_READ = "FILE_READ"
     FILE_WRITE = "FILE_WRITE"
     CODE_SEARCH = "CODE_SEARCH"
@@ -34,6 +35,7 @@ class IntentResult:
     intent: ChatIntent
     confidence: float
     params: dict[str, str]
+
 
 class IntentDetector:
     """يكشف نية المستخدم من نص السؤال باستخدام قواعد نمطية بسيطة."""

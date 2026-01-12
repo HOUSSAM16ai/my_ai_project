@@ -16,6 +16,7 @@ from app.services.overmind.factory import create_overmind
 
 logger = logging.getLogger(__name__)
 
+
 async def run_mission_in_background(mission_id: int) -> None:
     """
     تنفيذ المهمة في الخلفية باستخدام جلسة قاعدة بيانات مستقلة.

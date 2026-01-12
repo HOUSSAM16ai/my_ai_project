@@ -21,7 +21,9 @@ from dataclasses import dataclass, field
 ConfigPrimitive = str | int | float | bool
 """قيمة أولية مسموح بها في الإعدادات."""
 
-ConfigValue = ConfigPrimitive | list[ConfigPrimitive] | dict[str, ConfigPrimitive | list[ConfigPrimitive]]
+ConfigValue = (
+    ConfigPrimitive | list[ConfigPrimitive] | dict[str, ConfigPrimitive | list[ConfigPrimitive]]
+)
 """قيمة إعداد مركّبة تدعم القوائم والقواميس المتداخلة البسيطة."""
 
 

@@ -54,8 +54,8 @@ class SearchAnalyzer:
         """
         query_lower = query.lower()
         return {
-            'query_lower': query_lower,
-            'query_words': set(query_lower.split()),
+            "query_lower": query_lower,
+            "query_words": set(query_lower.split()),
         }
 
     def _iterate_python_files(self, app_dir: Path):
@@ -74,11 +74,7 @@ class SearchAnalyzer:
                 yield py_file
 
     def _search_in_file(
-        self,
-        py_file: Path,
-        query_info: dict,
-        results: list[dict],
-        max_results: int
+        self, py_file: Path, query_info: dict, results: list[dict], max_results: int
     ) -> None:
         """
         البحث في ملف واحد.
@@ -103,12 +99,7 @@ class SearchAnalyzer:
             pass
 
     def _check_line_match(
-        self,
-        line: str,
-        line_num: int,
-        file_path: str,
-        query_info: dict,
-        results: list[dict]
+        self, line: str, line_num: int, file_path: str, query_info: dict, results: list[dict]
     ) -> None:
         """
         التحقق من تطابق السطر مع الاستعلام.
@@ -122,27 +113,31 @@ class SearchAnalyzer:
             results: قائمة النتائج | Results list
         """
         line_lower = line.lower()
-        query_lower = query_info['query_lower']
-        query_words = query_info['query_words']
+        query_lower = query_info["query_lower"]
+        query_words = query_info["query_words"]
 
         if query_lower in line_lower:
-            results.append({
-                "file": file_path,
-                "line": line_num + 1,
-                "content": line.strip()[:100],
-                "match_type": "exact",
-                "relevance": 1.0,
-            })
-        elif query_words:
-            overlap = self._calculate_word_overlap(line_lower, query_words)
-            if overlap > 0.5:
-                results.append({
+            results.append(
+                {
                     "file": file_path,
                     "line": line_num + 1,
                     "content": line.strip()[:100],
-                    "match_type": "fuzzy",
-                    "relevance": overlap,
-                })
+                    "match_type": "exact",
+                    "relevance": 1.0,
+                }
+            )
+        elif query_words:
+            overlap = self._calculate_word_overlap(line_lower, query_words)
+            if overlap > 0.5:
+                results.append(
+                    {
+                        "file": file_path,
+                        "line": line_num + 1,
+                        "content": line.strip()[:100],
+                        "match_type": "fuzzy",
+                        "relevance": overlap,
+                    }
+                )
 
     def _calculate_word_overlap(self, line_lower: str, query_words: set) -> float:
         """

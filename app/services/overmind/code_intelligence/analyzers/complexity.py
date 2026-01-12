@@ -21,7 +21,7 @@ class ComplexityAnalyzer(ast.NodeVisitor):
                 "name": node.name,
                 "line": node.lineno,
                 "methods": [],
-                "loc": self._count_node_lines(node)
+                "loc": self._count_node_lines(node),
             }
         )
         self.generic_visit(node)
@@ -70,7 +70,18 @@ class ComplexityAnalyzer(ast.NodeVisitor):
 
         for child in ast.walk(node):
             # Decision points
-            if isinstance(child, (ast.If, ast.While, ast.For, ast.AsyncFor, ast.ExceptHandler, ast.With, ast.AsyncWith)):
+            if isinstance(
+                child,
+                (
+                    ast.If,
+                    ast.While,
+                    ast.For,
+                    ast.AsyncFor,
+                    ast.ExceptHandler,
+                    ast.With,
+                    ast.AsyncWith,
+                ),
+            ):
                 complexity += 1
             # Boolean operators
             elif isinstance(child, ast.BoolOp):

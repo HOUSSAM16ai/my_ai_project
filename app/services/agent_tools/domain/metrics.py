@@ -1,6 +1,7 @@
 """
 Domain tools for project metrics and file system statistics.
 """
+
 import os
 import subprocess
 from pathlib import Path
@@ -12,6 +13,7 @@ from app.services.agent_tools.tool_model import Tool, ToolConfig
 def get_project_root() -> Path:
     """Get the project root directory."""
     return Path(os.getcwd())
+
 
 async def count_files_handler(directory: str = ".", extension: str | None = None) -> dict[str, Any]:
     """
@@ -31,7 +33,7 @@ async def count_files_handler(directory: str = ".", extension: str | None = None
             files = [f for f in files if f.endswith(extension)]
 
         if directory != ".":
-             files = [f for f in files if f.startswith(directory)]
+            files = [f for f in files if f.startswith(directory)]
 
         count = len(files)
     except subprocess.CalledProcessError:
@@ -45,6 +47,7 @@ async def count_files_handler(directory: str = ".", extension: str | None = None
                 count += 1
 
     return {"directory": directory, "extension": extension, "count": count}
+
 
 async def get_project_metrics_handler() -> dict[str, Any]:
     """Read PROJECT_METRICS.md and supplement with live data."""
@@ -72,6 +75,7 @@ async def get_project_metrics_handler() -> dict[str, Any]:
     }
     return metrics
 
+
 class ProjectMetricsTool(Tool):
     """Tool to retrieve project metrics."""
 
@@ -82,9 +86,10 @@ class ProjectMetricsTool(Tool):
             category="metrics",
             capabilities=["read_file", "shell_exec"],
             aliases=["metrics", "stats"],
-            handler=get_project_metrics_handler
+            handler=get_project_metrics_handler,
         )
         super().__init__(config)
+
 
 class FileCountTool(Tool):
     """Tool to count files."""
@@ -95,6 +100,6 @@ class FileCountTool(Tool):
             description="Counts files in the project or a directory.",
             category="fs",
             aliases=["file_count"],
-            handler=count_files_handler
+            handler=count_files_handler,
         )
         super().__init__(config)

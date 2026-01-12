@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["AuthBoundaryService"]
 
+
 class AuthBoundaryService:
     """
     خدمة حدود المصادقة (Auth Boundary Service).
@@ -49,9 +50,7 @@ class AuthBoundaryService:
         self.persistence = AuthPersistence(db)
         self.settings = get_settings()
 
-    async def register_user(
-        self, full_name: str, email: str, password: str
-    ) -> dict[str, object]:
+    async def register_user(self, full_name: str, email: str, password: str) -> dict[str, object]:
         """
         تسجيل مستخدم جديد في النظام.
 
@@ -224,7 +223,5 @@ class AuthBoundaryService:
 
         parts = auth_header.split(" ")
         if len(parts) != 2 or parts[0].lower() != "bearer":
-            raise HTTPException(
-                status_code=401, detail="Invalid Authorization header format"
-            )
+            raise HTTPException(status_code=401, detail="Invalid Authorization header format")
         return parts[1]

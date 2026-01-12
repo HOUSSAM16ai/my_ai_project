@@ -26,6 +26,7 @@ class TestLRUPolicy:
         evicted = policy.on_add("D")
         assert evicted == "A"
 
+
 class TestLFUPolicy:
     def test_lfu_eviction(self):
         """اختبار طرد العنصر الأقل تكراراً."""
@@ -33,15 +34,16 @@ class TestLFUPolicy:
 
         # Add A, B
         policy.on_add("A")
-        policy.on_access("A") # Count: 1
-        policy.on_access("A") # Count: 2
+        policy.on_access("A")  # Count: 1
+        policy.on_access("A")  # Count: 2
 
         policy.on_add("B")
-        policy.on_access("B") # Count: 1
+        policy.on_access("B")  # Count: 1
 
         # Add C -> Should evict B (Count 1 < Count 2)
         evicted = policy.on_add("C")
         assert evicted == "B"
+
 
 class TestStrategicCache:
     def test_integration_with_lru(self):

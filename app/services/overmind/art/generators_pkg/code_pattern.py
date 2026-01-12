@@ -23,11 +23,7 @@ class CodePatternArtist:
         self.style = style
         self.palette = VisualTheme.get_palette(style)
 
-    def generate_fractal_tree(
-        self,
-        complexity: int = 5,
-        seed: int | None = None
-    ) -> str:
+    def generate_fractal_tree(self, complexity: int = 5, seed: int | None = None) -> str:
         """
         Generate a fractal tree representing code structure.
 
@@ -55,11 +51,12 @@ class CodePatternArtist:
 
         # Draw fractal tree
         branches = self._draw_branch(
-            start_x, start_y,
+            start_x,
+            start_y,
             -90,  # angle (up)
             100,  # length
             complexity,
-            self.palette.primary
+            self.palette.primary,
         )
         svg += branches
 
@@ -74,13 +71,7 @@ class CodePatternArtist:
         return svg
 
     def _draw_branch(
-        self,
-        x: float,
-        y: float,
-        angle: float,
-        length: float,
-        depth: int,
-        color: str
+        self, x: float, y: float, angle: float, length: float, depth: int, color: str
     ) -> str:
         """
         Draw a branch recursively (Recursive Fractal).
@@ -96,11 +87,7 @@ class CodePatternArtist:
         end_y = y + length * math.sin(angle_rad)
 
         # Color gradient by depth
-        gradient = VisualTheme.create_gradient(
-            self.palette.primary,
-            self.palette.accent,
-            steps=10
-        )
+        gradient = VisualTheme.create_gradient(self.palette.primary, self.palette.accent, steps=10)
         color_index = min(10 - depth, len(gradient) - 1)
         branch_color = gradient[color_index]
 
@@ -119,29 +106,17 @@ class CodePatternArtist:
 
         # Left branch
         svg += self._draw_branch(
-            end_x, end_y,
-            angle - angle_variation,
-            new_length,
-            depth - 1,
-            color
+            end_x, end_y, angle - angle_variation, new_length, depth - 1, color
         )
 
         # Right branch
         svg += self._draw_branch(
-            end_x, end_y,
-            angle + angle_variation,
-            new_length,
-            depth - 1,
-            color
+            end_x, end_y, angle + angle_variation, new_length, depth - 1, color
         )
 
         return svg
 
-    def generate_spiral_code(
-        self,
-        iterations: int = 100,
-        data_seed: int = 42
-    ) -> str:
+    def generate_spiral_code(self, iterations: int = 100, data_seed: int = 42) -> str:
         """
         Generate a spiral representing code evolution.
 
@@ -176,9 +151,7 @@ class CodePatternArtist:
 
         # Draw connected lines
         gradient = VisualTheme.create_gradient(
-            self.palette.primary,
-            self.palette.secondary,
-            steps=iterations
+            self.palette.primary, self.palette.secondary, steps=iterations
         )
 
         for i in range(len(points) - 1):

@@ -1,4 +1,3 @@
-
 import pytest
 
 from app.services.system.service_catalog_service import (
@@ -17,10 +16,12 @@ from app.services.system.service_catalog_service import (
 def catalog():
     return ServiceCatalogService()
 
+
 def test_initialization(catalog):
-    assert len(catalog.templates) > 0 # Should have default template
+    assert len(catalog.templates) > 0  # Should have default template
     metrics = catalog.get_catalog_metrics()
     assert metrics["templates_available"] >= 1
+
 
 def test_register_get_service(catalog):
     service = ServiceMetadata(
@@ -32,7 +33,7 @@ def test_register_get_service(catalog):
         owner_team="Team A",
         repository_url="http://git",
         documentation_url="http://doc",
-        tech_stack=["Python"]
+        tech_stack=["Python"],
     )
 
     assert catalog.register_service(service) is True
@@ -42,6 +43,7 @@ def test_register_get_service(catalog):
     assert health is not None
     assert health.status == HealthStatus.UNKNOWN
 
+
 def test_api_spec(catalog):
     spec = APISpec(
         spec_id="spec-1",
@@ -49,10 +51,11 @@ def test_api_spec(catalog):
         spec_type="openapi",
         version="v1",
         spec_content={},
-        endpoints=[]
+        endpoints=[],
     )
     assert catalog.register_api_spec(spec) is True
     assert len(catalog.get_api_specs("svc-1")) == 1
+
 
 def test_templates(catalog):
     template = ServiceTemplate(
@@ -62,7 +65,7 @@ def test_templates(catalog):
         service_type=ServiceType.API,
         tech_stack=[],
         files={},
-        parameters={}
+        parameters={},
     )
     catalog.register_template(template)
 
@@ -71,6 +74,7 @@ def test_templates(catalog):
     assert templates[0].template_id == "t1"
 
     assert len(catalog.get_templates(ServiceType.DATABASE)) == 0
+
 
 def test_health_update(catalog):
     service = ServiceMetadata(
@@ -81,7 +85,7 @@ def test_health_update(catalog):
         lifecycle=ServiceLifecycle.PRODUCTION,
         owner_team="Team A",
         repository_url="http://git",
-        documentation_url="http://doc"
+        documentation_url="http://doc",
     )
     catalog.register_service(service)
 
@@ -90,16 +94,29 @@ def test_health_update(catalog):
     assert health.status == HealthStatus.HEALTHY
     assert health.metrics["cpu"] == 10.0
 
+
 def test_dependency_graph(catalog):
     s1 = ServiceMetadata(
-        service_id="s1", name="S1", description="", service_type=ServiceType.API,
-        lifecycle=ServiceLifecycle.PRODUCTION, owner_team="", repository_url="", documentation_url="",
-        dependencies=["s2"]
+        service_id="s1",
+        name="S1",
+        description="",
+        service_type=ServiceType.API,
+        lifecycle=ServiceLifecycle.PRODUCTION,
+        owner_team="",
+        repository_url="",
+        documentation_url="",
+        dependencies=["s2"],
     )
     s2 = ServiceMetadata(
-        service_id="s2", name="S2", description="", service_type=ServiceType.DATABASE,
-        lifecycle=ServiceLifecycle.PRODUCTION, owner_team="", repository_url="", documentation_url="",
-        dependencies=[]
+        service_id="s2",
+        name="S2",
+        description="",
+        service_type=ServiceType.DATABASE,
+        lifecycle=ServiceLifecycle.PRODUCTION,
+        owner_team="",
+        repository_url="",
+        documentation_url="",
+        dependencies=[],
     )
 
     catalog.register_service(s1)
@@ -111,10 +128,17 @@ def test_dependency_graph(catalog):
     assert graph["edges"][0]["from"] == "s1"
     assert graph["edges"][0]["to"] == "s2"
 
+
 def test_metrics_summary(catalog):
     s1 = ServiceMetadata(
-        service_id="s1", name="S1", description="", service_type=ServiceType.API,
-        lifecycle=ServiceLifecycle.PRODUCTION, owner_team="", repository_url="", documentation_url=""
+        service_id="s1",
+        name="S1",
+        description="",
+        service_type=ServiceType.API,
+        lifecycle=ServiceLifecycle.PRODUCTION,
+        owner_team="",
+        repository_url="",
+        documentation_url="",
     )
     catalog.register_service(s1)
     catalog.update_service_health("s1", HealthStatus.HEALTHY, {})
@@ -122,6 +146,7 @@ def test_metrics_summary(catalog):
     metrics = catalog.get_catalog_metrics()
     assert metrics["total_services"] == 1
     assert metrics["health_status_summary"]["healthy"] == 1
+
 
 def test_singleton():
     c1 = get_service_catalog()

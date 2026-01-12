@@ -237,8 +237,7 @@ class MetricsCollector:
             "counters": dict(self._counters),
             "gauges": dict(self._gauges),
             "histograms": {
-                name: self.get_histogram_stats(name.split("{")[0])
-                for name in self._histograms
+                name: self.get_histogram_stats(name.split("{")[0]) for name in self._histograms
             },
             "metadata": {
                 "uptime_seconds": time.time() - self._start_time,
@@ -322,10 +321,10 @@ class PrometheusExporter:
             lines.append(f"# TYPE {metric_name} histogram")
             lines.append(f"{name}_count {stats['count']}")
             lines.append(f"{name}_sum {stats['sum']}")
-            lines.append(f"{name}_bucket{{le=\"0.5\"}} {stats['p50']}")
-            lines.append(f"{name}_bucket{{le=\"0.95\"}} {stats['p95']}")
-            lines.append(f"{name}_bucket{{le=\"0.99\"}} {stats['p99']}")
-            lines.append(f"{name}_bucket{{le=\"+Inf\"}} {stats['count']}")
+            lines.append(f'{name}_bucket{{le="0.5"}} {stats["p50"]}')
+            lines.append(f'{name}_bucket{{le="0.95"}} {stats["p95"]}')
+            lines.append(f'{name}_bucket{{le="0.99"}} {stats["p99"]}')
+            lines.append(f'{name}_bucket{{le="+Inf"}} {stats["count"]}')
 
         # Metadata
         uptime = time.time() - self.collector._start_time

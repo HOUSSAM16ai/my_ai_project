@@ -16,6 +16,7 @@ class HealthCheckType(Enum):
     READINESS = "readiness"  # Ready to serve traffic?
     DEEP = "deep"  # Full functional check
 
+
 @dataclass
 class HealthCheckConfig:
     """Health check configuration"""
@@ -25,6 +26,7 @@ class HealthCheckConfig:
     timeout_seconds: int = 3
     grace_period_failures: int = 3  # Fail after 3 consecutive failures
     enable_circuit_breaker: bool = True
+
 
 @dataclass
 class HealthCheckResult:
@@ -36,6 +38,7 @@ class HealthCheckResult:
     latency_ms: float
     details: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
+
 
 class HealthChecker:
     """
@@ -109,9 +112,7 @@ class HealthChecker:
         with self._lock:
             self.consecutive_failures += 1
 
-    def _create_success_result(
-        self, latency_ms: float, result: Any
-    ) -> HealthCheckResult:
+    def _create_success_result(self, latency_ms: float, result: Any) -> HealthCheckResult:
         """
         إنشاء نتيجة نجاح | Create success result
 
@@ -130,9 +131,7 @@ class HealthChecker:
             details=result if isinstance(result, dict) else {},
         )
 
-    def _create_failure_result(
-        self, latency_ms: float, error: Exception
-    ) -> HealthCheckResult:
+    def _create_failure_result(self, latency_ms: float, error: Exception) -> HealthCheckResult:
         """
         إنشاء نتيجة فشل | Create failure result
 

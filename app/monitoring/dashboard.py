@@ -21,11 +21,12 @@ class DashboardWidget:
     """
     عنصر في لوحة التحكم (Widget).
     """
+
     id: str
     title: str
     type: str  # e.g., "metric", "chart", "table"
-    data_source: str # e.g., "metrics.cpu_usage", "alerts.active"
-    refresh_rate: int = 60 # seconds
+    data_source: str  # e.g., "metrics.cpu_usage", "alerts.active"
+    refresh_rate: int = 60  # seconds
 
 
 @dataclass
@@ -33,6 +34,7 @@ class DashboardView:
     """
     عرض لوحة التحكم (Dashboard View).
     """
+
     id: str
     name: str
     description: str
@@ -75,12 +77,28 @@ class DashboardManager:
             name="Main System Overview",
             description="Overview of system health, alerts, and performance.",
             widgets=[
-                DashboardWidget(id="w1", title="Active Alerts", type="table", data_source="alerts.active"),
-                DashboardWidget(id="w2", title="System Uptime", type="metric", data_source="metrics.uptime"),
-                DashboardWidget(id="w3", title="Request Throughput", type="metric", data_source="metrics.requests_total"),
-                DashboardWidget(id="w4", title="Error Rate", type="metric", data_source="metrics.error_rate"),
-                DashboardWidget(id="w5", title="Slow Operations", type="list", data_source="performance.slow_ops"),
-            ]
+                DashboardWidget(
+                    id="w1", title="Active Alerts", type="table", data_source="alerts.active"
+                ),
+                DashboardWidget(
+                    id="w2", title="System Uptime", type="metric", data_source="metrics.uptime"
+                ),
+                DashboardWidget(
+                    id="w3",
+                    title="Request Throughput",
+                    type="metric",
+                    data_source="metrics.requests_total",
+                ),
+                DashboardWidget(
+                    id="w4", title="Error Rate", type="metric", data_source="metrics.error_rate"
+                ),
+                DashboardWidget(
+                    id="w5",
+                    title="Slow Operations",
+                    type="list",
+                    data_source="performance.slow_ops",
+                ),
+            ],
         )
         self.create_view(default_view)
 
@@ -124,12 +142,8 @@ class DashboardManager:
             return {"error": "View not found"}
 
         data = {
-            "view": {
-                "id": view.id,
-                "name": view.name,
-                "timestamp": datetime.utcnow().isoformat()
-            },
-            "widgets": {}
+            "view": {"id": view.id, "name": view.name, "timestamp": datetime.utcnow().isoformat()},
+            "widgets": {},
         }
 
         for widget in view.widgets:
@@ -137,7 +151,7 @@ class DashboardManager:
             data["widgets"][widget.id] = {
                 "title": widget.title,
                 "type": widget.type,
-                "data": widget_data
+                "data": widget_data,
             }
 
         return data
@@ -155,7 +169,7 @@ class DashboardManager:
                     "name": a.name,
                     "severity": a.severity.value,
                     "message": a.message,
-                    "created_at": a.created_at.isoformat()
+                    "created_at": a.created_at.isoformat(),
                 }
                 for a in self.alert_manager.get_active_alerts()
             ]
@@ -180,7 +194,7 @@ class DashboardManager:
                 {
                     "operation": op.operation_name,
                     "duration_ms": op.duration_ms,
-                    "time": op.end_time.isoformat() if op.end_time else None
+                    "time": op.end_time.isoformat() if op.end_time else None,
                 }
                 for op in self.performance_tracker.get_slow_operations(limit=5)
             ]
@@ -197,8 +211,10 @@ class DashboardManager:
 
         return None
 
+
 # مثيل عام
 _global_dashboard_manager: DashboardManager | None = None
+
 
 def get_dashboard_manager() -> DashboardManager:
     """

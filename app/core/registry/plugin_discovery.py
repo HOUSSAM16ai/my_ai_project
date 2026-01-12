@@ -7,6 +7,7 @@ Automatic plugin discovery from directories
 
 مبدأ البساطة: Convention over Configuration
 """
+
 import importlib
 import logging
 import pkgutil
@@ -19,30 +20,26 @@ from app.core.registry.plugin_registry import registry
 logger = logging.getLogger(__name__)
 
 
-def _load_plugin_module(
-    plugin_dir: str, module_name: str
-) -> tuple[ModuleType, str] | None:
+def _load_plugin_module(plugin_dir: str, module_name: str) -> tuple[ModuleType, str] | None:
     """
     Attempt to import the plugin module.
     """
-    full_name = f'{plugin_dir}.{module_name}'
+    full_name = f"{plugin_dir}.{module_name}"
     try:
-        return importlib.import_module(f'{full_name}.plugin'), full_name
+        return importlib.import_module(f"{full_name}.plugin"), full_name
     except ImportError as e:
-        logger.debug(f'No plugin in {module_name}: {e}')
+        logger.debug(f"No plugin in {module_name}: {e}")
         return None
     except Exception as e:
-        logger.error(f'Error loading plugin {module_name}: {e}')
+        logger.error(f"Error loading plugin {module_name}: {e}")
         return None
 
 
-def _extract_plugin_instance(
-    plugin_module: ModuleType, full_name: str
-) -> IPlugin | None:
+def _extract_plugin_instance(plugin_module: ModuleType, full_name: str) -> IPlugin | None:
     """
     Extract and validate the plugin instance from the module.
     """
-    if not hasattr(plugin_module, 'plugin'):
+    if not hasattr(plugin_module, "plugin"):
         return None
 
     plugin = plugin_module.plugin
@@ -58,12 +55,10 @@ def _register_plugin(plugin: IPlugin) -> None:
     Register the plugin with the registry.
     """
     registry.register(plugin)
-    logger.info(f'Discovered and registered: {plugin.name}')
+    logger.info(f"Discovered and registered: {plugin.name}")
 
 
-def discover_plugins(
-    plugin_dir: str = 'app.plugins', auto_register: bool = True
-) -> list[IPlugin]:
+def discover_plugins(plugin_dir: str = "app.plugins", auto_register: bool = True) -> list[IPlugin]:
     """
     اكتشاف جميع الإضافات
     Discover all plugins in directory

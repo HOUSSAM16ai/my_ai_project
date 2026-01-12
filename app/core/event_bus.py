@@ -22,6 +22,7 @@ logger = get_logger(__name__)
 
 type EventPayload = object
 
+
 class EventBus(EventBusProtocol):
     """
     ناقل أحداث غير متزامن يربط بين المنتجين (Producers) والمستهلكين (Consumers)
@@ -103,6 +104,7 @@ class EventBus(EventBusProtocol):
                 yield event
         finally:
             self.unsubscribe_queue(channel, queue)
+
 
 _global_event_bus: EventBus | None = None
 

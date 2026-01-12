@@ -5,6 +5,7 @@
 عن طبقة العرض، مع توفير تهيئة أولية للأدوار والصلاحيات لضمان أمان جاهز
 فور التشغيل.
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -105,7 +106,9 @@ class RBACService:
             desired_ids = {perms_map[name].id for name in perm_names if name in perms_map}
             await self._reconcile_role_permissions(role.id, desired_ids)
 
-    async def _reconcile_role_permissions(self, role_id: int, desired_permission_ids: set[int]) -> None:
+    async def _reconcile_role_permissions(
+        self, role_id: int, desired_permission_ids: set[int]
+    ) -> None:
         existing_links = await self.session.execute(
             select(RolePermission.permission_id).where(RolePermission.role_id == role_id)
         )

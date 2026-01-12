@@ -24,6 +24,7 @@ __all__ = ["TaskExecutor"]
 # نستخدم object بدلاً من Any للدلالة على أن النتيجة يمكن أن تكون أي شيء
 type ToolRegistry = dict[str, Callable[..., Awaitable[object] | object]]
 
+
 class TaskExecutor:
     """
     منفذ المهام.
@@ -31,10 +32,7 @@ class TaskExecutor:
     """
 
     def __init__(
-        self,
-        *,
-        state_manager: MissionStateManagerProtocol,
-        registry: ToolRegistry
+        self, *, state_manager: MissionStateManagerProtocol, registry: ToolRegistry
     ) -> None:
         """
         تهيئة المنفذ.
@@ -79,7 +77,7 @@ class TaskExecutor:
                 result = await tool_func(**tool_args)
             else:
                 loop = asyncio.get_running_loop()
-                result = await loop.run_in_executor(None, lambda: tool_func(**tool_args)) # type: ignore
+                result = await loop.run_in_executor(None, lambda: tool_func(**tool_args))  # type: ignore
 
             # 4. تنسيق النتيجة
             result_text = str(result)

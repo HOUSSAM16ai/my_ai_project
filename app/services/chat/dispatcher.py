@@ -4,6 +4,7 @@
 يوفر طبقة قرار واحدة تفصل مسار الزبون عن مسار الأدمن لضمان عدم اختلاط
 السياسات أو الأدوات أو السياق بينهما.
 """
+
 from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession

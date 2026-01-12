@@ -3,6 +3,7 @@
 
 تسمح بالأسئلة التعليمية وتمنع الطلبات الحساسة أو التشغيلية.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -112,7 +113,9 @@ class EducationPolicyGate:
         """
         فحص المؤشرات الحساسة أو التشغيلية.
         """
-        if any(keyword in normalized for keyword in self._normalize_terms(self._SENSITIVE_KEYWORDS)):
+        if any(
+            keyword in normalized for keyword in self._normalize_terms(self._SENSITIVE_KEYWORDS)
+        ):
             return True
         return any(re.search(pattern, normalized) for pattern in self._OPERATIONAL_PATTERNS)
 

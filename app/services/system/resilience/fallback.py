@@ -17,6 +17,7 @@ class FallbackLevel(Enum):
     BACKUP_SERVICE = "backup_service"  # Alternative provider
     DEFAULT = "default"  # Always succeeds
 
+
 class FallbackChain:
     """
     Multi-Level Fallback Chain

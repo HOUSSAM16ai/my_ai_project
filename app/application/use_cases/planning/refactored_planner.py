@@ -17,6 +17,7 @@ class Task:
     tool_args: dict[str, Any]
     dependencies: list[str]
 
+
 @dataclass
 class Plan:
     """Plan entity."""
@@ -25,6 +26,7 @@ class Plan:
     objective: str
     tasks: list[Task]
     metadata: dict[str, Any]
+
 
 class PlanValidator:
     """Validates plans."""
@@ -46,6 +48,7 @@ class PlanValidator:
                     errors.append(f"Task {task.task_id} has invalid dependency: {dep}")
 
         return len(errors) == 0, errors
+
 
 class PlanOptimizer:
     """Optimizes plan execution order."""
@@ -83,6 +86,7 @@ class PlanOptimizer:
 
         return result
 
+
 class ContextAnalyzer:
     """Analyzes planning context."""
 
@@ -116,6 +120,7 @@ class ContextAnalyzer:
         if arabic_chars > len(text) * 0.3:
             return "arabic"
         return "english"
+
 
 class TaskGenerator:
     """Generates tasks for plans."""
@@ -256,6 +261,7 @@ class TaskGenerator:
             tool_args={},
             dependencies=["task_4"],
         )
+
 
 class RefactoredPlanner(PlannerInterface):
     """Clean, maintainable planner implementation."""

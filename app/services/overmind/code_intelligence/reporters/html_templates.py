@@ -11,7 +11,6 @@
 """
 
 
-
 def _get_base_styles() -> str:
     """
     أنماط CSS الأساسية للصفحة (body, container, headings).
@@ -241,12 +240,12 @@ def get_html_styles() -> str:
         كل helper method مسؤول عن مجموعة أنماط محددة فقط.
     """
     return (
-        _get_base_styles() +
-        _get_summary_styles() +
-        _get_heatmap_file_row_styles() +
-        _get_severity_color_styles() +
-        _get_badge_styles() +
-        _get_legend_styles()
+        _get_base_styles()
+        + _get_summary_styles()
+        + _get_heatmap_file_row_styles()
+        + _get_severity_color_styles()
+        + _get_badge_styles()
+        + _get_legend_styles()
     )
 
 
@@ -352,8 +351,12 @@ def create_complete_html(
     styles = get_html_styles()
     header = _create_html_header(timestamp)
     summary = _create_summary_section(
-        total_files, total_code_lines, total_functions,
-        total_classes, avg_file_complexity, max_file_complexity
+        total_files,
+        total_code_lines,
+        total_functions,
+        total_classes,
+        avg_file_complexity,
+        max_file_complexity,
     )
     legend = _create_legend_section()
 
@@ -394,8 +397,12 @@ def _create_summary_section(
 ) -> str:
     """إنشاء قسم الملخص مع الإحصائيات."""
     stats = _create_stat_items(
-        total_files, total_code_lines, total_functions,
-        total_classes, avg_file_complexity, max_file_complexity
+        total_files,
+        total_code_lines,
+        total_functions,
+        total_classes,
+        avg_file_complexity,
+        max_file_complexity,
     )
     return f"""<div class="summary">
             <h2>📊 ملخص المشروع</h2>

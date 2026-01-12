@@ -6,6 +6,7 @@
 وغيرها. تعتمد على بيانات الاعتماد المخزنة في المتغيرات السرية وتعيد
 المزامنة في كل تشغيل لضمان إمكانية الدخول دائماً.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping

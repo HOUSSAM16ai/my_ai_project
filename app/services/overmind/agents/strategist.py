@@ -20,6 +20,7 @@ from app.core.protocols import AgentPlanner, CollaborationContext
 
 logger = get_logger(__name__)
 
+
 class StrategistAgent(AgentPlanner):
     """
     العقل المدبر للتخطيط الاستراتيجي.
@@ -52,14 +53,12 @@ class StrategistAgent(AgentPlanner):
             return plan_data
 
         except json.JSONDecodeError as e:
-            return self._handle_json_decode_error(e, locals().get('response_text'))
+            return self._handle_json_decode_error(e, locals().get("response_text"))
         except Exception as e:
             return self._handle_general_error(e)
 
     async def _generate_plan_with_ai(
-        self,
-        objective: str,
-        context: CollaborationContext
+        self, objective: str, context: CollaborationContext
     ) -> dict[str, Any]:
         """
         توليد الخطة باستخدام الذكاء الاصطناعي.
@@ -80,7 +79,7 @@ class StrategistAgent(AgentPlanner):
         response_text = await self.ai.send_message(
             system_prompt=system_prompt,
             user_message=user_content,
-            temperature=0.2  # دقة عالية، إبداع منخفض
+            temperature=0.2,  # دقة عالية، إبداع منخفض
         )
         logger.info(f"Strategist: Received AI response ({len(response_text)} chars)")
 
@@ -127,11 +126,7 @@ class StrategistAgent(AgentPlanner):
         }
         """
 
-    def _build_user_content(
-        self,
-        objective: str,
-        context: CollaborationContext
-    ) -> str:
+    def _build_user_content(self, objective: str, context: CollaborationContext) -> str:
         """
         بناء محتوى رسالة المستخدم.
 
@@ -178,9 +173,7 @@ class StrategistAgent(AgentPlanner):
             raise ValueError("Missing 'steps' in AI plan")
 
     def _handle_json_decode_error(
-        self,
-        error: json.JSONDecodeError,
-        response_text: str | None
+        self, error: json.JSONDecodeError, response_text: str | None
     ) -> dict[str, Any]:
         """
         معالجة خطأ تحليل JSON.
@@ -198,7 +191,7 @@ class StrategistAgent(AgentPlanner):
         logger.error(f"Raw response: {response_text[:500] if response_text else 'N/A'}")
 
         # التحقق من رسالة Safety Net
-        if response_text and 'Unable to reach external intelligence' in response_text:
+        if response_text and "Unable to reach external intelligence" in response_text:
             logger.error("AI service unavailable - Safety Net activated")
             return self._create_ai_unavailable_plan()
 
@@ -210,9 +203,9 @@ class StrategistAgent(AgentPlanner):
                 {
                     "name": "Report JSON Error",
                     "description": f"AI response was not valid JSON. Error: {error}",
-                    "tool_hint": "log"
+                    "tool_hint": "log",
                 }
-            ]
+            ],
         }
 
     def _handle_general_error(self, error: Exception) -> dict[str, Any]:
@@ -235,9 +228,9 @@ class StrategistAgent(AgentPlanner):
                 {
                     "name": "Analyze Failure",
                     "description": f"Check why planning failed: {type(error).__name__}: {str(error)[:200]}",
-                    "tool_hint": "unknown"
+                    "tool_hint": "unknown",
                 }
-            ]
+            ],
         }
 
     def _create_ai_unavailable_plan(self) -> dict[str, Any]:
@@ -256,9 +249,9 @@ class StrategistAgent(AgentPlanner):
                 {
                     "name": "Configuration Required",
                     "description": "OPENROUTER_API_KEY is not configured. Please set it in .env file.",
-                    "tool_hint": "config"
+                    "tool_hint": "config",
                 }
-            ]
+            ],
         }
 
     def _clean_json_block(self, text: str) -> str:
@@ -304,9 +297,7 @@ class StrategistAgent(AgentPlanner):
 
         try:
             response_text = await self.ai.send_message(
-                system_prompt=system_prompt,
-                user_message=user_message,
-                temperature=0.3
+                system_prompt=system_prompt, user_message=user_message, temperature=0.3
             )
 
             clean_json = self._clean_json_block(response_text)
@@ -315,5 +306,5 @@ class StrategistAgent(AgentPlanner):
             logger.warning(f"Strategist consultation failed: {e}")
             return {
                 "recommendation": "Adopt a cautious strategic approach (AI consultation failed).",
-                "confidence": 50.0
+                "confidence": 50.0,
             }

@@ -8,7 +8,9 @@ from app.services.admin.streaming.metrics import SessionRecorder, StreamingMetri
 
 
 class FakeFormatter(EventFormatter):
-    def format_event(self, event_type: str, payload: dict[str, str | int | float | bool]) -> str:  # pragma: no cover - stub
+    def format_event(
+        self, event_type: str, payload: dict[str, str | int | float | bool]
+    ) -> str:  # pragma: no cover - stub
         return f"{event_type}:{payload}"
 
 
@@ -37,7 +39,9 @@ def test_chunk_emitter_records_latency_and_size(text: str, timestamps: list[floa
 
 
 def test_chunk_emitter_formats_generic_event() -> None:
-    emitter = ChunkEmitter(formatter=FakeFormatter(), metrics=StreamingMetrics(), timer=FakeTimer([0.0]))
+    emitter = ChunkEmitter(
+        formatter=FakeFormatter(), metrics=StreamingMetrics(), timer=FakeTimer([0.0])
+    )
 
     payload = {"trace_id": "123"}
     event = emitter.format_event("metadata", payload)

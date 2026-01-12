@@ -21,6 +21,7 @@ from app.core.resilience.circuit_breaker import (
 # Re-export enums and config to maintain compatibility where possible
 CircuitState = CoreCircuitState
 
+
 @dataclass
 class CircuitBreakerConfig:
     """
@@ -42,6 +43,7 @@ class CircuitBreakerConfig:
             half_open_max_calls=self.half_open_max_calls,
         )
 
+
 @dataclass
 class CircuitBreakerState:
     """Legacy state wrapper for compatibility"""
@@ -53,10 +55,12 @@ class CircuitBreakerState:
     last_state_change: datetime | None = None
     half_open_calls: int = 0
 
+
 class CircuitBreakerOpenError(CoreCircuitOpenError):
     """Raised when circuit breaker is OPEN"""
 
     pass
+
 
 class CircuitBreaker:
     """

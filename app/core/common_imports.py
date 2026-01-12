@@ -42,6 +42,7 @@ try:
     from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, select
     from sqlalchemy.ext.asyncio import AsyncSession
     from sqlalchemy.orm import Session, relationship
+
     HAS_SQLALCHEMY = True
 except ImportError:
     HAS_SQLALCHEMY = False
@@ -49,6 +50,7 @@ except ImportError:
 try:
     from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
     from fastapi.responses import JSONResponse, StreamingResponse
+
     HAS_FASTAPI = True
 except ImportError:
     HAS_FASTAPI = False
@@ -56,15 +58,18 @@ except ImportError:
 try:
     from pydantic import BaseModel, ConfigDict, Field, ValidationError, validator
     from pydantic_settings import BaseSettings
+
     HAS_PYDANTIC = True
 except ImportError:
     HAS_PYDANTIC = False
+
 
 # ==============================================================================
 # Feature Flags
 # ==============================================================================
 class FeatureFlags:
     """Runtime availability flags."""
+
     HAS_SQLALCHEMY = HAS_SQLALCHEMY
     HAS_FASTAPI = HAS_FASTAPI
     HAS_PYDANTIC = HAS_PYDANTIC

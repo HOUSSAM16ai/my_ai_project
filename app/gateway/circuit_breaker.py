@@ -20,8 +20,8 @@ T = TypeVar("T")
 class CircuitState(Enum):
     """حالات قاطع الدائرة."""
 
-    CLOSED = "closed"      # الدائرة مغلقة - الطلبات تمر بشكل طبيعي
-    OPEN = "open"          # الدائرة مفتوحة - الطلبات تُرفض فوراً
+    CLOSED = "closed"  # الدائرة مغلقة - الطلبات تمر بشكل طبيعي
+    OPEN = "open"  # الدائرة مفتوحة - الطلبات تُرفض فوراً
     HALF_OPEN = "half_open"  # نصف مفتوحة - اختبار استعادة الخدمة
 
 
@@ -75,9 +75,7 @@ class CircuitBreakerError(Exception):
     def __init__(self, service_name: str, state: CircuitState) -> None:
         self.service_name = service_name
         self.state = state
-        super().__init__(
-            f"Circuit breaker is {state.value} for service: {service_name}"
-        )
+        super().__init__(f"Circuit breaker is {state.value} for service: {service_name}")
 
 
 class CircuitBreaker:
@@ -245,9 +243,7 @@ class CircuitBreaker:
                 else 0.0
             ),
             "last_failure_time": (
-                self.stats.last_failure_time.isoformat()
-                if self.stats.last_failure_time
-                else None
+                self.stats.last_failure_time.isoformat() if self.stats.last_failure_time else None
             ),
             "last_state_change": self.stats.last_state_change.isoformat(),
         }
@@ -307,10 +303,7 @@ class CircuitBreakerRegistry:
         Returns:
             dict[str, Any]: إحصائيات مفصلة
         """
-        return {
-            name: breaker.get_stats()
-            for name, breaker in self._breakers.items()
-        }
+        return {name: breaker.get_stats() for name, breaker in self._breakers.items()}
 
     async def reset_all(self) -> None:
         """يعيد تعيين جميع القواطع."""

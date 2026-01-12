@@ -25,10 +25,10 @@ class WebApplicationFirewall:
         """ينشئ قائمة بالتوقيعات المعتمدة للفحص السريع."""
         return [
             {
-                'name': 'SQL_INJECTION',
-                'pattern': re.compile(r"(union\s+select|--|;)", re.IGNORECASE),
+                "name": "SQL_INJECTION",
+                "pattern": re.compile(r"(union\s+select|--|;)", re.IGNORECASE),
             },
-            {'name': 'XSS', 'pattern': re.compile(r"<script>", re.IGNORECASE)},
+            {"name": "XSS", "pattern": re.compile(r"<script>", re.IGNORECASE)},
         ]
 
     async def check_request(self, request: Request) -> None:
@@ -36,7 +36,7 @@ class WebApplicationFirewall:
         all_params = await self._extract_all_params(request)
         for param_value in all_params.values():
             for signature in self.threat_signatures:
-                if signature['pattern'].search(param_value):
+                if signature["pattern"].search(param_value):
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail=f"Potential {signature['name']} attack detected.",

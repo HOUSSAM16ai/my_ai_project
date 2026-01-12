@@ -8,7 +8,7 @@ class ToolRegistry:
             raise ValueError("Tool already registered")
         self.tools[tool.name] = tool
         for alias in tool.config.aliases:
-             self.aliases[alias] = tool.name
+            self.aliases[alias] = tool.name
 
     def get(self, name):
         if name in self.tools:

@@ -1,4 +1,5 @@
 """Routing strategies using Strategy Pattern."""
+
 import random
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -11,6 +12,7 @@ from app.core.protocols import StrategyProtocol as StrategyInterface
 @dataclass
 class ServiceEndpoint:
     """Service endpoint information."""
+
     id: str
     url: str
     weight: float = 1.0
@@ -20,15 +22,18 @@ class ServiceEndpoint:
     health_score: float = 1.0
     last_health_check: float = 0.0
 
+
 @dataclass
 class RoutingRequest:
     """Request to be routed."""
+
     request_id: str
     method: str
     path: str
     headers: dict[str, str]
     body: dict[str, str | int | bool] = None
     metadata: dict[str, Any] | None = None
+
 
 class RoutingStrategy(StrategyInterface[RoutingRequest, ServiceEndpoint], ABC):
     """Base routing strategy."""
@@ -38,46 +43,49 @@ class RoutingStrategy(StrategyInterface[RoutingRequest, ServiceEndpoint], ABC):
         self._current_index = 0
 
     @abstractmethod
-    def execute(self, request: RoutingRequest) ->ServiceEndpoint:
+    def execute(self, request: RoutingRequest) -> ServiceEndpoint:
         """Select endpoint for request."""
 
-    def is_applicable(self, context: dict[str, Any]) ->bool:
+    def is_applicable(self, context: dict[str, Any]) -> bool:
         """Check if strategy is applicable."""
         return len(self.endpoints) > 0
+
 
 class RoundRobinStrategy(RoutingStrategy):
     """Round-robin routing strategy."""
 
-    def execute(self, request: RoutingRequest) ->ServiceEndpoint:
+    def execute(self, request: RoutingRequest) -> ServiceEndpoint:
         """Select next endpoint in rotation."""
         if not self.endpoints:
-            raise ValueError('No endpoints available')
+            raise ValueError("No endpoints available")
         endpoint = self.endpoints[self._current_index]
         self._current_index = (self._current_index + 1) % len(self.endpoints)
         return endpoint
 
-    def get_name(self) ->str:
-        return 'round_robin'
+    def get_name(self) -> str:
+        return "round_robin"
+
 
 class LeastConnectionsStrategy(RoutingStrategy):
     """Least connections routing strategy."""
 
-    def execute(self, request: RoutingRequest) ->ServiceEndpoint:
+    def execute(self, request: RoutingRequest) -> ServiceEndpoint:
         """Select endpoint with fewest active connections."""
         if not self.endpoints:
-            raise ValueError('No endpoints available')
+            raise ValueError("No endpoints available")
         return min(self.endpoints, key=lambda e: e.active_connections)
 
-    def get_name(self) ->str:
-        return 'least_connections'
+    def get_name(self) -> str:
+        return "least_connections"
+
 
 class WeightedStrategy(RoutingStrategy):
     """Weighted random routing strategy."""
 
-    def execute(self, request: RoutingRequest) ->ServiceEndpoint:
+    def execute(self, request: RoutingRequest) -> ServiceEndpoint:
         """Select endpoint based on weights."""
         if not self.endpoints:
-            raise ValueError('No endpoints available')
+            raise ValueError("No endpoints available")
         total_weight = sum(e.weight for e in self.endpoints)
         rand_val = random.uniform(0, total_weight)
         cumulative = 0.0
@@ -87,41 +95,42 @@ class WeightedStrategy(RoutingStrategy):
                 return endpoint
         return self.endpoints[-1]
 
-    def get_name(self) ->str:
-        return 'weighted'
+    def get_name(self) -> str:
+        return "weighted"
+
 
 class LatencyBasedStrategy(RoutingStrategy):
     """Latency-based routing strategy."""
 
-    def execute(self, request: RoutingRequest) ->ServiceEndpoint:
+    def execute(self, request: RoutingRequest) -> ServiceEndpoint:
         """Select endpoint with lowest latency."""
         if not self.endpoints:
-            raise ValueError('No endpoints available')
+            raise ValueError("No endpoints available")
         return min(self.endpoints, key=lambda e: e.avg_latency_ms)
 
-    def get_name(self) ->str:
-        return 'latency_based'
+    def get_name(self) -> str:
+        return "latency_based"
+
 
 class HealthAwareStrategy(RoutingStrategy):
     """Health-aware routing strategy."""
 
-    def __init__(self, endpoints: list[ServiceEndpoint], health_threshold:
-        float=0.5):
+    def __init__(self, endpoints: list[ServiceEndpoint], health_threshold: float = 0.5):
         super().__init__(endpoints)
         self.health_threshold = health_threshold
 
-    def execute(self, request: RoutingRequest) ->ServiceEndpoint:
+    def execute(self, request: RoutingRequest) -> ServiceEndpoint:
         """Select healthy endpoint with best score."""
         if not self.endpoints:
-            raise ValueError('No endpoints available')
-        healthy_endpoints = [e for e in self.endpoints if e.health_score >=
-            self.health_threshold]
+            raise ValueError("No endpoints available")
+        healthy_endpoints = [e for e in self.endpoints if e.health_score >= self.health_threshold]
         if not healthy_endpoints:
             healthy_endpoints = self.endpoints
         return max(healthy_endpoints, key=lambda e: e.health_score)
 
-    def get_name(self) ->str:
-        return 'health_aware'
+    def get_name(self) -> str:
+        return "health_aware"
+
 
 class IntelligentStrategy(RoutingStrategy):
     """ML-based intelligent routing strategy."""
@@ -130,45 +139,47 @@ class IntelligentStrategy(RoutingStrategy):
         super().__init__(endpoints)
         self._performance_history: dict[str, list[float]] = defaultdict(list)
 
-    def execute(self, request: RoutingRequest) ->ServiceEndpoint:
+    def execute(self, request: RoutingRequest) -> ServiceEndpoint:
         """Select endpoint using ML-based prediction."""
         if not self.endpoints:
-            raise ValueError('No endpoints available')
+            raise ValueError("No endpoints available")
         scores = []
         for endpoint in self.endpoints:
             score = self._calculate_score(endpoint, request)
             scores.append((score, endpoint))
         return max(scores, key=lambda x: x[0])[1]
 
-    def _calculate_score(self, endpoint: ServiceEndpoint, request:
-        RoutingRequest) ->float:
+    def _calculate_score(self, endpoint: ServiceEndpoint, request: RoutingRequest) -> float:
         """Calculate endpoint score based on multiple factors."""
         latency_score = 1.0 / (1.0 + endpoint.avg_latency_ms / 100.0)
         health_score = endpoint.health_score
         load_score = 1.0 / (1.0 + endpoint.active_connections / 10.0)
         history = self._performance_history.get(endpoint.id, [])
         history_score = sum(history[-10:]) / len(history) if history else 0.5
-        return (0.3 * latency_score + 0.3 * health_score + 0.2 * load_score +
-            0.2 * history_score)
+        return 0.3 * latency_score + 0.3 * health_score + 0.2 * load_score + 0.2 * history_score
 
-    def get_name(self) ->str:
-        return 'intelligent'
+    def get_name(self) -> str:
+        return "intelligent"
+
 
 class StrategyFactory:
     """Factory for creating routing strategies."""
-    _strategies: ClassVar[dict[str, type[RoutingStrategy]]] = {'round_robin':
-        RoundRobinStrategy, 'least_connections': LeastConnectionsStrategy,
-        'weighted': WeightedStrategy, 'latency_based': LatencyBasedStrategy,
-        'health_aware': HealthAwareStrategy, 'intelligent': IntelligentStrategy
-        }
+
+    _strategies: ClassVar[dict[str, type[RoutingStrategy]]] = {
+        "round_robin": RoundRobinStrategy,
+        "least_connections": LeastConnectionsStrategy,
+        "weighted": WeightedStrategy,
+        "latency_based": LatencyBasedStrategy,
+        "health_aware": HealthAwareStrategy,
+        "intelligent": IntelligentStrategy,
+    }
 
     @classmethod
-    def create(cls, strategy_name: str, endpoints: list[ServiceEndpoint]
-        ) ->RoutingStrategy:
+    def create(cls, strategy_name: str, endpoints: list[ServiceEndpoint]) -> RoutingStrategy:
         """Create routing strategy by name."""
         strategy_class = cls._strategies.get(strategy_name)
         if not strategy_class:
-            raise ValueError(f'Unknown strategy: {strategy_name}')
+            raise ValueError(f"Unknown strategy: {strategy_name}")
         return strategy_class(endpoints)
 
     @classmethod
@@ -177,6 +188,6 @@ class StrategyFactory:
         cls._strategies[name] = strategy_class
 
     @classmethod
-    def list_strategies(cls) ->list[str]:
+    def list_strategies(cls) -> list[str]:
         """List available strategies."""
         return list(cls._strategies.keys())

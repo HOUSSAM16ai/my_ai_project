@@ -19,7 +19,9 @@ class StructuralSmellDetector:
         "domain": ["domain", "models", "entities"],
     }
 
-    def detect_smells(self, file_path: str, metrics: FileMetrics, imports: list[str]) -> dict[str, bool]:
+    def detect_smells(
+        self, file_path: str, metrics: FileMetrics, imports: list[str]
+    ) -> dict[str, bool]:
         """Detect structural smells"""
         smells = {
             "is_god_class": False,

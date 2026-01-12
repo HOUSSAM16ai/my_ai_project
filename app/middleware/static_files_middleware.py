@@ -106,8 +106,7 @@ def _should_enable_static_files(config: StaticFilesConfig) -> bool:
 
     if not os.path.exists(config.static_dir):
         logger.warning(
-            f"⚠️ Static files directory not found: {config.static_dir}. "
-            "Running in API-only mode."
+            f"⚠️ Static files directory not found: {config.static_dir}. Running in API-only mode."
         )
         return False
 
@@ -140,6 +139,7 @@ def _setup_root_route(app: FastAPI, config: StaticFilesConfig) -> None:
 
     إعداد مسار الجذر لخدمة index.html.
     """
+
     async def serve_root() -> FileResponse:
         """Serve index.html at root يخدم ملف index.html عند طلب الجذر"""
         return FileResponse(os.path.join(config.static_dir, "index.html"))
@@ -153,6 +153,7 @@ def _setup_spa_fallback(app: FastAPI, config: StaticFilesConfig) -> None:
 
     إعداد التوجيه الاحتياطي لـ SPA للتوجيه من جانب العميل.
     """
+
     async def spa_fallback(request: Request, full_path: str) -> FileResponse:
         """
         Handle missing routes for SPA routing.

@@ -22,9 +22,7 @@ class TestServiceRegistry:
 
     def test_registry_initialization(self) -> None:
         """يختبر تهيئة السجل."""
-        services = (
-            ServiceEndpoint(name="test-service", base_url="http://localhost:8001"),
-        )
+        services = (ServiceEndpoint(name="test-service", base_url="http://localhost:8001"),)
         registry = ServiceRegistry(services=services)
 
         assert len(registry.list_services()) == 1
@@ -95,6 +93,7 @@ class TestServiceRegistry:
 
         # إضافة حالات صحة يدوياً
         from datetime import datetime
+
         registry._health["service1"] = ServiceHealth(
             is_healthy=True,
             last_check=datetime.utcnow(),
@@ -115,12 +114,8 @@ class TestAPIGateway:
     def test_gateway_initialization(self) -> None:
         """يختبر تهيئة البوابة."""
         config = GatewayConfig(
-            services=(
-                ServiceEndpoint(name="test-service", base_url="http://localhost:8001"),
-            ),
-            routes=(
-                RouteRule(path_prefix="/api/test", service_name="test-service"),
-            ),
+            services=(ServiceEndpoint(name="test-service", base_url="http://localhost:8001"),),
+            routes=(RouteRule(path_prefix="/api/test", service_name="test-service"),),
         )
 
         gateway = APIGateway(config=config)
@@ -188,9 +183,7 @@ class TestGatewayConfig:
     def test_gateway_config_immutability(self) -> None:
         """يختبر ثبات التكوين."""
         config = GatewayConfig(
-            services=(
-                ServiceEndpoint(name="test", base_url="http://localhost:8001"),
-            ),
+            services=(ServiceEndpoint(name="test", base_url="http://localhost:8001"),),
         )
 
         # يجب أن يكون التكوين ثابتاً (frozen)

@@ -33,6 +33,7 @@ from app.services.agent_tools.tool_model import ToolResult, tool
 # Tool Definitions (Decorated wrappers)
 # ======================================================================================
 
+
 @tool(
     name="read_file",
     description="Read content of a text file (auto-truncated).",
@@ -48,7 +49,9 @@ from app.services.agent_tools.tool_model import ToolResult, tool
         "required": ["path"],
     },
 )
-def read_file(path: str, max_bytes: int = MAX_READ_BYTES, ignore_missing: bool = False) -> ToolResult:
+def read_file(
+    path: str, max_bytes: int = MAX_READ_BYTES, ignore_missing: bool = False
+) -> ToolResult:
     return read_file_logic(path, max_bytes, ignore_missing)
 
 
@@ -62,7 +65,7 @@ def read_file(path: str, max_bytes: int = MAX_READ_BYTES, ignore_missing: bool =
         "properties": {
             "path": {"type": "string"},
             "content": {"type": "string"},
-            "compress_json_if_large": {"type": "boolean", "default": False}
+            "compress_json_if_large": {"type": "boolean", "default": False},
         },
         "required": ["path", "content"],
     },
@@ -179,7 +182,9 @@ def ensure_file(
     allow_create: bool = True,
     enforce_ext: str | None = None,
 ) -> ToolResult:
-    return ensure_file_logic(path, max_bytes, initial_content, force_create, allow_create, enforce_ext)
+    return ensure_file_logic(
+        path, max_bytes, initial_content, force_create, allow_create, enforce_ext
+    )
 
 
 @tool(

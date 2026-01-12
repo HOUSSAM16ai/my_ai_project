@@ -98,9 +98,7 @@ def test_analytics_skips_health(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_performance_profiler_collects(monkeypatch: pytest.MonkeyPatch) -> None:
     profiler = PerformanceProfiler(_dummy_app, {"max_latencies": 5})
     fake_time = _FakeTime([1.0, 1.1, 2.0, 2.25])
-    monkeypatch.setattr(
-        "app.middleware.observability.performance_profiler.time", fake_time
-    )
+    monkeypatch.setattr("app.middleware.observability.performance_profiler.time", fake_time)
 
     ctx_fast = RequestContext(path="/fast")
     profiler.process_request(ctx_fast)

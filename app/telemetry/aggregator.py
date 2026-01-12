@@ -20,7 +20,7 @@ class TelemetryAggregator:
         tracing_manager: TracingManager,
         metrics_manager: MetricsManager,
         logging_manager: LoggingManager,
-        service_name: str
+        service_name: str,
     ):
         self.tracing = tracing_manager
         self.metrics = metrics_manager
@@ -47,18 +47,20 @@ class TelemetryAggregator:
         metrics = self._get_correlated_metrics(trace_id)
 
         return {
-            'trace_id': trace.trace_id,
-            'service_name': self.service_name,
-            'start_time': datetime.fromtimestamp(trace.start_time, UTC).isoformat(),
-            'end_time': datetime.fromtimestamp(trace.end_time, UTC).isoformat() if trace.end_time else None,
-            'total_duration_ms': trace.total_duration_ms,
-            'error_count': trace.error_count,
-            'span_count': len(trace.spans),
-            'critical_path_ms': trace.critical_path_ms,
-            'bottleneck_span_id': trace.bottleneck_span_id,
-            'spans': [self._span_to_dict(span) for span in trace.spans],
-            'correlated_logs': logs,
-            'correlated_metrics': metrics
+            "trace_id": trace.trace_id,
+            "service_name": self.service_name,
+            "start_time": datetime.fromtimestamp(trace.start_time, UTC).isoformat(),
+            "end_time": datetime.fromtimestamp(trace.end_time, UTC).isoformat()
+            if trace.end_time
+            else None,
+            "total_duration_ms": trace.total_duration_ms,
+            "error_count": trace.error_count,
+            "span_count": len(trace.spans),
+            "critical_path_ms": trace.critical_path_ms,
+            "bottleneck_span_id": trace.bottleneck_span_id,
+            "spans": [self._span_to_dict(span) for span in trace.spans],
+            "correlated_logs": logs,
+            "correlated_metrics": metrics,
         }
 
     def find_traces_by_criteria(
@@ -66,7 +68,7 @@ class TelemetryAggregator:
         min_duration_ms: float | None = None,
         has_errors: bool | None = None,
         operation_name: str | None = None,
-        limit: int = 100
+        limit: int = 100,
     ) -> list[dict[str, object]]:
         """
         البحث عن التتبعات بناءً على معايير محددة.
@@ -124,14 +126,16 @@ class TelemetryAggregator:
         with self.logging.lock:
             trace_logs = self.logging.trace_logs.get(trace_id, [])
             for log in trace_logs:
-                logs.append({
-                    'timestamp': datetime.fromtimestamp(log.timestamp, UTC).isoformat(),
-                    'level': log.level,
-                    'message': log.message,
-                    'span_id': log.span_id,
-                    'context': log.context,
-                    'exception': log.exception
-                })
+                logs.append(
+                    {
+                        "timestamp": datetime.fromtimestamp(log.timestamp, UTC).isoformat(),
+                        "level": log.level,
+                        "message": log.message,
+                        "span_id": log.span_id,
+                        "context": log.context,
+                        "exception": log.exception,
+                    }
+                )
         return logs
 
     def _get_correlated_metrics(self, trace_id: str) -> list[dict[str, object]]:
@@ -139,11 +143,13 @@ class TelemetryAggregator:
         with self.metrics.lock:
             trace_metrics = self.metrics.trace_metrics.get(trace_id, [])
             for metric in trace_metrics:
-                metrics.append({
-                    'value': metric.value,
-                    'timestamp': datetime.fromtimestamp(metric.timestamp, UTC).isoformat(),
-                    'labels': metric.labels
-                })
+                metrics.append(
+                    {
+                        "value": metric.value,
+                        "timestamp": datetime.fromtimestamp(metric.timestamp, UTC).isoformat(),
+                        "labels": metric.labels,
+                    }
+                )
         return metrics
 
     def _matches_criteria(
@@ -151,7 +157,7 @@ class TelemetryAggregator:
         trace: UnifiedTrace,
         min_duration: float | None,
         has_errors: bool | None,
-        op_name: str | None
+        op_name: str | None,
     ) -> bool:
         if min_duration and (not trace.total_duration_ms or trace.total_duration_ms < min_duration):
             return False
@@ -161,15 +167,17 @@ class TelemetryAggregator:
 
     def _summarize_trace(self, trace: UnifiedTrace) -> dict[str, object]:
         return {
-            'trace_id': trace.trace_id,
-            'operation': trace.root_span.operation_name,
-            'duration_ms': trace.total_duration_ms,
-            'error_count': trace.error_count,
-            'span_count': len(trace.spans),
-            'start_time': datetime.fromtimestamp(trace.start_time, UTC).isoformat()
+            "trace_id": trace.trace_id,
+            "operation": trace.root_span.operation_name,
+            "duration_ms": trace.total_duration_ms,
+            "error_count": trace.error_count,
+            "span_count": len(trace.spans),
+            "start_time": datetime.fromtimestamp(trace.start_time, UTC).isoformat(),
         }
 
-    def _extract_dependencies_from_trace(self, trace: UnifiedTrace, dependencies: dict[str, set[str]]) -> None:
+    def _extract_dependencies_from_trace(
+        self, trace: UnifiedTrace, dependencies: dict[str, set[str]]
+    ) -> None:
         # بناء خريطة للوصول السريع للأبناء
         spans_by_id = {s.span_id: s for s in trace.spans}
 
@@ -178,8 +186,8 @@ class TelemetryAggregator:
                 continue
 
             parent = spans_by_id[span.parent_span_id]
-            parent_svc = parent.tags.get('service.name', self.service_name)
-            child_svc = span.tags.get('service.name', self.service_name)
+            parent_svc = parent.tags.get("service.name", self.service_name)
+            child_svc = span.tags.get("service.name", self.service_name)
 
             if parent_svc != child_svc:
                 if parent_svc not in dependencies:
@@ -188,16 +196,18 @@ class TelemetryAggregator:
 
     def _span_to_dict(self, span: UnifiedSpan) -> dict[str, object]:
         return {
-            'span_id': span.span_id,
-            'parent_span_id': span.parent_span_id,
-            'operation_name': span.operation_name,
-            'service_name': span.service_name,
-            'start_time': datetime.fromtimestamp(span.start_time, UTC).isoformat(),
-            'end_time': datetime.fromtimestamp(span.end_time, UTC).isoformat() if span.end_time else None,
-            'duration_ms': span.duration_ms,
-            'status': span.status,
-            'error_message': span.error_message,
-            'tags': span.tags,
-            'events': span.events,
-            'metrics': span.metrics
+            "span_id": span.span_id,
+            "parent_span_id": span.parent_span_id,
+            "operation_name": span.operation_name,
+            "service_name": span.service_name,
+            "start_time": datetime.fromtimestamp(span.start_time, UTC).isoformat(),
+            "end_time": datetime.fromtimestamp(span.end_time, UTC).isoformat()
+            if span.end_time
+            else None,
+            "duration_ms": span.duration_ms,
+            "status": span.status,
+            "error_message": span.error_message,
+            "tags": span.tags,
+            "events": span.events,
+            "metrics": span.metrics,
         }

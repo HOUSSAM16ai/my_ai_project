@@ -56,7 +56,7 @@ class ObservabilityBoundaryService:
             return {
                 "error": "Observability Service Unavailable",
                 "total_anomalies": 0,
-                "active_healing_decisions": 0
+                "active_healing_decisions": 0,
             }
 
     async def get_performance_snapshot(self) -> dict[str, object]:

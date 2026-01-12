@@ -32,12 +32,14 @@ def validate_path(path: str, allow_missing: bool = False) -> str:
 
     return abs_path
 
+
 def validate_directory(path: str) -> str:
     """Ensures the path exists and is a directory."""
     abs_path = validate_path(path, allow_missing=False)
     if not os.path.isdir(abs_path):
         raise NotADirectoryError(f"Path is not a directory: {path}")
     return abs_path
+
 
 def validate_file(path: str) -> str:
     """Ensures the path exists and is a file."""

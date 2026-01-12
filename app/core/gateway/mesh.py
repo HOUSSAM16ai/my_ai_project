@@ -64,19 +64,18 @@ def get_omni_router(nodes_map: dict[str, "NeuralNode"] | None = None) -> OmniRou
 
     return OmniRouter(nodes_map)
 
+
 @runtime_checkable
 class AIClient(Protocol):
     def stream_chat(self, messages: list[JSONDict]) -> AsyncGenerator[JSONDict, None]: ...
 
     async def send_message(
-        self,
-        system_prompt: str,
-        user_message: str,
-        temperature: float = 0.7
+        self, system_prompt: str, user_message: str, temperature: float = 0.7
     ) -> str: ...
 
     async def __aiter__(self):
         return self
+
 
 class NeuralRoutingMesh:
     """
@@ -125,9 +124,7 @@ class NeuralRoutingMesh:
         # 3. Safety Net (The Last Resort)
         nodes[SAFETY_NET_MODEL_ID] = NeuralNode(
             model_id=SAFETY_NET_MODEL_ID,
-            circuit_breaker=CircuitBreaker(
-                "Safety-Net", 999999, 1.0
-            ),  # Virtually unbreakable
+            circuit_breaker=CircuitBreaker("Safety-Net", 999999, 1.0),  # Virtually unbreakable
         )
         return nodes
 
@@ -161,7 +158,10 @@ class NeuralRoutingMesh:
             if node.circuit_breaker.allow_request() and node.rate_limit_cooldown_until <= now:
                 final_nodes.append(node)
 
-        if SAFETY_NET_MODEL_ID in self.nodes_map and self.nodes_map[SAFETY_NET_MODEL_ID] not in final_nodes:
+        if (
+            SAFETY_NET_MODEL_ID in self.nodes_map
+            and self.nodes_map[SAFETY_NET_MODEL_ID] not in final_nodes
+        ):
             final_nodes.append(self.nodes_map[SAFETY_NET_MODEL_ID])
 
         return final_nodes
@@ -194,7 +194,7 @@ class NeuralRoutingMesh:
             cached_memory = get_cognitive_engine().recall(prompt, context_hash)
             if cached_memory:
                 async for chunk in self._yield_cached_response(cached_memory, prompt):
-                    yield chunk # type: ignore
+                    yield chunk  # type: ignore
                 return
 
         # 2. Get Prioritized Nodes
@@ -218,7 +218,9 @@ class NeuralRoutingMesh:
                 # CRITICAL: Stream failed mid-transmission.
                 # Do NOT failover to another node, as this would result in duplicate/corrupted output.
                 # Re-raise immediately.
-                logger.critical(f"Stream interrupted for {node.model_id}. Aborting without failover.")
+                logger.critical(
+                    f"Stream interrupted for {node.model_id}. Aborting without failover."
+                )
                 raise
             except (AIConnectionError, ValueError, AIRateLimitError, Exception) as e:
                 # Error handling is now inside _attempt_node_stream mostly, but it re-raises
@@ -236,18 +238,16 @@ class NeuralRoutingMesh:
         context_str = json.dumps(list(messages[:-1]), sort_keys=True)
         return hashlib.sha256(context_str.encode()).hexdigest()
 
-    async def _yield_cached_response(self, cached_memory: list[JSONDict], prompt: str) -> AsyncGenerator[JSONDict, None]:
+    async def _yield_cached_response(
+        self, cached_memory: list[JSONDict], prompt: str
+    ) -> AsyncGenerator[JSONDict, None]:
         """Yield cached response chunks"""
         logger.info(f"⚡️ Cognitive Recall: Serving cached response for '{prompt[:20]}...'")
         for chunk in cached_memory:
             yield chunk
 
     async def _attempt_node_stream(
-        self,
-        node: NeuralNode,
-        messages: list[JSONDict],
-        prompt: str,
-        context_hash: str
+        self, node: NeuralNode, messages: list[JSONDict], prompt: str, context_hash: str
     ) -> AsyncGenerator[JSONDict, None]:
         """
         Attempt to stream from a specific node.
@@ -268,7 +268,7 @@ class NeuralRoutingMesh:
             self._record_metrics(node, prompt, duration, True)
 
             if node.model_id != SAFETY_NET_MODEL_ID:
-                get_cognitive_engine().memorize(prompt, context_hash, full_response_chunks) # type: ignore
+                get_cognitive_engine().memorize(prompt, context_hash, full_response_chunks)  # type: ignore
 
         except AIRateLimitError as e:
             duration = (time.time() - start_time) * 1000
@@ -281,7 +281,9 @@ class NeuralRoutingMesh:
 
             # CRITICAL: Check if we have already yielded data
             if chunks_yielded > 0:
-                logger.critical(f"Stream severed mid-transmission from {node.model_id}. Cannot failover safely.")
+                logger.critical(
+                    f"Stream severed mid-transmission from {node.model_id}. Cannot failover safely."
+                )
                 node.circuit_breaker.record_failure()
                 self._record_metrics(node, prompt, duration, False)
                 # Raise specific error to stop the mesh from retrying
@@ -314,13 +316,13 @@ class NeuralRoutingMesh:
                 return
 
             except AIRateLimitError:
-                raise # Propagate rate limit immediately (handled in outer loop)
+                raise  # Propagate rate limit immediately (handled in outer loop)
 
             except (httpx.ConnectError, httpx.ReadTimeout, httpx.HTTPStatusError, ValueError) as e:
                 # _execute_stream_request raises AIConnectionError if stream started then failed
                 # Here we catch initial connection errors
                 if attempt > MAX_RETRIES:
-                     raise AIConnectionError("Max retries exceeded") from e
+                    raise AIConnectionError("Max retries exceeded") from e
 
                 await asyncio.sleep(0.5 * attempt)
 
@@ -329,14 +331,11 @@ class NeuralRoutingMesh:
         logger.warning("⚠️ Engaging Safety Net Protocol.")
         safety_msg = "⚠️ System Alert: Unable to reach external intelligence providers."
         for word in safety_msg.split(" "):
-            yield {"choices": [{"delta": {"content": word + " "}}]} # type: ignore
+            yield {"choices": [{"delta": {"content": word + " "}}]}  # type: ignore
             await asyncio.sleep(0.05)
 
     async def _execute_stream_request(
-        self,
-        client: httpx.AsyncClient,
-        node: NeuralNode,
-        messages: list[JSONDict]
+        self, client: httpx.AsyncClient, node: NeuralNode, messages: list[JSONDict]
     ) -> AsyncGenerator[JSONDict, None]:
         """Execute the HTTP request and yield chunks"""
         stream_started = False
@@ -348,7 +347,6 @@ class NeuralRoutingMesh:
                 json={"model": node.model_id, "messages": messages, "stream": True},
                 timeout=httpx.Timeout(BASE_TIMEOUT, connect=10.0),
             ) as response:
-
                 if response.status_code == 429:
                     self._handle_rate_limit(node)
                     raise AIRateLimitError(f"Rate limit 429 on {node.model_id}")
@@ -390,24 +388,21 @@ class NeuralRoutingMesh:
         node.rate_limit_cooldown_until = time.time() + cooldown
 
     async def send_message(
-        self,
-        system_prompt: str,
-        user_message: str,
-        temperature: float = 0.7
+        self, system_prompt: str, user_message: str, temperature: float = 0.7
     ) -> str:
         """
         دالة مساعدة لإرسال رسالة وتلقي رد كامل (غير متدفق).
         """
         messages: list[JSONDict] = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message}
+            {"role": "user", "content": user_message},
         ]
 
         full_response = []
         try:
             async for chunk in self.stream_chat(messages):
                 content = str(
-                    chunk.get("choices", [{}])[0].get("delta", {}).get("content", "") # type: ignore
+                    chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")  # type: ignore
                 )
                 if content:
                     full_response.append(content)
@@ -416,6 +411,7 @@ class NeuralRoutingMesh:
             raise
 
         return "".join(full_response)
+
 
 def get_ai_client() -> AIClient:
     """

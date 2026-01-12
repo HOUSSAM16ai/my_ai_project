@@ -23,11 +23,7 @@ class MetricsArtist:
         self.style = style
         self.palette = VisualTheme.get_palette(style)
 
-    def create_radial_chart(
-        self,
-        metrics: dict[str, float],
-        title: str = "Code Metrics"
-    ) -> str:
+    def create_radial_chart(self, metrics: dict[str, float], title: str = "Code Metrics") -> str:
         """
         Create an artistic radial chart.
 
@@ -51,14 +47,12 @@ class MetricsArtist:
         svg += self._create_circular_grid(center_x, center_y, max_radius)
 
         if not metrics:
-            return svg + '</svg>'
+            return svg + "</svg>"
 
-        points, metrics_svg = self._create_metric_points(
-            metrics, center_x, center_y, max_radius
-        )
+        points, metrics_svg = self._create_metric_points(metrics, center_x, center_y, max_radius)
         svg += metrics_svg
         svg += self._create_connecting_polygon(points)
-        svg += '</svg>'
+        svg += "</svg>"
 
         return svg
 
@@ -68,16 +62,14 @@ class MetricsArtist:
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
 
-            <text x="{width//2}" y="30"
+            <text x="{width // 2}" y="30"
                   text-anchor="middle"
                   fill="{self.palette.text}"
                   font-size="20"
                   font-weight="bold">{title}</text>
         '''
 
-    def _create_circular_grid(
-        self, center_x: int, center_y: int, max_radius: int
-    ) -> str:
+    def _create_circular_grid(self, center_x: int, center_y: int, max_radius: int) -> str:
         """Create circular grid background."""
         grid_svg = ""
         for i in range(1, 5):
@@ -93,11 +85,7 @@ class MetricsArtist:
         return grid_svg
 
     def _create_metric_points(
-        self,
-        metrics: dict[str, float],
-        center_x: int,
-        center_y: int,
-        max_radius: int
+        self, metrics: dict[str, float], center_x: int, center_y: int, max_radius: int
     ) -> tuple[list[tuple[float, float]], str]:
         """Create metric points and their SVG elements."""
         num_metrics = len(metrics)
@@ -105,9 +93,7 @@ class MetricsArtist:
         max_value = max(metrics.values()) if metrics else 1
 
         gradient = VisualTheme.create_gradient(
-            self.palette.primary,
-            self.palette.accent,
-            steps=num_metrics
+            self.palette.primary, self.palette.accent, steps=num_metrics
         )
 
         points = []
@@ -115,8 +101,7 @@ class MetricsArtist:
 
         for i, (key, value) in enumerate(metrics.items()):
             point, point_svg = self._create_single_metric_point(
-                i, key, value, angle_step, max_value, max_radius,
-                center_x, center_y, gradient[i]
+                i, key, value, angle_step, max_value, max_radius, center_x, center_y, gradient[i]
             )
             points.append(point)
             svg += point_svg
@@ -133,7 +118,7 @@ class MetricsArtist:
         max_radius: int,
         center_x: int,
         center_y: int,
-        color: str
+        color: str,
     ) -> tuple[tuple[float, float], str]:
         """Create a single metric point with SVG elements."""
         angle = index * angle_step - 90  # Start from top
@@ -178,11 +163,7 @@ class MetricsArtist:
                      stroke-width="2"/>
         '''
 
-    def create_bar_art(
-        self,
-        data: dict[str, float],
-        title: str = "Artistic Bar Chart"
-    ) -> str:
+    def create_bar_art(self, data: dict[str, float], title: str = "Artistic Bar Chart") -> str:
         """
         Artistic bar chart.
 
@@ -203,12 +184,12 @@ class MetricsArtist:
         svg = self._create_bar_chart_header(width, height, title)
 
         if not data:
-            return svg + '</svg>'
+            return svg + "</svg>"
 
         bar_config = self._calculate_bar_dimensions(data, chart_width, chart_height)
         bars_svg = self._draw_bars(data, bar_config, margin, height, chart_height)
 
-        return svg + bars_svg + '</svg>'
+        return svg + bars_svg + "</svg>"
 
     def _create_bar_chart_header(self, width: int, height: int, title: str) -> str:
         """Create bar chart header."""
@@ -216,7 +197,7 @@ class MetricsArtist:
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
 
-            <text x="{width//2}" y="30"
+            <text x="{width // 2}" y="30"
                   text-anchor="middle"
                   fill="{self.palette.text}"
                   font-size="20"
@@ -224,10 +205,7 @@ class MetricsArtist:
         '''
 
     def _calculate_bar_dimensions(
-        self,
-        data: dict[str, float],
-        chart_width: int,
-        chart_height: int
+        self, data: dict[str, float], chart_width: int, chart_height: int
     ) -> dict[str, Any]:
         """Calculate bar dimensions and spacing."""
         num_bars = len(data)
@@ -236,9 +214,7 @@ class MetricsArtist:
         max_value = max(data.values()) if data else 1
 
         gradient = VisualTheme.create_gradient(
-            self.palette.primary,
-            self.palette.secondary,
-            steps=num_bars
+            self.palette.primary, self.palette.secondary, steps=num_bars
         )
 
         return {
@@ -255,7 +231,7 @@ class MetricsArtist:
         config: dict[str, Any],
         margin: int,
         height: int,
-        chart_height: int
+        chart_height: int,
     ) -> str:
         """Draw all bars with labels."""
         svg = ""
@@ -288,7 +264,7 @@ class MetricsArtist:
         value: float,
         key: str,
         height: int,
-        margin: int
+        margin: int,
     ) -> str:
         """Draw a single bar with gradient and labels."""
         return f'''
@@ -306,18 +282,18 @@ class MetricsArtist:
             </defs>
 
             <!-- Value Label -->
-            <text x="{x + bar_width/2}" y="{y - 5}"
+            <text x="{x + bar_width / 2}" y="{y - 5}"
                   text-anchor="middle"
                   fill="{self.palette.text}"
                   font-size="12"
                   font-weight="bold">{value:.1f}</text>
 
             <!-- Key Label -->
-            <text x="{x + bar_width/2}" y="{height - margin + 20}"
+            <text x="{x + bar_width / 2}" y="{height - margin + 20}"
                   text-anchor="middle"
                   fill="{self.palette.text}"
                   font-size="10"
-                  transform="rotate(-45 {x + bar_width/2} {height - margin + 20})">
+                  transform="rotate(-45 {x + bar_width / 2} {height - margin + 20})">
                 {key}
             </text>
         '''

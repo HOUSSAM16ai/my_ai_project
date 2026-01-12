@@ -44,10 +44,7 @@ class InMemoryModelRepository:
     def list_by_name(self, model_name: str) -> list[ModelVersion]:
         """List all versions of a model"""
         with self._lock:
-            return [
-                m for m in self._models.values()
-                if m.model_name == model_name
-            ]
+            return [m for m in self._models.values() if m.model_name == model_name]
 
     def delete(self, version_id: str) -> bool:
         """Remove a model"""
@@ -69,6 +66,7 @@ class InMemoryModelRepository:
                 return False
             self._models[model.version_id] = model
             return True
+
 
 class InMemoryMetricsRepository:
     """

@@ -27,11 +27,7 @@ class MemoryAgentSettings(BaseServiceSettings):
         description="رابط قاعدة البيانات الخاصة بالوكيل",
     )
 
-    model_config = SettingsConfigDict(
-        env_prefix="MEMORY_",
-        env_file=".env",
-        extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_prefix="MEMORY_", env_file=".env", extra="ignore")
 
 
 @functools.lru_cache(maxsize=1)

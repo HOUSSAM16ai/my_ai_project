@@ -35,7 +35,11 @@ class ComponentAnalyzer:
             ),
             ("app/core/ai_gateway.py", "AI Gateway", "Neural routing mesh for AI"),
             ("app/core/prompts.py", "System Prompts", "OVERMIND identity and context"),
-            ("app/services/overmind/orchestrator.py", "Overmind Orchestrator", "Mission orchestration"),
+            (
+                "app/services/overmind/orchestrator.py",
+                "Overmind Orchestrator",
+                "Mission orchestration",
+            ),
             ("app/services/agent_tools/__init__.py", "Agent Tools", "File ops, search, reasoning"),
             ("app/api/routers/admin.py", "Admin API", "Chat and admin endpoints"),
         ]

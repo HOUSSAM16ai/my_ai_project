@@ -8,6 +8,7 @@ Principles:
 - Facade Pattern: Provides a unified interface to a set of interfaces in a subsystem.
 - Backward Compatibility: Existing imports like `from app.core.domain.models import User` continue to work.
 """
+
 from __future__ import annotations
 
 from contextlib import suppress

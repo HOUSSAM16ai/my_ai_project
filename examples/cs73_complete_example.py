@@ -23,9 +23,9 @@ from app.services.overmind.art.styles import ArtStyle, VisualTheme
 
 def print_section(title: str):
     """Print a formatted section header"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print(f"🎨 {title}")
-    print("="*70)
+    print("=" * 70)
 
 
 def example_1_color_theory():
@@ -35,7 +35,9 @@ def example_1_color_theory():
     print("\n📚 Available Art Styles:")
     for style in ArtStyle:
         palette = VisualTheme.get_palette(style)
-        print(f"  • {style.value:12s} - Primary: {palette.primary}, Background: {palette.background}")
+        print(
+            f"  • {style.value:12s} - Primary: {palette.primary}, Background: {palette.background}"
+        )
 
     print("\n🌈 Creating Color Gradients:")
     gradient = VisualTheme.create_gradient("#FF0000", "#0000FF", steps=5)
@@ -58,7 +60,7 @@ def example_2_code_complexity():
         "functions": 127,
         "classes": 34,
         "lines": 4582,
-        "maintainability_index": 72.5
+        "maintainability_index": 72.5,
     }
 
     print("\n📊 Analysis Data:")
@@ -92,8 +94,8 @@ def example_3_mission_timeline():
             {"name": "Implementation", "type": "info", "timestamp": "2026-01-02T13:00:00"},
             {"name": "Testing", "type": "warning", "timestamp": "2026-01-02T15:00:00"},
             {"name": "Documentation", "type": "info", "timestamp": "2026-01-02T16:00:00"},
-            {"name": "Complete", "type": "success", "timestamp": "2026-01-02T17:00:00"}
-        ]
+            {"name": "Complete", "type": "success", "timestamp": "2026-01-02T17:00:00"},
+        ],
     }
 
     print(f"\n📋 Mission: {mission_data['name']}")
@@ -118,7 +120,7 @@ def example_4_metrics_art():
         "security": 8.5,
         "documentation": 9.1,
         "test_coverage": 85.3,
-        "type_safety": 100.0
+        "type_safety": 100.0,
     }
 
     print("\n📊 Metrics:")
@@ -128,10 +130,7 @@ def example_4_metrics_art():
     integration = OvermindArtIntegration(ArtStyle.DARK)
 
     print("\n🎨 Generating Multiple Visualization Types...")
-    art = integration.visualize_metrics(
-        metrics,
-        visualization_types=["radial", "bar", "sculpture"]
-    )
+    art = integration.visualize_metrics(metrics, visualization_types=["radial", "bar", "sculpture"])
 
     print(f"  ✓ Radial chart: {len(art['radial_chart'])} chars")
     print(f"  ✓ Bar chart: {len(art['bar_chart'])} chars")
@@ -151,7 +150,7 @@ def example_5_dependency_network():
         "middleware",
         "admin",
         "overmind",
-        "art_system"
+        "art_system",
     ]
 
     dependencies = [
@@ -165,7 +164,7 @@ def example_5_dependency_network():
         ("admin", "api"),
         ("overmind", "services"),
         ("overmind", "database"),
-        ("art_system", "overmind")
+        ("art_system", "overmind"),
     ]
 
     print(f"\n📦 Modules: {len(modules)}")
@@ -191,7 +190,7 @@ def example_6_generative_art():
     print("\n🌳 Fractal Tree Generation:")
     for depth in [3, 4, 5, 6]:
         fractal = artist.generate_fractal_tree(complexity=depth, seed=42)
-        branches = 2 ** depth
+        branches = 2**depth
         print(f"  Depth {depth}: ~{branches} branches, {len(fractal)} chars")
 
     print("\n🌀 Evolution Spiral:")
@@ -211,7 +210,7 @@ def example_7_full_report():
             "max_complexity": 16,
             "functions": 156,
             "classes": 42,
-            "lines": 5234
+            "lines": 5234,
         },
         "mission_data": {
             "id": 999,
@@ -219,23 +218,14 @@ def example_7_full_report():
                 {"name": "Start", "type": "start"},
                 {"name": "Analysis", "type": "info"},
                 {"name": "Implementation", "type": "info"},
-                {"name": "Success", "type": "success"}
-            ]
+                {"name": "Success", "type": "success"},
+            ],
         },
-        "metrics": {
-            "quality": 9.1,
-            "performance": 8.8,
-            "security": 9.0,
-            "maintainability": 8.5
-        },
+        "metrics": {"quality": 9.1, "performance": 8.8, "security": 9.0, "maintainability": 8.5},
         "dependencies": {
             "modules": ["core", "api", "services", "art"],
-            "edges": [
-                ("api", "core"),
-                ("services", "core"),
-                ("art", "services")
-            ]
-        }
+            "edges": [("api", "core"), ("services", "core"), ("art", "services")],
+        },
     }
 
     print("\n📦 Creating comprehensive art report...")
@@ -259,10 +249,10 @@ def example_7_full_report():
 
 def main():
     """Run all examples"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("🎨 CS73: Code, Data, and Art - Complete Examples")
     print("   Harvard CS73 Implementation on Overmind")
-    print("="*70)
+    print("=" * 70)
 
     try:
         example_1_color_theory()
@@ -273,17 +263,18 @@ def main():
         example_6_generative_art()
         example_7_full_report()
 
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("✅ All examples completed successfully!")
         print("\n💡 Next Steps:")
         print("  1. Check docs/CS73_IMPLEMENTATION_GUIDE.md for full API reference")
         print("  2. Run: python3 examples/cs73_demo.py for quick demo")
         print("  3. Integrate with your Overmind analysis pipelines")
-        print("="*70 + "\n")
+        print("=" * 70 + "\n")
 
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
 
 

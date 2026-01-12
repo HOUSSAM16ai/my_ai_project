@@ -67,9 +67,7 @@ class PipelineStatistics:
         average_execution_time = (
             self.total_execution_time / total_requests if total_requests else 0.0
         )
-        success_rate = (
-            self.successful_requests / total_requests if total_requests else 0.0
-        )
+        success_rate = self.successful_requests / total_requests if total_requests else 0.0
 
         return {
             "total_requests": total_requests,
@@ -101,9 +99,7 @@ class SmartPipeline:
 
         self.middlewares.append(middleware)
         self.middlewares.sort(key=lambda middleware_instance: middleware_instance.order)
-        self._execution_stats.middleware_stats.setdefault(
-            middleware.name, MiddlewareStatistics()
-        )
+        self._execution_stats.middleware_stats.setdefault(middleware.name, MiddlewareStatistics())
 
     def remove_middleware(self, name: str) -> bool:
         """يزيل الوسيط المحدد وينظف إحصاءاته إن وُجدت."""
@@ -126,9 +122,7 @@ class SmartPipeline:
         start = time.perf_counter()
         try:
             result = process_func(ctx)
-            self._register_middleware_result(
-                middleware, ctx, result, time.perf_counter() - start
-            )
+            self._register_middleware_result(middleware, ctx, result, time.perf_counter() - start)
             return result if not result.should_continue else None
         except Exception as exc:  # pragma: no cover - مسار حراسة
             failure = MiddlewareResult.internal_error(
@@ -202,17 +196,11 @@ class SmartPipeline:
         start = time.perf_counter()
         try:
             result = await process_func(ctx)
-            self._register_middleware_result(
-                mw, ctx, result, time.perf_counter() - start
-            )
+            self._register_middleware_result(mw, ctx, result, time.perf_counter() - start)
             return result if not result.should_continue else None
         except Exception as exc:  # pragma: no cover - مسار حراسة
-            failure = MiddlewareResult.internal_error(
-                f"Middleware {mw.name} failed: {exc!s}"
-            )
-            self._register_middleware_result(
-                mw, ctx, failure, time.perf_counter() - start, exc
-            )
+            failure = MiddlewareResult.internal_error(f"Middleware {mw.name} failed: {exc!s}")
+            self._register_middleware_result(mw, ctx, failure, time.perf_counter() - start, exc)
             return failure
 
     def _register_middleware_result(
@@ -248,8 +236,7 @@ class SmartPipeline:
 
         self._execution_stats = PipelineStatistics(
             middleware_stats={
-                middleware.name: MiddlewareStatistics()
-                for middleware in self.middlewares
+                middleware.name: MiddlewareStatistics() for middleware in self.middlewares
             }
         )
 

@@ -83,15 +83,9 @@ async def _calculate_average_duration(
     """
     duration_query = select(
         func.avg(
-            func.extract('epoch', Mission.updated_at) -
-            func.extract('epoch', Mission.created_at)
+            func.extract("epoch", Mission.updated_at) - func.extract("epoch", Mission.created_at)
         ).label("avg_duration_seconds")
-    ).where(
-        and_(
-            Mission.initiator_id == user_id,
-            Mission.status == "completed"
-        )
-    )
+    ).where(and_(Mission.initiator_id == user_id, Mission.status == "completed"))
 
     duration_result = await session.execute(duration_query)
     avg_duration_seconds = duration_result.scalar()
@@ -113,19 +107,14 @@ async def _calculate_weekly_missions(
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
 
     recent_missions_query = select(func.count(Mission.id)).where(
-        and_(
-            Mission.initiator_id == user_id,
-            Mission.created_at >= seven_days_ago
-        )
+        and_(Mission.initiator_id == user_id, Mission.created_at >= seven_days_ago)
     )
 
     recent_result = await session.execute(recent_missions_query)
     performance["missions_per_week"] = recent_result.scalar() or 0
 
 
-def _calculate_performance_scores(
-    performance: dict[str, float | int | str | None]
-) -> None:
+def _calculate_performance_scores(performance: dict[str, float | int | str | None]) -> None:
     """
     حساب درجات الإنتاجية والجودة.
     Calculate productivity and quality scores.

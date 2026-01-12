@@ -48,9 +48,7 @@ class SimpleBehavioralAnalyzer:
 
         return threats
 
-    def _is_unusual_endpoint(
-        self, event: SecurityEvent, profile: UserBehaviorProfile
-    ) -> bool:
+    def _is_unusual_endpoint(self, event: SecurityEvent, profile: UserBehaviorProfile) -> bool:
         """
         تحقق إذا كان نقطة النهاية غير معتادة | Check if endpoint is unusual
 
@@ -61,10 +59,7 @@ class SimpleBehavioralAnalyzer:
         Returns:
             True إذا كان غير معتاد | True if unusual
         """
-        return (
-            profile.typical_endpoints and
-            event.endpoint not in profile.typical_endpoints
-        )
+        return profile.typical_endpoints and event.endpoint not in profile.typical_endpoints
 
     def _create_unusual_endpoint_threat(
         self, event: SecurityEvent, profile: UserBehaviorProfile
@@ -80,7 +75,7 @@ class SimpleBehavioralAnalyzer:
         Returns:
             كشف التهديد | Threat detection
         """
-        typical_endpoints_sample = ', '.join(profile.typical_endpoints[:3])
+        typical_endpoints_sample = ", ".join(profile.typical_endpoints[:3])
 
         return ThreatDetection(
             detection_id=str(uuid.uuid4()),
@@ -111,5 +106,6 @@ class SimpleBehavioralAnalyzer:
 
         # Update timestamp
         profile.last_updated = datetime.now()
+
 
 __all__ = ["SimpleBehavioralAnalyzer"]

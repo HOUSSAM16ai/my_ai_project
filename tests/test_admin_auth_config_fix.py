@@ -1,4 +1,3 @@
-
 from unittest.mock import MagicMock, patch
 
 import jwt
@@ -28,10 +27,13 @@ async def test_admin_auth_uses_centralized_config():
 
     # 4. Patch dependencies
     with (
-        patch("app.services.boundaries.admin_chat_boundary_service.get_settings", return_value=mock_settings),
+        patch(
+            "app.services.boundaries.admin_chat_boundary_service.get_settings",
+            return_value=mock_settings,
+        ),
         # We need to mock AdminChatPersistence because __init__ creates it
         patch("app.services.boundaries.admin_chat_boundary_service.AdminChatPersistence"),
-        patch("app.services.boundaries.admin_chat_boundary_service.AdminChatStreamer")
+        patch("app.services.boundaries.admin_chat_boundary_service.AdminChatStreamer"),
     ):
         from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 
@@ -41,8 +43,8 @@ async def test_admin_auth_uses_centralized_config():
 
         # 5. Test Valid Token (Should Pass)
         try:
-             result = service.validate_auth_header(f"Bearer {valid_token}")
-             assert result == 123
+            result = service.validate_auth_header(f"Bearer {valid_token}")
+            assert result == 123
         except Exception as e:
             pytest.fail(f"Service rejected token signed with AppSettings key: {e}")
 

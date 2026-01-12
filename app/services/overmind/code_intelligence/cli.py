@@ -150,5 +150,6 @@ def _print_summary(analysis, output_dir: Path) -> None:
     print(f"  - High hotspots: {len(analysis.high_hotspots)}")
     print(f"\n📁 Reports saved to: {output_dir}")
 
+
 if __name__ == "__main__":
     main()

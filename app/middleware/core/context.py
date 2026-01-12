@@ -17,6 +17,7 @@ from fastapi import Request
 
 Primitive = str | int | float | bool | None
 
+
 @dataclass
 class RequestContext:
     """حاوية بيانات موحّدة لطلبات FastAPI تسهّل مشاركة المعلومات بين الوسطاء."""

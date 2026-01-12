@@ -32,6 +32,7 @@ def _touch_layer(layer: str, op: str):
             d[op] += 1
         d["last_ts"] = _now()
 
+
 def _load_deep_struct_map_logic(force: bool = False) -> bool:
     """
     Load deep structure map from file with caching.
@@ -115,10 +116,7 @@ def _is_same_content(new_hash: str, force: bool) -> bool:
     if force:
         return False
 
-    return (
-        new_hash == g._DEEP_STRUCT_HASH
-        and g._DEEP_STRUCT_MAP is not None
-    )
+    return new_hash == g._DEEP_STRUCT_HASH and g._DEEP_STRUCT_MAP is not None
 
 
 def _normalize_file_paths(files: dict) -> dict:
@@ -145,6 +143,7 @@ def _update_global_map_state(data: dict, new_hash: str, file_count: int) -> None
     g._DEEP_STRUCT_LOADED_AT = _now()
     _dbg(f"[deep_struct_map] loaded entries={file_count} hash={new_hash[:10]}")
 
+
 def _maybe_reload_struct_map():
     if not DEEP_MAP_PATH:
         return
@@ -154,6 +153,7 @@ def _maybe_reload_struct_map():
         return
     if (_now() - g._DEEP_STRUCT_LOADED_AT) >= DEEP_MAP_TTL:
         _load_deep_struct_map_logic(force=False)
+
 
 def _annotate_struct_meta(abs_path: str, meta: dict[str, Any]):
     _maybe_reload_struct_map()
@@ -167,6 +167,7 @@ def _annotate_struct_meta(abs_path: str, meta: dict[str, Any]):
     dup_group = info.get("dup_group")
     meta.update({"struct_layer": layer, "struct_hotspot": hotspot, "struct_dup_group": dup_group})
 
+
 def _maybe_hash_and_size(abs_path: str, result_data: dict[str, Any]):
     if HASH_AFTER_WRITE and os.path.isfile(abs_path):
         try:
@@ -174,6 +175,7 @@ def _maybe_hash_and_size(abs_path: str, result_data: dict[str, Any]):
             result_data["size_after"] = os.path.getsize(abs_path)
         except Exception:
             pass
+
 
 def _apply_struct_limit(meta: dict[str, Any]):
     if not DEEP_LIMIT_KEYS or not meta:

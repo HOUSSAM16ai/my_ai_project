@@ -56,7 +56,9 @@ class IndexManager:
             unique_sql = "UNIQUE " if unique else ""
             columns_sql = ", ".join([f'"{col}"' for col in columns])
 
-            create_sql = f'CREATE {unique_sql}INDEX "{index_name}" ON "{table_name}" ({columns_sql})'
+            create_sql = (
+                f'CREATE {unique_sql}INDEX "{index_name}" ON "{table_name}" ({columns_sql})'
+            )
 
             await self._session.execute(text(create_sql))
             await self._session.commit()

@@ -11,6 +11,7 @@ from app.services.chat.tools import ToolRegistry
 
 logger = get_logger("orchestrator-agent")
 
+
 class OrchestratorAgent:
     """
     الوكيل المنسق الرئيسي للوكلاء والأدوات.
@@ -236,7 +237,12 @@ class OrchestratorAgent:
         if count == 0:
             return "لا يوجد مستخدمون مسجلون حالياً ضمن المنصة."
         list_gov = await self.data_agent.process(
-            {"entity": "user", "operation": "list", "access_method": "direct_db", "purpose": "admin_analytics"}
+            {
+                "entity": "user",
+                "operation": "list",
+                "access_method": "direct_db",
+                "purpose": "admin_analytics",
+            }
         )
         if not list_gov.success:
             return (
@@ -259,7 +265,12 @@ class OrchestratorAgent:
 
     async def _handle_user_list(self, question: str, lowered: str) -> str:
         gov_response = await self.data_agent.process(
-            {"entity": "user", "operation": "list", "access_method": "direct_db", "purpose": "admin_analytics"}
+            {
+                "entity": "user",
+                "operation": "list",
+                "access_method": "direct_db",
+                "purpose": "admin_analytics",
+            }
         )
         if not gov_response.success:
             return f"خطأ حوكمة البيانات: {gov_response.message}"
@@ -278,7 +289,12 @@ class OrchestratorAgent:
             return "يرجى تزويدي بمعرّف المستخدم (ID) لعرض ملفه الكامل."
 
         gov_response = await self.data_agent.process(
-            {"entity": "user", "operation": "profile", "access_method": "direct_db", "purpose": "admin_analytics"}
+            {
+                "entity": "user",
+                "operation": "profile",
+                "access_method": "direct_db",
+                "purpose": "admin_analytics",
+            }
         )
         if not gov_response.success:
             return f"خطأ حوكمة البيانات: {gov_response.message}"
@@ -306,7 +322,12 @@ class OrchestratorAgent:
             return "يرجى تحديد رقم المستخدم للحصول على إحصائياته."
 
         gov_response = await self.data_agent.process(
-            {"entity": "user", "operation": "statistics", "access_method": "direct_db", "purpose": "admin_analytics"}
+            {
+                "entity": "user",
+                "operation": "statistics",
+                "access_method": "direct_db",
+                "purpose": "admin_analytics",
+            }
         )
         if not gov_response.success:
             return f"خطأ حوكمة البيانات: {gov_response.message}"
@@ -334,9 +355,7 @@ class OrchestratorAgent:
             if not schema:
                 return f"تعذر العثور على مخطط جدول '{table_name}'."
             columns = schema.get("columns", [])
-            columns_text = "\n".join(
-                f"- {col['name']} ({col['type']})" for col in columns
-            )
+            columns_text = "\n".join(f"- {col['name']} ({col['type']})" for col in columns)
             return f"مخطط جدول '{table_name}':\n{columns_text}"
 
         tables = await self.tools.execute("get_database_tables", {})
@@ -405,8 +424,7 @@ class OrchestratorAgent:
             {"file_path": file_path, "start_line": start_line, "end_line": end_line},
         )
         formatted_lines = "\n".join(
-            f"{snippet['start_line'] + idx}: {line}"
-            for idx, line in enumerate(snippet["lines"])
+            f"{snippet['start_line'] + idx}: {line}" for idx, line in enumerate(snippet["lines"])
         )
         return (
             f"مقتطف من {snippet['file_path']} (الأسطر {snippet['start_line']} إلى {snippet['end_line']}):\n"

@@ -297,7 +297,9 @@ async def test_session_chunk_counts_are_isolated_per_stream():
         timer.advance(delay_seconds)
 
     class ZeroPacing:
-        def delay_ms(self, metrics: StreamingMetrics, config: StreamingConfig) -> float:  # pragma: no cover - stub
+        def delay_ms(
+            self, metrics: StreamingMetrics, config: StreamingConfig
+        ) -> float:  # pragma: no cover - stub
             return 0
 
     config = StreamingConfig(optimal_chunk_size=1, min_chunk_delay_ms=0, max_chunk_delay_ms=0)

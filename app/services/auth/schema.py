@@ -1,6 +1,7 @@
 """
 تعريفات البيانات المشتركة لخدمة المصادقة.
 """
+
 from typing import TypedDict
 
 

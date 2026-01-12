@@ -11,11 +11,7 @@ from app.main import create_app
 from app.services.chat.agents.api_contract import APIContractAgent
 
 CONTRACT_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "docs"
-    / "contracts"
-    / "openapi"
-    / "core-api-v1.yaml"
+    Path(__file__).resolve().parents[2] / "docs" / "contracts" / "openapi" / "core-api-v1.yaml"
 )
 
 

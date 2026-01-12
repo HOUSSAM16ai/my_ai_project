@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict
 
 __all__ = ["RobustBaseModel"]
 
+
 class RobustBaseModel(BaseModel):
     """
     النموذج الأساسي المتين (Robust Base Model).
@@ -32,12 +33,8 @@ class RobustBaseModel(BaseModel):
         from_attributes=True,  # دعم التحويل من كائنات ORM
         populate_by_name=True,  # السماح باستخدام الأسماء المستعارة
         json_schema_extra={
-            "examples": [
-                {
-                    "_comment": "Extra fields are ignored by design (Postel's Law)."
-                }
-            ]
-        }
+            "examples": [{"_comment": "Extra fields are ignored by design (Postel's Law)."}]
+        },
     )
 
     def to_dict(self, **kwargs: dict[str, str | int | bool]) -> dict[str, Any]:

@@ -20,21 +20,24 @@ class IssueManager:
             return []
 
         try:
+
             def _fetch():
                 issues = []
                 # PyGithub lazy list iteration
                 for issue in self.client.repo_object.get_issues(state=state, labels=labels or []):
                     if issue.pull_request:
                         continue
-                    issues.append(GitHubIssue(
-                        number=issue.number,
-                        title=issue.title,
-                        state=issue.state,
-                        author=issue.user.login,
-                        labels=[label.name for label in issue.labels],
-                        created_at=issue.created_at.isoformat(),
-                        url=issue.html_url,
-                    ))
+                    issues.append(
+                        GitHubIssue(
+                            number=issue.number,
+                            title=issue.title,
+                            state=issue.state,
+                            author=issue.user.login,
+                            labels=[label.name for label in issue.labels],
+                            created_at=issue.created_at.isoformat(),
+                            url=issue.html_url,
+                        )
+                    )
                 return issues
 
             result = await self.client.run_async(_fetch)
@@ -55,6 +58,7 @@ class IssueManager:
             return {"success": False, "error": "Repository not initialized"}
 
         try:
+
             def _create():
                 return self.client.repo_object.create_issue(
                     title=title,
@@ -80,6 +84,7 @@ class IssueManager:
             return {"success": False, "error": "Repository not initialized"}
 
         try:
+
             def _close():
                 issue = self.client.repo_object.get_issue(issue_number)
                 issue.edit(state="closed")

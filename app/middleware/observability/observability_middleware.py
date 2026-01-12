@@ -76,7 +76,9 @@ class ObservabilityMiddleware(BaseMiddleware):
             )
         return None
 
-    def _start_trace(self, ctx: RequestContext, parent_context: TraceContext | None) -> TraceContext:
+    def _start_trace(
+        self, ctx: RequestContext, parent_context: TraceContext | None
+    ) -> TraceContext:
         """بدء تتبع جديد | Start new trace"""
         operation_name = f"{ctx.method} {ctx.path}"
         tags = {
@@ -136,7 +138,9 @@ class ObservabilityMiddleware(BaseMiddleware):
         self._end_trace_span(trace_context, status, status_code, duration_ms)
 
         # تسجيل المقاييس | Record metrics
-        self._record_request_metrics(ctx, trace_context, duration_ms, status_code, result.is_success)
+        self._record_request_metrics(
+            ctx, trace_context, duration_ms, status_code, result.is_success
+        )
 
         # تسجيل الإكمال | Log completion
         self._log_completion(ctx, trace_context, status_code, duration_ms, result.is_success)

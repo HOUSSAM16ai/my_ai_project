@@ -97,10 +97,14 @@ async def _get_tasks_statistics(
     الحصول على إحصائيات المهام الفرعية.
     Get sub-tasks statistics for user.
     """
-    tasks_query = select(
-        func.count(Task.id).label("total"),
-        func.sum(func.cast(Task.status == "completed", int)).label("completed"),
-    ).join(Mission).where(Mission.initiator_id == user_id)
+    tasks_query = (
+        select(
+            func.count(Task.id).label("total"),
+            func.sum(func.cast(Task.status == "completed", int)).label("completed"),
+        )
+        .join(Mission)
+        .where(Mission.initiator_id == user_id)
+    )
 
     tasks_result = await session.execute(tasks_query)
     tasks_row = tasks_result.one_or_none()

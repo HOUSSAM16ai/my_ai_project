@@ -23,7 +23,9 @@ async def test_admin_conversations_are_restored(async_client: AsyncClient) -> No
 
         persistence = AdminChatPersistence(session)
         conversation = await persistence.get_or_create_conversation(admin.id, "حفظ الرسائل")
-        await persistence.save_message(conversation.id, MessageRole.USER, "مرحبا أريد سجل المحادثات")
+        await persistence.save_message(
+            conversation.id, MessageRole.USER, "مرحبا أريد سجل المحادثات"
+        )
 
         tokens = await auth.issue_tokens(admin)
 
@@ -53,7 +55,9 @@ async def test_standard_conversations_are_scoped(async_client: AsyncClient) -> N
     access_token = register_response.json()["access_token"]
 
     async with managed_test_session() as session:
-        user = (await session.execute(select(User).where(User.email == register_payload["email"])) ).scalar_one()
+        user = (
+            await session.execute(select(User).where(User.email == register_payload["email"]))
+        ).scalar_one()
         persistence = AdminChatPersistence(session)
         conversation = await persistence.get_or_create_conversation(user.id, "درس رياضيات")
         await persistence.save_message(conversation.id, MessageRole.USER, "ما هو تكامل سهل؟")
@@ -71,4 +75,3 @@ async def test_standard_conversations_are_scoped(async_client: AsyncClient) -> N
     detail_body = detail_response.json()
     assert detail_body["conversation_id"] == conversation.id
     assert detail_body["title"].startswith("درس")
-

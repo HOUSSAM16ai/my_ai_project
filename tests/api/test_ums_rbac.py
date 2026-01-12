@@ -23,7 +23,8 @@ def reset_auth_rate_limits() -> None:
 @pytest.mark.asyncio
 async def test_register_login_refresh_logout_flow(async_client: AsyncClient):
     register_resp = await async_client.post(
-        "/auth/register", json={"full_name": "Test User", "email": "user@example.com", "password": "Secret123!"}
+        "/auth/register",
+        json={"full_name": "Test User", "email": "user@example.com", "password": "Secret123!"},
     )
     assert register_resp.status_code == 201
     initial_tokens = register_resp.json()
@@ -57,7 +58,8 @@ async def test_register_login_refresh_logout_flow(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_standard_user_cannot_access_admin(async_client: AsyncClient):
     await async_client.post(
-        "/auth/register", json={"full_name": "User", "email": "basic@example.com", "password": "Secret123!"}
+        "/auth/register",
+        json={"full_name": "User", "email": "basic@example.com", "password": "Secret123!"},
     )
     login_resp = await async_client.post(
         "/auth/login", json={"email": "basic@example.com", "password": "Secret123!"}
@@ -72,7 +74,8 @@ async def test_standard_user_cannot_access_admin(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_policy_gate_blocks_disallowed_question(async_client: AsyncClient):
     await async_client.post(
-        "/auth/register", json={"full_name": "User", "email": "policy@example.com", "password": "Secret123!"}
+        "/auth/register",
+        json={"full_name": "User", "email": "policy@example.com", "password": "Secret123!"},
     )
     login_resp = await async_client.post(
         "/auth/login", json={"email": "policy@example.com", "password": "Secret123!"}
@@ -89,7 +92,8 @@ async def test_policy_gate_blocks_disallowed_question(async_client: AsyncClient)
 @pytest.mark.asyncio
 async def test_login_rate_limit_blocks_bruteforce(async_client: AsyncClient):
     await async_client.post(
-        "/auth/register", json={"full_name": "User", "email": "ratelimit@example.com", "password": "Secret123!"}
+        "/auth/register",
+        json={"full_name": "User", "email": "ratelimit@example.com", "password": "Secret123!"},
     )
 
     for _ in range(5):
@@ -127,7 +131,9 @@ async def test_admin_can_suspend_user_and_audit(db_session, async_client: AsyncC
         "/auth/register",
         json={"full_name": "Target", "email": "target@example.com", "password": "Target123!"},
     )
-    target = (await db_session.execute(select(User).where(User.email == "target@example.com"))).scalar_one()
+    target = (
+        await db_session.execute(select(User).where(User.email == "target@example.com"))
+    ).scalar_one()
     # Suspend target user
     status_resp = await async_client.patch(
         f"/admin/users/{target.id}/status",
@@ -144,7 +150,8 @@ async def test_admin_can_suspend_user_and_audit(db_session, async_client: AsyncC
 @pytest.mark.asyncio
 async def test_audit_records_auth_anomalies(db_session, async_client: AsyncClient):
     await async_client.post(
-        "/auth/register", json={"full_name": "User", "email": "audit@example.com", "password": "Secret123!"}
+        "/auth/register",
+        json={"full_name": "User", "email": "audit@example.com", "password": "Secret123!"},
     )
 
     failed = await async_client.post(

@@ -50,7 +50,7 @@ async def main():
             print(f"Users columns: {columns}")
 
             if columns["is_active"] not in ["BOOLEAN", "INTEGER", "BOOL"]:
-                 print(f"WARNING: is_active type is {columns['is_active']}")
+                print(f"WARNING: is_active type is {columns['is_active']}")
 
     except TimeoutError:
         print("TIMEOUT: Operation took too long.")
@@ -58,10 +58,12 @@ async def main():
     except Exception as e:
         print(f"FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
     finally:
         await test_engine.dispose()
+
 
 if __name__ == "__main__":
     with contextlib.suppress(KeyboardInterrupt):

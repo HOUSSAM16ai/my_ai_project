@@ -24,8 +24,14 @@ correlation_id: ContextVar[str | None] = ContextVar("correlation_id", default=No
 
 # Keys to redact from logs
 SENSITIVE_KEYS: Final[set[str]] = {
-    "password", "token", "secret", "authorization", "api_key", "access_token"
+    "password",
+    "token",
+    "secret",
+    "authorization",
+    "api_key",
+    "access_token",
 }
+
 
 class RedactingJsonFormatter(jsonlogger.JsonFormatter):
     """JSON Formatter that automatically redacts sensitive keys."""
@@ -38,11 +44,12 @@ class RedactingJsonFormatter(jsonlogger.JsonFormatter):
 
         # Also check inside 'message' if it's a dict (structured log)
         if isinstance(log_record.get("message"), dict):
-             for key in list(log_record["message"].keys()): # type: ignore
-                 if key.lower() in SENSITIVE_KEYS:
-                     log_record["message"][key] = "***REDACTED***" # type: ignore
+            for key in list(log_record["message"].keys()):  # type: ignore
+                if key.lower() in SENSITIVE_KEYS:
+                    log_record["message"][key] = "***REDACTED***"  # type: ignore
 
         return super().process_log_record(log_record)
+
 
 class CorrelationIdFilter(logging.Filter):
     """Injects the correlation ID into the log record."""
@@ -50,8 +57,9 @@ class CorrelationIdFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         cid = correlation_id.get()
         # Add to record so it appears in formatter
-        record.correlation_id = cid # type: ignore
+        record.correlation_id = cid  # type: ignore
         return True
+
 
 def setup_logging(service_name: str | None = None) -> None:
     """
@@ -79,9 +87,7 @@ def setup_logging(service_name: str | None = None) -> None:
     else:
         # Simple readable format for Dev
         handler = logging.StreamHandler(sys.stdout)
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     handler.setFormatter(formatter)
 
@@ -99,21 +105,25 @@ def setup_logging(service_name: str | None = None) -> None:
 
     # Inject Service Name Record Factory
     old_factory = logging.getLogRecordFactory()
+
     def record_factory(*args: Any, **kwargs: Any) -> logging.LogRecord:
         record = old_factory(*args, **kwargs)
-        record.service_name = svc_name # type: ignore
+        record.service_name = svc_name  # type: ignore
         return record
+
     logging.setLogRecordFactory(record_factory)
 
     # Silence noisy libraries
-    logging.getLogger("uvicorn.access").disabled = True # We use our own middleware
+    logging.getLogger("uvicorn.access").disabled = True  # We use our own middleware
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("watchfiles").setLevel(logging.WARNING)
 
+
 def get_logger(name: str) -> logging.Logger:
     """Returns a logger instance with the given name."""
     return logging.getLogger(name)
+
 
 # Export a default logger to satisfy imports expecting 'logger' from this module
 logger = logging.getLogger("app")

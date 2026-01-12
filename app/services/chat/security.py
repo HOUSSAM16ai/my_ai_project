@@ -17,6 +17,7 @@ class PathValidator:
         # Prevent absolute paths (optional, depending on requirements)
         return not path.startswith("/")
 
+
 class ErrorSanitizer:
     """Sanitize error messages."""
 

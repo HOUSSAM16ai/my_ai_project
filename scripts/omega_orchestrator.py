@@ -4,6 +4,7 @@ Omega Intelligence Orchestrator
 
 يقوم بتنسيق عمليات المراقبة والتحقق والإصلاح الذاتي للنظام
 """
+
 import argparse
 import sys
 
@@ -49,14 +50,12 @@ def run_monitoring() -> bool:
 
 def main():
     """نقطة الدخول الرئيسية"""
-    parser = argparse.ArgumentParser(
-        description="Omega Intelligence Orchestrator"
-    )
+    parser = argparse.ArgumentParser(description="Omega Intelligence Orchestrator")
     parser.add_argument(
         "--mode",
         choices=["monitor", "heal", "security", "all"],
         default="all",
-        help="Operation mode"
+        help="Operation mode",
     )
 
     args = parser.parse_args()

@@ -14,6 +14,7 @@ This test suite implements ultra-strict verification for login functionality:
 - Security First: Defense in depth testing
 - SOLID: Test isolation and clarity
 """
+
 import pytest
 from httpx import AsyncClient
 
@@ -189,7 +190,9 @@ async def test_jwt_token_contains_correct_claims(async_client: AsyncClient):
     token = login_data["access_token"]
 
     # Decode token (without verification for testing)
-    secret_key = os.getenv("SECRET_KEY", "test-secret-key-that-is-very-long-and-secure-enough-for-tests-v4")
+    secret_key = os.getenv(
+        "SECRET_KEY", "test-secret-key-that-is-very-long-and-secure-enough-for-tests-v4"
+    )
     decoded = jwt.decode(token, secret_key, algorithms=["HS256"])
 
     # Verify claims
@@ -224,7 +227,7 @@ async def test_login_multiple_sequential_attempts(async_client: AsyncClient):
         login_payload = {"email": "multilogin@example.com", "password": "Password123!"}
         login_response = await async_client.post("/api/security/login", json=login_payload)
 
-        assert login_response.status_code == 200, f"Login {i+1} failed"
+        assert login_response.status_code == 200, f"Login {i + 1} failed"
         login_data = login_response.json()
         assert login_data["status"] == "success"
         assert "access_token" in login_data

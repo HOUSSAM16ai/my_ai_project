@@ -117,10 +117,10 @@ def _build_priority_distribution_section(analysis: ProjectAnalysis) -> str:
 
     return f"""\n---\n\n## 📈 توزيع الأولويات
 
-- 🔴 حرجة (CRITICAL): {priority_counts['CRITICAL']}
-- 🟠 عالية (HIGH): {priority_counts['HIGH']}
-- 🟡 متوسطة (MEDIUM): {priority_counts['MEDIUM']}
-- 🟢 منخفضة (LOW): {priority_counts['LOW']}
+- 🔴 حرجة (CRITICAL): {priority_counts["CRITICAL"]}
+- 🟠 عالية (HIGH): {priority_counts["HIGH"]}
+- 🟡 متوسطة (MEDIUM): {priority_counts["MEDIUM"]}
+- 🟢 منخفضة (LOW): {priority_counts["LOW"]}
 
 """
 

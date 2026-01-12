@@ -54,6 +54,7 @@ class SecretRequest:
     rotation_policy: RotationPolicy = RotationPolicy.NEVER
     accessed_by: str = "system"
 
+
 class ConfigSecretsManager:
     """خدمة تطبيقية تنظّم ضبط الإعدادات وإدارة الأسرار بواجهات واضحة."""
 
@@ -178,9 +179,9 @@ class ConfigSecretsManager:
 
     def _generate_secret_id(self, name: str, environment: Environment) -> str:
         """توليد معرف سر قصير ثابت الطول اعتماداً على الاسم والبيئة والزمن."""
-        return hashlib.sha256(
-            f"{name}{environment.value}{datetime.now(UTC)}".encode()
-        ).hexdigest()[:16]
+        return hashlib.sha256(f"{name}{environment.value}{datetime.now(UTC)}".encode()).hexdigest()[
+            :16
+        ]
 
     def _store_in_vault(self, secret_id: str, value: str) -> None:
         """حفظ السر في الخزينة مع رفع خطأ واضح عند الفشل."""
@@ -194,7 +195,7 @@ class ConfigSecretsManager:
         name: str,
         secret_type: SecretType,
         environment: Environment,
-        rotation_policy: RotationPolicy
+        rotation_policy: RotationPolicy,
     ) -> Secret:
         """بناء وصف السر المخزن دون الاحتفاظ بالقيمة النصية في الذاكرة."""
         now = datetime.now(UTC)
@@ -306,9 +307,7 @@ class ConfigSecretsManager:
         config_entries = self.config_repo.get_all_config(environment)
 
         config = {
-            key: entry.value
-            for key, entry in config_entries.items()
-            if not entry.is_sensitive
+            key: entry.value for key, entry in config_entries.items() if not entry.is_sensitive
         }
 
         all_secrets = self.secret_repo.get_all_secrets()

@@ -19,14 +19,10 @@ class PerformanceSuggestionEngine:
         self._check_slow_requests(stats, suggestions)
         self._check_streaming_usage(stats, suggestions)
         self._check_excellent_performance(stats, suggestions)
-        return suggestions or [
-            "✅ Performance is optimal! No suggestions at this time."
-        ]
+        return suggestions or ["✅ Performance is optimal! No suggestions at this time."]
 
     @staticmethod
-    def _check_average_latency(
-        stats: PerformanceStatistics, suggestions: list[str]
-    ) -> None:
+    def _check_average_latency(stats: PerformanceStatistics, suggestions: list[str]) -> None:
         """يتحقق من متوسط زمن الاستجابة ويضيف اقتراحًا عند الحاجة."""
         if stats.get("avg_latency_ms", 0) > 2000:
             suggestions.append(
@@ -37,9 +33,7 @@ class PerformanceSuggestionEngine:
             )
 
     @staticmethod
-    def _check_p95_latency(
-        stats: PerformanceStatistics, suggestions: list[str]
-    ) -> None:
+    def _check_p95_latency(stats: PerformanceStatistics, suggestions: list[str]) -> None:
         """يتحقق من زمن الاستجابة للنسبة المئوية 95."""
         if stats.get("p95_latency_ms", 0) > 5000:
             suggestions.append(
@@ -50,9 +44,7 @@ class PerformanceSuggestionEngine:
             )
 
     @staticmethod
-    def _check_slow_requests(
-        stats: PerformanceStatistics, suggestions: list[str]
-    ) -> None:
+    def _check_slow_requests(stats: PerformanceStatistics, suggestions: list[str]) -> None:
         """يراقب نسبة الطلبات البطيئة ويقترح تحسينات."""
         total_requests = stats.get("total_requests", 0)
         if total_requests == 0:
@@ -68,9 +60,7 @@ class PerformanceSuggestionEngine:
             )
 
     @staticmethod
-    def _check_streaming_usage(
-        stats: PerformanceStatistics, suggestions: list[str]
-    ) -> None:
+    def _check_streaming_usage(stats: PerformanceStatistics, suggestions: list[str]) -> None:
         """يتحقق من معدل استخدام البث المباشر ويضيف توصيات."""
         total_requests = stats.get("total_requests", 0)
         if total_requests == 0:
@@ -85,9 +75,7 @@ class PerformanceSuggestionEngine:
             )
 
     @staticmethod
-    def _check_excellent_performance(
-        stats: PerformanceStatistics, suggestions: list[str]
-    ) -> None:
+    def _check_excellent_performance(stats: PerformanceStatistics, suggestions: list[str]) -> None:
         """يتحقق من نسبة الأداء الممتاز ويضيف إشادة مناسبة."""
         total_requests = stats.get("total_requests", 0)
         if total_requests == 0:

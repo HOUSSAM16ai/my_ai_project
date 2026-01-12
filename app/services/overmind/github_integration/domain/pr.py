@@ -16,19 +16,22 @@ class PRManager:
             return []
 
         try:
+
             def _fetch():
                 prs = []
                 for pr in self.client.repo_object.get_pulls(state=state):
-                    prs.append(GitHubPR(
-                        number=pr.number,
-                        title=pr.title,
-                        state=pr.state,
-                        author=pr.user.login,
-                        head=pr.head.ref,
-                        base=pr.base.ref,
-                        created_at=pr.created_at.isoformat(),
-                        url=pr.html_url,
-                    ))
+                    prs.append(
+                        GitHubPR(
+                            number=pr.number,
+                            title=pr.title,
+                            state=pr.state,
+                            author=pr.user.login,
+                            head=pr.head.ref,
+                            base=pr.base.ref,
+                            created_at=pr.created_at.isoformat(),
+                            url=pr.html_url,
+                        )
+                    )
                 return prs
 
             result = await self.client.run_async(_fetch)
@@ -50,6 +53,7 @@ class PRManager:
             return {"success": False, "error": "Repository not initialized"}
 
         try:
+
             def _create():
                 return self.client.repo_object.create_pull(
                     title=title,
@@ -81,6 +85,7 @@ class PRManager:
             return {"success": False, "error": "Repository not initialized"}
 
         try:
+
             def _merge():
                 pr = self.client.repo_object.get_pull(pr_number)
                 return pr.merge(merge_method=merge_method)

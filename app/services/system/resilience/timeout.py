@@ -14,6 +14,7 @@ class TimeoutConfig:
     request_timeout_ms: int = 60000  # 60s total
     adaptive_enabled: bool = True  # Use P95-based adaptive timeout
 
+
 @dataclass
 class LatencyMetrics:
     """Latency tracking for adaptive timeout"""
@@ -23,6 +24,7 @@ class LatencyMetrics:
     p95: float = 0.0
     p99: float = 0.0
     p999: float = 0.0
+
 
 class AdaptiveTimeout:
     """

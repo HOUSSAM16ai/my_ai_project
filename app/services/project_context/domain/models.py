@@ -27,6 +27,7 @@ class DirectorySummary:
             return self.file_count
         raise KeyError(key)
 
+
 @dataclass
 class ProjectHealth:
     """مؤشرات صحة المشروع في الزمن الحقيقي."""
@@ -42,6 +43,7 @@ class ProjectHealth:
     issues_found: list[str] = field(default_factory=list)
     strengths: list[str] = field(default_factory=list)
 
+
 @dataclass
 class CodeStatistics:
     """إحصائيات الكود للمشروع."""
@@ -52,6 +54,7 @@ class CodeStatistics:
     app_lines: int = 0
     test_lines: int = 0
 
+
 @dataclass
 class ProjectStructure:
     """تمثيل هيكل دليل المشروع."""
@@ -59,6 +62,7 @@ class ProjectStructure:
     directories: list[DirectorySummary] = field(default_factory=list)
     key_files: list[str] = field(default_factory=list)
     app_modules: list[str] = field(default_factory=list)
+
 
 @dataclass
 class FileAnalysis:
@@ -71,6 +75,7 @@ class FileAnalysis:
     frameworks_detected: list[str] = field(default_factory=list)
     design_patterns: list[str] = field(default_factory=list)
 
+
 @dataclass
 class KeyComponent:
     """معلومات المكونات الرئيسية."""
@@ -79,6 +84,7 @@ class KeyComponent:
     path: str
     description: str
     lines: int
+
 
 __all__ = [
     "CodeStatistics",

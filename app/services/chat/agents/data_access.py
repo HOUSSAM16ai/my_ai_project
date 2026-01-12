@@ -5,6 +5,7 @@ from app.services.chat.agents.base import AgentResponse
 
 logger = get_logger("data-access-agent")
 
+
 class DataAccessAgent:
     """
     التحقق من ملكية البيانات ومسارات الوصول إليها.

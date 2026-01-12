@@ -10,6 +10,7 @@ from app.core.domain.models import AdminConversation, AdminMessage, User
 # 'test_app' fixture creates the app and sets up overrides
 # 'db_session' fixture provides the async session
 
+
 @pytest.fixture
 def local_admin_user(db_session: AsyncSession, event_loop):
     """إنشاء مستخدم إداري محلي للاختبارات التكاملية."""
@@ -24,6 +25,7 @@ def local_admin_user(db_session: AsyncSession, event_loop):
         return user
 
     return event_loop.run_until_complete(_create_user())
+
 
 @pytest.fixture
 def client(test_app, local_admin_user, event_loop):
@@ -67,6 +69,7 @@ async def test_get_latest_chat_integration(client, db_session: AsyncSession, loc
     assert len(data["messages"]) == 1
     assert data["messages"][0]["content"] == "Hello"
 
+
 @pytest.mark.asyncio
 async def test_list_conversations_integration(client, db_session: AsyncSession, local_admin_user):
     # 1. Setup Data
@@ -88,8 +91,11 @@ async def test_list_conversations_integration(client, db_session: AsyncSession, 
     assert "Conv 1" in titles
     assert "Conv 2" in titles
 
+
 @pytest.mark.asyncio
-async def test_get_conversation_details_integration(client, db_session: AsyncSession, local_admin_user):
+async def test_get_conversation_details_integration(
+    client, db_session: AsyncSession, local_admin_user
+):
     # 1. Setup Data
     conv = AdminConversation(user_id=local_admin_user.id, title="Specific Conv")
     db_session.add(conv)

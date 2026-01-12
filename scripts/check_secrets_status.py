@@ -3,6 +3,7 @@
 Check if GitHub Actions secrets are configured for GitLab sync.
 This runs in GitHub Actions environment.
 """
+
 import os
 import sys
 
@@ -15,6 +16,7 @@ def check_secret(name):
         masked = value[:4] + "..." if len(value) > 4 else "***"
         return True, masked
     return False, "Not set"
+
 
 print("=" * 70)
 print("Checking GitHub Actions Secrets for GitLab Sync")

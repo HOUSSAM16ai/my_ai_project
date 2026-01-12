@@ -79,7 +79,9 @@ class AdaptiveRateLimiter:
     def _prune_window(self, key: str, window: int, now: float) -> None:
         """تنظيف السجلات القديمة خارج النافذة الزمنية للحفاظ على الدقة."""
 
-        self.memory_store[key] = [timestamp for timestamp in self.memory_store[key] if now - timestamp < window]
+        self.memory_store[key] = [
+            timestamp for timestamp in self.memory_store[key] if now - timestamp < window
+        ]
 
     def _calculate_reset_time(self, key: str, window: int, now: float) -> int:
         """حساب الزمن المتبقي لإعادة الضبط بناءً على أقدم طلب مسجل."""

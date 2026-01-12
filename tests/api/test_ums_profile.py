@@ -19,7 +19,11 @@ def reset_rate_limits() -> None:
 async def test_user_can_view_and_update_profile(async_client: AsyncClient) -> None:
     register_resp = await async_client.post(
         "/auth/register",
-        json={"full_name": "Profile User", "email": "profile@example.com", "password": "Secret123!"},
+        json={
+            "full_name": "Profile User",
+            "email": "profile@example.com",
+            "password": "Secret123!",
+        },
     )
     assert register_resp.status_code == 201
 

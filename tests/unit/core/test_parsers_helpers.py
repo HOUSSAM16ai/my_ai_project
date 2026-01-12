@@ -1,9 +1,10 @@
 """اختبارات مساعدة لوحدة parsers لضمان سلامة استخراج JSON وتنظيف Markdown."""
+
 from app.core import parsers
 
 
 def test_strip_markdown_fences_removes_code_block() -> None:
-    content = "```json\n{\n  \"value\": 42\n}\n```"
+    content = '```json\n{\n  "value": 42\n}\n```'
 
     cleaned = parsers.strip_markdown_fences(content)
 
@@ -25,13 +26,7 @@ def test_find_balanced_json_block_ignores_braces_inside_strings() -> None:
 
 
 def test_extract_first_json_object_removes_markdown_before_parsing() -> None:
-    text = (
-        "metadata before\n"
-        "```json\n"
-        "{\"outer\": {\"inner\": 1}}\n"
-        "```\n"
-        "footer"
-    )
+    text = 'metadata before\n```json\n{"outer": {"inner": 1}}\n```\nfooter'
 
     extracted = parsers.extract_first_json_object(text)
 
@@ -45,7 +40,7 @@ def test_find_balanced_json_block_returns_none_when_unbalanced() -> None:
 
 
 def test_find_balanced_json_block_handles_nested_objects() -> None:
-    text = "prefix {\"outer\": {\"inner\": {\"deep\": true}}} suffix"
+    text = 'prefix {"outer": {"inner": {"deep": true}}} suffix'
     start = text.find("{")
 
     result = parsers._find_balanced_json_block(text, start)
@@ -72,7 +67,7 @@ def test_extract_first_json_object_returns_none_for_none_input() -> None:
 
 
 def test_find_balanced_json_block_handles_escaped_quotes() -> None:
-    text = '{"message": "line with \"escaped quotes\"", "flag": true}'
+    text = '{"message": "line with "escaped quotes"", "flag": true}'
 
     result = parsers._find_balanced_json_block(text, 0)
 
@@ -80,22 +75,19 @@ def test_find_balanced_json_block_handles_escaped_quotes() -> None:
 
 
 def test_strip_markdown_fences_trims_whitespace_after_markers() -> None:
-    fenced = "```\n{\n  \"ok\": true\n}\n```   \n"
+    fenced = '```\n{\n  "ok": true\n}\n```   \n'
 
     assert parsers.strip_markdown_fences(fenced) == '{\n  "ok": true\n}'
 
 
 def test_strip_markdown_fences_handles_missing_closing_marker() -> None:
-    text = "```json\n{\"value\": 1}"
+    text = '```json\n{"value": 1}'
 
     assert parsers.strip_markdown_fences(text) == '{"value": 1}'
 
 
 def test_extract_first_json_object_respects_braces_inside_strings() -> None:
-    text = (
-        "prefix {\"meta\": \"{should stay in string}\","
-        " \"payload\": {\"value\": 5}} suffix"
-    )
+    text = 'prefix {"meta": "{should stay in string}", "payload": {"value": 5}} suffix'
 
     extracted = parsers.extract_first_json_object(text)
 
@@ -111,4 +103,7 @@ def test_remove_markdown_markers_strips_language_and_padding() -> None:
 def test_find_balanced_json_block_handles_escaped_backslashes() -> None:
     text = '{"message": "path \\\\server\\share", "ok": true} trailing data'
 
-    assert parsers._find_balanced_json_block(text, 0) == '{"message": "path \\\\server\\share", "ok": true}'
+    assert (
+        parsers._find_balanced_json_block(text, 0)
+        == '{"message": "path \\\\server\\share", "ok": true}'
+    )

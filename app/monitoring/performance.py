@@ -145,6 +145,7 @@ class PerformanceTracker:
                 pass
             ```
         """
+
         def decorator(func: Callable[..., T]) -> Callable[..., T]:
             op_name = operation_name or func.__name__
 
@@ -179,6 +180,7 @@ class PerformanceTracker:
                     self._add_to_history(metrics)
 
             return wrapper
+
         return decorator
 
     def track_async(
@@ -201,6 +203,7 @@ class PerformanceTracker:
                 pass
             ```
         """
+
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             op_name = operation_name or func.__name__
 
@@ -210,6 +213,7 @@ class PerformanceTracker:
                     return await func(*args, **kwargs)
 
             return wrapper
+
         return decorator
 
     def _record_metrics(self, metrics: PerformanceMetrics) -> None:
@@ -260,7 +264,7 @@ class PerformanceTracker:
 
         # الحفاظ على حجم السجل
         if len(self._completed_operations) > self._max_history_size:
-            self._completed_operations = self._completed_operations[-self._max_history_size:]
+            self._completed_operations = self._completed_operations[-self._max_history_size :]
 
     def get_operation_stats(
         self,
@@ -276,8 +280,7 @@ class PerformanceTracker:
             dict[str, Any]: إحصائيات مفصلة
         """
         operations = [
-            op for op in self._completed_operations
-            if op.operation_name == operation_name
+            op for op in self._completed_operations if op.operation_name == operation_name
         ]
 
         if not operations:
@@ -315,10 +318,7 @@ class PerformanceTracker:
         operation_names = {op.operation_name for op in self._completed_operations}
 
         return {
-            "operations": {
-                name: self.get_operation_stats(name)
-                for name in operation_names
-            },
+            "operations": {name: self.get_operation_stats(name) for name in operation_names},
             "active_operations": len(self._active_operations),
             "total_completed": len(self._completed_operations),
         }
@@ -339,7 +339,8 @@ class PerformanceTracker:
             list[PerformanceMetrics]: العمليات البطيئة
         """
         slow_ops = [
-            op for op in self._completed_operations
+            op
+            for op in self._completed_operations
             if op.duration_ms and op.duration_ms > threshold_ms
         ]
 

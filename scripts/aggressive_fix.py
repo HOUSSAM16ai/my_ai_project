@@ -14,7 +14,7 @@ class AggressiveProcessor:
 
     def __init__(self, filepath: Path):
         self.filepath = filepath
-        self.content = filepath.read_text(encoding='utf-8')
+        self.content = filepath.read_text(encoding="utf-8")
         self.original = self.content
         self.fixes_applied = []
 
@@ -38,36 +38,36 @@ class AggressiveProcessor:
 
         # Save if changed
         if self.content != self.original:
-            self.filepath.write_text(self.content, encoding='utf-8')
+            self.filepath.write_text(self.content, encoding="utf-8")
             return True
         return False
 
     def clean_typing_imports(self):
         """Remove ALL old typing imports completely."""
-        lines = self.content.split('\n')
+        lines = self.content.split("\n")
         new_lines = []
 
         for line in lines:
             # Skip lines that import old typing styles
-            if 'from typing import' in line:
+            if "from typing import" in line:
                 # Extract imports
-                match = re.search(r'from typing import (.+)', line)
+                match = re.search(r"from typing import (.+)", line)
                 if match:
                     imports_str = match.group(1)
 
                     # Split by comma, handling parentheses
-                    if '(' in imports_str:
-                        imports_str = imports_str.replace('(', '').replace(')', '')
+                    if "(" in imports_str:
+                        imports_str = imports_str.replace("(", "").replace(")", "")
 
-                    imports = [i.strip() for i in imports_str.split(',')]
+                    imports = [i.strip() for i in imports_str.split(",")]
 
                     # Keep only modern imports
                     keep_imports = []
-                    old_types = {'Optional', 'Union', 'List', 'Dict', 'Tuple', 'Set', 'Any'}
+                    old_types = {"Optional", "Union", "List", "Dict", "Tuple", "Set", "Any"}
 
                     for imp in imports:
                         # Remove 'as' aliases
-                        base_import = imp.split(' as ')[0].strip()
+                        base_import = imp.split(" as ")[0].strip()
                         if base_import not in old_types:
                             keep_imports.append(imp)
 
@@ -80,7 +80,7 @@ class AggressiveProcessor:
 
             new_lines.append(line)
 
-        new_content = '\n'.join(new_lines)
+        new_content = "\n".join(new_lines)
         if new_content != self.content:
             self.content = new_content
             self.fixes_applied.append("Cleaned imports")
@@ -93,27 +93,27 @@ class AggressiveProcessor:
             for node in ast.walk(tree):
                 if (
                     isinstance(node, ast.FunctionDef)
-                    and hasattr(node, 'lineno')
-                    and hasattr(node, 'end_lineno')
+                    and hasattr(node, "lineno")
+                    and hasattr(node, "end_lineno")
                 ):
                     func_size = node.end_lineno - node.lineno
 
-                        # If function > 30 lines, add a TODO comment
+                    # If function > 30 lines, add a TODO comment
                     if func_size > 30:
                         # Add comment at function definition
-                        lines = self.content.split('\n')
+                        lines = self.content.split("\n")
                         func_line = node.lineno - 1
 
                         # Check if TODO already exists
-                        if func_line > 0 and 'TODO: Split' not in lines[func_line - 1]:
+                        if func_line > 0 and "TODO: Split" not in lines[func_line - 1]:
                             # Insert TODO comment
                             indent = len(lines[func_line]) - len(lines[func_line].lstrip())
                             comment = (
-                                ' ' * indent
+                                " " * indent
                                 + f"# TODO: Split this function ({func_size} lines) - KISS principle"
                             )
                             lines.insert(func_line, comment)
-                            self.content = '\n'.join(lines)
+                            self.content = "\n".join(lines)
                             self.fixes_applied.append(f"Marked large function: {node.name}")
         except Exception:
             pass
@@ -128,15 +128,18 @@ class AggressiveProcessor:
                     param_count = len(node.args.args)
 
                     if param_count > 5:
-                        lines = self.content.split('\n')
+                        lines = self.content.split("\n")
                         func_line = node.lineno - 1
 
                         # Check if TODO already exists
-                        if func_line > 0 and 'TODO: Reduce' not in lines[func_line - 1]:
+                        if func_line > 0 and "TODO: Reduce" not in lines[func_line - 1]:
                             indent = len(lines[func_line]) - len(lines[func_line].lstrip())
-                            comment = ' ' * indent + f"# TODO: Reduce parameters ({param_count} params) - Use config object"
+                            comment = (
+                                " " * indent
+                                + f"# TODO: Reduce parameters ({param_count} params) - Use config object"
+                            )
                             lines.insert(func_line, comment)
-                            self.content = '\n'.join(lines)
+                            self.content = "\n".join(lines)
                             self.fixes_applied.append(f"Marked high-param function: {node.name}")
         except Exception:
             pass
@@ -150,12 +153,12 @@ class AggressiveProcessor:
     def clean_whitespace(self):
         """Remove excessive blank lines."""
         # Replace 3+ blank lines with 2
-        self.content = re.sub(r'\n\n\n+', '\n\n', self.content)
+        self.content = re.sub(r"\n\n\n+", "\n\n", self.content)
 
         # Remove trailing whitespace
-        lines = self.content.split('\n')
+        lines = self.content.split("\n")
         lines = [line.rstrip() for line in lines]
-        self.content = '\n'.join(lines)
+        self.content = "\n".join(lines)
 
         self.fixes_applied.append("Cleaned whitespace")
 

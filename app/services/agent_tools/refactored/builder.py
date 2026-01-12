@@ -4,6 +4,7 @@ class Config:
         self.category = category
         self.aliases = aliases
 
+
 class Tool:
     def __init__(self, name, description, category, aliases, handler):
         self.name = name
@@ -12,6 +13,7 @@ class Tool:
 
     def can_execute(self):
         return callable(self.handler)
+
 
 class ToolBuilder:
     def __init__(self, name):
@@ -39,7 +41,7 @@ class ToolBuilder:
 
     def build(self):
         if not self.description:
-             raise ValueError("Invalid tool configuration: Description required")
+            raise ValueError("Invalid tool configuration: Description required")
         if not self.handler:
-             raise ValueError("Invalid tool configuration: Handler required")
+            raise ValueError("Invalid tool configuration: Handler required")
         return Tool(self.name, self.description, self.category, self.aliases, self.handler)

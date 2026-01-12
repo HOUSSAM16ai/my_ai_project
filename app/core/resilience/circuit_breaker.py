@@ -40,12 +40,14 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+
 class CircuitState(Enum):
     """Circuit breaker states"""
 
     CLOSED = "closed"  # Normal operation, requests allowed
     OPEN = "open"  # Failing, requests rejected
     HALF_OPEN = "half_open"  # Testing recovery, limited requests
+
 
 @dataclass
 class CircuitBreakerConfig:
@@ -55,6 +57,7 @@ class CircuitBreakerConfig:
     success_threshold: int = 2  # Successes in half-open before closing
     timeout: float = 60.0  # Seconds to wait before trying half-open
     half_open_max_calls: int = 3  # Max concurrent calls in half-open
+
 
 class CircuitBreaker:
     """
@@ -252,6 +255,7 @@ class CircuitBreaker:
                 },
             }
 
+
 class CircuitBreakerRegistry:
     """
     Singleton registry for managing circuit breakers.
@@ -329,6 +333,7 @@ class CircuitBreakerRegistry:
             self._breakers.clear()
             logger.info("Circuit breaker registry cleared")
 
+
 class CircuitOpenError(Exception):
     """Raised when circuit breaker is open"""
 
@@ -336,9 +341,11 @@ class CircuitOpenError(Exception):
         self.breaker_name = breaker_name
         super().__init__(f"Circuit breaker '{breaker_name}' is OPEN")
 
+
 # =============================================================================
 # PUBLIC API
 # =============================================================================
+
 
 def get_circuit_breaker(
     name: str,
@@ -360,20 +367,24 @@ def get_circuit_breaker(
     registry = CircuitBreakerRegistry.get_instance()
     return registry.get(name, config)
 
+
 def reset_circuit_breaker(name: str) -> None:
     """Reset a specific circuit breaker"""
     registry = CircuitBreakerRegistry.get_instance()
     registry.reset(name)
+
 
 def reset_all_circuit_breakers() -> None:
     """Reset all circuit breakers"""
     registry = CircuitBreakerRegistry.get_instance()
     registry.reset_all()
 
+
 def get_all_circuit_breaker_stats() -> dict[str, dict[str, Any]]:
     """Get statistics for all circuit breakers"""
     registry = CircuitBreakerRegistry.get_instance()
     return registry.get_all_stats()
+
 
 __all__ = [
     "CircuitBreaker",

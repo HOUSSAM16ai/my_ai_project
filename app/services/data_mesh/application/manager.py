@@ -2,6 +2,7 @@
 DataMesh Manager - Application Service
 """
 
+
 class DataMeshManager:
     """Manages DataMesh operations"""
 

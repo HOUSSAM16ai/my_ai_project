@@ -9,6 +9,7 @@
 - **Fail Fast**: معالجة الأخطاء وإرسال أحداث خطأ واضحة للواجهة الأمامية.
 - **Strict Typing**: الامتثال لمعايير Python 3.12+.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 # مجموعة عالمية للحفاظ على مراجع المهام الخلفية ومنع جمع القمامة (Garbage Collection)
 _background_tasks: set[asyncio.Task[object]] = set()
+
 
 class AdminChatStreamer:
     """
@@ -71,15 +73,19 @@ class AdminChatStreamer:
             full_response: list[str] = []
 
             async for chunk in self._stream_with_safety_checks(
-                orchestrator, question, user_id, conversation.id,
-                ai_client, history, session_factory_func, full_response
+                orchestrator,
+                question,
+                user_id,
+                conversation.id,
+                ai_client,
+                history,
+                session_factory_func,
+                full_response,
             ):
                 yield chunk
 
             # 4. حفظ وإنهاء
-            await self._persist_response(
-                conversation.id, full_response, session_factory_func
-            )
+            await self._persist_response(conversation.id, full_response, session_factory_func)
             yield "data: [DONE]\n\n"
 
         except Exception as e:
@@ -94,6 +100,7 @@ class AdminChatStreamer:
         if not has_system:
             try:
                 from app.services.chat.context_service import get_context_service
+
                 ctx_service = get_context_service()
                 system_prompt = ctx_service.get_admin_system_prompt()
                 history.insert(0, {"role": "system", "content": system_prompt})
@@ -177,7 +184,7 @@ class AdminChatStreamer:
         """
         error_payload = {
             "type": "error",
-            "payload": {"error": "Response exceeded safety limit (100k chars). Aborting stream."}
+            "payload": {"error": "Response exceeded safety limit (100k chars). Aborting stream."},
         }
         return f"event: error\ndata: {json.dumps(error_payload)}\n\n"
 

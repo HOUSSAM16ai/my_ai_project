@@ -1,4 +1,3 @@
-
 import os
 from unittest.mock import patch
 
@@ -19,10 +18,12 @@ from app.core.settings.base import BaseServiceSettings
 # DO NOT MODIFY OR DELETE WITHOUT ARCHITECT APPROVAL.
 # -----------------------------------------------------------------------------
 
+
 class MockSettings(BaseServiceSettings):
     DATABASE_URL: str = "postgresql://user:pass%40word@host:5432/db?sslmode=require"
     SERVICE_NAME: str = "guardrail_test_service"
     ENVIRONMENT: str = "testing"
+
 
 @pytest.mark.asyncio
 @patch("app.core.database.create_async_engine")
@@ -46,8 +47,7 @@ async def test_guardrail_db_url_password_encoding(mock_create_engine):
         # The exact string format might vary by driver (postgresql+asyncpg://), but the
         # password segment 'pass%40word' MUST be present.
         assert "pass%40word" in db_url, (
-            f"❌ CATASTROPHIC FAILURE: Password encoding lost. "
-            f"Expected 'pass%40word' in '{db_url}'"
+            f"❌ CATASTROPHIC FAILURE: Password encoding lost. Expected 'pass%40word' in '{db_url}'"
         )
 
         # STRICT CHECK 2: No '***' masking
@@ -55,6 +55,7 @@ async def test_guardrail_db_url_password_encoding(mock_create_engine):
             "❌ CATASTROPHIC FAILURE: Password masked in connection string. "
             "Database will fail to authenticate."
         )
+
 
 @pytest.mark.asyncio
 @patch("app.core.database.create_async_engine")

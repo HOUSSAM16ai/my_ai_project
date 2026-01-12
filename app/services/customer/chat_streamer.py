@@ -3,6 +3,7 @@
 
 يوفر قناة SSE آمنة مع حفظ الاستجابات بعد اكتمال البث.
 """
+
 from __future__ import annotations
 
 import json

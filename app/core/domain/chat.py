@@ -2,6 +2,7 @@
 Chat Domain Models.
 Contains AdminConversation, AdminMessage, CustomerConversation, CustomerMessage.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -21,6 +22,7 @@ class MessageRole(CaseInsensitiveEnum):
     """
     Message Role Enum.
     """
+
     USER = "user"
     ASSISTANT = "assistant"
     TOOL = "tool"

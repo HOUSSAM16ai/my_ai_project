@@ -86,7 +86,7 @@ async def test_analyzer_logic():
     analysis = await SituationAnalyzer.analyze(situation, context)
 
     assert analysis["complexity_level"] == "high"  # Contains 'complex'
-    assert analysis["urgency"] == "high"           # Contains 'urgent'
+    assert analysis["urgency"] == "high"  # Contains 'urgent'
     assert "security breach" in analysis["threats"]
 
 

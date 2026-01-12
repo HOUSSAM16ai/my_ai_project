@@ -31,7 +31,7 @@ class UserCreated(DomainEvent):
             category=EventCategory.USER,
             aggregate_id=user_id,
             aggregate_type="User",
-            payload={"email": email, "name": name}
+            payload={"email": email, "name": name},
         )
 
 
@@ -47,7 +47,7 @@ class UserUpdated(DomainEvent):
             category=EventCategory.USER,
             aggregate_id=user_id,
             aggregate_type="User",
-            payload={"changes": changes}
+            payload={"changes": changes},
         )
 
 
@@ -63,5 +63,5 @@ class UserDeleted(DomainEvent):
             category=EventCategory.USER,
             aggregate_id=user_id,
             aggregate_type="User",
-            payload={"reason": reason}
+            payload={"reason": reason},
         )

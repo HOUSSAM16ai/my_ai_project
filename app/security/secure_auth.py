@@ -23,13 +23,13 @@ class SecureAuthenticationService:
     ) -> tuple[bool, AuthenticatedUserPayload]:
         """يتحقق من بيانات الاعتماد ويعيد هوية مستخدم مكتوبة بدقة."""
         if not email or not password:
-            raise ValueError('يجب توفير بريد إلكتروني وكلمة مرور صالحين')
+            raise ValueError("يجب توفير بريد إلكتروني وكلمة مرور صالحين")
 
-        fingerprint = request.client.host if request.client else 'unknown'
+        fingerprint = request.client.host if request.client else "unknown"
         return True, {
-            'user_id': 1,
-            'email': email,
-            'request_fingerprint': fingerprint,
+            "user_id": 1,
+            "email": email,
+            "request_fingerprint": fingerprint,
         }
 
     def hash_password(self, password: str) -> str:

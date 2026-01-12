@@ -98,7 +98,7 @@ class LFUPolicy(EvictionPolicy[K]):
         victim = None
         if len(self._counts) >= self.capacity:
             # البحث عن العنصر الأقل تكراراً
-            victim = min(self._counts, key=self._counts.get) # type: ignore
+            victim = min(self._counts, key=self._counts.get)  # type: ignore
             del self._counts[victim]
 
         self._counts[key] = 1
@@ -200,7 +200,7 @@ class StrategicMemoryCache(CacheBackend):
             # سنقوم بالتنفيذ الأبسط هنا:
             keys = list(self._storage.keys())
             for key in keys:
-                 if key in self._storage:
+                if key in self._storage:
                     del self._storage[key]
                     self._policy.on_remove(key)
             return True
@@ -209,6 +209,7 @@ class StrategicMemoryCache(CacheBackend):
         """البحث عن مفاتيح (غير مدعوم بشكل كامل للبحث بالنمط في هذا التنفيذ البسيط)."""
         # يمكن استخدام fnmatch إذا لزم الأمر
         import fnmatch
+
         async with self._lock:
             keys = []
             now = time.time()

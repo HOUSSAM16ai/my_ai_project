@@ -2,6 +2,7 @@
 Tests for Refactored Modules - SOLID Compliance Verification
 Tests the new clean architecture implementation.
 """
+
 import pytest
 
 
@@ -65,12 +66,7 @@ class TestToolRegistry:
         def handler(**kwargs):
             return "result"
 
-        tool = (
-            ToolBuilder("test_tool")
-            .with_description("Test tool")
-            .with_handler(handler)
-            .build()
-        )
+        tool = ToolBuilder("test_tool").with_description("Test tool").with_handler(handler).build()
 
         registry = ToolRegistry()
         registry.register(tool)
@@ -85,12 +81,7 @@ class TestToolRegistry:
         def handler(**kwargs):
             return "result"
 
-        tool = (
-            ToolBuilder("test_tool")
-            .with_description("Test tool")
-            .with_handler(handler)
-            .build()
-        )
+        tool = ToolBuilder("test_tool").with_description("Test tool").with_handler(handler).build()
 
         registry = ToolRegistry()
         registry.register(tool)

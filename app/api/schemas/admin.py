@@ -35,14 +35,17 @@ class ChatRequest(RobustBaseModel):
             raise ValueError(msg)
         return trimmed
 
+
 class MessageResponse(RobustBaseModel):
     """
     نموذج استجابة لرسالة واحدة.
     """
+
     id: int | None = Field(None, description="معرف الرسالة")
     role: str = Field(..., description="دور المرسل (user, assistant, system)")
     content: str = Field(..., description="محتوى الرسالة")
     timestamp: datetime | None = Field(None, description="وقت الرسالة")
+
 
 class ConversationSummaryResponse(RobustBaseModel):
     """
@@ -67,10 +70,12 @@ class ConversationSummaryResponse(RobustBaseModel):
         self.conversation_id = normalized_id
         return self
 
+
 class ConversationDetailsResponse(RobustBaseModel):
     """
     نموذج تفاصيل المحادثة الكاملة.
     """
+
     conversation_id: int | str = Field(..., description="معرف المحادثة")
     title: str | None = Field(None, description="عنوان المحادثة")
     messages: list[MessageResponse] = Field(..., description="قائمة الرسائل")

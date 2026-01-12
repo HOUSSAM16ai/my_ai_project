@@ -13,6 +13,7 @@ from typing import Any
 # ======================================================================================
 __version__ = "4.5.0-hyper-l5++-omniplan"
 
+
 # ======================================================================================
 # Data Structures
 # ======================================================================================
@@ -28,6 +29,7 @@ class ToolResult:
         d = asdict(self)
         return {k: v for k, v in d.items() if v is not None}
 
+
 # ======================================================================================
 # Helpers
 # ======================================================================================
@@ -37,6 +39,7 @@ def _int_env(name: str, default: int) -> int:
     except Exception:
         return default
 
+
 def _bool_env(name: str, default: bool = False) -> bool:
     return os.getenv(name, str(1 if default else 0)).strip().lower() in (
         "1",
@@ -44,6 +47,7 @@ def _bool_env(name: str, default: bool = False) -> bool:
         "yes",
         "on",
     )
+
 
 # ======================================================================================
 # Core Limits / Config

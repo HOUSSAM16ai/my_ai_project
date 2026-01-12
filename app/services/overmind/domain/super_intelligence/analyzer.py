@@ -63,7 +63,7 @@ class SituationAnalyzer:
 
         # زيادة الدرجة في حال وجود مُعززات (Intensifiers)
         if "very complex" in situation.lower():
-             complexity_score += 1
+            complexity_score += 1
 
         if complexity_score >= 2:
             analysis["complexity_level"] = "high"
@@ -111,7 +111,9 @@ class SituationAnalyzer:
         urgency_keywords = ["urgent", "critical", "immediate", "عاجل", "حرج", "فوري"]
         novelty_keywords = ["new", "novel", "innovative", "غير مسبوق", "ابتكار"]
 
-        complexity = min(sum(1 for keyword in complexity_keywords if keyword in normalized) / 3, 1.0)
+        complexity = min(
+            sum(1 for keyword in complexity_keywords if keyword in normalized) / 3, 1.0
+        )
         urgency = min(sum(1 for keyword in urgency_keywords if keyword in normalized) / 2, 1.0)
         novelty = min(sum(1 for keyword in novelty_keywords if keyword in normalized) / 2, 1.0)
 
@@ -198,7 +200,9 @@ class SituationAnalyzer:
         ) / 3
         narrative_density = min(len(situation.split()) / 40, 1.0)
 
-        depth_score = (context_richness * 0.5) + (signal_diversity * 0.3) + (narrative_density * 0.2)
+        depth_score = (
+            (context_richness * 0.5) + (signal_diversity * 0.3) + (narrative_density * 0.2)
+        )
         return {
             "context_richness": round(context_richness, 2),
             "signal_diversity": round(signal_diversity, 2),

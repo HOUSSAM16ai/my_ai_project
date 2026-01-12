@@ -6,6 +6,7 @@ from app.services.chat.agents.base import AgentResponse
 
 logger = get_logger("api-contract-agent")
 
+
 class APIContractAgent:
     """
     وكيل يتحقق من صحة الالتزام بعقود OpenAPI وفق منهجية API-First.

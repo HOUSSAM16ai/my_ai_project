@@ -51,9 +51,7 @@ class OvermindArtIntegration:
         self.network_artist = NetworkArtist(default_style)
 
     def visualize_code_intelligence(
-        self,
-        analysis_result: dict[str, Any],
-        style: ArtStyle | None = None
+        self, analysis_result: dict[str, Any], style: ArtStyle | None = None
     ) -> dict[str, str]:
         """
         تحويل نتائج تحليل الكود إلى تصورات فنية.
@@ -82,50 +80,33 @@ class OvermindArtIntegration:
 
         # 1. Complexity Landscape
         if "avg_complexity" in analysis_result:
-            visualizations["complexity_art"] = (
-                self.code_visualizer.create_complexity_art(
-                    analysis_result,
-                    title="Code Complexity Landscape"
-                )
+            visualizations["complexity_art"] = self.code_visualizer.create_complexity_art(
+                analysis_result, title="Code Complexity Landscape"
             )
 
         # 2. Metrics Dashboard
-        metrics = {
-            k: v for k, v in analysis_result.items()
-            if isinstance(v, (int, float))
-        }
+        metrics = {k: v for k, v in analysis_result.items() if isinstance(v, (int, float))}
         if metrics:
-            visualizations["metrics_dashboard"] = (
-                self.code_visualizer.create_metrics_dashboard(
-                    metrics,
-                    title="Code Metrics Art"
-                )
+            visualizations["metrics_dashboard"] = self.code_visualizer.create_metrics_dashboard(
+                metrics, title="Code Metrics Art"
             )
 
         # 3. Code Pattern Art
-        visualizations["pattern_art"] = (
-            self.data_generator.generate_code_pattern(
-                analysis_result,
-                size=(600, 600)
-            )
+        visualizations["pattern_art"] = self.data_generator.generate_code_pattern(
+            analysis_result, size=(600, 600)
         )
 
         # 4. Fractal Tree (based on complexity)
         complexity = int(analysis_result.get("avg_complexity", 5))
         fractal_depth = min(max(complexity // 2, 3), 7)
-        visualizations["fractal_tree"] = (
-            self.pattern_artist.generate_fractal_tree(
-                complexity=fractal_depth,
-                seed=42
-            )
+        visualizations["fractal_tree"] = self.pattern_artist.generate_fractal_tree(
+            complexity=fractal_depth, seed=42
         )
 
         return visualizations
 
     def visualize_mission_journey(
-        self,
-        mission_data: dict[str, Any],
-        style: ArtStyle | None = None
+        self, mission_data: dict[str, Any], style: ArtStyle | None = None
     ) -> dict[str, str]:
         """
         تصور رحلة المهمة بشكل فني.
@@ -153,20 +134,14 @@ class OvermindArtIntegration:
         visualizations = {}
 
         # 1. Mission Timeline
-        visualizations["timeline"] = (
-            self.mission_artist.create_mission_timeline(
-                mission_data,
-                title="Mission Journey"
-            )
+        visualizations["timeline"] = self.mission_artist.create_mission_timeline(
+            mission_data, title="Mission Journey"
         )
 
         # 2. Evolution Spiral
         iterations = len(mission_data.get("events", [])) * 10
-        visualizations["evolution_spiral"] = (
-            self.pattern_artist.generate_spiral_code(
-                iterations=max(iterations, 50),
-                data_seed=mission_data.get("id", 42)
-            )
+        visualizations["evolution_spiral"] = self.pattern_artist.generate_spiral_code(
+            iterations=max(iterations, 50), data_seed=mission_data.get("id", 42)
         )
 
         return visualizations
@@ -175,7 +150,7 @@ class OvermindArtIntegration:
         self,
         metrics: dict[str, float],
         style: ArtStyle | None = None,
-        visualization_types: list[str] | None = None
+        visualization_types: list[str] | None = None,
     ) -> dict[str, str]:
         """
         تصور المقاييس بطرق فنية متعددة.
@@ -207,36 +182,24 @@ class OvermindArtIntegration:
         visualizations = {}
 
         if "radial" in visualization_types:
-            visualizations["radial_chart"] = (
-                self.metrics_artist.create_radial_chart(
-                    metrics,
-                    title="Metrics Radial View"
-                )
+            visualizations["radial_chart"] = self.metrics_artist.create_radial_chart(
+                metrics, title="Metrics Radial View"
             )
 
         if "bar" in visualization_types:
-            visualizations["bar_chart"] = (
-                self.metrics_artist.create_bar_art(
-                    metrics,
-                    title="Metrics Bar Chart"
-                )
+            visualizations["bar_chart"] = self.metrics_artist.create_bar_art(
+                metrics, title="Metrics Bar Chart"
             )
 
         if "sculpture" in visualization_types:
-            visualizations["data_sculpture"] = (
-                self.data_generator.create_data_sculpture(
-                    metrics,
-                    title="Metrics Sculpture"
-                )
+            visualizations["data_sculpture"] = self.data_generator.create_data_sculpture(
+                metrics, title="Metrics Sculpture"
             )
 
         return visualizations
 
     def visualize_dependencies(
-        self,
-        modules: list[str],
-        dependencies: list[tuple[str, str]],
-        style: ArtStyle | None = None
+        self, modules: list[str], dependencies: list[tuple[str, str]], style: ArtStyle | None = None
     ) -> str:
         """
         تصور شبكة التبعيات بشكل فني.
@@ -263,15 +226,11 @@ class OvermindArtIntegration:
         nodes = [{"id": module, "label": module} for module in modules]
 
         return self.network_artist.create_dependency_web(
-            nodes=nodes,
-            edges=dependencies,
-            title="Code Dependencies Network"
+            nodes=nodes, edges=dependencies, title="Code Dependencies Network"
         )
 
     def create_full_report(
-        self,
-        analysis_data: dict[str, Any],
-        style: ArtStyle | None = None
+        self, analysis_data: dict[str, Any], style: ArtStyle | None = None
     ) -> dict[str, Any]:
         """
         إنشاء تقرير فني شامل.
@@ -290,53 +249,39 @@ class OvermindArtIntegration:
         report = {
             "style": style.value,
             "generated_at": "now",  # يمكن استبداله بـ datetime
-            "visualizations": {}
+            "visualizations": {},
         }
 
         # Code Intelligence Art
         if "code_analysis" in analysis_data:
-            report["visualizations"]["code_intelligence"] = (
-                self.visualize_code_intelligence(
-                    analysis_data["code_analysis"],
-                    style
-                )
+            report["visualizations"]["code_intelligence"] = self.visualize_code_intelligence(
+                analysis_data["code_analysis"], style
             )
 
         # Mission Journey Art
         if "mission_data" in analysis_data:
-            report["visualizations"]["mission_journey"] = (
-                self.visualize_mission_journey(
-                    analysis_data["mission_data"],
-                    style
-                )
+            report["visualizations"]["mission_journey"] = self.visualize_mission_journey(
+                analysis_data["mission_data"], style
             )
 
         # Metrics Art
         if "metrics" in analysis_data:
-            report["visualizations"]["metrics"] = (
-                self.visualize_metrics(
-                    analysis_data["metrics"],
-                    style
-                )
+            report["visualizations"]["metrics"] = self.visualize_metrics(
+                analysis_data["metrics"], style
             )
 
         # Dependencies Network Art
         if "dependencies" in analysis_data:
             deps = analysis_data["dependencies"]
-            report["visualizations"]["dependencies"] = (
-                self.visualize_dependencies(
-                    modules=deps.get("modules", []),
-                    dependencies=deps.get("edges", []),
-                    style=style
-                )
+            report["visualizations"]["dependencies"] = self.visualize_dependencies(
+                modules=deps.get("modules", []), dependencies=deps.get("edges", []), style=style
             )
 
         return report
 
 
 def create_art_from_overmind_data(
-    overmind_data: dict[str, Any],
-    style: ArtStyle = ArtStyle.MODERN
+    overmind_data: dict[str, Any], style: ArtStyle = ArtStyle.MODERN
 ) -> dict[str, Any]:
     """
     دالة مساعدة سريعة لإنشاء الفن من بيانات Overmind.

@@ -8,6 +8,7 @@ Features surpassing tech giants:
 ✅ Batch processing for performance
 ✅ Event deduplication
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -21,11 +22,11 @@ from enum import Enum
 class EventType(Enum):
     """أنواع الأحداث المدعومة."""
 
-    USER = 'user'
-    SYSTEM = 'system'
-    BUSINESS = 'business'
-    ERROR = 'error'
-    SECURITY = 'security'
+    USER = "user"
+    SYSTEM = "system"
+    BUSINESS = "business"
+    ERROR = "error"
+    SECURITY = "security"
 
 
 @dataclass(slots=True)
@@ -46,16 +47,16 @@ class Event:
         """يحّول الحدث إلى معجم جاهز للتسلسل أو التسجيل."""
 
         return {
-            'event_id': self.event_id,
-            'event_type': self.event_type.value,
-            'name': self.name,
-            'timestamp': self.timestamp,
-            'datetime': datetime.fromtimestamp(self.timestamp, UTC).isoformat(),
-            'user_id': self.user_id,
-            'session_id': self.session_id,
-            'trace_id': self.trace_id,
-            'properties': self.properties,
-            'context': self.context,
+            "event_id": self.event_id,
+            "event_type": self.event_type.value,
+            "name": self.name,
+            "timestamp": self.timestamp,
+            "datetime": datetime.fromtimestamp(self.timestamp, UTC).isoformat(),
+            "user_id": self.user_id,
+            "session_id": self.session_id,
+            "trace_id": self.trace_id,
+            "properties": self.properties,
+            "context": self.context,
         }
 
 
@@ -89,13 +90,13 @@ class EventTracker:
         self.event_batch: list[Event] = []
         self.seen_events: set[str] = set()
         self.stats = {
-            'total_events': 0,
-            'user_events': 0,
-            'system_events': 0,
-            'business_events': 0,
-            'error_events': 0,
-            'security_events': 0,
-            'duplicates_filtered': 0,
+            "total_events": 0,
+            "user_events": 0,
+            "system_events": 0,
+            "business_events": 0,
+            "error_events": 0,
+            "security_events": 0,
+            "duplicates_filtered": 0,
         }
 
     def track(self, payload: EventPayload) -> str:
@@ -103,7 +104,7 @@ class EventTracker:
 
         event_id = self._generate_event_id(payload)
         if event_id in self.seen_events:
-            self.stats['duplicates_filtered'] += 1
+            self.stats["duplicates_filtered"] += 1
             return event_id
 
         enriched_context = self._enrich_context(payload.context)
@@ -122,8 +123,8 @@ class EventTracker:
         self.events.append(event)
         self.event_batch.append(event)
         self.seen_events.add(event_id)
-        self.stats['total_events'] += 1
-        stat_key = f'{payload.event_type.value}_events'
+        self.stats["total_events"] += 1
+        stat_key = f"{payload.event_type.value}_events"
         if stat_key in self.stats:
             self.stats[stat_key] += 1
         if len(self.event_batch) >= self.batch_size:
@@ -157,10 +158,10 @@ class EventTracker:
     def _enrich_context(self, context: dict[str, object]) -> dict[str, object]:
         """Enrich event context with automatic data"""
         enriched = context.copy()
-        if 'timestamp' not in enriched:
-            enriched['timestamp'] = datetime.now(UTC).isoformat()
-        if 'server' not in enriched:
-            enriched['server'] = 'cogniforge'
+        if "timestamp" not in enriched:
+            enriched["timestamp"] = datetime.now(UTC).isoformat()
+        if "server" not in enriched:
+            enriched["server"] = "cogniforge"
         return enriched
 
     def _generate_event_id(self, payload: EventPayload) -> str:
@@ -169,13 +170,13 @@ class EventTracker:
         data_parts = [
             payload.event_type.value,
             payload.name,
-            payload.user_id or '',
-            payload.session_id or '',
-            payload.trace_id or '',
+            payload.user_id or "",
+            payload.session_id or "",
+            payload.trace_id or "",
             str(sorted(payload.properties.items())),
             str(sorted(payload.context.items())),
         ]
-        data = ':'.join(data_parts)
+        data = ":".join(data_parts)
         return hashlib.sha256(data.encode()).hexdigest()[:16]
 
     def _process_batch(self) -> None:
@@ -186,6 +187,6 @@ class EventTracker:
         """Get tracker statistics"""
         return {
             **self.stats,
-            'events_stored': len(self.events),
-            'batch_size': len(self.event_batch),
+            "events_stored": len(self.events),
+            "batch_size": len(self.event_batch),
         }

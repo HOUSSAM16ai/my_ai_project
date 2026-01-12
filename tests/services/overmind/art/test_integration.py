@@ -3,7 +3,6 @@
 Tests for CS73 Art Integration Module
 """
 
-
 from app.services.overmind.art.integration import (
     OvermindArtIntegration,
     create_art_from_overmind_data,
@@ -33,7 +32,7 @@ class TestOvermindArtIntegration:
             "max_complexity": 15,
             "functions": 42,
             "classes": 12,
-            "lines": 1500
+            "lines": 1500,
         }
 
         visualizations = integration.visualize_code_intelligence(analysis_result)
@@ -57,8 +56,8 @@ class TestOvermindArtIntegration:
             "events": [
                 {"name": "Start", "type": "start"},
                 {"name": "Planning", "type": "info"},
-                {"name": "Success", "type": "success"}
-            ]
+                {"name": "Success", "type": "success"},
+            ],
         }
 
         visualizations = integration.visualize_mission_journey(mission_data)
@@ -73,11 +72,7 @@ class TestOvermindArtIntegration:
         """Test visualizing metrics with defaults"""
         integration = OvermindArtIntegration()
 
-        metrics = {
-            "performance": 8.5,
-            "quality": 9.0,
-            "maintainability": 7.8
-        }
+        metrics = {"performance": 8.5, "quality": 9.0, "maintainability": 7.8}
 
         visualizations = integration.visualize_metrics(metrics)
 
@@ -92,10 +87,7 @@ class TestOvermindArtIntegration:
 
         metrics = {"metric1": 5.0}
 
-        visualizations = integration.visualize_metrics(
-            metrics,
-            visualization_types=["radial"]
-        )
+        visualizations = integration.visualize_metrics(metrics, visualization_types=["radial"])
 
         assert "radial_chart" in visualizations
         assert "bar_chart" not in visualizations
@@ -106,10 +98,7 @@ class TestOvermindArtIntegration:
         integration = OvermindArtIntegration(ArtStyle.DARK)
 
         modules = ["auth", "users", "database"]
-        dependencies = [
-            ("users", "auth"),
-            ("users", "database")
-        ]
+        dependencies = [("users", "auth"), ("users", "database")]
 
         svg = integration.visualize_dependencies(modules, dependencies)
 
@@ -123,21 +112,10 @@ class TestOvermindArtIntegration:
         integration = OvermindArtIntegration()
 
         analysis_data = {
-            "code_analysis": {
-                "avg_complexity": 5.2,
-                "functions": 42
-            },
-            "mission_data": {
-                "id": 123,
-                "events": [{"name": "Start", "type": "start"}]
-            },
-            "metrics": {
-                "performance": 8.5
-            },
-            "dependencies": {
-                "modules": ["module1", "module2"],
-                "edges": [("module1", "module2")]
-            }
+            "code_analysis": {"avg_complexity": 5.2, "functions": 42},
+            "mission_data": {"id": 123, "events": [{"name": "Start", "type": "start"}]},
+            "metrics": {"performance": 8.5},
+            "dependencies": {"modules": ["module1", "module2"], "edges": [("module1", "module2")]},
         }
 
         report = integration.create_full_report(analysis_data)
@@ -158,12 +136,7 @@ class TestCreateArtFromOvermindData:
 
     def test_create_art_basic(self):
         """Test creating art with basic data"""
-        overmind_data = {
-            "code_analysis": {
-                "avg_complexity": 3.0,
-                "functions": 10
-            }
-        }
+        overmind_data = {"code_analysis": {"avg_complexity": 3.0, "functions": 10}}
 
         result = create_art_from_overmind_data(overmind_data)
 
@@ -172,15 +145,8 @@ class TestCreateArtFromOvermindData:
 
     def test_create_art_with_style(self):
         """Test creating art with custom style"""
-        overmind_data = {
-            "metrics": {
-                "quality": 9.0
-            }
-        }
+        overmind_data = {"metrics": {"quality": 9.0}}
 
-        result = create_art_from_overmind_data(
-            overmind_data,
-            style=ArtStyle.CYBERPUNK
-        )
+        result = create_art_from_overmind_data(overmind_data, style=ArtStyle.CYBERPUNK)
 
         assert result["style"] == "cyberpunk"

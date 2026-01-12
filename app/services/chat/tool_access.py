@@ -3,6 +3,7 @@
 
 تحدد هذه السياسة ما إذا كان المستخدم مخولاً للوصول إلى نوايا/أدوات معينة.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

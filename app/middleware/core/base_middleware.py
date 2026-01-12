@@ -127,6 +127,7 @@ class BaseMiddleware(BaseHTTPMiddleware, ABC):
         """تمثيل نصي مهيأ لأغراض التشخيص."""
         return f"{self.__class__.__name__}(name={self.name}, order={self.order})"
 
+
 class ConditionalMiddleware(BaseMiddleware):
     """قاعدة لوسطاء يعتمد تشغيلهم على شروط المسار أو الطريقة."""
 
@@ -159,6 +160,7 @@ class ConditionalMiddleware(BaseMiddleware):
 
         # Check HTTP methods
         return not (self.methods and ctx.method not in self.methods)
+
 
 class MetricsMiddleware(BaseMiddleware):
     """قاعدة لوسطاء جمع المقاييس ومراقبة معدلات النجاح والفشل."""

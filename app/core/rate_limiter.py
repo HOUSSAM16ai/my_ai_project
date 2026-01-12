@@ -22,6 +22,7 @@ class RateLimitConfig:
     window_seconds: float = 60  # Time window in seconds
     cooldown_seconds: float = 5  # Cooldown after limit hit
 
+
 class ToolRateLimiter:
     """Thread-safe rate limiter for tool execution."""
 
@@ -147,8 +148,10 @@ class ToolRateLimiter:
                     self._calls.pop(k, None)
                     self._cooldowns.pop(k, None)
 
+
 # Global rate limiter instance
 _rate_limiter = ToolRateLimiter()
+
 
 def get_rate_limiter() -> ToolRateLimiter:
     return _rate_limiter

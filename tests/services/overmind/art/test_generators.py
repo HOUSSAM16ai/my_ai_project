@@ -3,7 +3,6 @@
 Tests for CS73 Art Generators Module
 """
 
-
 from app.services.overmind.art.generators import (
     CodePatternArtist,
     MetricsArtist,
@@ -81,11 +80,7 @@ class TestMetricsArtist:
         """Test radial chart with metrics"""
         artist = MetricsArtist(ArtStyle.MODERN)
 
-        metrics = {
-            "performance": 8.5,
-            "quality": 9.0,
-            "maintainability": 7.8
-        }
+        metrics = {"performance": 8.5, "quality": 9.0, "maintainability": 7.8}
 
         svg = artist.create_radial_chart(metrics, title="Test Metrics")
 
@@ -106,11 +101,7 @@ class TestMetricsArtist:
         """Test bar art with data"""
         artist = MetricsArtist(ArtStyle.CYBERPUNK)
 
-        data = {
-            "metric1": 5.0,
-            "metric2": 8.5,
-            "metric3": 3.2
-        }
+        data = {"metric1": 5.0, "metric2": 8.5, "metric3": 3.2}
 
         svg = artist.create_bar_art(data, title="Bar Chart")
 
@@ -143,13 +134,10 @@ class TestNetworkArtist:
         nodes = [
             {"id": "auth", "label": "Auth"},
             {"id": "users", "label": "Users"},
-            {"id": "db", "label": "Database"}
+            {"id": "db", "label": "Database"},
         ]
 
-        edges = [
-            ("users", "auth"),
-            ("users", "db")
-        ]
+        edges = [("users", "auth"), ("users", "db")]
 
         svg = artist.create_dependency_web(nodes, edges, title="Dependencies")
 
@@ -162,14 +150,9 @@ class TestNetworkArtist:
         """Test dependency web with edges referencing non-existent nodes"""
         artist = NetworkArtist()
 
-        nodes = [
-            {"id": "node1", "label": "Node 1"}
-        ]
+        nodes = [{"id": "node1", "label": "Node 1"}]
 
-        edges = [
-            ("node1", "non_existent"),
-            ("another_missing", "node1")
-        ]
+        edges = [("node1", "non_existent"), ("another_missing", "node1")]
 
         # Should not crash, just skip invalid edges
         svg = artist.create_dependency_web(nodes, edges)

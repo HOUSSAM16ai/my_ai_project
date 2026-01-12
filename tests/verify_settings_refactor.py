@@ -13,6 +13,7 @@ except ImportError as e:
     # Try to simulate how it might run if app is not found (though sys.path.append should fix it)
     sys.exit(1)
 
+
 def verify():
     print("Verifying settings refactor...")
 
@@ -36,6 +37,7 @@ def verify():
     assert "memory_agent.db" in mem.DATABASE_URL
     assert mem.SERVICE_NAME == "memory-agent"
     print("Memory settings: OK")
+
 
 if __name__ == "__main__":
     verify()

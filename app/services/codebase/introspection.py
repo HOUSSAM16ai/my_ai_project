@@ -24,16 +24,29 @@ class CodeSearchService:
     def __init__(self, root_dir: str = ".") -> None:
         self.root_dir = Path(root_dir).resolve()
         self.exclude_dirs = {
-            ".git", "__pycache__", ".venv", "venv", ".pytest_cache",
-            "node_modules", ".mypy_cache", ".ruff_cache", "coverage"
+            ".git",
+            "__pycache__",
+            ".venv",
+            "venv",
+            ".pytest_cache",
+            "node_modules",
+            ".mypy_cache",
+            ".ruff_cache",
+            "coverage",
         }
         self.exclude_files = {
-            ".env", ".env.local", ".env.production", ".env.test",
-            "secrets.json", "credentials.json"
+            ".env",
+            ".env.local",
+            ".env.production",
+            ".env.test",
+            "secrets.json",
+            "credentials.json",
         }
 
     def _should_exclude(self, path: Path) -> bool:
-        return path.name in self.exclude_files or any(part in self.exclude_dirs for part in path.parts)
+        return path.name in self.exclude_files or any(
+            part in self.exclude_dirs for part in path.parts
+        )
 
     def search_text(self, query: str, file_pattern: str = "*.py") -> list[FileLocation]:
         """Lexical search for text in files."""
@@ -57,7 +70,7 @@ class CodeSearchService:
                                     FileLocation(
                                         file_path=str(filepath.relative_to(self.root_dir)),
                                         line_number=i + 1,
-                                        match_context=line.strip()[:200]
+                                        match_context=line.strip()[:200],
                                     )
                                 )
                 except Exception:
@@ -81,14 +94,16 @@ class CodeSearchService:
                     tree = ast.parse(content, filename=str(filepath))
 
                     for node in ast.walk(tree):
-                        if (isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and
-                            node.name == symbol_name):
+                        if (
+                            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+                            and node.name == symbol_name
+                        ):
                             results.append(
                                 FileLocation(
                                     file_path=str(filepath.relative_to(self.root_dir)),
                                     line_number=node.lineno,
                                     symbol_name=node.name,
-                                    match_context=f"Definition of {node.name}"
+                                    match_context=f"Definition of {node.name}",
                                 )
                             )
                 except Exception:
@@ -99,5 +114,6 @@ class CodeSearchService:
         """Find API route definition."""
         # Simple heuristic search for decorators
         return self.search_text(f'"{path_fragment}"') + self.search_text(f"'{path_fragment}'")
+
 
 introspection_service = CodeSearchService()

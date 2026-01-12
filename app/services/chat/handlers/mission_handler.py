@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 # ======================================================================================
 # Helper Functions for Mission Handler
 # ======================================================================================
@@ -35,6 +36,7 @@ async def _check_preconditions(
 
     yield None
 
+
 async def _create_mission(
     context: ChatContext, objective: str, user_id: int, circuit
 ) -> dict | None:
@@ -53,6 +55,7 @@ async def _create_mission(
         circuit.record_failure()
         return {"ok": False, "error": str(e)}
 
+
 def _format_task_info(tasks: dict) -> str:
     """Format task progress information."""
     if not tasks:
@@ -70,6 +73,7 @@ def _format_task_info(tasks: dict) -> str:
         info += f" {failed} ❌"
     return info
 
+
 def _get_status_emoji(status: str) -> str:
     """Get emoji for mission status."""
     return {
@@ -83,9 +87,8 @@ def _get_status_emoji(status: str) -> str:
         "canceled": "🚫",
     }.get(status, "❓")
 
-async def _poll_mission_status(
-    context: ChatContext, mission_id: int
-) -> AsyncGenerator[str, None]:
+
+async def _poll_mission_status(context: ChatContext, mission_id: int) -> AsyncGenerator[str, None]:
     """Poll mission status until completion or timeout."""
     poll_count = 0
     max_polls = 15
@@ -122,6 +125,7 @@ async def _poll_mission_status(
 
     if poll_count >= max_polls:
         yield "\nℹ️ المهمة تعمل في الخلفية. يمكنك متابعة حالتها من لوحة التحكم.\n"
+
 
 async def handle_deep_analysis(
     context: ChatContext,
@@ -260,6 +264,7 @@ def _extract_content_from_chunk(chunk: dict) -> str:
         return choices[0].get("delta", {}).get("content", "")
     return ""
 
+
 async def handle_mission(
     context: ChatContext,
     objective: str,
@@ -306,6 +311,7 @@ async def handle_mission(
         yield status_msg
 
     logger.debug(f"mission handler completed in {(time.time() - start_time) * 1000:.2f}ms")
+
 
 async def _link_mission_to_conversation(conversation_id: int, mission_id: int):
     """

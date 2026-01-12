@@ -1,4 +1,3 @@
-
 import pytest
 
 from app.core.prompts import OVERMIND_SYSTEM_PROMPT, get_static_system_prompt, get_system_prompt
@@ -12,6 +11,7 @@ async def test_get_system_prompt_static():
     assert "## ⏰ Time:" in prompt
     assert "PROJECT METRICS" not in prompt
 
+
 @pytest.mark.asyncio
 async def test_get_system_prompt_async_default():
     prompt = await get_system_prompt(include_health=True, include_dynamic=False)
@@ -19,6 +19,7 @@ async def test_get_system_prompt_async_default():
     assert "المبادئ الصارمة للنظام" in prompt
     assert "## ⏰ Time:" in prompt
     assert "PROJECT METRICS" not in prompt
+
 
 @pytest.mark.asyncio
 async def test_get_system_prompt_async_dynamic():
@@ -40,6 +41,7 @@ async def test_get_system_prompt_async_dynamic():
     # Since we are in an environment where git might be available or mocked, let's just check it doesn't crash.
     # and if it returns something, it should be a string.
     assert isinstance(prompt, str)
+
 
 def test_global_constant():
     assert "OVERMIND CLI MINDGATE" in OVERMIND_SYSTEM_PROMPT

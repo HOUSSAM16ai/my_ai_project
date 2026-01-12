@@ -63,9 +63,7 @@ class ServiceRegistry:
             services: قائمة الخدمات المسجلة
             health_check_interval: فترة فحص الصحة بالثواني
         """
-        self._services: Final[dict[str, ServiceEndpoint]] = {
-            svc.name: svc for svc in services
-        }
+        self._services: Final[dict[str, ServiceEndpoint]] = {svc.name: svc for svc in services}
         self._health: dict[str, ServiceHealth] = {}
         self._health_check_interval = health_check_interval
 
@@ -191,8 +189,4 @@ class ServiceRegistry:
         Returns:
             list[str]: أسماء الخدمات الصحية
         """
-        return [
-            name
-            for name, health in self._health.items()
-            if health.is_healthy
-        ]
+        return [name for name, health in self._health.items() if health.is_healthy]

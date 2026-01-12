@@ -61,8 +61,10 @@ async def test_sensitive_request_blocked_and_logged(test_app, db_session) -> Non
             assert "لا يمكنني" in refusal_text
 
         audit_entries = (
-            await db_session.execute(select(AuditLog).where(AuditLog.action == "POLICY_BLOCKED"))
-        ).scalars().all()
+            (await db_session.execute(select(AuditLog).where(AuditLog.action == "POLICY_BLOCKED")))
+            .scalars()
+            .all()
+        )
         assert len(audit_entries) == 1
     finally:
         test_app.dependency_overrides.clear()

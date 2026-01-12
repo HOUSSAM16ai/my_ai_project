@@ -3,6 +3,7 @@ Ensemble Router
 ===============
 Routes requests to multiple models and aggregates their responses.
 """
+
 from __future__ import annotations
 
 import threading
@@ -27,8 +28,12 @@ class EnsembleRouter:
         self._ensembles: dict[str, EnsembleConfig] = {}
         self._lock = threading.RLock()
 
-    def create_ensemble(self, model_versions: list[str], aggregation_method:
-        str='voting', weights: (dict[str, float] | None)=None) ->str:
+    def create_ensemble(
+        self,
+        model_versions: list[str],
+        aggregation_method: str = "voting",
+        weights: (dict[str, float] | None) = None,
+    ) -> str:
         """
         إنشاء تجميع نماذج (Ensemble)
 
@@ -41,14 +46,17 @@ class EnsembleRouter:
             معرف التجميع
         """
         ensemble_id = str(uuid.uuid4())
-        config = EnsembleConfig(ensemble_id=ensemble_id, model_ids=
-            model_versions, aggregation_method=aggregation_method, weights=
-            weights or {})
+        config = EnsembleConfig(
+            ensemble_id=ensemble_id,
+            model_ids=model_versions,
+            aggregation_method=aggregation_method,
+            weights=weights or {},
+        )
         with self._lock:
             self._ensembles[ensemble_id] = config
         return ensemble_id
 
-    def _voting_aggregation(self, responses: list[ModelResponse]) ->dict[str, str | int | bool]:
+    def _voting_aggregation(self, responses: list[ModelResponse]) -> dict[str, str | int | bool]:
         """التصويت الأغلبي"""
         results = [r.output_data for r in responses if r.success]
         if not results:
@@ -56,21 +64,25 @@ class EnsembleRouter:
         result_counts = Counter(str(r) for r in results)
         return result_counts.most_common(1)[0][0]
 
-    def _averaging_aggregation(self, responses: list[ModelResponse]) ->dict[
-        str, Any]:
+    def _averaging_aggregation(self, responses: list[ModelResponse]) -> dict[str, Any]:
         """المتوسط (للقيم الرقمية)"""
         results = [r.output_data for r in responses if r.success]
-        return {'averaged_results': results}
+        return {"averaged_results": results}
 
-    def _default_aggregation(self, responses: list[ModelResponse]) ->dict[
-        str, Any]:
+    def _default_aggregation(self, responses: list[ModelResponse]) -> dict[str, Any]:
         """الافتراضي: إرجاع جميع النتائج"""
-        return {'ensemble_results': [r.output_data for r in responses],
-            'individual_latencies': [r.latency_ms for r in responses]}
+        return {
+            "ensemble_results": [r.output_data for r in responses],
+            "individual_latencies": [r.latency_ms for r in responses],
+        }
 
-    def create_ensemble_response(self, ensemble_id: str, aggregated_output:
-        dict[str, str | int | bool], responses: list[ModelResponse], total_latency: float
-        ) ->ModelResponse:
+    def create_ensemble_response(
+        self,
+        ensemble_id: str,
+        aggregated_output: dict[str, str | int | bool],
+        responses: list[ModelResponse],
+        total_latency: float,
+    ) -> ModelResponse:
         """
         إنشاء استجابة التجميع
 
@@ -84,8 +96,13 @@ class EnsembleRouter:
             استجابة التجميع
         """
         request_id = str(uuid.uuid4())
-        return ModelResponse(request_id=request_id, model_id=
-            f'ensemble-{ensemble_id}', version_id=ensemble_id, output_data=
-            aggregated_output, latency_ms=total_latency, tokens_used=sum(r.
-            tokens_used for r in responses), cost_usd=sum(r.cost_usd for r in
-            responses), success=all(r.success for r in responses))
+        return ModelResponse(
+            request_id=request_id,
+            model_id=f"ensemble-{ensemble_id}",
+            version_id=ensemble_id,
+            output_data=aggregated_output,
+            latency_ms=total_latency,
+            tokens_used=sum(r.tokens_used for r in responses),
+            cost_usd=sum(r.cost_usd for r in responses),
+            success=all(r.success for r in responses),
+        )

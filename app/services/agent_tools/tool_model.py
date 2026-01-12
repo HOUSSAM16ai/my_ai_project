@@ -10,9 +10,11 @@ from typing import Any
 @dataclass
 class ToolResult:
     """Standardized tool output."""
+
     ok: bool
     data: dict[str, Any] | None = None
     error: str | None = None
+
 
 @dataclass
 class ToolConfig:
@@ -41,6 +43,7 @@ class ToolConfig:
             errors.append("Tool handler is required")
 
         return errors
+
 
 @dataclass
 class Tool:
@@ -86,6 +89,7 @@ class Tool:
             "disabled": self.is_disabled,
         }
 
+
 def tool(
     name: str,
     description: str,
@@ -95,6 +99,7 @@ def tool(
     aliases: list[str] | None = None,
 ):
     """Decorator to register a function as a tool."""
+
     def decorator(func):
         func._tool_config = ToolConfig(
             name=name,
@@ -103,7 +108,8 @@ def tool(
             capabilities=capabilities or [],
             parameters=parameters or {},
             aliases=aliases or [],
-            handler=func
+            handler=func,
         )
         return func
+
     return decorator

@@ -38,7 +38,7 @@ class AccessDenied(DomainEvent):
             category=EventCategory.SYSTEM,
             aggregate_id=user_id,
             aggregate_type="User",
-            payload={"resource": resource, "reason": reason}
+            payload={"resource": resource, "reason": reason},
         )
 
 
@@ -66,7 +66,7 @@ class ApiResponseSent(DomainEvent):
             category=EventCategory.SYSTEM,
             aggregate_id=request_id,
             aggregate_type="Request",
-            payload={"status_code": status_code, "duration_ms": duration_ms}
+            payload={"status_code": status_code, "duration_ms": duration_ms},
         )
 
 
@@ -80,21 +80,33 @@ class RateLimitExceeded(DomainEvent):
             category=EventCategory.SYSTEM,
             aggregate_id=client_id,
             aggregate_type="Client",
-            payload={"endpoint": endpoint, "limit": limit}
+            payload={"endpoint": endpoint, "limit": limit},
         )
 
 
 @DomainEventRegistry.register
 @dataclass
 class ChatIntentDetected(DomainEvent):
-    def __init__(self, conversation_id: str, user_id: str, intent: str, confidence: float, original_message: str):
+    def __init__(
+        self,
+        conversation_id: str,
+        user_id: str,
+        intent: str,
+        confidence: float,
+        original_message: str,
+    ):
         super().__init__(
             event_type="ChatIntentDetected",
             bounded_context=BoundedContext.ADMIN_OPERATIONS,
             category=EventCategory.USER,
             aggregate_id=conversation_id,
             aggregate_type="Conversation",
-            payload={"user_id": user_id, "intent": intent, "confidence": confidence, "message": original_message}
+            payload={
+                "user_id": user_id,
+                "intent": intent,
+                "confidence": confidence,
+                "message": original_message,
+            },
         )
 
 
@@ -106,7 +118,7 @@ class NotificationRequested(DomainEvent):
             event_type="NotificationRequested",
             bounded_context=BoundedContext.NOTIFICATION_DELIVERY,
             category=EventCategory.INTEGRATION,
-            payload={"channel": channel, "recipient": recipient, "subject": subject, "body": body}
+            payload={"channel": channel, "recipient": recipient, "subject": subject, "body": body},
         )
 
 
@@ -120,5 +132,5 @@ class DataExportRequested(DomainEvent):
             category=EventCategory.INTEGRATION,
             aggregate_id=export_id,
             aggregate_type="Export",
-            payload={"format": format, "filters": filters}
+            payload={"format": format, "filters": filters},
         )

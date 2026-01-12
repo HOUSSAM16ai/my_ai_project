@@ -48,6 +48,7 @@ _ALLOWED_TABLES: Final[frozenset[str]] = frozenset(
     }
 )
 
+
 class TableSchemaConfig(TypedDict):
     """Schema definition for a table."""
 
@@ -88,11 +89,11 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
         },
         "index_names": {"linked_mission_id": "ix_admin_conversations_linked_mission_id"},
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"admin_conversations\"("
+            'CREATE TABLE IF NOT EXISTS "admin_conversations"('
             '"id" SERIAL PRIMARY KEY,'
             '"title" VARCHAR(500) NOT NULL,'
             '"user_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,'
-            '"conversation_type" VARCHAR(50) DEFAULT \'general\','
+            "\"conversation_type\" VARCHAR(50) DEFAULT 'general',"
             '"linked_mission_id" INTEGER,'
             '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
             ")"
@@ -111,7 +112,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
         },
         "index_names": {"user_id": "ix_customer_conversations_user_id"},
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"customer_conversations\"("
+            'CREATE TABLE IF NOT EXISTS "customer_conversations"('
             '"id" SERIAL PRIMARY KEY,'
             '"title" VARCHAR(500) NOT NULL,'
             '"user_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,'
@@ -134,7 +135,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
         },
         "index_names": {"conversation_id": "ix_customer_messages_conversation_id"},
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"customer_messages\"("
+            'CREATE TABLE IF NOT EXISTS "customer_messages"('
             '"id" SERIAL PRIMARY KEY,'
             '"conversation_id" INTEGER NOT NULL REFERENCES "customer_conversations"("id") ON DELETE CASCADE,'
             '"role" VARCHAR(50) NOT NULL,'
@@ -160,14 +161,14 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
         "auto_fix": {
             "external_id": 'ALTER TABLE "users" ADD COLUMN "external_id" VARCHAR(36)',
             "is_active": 'ALTER TABLE "users" ADD COLUMN "is_active" BOOLEAN NOT NULL DEFAULT TRUE',
-            "status": 'ALTER TABLE "users" ADD COLUMN "status" VARCHAR(50) NOT NULL DEFAULT \'active\''
+            "status": 'ALTER TABLE "users" ADD COLUMN "status" VARCHAR(50) NOT NULL DEFAULT \'active\'',
         },
         "indexes": {
             "external_id": 'CREATE UNIQUE INDEX IF NOT EXISTS "ix_users_external_id" ON "users"("external_id")'
         },
         "index_names": {"external_id": "ix_users_external_id"},
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"users\"("
+            'CREATE TABLE IF NOT EXISTS "users"('
             '"id" SERIAL PRIMARY KEY,'
             '"external_id" VARCHAR(36) UNIQUE,'
             '"full_name" VARCHAR(150) NOT NULL,'
@@ -175,7 +176,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             '"password_hash" VARCHAR(256),'
             '"is_admin" BOOLEAN DEFAULT FALSE,'
             '"is_active" BOOLEAN DEFAULT TRUE,'
-            '"status" VARCHAR(50) DEFAULT \'active\','
+            "\"status\" VARCHAR(50) DEFAULT 'active',"
             '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),'
             '"updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
             ")"
@@ -195,7 +196,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
         },
         "index_names": {"name": "ix_roles_name"},
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"roles\"("
+            'CREATE TABLE IF NOT EXISTS "roles"('
             '"id" SERIAL PRIMARY KEY,'
             '"name" VARCHAR(100) NOT NULL UNIQUE,'
             '"description" VARCHAR(255),'
@@ -218,7 +219,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
         },
         "index_names": {"name": "ix_permissions_name"},
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"permissions\"("
+            'CREATE TABLE IF NOT EXISTS "permissions"('
             '"id" SERIAL PRIMARY KEY,'
             '"name" VARCHAR(100) NOT NULL UNIQUE,'
             '"description" VARCHAR(255),'
@@ -239,7 +240,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             "role_id": "ix_user_roles_role_id",
         },
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"user_roles\"("
+            'CREATE TABLE IF NOT EXISTS "user_roles"('
             '"user_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,'
             '"role_id" INTEGER NOT NULL REFERENCES "roles"("id") ON DELETE CASCADE,'
             '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),'
@@ -259,7 +260,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             "permission_id": "ix_role_permissions_permission_id",
         },
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"role_permissions\"("
+            'CREATE TABLE IF NOT EXISTS "role_permissions"('
             '"role_id" INTEGER NOT NULL REFERENCES "roles"("id") ON DELETE CASCADE,'
             '"permission_id" INTEGER NOT NULL REFERENCES "permissions"("id") ON DELETE CASCADE,'
             '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),'
@@ -289,7 +290,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             "token_id": "ix_refresh_tokens_token_id",
         },
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"refresh_tokens\"("
+            'CREATE TABLE IF NOT EXISTS "refresh_tokens"('
             '"id" SERIAL PRIMARY KEY,'
             '"token_id" VARCHAR(36) NOT NULL UNIQUE,'
             '"user_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,'
@@ -322,7 +323,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             "created_at": "ix_audit_log_created_at",
         },
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"audit_log\"("
+            'CREATE TABLE IF NOT EXISTS "audit_log"('
             '"id" SERIAL PRIMARY KEY,'
             '"actor_user_id" INTEGER REFERENCES "users"("id") ON DELETE SET NULL,'
             '"action" VARCHAR(150) NOT NULL,'
@@ -337,38 +338,59 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
     },
     # New tables added to schema
     "missions": {
-        "columns": ["id", "objective", "status", "initiator_id", "active_plan_id", "created_at", "updated_at"],
+        "columns": [
+            "id",
+            "objective",
+            "status",
+            "initiator_id",
+            "active_plan_id",
+            "created_at",
+            "updated_at",
+        ],
         "auto_fix": {},
         "indexes": {
             "initiator_id": 'CREATE INDEX IF NOT EXISTS "ix_missions_initiator_id" ON "missions"("initiator_id")'
         },
         "index_names": {"initiator_id": "ix_missions_initiator_id"},
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"missions\"("
+            'CREATE TABLE IF NOT EXISTS "missions"('
             '"id" SERIAL PRIMARY KEY,'
             '"objective" TEXT,'
-            '"status" VARCHAR(50) DEFAULT \'pending\','
+            "\"status\" VARCHAR(50) DEFAULT 'pending',"
             '"initiator_id" INTEGER NOT NULL REFERENCES "users"("id"),'
             '"active_plan_id" INTEGER,'
             '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),'
             '"updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
             ")"
-        )
+        ),
     },
     "mission_plans": {
-        "columns": ["id", "mission_id", "version", "planner_name", "status", "score", "rationale", "raw_json", "stats_json", "warnings_json", "content_hash", "created_at"],
+        "columns": [
+            "id",
+            "mission_id",
+            "version",
+            "planner_name",
+            "status",
+            "score",
+            "rationale",
+            "raw_json",
+            "stats_json",
+            "warnings_json",
+            "content_hash",
+            "created_at",
+        ],
         "auto_fix": {},
         "indexes": {
             "mission_id": 'CREATE INDEX IF NOT EXISTS "ix_mission_plans_mission_id" ON "mission_plans"("mission_id")'
         },
         "index_names": {"mission_id": "ix_mission_plans_mission_id"},
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"mission_plans\"("
+            'CREATE TABLE IF NOT EXISTS "mission_plans"('
             '"id" SERIAL PRIMARY KEY,'
             '"mission_id" INTEGER NOT NULL REFERENCES "missions"("id"),'
             '"version" INTEGER DEFAULT 1,'
             '"planner_name" VARCHAR(100) NOT NULL,'
-            '"status" VARCHAR(50) DEFAULT \'draft\','
+            "\"status\" VARCHAR(50) DEFAULT 'draft',"
             '"score" FLOAT DEFAULT 0.0,'
             '"rationale" TEXT,'
             '"raw_json" TEXT,'
@@ -377,18 +399,42 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             '"content_hash" VARCHAR(64),'
             '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
             ")"
-        )
+        ),
     },
     "tasks": {
-        "columns": ["id", "mission_id", "plan_id", "task_key", "description", "tool_name", "tool_args_json", "status", "attempt_count", "max_attempts", "priority", "risk_level", "criticality", "depends_on_json", "result_text", "result_meta_json", "error_text", "started_at", "finished_at", "next_retry_at", "duration_ms", "created_at", "updated_at"],
+        "columns": [
+            "id",
+            "mission_id",
+            "plan_id",
+            "task_key",
+            "description",
+            "tool_name",
+            "tool_args_json",
+            "status",
+            "attempt_count",
+            "max_attempts",
+            "priority",
+            "risk_level",
+            "criticality",
+            "depends_on_json",
+            "result_text",
+            "result_meta_json",
+            "error_text",
+            "started_at",
+            "finished_at",
+            "next_retry_at",
+            "duration_ms",
+            "created_at",
+            "updated_at",
+        ],
         "auto_fix": {},
         "indexes": {
             "mission_id": 'CREATE INDEX IF NOT EXISTS "ix_tasks_mission_id" ON "tasks"("mission_id")',
-            "plan_id": 'CREATE INDEX IF NOT EXISTS "ix_tasks_plan_id" ON "tasks"("plan_id")'
+            "plan_id": 'CREATE INDEX IF NOT EXISTS "ix_tasks_plan_id" ON "tasks"("plan_id")',
         },
         "index_names": {"mission_id": "ix_tasks_mission_id", "plan_id": "ix_tasks_plan_id"},
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"tasks\"("
+            'CREATE TABLE IF NOT EXISTS "tasks"('
             '"id" SERIAL PRIMARY KEY,'
             '"mission_id" INTEGER NOT NULL REFERENCES "missions"("id"),'
             '"plan_id" INTEGER REFERENCES "mission_plans"("id"),'
@@ -396,7 +442,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             '"description" TEXT,'
             '"tool_name" VARCHAR(100),'
             '"tool_args_json" TEXT,'
-            '"status" VARCHAR(50) DEFAULT \'pending\','
+            "\"status\" VARCHAR(50) DEFAULT 'pending',"
             '"attempt_count" INTEGER DEFAULT 0,'
             '"max_attempts" INTEGER DEFAULT 3,'
             '"priority" INTEGER DEFAULT 0,'
@@ -413,26 +459,24 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),'
             '"updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
             ")"
-        )
+        ),
     },
     "mission_events": {
         "columns": ["id", "mission_id", "event_type", "payload_json", "created_at"],
-        "auto_fix": {
-             "payload_json": 'ALTER TABLE "mission_events" ADD COLUMN "payload_json" TEXT'
-        },
+        "auto_fix": {"payload_json": 'ALTER TABLE "mission_events" ADD COLUMN "payload_json" TEXT'},
         "indexes": {
-             "mission_id": 'CREATE INDEX IF NOT EXISTS "ix_mission_events_mission_id" ON "mission_events"("mission_id")'
+            "mission_id": 'CREATE INDEX IF NOT EXISTS "ix_mission_events_mission_id" ON "mission_events"("mission_id")'
         },
         "index_names": {"mission_id": "ix_mission_events_mission_id"},
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"mission_events\"("
+            'CREATE TABLE IF NOT EXISTS "mission_events"('
             '"id" SERIAL PRIMARY KEY,'
             '"mission_id" INTEGER NOT NULL REFERENCES "missions"("id"),'
             '"event_type" VARCHAR(50) NOT NULL,'
             '"payload_json" TEXT,'
             '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
             ")"
-        )
+        ),
     },
     "prompt_templates": {
         "columns": ["id", "name", "template"],
@@ -444,12 +488,12 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
         },
         "index_names": {"name": "ix_prompt_templates_name"},
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"prompt_templates\"("
+            'CREATE TABLE IF NOT EXISTS "prompt_templates"('
             '"id" SERIAL PRIMARY KEY,'
             '"name" VARCHAR(255) NOT NULL UNIQUE,'
             '"template" TEXT NOT NULL'
             ")"
-        )
+        ),
     },
     "generated_prompts": {
         "columns": ["id", "prompt", "template_id"],
@@ -461,20 +505,23 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
         },
         "index_names": {"template_id": "ix_generated_prompts_template_id"},
         "create_table": (
-            "CREATE TABLE IF NOT EXISTS \"generated_prompts\"("
+            'CREATE TABLE IF NOT EXISTS "generated_prompts"('
             '"id" SERIAL PRIMARY KEY,'
             '"prompt" TEXT NOT NULL,'
             '"template_id" INTEGER NOT NULL REFERENCES "prompt_templates"("id")'
             ")"
-        )
-    }
+        ),
+    },
 }
+
 
 def _to_sqlite_ddl(sql: str) -> str:
     """Converts PostgreSQL DDL to SQLite compatible DDL."""
     # Replace SERIAL with INTEGER PRIMARY KEY AUTOINCREMENT
     # Note: In CREATE TABLE, "id SERIAL PRIMARY KEY" becomes "id INTEGER PRIMARY KEY AUTOINCREMENT"
-    sql = re.sub(r"SERIAL PRIMARY KEY", "INTEGER PRIMARY KEY AUTOINCREMENT", sql, flags=re.IGNORECASE)
+    sql = re.sub(
+        r"SERIAL PRIMARY KEY", "INTEGER PRIMARY KEY AUTOINCREMENT", sql, flags=re.IGNORECASE
+    )
 
     # Replace TIMESTAMPTZ with TIMESTAMP or TEXT
     # SQLite has no TIMESTAMPTZ. TIMESTAMP is a safe generic type.
@@ -508,10 +555,13 @@ def _assert_schema_whitelist_alignment() -> None:
         raise ValueError(f"Unauthorized table in schema: {', '.join(sorted(undefined_tables))}")
 
     if missing_definitions:
-        raise ValueError(f"Missing schema definition for allowed tables: {', '.join(sorted(missing_definitions))}")
+        raise ValueError(
+            f"Missing schema definition for allowed tables: {', '.join(sorted(missing_definitions))}"
+        )
 
 
 _assert_schema_whitelist_alignment()
+
 
 async def _get_existing_columns(conn: AsyncConnection, table_name: str) -> set[str]:
     """Extracts existing columns."""
@@ -525,13 +575,11 @@ async def _get_existing_columns(conn: AsyncConnection, table_name: str) -> set[s
         return {row[1] for row in result.fetchall()}
 
     result = await conn.execute(
-        text(
-            "SELECT column_name FROM information_schema.columns "
-            "WHERE table_name = :table_name"
-        ),
+        text("SELECT column_name FROM information_schema.columns WHERE table_name = :table_name"),
         {"table_name": table_name},
     )
     return {row[0] for row in result.fetchall()}
+
 
 async def _table_exists(conn: AsyncConnection, table_name: str) -> bool:
     """Checks if table exists."""
@@ -555,6 +603,7 @@ async def _table_exists(conn: AsyncConnection, table_name: str) -> bool:
         {"table_name": table_name},
     )
     return bool(result.scalar())
+
 
 async def _fix_missing_column(
     conn: AsyncConnection,
@@ -589,6 +638,7 @@ async def _fix_missing_column(
         logger.error(f"❌ Failed to fix {table_name}.{col}: {e}")
         return False
 
+
 def _infer_index_name(index_query: str) -> str | None:
     """Infers index name from SQL."""
     pattern = re.compile(r"INDEX(?: IF NOT EXISTS)?\s+\"([^\"]+)\"", flags=re.IGNORECASE)
@@ -596,6 +646,7 @@ def _infer_index_name(index_query: str) -> str | None:
     if match:
         return match.group(1)
     return None
+
 
 async def _get_existing_indexes(conn: AsyncConnection, table_name: str) -> set[str]:
     """Gets existing index names."""
@@ -613,6 +664,7 @@ async def _get_existing_indexes(conn: AsyncConnection, table_name: str) -> set[s
         {"table_name": table_name},
     )
     return {row[0] for row in result.fetchall()}
+
 
 async def _ensure_missing_indexes(
     conn: AsyncConnection,
@@ -654,7 +706,9 @@ async def _ensure_missing_indexes(
             continue
 
         try:
-            ddl_query = _to_sqlite_ddl(index_query) if conn.dialect.name == "sqlite" else index_query
+            ddl_query = (
+                _to_sqlite_ddl(index_query) if conn.dialect.name == "sqlite" else index_query
+            )
             await conn.execute(text(ddl_query))
             fixed_indexes.append(f"{table_name}.{index_name}")
             logger.info(f"✅ Created missing index: {table_name}.{index_name}")
@@ -663,6 +717,7 @@ async def _ensure_missing_indexes(
             missing_indexes.append(f"{table_name}.{index_name}")
 
     return missing_indexes, fixed_indexes, errors
+
 
 async def validate_and_fix_schema(auto_fix: bool = True) -> SchemaValidationResult:
     """
@@ -704,9 +759,7 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> SchemaValidationResu
                             )
                             table_exists = True
                         except Exception as exc:
-                            results["errors"].append(
-                                f"Failed to create table {table_name}: {exc}"
-                            )
+                            results["errors"].append(f"Failed to create table {table_name}: {exc}")
                             continue
                     else:
                         results["errors"].append(
@@ -731,7 +784,9 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> SchemaValidationResu
                         index_queries = schema_info.get("indexes", {})
 
                         for col in missing:
-                            if await _fix_missing_column(conn, table_name, col, auto_fix_queries, index_queries):
+                            if await _fix_missing_column(
+                                conn, table_name, col, auto_fix_queries, index_queries
+                            ):
                                 results["fixed_columns"].append(f"{table_name}.{col}")
 
                 index_queries = schema_info.get("indexes", {})
@@ -768,6 +823,7 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> SchemaValidationResu
         results["status"] = "warning"
 
     return results
+
 
 async def validate_schema_on_startup() -> None:
     """

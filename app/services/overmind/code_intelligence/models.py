@@ -55,6 +55,7 @@ class FileMetrics:
     hotspot_score: float = 0.0
     priority_tier: str = ""  # "CRITICAL", "HIGH", "MEDIUM", "LOW"
 
+
 @dataclass
 class ProjectAnalysis:
     """Comprehensive project analysis"""

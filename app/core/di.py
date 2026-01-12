@@ -37,13 +37,16 @@ __all__ = [
     "get_system_service",
 ]
 
+
 def get_di_settings() -> AppSettings:
     """
     استرجاع إعدادات التطبيق (Singleton).
     """
     return _SETTINGS_SINGLETON
 
+
 get_settings = get_di_settings
+
 
 async def get_di_db() -> AsyncGenerator[AsyncSession, None]:
     """
@@ -53,6 +56,7 @@ async def get_di_db() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_factory() as session:
         yield session
 
+
 get_session = get_di_db
 get_db = get_di_db
 get_logger = _get_logger
@@ -61,7 +65,8 @@ get_logger = _get_logger
 # Application Service Dependencies (Clean Architecture)
 # ==============================================================================
 
-async def get_health_check_service() -> AsyncGenerator['HealthCheckService', None]:
+
+async def get_health_check_service() -> AsyncGenerator["HealthCheckService", None]:
     """
     الحصول على خدمة فحص الصحة.
     تستخدم Lazy Import لتجنب الدورات (Circular Imports).
@@ -73,7 +78,8 @@ async def get_health_check_service() -> AsyncGenerator['HealthCheckService', Non
         db_repo = SQLAlchemyDatabaseRepository(session)
         yield DefaultHealthCheckService(db_repo)
 
-async def get_system_service() -> AsyncGenerator['SystemService', None]:
+
+async def get_system_service() -> AsyncGenerator["SystemService", None]:
     """
     الحصول على خدمة النظام.
     """

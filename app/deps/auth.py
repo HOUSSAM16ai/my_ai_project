@@ -4,6 +4,7 @@
 تفصل هذه الوحدة منطق استخراج الرموز والتحقق من الأدوار عن الموجهات
 لضمان إعادة الاستخدام والاختبار السهل مع توثيق عربي موحّد.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -33,7 +34,9 @@ async def get_auth_service(db=Depends(get_db)) -> AuthService:
 def _extract_bearer_token(request: Request) -> str:
     header = request.headers.get("Authorization")
     if not header or not header.lower().startswith("bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing"
+        )
     return header.split(" ", maxsplit=1)[1]
 
 
@@ -45,11 +48,15 @@ async def get_current_user(
     payload = service.verify_access_token(token)
     user_id = payload.get("sub")
     if user_id is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload"
+        )
 
     user = await service.session.get(User, int(user_id))
     if user is None or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive"
+        )
 
     rbac = RBACService(service.session)
     await rbac.ensure_seed()
@@ -130,6 +137,8 @@ def reauth_dependency():
         if password and current.user.check_password(password):
             return current
 
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Re-authentication required")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Re-authentication required"
+        )
 
     return dependency

@@ -12,6 +12,7 @@ from app.telemetry.models import TraceContext, UnifiedSpan, UnifiedTrace
 
 logger = logging.getLogger(__name__)
 
+
 class TracingManager:
     def __init__(self, service_name: str, sample_rate: float, sla_target_ms: float):
         self.service_name = service_name
@@ -21,13 +22,18 @@ class TracingManager:
         self.active_spans: dict[str, UnifiedSpan] = {}
         self.completed_traces: deque[UnifiedTrace] = deque(maxlen=10000)
         self.lock = threading.RLock()
-        self.stats = {'traces_started': 0, 'traces_completed': 0, 'spans_created': 0}
+        self.stats = {"traces_started": 0, "traces_completed": 0, "spans_created": 0}
 
         # Dependency tracking
-        self.service_dependencies: dict[str, set[str]] = {} # Will be re-computed or updated
+        self.service_dependencies: dict[str, set[str]] = {}  # Will be re-computed or updated
 
-    def start_trace(self, operation_name: str, parent_context: TraceContext | None = None,
-                    tags: dict[str, object] | None = None, request: Request | None = None) -> TraceContext:
+    def start_trace(
+        self,
+        operation_name: str,
+        parent_context: TraceContext | None = None,
+        tags: dict[str, object] | None = None,
+        request: Request | None = None,
+    ) -> TraceContext:
         """
         Start a new trace or child span.
         بدء تتبع جديد أو span فرعي.
@@ -36,9 +42,7 @@ class TracingManager:
         trace_params = self._initialize_trace_params(parent_context)
 
         # Create span
-        span = self._create_span(
-            operation_name, trace_params, tags or {}
-        )
+        span = self._create_span(operation_name, trace_params, tags or {})
 
         # Register span and trace
         self._register_span_and_trace(span, trace_params)
@@ -50,25 +54,23 @@ class TracingManager:
 
         return context
 
-    def _initialize_trace_params(
-        self, parent_context: TraceContext | None
-    ) -> dict[str, object]:
+    def _initialize_trace_params(self, parent_context: TraceContext | None) -> dict[str, object]:
         """
         Initialize trace parameters from parent context or create new.
         تهيئة معاملات التتبع من السياق الأصلي أو إنشاء جديدة.
         """
         if parent_context:
             return {
-                'sampled': parent_context.sampled,
-                'trace_id': parent_context.trace_id,
-                'parent_span_id': parent_context.span_id,
-                'baggage': parent_context.baggage.copy(),
+                "sampled": parent_context.sampled,
+                "trace_id": parent_context.trace_id,
+                "parent_span_id": parent_context.span_id,
+                "baggage": parent_context.baggage.copy(),
             }
         return {
-            'sampled': self._head_based_sampling(),
-            'trace_id': self._generate_trace_id(),
-            'parent_span_id': None,
-            'baggage': {},
+            "sampled": self._head_based_sampling(),
+            "trace_id": self._generate_trace_id(),
+            "parent_span_id": None,
+            "baggage": {},
         }
 
     def _create_span(
@@ -80,19 +82,17 @@ class TracingManager:
         """
         span_id = self._generate_span_id()
         return UnifiedSpan(
-            trace_id=trace_params['trace_id'],
+            trace_id=trace_params["trace_id"],
             span_id=span_id,
-            parent_span_id=trace_params['parent_span_id'],
+            parent_span_id=trace_params["parent_span_id"],
             operation_name=operation_name,
             service_name=self.service_name,
             start_time=time.time(),
             tags=tags,
-            baggage=trace_params['baggage']
+            baggage=trace_params["baggage"],
         )
 
-    def _register_span_and_trace(
-        self, span: UnifiedSpan, trace_params: dict[str, object]
-    ) -> None:
+    def _register_span_and_trace(self, span: UnifiedSpan, trace_params: dict[str, object]) -> None:
         """
         Register span and trace in active collections.
         تسجيل span والتتبع في المجموعات النشطة.
@@ -100,21 +100,19 @@ class TracingManager:
         with self.lock:
             self.active_spans[span.span_id] = span
 
-            if trace_params['parent_span_id'] is None:
+            if trace_params["parent_span_id"] is None:
                 # Root span - create new trace
                 trace = UnifiedTrace(
-                    trace_id=span.trace_id,
-                    root_span=span,
-                    start_time=span.start_time
+                    trace_id=span.trace_id, root_span=span, start_time=span.start_time
                 )
                 trace.spans.append(span)
                 self.active_traces[span.trace_id] = trace
-                self.stats['traces_started'] += 1
+                self.stats["traces_started"] += 1
             elif span.trace_id in self.active_traces:
                 # Child span - add to existing trace
                 self.active_traces[span.trace_id].spans.append(span)
 
-            self.stats['spans_created'] += 1
+            self.stats["spans_created"] += 1
 
     def _create_trace_context(
         self, trace_params: dict[str, object], span: UnifiedSpan
@@ -124,11 +122,11 @@ class TracingManager:
         إنشاء كائن سياق التتبع.
         """
         return TraceContext(
-            trace_id=trace_params['trace_id'],
+            trace_id=trace_params["trace_id"],
             span_id=span.span_id,
-            parent_span_id=trace_params['parent_span_id'],
-            sampled=trace_params['sampled'],
-            baggage=trace_params['baggage']
+            parent_span_id=trace_params["parent_span_id"],
+            sampled=trace_params["sampled"],
+            baggage=trace_params["baggage"],
         )
 
     def _attach_context_to_request(
@@ -140,8 +138,14 @@ class TracingManager:
         """
         request.state.trace_context = context
         request.state.current_span_id = span_id
-    def end_span(self, span_id: str, status: str = 'OK', error_message: str | None = None,
-                 metrics: dict[str, float] | None = None) -> UnifiedTrace | None:
+
+    def end_span(
+        self,
+        span_id: str,
+        status: str = "OK",
+        error_message: str | None = None,
+        metrics: dict[str, float] | None = None,
+    ) -> UnifiedTrace | None:
         """
         End a span and return completed trace if applicable.
         إنهاء span وإرجاع التتبع المكتمل إن أمكن.
@@ -193,7 +197,7 @@ class TracingManager:
             return None
 
         # Update error count
-        if span.status == 'ERROR':
+        if span.status == "ERROR":
             trace.error_count += 1
 
         # Check if root span
@@ -213,7 +217,7 @@ class TracingManager:
 
         if self._tail_based_sampling(trace):
             self.completed_traces.append(trace)
-            self.stats['traces_completed'] += 1
+            self.stats["traces_completed"] += 1
             completed_trace = trace
         else:
             completed_trace = None
@@ -221,22 +225,26 @@ class TracingManager:
         del self.active_traces[trace.trace_id]
         return completed_trace
 
-    def add_span_event(self, span_id: str, event_name: str, attributes: dict[str, object] | None = None) -> None:
+    def add_span_event(
+        self, span_id: str, event_name: str, attributes: dict[str, object] | None = None
+    ) -> None:
         with self.lock:
             if span_id in self.active_spans:
                 event = {
-                    'timestamp': time.time(),
-                    'name': event_name,
-                    'attributes': attributes or {}
+                    "timestamp": time.time(),
+                    "name": event_name,
+                    "attributes": attributes or {},
                 }
                 self.active_spans[span_id].events.append(event)
 
     def _head_based_sampling(self) -> bool:
         import random
+
         return random.random() < self.sample_rate
 
     def _tail_based_sampling(self, trace: UnifiedTrace) -> bool:
         import random
+
         if trace.error_count > 0:
             return True
         if trace.total_duration_ms and trace.total_duration_ms > self.sla_target_ms * 2:

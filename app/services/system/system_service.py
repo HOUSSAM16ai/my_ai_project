@@ -158,10 +158,15 @@ class SystemService:
         connection_diagnostic: DatabaseConnectionDiagnostic | None = None,
         admin_presence_diagnostic: AdminPresenceDiagnostic | None = None,
     ):
-        self._session_factory: SessionFactory = session_factory or _wrap_session_factory(async_session_factory)
+        self._session_factory: SessionFactory = session_factory or _wrap_session_factory(
+            async_session_factory
+        )
         self._connection_diagnostic = connection_diagnostic or SQLAlchemyConnectionDiagnostic()
-        self._admin_presence_diagnostic = admin_presence_diagnostic or SQLAlchemyAdminPresenceDiagnostic(
-            admin_email="admin@example.com",
+        self._admin_presence_diagnostic = (
+            admin_presence_diagnostic
+            or SQLAlchemyAdminPresenceDiagnostic(
+                admin_email="admin@example.com",
+            )
         )
 
     async def check_database_status(self, db: AsyncSession | None = None) -> HealthStatus:
@@ -181,7 +186,9 @@ class SystemService:
         pulse = await self._evaluate_database(db)
         return pulse["connected"]
 
-    async def verify_system_integrity(self, db: AsyncSession | None = None) -> SystemIntegrityReport:
+    async def verify_system_integrity(
+        self, db: AsyncSession | None = None
+    ) -> SystemIntegrityReport:
         """
         الفحص الشامل (Deep Scan).
 
@@ -207,7 +214,9 @@ class SystemService:
 
         return self._compose_integrity_report(db_pulse, admin_present, timings.snapshot())
 
-    async def evaluate_integrity_features(self, db: AsyncSession | None = None) -> DiagnosticFeatureVector:
+    async def evaluate_integrity_features(
+        self, db: AsyncSession | None = None
+    ) -> DiagnosticFeatureVector:
         """
         ينتج متجه سمات عددي مبني على فحص التكامل الكامل.
 
@@ -272,7 +281,9 @@ class SystemService:
                 raise
 
     @asynccontextmanager
-    async def _timed_session(self, db: AsyncSession | None, timings: _TimingAccumulator) -> AsyncIterator[AsyncSession]:
+    async def _timed_session(
+        self, db: AsyncSession | None, timings: _TimingAccumulator
+    ) -> AsyncIterator[AsyncSession]:
         """
         يقيس زمن الحصول على الجلسة لضبط سلوك النظام وفق مبادئ 15-213 وCS244.
 
@@ -299,7 +310,9 @@ class SystemService:
         على البيانات الوصفية بدلاً من التفاصيل التنفيذية.
         """
 
-        status: IntegrityStatus = "ok" if database_pulse["connected"] and admin_present else "degraded"
+        status: IntegrityStatus = (
+            "ok" if database_pulse["connected"] and admin_present else "degraded"
+        )
 
         return {
             "status": status,
@@ -348,7 +361,9 @@ class SystemService:
         }
 
 
-def _wrap_session_factory(factory: Callable[[], AsyncGenerator[AsyncSession, None]]) -> SessionFactory:
+def _wrap_session_factory(
+    factory: Callable[[], AsyncGenerator[AsyncSession, None]],
+) -> SessionFactory:
     """يلف مصنع الجلسة الأصلي ليصبح متوافقًا مع توقيع SessionFactory."""
 
     @asynccontextmanager
@@ -468,7 +483,9 @@ def _vectorize_integrity_report(report: SystemIntegrityReport) -> DiagnosticFeat
     }
 
 
-def _build_feature_snapshot(report: SystemIntegrityReport, source: str) -> DiagnosticFeatureSnapshot:
+def _build_feature_snapshot(
+    report: SystemIntegrityReport, source: str
+) -> DiagnosticFeatureSnapshot:
     """
     يربط متجه السمات بالبيانات الوصفية لإصدار عقود تعليم الآلة.
 

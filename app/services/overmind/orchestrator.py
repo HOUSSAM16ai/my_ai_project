@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["OvermindOrchestrator"]
 
+
 class OvermindOrchestrator:
     """
     منسق العقل المدبر (The Cognitive Brain).
@@ -105,23 +106,18 @@ class OvermindOrchestrator:
             await self.state.log_event(
                 mission.id,
                 MissionEventType.STATUS_CHANGE,
-                {"brain_event": evt_type, "data": payload}
+                {"brain_event": evt_type, "data": payload},
             )
 
         try:
             # تفويض كامل للعقل (Abstraction Barrier)
-            result = await self.brain.process_mission(
-                mission,
-                log_event=_log_bridge
-            )
+            result = await self.brain.process_mission(mission, log_event=_log_bridge)
 
             await self.state.update_mission_status(
                 mission.id, MissionStatus.SUCCESS, OvermindMessage.MISSION_ACCOMPLISHED
             )
             await self.state.log_event(
-                mission.id,
-                MissionEventType.MISSION_COMPLETED,
-                {"result": result}
+                mission.id, MissionEventType.MISSION_COMPLETED, {"result": result}
             )
 
         except Exception as e:
@@ -132,5 +128,5 @@ class OvermindOrchestrator:
             await self.state.log_event(
                 mission.id,
                 MissionEventType.MISSION_FAILED,
-                {"error": str(e), "error_type": type(e).__name__}
+                {"error": str(e), "error_type": type(e).__name__},
             )

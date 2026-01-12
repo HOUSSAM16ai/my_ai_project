@@ -83,5 +83,6 @@ class TestCaching(unittest.TestCase):
         cache = get_cache()
         self.assertIsInstance(cache, InMemoryCache)
 
+
 if __name__ == "__main__":
     unittest.main()

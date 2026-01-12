@@ -14,13 +14,14 @@ logger = logging.getLogger(__name__)
 # A pre-computed hash for dummy verification to ensure CPU work is done
 # Optimization: Skip heavy computation in test environments
 if os.getenv("TESTING", "False").lower() == "true":
-    DUMMY_HASH = "$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$QaH8hQ" # Mock hash
+    DUMMY_HASH = "$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$QaH8hQ"  # Mock hash
 else:
     try:
         DUMMY_HASH = pwd_context.hash("phantom_verification_string_for_timing_protection")
     except Exception as e:
         logger.warning(f"ChronoShield: Could not pre-compute DUMMY_HASH ({e}). Using fallback.")
         DUMMY_HASH = "$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$QaH8hQ"
+
 
 class ChronoShield:
     """
@@ -139,6 +140,7 @@ class ChronoShield:
         # Verify against the dummy hash. Always returns False (hopefully),
         # but takes the same time as a real verify.
         return pwd_context.verify(password, DUMMY_HASH)
+
 
 # Singleton Instance
 chrono_shield = ChronoShield()

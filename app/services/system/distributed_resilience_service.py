@@ -4,12 +4,14 @@
 ───────────────────────────────
 Handles distributed transactions, circuit breaking, and system self-healing.
 """
+
 import logging
 
 # Removed broken imports from non-existent 'app.services.resilience'
 # from app.services.resilience import ...
 
 logger = logging.getLogger(__name__)
+
 
 class DistributedResilienceService:
     """

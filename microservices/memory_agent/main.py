@@ -48,8 +48,7 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
 
     @router.post("/memories", response_model=MemoryResponse)
     async def create_memory(
-        payload: MemoryCreateRequest,
-        session: AsyncSession = Depends(get_session)
+        payload: MemoryCreateRequest, session: AsyncSession = Depends(get_session)
     ) -> MemoryResponse:
         """ينشئ عنصر ذاكرة جديد ويعيده."""
 
@@ -78,8 +77,7 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
 
     @router.get("/memories/search", response_model=list[MemoryResponse])
     async def search_memories(
-        query: str = "",
-        session: AsyncSession = Depends(get_session)
+        query: str = "", session: AsyncSession = Depends(get_session)
     ) -> list[MemoryResponse]:
         """
         يبحث عن عناصر ذاكرة مطابقة للاستعلام.
@@ -93,9 +91,13 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
         if normalized:
             # Join with tags to search there too
             # We want memories where content matches OR any tag name matches
-            statement = statement.distinct().outerjoin(Memory.tags).where(
-                (col(Memory.content).ilike(f"%{normalized}%")) |
-                (col(Tag.name).ilike(f"%{normalized}%"))
+            statement = (
+                statement.distinct()
+                .outerjoin(Memory.tags)
+                .where(
+                    (col(Memory.content).ilike(f"%{normalized}%"))
+                    | (col(Tag.name).ilike(f"%{normalized}%"))
+                )
             )
 
         result = await session.execute(statement)
@@ -124,7 +126,7 @@ def create_app(settings: MemoryAgentSettings | None = None) -> FastAPI:
         title="Memory Agent",
         version=effective_settings.SERVICE_VERSION,
         description="وكيل مستقل لإدارة السياق والذاكرة",
-        lifespan=lifespan
+        lifespan=lifespan,
     )
     app.include_router(_build_router(effective_settings))
 

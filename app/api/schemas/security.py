@@ -7,6 +7,7 @@ class TokenRequest(RobustBaseModel):
     user_id: int | None = None
     scopes: list[str] = Field(default_factory=list)
 
+
 class LoginRequest(RobustBaseModel):
     email: str
     password: str
@@ -15,6 +16,7 @@ class LoginRequest(RobustBaseModel):
     @classmethod
     def lowercase_email(cls, v: str) -> str:
         return v.lower().strip()
+
 
 class RegisterRequest(RobustBaseModel):
     full_name: str
@@ -26,8 +28,10 @@ class RegisterRequest(RobustBaseModel):
     def lowercase_email(cls, v: str) -> str:
         return v.lower().strip()
 
+
 class TokenVerifyRequest(RobustBaseModel):
     token: str | None = None
+
 
 class UserResponse(RobustBaseModel):
     id: int
@@ -58,6 +62,7 @@ class UserResponse(RobustBaseModel):
             data.pop("full_name", None)
         return data
 
+
 class AuthResponse(RobustBaseModel):
     access_token: str
     token_type: str = "Bearer"
@@ -65,23 +70,28 @@ class AuthResponse(RobustBaseModel):
     status: str = "success"
     landing_path: str = "/app/chat"
 
+
 class RegisterResponse(RobustBaseModel):
     status: str = "success"
     message: str
     user: UserResponse
 
+
 class HealthResponse(RobustBaseModel):
     status: str
     data: dict[str, object]
+
 
 class TokenVerifyResponse(RobustBaseModel):
     status: str
     data: dict[str, object]
 
+
 class TokenGenerateResponse(RobustBaseModel):
     """
     نموذج استجابة توليد الرموز (للاختبارات).
     """
+
     access_token: str
     refresh_token: str
     token_type: str = "Bearer"

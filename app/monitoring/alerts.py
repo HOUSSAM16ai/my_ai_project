@@ -259,10 +259,7 @@ class AlertManager:
         Returns:
             list[Alert]: قائمة التنبيهات النشطة
         """
-        return [
-            alert for alert in self._alerts.values()
-            if alert.status == AlertStatus.ACTIVE
-        ]
+        return [alert for alert in self._alerts.values() if alert.status == AlertStatus.ACTIVE]
 
     def get_alerts_by_severity(self, severity: AlertSeverity) -> list[Alert]:
         """
@@ -274,10 +271,7 @@ class AlertManager:
         Returns:
             list[Alert]: قائمة التنبيهات
         """
-        return [
-            alert for alert in self._alerts.values()
-            if alert.severity == severity
-        ]
+        return [alert for alert in self._alerts.values() if alert.severity == severity]
 
     def get_alert_stats(self) -> dict[str, Any]:
         """

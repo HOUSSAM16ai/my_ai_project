@@ -11,11 +11,13 @@ from app.core.ai_gateway import AIClient, get_ai_client
 
 logger = logging.getLogger(__name__)
 
+
 class AgentState(Enum):
     IDLE = "IDLE"
     WORKING = "WORKING"
     WAITING = "WAITING"
     ERROR = "ERROR"
+
 
 @dataclass
 class AgentMessage:
@@ -24,6 +26,7 @@ class AgentMessage:
     target_id: str = ""
     content: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
+
 
 class AgentNode:
     """

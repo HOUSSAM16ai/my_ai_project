@@ -4,6 +4,7 @@ from microservices.user_service.settings import UserServiceSettings
 
 def test_base_service_settings_defaults():
     """Test that BaseServiceSettings has correct defaults."""
+
     class TestSettings(BaseServiceSettings):
         SERVICE_NAME: str = "test-service"
         DATABASE_URL: str = "sqlite:///test.db"
@@ -15,12 +16,14 @@ def test_base_service_settings_defaults():
     # Auto-fix check
     assert settings.DATABASE_URL == "sqlite+aiosqlite:///test.db"
 
+
 def test_user_service_settings_inheritance():
     """Test that UserServiceSettings correctly inherits and sets defaults."""
     settings = UserServiceSettings()
     assert settings.SERVICE_NAME == "user-service"
     assert "user_service.db" in settings.DATABASE_URL
     assert isinstance(settings, BaseServiceSettings)
+
 
 def test_user_service_settings_env_override(monkeypatch):
     """Test that env vars override defaults."""

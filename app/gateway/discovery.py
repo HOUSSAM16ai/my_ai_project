@@ -106,9 +106,7 @@ class ServiceDiscovery:
 
         self._instances[endpoint.name].append(instance)
 
-        logger.info(
-            f"✅ Service registered: {endpoint.name} at {endpoint.base_url}"
-        )
+        logger.info(f"✅ Service registered: {endpoint.name} at {endpoint.base_url}")
 
         return instance
 
@@ -129,10 +127,7 @@ class ServiceDiscovery:
         instances = self._instances[name]
         original_count = len(instances)
 
-        self._instances[name] = [
-            inst for inst in instances
-            if inst.endpoint.base_url != base_url
-        ]
+        self._instances[name] = [inst for inst in instances if inst.endpoint.base_url != base_url]
 
         removed = original_count - len(self._instances[name])
 
@@ -169,10 +164,7 @@ class ServiceDiscovery:
             return None
 
         # فلترة المثيلات الصحية
-        healthy_instances = [
-            inst for inst in instances
-            if self._is_instance_healthy(inst)
-        ]
+        healthy_instances = [inst for inst in instances if self._is_instance_healthy(inst)]
 
         if not healthy_instances:
             return None
@@ -303,16 +295,13 @@ class ServiceDiscovery:
         original_count = len(self._instances[name])
 
         self._instances[name] = [
-            inst for inst in self._instances[name]
-            if self._is_instance_healthy(inst)
+            inst for inst in self._instances[name] if self._is_instance_healthy(inst)
         ]
 
         removed = original_count - len(self._instances[name])
 
         if removed > 0:
-            logger.warning(
-                f"⚠️ Removed {removed} unhealthy instances of {name}"
-            )
+            logger.warning(f"⚠️ Removed {removed} unhealthy instances of {name}")
 
     def get_service_stats(self) -> dict[str, Any]:
         """
@@ -328,10 +317,7 @@ class ServiceDiscovery:
         }
 
         for name, instances in self._instances.items():
-            healthy_count = sum(
-                1 for inst in instances
-                if self._is_instance_healthy(inst)
-            )
+            healthy_count = sum(1 for inst in instances if self._is_instance_healthy(inst))
 
             stats["services"][name] = {
                 "total_instances": len(instances),

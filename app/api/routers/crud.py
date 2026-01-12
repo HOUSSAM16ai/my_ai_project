@@ -49,6 +49,7 @@ def get_crud_service(db: AsyncSession = Depends(get_db)) -> CrudBoundaryService:
     """يوفر تبعية حقن لخدمة CRUD الحدية باستخدام جلسة قاعدة البيانات غير المتزامنة."""
     return CrudBoundaryService(db)
 
+
 @router.get(
     "/resources/{resource_type}",
     summary="List Resources",
@@ -77,7 +78,7 @@ async def list_resources(
             per_page=per_page,
             sort_by=sort_by,
             order=order,  # type: ignore # Validated by Query pattern
-            filters=filters
+            filters=filters,
         )
     except ValueError as e:
         # Handle invalid resource type or other value errors gracefully
@@ -89,6 +90,7 @@ async def list_resources(
 
     # Fallback if result is still a dict (legacy support, though service is updated)
     return PaginatedResponse[GenericResourceResponse].model_validate(result)
+
 
 @router.post(
     "/resources/{resource_type}",
@@ -105,6 +107,7 @@ async def create_resource(
     """
     result = await service.create_item(resource_type, payload)
     return GenericResourceResponse.model_validate(result)
+
 
 @router.get(
     "/resources/{resource_type}/{item_id}",
@@ -125,6 +128,7 @@ async def get_resource(
 
     return GenericResourceResponse.model_validate(result)
 
+
 @router.put(
     "/resources/{resource_type}/{item_id}",
     summary="Update Resource",
@@ -144,6 +148,7 @@ async def update_resource(
         raise HTTPException(status_code=404, detail="المورد غير موجود")
 
     return GenericResourceResponse.model_validate(result)
+
 
 @router.delete(
     "/resources/{resource_type}/{item_id}",

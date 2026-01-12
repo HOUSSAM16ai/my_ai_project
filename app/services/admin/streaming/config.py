@@ -1,4 +1,5 @@
 """ضبط بث المحادثات الإدارية بطريقة قابلة للتمديد."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

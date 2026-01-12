@@ -76,9 +76,7 @@ class RedisCache(CacheBackend):
 
         # إعداد قاطع الدائرة
         config = breaker_config or CircuitBreakerConfig(
-            failure_threshold=5,
-            timeout=30.0,
-            success_threshold=2
+            failure_threshold=5, timeout=30.0, success_threshold=2
         )
         # استخدام MD5 لضمان ثبات الاسم عبر التشغيلات المختلفة
         url_hash = hashlib.md5(redis_url.encode()).hexdigest()
@@ -97,7 +95,9 @@ class RedisCache(CacheBackend):
         jitter = int(ttl_val * self._ttl_jitter_ratio * random.random())
         return ttl_val + jitter
 
-    async def _execute_with_breaker(self, operation_name: str, func, *args, **kwargs) -> object | None:
+    async def _execute_with_breaker(
+        self, operation_name: str, func, *args, **kwargs
+    ) -> object | None:
         """
         تنفيذ عملية Redis داخل قاطع الدائرة.
         """
@@ -118,6 +118,7 @@ class RedisCache(CacheBackend):
         """
         استرجاع قيمة.
         """
+
         # دالة مساعدة لتغليف الاستدعاء
         async def _do_get():
             value = await self._redis.get(key)
@@ -165,6 +166,7 @@ class RedisCache(CacheBackend):
 
     async def delete(self, key: str) -> bool:
         """حذف عنصر."""
+
         async def _do_delete():
             await self._redis.delete(key)
             return True
@@ -176,6 +178,7 @@ class RedisCache(CacheBackend):
 
     async def exists(self, key: str) -> bool:
         """التحقق من الوجود."""
+
         async def _do_exists():
             return await self._redis.exists(key) > 0
 
@@ -184,6 +187,7 @@ class RedisCache(CacheBackend):
 
     async def clear(self) -> bool:
         """مسح قاعدة البيانات الحالية."""
+
         async def _do_clear():
             await self._redis.flushdb()
             return True
@@ -195,6 +199,7 @@ class RedisCache(CacheBackend):
         """
         البحث عن مفاتيح.
         """
+
         async def _do_scan():
             keys: list[str] = []
             async for key in self._redis.scan_iter(match=pattern):

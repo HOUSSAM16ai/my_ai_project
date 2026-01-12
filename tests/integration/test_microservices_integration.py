@@ -232,9 +232,7 @@ class TestOrchestratorAPI:
     async def test_create_task(self, orchestrator_app: FastAPI) -> None:
         """يختبر إنشاء مهمة."""
         async with AsyncClient(app=orchestrator_app, base_url="http://test") as client:
-            response = await client.post(
-                "/orchestrator/tasks?description=Test Task"
-            )
+            response = await client.post("/orchestrator/tasks?description=Test Task")
             assert response.status_code == 200
             data = response.json()
             assert "id" in data

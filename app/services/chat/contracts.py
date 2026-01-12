@@ -1,6 +1,7 @@
 """
 عقود الدردشة المشتركة بين طبقات التفريع والحدود.
 """
+
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator, Callable

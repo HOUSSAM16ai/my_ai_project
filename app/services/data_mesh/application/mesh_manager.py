@@ -154,7 +154,7 @@ class DataMeshManager:
             quality_metrics={},
             access_patterns=[],
             lineage={},
-            status=DataProductStatus.ACTIVE
+            status=DataProductStatus.ACTIVE,
         )
 
     def evolve_contract_schema(
@@ -172,7 +172,9 @@ class DataMeshManager:
         if not contract:
             return None
 
-        compatibility = self._check_schema_compatibility(contract.schema_definition, new_schema, changes)
+        compatibility = self._check_schema_compatibility(
+            contract.schema_definition, new_schema, changes
+        )
         if not compatibility:
             return None
 
@@ -181,17 +183,14 @@ class DataMeshManager:
             contract_version=contract.schema_version,
             new_version=new_version,
             changes=changes,
-            compatibility=compatibility
+            compatibility=compatibility,
         )
 
         self._apply_schema_evolution(contract, evolution, new_schema, new_version)
         return evolution
 
     def _check_schema_compatibility(
-        self,
-        old_schema: dict[str, Any],
-        new_schema: dict[str, Any],
-        changes: list[dict[str, Any]]
+        self, old_schema: dict[str, Any], new_schema: dict[str, Any], changes: list[dict[str, Any]]
     ) -> SchemaCompatibility | None:
         """
         التحقق من توافق المخطط مع السياسات.
@@ -213,7 +212,7 @@ class DataMeshManager:
         contract_version: str,
         new_version: str,
         changes: list[dict[str, Any]],
-        compatibility: SchemaCompatibility
+        compatibility: SchemaCompatibility,
     ) -> SchemaEvolution:
         """
         إنشاء كائن تطور المخطط.
@@ -235,7 +234,7 @@ class DataMeshManager:
         contract: DataContract,
         evolution: SchemaEvolution,
         new_schema: dict[str, Any],
-        new_version: str
+        new_version: str,
     ) -> None:
         """
         تطبيق تطور المخطط على العقد وتحديث الحالة.
@@ -354,7 +353,9 @@ class DataMeshManager:
                 self._trigger_governance_action(
                     policy, f"Accuracy below threshold: {metrics.accuracy:.2%}"
                 )
-            elif rule_type == "freshness_max_seconds" and metrics.freshness_seconds > float(threshold):
+            elif rule_type == "freshness_max_seconds" and metrics.freshness_seconds > float(
+                threshold
+            ):
                 self._trigger_governance_action(
                     policy, f"Data freshness exceeded: {metrics.freshness_seconds}s"
                 )

@@ -76,7 +76,9 @@ def setup_static_files(app: FastAPI, static_dir: str | None = None) -> None:
     _setup_spa_fallback(app, base_static_dir)
 
 
-async def serve_static(request: Request, file_path: str, static_dir: str | None = None) -> Response | None:
+async def serve_static(
+    request: Request, file_path: str, static_dir: str | None = None
+) -> Response | None:
     """
     Serve static file with proper headers and caching.
 
@@ -147,6 +149,7 @@ def _setup_root_route(app: FastAPI, base_static_dir: str) -> None:
     إعداد مسار الجذر لخدمة index.html.
     Setup root route to serve index.html.
     """
+
     async def serve_root() -> FileResponse:
         """يخدم ملف index.html عند طلب الجذر."""
         return FileResponse(os.path.join(base_static_dir, "index.html"))
@@ -159,6 +162,7 @@ def _setup_spa_fallback(app: FastAPI, base_static_dir: str) -> None:
     إعداد معالج SPA Fallback.
     Setup SPA fallback handler for client-side routing.
     """
+
     async def spa_fallback(request: Request, full_path: str) -> FileResponse:
         """
         معالج المسارات غير الموجودة.
@@ -167,7 +171,7 @@ def _setup_spa_fallback(app: FastAPI, base_static_dir: str) -> None:
         # 1. التحقق من ملف فعلي | Check for physical file
         physical_response = await serve_static(request, full_path, static_dir=base_static_dir)
         if physical_response:
-            return physical_response # type: ignore
+            return physical_response  # type: ignore
 
         # 2. حماية مسارات API | Protect API routes
         if _is_api_route(full_path):

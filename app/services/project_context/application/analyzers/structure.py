@@ -26,9 +26,7 @@ class StructureAnalyzer:
             for item in sorted(app_dir.iterdir()):
                 if item.is_dir() and not item.name.startswith("__"):
                     py_files = list(item.glob("*.py"))
-                    directories.append(
-                        DirectorySummary(name=item.name, file_count=len(py_files))
-                    )
+                    directories.append(DirectorySummary(name=item.name, file_count=len(py_files)))
 
             # Get key files
             for key_file in ["models.py", "main.py", "cli.py"]:
