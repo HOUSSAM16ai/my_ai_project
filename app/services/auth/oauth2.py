@@ -52,8 +52,8 @@ class OAuth2Provider:
         self,
         name: str,
         redirect_uris: list[str],
-        grant_types: list[GrantType] = ["authorization_code"],
-        is_confidential: bool = True
+        grant_types: list[GrantType] | None = None,
+        is_confidential: bool = True,
     ) -> ClientRegistration:
         """
         تسجيل عميل جديد وإرجاع السر الخام.
@@ -61,10 +61,11 @@ class OAuth2Provider:
         Returns:
             ClientRegistration: كائن يحتوي على بيانات العميل والسر الخام (يجب عرضه مرة واحدة).
         """
-        import secrets
         import hashlib
+        import secrets
 
         client_id = secrets.token_urlsafe(16)
+        resolved_grant_types = grant_types or ["authorization_code"]
         client_secret = None
         secret_hash = "none"
 
@@ -76,7 +77,7 @@ class OAuth2Provider:
             client_id=client_id,
             client_secret_hash=secret_hash,
             redirect_uris=redirect_uris,
-            allowed_grant_types=grant_types,
+            allowed_grant_types=resolved_grant_types,
             name=name,
             is_confidential=is_confidential
         )
@@ -165,8 +166,8 @@ class OAuth2Provider:
         }
 
     def _verify_pkce(self, verifier: str, challenge: str, method: str | None) -> None:
-        import hashlib
         import base64
+        import hashlib
 
         if method == "S256":
             # S256: BASE64URL-ENCODE(SHA256(ASCII(code_verifier)))
@@ -174,7 +175,6 @@ class OAuth2Provider:
             encoded = base64.urlsafe_b64encode(hashed).decode("ascii").rstrip("=")
             if encoded != challenge:
                  raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="PKCE verification failed")
-        else:
-            # plain
-            if verifier != challenge:
-                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="PKCE verification failed")
+        # plain
+        elif verifier != challenge:
+             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="PKCE verification failed")

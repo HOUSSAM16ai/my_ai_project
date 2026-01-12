@@ -13,7 +13,6 @@ from typing import Protocol, runtime_checkable
 
 import httpx
 
-from app.core.types import JSONDict
 # Config imports
 from app.core.ai_config import get_ai_config
 from app.core.cognitive_cache import get_cognitive_engine
@@ -28,6 +27,7 @@ from app.core.gateway.exceptions import (
     StreamInterruptedError,
 )
 from app.core.gateway.node import NeuralNode
+from app.core.types import JSONDict
 
 logger = logging.getLogger(__name__)
 

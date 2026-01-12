@@ -55,7 +55,7 @@ def _extract_paths_from_json(payload: dict[str, object]) -> set[str]:
 
     paths_node = payload.get("paths")
     if isinstance(paths_node, dict):
-        return {str(path) for path in paths_node.keys()}
+        return {str(path) for path in paths_node}
     return set()
 
 
@@ -70,7 +70,7 @@ def _extract_operations_from_json(payload: dict[str, object]) -> dict[str, set[s
     for path, details in paths_node.items():
         if not isinstance(path, str) or not isinstance(details, dict):
             continue
-        operations[path] = {method.lower() for method in details.keys() if isinstance(method, str)}
+        operations[path] = {method.lower() for method in details if isinstance(method, str)}
     return operations
 
 
@@ -94,7 +94,7 @@ def _runtime_operations_from_openapi(schema: dict[str, object]) -> dict[str, set
             continue
         methods = {
             method.lower()
-            for method in details.keys()
+            for method in details
             if isinstance(method, str)
         }
         operations[path] = methods

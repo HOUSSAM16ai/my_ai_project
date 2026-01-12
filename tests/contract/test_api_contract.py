@@ -6,10 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from app.main import create_app
 from app.core.openapi_contracts import load_contract_operations, load_contract_paths
+from app.main import create_app
 from app.services.chat.agents.api_contract import APIContractAgent
-
 
 CONTRACT_PATH = (
     Path(__file__).resolve().parents[2]

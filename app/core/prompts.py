@@ -56,12 +56,11 @@ def _get_system_principles_prompt() -> str:
     Returns:
         str: نص المبادئ الصارمة المهيأ للإدراج في السياق.
     """
-    formatted = format_system_principles(
+    return format_system_principles(
         header="## 📜 المبادئ الصارمة للنظام",
         bullet="-",
         include_header=True,
     )
-    return formatted
 
 # =============================================================================
 # DYNAMIC CONTEXT HELPERS (Refactored for Low Complexity)

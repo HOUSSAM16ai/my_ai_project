@@ -150,7 +150,7 @@ async def get_admin_user_count() -> AdminUserCountResponse:
         return AdminUserCountResponse(count=count)
     except Exception as e:
         logger.error(f"Failed to retrieve user count: {e}")
-        raise HTTPException(status_code=503, detail="User Service unavailable")
+        raise HTTPException(status_code=503, detail="User Service unavailable") from e
 
 @router.post("/api/chat/stream", summary="بث محادثة المسؤول (Admin Chat Stream)")
 async def chat_stream(

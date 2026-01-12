@@ -1,5 +1,8 @@
 import pytest
+from fastapi import HTTPException
+
 from app.services.auth import OAuth2Provider
+
 
 def test_oauth2_provider_flow():
     """اختبار تدفق OAuth2 الأساسي."""
@@ -21,7 +24,7 @@ def test_oauth2_provider_flow():
     assert client.name == "Test App"
 
     # Should fail with wrong secret
-    with pytest.raises(Exception):
+    with pytest.raises(HTTPException):
         provider.validate_client(reg.client.client_id, "wrong_secret")
 
     # 3. Create Auth Code

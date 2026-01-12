@@ -12,17 +12,15 @@
 """
 
 import hashlib
-import secrets
 import logging
-from dataclasses import dataclass, field
+import secrets
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
+
 # We use a simulated In-Memory store for the Monolith Kernel phase
 # untill the Auth Microservice is fully extracted with its own DB.
-
 from app.core.domain.common import utc_now
 
 logger = logging.getLogger(__name__)
