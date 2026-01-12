@@ -37,6 +37,8 @@ from tests.factories.base import MissionFactory, UserFactory
 if TYPE_CHECKING:
     from app.core.domain.models import User
 
+TestingSessionLocal = testing_session_factory
+
 
 @asynccontextmanager
 async def managed_test_session() -> AsyncIterator[AsyncSession]:

@@ -24,6 +24,7 @@ from app.core.domain.chat import (
     CustomerMessage,
     MessageRole,
 )
+from app.core.domain.common import CaseInsensitiveEnum, FlexibleEnum, JSONText, utc_now
 from app.core.domain.mission import (
     Mission,
     MissionEvent,
@@ -33,6 +34,8 @@ from app.core.domain.mission import (
     PlanStatus,
     Task,
     TaskStatus,
+    log_mission_event,
+    update_mission_status,
 )
 from app.core.domain.user import (
     PasswordResetToken,
@@ -44,6 +47,7 @@ from app.core.domain.user import (
     UserRole,
     UserStatus,
 )
+from app.security.passwords import pwd_context
 
 if TYPE_CHECKING:
     pass
@@ -63,9 +67,12 @@ __all__ = [
     "AdminConversation",
     "AdminMessage",
     "AuditLog",
+    "CaseInsensitiveEnum",
     "CustomerConversation",
     "CustomerMessage",
+    "FlexibleEnum",
     "GeneratedPrompt",
+    "JSONText",
     "MessageRole",
     "Mission",
     "MissionEvent",
@@ -76,12 +83,16 @@ __all__ = [
     "Permission",
     "PlanStatus",
     "PromptTemplate",
+    "log_mission_event",
+    "pwd_context",
     "RefreshToken",
     "Role",
     "RolePermission",
     "Task",
     "TaskStatus",
+    "update_mission_status",
     "User",
     "UserRole",
     "UserStatus",
+    "utc_now",
 ]
