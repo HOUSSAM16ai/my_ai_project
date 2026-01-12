@@ -8,8 +8,10 @@ from __future__ import annotations
 import enum
 import json
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import Text, TypeDecorator
+from sqlalchemy.engine.interfaces import Dialect
 
 
 def utc_now() -> datetime:
@@ -29,7 +31,7 @@ class CaseInsensitiveEnum(str, enum.Enum):
     """
 
     @classmethod
-    def _missing_(cls, value):
+    def _missing_(cls, value: object) -> Any:
         if isinstance(value, str):
             upper_value = value.upper()
             if upper_value in cls.__members__:
@@ -49,11 +51,11 @@ class FlexibleEnum(TypeDecorator):
     impl = Text
     cache_ok = True
 
-    def __init__(self, enum_type: type[enum.Enum], *args, **kwargs):
+    def __init__(self, enum_type: type[enum.Enum], *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._enum_type = enum_type
 
-    def process_bind_param(self, value, dialect) -> None:
+    def process_bind_param(self, value: Any, dialect: Dialect) -> Any:
         if value is None:
             return None
         if isinstance(value, self._enum_type):
@@ -65,7 +67,7 @@ class FlexibleEnum(TypeDecorator):
                 return value.lower()
         return value
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value: Any, dialect: Dialect) -> Any:
         if value is None:
             return None
         if isinstance(value, self._enum_type):
@@ -87,12 +89,12 @@ class JSONText(TypeDecorator):
     impl = Text
     cache_ok = True
 
-    def process_bind_param(self, value, dialect) -> None:
+    def process_bind_param(self, value: Any, dialect: Dialect) -> Any:
         if value is None:
             return None
         return json.dumps(value)
 
-    def process_result_value(self, value, dialect) -> None:
+    def process_result_value(self, value: Any, dialect: Dialect) -> Any:
         if value is None:
             return None
         try:

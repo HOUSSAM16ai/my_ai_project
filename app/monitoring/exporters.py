@@ -10,6 +10,7 @@ import time
 from abc import ABC, abstractmethod
 from typing import Any
 
+from app.core.types import JSON
 from app.monitoring.metrics import MetricsCollector
 from app.monitoring.metrics import PrometheusExporter as BasePrometheusExporter
 
@@ -53,7 +54,7 @@ class JSONExporter(MetricExporter):
         Returns:
             dict[str, Any]: المقاييس
         """
-        return self.collector.get_all_metrics()
+        return self.collector.get_all_metrics()  # type: ignore[return-value]
 
     def export_to_file(self, filepath: str) -> None:
         """
