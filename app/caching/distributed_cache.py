@@ -10,8 +10,8 @@
 """
 
 import asyncio
-import logging
 import inspect
+import logging
 from collections.abc import Awaitable, Callable
 
 from app.caching.base import CacheBackend

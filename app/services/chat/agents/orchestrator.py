@@ -1,10 +1,8 @@
-import json
 import re
 
 from app.core.ai_gateway import AIClient
 from app.core.logging import get_logger
 from app.services.chat.agents.api_contract import APIContractAgent
-from app.services.chat.agents.base import AgentResponse
 from app.services.chat.agents.data_access import DataAccessAgent
 from app.services.chat.agents.refactor import RefactorAgent
 from app.services.chat.agents.test_agent import TestAgent

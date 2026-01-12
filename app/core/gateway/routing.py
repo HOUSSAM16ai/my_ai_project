@@ -17,7 +17,8 @@ from collections import deque
 from datetime import UTC, datetime
 from typing import TypedDict
 
-from app.core.types import JSONDict, Metadata
+from app.core.types import Metadata
+
 from .models import LoadBalancerState, ProtocolType, RoutingDecision, RoutingStrategy
 from .providers.anthropic import AnthropicAdapter
 from .providers.base import ModelProviderAdapter
@@ -254,8 +255,7 @@ class IntelligentRouter:
         strategy_impl.calculate_scores(candidate_dicts) # type: ignore
 
         # Select best
-        best = max(candidates, key=lambda x: x["score"])
-        return best
+        return max(candidates, key=lambda x: x["score"])
 
     def _create_routing_decision(
         self,

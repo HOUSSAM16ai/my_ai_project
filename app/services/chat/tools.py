@@ -121,8 +121,7 @@ class ToolRegistry:
         total_lines = len(raw_lines)
         start = max(start_line, 1)
         effective_end = end_line if end_line is not None else start
-        if effective_end < start:
-            effective_end = start
+        effective_end = max(effective_end, start)
         effective_end = min(effective_end, start + max_lines - 1, total_lines)
         snippet = raw_lines[start - 1 : effective_end]
 

@@ -15,8 +15,8 @@ import fnmatch
 import inspect
 import random
 import time
-from collections.abc import Awaitable, Callable
 from collections import OrderedDict
+from collections.abc import Awaitable, Callable
 
 from app.caching.base import CacheBackend
 from app.caching.stats import CacheCounters, CacheStatsSnapshot

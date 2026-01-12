@@ -153,10 +153,9 @@ class StrategicMemoryCache(CacheBackend):
             # إبلاغ السياسة بالإضافة والحصول على العنصر المطرود (إن وجد)
             evicted = self._policy.on_add(key)
 
-            if evicted and evicted != key:
-                 # إذا طُلب طرد عنصر وكان موجوداً في التخزين
-                if evicted in self._storage:
-                    del self._storage[evicted]
+            if evicted and evicted != key and evicted in self._storage:
+                # إذا طُلب طرد عنصر وكان موجوداً في التخزين
+                del self._storage[evicted]
 
             return True
 

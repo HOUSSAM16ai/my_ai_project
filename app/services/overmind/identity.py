@@ -18,7 +18,6 @@ from typing import Any
 
 from app.core.agents.principles import get_agent_principles
 from app.core.agents.system_principles import format_system_principles, get_system_principles
-
 from app.core.di import get_logger
 
 logger = get_logger(__name__)
@@ -408,12 +407,11 @@ class OvermindIdentity:
 
     def _answer_system_principles_question(self) -> str:
         """الإجابة على أسئلة مبادئ النظام الصارمة."""
-        formatted = format_system_principles(
+        return format_system_principles(
             header="المبادئ الصارمة للنظام هي:",
             bullet="",
             include_header=True,
         )
-        return formatted
 
     def _answer_capabilities_question(self) -> str:
         """الإجابة على أسئلة القدرات."""

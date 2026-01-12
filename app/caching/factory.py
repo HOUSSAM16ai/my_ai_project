@@ -16,7 +16,7 @@ from app.caching.namespace_cache import NamespacedCache
 from app.core.agents.principles import resolve_autonomy_namespace
 
 if TYPE_CHECKING:
-    from app.caching.redis_cache import RedisCache
+    pass
 
 # نوع الواجهة الخلفية (Backend Type)
 CacheBackendType = Literal["memory", "redis"]

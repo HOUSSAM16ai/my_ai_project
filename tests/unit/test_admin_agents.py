@@ -1,10 +1,12 @@
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
+from app.services.chat.agents.base import AgentResponse
 from app.services.chat.agents.orchestrator import OrchestratorAgent
 from app.services.chat.tools import ToolRegistry
-from app.services.chat.agents.base import AgentResponse
+
 
 @pytest.mark.asyncio
 async def test_orchestrator_agent_user_count():

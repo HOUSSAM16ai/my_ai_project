@@ -4,7 +4,11 @@
 تجمع المبادئ المعيارية والواجهات الداعمة لبناء وكلاء مستقلين ومتعاونين.
 """
 
-from app.core.agents.principles import AgentPrinciple, get_agent_principles, resolve_autonomy_namespace
+from app.core.agents.principles import (
+    AgentPrinciple,
+    get_agent_principles,
+    resolve_autonomy_namespace,
+)
 from app.core.agents.system_principles import (
     SystemPrinciple,
     get_system_principles,
@@ -16,6 +20,6 @@ __all__ = [
     "SystemPrinciple",
     "get_agent_principles",
     "get_system_principles",
-    "validate_system_principles",
     "resolve_autonomy_namespace",
+    "validate_system_principles",
 ]

@@ -33,11 +33,7 @@ class CodeSearchService:
         }
 
     def _should_exclude(self, path: Path) -> bool:
-        if path.name in self.exclude_files:
-            return True
-        if any(part in self.exclude_dirs for part in path.parts):
-            return True
-        return False
+        return path.name in self.exclude_files or any(part in self.exclude_dirs for part in path.parts)
 
     def search_text(self, query: str, file_pattern: str = "*.py") -> list[FileLocation]:
         """Lexical search for text in files."""

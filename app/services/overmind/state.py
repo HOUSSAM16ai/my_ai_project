@@ -242,7 +242,7 @@ class MissionStateManager:
         channel = f"mission:{mission_id}"
 
         # 1. Subscribe FIRST to avoid Race Condition (Gap-Free)
-        queue = event_bus.subscribe_queue(channel)
+        queue = self.event_bus.subscribe_queue(channel)
 
         try:
             # 2. Catch-up from Database (Consistency)
@@ -278,7 +278,7 @@ class MissionStateManager:
                     return
 
         finally:
-            event_bus.unsubscribe_queue(channel, queue)
+            self.event_bus.unsubscribe_queue(channel, queue)
 
     def _is_terminal_event(self, event: MissionEvent) -> bool:
         """Helper to check if an event concludes the mission."""

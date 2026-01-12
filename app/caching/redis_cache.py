@@ -20,7 +20,6 @@ import redis.asyncio as redis
 from app.caching.base import CacheBackend
 from app.caching.stats import CacheCounters, CacheStatsSnapshot
 from app.core.resilience.circuit_breaker import (
-    CircuitBreaker,
     CircuitBreakerConfig,
     get_circuit_breaker,
 )
