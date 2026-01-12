@@ -40,7 +40,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s | URSP | %(levelname
 logger = logging.getLogger("URSP")
 
 
-def get_env_var(name, default=None, required=True):
+def get_env_var(name: str, default: str | None = None, required: bool = True) -> str | None:
+    """يجلب متغير بيئي مع خيار قيمة افتراضية والتحقق من الإلزامية."""
     val = os.environ.get(name, default)
     if not val and required:
         # For non-critical optional targets, we might want to just log warning
@@ -48,8 +49,13 @@ def get_env_var(name, default=None, required=True):
     return val
 
 
-def run_command(command, cwd=None, sensitive_inputs=None, ignore_errors=False):
-    """Executes a shell command with secure output handling."""
+def run_command(
+    command: list[str],
+    cwd: str | None = None,
+    sensitive_inputs: list[str] | None = None,
+    ignore_errors: bool = False,
+) -> str | None:
+    """ينفذ أمرًا طرفيًا مع إخفاء القيم الحساسة في السجلات."""
     cmd_str = " ".join(command)
     if sensitive_inputs:
         for sensitive in sensitive_inputs:
@@ -70,8 +76,8 @@ def run_command(command, cwd=None, sensitive_inputs=None, ignore_errors=False):
         raise
 
 
-def resolve_github_url(token, repo_id):
-    """Resolves GitHub repository URL using the Repository ID."""
+def resolve_github_url(token: str, repo_id: str) -> str | None:
+    """يحسم رابط مستودع GitHub اعتمادًا على معرّف المستودع."""
     logger.info(f"Resolving GitHub target for ID: {repo_id}")
     headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
     url = f"https://api.github.com/repositories/{repo_id}"
@@ -81,15 +87,22 @@ def resolve_github_url(token, repo_id):
         response.raise_for_status()
         data = response.json()
         clone_url = data.get("clone_url")
+        if not clone_url:
+            logger.warning("GitHub clone URL missing from API response.")
+            return None
         # Inject auth
         return clone_url.replace("https://", f"https://oauth2:{token}@")
-    except Exception as e:
-        logger.error(f"Failed to resolve GitHub target: {e}")
-        raise
+    except requests.HTTPError as exc:
+        status_code = exc.response.status_code if exc.response else None
+        logger.warning(f"GitHub target resolution failed with status {status_code}.")
+        return None
+    except requests.RequestException as exc:
+        logger.warning(f"GitHub target resolution failed: {exc}")
+        return None
 
 
-def resolve_gitlab_url(token, project_id):
-    """Resolves GitLab project URL using the Project ID."""
+def resolve_gitlab_url(token: str, project_id: str) -> str | None:
+    """يحسم رابط مشروع GitLab اعتمادًا على معرّف المشروع."""
     logger.info(f"Resolving GitLab target for ID: {project_id}")
     headers = {"PRIVATE-TOKEN": token}
     url = f"https://gitlab.com/api/v4/projects/{project_id}"
@@ -99,30 +112,23 @@ def resolve_gitlab_url(token, project_id):
         response.raise_for_status()
         data = response.json()
         http_url = data.get("http_url_to_repo")
+        if not http_url:
+            logger.warning("GitLab repository URL missing from API response.")
+            return None
         # Inject auth - GitLab supports oauth2 as user for tokens, or just the token as user
         # Format: https://oauth2:<token>@gitlab.com/...
         return http_url.replace("https://", f"https://oauth2:{token}@")
-    except Exception as e:
-        logger.error(f"Failed to resolve GitLab target: {e}")
-        raise
+    except requests.HTTPError as exc:
+        status_code = exc.response.status_code if exc.response else None
+        logger.warning(f"GitLab target resolution failed with status {status_code}.")
+        return None
+    except requests.RequestException as exc:
+        logger.warning(f"GitLab target resolution failed: {exc}")
+        return None
 
 
-def check_workload_identity():
-    """
-    Checks if Workload Identity (OIDC) is available in the current CI environment.
-
-    This function specifically detects OIDC tokens available in CI/CD environments
-    (GitHub Actions and GitLab CI) for secure authentication without storing credentials.
-
-    Supported CI Environments:
-    - GitHub Actions: Checks for ACTIONS_ID_TOKEN_REQUEST_URL and ACTIONS_ID_TOKEN_REQUEST_TOKEN
-    - GitLab CI: Checks for CI_JOB_JWT_V2
-
-    Returns:
-        bool: True if Workload Identity/OIDC is available in the current CI environment,
-              False otherwise. This indicates whether OIDC tokens can be used
-              for secure authentication in the current execution context.
-    """
+def check_workload_identity() -> bool:
+    """يتحقق من توفر رموز الهوية الموثوقة (OIDC) في بيئة التكامل المستمر."""
     # Check for GitHub OIDC token
     if os.environ.get("ACTIONS_ID_TOKEN_REQUEST_URL") and os.environ.get(
         "ACTIONS_ID_TOKEN_REQUEST_TOKEN"
@@ -132,12 +138,8 @@ def check_workload_identity():
     return bool(os.environ.get("CI_JOB_JWT_V2"))
 
 
-def ensure_complete_history():
-    """
-    Ensures the local repository has complete history and local branches for all remote branches.
-    This is CRITICAL before running 'git push --prune', otherwise valid remote branches
-    might be deleted because the local CI environment (detached HEAD) doesn't know about them.
-    """
+def ensure_complete_history() -> None:
+    """يضمن اكتمال تاريخ المستودع والفروع المحلية قبل تنفيذ المزامنة القسرية."""
     logger.info("Validating repository history depth...")
 
     # 1. Unshallow if needed
@@ -186,7 +188,7 @@ def ensure_complete_history():
         logger.warning(f"Failed to hydrate some branches: {e}")
 
 
-def sync_remotes():
+def sync_remotes() -> None:
     # 0. Safety Pre-flight
     ensure_complete_history()
 
@@ -213,57 +215,69 @@ def sync_remotes():
     # 3. Execute Synchronization based on Direction
 
     # CASE A: GitHub -> GitLab
-    if (target_platform in {"GitLab", "All"}) and gitlab_token and gitlab_id:
-        try:
-            target_url = resolve_gitlab_url(gitlab_token, gitlab_id)
-            logger.info("Initiating Mirror Push to GitLab...")
+    if target_platform in {"GitLab", "All"}:
+        if not gitlab_token or not gitlab_id:
+            logger.info("GitLab credentials are missing; skipping GitLab synchronization.")
+        else:
+            try:
+                target_url = resolve_gitlab_url(gitlab_token, gitlab_id)
+                if not target_url:
+                    logger.warning("GitLab target resolution unavailable; skipping sync.")
+                else:
+                    logger.info("Initiating Mirror Push to GitLab...")
 
-            # Use --prune --force --all to ensure exact replica (deletes removed branches)
-            # and --tags to sync tags.
-            # Now that we have hydrated local branches, this is safe.
-            run_command(
-                [
-                    "git",
-                    "push",
-                    "--prune",
-                    "--force",
-                    target_url,
-                    "+refs/heads/*:refs/heads/*",
-                    "+refs/tags/*:refs/tags/*",
-                ],
-                sensitive_inputs=[gitlab_token],
-            )
-            logger.info("✅ Sync to GitLab Successful (Exit Code 0).")
+                    # Use --prune --force --all to ensure exact replica (deletes removed branches)
+                    # and --tags to sync tags.
+                    # Now that we have hydrated local branches, this is safe.
+                    run_command(
+                        [
+                            "git",
+                            "push",
+                            "--prune",
+                            "--force",
+                            target_url,
+                            "+refs/heads/*:refs/heads/*",
+                            "+refs/tags/*:refs/tags/*",
+                        ],
+                        sensitive_inputs=[gitlab_token],
+                    )
+                    logger.info("✅ Sync to GitLab Successful (Exit Code 0).")
 
-        except Exception as e:
-            logger.error(f"Sync to GitLab failed: {e}")
-            if target_platform == "GitLab":
-                sys.exit(1)
+            except Exception as e:
+                logger.error(f"Sync to GitLab failed: {e}")
+                if target_platform == "GitLab":
+                    sys.exit(1)
 
     # CASE B: GitLab -> GitHub
-    if (target_platform in {"GitHub", "All"}) and github_token and github_id:
-        try:
-            target_url = resolve_github_url(github_token, github_id)
-            logger.info("Initiating Mirror Push to GitHub...")
+    if target_platform in {"GitHub", "All"}:
+        if not github_token or not github_id:
+            logger.info("GitHub credentials are missing; skipping GitHub synchronization.")
+        else:
+            try:
+                target_url = resolve_github_url(github_token, github_id)
+                if not target_url:
+                    logger.warning("GitHub target resolution unavailable; skipping sync.")
+                else:
+                    logger.info("Initiating Mirror Push to GitHub...")
 
-            run_command(
-                [
-                    "git",
-                    "push",
-                    "--prune",
-                    "--force",
-                    target_url,
-                    "+refs/heads/*:refs/heads/*",
-                    "+refs/tags/*:refs/tags/*",
-                ],
-                sensitive_inputs=[github_token],
-            )
-            logger.info("✅ Sync to GitHub Successful (Exit Code 0).")
+                    run_command(
+                        [
+                            "git",
+                            "push",
+                            "--prune",
+                            "--force",
+                            target_url,
+                            "+refs/heads/*:refs/heads/*",
+                            "+refs/tags/*:refs/tags/*",
+                        ],
+                        sensitive_inputs=[github_token],
+                    )
+                    logger.info("✅ Sync to GitHub Successful (Exit Code 0).")
 
-        except Exception as e:
-            logger.error(f"Sync to GitHub failed: {e}")
-            if target_platform == "GitHub":
-                sys.exit(1)
+            except Exception as e:
+                logger.error(f"Sync to GitHub failed: {e}")
+                if target_platform == "GitHub":
+                    sys.exit(1)
 
     logger.info("Universal synchronization protocol completed.")
 
