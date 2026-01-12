@@ -91,6 +91,23 @@
             cursor: pointer;
         }
 
+        .legacy-loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            gap: 8px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .legacy-loader__error {
+            color: var(--error-color);
+            font-size: 0.9rem;
+            max-width: 480px;
+        }
+
         /* Dashboard Layout */
         .dashboard-layout {
             display: flex;
