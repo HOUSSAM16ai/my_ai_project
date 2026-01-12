@@ -16,6 +16,7 @@ import hashlib
 import json
 import logging
 import random
+from typing import Any
 
 import redis.asyncio as redis
 from app.caching.base import CacheBackend
@@ -97,8 +98,8 @@ class RedisCache(CacheBackend):
         return ttl_val + jitter
 
     async def _execute_with_breaker(
-        self, operation_name: str, func, *args, **kwargs
-    ) -> object | None:
+        self, operation_name: str, func: Any, *args: Any, **kwargs: Any
+    ) -> Any | None:
         """
         تنفيذ عملية Redis داخل قاطع الدائرة.
         """
@@ -121,7 +122,7 @@ class RedisCache(CacheBackend):
         """
 
         # دالة مساعدة لتغليف الاستدعاء
-        async def _do_get():
+        async def _do_get() -> Any:
             value = await self._redis.get(key)
             if value is None:
                 return None
@@ -151,7 +152,7 @@ class RedisCache(CacheBackend):
             await self.delete(key)
             return True
 
-        async def _do_set():
+        async def _do_set() -> bool:
             try:
                 serialized_value = json.dumps(value)
             except (TypeError, ValueError):
@@ -168,7 +169,7 @@ class RedisCache(CacheBackend):
     async def delete(self, key: str) -> bool:
         """حذف عنصر."""
 
-        async def _do_delete():
+        async def _do_delete() -> bool:
             await self._redis.delete(key)
             return True
 
@@ -180,7 +181,7 @@ class RedisCache(CacheBackend):
     async def exists(self, key: str) -> bool:
         """التحقق من الوجود."""
 
-        async def _do_exists():
+        async def _do_exists() -> bool:
             return await self._redis.exists(key) > 0
 
         result = await self._execute_with_breaker("exists", _do_exists)
@@ -189,7 +190,7 @@ class RedisCache(CacheBackend):
     async def clear(self) -> bool:
         """مسح قاعدة البيانات الحالية."""
 
-        async def _do_clear():
+        async def _do_clear() -> bool:
             await self._redis.flushdb()
             return True
 
@@ -201,7 +202,7 @@ class RedisCache(CacheBackend):
         البحث عن مفاتيح.
         """
 
-        async def _do_scan():
+        async def _do_scan() -> list[str]:
             keys: list[str] = []
             async for key in self._redis.scan_iter(match=pattern):
                 keys.append(key)

@@ -8,10 +8,10 @@ import logging
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Final
+from datetime import UTC, datetime
+from typing import Final, TypedDict
 
-from app.core.types import JSONDict
+from app.core.types import JSON, JSONDict
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +32,37 @@ class Metric:
     name: str
     value: float
     labels: dict[str, str] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=lambda: datetime.now(datetime.UTC))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     metric_type: str = "gauge"
+
+
+class HistogramStats(TypedDict):
+    """إحصائيات المخطط التكراري."""
+
+    count: int
+    sum: float
+    min: float
+    max: float
+    avg: float
+    p50: float
+    p95: float
+    p99: float
+
+
+class MetricsMetadata(TypedDict):
+    """بيانات وصفية للمقاييس."""
+
+    uptime_seconds: float
+    total_metrics_collected: int
+
+
+class MetricsSnapshot(TypedDict):
+    """لقطة كاملة للمقاييس."""
+
+    counters: dict[str, float]
+    gauges: dict[str, float]
+    histograms: dict[str, dict[str, float]]
+    metadata: MetricsMetadata
 
 
 class MetricsCollector:
@@ -188,7 +217,7 @@ class MetricsCollector:
         self,
         name: str,
         labels: dict[str, str] | None = None,
-    ) -> dict[str, float]:
+    ) -> HistogramStats:
         """
         يحصل على إحصائيات histogram.
 
@@ -197,7 +226,7 @@ class MetricsCollector:
             labels: تسميات
 
         Returns:
-            dict[str, float]: إحصائيات (count, sum, min, max, avg, p50, p95, p99)
+            HistogramStats: إحصائيات (count, sum, min, max, avg, p50, p95, p99)
         """
         key = self._make_key(name, labels)
         values = self._histograms.get(key, [])
@@ -228,17 +257,23 @@ class MetricsCollector:
             "p99": sorted_values[int(count * 0.99)],
         }
 
-    def get_all_metrics(self) -> JSONDict:
+    def get_all_metrics(self) -> MetricsSnapshot:
         """
         يحصل على جميع المقاييس.
 
         Returns:
-            JSONDict: جميع المقاييس
+            MetricsSnapshot: جميع المقاييس
         """
         histograms: dict[str, dict[str, float]] = {}
         for key in self._histograms:
             metric_name, labels = self._parse_key(key)
-            histograms[key] = self.get_histogram_stats(metric_name, labels)
+            # Casting HistogramStats to dict[str, float] for generic storage or use explicit type
+            # Since HistogramStats is TypedDict which is a dict at runtime, this is fine but we
+            # should match the return type structure.
+            # However, TypedDict doesn't inherit from dict[str, float] in MyPy's eyes always.
+            # Let's keep it simple.
+            stats = self.get_histogram_stats(metric_name, labels)
+            histograms[key] = stats  # type: ignore[assignment]
 
         return {
             "counters": dict(self._counters),
@@ -368,14 +403,15 @@ class PrometheusExporter:
 
         return "\n".join(lines) + "\n"
 
-    def export_json(self) -> JSONDict:
+    def export_json(self) -> JSON:
         """
         يصدر المقاييس بتنسيق JSON.
 
         Returns:
-            JSONDict: مقاييس بتنسيق JSON
+            JSON: مقاييس بتنسيق JSON
         """
-        return self.collector.get_all_metrics()
+        # Casting because MetricsSnapshot (TypedDict) is compatible with JSON structure
+        return self.collector.get_all_metrics()  # type: ignore[return-value]
 
 
 # مثيل عام

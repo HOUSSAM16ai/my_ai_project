@@ -52,6 +52,7 @@ class CacheFactory:
         cache_type = os.getenv("CACHE_TYPE", "memory").lower()
         ttl_jitter_ratio = CacheFactory._get_ttl_jitter_ratio()
 
+        backend: CacheBackend
         if cache_type == "redis":
             redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
             socket_timeout = CacheFactory._get_float_env("REDIS_SOCKET_TIMEOUT")
