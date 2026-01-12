@@ -1118,12 +1118,25 @@ const { useState, useEffect, useRef, useCallback, memo } = React;
             );
         };
 
-        ReactDOM.render(
-            <ErrorBoundary>
-                <App />
-            </ErrorBoundary>,
-            document.getElementById('root')
-        );
+        const rootElement = document.getElementById('root');
+
+        if (!rootElement) {
+            console.error('Legacy root element not found.');
+            window.dispatchEvent(new CustomEvent('legacy-app-error', {
+                detail: { message: 'تعذر العثور على عنصر تشغيل الواجهة.' }
+            }));
+        } else {
+            ReactDOM.render(
+                <ErrorBoundary>
+                    <App />
+                </ErrorBoundary>,
+                rootElement,
+                () => {
+                    window.__legacyAppMounted = true;
+                    window.dispatchEvent(new Event('legacy-app-mounted'));
+                }
+            );
+        }
         
         // ══════════════════════════════════════════════════════════════════════
         // STARTUP DIAGNOSTICS | تشخيص بدء التشغيل
