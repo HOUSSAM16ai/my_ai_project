@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import axios from 'axios';
 import showdown from 'showdown';
 
 // ══════════════════════════════════════════════════════════════════════
@@ -43,12 +42,21 @@ const PERFORMANCE_MONITOR = {
 };
 
 // Use relative URL for API. Next.js rewrite will handle proxying to backend.
-const API_ORIGIN = '';
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? '';
 const apiUrl = (path) => `${API_ORIGIN}${path}`;
 
 // WebSocket URL needs full path
 const getWsBase = () => {
     if (!isBrowser) return '';
+    if (API_ORIGIN) {
+        try {
+            const parsed = new URL(API_ORIGIN);
+            const wsProtocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+            return `${wsProtocol}//${parsed.host}`;
+        } catch (error) {
+            console.error('Invalid NEXT_PUBLIC_API_URL for WebSocket base:', error);
+        }
+    }
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const host = window.location.host; // includes port
     return `${protocol}://${host}`;
