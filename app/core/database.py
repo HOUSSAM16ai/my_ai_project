@@ -75,12 +75,16 @@ def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
             {"statement_cache_size": 0, "prepared_statement_cache_size": 0}
         )
 
-        # Handle 'sslmode' which asyncpg does not accept as a kwarg
-        # We strip it from the URL and convert it to an 'ssl' context
+        # Handle ssl query params and convert them to an SSL context for asyncpg.
         qs = dict(url_obj.query)
+        ssl_mode = None
         if "sslmode" in qs:
             ssl_mode = qs.pop("sslmode")
-            # Update db_url to exclude sslmode
+        elif "ssl" in qs:
+            ssl_mode = qs.pop("ssl")
+
+        if ssl_mode is not None:
+            # Update db_url to exclude ssl/sslmode
             url_obj = url_obj.set(query=qs)
 
             # [CRITICAL GUARDRAIL]
@@ -100,10 +104,6 @@ def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
 
                 if ssl_mode == "require":
                     # In 'require', we want SSL but don't strictly verify hostname/cert
-                    # if the user just wants encryption.
-                    # Note: Asyncpg's 'require' usually implies SSL but not necessarily full validation.
-                    # For strict safety, 'verify-full' is best.
-                    # Here we mimic common 'require' behavior: accept self-signed if needed or relax checks.
                     ctx.check_hostname = False
                     ctx.verify_mode = ssl.CERT_NONE
 

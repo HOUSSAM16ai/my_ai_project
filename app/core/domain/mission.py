@@ -94,7 +94,9 @@ class Mission(SQLModel, table=True):
     )
     tasks: list[Task] = Relationship(
         sa_relationship=relationship(
-            "Task", back_populates="mission", foreign_keys="[Task.mission_id]"
+            "app.core.domain.mission.Task",
+            back_populates="mission",
+            foreign_keys=lambda: [Task.mission_id],
         )
     )
     mission_plans: list[MissionPlan] = Relationship(
@@ -135,7 +137,9 @@ class MissionPlan(SQLModel, table=True):
             "Mission", back_populates="mission_plans", foreign_keys="[MissionPlan.mission_id]"
         )
     )
-    tasks: list[Task] = Relationship(sa_relationship=relationship("Task", back_populates="plan"))
+    tasks: list[Task] = Relationship(
+        sa_relationship=relationship("app.core.domain.mission.Task", back_populates="plan")
+    )
 
 
 class Task(SQLModel, table=True):
@@ -178,12 +182,12 @@ class Task(SQLModel, table=True):
     # Relationships
     mission: Mission = Relationship(
         sa_relationship=relationship(
-            "Mission", back_populates="tasks", foreign_keys="[Task.mission_id]"
+            "Mission", back_populates="tasks", foreign_keys=lambda: [Task.mission_id]
         )
     )
     plan: MissionPlan = Relationship(
         sa_relationship=relationship(
-            "MissionPlan", back_populates="tasks", foreign_keys="[Task.plan_id]"
+            "MissionPlan", back_populates="tasks", foreign_keys=lambda: [Task.plan_id]
         )
     )
 

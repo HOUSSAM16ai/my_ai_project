@@ -10,6 +10,7 @@ from app.core.settings.base import BaseServiceSettings
 class TestDBSettings(BaseServiceSettings):
     """Test settings for DB contract."""
 
+    __test__ = False
     DATABASE_URL: str = "sqlite+aiosqlite:///:memory:"
     SERVICE_NAME: str = "TestService"
     DEBUG: bool = True

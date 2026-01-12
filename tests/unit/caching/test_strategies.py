@@ -2,6 +2,8 @@
 اختبارات استراتيجيات التخزين المؤقت.
 """
 
+import asyncio
+
 from app.caching.strategies import LFUPolicy, LRUPolicy, StrategicMemoryCache
 
 
@@ -51,15 +53,18 @@ class TestStrategicCache:
         policy = LRUPolicy[str](capacity=2)
         cache = StrategicMemoryCache(policy)
 
-        cache.set("k1", "v1")
-        cache.set("k2", "v2")
+        async def run_test():
+            await cache.set("k1", "v1")
+            await cache.set("k2", "v2")
 
-        # Access k1
-        assert cache.get("k1") == "v1"
+            # Access k1
+            assert await cache.get("k1") == "v1"
 
-        # Add k3 -> Evicts k2 (since k1 was just accessed)
-        cache.set("k3", "v3")
+            # Add k3 -> Evicts k2 (since k1 was just accessed)
+            await cache.set("k3", "v3")
 
-        assert cache.get("k2") is None
-        assert cache.get("k1") == "v1"
-        assert cache.get("k3") == "v3"
+            assert await cache.get("k2") is None
+            assert await cache.get("k1") == "v1"
+            assert await cache.get("k3") == "v3"
+
+        asyncio.run(run_test())

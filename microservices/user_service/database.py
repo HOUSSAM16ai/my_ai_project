@@ -4,6 +4,8 @@ User Service Database Module.
 Uses the Shared Kernel Factory Pattern.
 """
 
+import asyncio
+import os
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,12 +16,20 @@ from microservices.user_service.settings import get_settings
 
 # 1. Initialize Settings
 settings = get_settings()
+runtime_settings = settings
+if os.getenv("ENVIRONMENT") == "testing":
+    runtime_settings = settings.model_copy(
+        update={"DATABASE_URL": "sqlite+aiosqlite:///:memory:"}
+    )
 
 # 2. Create Engine using Shared Kernel Factory
-engine = create_db_engine(settings)
+engine = create_db_engine(runtime_settings)
 
 # 3. Create Session Factory using Shared Kernel Factory
 async_session_factory = create_session_factory(engine)
+
+_init_lock = asyncio.Lock()
+_is_initialized = False
 
 
 async def init_db() -> None:
@@ -44,8 +54,20 @@ async def init_db() -> None:
         await conn.run_sync(SQLModel.metadata.create_all)
 
 
+async def _ensure_initialized() -> None:
+    global _is_initialized
+    if _is_initialized:
+        return
+    async with _init_lock:
+        if _is_initialized:
+            return
+        await init_db()
+        _is_initialized = True
+
+
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """Dependency for DB Session."""
+    await _ensure_initialized()
     async with async_session_factory() as session:
         try:
             yield session
