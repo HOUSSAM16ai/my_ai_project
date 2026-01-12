@@ -44,7 +44,9 @@ class AdminConversation(SQLModel, table=True):
 
     # Relationships
     user: User = Relationship(
-        sa_relationship=relationship("app.core.domain.user.User", back_populates="admin_conversations")
+        sa_relationship=relationship(
+            "app.core.domain.user.User", back_populates="admin_conversations"
+        )
     )
     messages: list[AdminMessage] = Relationship(
         sa_relationship=relationship("AdminMessage", back_populates="conversation")
@@ -84,7 +86,9 @@ class CustomerConversation(SQLModel, table=True):
     )
 
     user: User = Relationship(
-        sa_relationship=relationship("app.core.domain.user.User", back_populates="customer_conversations")
+        sa_relationship=relationship(
+            "app.core.domain.user.User", back_populates="customer_conversations"
+        )
     )
     messages: list[CustomerMessage] = Relationship(
         sa_relationship=relationship("CustomerMessage", back_populates="conversation")
