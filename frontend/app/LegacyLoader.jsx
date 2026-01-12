@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const LEGACY_SCRIPTS = [
   {
@@ -36,7 +36,7 @@ const LEGACY_APP_SCRIPT = {
   attributes: { "data-presets": "env,react" }
 };
 
-const LEGACY_MOUNT_TIMEOUT_MS = 12000;
+const LEGACY_MOUNT_TIMEOUT_MS = 45000;
 
 const ensureScript = (script) =>
   new Promise((resolve, reject) => {
@@ -141,6 +141,8 @@ const waitForLegacyMount = () =>
 export default function LegacyLoader() {
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState(null);
+  const dependenciesReadyRef = useRef(false);
+  const pendingMountedRef = useRef(false);
 
   const loadingMessage = useMemo(() => {
     if (status === "error") {
@@ -148,6 +150,27 @@ export default function LegacyLoader() {
     }
     return "جارٍ تشغيل واجهة CogniForge...";
   }, [status]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleMounted = () => {
+      if (dependenciesReadyRef.current) {
+        setError(null);
+        setStatus("ready");
+      } else {
+        pendingMountedRef.current = true;
+      }
+    };
+
+    window.addEventListener("legacy-app-mounted", handleMounted);
+
+    return () => {
+      window.removeEventListener("legacy-app-mounted", handleMounted);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -169,6 +192,12 @@ export default function LegacyLoader() {
         if (!window.__legacyAppLoaded) {
           await ensureScript(LEGACY_APP_SCRIPT);
           window.__legacyAppLoaded = true;
+        }
+        dependenciesReadyRef.current = true;
+        if (pendingMountedRef.current || window.__legacyAppMounted) {
+          setError(null);
+          setStatus("ready");
+          return;
         }
         await waitForLegacyMount();
         setStatus("ready");
