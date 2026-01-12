@@ -75,6 +75,13 @@ lifecycle_info "Launching background supervisor..."
 nohup bash "$SUPERVISOR_SCRIPT" > "$LOG_FILE" 2>&1 &
 SUPERVISOR_PID=$!
 
+# Ensure Codespaces ports are public when gh CLI is available
+if command -v gh >/dev/null 2>&1; then
+    lifecycle_info "Setting Codespaces port visibility (8000, 3000) to public..."
+    gh codespace ports visibility 8000:public >/dev/null 2>&1 || true
+    gh codespace ports visibility 3000:public >/dev/null 2>&1 || true
+fi
+
 # Save supervisor PID
 lifecycle_set_state "supervisor_running" "$SUPERVISOR_PID"
 lifecycle_set_state "supervisor_started_at" "$(date +%s)"
