@@ -10,6 +10,8 @@
 - Pub/Sub: لإبطال L1 عند حدوث تغيير في L2 من خدمة أخرى.
 """
 
+from __future__ import annotations
+
 import asyncio
 import inspect
 import logging
@@ -300,6 +302,35 @@ class MultiLevelCache(CacheBackend):
         except Exception as e:
             logger.error(f"❌ L2 Cache scan error: {e}")
             return []
+
+    async def set_add(
+        self, key: str, members: list[str], ttl: int | None = None
+    ) -> bool:
+        """
+        إضافة عناصر إلى مجموعة.
+        يتم التنفيذ في L2 فقط (باعتباره مصدر الحقيقة للمجموعات والعلامات).
+        """
+        try:
+            return await self.l2.set_add(key, members, ttl=ttl)
+        except Exception as e:
+            logger.error(f"❌ L2 Cache set_add error: {e}")
+            return False
+
+    async def set_remove(self, key: str, members: list[str]) -> bool:
+        """حذف عناصر من مجموعة في L2."""
+        try:
+            return await self.l2.set_remove(key, members)
+        except Exception as e:
+            logger.error(f"❌ L2 Cache set_remove error: {e}")
+            return False
+
+    async def set_members(self, key: str) -> set[str]:
+        """جلب عناصر المجموعة من L2."""
+        try:
+            return await self.l2.set_members(key)
+        except Exception as e:
+            logger.error(f"❌ L2 Cache set_members error: {e}")
+            return set()
 
     async def close(self) -> None:
         """إغلاق الموارد (مثل مستمع Pub/Sub)."""
