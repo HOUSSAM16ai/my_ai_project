@@ -1,4 +1,3 @@
-import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -50,17 +49,10 @@ class TraceContext:
                     k, v = item.split("=", 1)
                     baggage[k.strip()] = v.strip()
 
-            # Create a NEW span_id for the incoming context representation?
-            # The original code generated a new span_id here:
-            # span_id = uuid.uuid4().hex[:16]
-            # This seems slightly odd for "from_headers" (usually extracts the span_id sent),
-            # but I must preserve behavior.
-            span_id = uuid.uuid4().hex[:16]
-
             return cls(
                 trace_id=trace_id,
-                span_id=span_id,
-                parent_span_id=parent_span_id,
+                span_id=parent_span_id,
+                parent_span_id=None,
                 sampled=sampled,
                 baggage=baggage,
             )

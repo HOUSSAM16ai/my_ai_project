@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_factory
 from app.core.domain.user import User
+from app.core.settings.base import get_settings
 
 SessionFactory = Callable[[], AsyncIterator[AsyncSession]]
 
@@ -140,8 +141,10 @@ class SQLAlchemyAdminPresenceDiagnostic:
 
     async def admin_exists(self, session: AsyncSession) -> bool:
         """يستخدم استعلامًا آمنًا للتحقق من وجود الحساب المطلوب."""
-        result = await session.execute(select(User).where(User.email == self._admin_email))
-        return bool(result.scalars().first())
+        result = await session.execute(
+            select(User.id).where(User.email == self._admin_email).limit(1)
+        )
+        return result.scalar_one_or_none() is not None
 
 
 class SystemService:
@@ -162,10 +165,11 @@ class SystemService:
             async_session_factory
         )
         self._connection_diagnostic = connection_diagnostic or SQLAlchemyConnectionDiagnostic()
+        settings = get_settings()
         self._admin_presence_diagnostic = (
             admin_presence_diagnostic
             or SQLAlchemyAdminPresenceDiagnostic(
-                admin_email="admin@example.com",
+                admin_email=settings.ADMIN_EMAIL,
             )
         )
 
