@@ -8,7 +8,10 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy import select
 
-from app.core.agents.system_principles import format_system_principles
+from app.core.agents.system_principles import (
+    format_architecture_system_principles,
+    format_system_principles,
+)
 from app.core.domain.mission import Mission, MissionEvent, MissionEventType, MissionStatus
 from app.core.patterns.strategy import Strategy
 from app.services.chat.context import ChatContext
@@ -391,6 +394,11 @@ class DefaultChatHandler(IntentHandler):
             bullet="-",
             include_header=True,
         )
+        architecture_principles_text = format_architecture_system_principles(
+            header="مبادئ المعمارية وحوكمة البيانات (تُطبّق على الشيفرة بالكامل):",
+            bullet="-",
+            include_header=True,
+        )
         return f"""أنت {overmind["name_ar"]} (Overmind)، {overmind["role_ar"]}.
 
 معلومات المؤسس (مهمة جداً):
@@ -402,6 +410,8 @@ class DefaultChatHandler(IntentHandler):
 - GitHub: @{founder["github"]}
 
 {principles_text}
+
+{architecture_principles_text}
 
 عندما يسأل أحد عن المؤسس أو مؤسس النظام أو من أنشأ Overmind، أجب بهذه المعلومات بدقة تامة.
 """

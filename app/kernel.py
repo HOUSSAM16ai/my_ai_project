@@ -41,7 +41,10 @@ from app.api.routers import (
     system,
     ums,
 )
-from app.core.agents.system_principles import validate_system_principles
+from app.core.agents.system_principles import (
+    validate_architecture_system_principles,
+    validate_system_principles,
+)
 from app.core.config import AppSettings
 from app.core.database import async_session_factory
 from app.core.db_schema import validate_schema_on_startup
@@ -212,6 +215,7 @@ class RealityKernel:
                                        يمكن تعطيله لوضع API-only.
         """
         validate_system_principles()
+        validate_architecture_system_principles()
         if isinstance(settings, dict):
             self.settings_obj = AppSettings(**settings)
             self.settings_dict = self.settings_obj.model_dump()
