@@ -15,8 +15,9 @@
 
 import asyncio
 import logging
+import time
 from collections.abc import Awaitable, Callable
-from typing import Any, Protocol, TypeVar
+from typing import Protocol, TypeAlias, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -29,12 +30,14 @@ from app.services.overmind.domain.exceptions import StalemateError
 logger = logging.getLogger(__name__)
 
 # تعريف نوع عام للنتيجة
+JsonValue: TypeAlias = object
+JsonObject: TypeAlias = dict[str, JsonValue]
 T = TypeVar("T")
 
 
 # بروتوكول استدعاء تسجيل الأحداث
 class EventLogger(Protocol):
-    async def __call__(self, event_type: str, payload: dict[str, Any]) -> None: ...
+    async def __call__(self, event_type: str, payload: JsonObject) -> None: ...
 
 
 class CognitiveCritique(BaseModel):
@@ -54,9 +57,9 @@ class CognitiveState(BaseModel):
 
     mission_id: int
     objective: str
-    plan: dict[str, Any] | None = None
-    design: dict[str, Any] | None = None
-    execution_result: dict[str, Any] | None = None
+    plan: JsonObject | None = None
+    design: JsonObject | None = None
+    execution_result: JsonObject | None = None
     critique: CognitiveCritique | None = None
     iteration_count: int = Field(0, description="عدد المحاولات الحالية")
     max_iterations: int = Field(5, description="الحد الأقصى لمحاولات التصحيح الذاتي")
@@ -90,8 +93,8 @@ class SuperBrain:
         self.auditor = auditor
 
     async def _create_safe_logger(
-        self, log_event: Callable[[str, dict[str, Any]], Awaitable[None]] | None
-    ) -> Callable[[str, dict[str, Any]], Awaitable[None]]:
+        self, log_event: Callable[[str, JsonObject], Awaitable[None]] | None
+    ) -> Callable[[str, JsonObject], Awaitable[None]]:
         """
         إنشاء دالة تسجيل آمنة.
 
@@ -102,7 +105,7 @@ class SuperBrain:
             دالة تسجيل آمنة
         """
 
-        async def safe_log(evt_type: str, data: dict[str, Any]) -> None:
+        async def safe_log(evt_type: str, data: JsonObject) -> None:
             if log_event:
                 await log_event(evt_type, data)
 
@@ -112,7 +115,7 @@ class SuperBrain:
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
+        safe_log: Callable[[str, JsonObject], Awaitable[None]],
     ) -> CognitiveCritique:
         """
         معالجة مرحلة التخطيط والمراجعة.
@@ -135,6 +138,7 @@ class SuperBrain:
             action=lambda: self.strategist.create_plan(state.objective, collab_context),
             timeout=120.0,
             log_func=safe_log,
+            collab_context=collab_context,
         )
 
         # الكشف عن الحلقات المفرغة (Loop Detection)
@@ -149,6 +153,7 @@ class SuperBrain:
             ),
             timeout=60.0,
             log_func=safe_log,
+            collab_context=collab_context,
         )
 
         critique = CognitiveCritique(
@@ -171,7 +176,7 @@ class SuperBrain:
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
+        safe_log: Callable[[str, JsonObject], Awaitable[None]],
     ) -> None:
         """
         الكشف عن الحلقات المفرغة ومعالجتها.
@@ -209,7 +214,7 @@ class SuperBrain:
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
+        safe_log: Callable[[str, JsonObject], Awaitable[None]],
     ) -> None:
         """
         تنفيذ مرحلة التصميم.
@@ -225,13 +230,14 @@ class SuperBrain:
             action=lambda: self.architect.design_solution(state.plan, collab_context),
             timeout=120.0,
             log_func=safe_log,
+            collab_context=collab_context,
         )
 
     async def _execute_execution_phase(
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
+        safe_log: Callable[[str, JsonObject], Awaitable[None]],
     ) -> None:
         """
         تنفيذ مرحلة التنفيذ.
@@ -247,13 +253,14 @@ class SuperBrain:
             action=lambda: self.operator.execute_tasks(state.design, collab_context),
             timeout=300.0,
             log_func=safe_log,
+            collab_context=collab_context,
         )
 
     async def _execute_reflection_phase(
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
+        safe_log: Callable[[str, JsonObject], Awaitable[None]],
     ) -> None:
         """
         تنفيذ مرحلة الانعكاس والمراجعة النهائية.
@@ -271,6 +278,7 @@ class SuperBrain:
             ),
             timeout=60.0,
             log_func=safe_log,
+            collab_context=collab_context,
         )
 
         state.critique = CognitiveCritique(
@@ -283,9 +291,9 @@ class SuperBrain:
         self,
         mission: Mission,
         *,
-        context: dict[str, Any] | None = None,
-        log_event: Callable[[str, dict[str, Any]], Awaitable[None]] | None = None,
-    ) -> dict[str, Any]:
+        context: JsonObject | None = None,
+        log_event: Callable[[str, JsonObject], Awaitable[None]] | None = None,
+    ) -> JsonObject:
         """
         تنفيذ الحلقة المعرفية الكاملة للمهمة.
         Execute complete cognitive loop for mission.
@@ -314,7 +322,12 @@ class SuperBrain:
                 result = await self._execute_cognitive_cycle(state, collab_context, safe_log)
 
                 if result is not None:
-                    return result
+                    coordination_report = self._build_coordination_report(
+                        collab_context=collab_context, iteration=state.iteration_count
+                    )
+                    final_result = dict(result)
+                    final_result["coordination_report"] = coordination_report
+                    return final_result
 
             except StalemateError as se:
                 self._handle_stalemate(se, state, collab_context, safe_log)
@@ -330,7 +343,7 @@ class SuperBrain:
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
         safe_log,
-    ) -> dict[str, Any] | None:
+    ) -> JsonObject | None:
         """
         تنفيذ دورة معرفية كاملة.
         Execute one complete cognitive cycle (plan → design → execute → review).
@@ -355,7 +368,7 @@ class SuperBrain:
 
         # التحقق من النجاح | Check success
         if state.critique.approved:
-            await safe_log(CognitiveEvent.MISSION_SUCCESS, {"result": state.execution_result})
+            await safe_log(CognitiveEvent.MISSION_SUCCESS, {"result": state.execution_result or {}})
             return state.execution_result or {}
 
         # إعداد للإعادة | Prepare for retry
@@ -447,7 +460,8 @@ class SuperBrain:
         agent_name: str,
         action: Callable[[], Awaitable[T]],
         timeout: float,
-        log_func: Callable[[str, dict[str, Any]], Awaitable[None]],
+        log_func: Callable[[str, JsonObject], Awaitable[None]],
+        collab_context: InMemoryCollaborationContext,
     ) -> T:
         """
         منفذ المرحلة المعرفي العام (Generic Cognitive Phase Executor).
@@ -460,6 +474,7 @@ class SuperBrain:
             action: الدالة المراد تنفيذها (Closure).
             timeout: المهلة الزمنية بالثواني.
             log_func: دالة التسجيل.
+            collab_context: سياق التعاون لتسجيل التنسيق بين الوكلاء.
 
         Returns:
             T: نتيجة التنفيذ.
@@ -467,17 +482,124 @@ class SuperBrain:
         Raises:
             RuntimeError: في حال انتهاء المهلة أو حدوث خطأ.
         """
+        self._record_coordination_event(
+            collab_context=collab_context,
+            phase_name=str(phase_name),
+            agent_name=agent_name,
+            status="start",
+        )
         await log_func(CognitiveEvent.PHASE_START, {"phase": phase_name, "agent": agent_name})
         try:
             result = await asyncio.wait_for(action(), timeout=timeout)
             phase_str = str(phase_name).lower()
             await log_func(f"{phase_str}_completed", {"summary": "Phase completed successfully"})
+            self._record_coordination_event(
+                collab_context=collab_context,
+                phase_name=str(phase_name),
+                agent_name=agent_name,
+                status="success",
+            )
             return result
         except TimeoutError:
             error_msg = f"{agent_name} timeout during {phase_name} (exceeded {timeout}s)"
             logger.error(error_msg)
             phase_str = str(phase_name).lower()
             await log_func(f"{phase_str}_timeout", {"error": error_msg})
+            self._record_coordination_event(
+                collab_context=collab_context,
+                phase_name=str(phase_name),
+                agent_name=agent_name,
+                status="timeout",
+            )
             raise RuntimeError(error_msg) from None
         except Exception as e:
+            self._record_coordination_event(
+                collab_context=collab_context,
+                phase_name=str(phase_name),
+                agent_name=agent_name,
+                status="error",
+            )
             raise e
+
+    def _record_coordination_event(
+        self,
+        *,
+        collab_context: InMemoryCollaborationContext,
+        phase_name: str,
+        agent_name: str,
+        status: str,
+    ) -> None:
+        """
+        تسجيل حدث تنسيقي بين الوكلاء لتحسين التتبع والإنتاجية.
+        """
+        collab_context.add_trace(
+            {
+                "phase": phase_name,
+                "agent": agent_name,
+                "status": status,
+                "timestamp": time.time(),
+            }
+        )
+
+    def _build_coordination_report(
+        self,
+        *,
+        collab_context: InMemoryCollaborationContext,
+        iteration: int,
+    ) -> JsonObject:
+        """
+        إنشاء تقرير تنسيق احترافي يضمن وصول العمل للعميل بجودة عالية.
+        """
+        trace = collab_context.get_trace()
+        agent_names = {entry.get("agent") for entry in trace if entry.get("agent")}
+        phases = [entry.get("phase") for entry in trace if entry.get("phase")]
+        status_counts, phase_durations = self._summarize_trace(trace)
+        return {
+            "summary": "تم تنسيق الوكلاء عبر مراحل التخطيط والتصميم والتنفيذ والمراجعة.",
+            "iteration": iteration,
+            "agents_involved": sorted(agent for agent in agent_names if isinstance(agent, str)),
+            "phases": [phase for phase in phases if isinstance(phase, str)],
+            "status_counts": status_counts,
+            "phase_durations": phase_durations,
+            "trace": trace,
+        }
+
+    def _summarize_trace(
+        self,
+        trace: list[dict[str, JsonValue]],
+    ) -> tuple[dict[str, int], dict[str, float]]:
+        """
+        تلخيص سجل التنسيق بإحصاءات زمنية وحالات تنفيذ واضحة.
+        """
+        status_counts: dict[str, int] = {}
+        phase_starts: dict[tuple[str, str], float] = {}
+        phase_durations: dict[str, float] = {}
+        for entry in trace:
+            status = entry.get("status")
+            phase = entry.get("phase")
+            agent = entry.get("agent")
+            timestamp = entry.get("timestamp")
+
+            if isinstance(status, str):
+                status_counts[status] = status_counts.get(status, 0) + 1
+
+            if not (isinstance(phase, str) and isinstance(agent, str)):
+                continue
+            if not isinstance(timestamp, (int, float)):
+                continue
+
+            key = (phase, agent)
+            if status == "start":
+                phase_starts[key] = float(timestamp)
+                continue
+
+            start_time = phase_starts.get(key)
+            if start_time is None:
+                continue
+
+            duration = float(timestamp) - start_time
+            if duration < 0:
+                continue
+            phase_durations[phase] = phase_durations.get(phase, 0.0) + duration
+
+        return status_counts, phase_durations

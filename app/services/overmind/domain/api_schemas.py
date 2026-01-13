@@ -14,10 +14,14 @@
 
 from datetime import datetime
 from enum import Enum
+from typing import TypeAlias
 
 from pydantic import AliasChoices, Field
 
 from app.core.schemas import RobustBaseModel
+
+JsonPrimitive: TypeAlias = str | int | float | bool | None
+JsonValue: TypeAlias = JsonPrimitive | list["JsonValue"] | dict[str, "JsonValue"]
 
 
 class MissionStatusEnum(str, Enum):
@@ -86,7 +90,7 @@ class MissionCreate(RobustBaseModel):
     """
 
     objective: str = Field(..., min_length=5, max_length=5000, description="الهدف الرئيسي للمهمة")
-    context: dict[str, str | int | float | bool | None] = Field(
+    context: dict[str, "JsonValue"] = Field(
         default_factory=dict, description="سياق إضافي للمهمة (مثل بيئة العمل، قيود)"
     )
     priority: int = Field(1, ge=1, le=5, description="أولوية المهمة (1-5)")
@@ -102,9 +106,7 @@ class MissionResponse(RobustBaseModel):
     status: MissionStatusEnum = Field(..., description="الحالة العامة للمهمة")
     created_at: datetime = Field(..., description="توقيت الإنشاء")
     updated_at: datetime = Field(..., description="آخر تحديث")
-    result: dict[str, str | int | float | bool | None] | None = Field(
-        None, description="النتيجة النهائية للمهمة"
-    )
+    result: dict[str, "JsonValue"] | None = Field(None, description="النتيجة النهائية للمهمة")
     # Using 'tasks' from DB model, mapped to 'steps' in API if we want to keep API consistent,
     # or just rename to 'tasks'. Let's use validation_alias to accept 'tasks' from DB object.
     steps: list[MissionStepResponse] = Field(
@@ -122,9 +124,7 @@ class MissionEventResponse(RobustBaseModel):
     event_type: str = Field(..., description="نوع الحدث (مثلاً: step_start, log, completion)")
     mission_id: int = Field(..., description="معرف المهمة")
     timestamp: datetime = Field(default_factory=lambda: datetime.now(), description="توقيت الحدث")
-    payload: dict[str, str | int | float | bool | list | dict | None] = Field(
-        default_factory=dict, description="بيانات الحدث التفصيلية"
-    )
+    payload: dict[str, "JsonValue"] = Field(default_factory=dict, description="بيانات الحدث التفصيلية")
 
 
 class AgentPlanPriority(str, Enum):
@@ -144,7 +144,7 @@ class AgentsPlanRequest(RobustBaseModel):
     """
 
     objective: str = Field(..., min_length=5, max_length=5000, description="الهدف الرئيسي المطلوب")
-    context: dict[str, str | int | float | bool | None] = Field(
+    context: dict[str, "JsonValue"] = Field(
         default_factory=dict, description="سياق إضافي يساعد الوكلاء على التخطيط"
     )
     constraints: list[str] = Field(default_factory=list, description="قيود تشغيلية أو تقنية")

@@ -9,7 +9,7 @@ import time
 import traceback
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import TypeAlias
 
 from app.services.overmind.tool_canonicalizer import canonicalize_tool_name as new_canonicalizer
 
@@ -36,6 +36,16 @@ from .utils import _coerce_to_tool_result, _dbg, _generate_trace_id, _lower
 
 
 # ======================================================================================
+# Types
+# ======================================================================================
+JsonPrimitive: TypeAlias = str | int | float | bool | None
+JsonValue: TypeAlias = JsonPrimitive | dict[str, "JsonValue"] | list["JsonValue"]
+JsonSchema: TypeAlias = dict[str, JsonValue]
+JsonObject: TypeAlias = dict[str, JsonValue]
+ToolMetadata: TypeAlias = dict[str, object]
+
+
+# ======================================================================================
 # Metrics Helpers
 # ======================================================================================
 @dataclass
@@ -47,9 +57,9 @@ class ToolExecutionContext:
 
     name: str
     trace_id: str
-    meta_entry: dict[str, Any]
-    func: Callable[..., Any]
-    kwargs: dict[str, Any]
+    meta_entry: ToolMetadata
+    func: Callable[..., object]
+    kwargs: JsonObject
 
 
 @dataclass
@@ -64,7 +74,7 @@ class ToolExecutionInfo:
     elapsed_ms: float
     category: str
     capabilities: list[str]
-    meta_entry: dict[str, Any]
+    meta_entry: ToolMetadata
     trace_id: str
 
 
@@ -101,12 +111,12 @@ def _validate_tool_names(name: str, aliases: list[str]) -> None:
 def _create_tool_metadata(
     name: str,
     description: str,
-    parameters: dict[str, Any],
+    parameters: JsonSchema,
     category: str,
     aliases: list[str],
     allow_disable: bool,
     is_alias: bool = False,
-) -> dict:
+) -> ToolMetadata:
     """
     Create tool metadata dictionary.
 
@@ -128,7 +138,7 @@ def _create_tool_metadata(
 def _register_main_tool(
     name: str,
     description: str,
-    parameters: dict[str, Any],
+    parameters: JsonSchema,
     category: str,
     aliases: list[str],
     allow_disable: bool,
@@ -149,7 +159,7 @@ def _register_main_tool(
 def _register_tool_aliases(
     name: str,
     description: str,
-    parameters: dict[str, Any],
+    parameters: JsonSchema,
     category: str,
     aliases: list[str],
     allow_disable: bool,
@@ -180,7 +190,7 @@ def _register_tool_aliases(
 # ======================================================================================
 # Policy Hooks (stubs)
 # ======================================================================================
-def policy_can_execute(tool_name: str, args: dict[str, Any]) -> bool:
+def policy_can_execute(tool_name: str, args: JsonObject) -> bool:
     """يحدد إمكانية تنفيذ الأداة بناءً على السياسة المعلنة."""
     _ = args
     meta = _TOOL_REGISTRY.get(tool_name)
@@ -193,7 +203,7 @@ def policy_can_execute(tool_name: str, args: dict[str, Any]) -> bool:
     return os.getenv("TOOL_POLICY_ALLOW_WRITE", "false").lower() == "true"
 
 
-def transform_arguments(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+def transform_arguments(tool_name: str, args: JsonObject) -> JsonObject:
     """يحول الوسائط قبل تمريرها للأداة مع الحفاظ على سلامة المدخلات."""
     _ = tool_name
     return args
@@ -202,32 +212,108 @@ def transform_arguments(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
 # ======================================================================================
 # Argument Validation
 # ======================================================================================
-def _validate_type(name: str, value: dict[str, str | int | bool], expected: str):
+def _validate_type(name: str, value: JsonValue, expected: str) -> None:
     py_type = SUPPORTED_TYPES.get(expected)
     if py_type and not isinstance(value, py_type):
         raise TypeError(f"Parameter '{name}' must be of type '{expected}'.")
 
 
-def _validate_arguments(schema: dict[str, Any], args: dict[str, Any]) -> dict[str, Any]:
-    if not isinstance(schema, dict) or schema.get("type") != "object":
+def _schema_candidates(schema: JsonSchema) -> list[JsonSchema]:
+    """يستخرج بدائل المخطط المتعددة لاستخدامها في حل التمييز متعدد الأشكال."""
+    for key in ("oneOf", "anyOf"):
+        node = schema.get(key)
+        if isinstance(node, list):
+            return [item for item in node if isinstance(item, dict)]
+    return []
+
+
+def _schema_matches_discriminator(
+    candidate: JsonSchema,
+    property_name: str,
+    discriminator_value: JsonValue,
+) -> bool:
+    """يتحقق من مطابقة قيمة المميّز داخل خصائص المخطط المرشح."""
+    properties = candidate.get("properties")
+    if not isinstance(properties, dict):
+        return False
+    field_schema = properties.get(property_name)
+    if not isinstance(field_schema, dict):
+        return False
+    if field_schema.get("const") == discriminator_value:
+        return True
+    enum_values = field_schema.get("enum")
+    if isinstance(enum_values, list) and discriminator_value in enum_values:
+        return True
+    return False
+
+
+def _resolve_polymorphic_schema(schema: JsonSchema, args: JsonObject) -> JsonSchema:
+    """يحاول اختيار مخطط فرعي بناءً على discriminator لتقليل الالتباس."""
+    discriminator = schema.get("discriminator")
+    if not isinstance(discriminator, dict):
+        return schema
+    property_name = discriminator.get("propertyName")
+    if not isinstance(property_name, str):
+        return schema
+    discriminator_value = args.get(property_name)
+    if discriminator_value is None:
+        return schema
+
+    mapping = discriminator.get("mapping")
+    if isinstance(mapping, dict):
+        mapped_schema = mapping.get(discriminator_value)
+        if isinstance(mapped_schema, dict):
+            return mapped_schema
+
+    for candidate in _schema_candidates(schema):
+        if _schema_matches_discriminator(candidate, property_name, discriminator_value):
+            return candidate
+
+    return schema
+
+
+def _enforce_property_strictness(
+    schema: JsonSchema,
+    args: JsonObject,
+    properties: dict[str, JsonValue],
+) -> None:
+    """يفرض قيود الخصائص غير المعرّفة وفق unevaluatedProperties/additionalProperties."""
+    unevaluated = schema.get("unevaluatedProperties")
+    additional = schema.get("additionalProperties")
+    if unevaluated is not False and additional is not False:
+        return
+    allowed = set(properties.keys())
+    extras = [key for key in args if key not in allowed]
+    if extras:
+        raise ValueError(f"Unknown properties are not allowed: {extras}")
+
+
+def _validate_arguments(schema: JsonSchema, args: JsonObject) -> JsonObject:
+    resolved_schema = _resolve_polymorphic_schema(schema, args)
+    if not isinstance(resolved_schema, dict) or resolved_schema.get("type") != "object":
         return args
-    properties = schema.get("properties", {}) or {}
-    required = schema.get("required", []) or []
-    cleaned: dict[str, Any] = {}
+    properties = resolved_schema.get("properties", {}) or {}
+    required = resolved_schema.get("required", []) or []
+    cleaned: JsonObject = {}
+    if not isinstance(properties, dict):
+        properties = {}
+    if not isinstance(required, list):
+        required = []
     for field, meta in properties.items():
         if field in args:
             value = args[field]
-        elif "default" in meta:
+        elif isinstance(meta, dict) and "default" in meta:
             value = meta["default"]
         else:
             continue
-        et = meta.get("type")
-        if et in SUPPORTED_TYPES:
+        et = meta.get("type") if isinstance(meta, dict) else None
+        if isinstance(et, str) and et in SUPPORTED_TYPES:
             _validate_type(field, value, et)
         cleaned[field] = value
     missing = [r for r in required if r not in cleaned]
     if missing:
         raise ValueError(f"Missing required parameters: {missing}")
+    _enforce_property_strictness(resolved_schema, args, properties)
     return cleaned
 
 
@@ -281,14 +367,14 @@ def has_tool(name: str) -> bool:
     return resolve_tool_name(name) is not None
 
 
-def get_tool(name: str) -> dict[str, Any] | None:
+def get_tool(name: str) -> ToolMetadata | None:
     cname = resolve_tool_name(name)
     if not cname:
         return None
     return _TOOL_REGISTRY.get(cname)
 
 
-def list_tools(include_aliases: bool = False) -> list[dict[str, Any]]:
+def list_tools(include_aliases: bool = False) -> list[ToolMetadata]:
     out = []
     for meta in _TOOL_REGISTRY.values():
         if not include_aliases and meta.get("is_alias"):
@@ -303,7 +389,7 @@ def list_tools(include_aliases: bool = False) -> list[dict[str, Any]]:
 def _register_tool_metadata(
     name: str,
     description: str,
-    parameters: dict[str, Any],
+    parameters: JsonSchema,
     category: str,
     aliases: list[str],
     allow_disable: bool,
@@ -337,7 +423,7 @@ def _register_tool_metadata(
     )
 
 
-def _apply_autofill(kwargs: dict[str, Any], canonical_name: str, trace_id: str):
+def _apply_autofill(kwargs: JsonObject, canonical_name: str, trace_id: str) -> None:
     """Apply autofill logic for write operations."""
     if not AUTOFILL:
         return
@@ -429,7 +515,7 @@ def _build_result_metadata(
 def tool(
     name: str,
     description: str,
-    parameters: dict[str, Any] | None = None,
+    parameters: JsonSchema | None = None,
     *,
     category: str = "general",
     aliases: list[str] | None = None,
@@ -454,7 +540,7 @@ def tool(
     aliases = aliases or []
     capabilities = capabilities or []
 
-    def decorator(func: Callable[..., Any]) -> None:
+    def decorator(func: Callable[..., object]) -> None:
         with _REGISTRY_LOCK:
             _register_tool_metadata(
                 name, description, parameters, category, aliases, allow_disable, capabilities
@@ -516,8 +602,8 @@ def _execute_tool_with_error_handling(ctx: ToolExecutionContext) -> ToolResult:
         return ToolResult(ok=False, error=str(e))
 
 
-def get_tools_schema(include_disabled: bool = False) -> list[dict[str, Any]]:
-    schema: list[dict[str, Any]] = []
+def get_tools_schema(include_disabled: bool = False) -> list[dict[str, JsonValue]]:
+    schema: list[dict[str, JsonValue]] = []
     for meta in _TOOL_REGISTRY.values():
         if meta.get("is_alias"):
             continue

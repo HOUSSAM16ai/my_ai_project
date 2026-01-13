@@ -14,7 +14,7 @@
 import json
 from collections.abc import AsyncGenerator, Callable
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -175,3 +175,33 @@ async def stream_mission(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@router.websocket("/missions/{mission_id}/ws")
+async def stream_mission_ws(
+    websocket: WebSocket,
+    mission_id: int,
+) -> None:
+    """
+    بث أحداث المهمة عبر WebSocket بدلاً من SSE.
+
+    يتيح هذا المسار تجربة تفاعلية أسرع للعميل مع دعم إرسال الأحداث فورياً.
+    """
+    await websocket.accept()
+    async with async_session_factory() as session:
+        state_manager = MissionStateManager(session)
+        mission = await state_manager.get_mission(mission_id)
+        if not mission:
+            await websocket.send_json({"event": "error", "data": "Mission not found"})
+            await websocket.close(code=1008)
+            return
+
+        try:
+            async for event in state_manager.monitor_mission_events(mission_id):
+                await websocket.send_json(
+                    {"event": event.event_type.value, "data": event.payload_json}
+                )
+        except WebSocketDisconnect:
+            logger.info("WebSocket disconnected for mission stream", extra={"mission_id": mission_id})
+        finally:
+            await websocket.close()
