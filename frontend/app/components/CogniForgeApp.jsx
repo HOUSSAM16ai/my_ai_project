@@ -85,6 +85,7 @@ const Markdown = memo(({ content }) => {
     }
     return <div className="markdown-content" dangerouslySetInnerHTML={{ __html: html }} />;
 });
+Markdown.displayName = 'Markdown';
 
 // ══════════════════════════════════════════════════════════════════════
 // HOOKS
@@ -151,17 +152,7 @@ const useChat = (endpoint, token, onConversationUpdate) => {
         }
     }, [token, endpoint]);
 
-    useEffect(() => {
-        mountedRef.current = true;
-        connect();
-        return () => {
-            mountedRef.current = false;
-            if (socketRef.current) socketRef.current.close();
-            clearTimeout(reconnectTimeoutRef.current);
-        };
-    }, [connect]);
-
-    const handleMessage = (data) => {
+    const handleMessage = useCallback((data) => {
         const { type, payload } = data;
 
         if (type === 'status') return;
@@ -213,7 +204,17 @@ const useChat = (endpoint, token, onConversationUpdate) => {
                 return prev;
             });
         }
-    };
+    }, [onConversationUpdate, setConversationId, setMessages]); // Added dependencies
+
+    useEffect(() => {
+        mountedRef.current = true;
+        connect();
+        return () => {
+            mountedRef.current = false;
+            if (socketRef.current) socketRef.current.close();
+            clearTimeout(reconnectTimeoutRef.current);
+        };
+    }, [connect]);
 
     const addMessage = (msg) => {
         setMessages(prev => [...prev, msg]);
