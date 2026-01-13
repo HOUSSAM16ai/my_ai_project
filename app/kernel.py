@@ -20,6 +20,7 @@
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from typing import Final
 
 from fastapi import APIRouter, FastAPI
@@ -55,7 +56,7 @@ from app.core.openapi_contracts import (
     load_contract_operations,
 )
 from app.gateway import APIGateway, ServiceRegistry
-from app.gateway.config import DEFAULT_GATEWAY_CONFIG
+from app.gateway.config import DEFAULT_GATEWAY_CONFIG, GatewayConfig
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
@@ -94,6 +95,14 @@ BASE_CORS_OPTIONS: dict[str, object] = {
     ],
     "expose_headers": ["Content-Length", "Content-Range"],
 }
+
+
+@dataclass(frozen=True, slots=True)
+class GatewayComponents:
+    """حاوية مكونات البوابة لضمان تجميع منظم وقابل للاختبار."""
+
+    registry: ServiceRegistry
+    gateway: APIGateway
 
 # ==============================================================================
 # SICP: Functional Core (الجوهر الوظيفي)
@@ -162,7 +171,19 @@ def _get_router_registry(gateway_router: APIRouter | None = None) -> list[Router
     Returns:
         list[RouterSpec]: قائمة (الموجه، البادئة).
     """
-    routers = [
+    routers = _base_router_registry()
+
+    # إضافة موجه البوابة إذا كان متاحاً
+    if gateway_router:
+        routers.append((gateway_router, ""))
+
+    return routers
+
+
+def _base_router_registry() -> list[RouterSpec]:
+    """يبني سجل الموجهات الأساسية للتطبيق بدون موجه البوابة."""
+
+    return [
         (system.root_router, ""),  # Root Level (e.g., /health)
         (system.router, ""),  # /system prefix is inside the router
         (admin.router, ""),
@@ -175,12 +196,6 @@ def _get_router_registry(gateway_router: APIRouter | None = None) -> list[Router
         (agents.router, ""),
         (overmind.router, ""),
     ]
-
-    # إضافة موجه البوابة إذا كان متاحاً
-    if gateway_router:
-        routers.append((gateway_router, ""))
-
-    return routers
 
 
 def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
@@ -199,6 +214,54 @@ def _mount_routers(app: FastAPI, registry: list[RouterSpec]) -> FastAPI:
     for router, prefix in registry:
         app.include_router(router, prefix=prefix)
     return app
+
+
+def _get_gateway_router(app: FastAPI) -> APIRouter | None:
+    """يعيد موجه البوابة إن كان متاحاً في حالة التطبيق."""
+
+    gateway = getattr(app.state, "api_gateway", None)
+    return gateway.router if gateway else None
+
+
+def _initialize_app_state(app: FastAPI) -> None:
+    """يهيئ حالة التطبيق الأساسية بشكل صريح وقابل للتوسعة."""
+
+    app.state.agent_plan_registry = AgentPlanRegistry()
+    app.state.agent_plan_service = AgentPlanService()
+    app.state.event_bus = get_event_bus()
+
+    gateway_components = _build_gateway_components()
+    app.state.service_registry = gateway_components.registry
+    app.state.api_gateway = gateway_components.gateway
+
+
+def _build_gateway_components(
+    config: GatewayConfig = DEFAULT_GATEWAY_CONFIG,
+) -> GatewayComponents:
+    """يبني مكونات بوابة API في حاوية واحدة لضمان الاتساق."""
+
+    registry = ServiceRegistry(services=config.services)
+    gateway = APIGateway(config=config, registry=registry)
+    return GatewayComponents(registry=registry, gateway=gateway)
+
+
+def _is_dev_environment(settings_dict: dict[str, object]) -> bool:
+    """يتحقق من أن البيئة تطويرية لتفعيل وثائق الـ API فقط حين الحاجة."""
+
+    return settings_dict.get("ENVIRONMENT") == "development"
+
+
+def _configure_static_files(app: FastAPI, *, enable_static_files: bool) -> None:
+    """يضبط خدمة الملفات الثابتة بشكل صريح مع احترام وضع API-only."""
+
+    if enable_static_files:
+        static_config = StaticFilesConfig(
+            enabled=True,
+            serve_spa=True,
+        )
+        setup_static_files_middleware(app, static_config)
+    else:
+        logger.info("🚀 Running in API-only mode (no static files)")
 
 
 # ==============================================================================
@@ -260,14 +323,9 @@ class RealityKernel:
         app = self._create_base_app_instance()
 
         # 2. Data Acquisition (Pure)
-        middleware_stack = _get_middleware_stack(self.settings_obj) if self.settings_obj else []
+        middleware_stack = _get_middleware_stack(self.settings_obj)
 
-        # إضافة موجه البوابة إذا كان متاحاً
-        gateway_router = None
-        if hasattr(app.state, "api_gateway"):
-            gateway_router = app.state.api_gateway.router
-
-        router_registry = _get_router_registry(gateway_router)
+        router_registry = _get_router_registry(_get_gateway_router(app))
 
         # 3. Transformations - API Core (100% API-First)
         app = _apply_middleware(app, middleware_stack)
@@ -278,14 +336,7 @@ class RealityKernel:
         # 4. Static Files (Optional - Frontend Support)
         # Principle: API-First - يمكن تشغيل API بدون frontend
         # يتم الإعداد أخيراً لضمان عدم تداخل المسارات مع API
-        if self.enable_static_files:
-            static_config = StaticFilesConfig(
-                enabled=True,
-                serve_spa=True,
-            )
-            setup_static_files_middleware(app, static_config)
-        else:
-            logger.info("🚀 Running in API-only mode (no static files)")
+        _configure_static_files(app, enable_static_files=self.enable_static_files)
 
         return app
 
@@ -297,25 +348,12 @@ class RealityKernel:
         @asynccontextmanager
         async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             """Lifecycle Manager Closure."""
-            # تهيئة المكونات الأساسية
-            app.state.agent_plan_registry = AgentPlanRegistry()
-            app.state.agent_plan_service = AgentPlanService()
-
-            # تهيئة Event Bus
-            app.state.event_bus = get_event_bus()
-
-            # تهيئة API Gateway
-            gateway_config = DEFAULT_GATEWAY_CONFIG
-            app.state.service_registry = ServiceRegistry(services=gateway_config.services)
-            app.state.api_gateway = APIGateway(
-                config=gateway_config,
-                registry=app.state.service_registry,
-            )
+            _initialize_app_state(app)
 
             async for _ in self._handle_lifespan_events():
                 yield
 
-        is_dev: bool = self.settings_dict.get("ENVIRONMENT") == "development"
+        is_dev = _is_dev_environment(self.settings_dict)
 
         return FastAPI(
             title=self.settings_dict.get("PROJECT_NAME", "CogniForge"),
