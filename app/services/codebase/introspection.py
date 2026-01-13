@@ -42,8 +42,20 @@ class CodeSearchService:
             "secrets.json",
             "credentials.json",
         }
+        self.exclude_extensions = {
+            ".pem",
+            ".key",
+            ".p12",
+            ".pfx",
+            ".crt",
+            ".cer",
+        }
 
     def _should_exclude(self, path: Path) -> bool:
+        if path.suffix in self.exclude_extensions:
+            return True
+        if path.name.startswith(".env"):
+            return True
         return path.name in self.exclude_files or any(
             part in self.exclude_dirs for part in path.parts
         )

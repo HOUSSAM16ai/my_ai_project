@@ -47,7 +47,11 @@ class ToolRegistry:
         if tool_name not in self._tools:
             raise ValueError(f"Tool '{tool_name}' not found.")
 
-        logger.info(f"Executing tool: {tool_name} with {args}")
+        logger.info(
+            "Executing tool: %s with %s",
+            tool_name,
+            self._redact_args(args),
+        )
         return await self._tools[tool_name](**args)
 
     # --- Tool Implementations ---
@@ -133,3 +137,17 @@ class ToolRegistry:
             "lines": snippet,
             "total_lines": total_lines,
         }
+
+    @staticmethod
+    def _redact_args(args: dict[str, object]) -> dict[str, object]:
+        """
+        إخفاء القيم الحساسة قبل التسجيل في السجلات.
+        """
+        redacted: dict[str, object] = {}
+        for key, value in args.items():
+            lowered = key.lower()
+            if any(token in lowered for token in ("password", "token", "secret", "key")):
+                redacted[key] = "***"
+            else:
+                redacted[key] = value
+        return redacted

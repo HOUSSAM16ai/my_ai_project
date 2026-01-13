@@ -4,13 +4,16 @@
 مسؤول عن إدارة الفهارس: إنشاء، حذف.
 """
 
-from typing import Any
-
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.di import get_logger
 from app.services.overmind.database_tools.operations_logger import OperationsLogger
+from app.services.overmind.database_tools.validators import (
+    ensure_columns_exist,
+    quote_identifier,
+    validate_identifier,
+)
 
 logger = get_logger(__name__)
 
@@ -39,7 +42,7 @@ class IndexManager:
         table_name: str,
         columns: list[str],
         unique: bool = False,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         إنشاء فهرس على جدول.
 
@@ -53,11 +56,17 @@ class IndexManager:
             dict: نتيجة الإنشاء
         """
         try:
+            validate_identifier(index_name)
+            validate_identifier(table_name)
+            if not columns:
+                raise ValueError("قائمة الأعمدة مطلوبة لإنشاء الفهرس.")
+            await ensure_columns_exist(self._session, table_name, set(columns))
             unique_sql = "UNIQUE " if unique else ""
-            columns_sql = ", ".join([f'"{col}"' for col in columns])
+            columns_sql = ", ".join([quote_identifier(col) for col in columns])
 
             create_sql = (
-                f'CREATE {unique_sql}INDEX "{index_name}" ON "{table_name}" ({columns_sql})'
+                f"CREATE {unique_sql}INDEX {quote_identifier(index_name)} "
+                f"ON {quote_identifier(table_name)} ({columns_sql})"
             )
 
             await self._session.execute(text(create_sql))
@@ -86,7 +95,7 @@ class IndexManager:
             self._logger.log_operation("create_index", result, success=False)
             return result
 
-    async def drop_index(self, index_name: str) -> dict[str, Any]:
+    async def drop_index(self, index_name: str) -> dict[str, object]:
         """
         حذف فهرس.
 
@@ -97,7 +106,8 @@ class IndexManager:
             dict: نتيجة الحذف
         """
         try:
-            drop_sql = f'DROP INDEX IF EXISTS "{index_name}"'
+            validate_identifier(index_name)
+            drop_sql = f"DROP INDEX IF EXISTS {quote_identifier(index_name)}"
 
             await self._session.execute(text(drop_sql))
             await self._session.commit()

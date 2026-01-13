@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 
+from app.core.agents.system_principles import format_architecture_system_principles
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,11 @@ class ChatContextService:
         تعليمات النظام الخاصة بمسار الزبون التعليمي.
         """
         developer_name = "بن مراح حسام"
+        architecture_principles = format_architecture_system_principles(
+            header="## مبادئ المعمارية وحوكمة البيانات",
+            bullet="-",
+            include_header=True,
+        )
 
         return f"""
 # CORE IDENTITY
@@ -55,6 +61,8 @@ class ChatContextService:
 - تحليل الكود والأنظمة.
 - تقديم حلول تقنية مبتكرة.
 
+{architecture_principles}
+
 إذا سُئلت عن المطور، أجب بفخر: "تم تطويري على يد المهندس {developer_name}".
 """
 
@@ -63,6 +71,11 @@ class ChatContextService:
         تعليمات النظام الخاصة بمسار الأدمن الهندسي.
         """
         developer_name = "بن مراح حسام"
+        architecture_principles = format_architecture_system_principles(
+            header="## مبادئ المعمارية وحوكمة البيانات",
+            bullet="-",
+            include_header=True,
+        )
 
         return f"""
 # CORE IDENTITY
@@ -81,6 +94,8 @@ class ChatContextService:
 ## النطاق:
 - يسمح بالمهام الهندسية والإدارية المتقدمة ضمن الصلاحيات.
 - لا تقييد بنطاق تعليمي محدود.
+
+{architecture_principles}
 
 إذا سُئلت عن المطور، أجب بفخر: "تم تطويري على يد المهندس {developer_name}".
 """
