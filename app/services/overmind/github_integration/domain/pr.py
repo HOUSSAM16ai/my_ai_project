@@ -1,5 +1,3 @@
-from typing import Any
-
 from app.core.di import get_logger
 from app.services.overmind.github_integration.client import GitHubClient
 from app.services.overmind.github_integration.models import GitHubPR
@@ -48,7 +46,7 @@ class PRManager:
         body: str,
         head: str,
         base: str = "main",
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         if not self.client.repo_object:
             return {"success": False, "error": "Repository not initialized"}
 
@@ -80,7 +78,7 @@ class PRManager:
         self,
         pr_number: int,
         merge_method: str = "merge",
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         if not self.client.repo_object:
             return {"success": False, "error": "Repository not initialized"}
 

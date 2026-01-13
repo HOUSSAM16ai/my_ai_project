@@ -11,7 +11,6 @@ from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +56,7 @@ class Alert:
     status: AlertStatus = AlertStatus.ACTIVE
     created_at: datetime = field(default_factory=datetime.utcnow)
     resolved_at: datetime | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,13 +73,13 @@ class AlertRule:
     """
 
     name: str
-    condition: Callable[[], bool | Coroutine[Any, Any, bool]]
+    condition: Callable[[], bool | Coroutine[object, object, bool]]
     severity: AlertSeverity
     message_template: str
     cooldown_seconds: int = 300  # 5 دقائق
 
 
-type AlertHandler = Callable[[Alert], Coroutine[Any, Any, None]]
+type AlertHandler = Callable[[Alert], Coroutine[object, object, None]]
 
 
 class AlertManager:
@@ -153,7 +152,7 @@ class AlertManager:
         name: str,
         severity: AlertSeverity,
         message: str,
-        metadata: dict[str, Any] | None = None,
+        metadata: dict[str, object] | None = None,
     ) -> Alert:
         """
         يطلق تنبيهاً يدوياً.
@@ -273,12 +272,12 @@ class AlertManager:
         """
         return [alert for alert in self._alerts.values() if alert.severity == severity]
 
-    def get_alert_stats(self) -> dict[str, Any]:
+    def get_alert_stats(self) -> dict[str, object]:
         """
         يحصل على إحصائيات التنبيهات.
 
         Returns:
-            dict[str, Any]: إحصائيات مفصلة
+            dict[str, object]: إحصائيات مفصلة
         """
         alerts = list(self._alerts.values())
 

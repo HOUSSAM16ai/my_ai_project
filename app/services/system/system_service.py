@@ -204,10 +204,11 @@ class SystemService:
             async with self._timed_session(db, timings) as session:
                 async with timings.capture("connection_ms"):
                     db_pulse = await self._connection_diagnostic.evaluate(session)
-                admin_present = False
-                if db_pulse["connected"]:
-                    async with timings.capture("admin_lookup_ms"):
-                        admin_present = await self._admin_presence_diagnostic.admin_exists(session)
+                admin_present = await self._evaluate_admin_presence(
+                    session=session,
+                    db_pulse=db_pulse,
+                    timings=timings,
+                )
         except Exception as exc:  # pragma: no cover - خط دفاعي ضد أعطال البنية التحتية
             db_pulse = self._connection_failure(exc)
             admin_present = False
@@ -254,6 +255,19 @@ class SystemService:
                     return await self._connection_diagnostic.evaluate(session)
         except Exception as exc:  # pragma: no cover - حماية من فشل إنشاء الجلسة
             return self._connection_failure(exc)
+
+    async def _evaluate_admin_presence(
+        self,
+        *,
+        session: AsyncSession,
+        db_pulse: DatabasePulse,
+        timings: _TimingAccumulator,
+    ) -> bool:
+        """يتحقق من وجود المسؤول عندما تكون قاعدة البيانات متصلة."""
+        if not db_pulse["connected"]:
+            return False
+        async with timings.capture("admin_lookup_ms"):
+            return await self._admin_presence_diagnostic.admin_exists(session)
 
     @asynccontextmanager
     async def _session_context(self, db: AsyncSession | None) -> AsyncIterator[AsyncSession]:

@@ -1,7 +1,6 @@
 """أحداث النطاق المتعلقة بالمهام والعمليات التنفيذية."""
 
 from dataclasses import dataclass
-from typing import Any
 
 from app.core.domain_events.base import (
     BoundedContext,
@@ -158,7 +157,7 @@ class MissionCreatedFromChat(DomainEvent):
 @DomainEventRegistry.register
 @dataclass
 class ToolExecutionStarted(DomainEvent):
-    def __init__(self, tool_name: str, executed_by: str, context_id: str, args: dict[str, Any]):
+    def __init__(self, tool_name: str, executed_by: str, context_id: str, args: dict[str, object]):
         super().__init__(
             event_type="ToolExecutionStarted",
             bounded_context=BoundedContext.TASK_EXECUTION,

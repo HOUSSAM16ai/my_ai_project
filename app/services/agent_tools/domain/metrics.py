@@ -5,7 +5,6 @@ Domain tools for project metrics and file system statistics.
 import os
 import subprocess
 from pathlib import Path
-from typing import Any
 
 from app.services.agent_tools.tool_model import Tool, ToolConfig
 
@@ -15,7 +14,9 @@ def get_project_root() -> Path:
     return Path(os.getcwd())
 
 
-async def count_files_handler(directory: str = ".", extension: str | None = None) -> dict[str, Any]:
+async def count_files_handler(
+    directory: str = ".", extension: str | None = None
+) -> dict[str, object]:
     """
     Count files in a directory, optionally filtering by extension.
     Respects .gitignore if possible (using git ls-files if available).
@@ -49,7 +50,7 @@ async def count_files_handler(directory: str = ".", extension: str | None = None
     return {"directory": directory, "extension": extension, "count": count}
 
 
-async def get_project_metrics_handler() -> dict[str, Any]:
+async def get_project_metrics_handler() -> dict[str, object]:
     """Read PROJECT_METRICS.md and supplement with live data."""
     metrics = {}
     metrics_file = get_project_root() / "PROJECT_METRICS.md"

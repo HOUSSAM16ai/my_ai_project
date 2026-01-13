@@ -8,8 +8,6 @@
 يوفر واجهة بسيطة لنظام معقد من المكونات المتخصصة.
 """
 
-from typing import Any
-
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -119,7 +117,7 @@ class SuperDatabaseTools:
             return []
         return await self._table_manager.list_all_tables()
 
-    async def get_table_details(self, table_name: str) -> dict[str, Any]:
+    async def get_table_details(self, table_name: str) -> dict[str, object]:
         """
         الحصول على تفاصيل كاملة عن جدول.
 
@@ -137,7 +135,7 @@ class SuperDatabaseTools:
         self,
         table_name: str,
         columns: dict[str, str],
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         إنشاء جدول جديد.
 
@@ -156,7 +154,7 @@ class SuperDatabaseTools:
         self,
         table_name: str,
         cascade: bool = False,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         حذف جدول.
 
@@ -180,7 +178,7 @@ class SuperDatabaseTools:
         table_name: str,
         column_name: str,
         column_type: str,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         إضافة عمود جديد إلى جدول موجود.
 
@@ -200,7 +198,7 @@ class SuperDatabaseTools:
         self,
         table_name: str,
         column_name: str,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         حذف عمود من جدول.
 
@@ -222,8 +220,8 @@ class SuperDatabaseTools:
     async def insert_data(
         self,
         table_name: str,
-        data: dict[str, Any],
-    ) -> dict[str, Any]:
+        data: dict[str, object],
+    ) -> dict[str, object]:
         """
         إدخال بيانات جديدة في جدول.
 
@@ -241,10 +239,10 @@ class SuperDatabaseTools:
     async def query_table(
         self,
         table_name: str,
-        where: dict[str, Any] | None = None,
+        where: dict[str, object] | None = None,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         استعلام بيانات من جدول.
 
@@ -264,9 +262,9 @@ class SuperDatabaseTools:
     async def update_data(
         self,
         table_name: str,
-        data: dict[str, Any],
-        where: dict[str, Any],
-    ) -> dict[str, Any]:
+        data: dict[str, object],
+        where: dict[str, object],
+    ) -> dict[str, object]:
         """
         تعديل بيانات في جدول.
 
@@ -285,8 +283,8 @@ class SuperDatabaseTools:
     async def delete_data(
         self,
         table_name: str,
-        where: dict[str, Any],
-    ) -> dict[str, Any]:
+        where: dict[str, object],
+    ) -> dict[str, object]:
         """
         حذف بيانات من جدول.
 
@@ -311,7 +309,7 @@ class SuperDatabaseTools:
         table_name: str,
         columns: list[str],
         unique: bool = False,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         إنشاء فهرس على جدول.
 
@@ -328,7 +326,7 @@ class SuperDatabaseTools:
             return {"success": False, "error": "No session"}
         return await self._index_manager.create_index(index_name, table_name, columns, unique)
 
-    async def drop_index(self, index_name: str) -> dict[str, Any]:
+    async def drop_index(self, index_name: str) -> dict[str, object]:
         """
         حذف فهرس.
 
@@ -349,8 +347,8 @@ class SuperDatabaseTools:
     async def execute_sql(
         self,
         sql: str,
-        params: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        params: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         """
         تنفيذ استعلام SQL مخصص.
 
@@ -369,7 +367,7 @@ class SuperDatabaseTools:
     # سجل العمليات
     # =========================================================================
 
-    def get_operations_log(self) -> list[dict[str, Any]]:
+    def get_operations_log(self) -> list[dict[str, object]]:
         """
         الحصول على سجل العمليات.
 

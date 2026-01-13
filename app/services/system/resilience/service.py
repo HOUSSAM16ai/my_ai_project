@@ -4,7 +4,6 @@ import threading
 from collections.abc import Callable
 from datetime import UTC, datetime
 from functools import wraps
-from typing import Any
 
 from app.services.resilience.bulkhead import Bulkhead, BulkheadConfig
 from app.services.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerConfig
@@ -34,7 +33,7 @@ class DistributedResilienceService:
         self.bulkheads: dict[str, Bulkhead] = {}
         self.adaptive_timeouts: dict[str, AdaptiveTimeout] = {}
         self.fallback_chains: dict[str, FallbackChain] = {}
-        self.rate_limiters: dict[str, Any] = {}
+        self.rate_limiters: dict[str, object] = {}
         self.health_checkers: dict[str, HealthChecker] = {}
         self._lock = threading.RLock()
 
@@ -66,9 +65,9 @@ class DistributedResilienceService:
                 self.bulkheads[name] = Bulkhead(name, config)
             return self.bulkheads[name]
 
-    def get_comprehensive_stats(self) -> dict[str, Any]:
+    def get_comprehensive_stats(self) -> dict[str, object]:
         """Get comprehensive resilience statistics"""
-        stats: dict[str, Any] = {
+        stats: dict[str, object] = {
             "timestamp": datetime.now(UTC).isoformat(),
             "circuit_breakers": {},
             "retry_managers": {},
@@ -126,13 +125,13 @@ def resilient(
             retry_config=RetryConfig(max_retries=3),
             bulkhead_name="api_calls"
         )
-        def my_function() -> Any:
+        def my_function() -> object:
             pass
     """
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(*args, **kwargs) -> Any:
+        def wrapper(*args, **kwargs) -> object:
             service = get_resilience_service()
 
             # Apply resilience patterns in priority order
@@ -159,7 +158,7 @@ def _apply_circuit_breaker(
     func: Callable,
     args: tuple,
     kwargs: dict,
-) -> Any:
+) -> object:
     """
     تطبيق نمط قاطع الدائرة | Apply circuit breaker pattern
 
@@ -175,7 +174,7 @@ def _apply_circuit_breaker(
     """
     cb = service.get_or_create_circuit_breaker(circuit_breaker_name)
 
-    def func_to_call() -> Any:
+    def func_to_call() -> object:
         return func(*args, **kwargs)
 
     return cb.call(func_to_call)
@@ -187,7 +186,7 @@ def _apply_retry(
     func: Callable,
     args: tuple,
     kwargs: dict,
-) -> Any:
+) -> object:
     """
     تطبيق نمط إعادة المحاولة | Apply retry pattern
 
@@ -211,7 +210,7 @@ def _apply_bulkhead(
     func: Callable,
     args: tuple,
     kwargs: dict,
-) -> Any:
+) -> object:
     """
     تطبيق نمط الحاجز المائي | Apply bulkhead pattern
 

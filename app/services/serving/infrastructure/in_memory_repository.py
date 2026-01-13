@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import threading
 from collections import defaultdict, deque
-from typing import Any
 
 from app.services.serving.domain.models import ModelMetrics, ModelVersion
 
@@ -93,7 +92,7 @@ class InMemoryMetricsRepository:
             all_metrics = list(self._metrics.get(version_id, []))
             return all_metrics[-limit:] if all_metrics else []
 
-    def get_summary(self, version_id: str) -> dict[str, Any]:
+    def get_summary(self, version_id: str) -> dict[str, object]:
         """
         Get aggregated metrics summary
         الحصول على ملخص المقاييس المجمعة
@@ -112,7 +111,7 @@ class InMemoryMetricsRepository:
 
             return self._calculate_metrics_summary(metrics_list)
 
-    def _create_empty_summary(self) -> dict[str, Any]:
+    def _create_empty_summary(self) -> dict[str, object]:
         """
         إنشاء ملخص فارغ | Create empty summary
 
@@ -126,7 +125,7 @@ class InMemoryMetricsRepository:
             "success_rate": 0.0,
         }
 
-    def _calculate_metrics_summary(self, metrics_list: list[ModelMetrics]) -> dict[str, Any]:
+    def _calculate_metrics_summary(self, metrics_list: list[ModelMetrics]) -> dict[str, object]:
         """
         حساب ملخص المقاييس | Calculate metrics summary
 

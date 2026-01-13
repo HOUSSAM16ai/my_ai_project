@@ -236,9 +236,7 @@ class InMemoryCache(CacheBackend):
                     keys.append(key)
             return keys
 
-    async def set_add(
-        self, key: str, members: list[str], ttl: int | None = None
-    ) -> bool:
+    async def set_add(self, key: str, members: list[str], ttl: int | None = None) -> bool:
         """إضافة عناصر إلى مجموعة (Internal Set)."""
         ttl_val = self._resolve_ttl(ttl)
         expire_at = time.time() + ttl_val if ttl_val > 0 else float("inf")
@@ -252,25 +250,23 @@ class InMemoryCache(CacheBackend):
                     val_set = set(members)
                     self._cache[key] = (val_set, expire_at)
                     return True
-                else:
-                    # Update existing set
-                    current_val.update(members)
-                    # Update Expiry? Usually yes on write.
-                    if ttl_val > 0:
-                        self._cache[key] = (current_val, expire_at)
-                    return True
-            else:
-                # Create new set
-                val_set = set(members)
-                self._cache[key] = (val_set, expire_at)
-                self._stats.record_set()
+                # Update existing set
+                current_val.update(members)
+                # Update Expiry? Usually yes on write.
+                if ttl_val > 0:
+                    self._cache[key] = (current_val, expire_at)
                 return True
+            # Create new set
+            val_set = set(members)
+            self._cache[key] = (val_set, expire_at)
+            self._stats.record_set()
+            return True
 
     async def set_remove(self, key: str, members: list[str]) -> bool:
         """حذف عناصر من مجموعة."""
         async with self._lock:
             if key in self._cache:
-                current_val, expire_at = self._cache[key]
+                current_val, _expire_at = self._cache[key]
                 if isinstance(current_val, set):
                     current_val.difference_update(members)
                     # إذا أصبحت المجموعة فارغة، هل نحذف المفتاح؟

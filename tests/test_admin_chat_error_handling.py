@@ -46,6 +46,7 @@ async def test_chat_error_handling_with_auth_but_service_error(test_app, db_sess
         with patch(
             "app.services.boundaries.admin_chat_boundary_service.AdminChatBoundaryService.stream_chat_response"
         ) as mock_stream:
+
             async def mock_generator(*args, **kwargs):
                 yield {"type": "delta", "payload": {"content": "some data"}}
                 raise Exception("AI Service Down")

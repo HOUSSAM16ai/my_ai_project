@@ -6,7 +6,7 @@ implementation, strictly following the Phase 2 refactoring plan.
 
 Standards:
 - Single Source of Truth: All services use this settings schema.
-- Strict Types: No Any, use Pydantic V2.
+- Strict Types: No object, use Pydantic V2.
 - Environment Awareness: Automatic detection and validation.
 - Secure Defaults: Safe by design.
 """

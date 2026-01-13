@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -145,6 +145,6 @@ class PubSubBackend(Protocol):
         """نشر رسالة إلى قناة."""
         ...
 
-    def pubsub(self) -> Any:
+    def pubsub(self) -> object:
         """الحصول على كائن PubSub."""
         ...

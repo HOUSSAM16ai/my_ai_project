@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import threading
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from app.services.serving.domain.models import ShadowDeployment
 
@@ -55,7 +55,7 @@ class ShadowDeploymentManager:
             self._shadow_deployments[shadow_id] = deployment
         return shadow_id
 
-    def get_shadow_deployment_stats(self, shadow_id: str) -> dict[str, Any] | None:
+    def get_shadow_deployment_stats(self, shadow_id: str) -> dict[str, object] | None:
         """
         الحصول على إحصائيات النشر الخفي
         Get shadow deployment statistics
@@ -79,7 +79,7 @@ class ShadowDeploymentManager:
         # Calculate statistics
         return self._calculate_deployment_statistics(shadow_id, deployment, comparisons)
 
-    def _get_deployment_comparisons(self, deployment: ShadowDeployment) -> list[dict[str, Any]]:
+    def _get_deployment_comparisons(self, deployment: ShadowDeployment) -> list[dict[str, object]]:
         """
         الحصول على نتائج المقارنة | Get comparison results
 
@@ -92,7 +92,7 @@ class ShadowDeploymentManager:
         with self._lock:
             return deployment.comparison_results.copy()
 
-    def _create_empty_stats_response(self, shadow_id: str) -> dict[str, Any]:
+    def _create_empty_stats_response(self, shadow_id: str) -> dict[str, object]:
         """
         إنشاء استجابة فارغة للإحصائيات | Create empty stats response
 
@@ -105,8 +105,8 @@ class ShadowDeploymentManager:
         return {"shadow_id": shadow_id, "total_comparisons": 0, "message": "No comparisons yet"}
 
     def _calculate_deployment_statistics(
-        self, shadow_id: str, deployment: ShadowDeployment, comparisons: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+        self, shadow_id: str, deployment: ShadowDeployment, comparisons: list[dict[str, object]]
+    ) -> dict[str, object]:
         """
         حساب إحصائيات النشر | Calculate deployment statistics
 

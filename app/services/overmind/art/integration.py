@@ -13,8 +13,6 @@ CS73 Integration Strategy:
 - Dependencies → Network: شبكة التبعيات كفن
 """
 
-from typing import Any
-
 from app.services.overmind.art.generators import (
     CodePatternArtist,
     MetricsArtist,
@@ -51,7 +49,7 @@ class OvermindArtIntegration:
         self.network_artist = NetworkArtist(default_style)
 
     def visualize_code_intelligence(
-        self, analysis_result: dict[str, Any], style: ArtStyle | None = None
+        self, analysis_result: dict[str, object], style: ArtStyle | None = None
     ) -> dict[str, str]:
         """
         تحويل نتائج تحليل الكود إلى تصورات فنية.
@@ -106,7 +104,7 @@ class OvermindArtIntegration:
         return visualizations
 
     def visualize_mission_journey(
-        self, mission_data: dict[str, Any], style: ArtStyle | None = None
+        self, mission_data: dict[str, object], style: ArtStyle | None = None
     ) -> dict[str, str]:
         """
         تصور رحلة المهمة بشكل فني.
@@ -230,8 +228,8 @@ class OvermindArtIntegration:
         )
 
     def create_full_report(
-        self, analysis_data: dict[str, Any], style: ArtStyle | None = None
-    ) -> dict[str, Any]:
+        self, analysis_data: dict[str, object], style: ArtStyle | None = None
+    ) -> dict[str, object]:
         """
         إنشاء تقرير فني شامل.
 
@@ -281,8 +279,8 @@ class OvermindArtIntegration:
 
 
 def create_art_from_overmind_data(
-    overmind_data: dict[str, Any], style: ArtStyle = ArtStyle.MODERN
-) -> dict[str, Any]:
+    overmind_data: dict[str, object], style: ArtStyle = ArtStyle.MODERN
+) -> dict[str, object]:
     """
     دالة مساعدة سريعة لإنشاء الفن من بيانات Overmind.
 

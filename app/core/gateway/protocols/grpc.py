@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import Request
 
 from .base import ProtocolAdapter
@@ -12,10 +10,10 @@ class GRPCAdapter(ProtocolAdapter):
         """Validate gRPC request"""
         return True, None
 
-    async def transform_request(self, request: Request) -> dict[str, Any]:
+    async def transform_request(self, request: Request) -> dict[str, object]:
         """Transform gRPC request"""
         return {"metadata": {"protocol": "grpc"}}
 
-    def transform_response(self, response_data: dict[str, Any]) -> dict[str, str | int | bool]:
+    def transform_response(self, response_data: dict[str, object]) -> dict[str, str | int | bool]:
         """Transform to gRPC response"""
         return response_data

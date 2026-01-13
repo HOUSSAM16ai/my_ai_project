@@ -1,5 +1,3 @@
-from typing import Any
-
 from app.core.logging import get_logger
 from app.services.chat.agents.base import AgentResponse
 
@@ -11,7 +9,7 @@ class DataAccessAgent:
     التحقق من ملكية البيانات ومسارات الوصول إليها.
     """
 
-    async def process(self, input_data: dict[str, Any]) -> AgentResponse:
+    async def process(self, input_data: dict[str, object]) -> AgentResponse:
         """
         يتحقق من أن الوصول للبيانات يلتزم بحدود الخدمات المصغرة.
         """

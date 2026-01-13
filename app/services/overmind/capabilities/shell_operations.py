@@ -11,7 +11,6 @@
 
 import subprocess
 from pathlib import Path
-from typing import Any
 
 from app.core.di import get_logger
 
@@ -49,7 +48,7 @@ class ShellOperations:
         command: str,
         cwd: Path | None = None,
         timeout: int = 30,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         تنفيذ أمر Shell.
 

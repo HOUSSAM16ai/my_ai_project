@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 
 class YAMLError(Exception):
@@ -24,7 +23,7 @@ class _ConstructorNamespace:
 constructor = _ConstructorNamespace(ConstructorError=ConstructorError)
 
 
-def safe_load(stream: str | bytes | Any) -> Any:
+def safe_load(stream: str | bytes | object) -> object:
     """تحميل YAML بشكل آمن مع رفض العلامات غير الموثوقة.
 
     يقبل نصاً، بايتات، أو كائناً يدعم ``read`` مثل الملفات.
@@ -51,7 +50,7 @@ def safe_load(stream: str | bytes | Any) -> Any:
 safe_load_all = safe_load
 
 
-def _coerce_to_text(stream: str | bytes | Any) -> str:
+def _coerce_to_text(stream: str | bytes | object) -> str:
     if hasattr(stream, "read"):
         stream = stream.read()
     if isinstance(stream, bytes):
@@ -70,7 +69,7 @@ def _split_clean_lines(text: str) -> list[str]:
     return [line[min_indent:] if len(line) >= min_indent else line for line in raw_lines]
 
 
-def _parse_block(lines: list[str], start: int, indent: int = 0) -> tuple[Any, int]:
+def _parse_block(lines: list[str], start: int, indent: int = 0) -> tuple[object, int]:
     if start >= len(lines):
         return {}, start
 
@@ -82,8 +81,8 @@ def _parse_block(lines: list[str], start: int, indent: int = 0) -> tuple[Any, in
     return _parse_mapping(lines, start, indent)
 
 
-def _parse_list(lines: list[str], start: int, indent: int) -> tuple[list[Any], int]:
-    items: list[Any] = []
+def _parse_list(lines: list[str], start: int, indent: int) -> tuple[list[object], int]:
+    items: list[object] = []
     index = start
     while index < len(lines):
         line = lines[index]
@@ -101,8 +100,8 @@ def _parse_list(lines: list[str], start: int, indent: int) -> tuple[list[Any], i
     return items, index
 
 
-def _parse_mapping(lines: list[str], start: int, indent: int) -> tuple[dict[str, Any], int]:
-    mapping: dict[str, Any] = {}
+def _parse_mapping(lines: list[str], start: int, indent: int) -> tuple[dict[str, object], int]:
+    mapping: dict[str, object] = {}
     index = start
     while index < len(lines):
         line = lines[index]
@@ -137,7 +136,7 @@ def _parse_mapping(lines: list[str], start: int, indent: int) -> tuple[dict[str,
     return mapping, index
 
 
-def _parse_scalar(text: str) -> Any:
+def _parse_scalar(text: str) -> object:
     lowered = text.lower()
     literals = {
         "true": True,

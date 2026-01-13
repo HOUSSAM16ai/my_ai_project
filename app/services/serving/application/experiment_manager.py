@@ -15,7 +15,6 @@ import threading
 import time
 import uuid
 from datetime import UTC, datetime
-from typing import Any
 
 from app.services.serving.application.inference_router import InferenceRouter
 from app.services.serving.application.model_registry import ModelRegistry
@@ -265,7 +264,7 @@ class ExperimentManager:
             raise ValueError(f"Model {version_id} not found")
         return model
 
-    def analyze_ab_test(self, test_id: str) -> dict[str, Any]:
+    def analyze_ab_test(self, test_id: str) -> dict[str, object]:
         """
         Analyze A/B test results and determine winner.
 

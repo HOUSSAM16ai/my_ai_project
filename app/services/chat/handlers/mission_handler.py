@@ -4,7 +4,7 @@ import asyncio
 import logging
 import time
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from app.core.resilience import get_circuit_breaker
 from app.services.chat.handlers.base import ChatContext
@@ -158,7 +158,7 @@ async def handle_deep_analysis(
     logger.debug(f"Deep analysis completed in {(time.time() - start_time) * 1000:.2f}ms")
 
 
-async def _build_project_index_with_feedback() -> dict[str, Any]:
+async def _build_project_index_with_feedback() -> dict[str, object]:
     """
     بناء فهرس المشروع مع تغذية راجعة للمستخدم.
     Build project index with user feedback.

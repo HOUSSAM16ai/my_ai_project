@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Any
 
 
 class ModelProviderAdapter(ABC):
     """Abstract model provider interface"""
 
     @abstractmethod
-    def call_model(self, model: str, prompt: str, params: dict[str, Any]) -> dict[str, Any]:
+    def call_model(self, model: str, prompt: str, params: dict[str, object]) -> dict[str, object]:
         """Call AI model"""
         pass
 

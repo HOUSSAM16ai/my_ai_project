@@ -5,7 +5,6 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -72,11 +71,11 @@ class Decision(BaseModel):
     agents_involved: list[str]
 
     # البيانات الإضافية
-    alternatives_considered: list[dict[str, Any]] = Field(default_factory=list)
+    alternatives_considered: list[dict[str, object]] = Field(default_factory=list)
     expected_outcomes: list[str] = Field(default_factory=list)
-    risks: list[dict[str, Any]] = Field(default_factory=list)
+    risks: list[dict[str, object]] = Field(default_factory=list)
     mitigation_strategies: list[str] = Field(default_factory=list)
-    execution_plan: dict[str, Any] = Field(default_factory=dict)
+    execution_plan: dict[str, object] = Field(default_factory=dict)
     success_criteria: list[str] = Field(default_factory=list)
 
     # المقاييس
@@ -88,7 +87,7 @@ class Decision(BaseModel):
     executed: bool = False
     outcome: str | None = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         """
         تحويل القرار إلى dictionary (للتوافق مع الكود القديم).
         """

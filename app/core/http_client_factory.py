@@ -31,13 +31,12 @@ from __future__ import annotations
 import logging
 import threading
 from dataclasses import dataclass
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Thread-safe singleton management
 _CLIENT_LOCK = threading.Lock()
-_HTTP_CLIENTS: dict[str, Any] = {}
+_HTTP_CLIENTS: dict[str, object] = {}
 
 
 @dataclass
@@ -98,7 +97,7 @@ class HTTPClientFactory:
         return HTTPClientFactory._create_new_client(config, cache_key)
 
     @staticmethod
-    def _get_cached_client(cache_key: str, config: HTTPClientConfig) -> Any | None:
+    def _get_cached_client(cache_key: str, config: HTTPClientConfig) -> object | None:
         """
         Get cached HTTP client if available and caching is enabled.
         استرجاع عميل HTTP من الذاكرة المؤقتة.
@@ -109,7 +108,7 @@ class HTTPClientFactory:
         return None
 
     @staticmethod
-    def _create_new_client(config: HTTPClientConfig, cache_key: str) -> Any:
+    def _create_new_client(config: HTTPClientConfig, cache_key: str) -> object:
         """
         Create a new HTTP client with thread-safe locking.
         إنشاء عميل HTTP جديد بأمان.
@@ -131,7 +130,7 @@ class HTTPClientFactory:
             return client
 
     @staticmethod
-    def _build_http_client(config: HTTPClientConfig) -> Any:
+    def _build_http_client(config: HTTPClientConfig) -> object:
         """
         Build httpx client with configuration.
         بناء عميل httpx بالإعدادات المحددة.
@@ -194,7 +193,7 @@ class HTTPClientFactory:
             logger.info("All HTTP clients closed")
 
     @staticmethod
-    def get_cached_clients() -> dict[str, Any]:
+    def get_cached_clients() -> dict[str, object]:
         """Get information about cached clients"""
         return {key: {"created": True} for key in _HTTP_CLIENTS}
 
@@ -277,7 +276,7 @@ async def close_all_http_clients() -> None:
     await HTTPClientFactory.close_all()
 
 
-def get_http_client_stats() -> dict[str, Any]:
+def get_http_client_stats() -> dict[str, object]:
     """Get statistics about cached HTTP clients"""
     return HTTPClientFactory.get_cached_clients()
 

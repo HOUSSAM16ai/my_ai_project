@@ -1,5 +1,3 @@
-from typing import Any
-
 from app.core.di import get_logger
 from app.services.overmind.github_integration.client import GitHubClient
 from app.services.overmind.github_integration.models import GitHubIssue
@@ -53,7 +51,7 @@ class IssueManager:
         title: str,
         body: str,
         labels: list[str] | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         if not self.client.repo_object:
             return {"success": False, "error": "Repository not initialized"}
 
@@ -79,7 +77,7 @@ class IssueManager:
             logger.error(f"Error creating issue: {e}")
             return {"success": False, "error": str(e)}
 
-    async def close_issue(self, issue_number: int) -> dict[str, Any]:
+    async def close_issue(self, issue_number: int) -> dict[str, object]:
         if not self.client.repo_object:
             return {"success": False, "error": "Repository not initialized"}
 

@@ -5,7 +5,7 @@ Bulkhead pattern for resource isolation.
 import asyncio
 import logging
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class Bulkhead:
             async with self._lock:
                 self._queue_size -= 1
 
-    def get_stats(self) -> dict[str, Any]:
+    def get_stats(self) -> dict[str, object]:
         """Get bulkhead statistics."""
         return {
             "max_concurrent": self.max_concurrent,

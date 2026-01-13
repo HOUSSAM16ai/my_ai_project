@@ -9,7 +9,6 @@ User Domain Events.
 """
 
 from dataclasses import dataclass
-from typing import Any
 
 from app.core.domain_events.base import (
     BoundedContext,
@@ -40,7 +39,7 @@ class UserCreated(DomainEvent):
 class UserUpdated(DomainEvent):
     """حدث تحديث بيانات مستخدم."""
 
-    def __init__(self, user_id: str, changes: dict[str, Any]):
+    def __init__(self, user_id: str, changes: dict[str, object]):
         super().__init__(
             event_type="UserUpdated",
             bounded_context=BoundedContext.USER_MANAGEMENT,

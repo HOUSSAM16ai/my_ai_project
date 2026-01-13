@@ -17,7 +17,6 @@ import logging
 import time
 from collections.abc import Callable
 from functools import wraps
-from typing import Any
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -260,7 +259,7 @@ def gateway_process(
 
     def decorator(f: Callable) -> Callable:
         @wraps(f)
-        async def decorated_function(request: Request, *args: Any, **kwargs: Any) -> Any:
+        async def decorated_function(request: Request, *args: object, **kwargs: object) -> object:
             gateway_response = await _process_gateway_request(request, protocol)
             if gateway_response:
                 return gateway_response
@@ -287,7 +286,9 @@ async def _process_gateway_request(request: Request, protocol: ProtocolType) -> 
     return None
 
 
-async def _execute_endpoint(f: Callable, request: Request, *args: Any, **kwargs: Any) -> Any:
+async def _execute_endpoint(
+    f: Callable, request: Request, *args: object, **kwargs: object
+) -> object:
     """تنفيذ الدالة الأصلية بشكل آمن."""
     try:
         return await f(request, *args, **kwargs)

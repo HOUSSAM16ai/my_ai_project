@@ -1,5 +1,3 @@
-from typing import Any
-
 from app.core.di import get_logger
 from app.services.overmind.github_integration.client import GitHubClient
 from app.services.overmind.github_integration.models import GitHubBranch
@@ -37,7 +35,7 @@ class BranchManager:
             logger.error(f"Error listing branches: {e}")
             return []
 
-    async def create_branch(self, branch_name: str, from_branch: str = "main") -> dict[str, Any]:
+    async def create_branch(self, branch_name: str, from_branch: str = "main") -> dict[str, object]:
         if not self.client.repo_object:
             return {"success": False, "error": "Repository not initialized"}
 
@@ -63,7 +61,7 @@ class BranchManager:
             logger.error(f"Error creating branch: {e}")
             return {"success": False, "error": str(e)}
 
-    async def delete_branch(self, branch_name: str) -> dict[str, Any]:
+    async def delete_branch(self, branch_name: str) -> dict[str, object]:
         if not self.client.repo_object:
             return {"success": False, "error": "Repository not initialized"}
 

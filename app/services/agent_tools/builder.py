@@ -6,7 +6,6 @@ AFTER: Simple builder with CC = 2
 """
 
 from collections.abc import Callable
-from typing import Any
 
 from app.core.patterns.builder import FluentBuilder
 from app.services.agent_tools.tool_model import Tool, ToolConfig
@@ -34,7 +33,7 @@ class ToolBuilder(FluentBuilder[Tool]):
         self._config.description = description
         return self
 
-    def with_parameters(self, parameters: dict[str, Any]) -> "ToolBuilder":
+    def with_parameters(self, parameters: dict[str, object]) -> "ToolBuilder":
         """Set parameters schema."""
         self._config.parameters = parameters
         return self

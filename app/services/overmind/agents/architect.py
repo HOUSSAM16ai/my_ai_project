@@ -12,7 +12,6 @@
 """
 
 import json
-from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
@@ -35,8 +34,8 @@ class ArchitectAgent(AgentArchitect):
         self.ai = ai_client
 
     async def design_solution(
-        self, plan: dict[str, Any], context: CollaborationContext
-    ) -> dict[str, Any]:
+        self, plan: dict[str, object], context: CollaborationContext
+    ) -> dict[str, object]:
         """
         تحويل الخطة الاستراتيجية إلى تصميم تقني.
         Convert strategic plan to technical design.
@@ -106,7 +105,7 @@ class ArchitectAgent(AgentArchitect):
         }
         """
 
-    def _format_plan_for_design(self, plan: dict[str, Any]) -> str:
+    def _format_plan_for_design(self, plan: dict[str, object]) -> str:
         """
         تنسيق الخطة للإرسال إلى AI.
         Format plan for sending to AI.
@@ -116,7 +115,7 @@ class ArchitectAgent(AgentArchitect):
 
     async def _generate_design_with_ai(
         self, system_prompt: str, user_content: str
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         توليد التصميم باستخدام AI.
         Generate design using AI with error handling.
@@ -140,7 +139,7 @@ class ArchitectAgent(AgentArchitect):
         logger.info(f"Architect: Design created with {len(design_data.get('tasks', []))} tasks")
         return design_data
 
-    def _create_json_error_design(self, error: json.JSONDecodeError) -> dict[str, Any]:
+    def _create_json_error_design(self, error: json.JSONDecodeError) -> dict[str, object]:
         """
         إنشاء تصميم خطأ JSON.
         Create error design for JSON parsing failures.
@@ -152,7 +151,7 @@ class ArchitectAgent(AgentArchitect):
             "tasks": [],
         }
 
-    def _create_general_error_design(self, error: Exception) -> dict[str, Any]:
+    def _create_general_error_design(self, error: Exception) -> dict[str, object]:
         """
         إنشاء تصميم خطأ عام.
         Create general error design.
@@ -172,7 +171,7 @@ class ArchitectAgent(AgentArchitect):
             text = text.split("```")[1].split("```")[0]
         return text.strip()
 
-    async def consult(self, situation: str, analysis: dict[str, Any]) -> dict[str, Any]:
+    async def consult(self, situation: str, analysis: dict[str, object]) -> dict[str, object]:
         """
         تقديم استشارة معمارية وتقنية.
         Provide architectural and technical consultation.

@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Any
 
 
 @dataclass
@@ -46,7 +45,7 @@ class FileMetrics:
     num_external_dependencies: int = 0
 
     # Function Details
-    function_details: list[dict[str, Any]] = field(default_factory=list)
+    function_details: list[dict[str, object]] = field(default_factory=list)
 
     # Hotspot Scores
     complexity_rank: float = 0.0

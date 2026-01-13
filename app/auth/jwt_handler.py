@@ -6,7 +6,6 @@
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any
 
 import jwt
 from pydantic import BaseModel
@@ -232,7 +231,7 @@ class JWTHandler:
 
         return required_scope in payload.scopes
 
-    def get_token_info(self, token: str) -> dict[str, Any] | None:
+    def get_token_info(self, token: str) -> dict[str, object] | None:
         """
         يحصل على معلومات token.
 
@@ -240,7 +239,7 @@ class JWTHandler:
             token: JWT token
 
         Returns:
-            dict[str, Any] | None: معلومات Token
+            dict[str, object] | None: معلومات Token
         """
         payload = self.verify_token(token)
 

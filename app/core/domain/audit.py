@@ -6,7 +6,7 @@ Contains AuditLog, PromptTemplate, GeneratedPrompt.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from sqlalchemy import JSON, Column, DateTime, func
 from sqlalchemy.orm import relationship
@@ -30,7 +30,7 @@ class AuditLog(SQLModel, table=True):
     action: str = Field(max_length=150, index=True)
     target_type: str = Field(max_length=100)
     target_id: str | None = Field(default=None, max_length=150)
-    details: dict[str, Any] = Field(
+    details: dict[str, object] = Field(
         default_factory=dict,
         sa_column=Column("metadata", JSON, nullable=False, default=dict),
     )

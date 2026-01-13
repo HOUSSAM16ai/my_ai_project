@@ -4,7 +4,7 @@
 Maps Python exceptions to appropriate HTTP status codes and error responses.
 """
 
-from typing import Any, ClassVar
+from typing import ClassVar
 
 
 class ExceptionMapper:
@@ -14,7 +14,7 @@ class ExceptionMapper:
     Maps exception types to HTTP status codes and user-friendly messages.
     """
 
-    EXCEPTION_MAP: ClassVar[dict[type, dict[str, Any]]] = {
+    EXCEPTION_MAP: ClassVar[dict[type, dict[str, object]]] = {
         ValueError: {"status_code": 400, "message": "Invalid value provided"},
         TypeError: {"status_code": 400, "message": "Invalid type provided"},
         KeyError: {"status_code": 400, "message": "Missing required field"},

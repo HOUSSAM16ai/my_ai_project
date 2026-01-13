@@ -11,7 +11,7 @@ import threading
 import time
 import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from app.services.serving.domain.models import ABTestConfig
 
@@ -72,7 +72,7 @@ class ABTestEngine:
         threading.Thread(target=end_test, daemon=True).start()
         return test_id
 
-    def analyze_ab_test(self, test_id: str, metrics_getter: callable) -> dict[str, Any]:
+    def analyze_ab_test(self, test_id: str, metrics_getter: callable) -> dict[str, object]:
         """
         تحليل نتائج اختبار A/B وتحديد الفائز
 

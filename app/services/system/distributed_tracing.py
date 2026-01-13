@@ -7,7 +7,6 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
 
 
 class SpanKind(Enum):
@@ -52,8 +51,8 @@ class Span:
     end_time: datetime | None = None
     duration_ms: float | None = None
     parent_span_id: str | None = None
-    tags: dict[str, Any] = field(default_factory=dict)
-    logs: list[dict[str, Any]] = field(default_factory=list)
+    tags: dict[str, object] = field(default_factory=dict)
+    logs: list[dict[str, object]] = field(default_factory=list)
     status_code: str = "OK"
     status_message: str | None = None
     baggage: dict[str, str] = field(default_factory=dict)
@@ -220,7 +219,7 @@ class DistributedTracer:
                 span.tags[key] = value
 
     def add_span_log(
-        self, span_context: SpanContext, message: str, fields: (dict[str, Any] | None) = None
+        self, span_context: SpanContext, message: str, fields: (dict[str, object] | None) = None
     ):
         """Add log event to span"""
         with self.lock:
@@ -305,7 +304,7 @@ class DistributedTracer:
                                 dependencies[parent_span.service_name].add(span.service_name)
         return {k: list(v) for k, v in dependencies.items()}
 
-    def get_metrics(self) -> dict[str, Any]:
+    def get_metrics(self) -> dict[str, object]:
         """Get tracing metrics"""
         with self.lock:
             active_spans_count = len(self.active_spans)

@@ -13,11 +13,11 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import inspect
 import logging
 import uuid
 from collections.abc import Awaitable, Callable
-from typing import Any
 
 from app.caching.base import CacheBackend, PubSubBackend
 from app.caching.stats import MultiLevelCacheCounters, MultiLevelCacheStatsSnapshot
@@ -303,9 +303,7 @@ class MultiLevelCache(CacheBackend):
             logger.error(f"❌ L2 Cache scan error: {e}")
             return []
 
-    async def set_add(
-        self, key: str, members: list[str], ttl: int | None = None
-    ) -> bool:
+    async def set_add(self, key: str, members: list[str], ttl: int | None = None) -> bool:
         """
         إضافة عناصر إلى مجموعة.
         يتم التنفيذ في L2 فقط (باعتباره مصدر الحقيقة للمجموعات والعلامات).
@@ -336,7 +334,5 @@ class MultiLevelCache(CacheBackend):
         """إغلاق الموارد (مثل مستمع Pub/Sub)."""
         if self._pubsub_task:
             self._pubsub_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._pubsub_task
-            except asyncio.CancelledError:
-                pass

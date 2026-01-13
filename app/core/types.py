@@ -30,7 +30,7 @@ type JSONPrimitive = str | int | float | bool | None
 """القيمة البدائية المسموح بها ضمن JSON."""
 
 type JSON = dict[str, "JSON"] | list["JSON"] | JSONPrimitive
-"""نوع يدعم جميع قيم JSON بشكل متداخل دون استخدام Any."""
+"""نوع يدعم جميع قيم JSON بشكل متداخل دون استخدام object."""
 
 type JSONDict = dict[str, JSON]
 """تمثيل كائن JSON مع قيم متماسكة النوع."""
@@ -52,7 +52,7 @@ type Headers = dict[str, str]
 """HTTP headers type"""
 
 type QueryParams = dict[str, str | int | bool]
-"""نوع معاملات الاستعلام بقيم محددة ودون Any."""
+"""نوع معاملات الاستعلام بقيم محددة ودون object."""
 
 type Config = dict[str, JSON]
 """تهيئة منسجمة تعتمد على قيم JSON الصارمة."""
@@ -64,7 +64,7 @@ type Config = dict[str, JSON]
 from collections.abc import Awaitable, Callable
 
 type AsyncCallable = Callable[..., Awaitable[object]]
-"""تابع غير متزامن يعيد أي كائن مضبوط النوع دون اللجوء إلى Any."""
+"""تابع غير متزامن يعيد أي كائن مضبوط النوع دون اللجوء إلى object."""
 
 type ErrorHandler = Callable[[Exception], object]
 """معالج أخطاء يعيد قيمة مضبوطة لتوثيق السلوك بوضوح."""

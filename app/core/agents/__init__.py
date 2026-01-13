@@ -12,8 +12,8 @@ from app.core.agents.principles import (
 from app.core.agents.system_principles import (
     SystemPrinciple,
     format_architecture_system_principles,
-    get_system_principles,
     get_architecture_system_principles,
+    get_system_principles,
     validate_architecture_system_principles,
     validate_system_principles,
 )

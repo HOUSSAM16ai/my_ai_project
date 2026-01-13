@@ -10,7 +10,6 @@ import random
 import time
 import uuid
 from collections import deque
-from typing import Any
 
 from app.services.serving.domain.models import (
     ModelRequest,
@@ -38,8 +37,8 @@ class ModelInvoker:
     def serve_request(
         self,
         model: ModelVersion,
-        input_data: dict[str, Any],
-        parameters: dict[str, Any] | None = None,
+        input_data: dict[str, object],
+        parameters: dict[str, object] | None = None,
         cost_calculator: callable | None = None,
         metrics_updater: callable | None = None,
     ) -> ModelResponse:
@@ -109,8 +108,8 @@ class ModelInvoker:
         self,
         request_id: str,
         model: ModelVersion,
-        input_data: dict[str, Any],
-        parameters: dict[str, Any] | None,
+        input_data: dict[str, object],
+        parameters: dict[str, object] | None,
     ) -> ModelRequest:
         """
         إنشاء كائن الطلب | Create request object
@@ -136,8 +135,8 @@ class ModelInvoker:
         self,
         request_id: str,
         model: ModelVersion,
-        input_data: dict[str, Any],
-        parameters: dict[str, Any] | None,
+        input_data: dict[str, object],
+        parameters: dict[str, object] | None,
         cost_calculator: callable | None,
     ) -> ModelResponse:
         """
@@ -185,7 +184,7 @@ class ModelInvoker:
             )
 
     def _invoke_model(
-        self, model: ModelVersion, input_data: dict[str, Any], parameters: dict[str, Any]
+        self, model: ModelVersion, input_data: dict[str, object], parameters: dict[str, object]
     ) -> dict[str, str | int | bool]:
         """
         استدعاء النموذج الفعلي

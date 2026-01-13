@@ -323,9 +323,7 @@ class StrategistAgent(AgentPlanner):
         }
         """
 
-    def _build_consult_user_message(
-        self, situation: str, analysis: dict[str, object]
-    ) -> str:
+    def _build_consult_user_message(self, situation: str, analysis: dict[str, object]) -> str:
         """
         بناء رسالة المستخدم للاستشارة الاستراتيجية.
         """

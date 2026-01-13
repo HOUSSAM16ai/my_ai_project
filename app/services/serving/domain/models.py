@@ -13,7 +13,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
 
 # ======================================================================================
 # ENUMERATIONS
@@ -85,8 +84,8 @@ class ModelVersion:
     device: str = "cpu"  # cpu, cuda, mps
     batch_size: int = 1
     max_sequence_length: int = 2048
-    parameters: dict[str, Any] = field(default_factory=dict)
-    metadata: dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, object] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     loaded_at: datetime | None = None
 
@@ -150,7 +149,7 @@ class ShadowDeployment:
     collect_responses: bool = True
     compare_results: bool = True
     started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-    comparison_results: list[dict[str, Any]] = field(default_factory=list)
+    comparison_results: list[dict[str, object]] = field(default_factory=list)
 
 
 @dataclass
@@ -164,8 +163,8 @@ class ModelRequest:
     request_id: str
     model_id: str
     version_id: str
-    input_data: dict[str, Any]
-    parameters: dict[str, Any] = field(default_factory=dict)
+    input_data: dict[str, object]
+    parameters: dict[str, object] = field(default_factory=dict)
     timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -180,7 +179,7 @@ class ModelResponse:
     request_id: str
     model_id: str
     version_id: str
-    output_data: Any
+    output_data: object
     latency_ms: float
     tokens_used: int = 0
     cost_usd: float = 0.0

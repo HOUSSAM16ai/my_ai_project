@@ -10,7 +10,6 @@
 """
 
 import logging
-from typing import Any
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request, Response, status
@@ -60,7 +59,7 @@ class APIGateway:
         router = APIRouter(prefix="/gateway", tags=["Gateway"])
 
         @router.get("/health")
-        async def gateway_health() -> dict[str, Any]:
+        async def gateway_health() -> dict[str, object]:
             """يفحص صحة البوابة وجميع الخدمات."""
             services_health = await self.registry.check_all_health()
 
@@ -86,7 +85,7 @@ class APIGateway:
             }
 
         @router.get("/services")
-        async def list_services() -> dict[str, Any]:
+        async def list_services() -> dict[str, object]:
             """يعرض جميع الخدمات المسجلة."""
             services = self.registry.list_services()
             return {

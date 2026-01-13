@@ -4,8 +4,6 @@
 مسؤول عن تجميع الآراء وتركيب القرار النهائي.
 """
 
-from typing import Any
-
 from app.core.di import get_logger
 from app.services.overmind.domain.super_intelligence.models import (
     Decision,
@@ -25,8 +23,8 @@ class DecisionSynthesizer:
     @staticmethod
     async def synthesize(
         situation: str,
-        analysis: dict[str, Any],
-        consultations: dict[str, Any],
+        analysis: dict[str, object],
+        consultations: dict[str, object],
     ) -> Decision:
         """
         تركيب القرار النهائي من آراء الوكلاء.
@@ -68,7 +66,7 @@ class DecisionSynthesizer:
         return decision
 
     @staticmethod
-    def _calculate_average_confidence(consultations: dict[str, Any]) -> float:
+    def _calculate_average_confidence(consultations: dict[str, object]) -> float:
         """
         حساب متوسط الثقة من الاستشارات.
         Calculate average confidence from consultations.
@@ -78,7 +76,7 @@ class DecisionSynthesizer:
         return sum(c["confidence"] for c in consultations.values()) / len(consultations)
 
     @staticmethod
-    def _determine_priority(analysis: dict[str, Any]) -> DecisionPriority:
+    def _determine_priority(analysis: dict[str, object]) -> DecisionPriority:
         """
         تحديد أولوية القرار.
         Determine decision priority based on urgency.
@@ -94,7 +92,7 @@ class DecisionSynthesizer:
         return DecisionPriority.MEDIUM
 
     @staticmethod
-    def _determine_impact(analysis: dict[str, Any]) -> DecisionImpact:
+    def _determine_impact(analysis: dict[str, object]) -> DecisionImpact:
         """
         تحديد تأثير القرار.
         Determine decision impact based on complexity.
@@ -114,7 +112,7 @@ class DecisionSynthesizer:
     @staticmethod
     def _create_base_decision(
         situation: str,
-        analysis: dict[str, Any],
+        analysis: dict[str, object],
         avg_confidence: float,
         priority: DecisionPriority,
         impact: DecisionImpact,
@@ -162,7 +160,7 @@ class DecisionSynthesizer:
         decision.success_criteria = DecisionSynthesizer._get_default_success_criteria()
 
     @staticmethod
-    def _get_default_alternatives() -> list[dict[str, Any]]:
+    def _get_default_alternatives() -> list[dict[str, object]]:
         """
         الحصول على البدائل الافتراضية.
         Get default alternatives for decision.
@@ -195,7 +193,7 @@ class DecisionSynthesizer:
         ]
 
     @staticmethod
-    def _determine_category(analysis: dict[str, Any]) -> DecisionCategory:
+    def _determine_category(analysis: dict[str, object]) -> DecisionCategory:
         """
         تحديد فئة القرار باستخدام مؤشرات المخاطر والقيمة الاستراتيجية.
         """
@@ -212,7 +210,7 @@ class DecisionSynthesizer:
         return DecisionCategory.TECHNICAL
 
     @staticmethod
-    def _compose_reasoning(*, analysis: dict[str, Any], avg_confidence: float) -> str:
+    def _compose_reasoning(*, analysis: dict[str, object], avg_confidence: float) -> str:
         """
         صياغة جزء منطق القرار اعتماداً على المؤشرات الكمية.
         """

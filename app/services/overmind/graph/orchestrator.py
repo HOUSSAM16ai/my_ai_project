@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from app.services.overmind.graph.nodes import AgentMessage, AgentNode
 
@@ -29,7 +28,7 @@ class DecentralizedGraphOrchestrator:
             logger.info(f"Linked {source_id} -> {target_id}")
 
     async def dispatch(
-        self, target_id: str, message_content: dict[str, Any], sender_id: str = "system"
+        self, target_id: str, message_content: dict[str, object], sender_id: str = "system"
     ) -> None:
         """Sends a message to a specific node."""
         if target_id in self.nodes:

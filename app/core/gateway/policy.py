@@ -1,7 +1,6 @@
 import logging
 import threading
 from datetime import UTC, datetime
-from typing import Any
 
 from .models import PolicyRule
 
@@ -21,7 +20,7 @@ class PolicyEngine:
 
     def __init__(self):
         self.policies: dict[str, PolicyRule] = {}
-        self.violations: list[dict[str, Any]] = []
+        self.violations: list[dict[str, object]] = []
         self.lock = threading.RLock()
 
     def add_policy(self, policy: PolicyRule) -> None:
@@ -29,7 +28,7 @@ class PolicyEngine:
         with self.lock:
             self.policies[policy.rule_id] = policy
 
-    def evaluate(self, request_context: dict[str, Any]) -> tuple[bool, str | None]:
+    def evaluate(self, request_context: dict[str, object]) -> tuple[bool, str | None]:
         """
         Evaluate policies against request
 
@@ -59,7 +58,7 @@ class PolicyEngine:
 
             return True, None
 
-    def _evaluate_condition(self, condition: str, context: dict[str, Any]) -> bool:
+    def _evaluate_condition(self, condition: str, context: dict[str, object]) -> bool:
         """Evaluate policy condition (simplified)"""
         # In production, use a proper expression engine
         # For now, support basic checks
@@ -79,7 +78,7 @@ class PolicyEngine:
 
         return False
 
-    def _record_violation(self, policy: PolicyRule, context: dict[str, Any]):
+    def _record_violation(self, policy: PolicyRule, context: dict[str, object]):
         """Record policy violation"""
         self.violations.append(
             {
@@ -90,7 +89,7 @@ class PolicyEngine:
             }
         )
 
-    def get_violations(self, limit: int = 100) -> list[dict[str, Any]]:
+    def get_violations(self, limit: int = 100) -> list[dict[str, object]]:
         """Get recent policy violations"""
         with self.lock:
             return self.violations[-limit:]

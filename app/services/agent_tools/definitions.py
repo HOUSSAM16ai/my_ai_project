@@ -6,7 +6,6 @@ Part of the Omni-Plan Refactoring Initiative.
 
 import os
 from dataclasses import asdict, dataclass
-from typing import Any
 
 # ======================================================================================
 # Version
@@ -22,10 +21,10 @@ class ToolResult:
     ok: bool
     data: dict[str, str | int | bool] = None
     error: str | None = None
-    meta: dict[str, Any] = None
+    meta: dict[str, object] = None
     trace_id: str | None = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         d = asdict(self)
         return {k: v for k, v in d.items() if v is not None}
 

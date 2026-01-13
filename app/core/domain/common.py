@@ -8,7 +8,6 @@ from __future__ import annotations
 import enum
 import json
 from datetime import UTC, datetime
-from typing import Any
 
 from sqlalchemy import Text, TypeDecorator
 from sqlalchemy.engine.interfaces import Dialect
@@ -31,7 +30,7 @@ class CaseInsensitiveEnum(str, enum.Enum):
     """
 
     @classmethod
-    def _missing_(cls, value: object) -> Any:
+    def _missing_(cls, value: object) -> object:
         if isinstance(value, str):
             upper_value = value.upper()
             if upper_value in cls.__members__:
@@ -51,11 +50,11 @@ class FlexibleEnum(TypeDecorator):
     impl = Text
     cache_ok = True
 
-    def __init__(self, enum_type: type[enum.Enum], *args: Any, **kwargs: Any) -> None:
+    def __init__(self, enum_type: type[enum.Enum], *args: object, **kwargs: object) -> None:
         super().__init__(*args, **kwargs)
         self._enum_type = enum_type
 
-    def process_bind_param(self, value: Any, dialect: Dialect) -> Any:
+    def process_bind_param(self, value: object, dialect: Dialect) -> object:
         if value is None:
             return None
         if isinstance(value, self._enum_type):
@@ -67,7 +66,7 @@ class FlexibleEnum(TypeDecorator):
                 return value.lower()
         return value
 
-    def process_result_value(self, value: Any, dialect: Dialect) -> Any:
+    def process_result_value(self, value: object, dialect: Dialect) -> object:
         if value is None:
             return None
         if isinstance(value, self._enum_type):
@@ -89,12 +88,12 @@ class JSONText(TypeDecorator):
     impl = Text
     cache_ok = True
 
-    def process_bind_param(self, value: Any, dialect: Dialect) -> Any:
+    def process_bind_param(self, value: object, dialect: Dialect) -> object:
         if value is None:
             return None
         return json.dumps(value)
 
-    def process_result_value(self, value: Any, dialect: Dialect) -> Any:
+    def process_result_value(self, value: object, dialect: Dialect) -> object:
         if value is None:
             return None
         try:

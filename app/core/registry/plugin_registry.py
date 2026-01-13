@@ -10,8 +10,6 @@ Central registration and management of all plugins
 
 from __future__ import annotations
 
-from typing import Any
-
 from app.core.protocols import PluginProtocol as IPlugin
 
 
@@ -34,10 +32,10 @@ class PluginRegistry:
     def __init__(self):
         if not self._initialized:
             self._plugins: dict[str, IPlugin] = {}
-            self._metadata: dict[str, dict[str, Any]] = {}
+            self._metadata: dict[str, dict[str, object]] = {}
             self._initialized = True
 
-    def register(self, plugin: IPlugin, metadata: dict[str, Any] | None = None) -> None:
+    def register(self, plugin: IPlugin, metadata: dict[str, object] | None = None) -> None:
         """
         تسجيل إضافة جديدة
         Register a new plugin
@@ -75,7 +73,7 @@ class PluginRegistry:
         self._plugins.clear()
         self._metadata.clear()
 
-    def get_metadata(self, name: str) -> dict[str, Any]:
+    def get_metadata(self, name: str) -> dict[str, object]:
         """Get plugin metadata"""
         return self._metadata.get(name, {})
 

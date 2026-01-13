@@ -5,7 +5,6 @@ import logging
 import time
 from collections import OrderedDict
 from datetime import timedelta
-from typing import Any
 
 from app.core.gateway.protocols.cache import CacheProviderProtocol
 
@@ -42,7 +41,7 @@ class InMemoryCacheProvider(CacheProviderProtocol):
         self.default_ttl = default_ttl
 
         # storage: maps key -> (value, expire_at_timestamp)
-        self._storage: OrderedDict[str, tuple[Any, float]] = OrderedDict()
+        self._storage: OrderedDict[str, tuple[object, float]] = OrderedDict()
 
         # Statistics
         self._stats = {"hits": 0, "misses": 0, "evictions": 0, "sets": 0}
@@ -50,7 +49,7 @@ class InMemoryCacheProvider(CacheProviderProtocol):
         # Async lock for thread safety in async context
         self._lock = asyncio.Lock()
 
-    async def get(self, key: str) -> Any | None:
+    async def get(self, key: str) -> object | None:
         """
         استرجاع عنصر من الذاكرة المؤقتة.
         Retrieves an item if it exists and hasn't expired.
@@ -74,7 +73,7 @@ class InMemoryCacheProvider(CacheProviderProtocol):
             self._stats["hits"] += 1
             return value
 
-    async def put(self, key: str, value: Any, ttl: int | timedelta | None = None) -> bool:
+    async def put(self, key: str, value: object, ttl: int | timedelta | None = None) -> bool:
         """
         تخزين عنصر في الذاكرة.
         Stores an item. If cache is full, evicts the least recently used item.
@@ -128,7 +127,7 @@ class InMemoryCacheProvider(CacheProviderProtocol):
             self._stats = dict.fromkeys(self._stats, 0)
             return True
 
-    async def get_stats(self) -> dict[str, Any]:
+    async def get_stats(self) -> dict[str, object]:
         """
         الحصول على الإحصائيات.
         Returns a snapshot of the cache statistics.
@@ -169,7 +168,7 @@ class CacheFactory:
 
 
 # Backwards compatibility helper for key generation
-def generate_cache_key(data: Any) -> str:
+def generate_cache_key(data: object) -> str:
     """
     Generates a deterministic SHA256 hash for a dictionary or string.
     """

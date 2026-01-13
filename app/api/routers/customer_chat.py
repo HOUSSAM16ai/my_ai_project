@@ -17,12 +17,12 @@ from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
 from app.core.domain.user import User
 from app.deps.auth import CurrentUser, require_permissions
+from app.services.auth.token_decoder import decode_user_id
 from app.services.boundaries.customer_chat_boundary_service import CustomerChatBoundaryService
 from app.services.chat.contracts import ChatDispatchRequest
 from app.services.chat.dispatcher import ChatRoleDispatcher, build_chat_dispatcher
 from app.services.chat.orchestrator import ChatOrchestrator
 from app.services.rbac import QA_SUBMIT
-from app.services.auth.token_decoder import decode_user_id
 
 logger = get_logger(__name__)
 

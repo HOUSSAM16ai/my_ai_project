@@ -7,7 +7,6 @@
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
 
 from app.monitoring.alerts import AlertManager, get_alert_manager
 from app.monitoring.metrics import MetricsCollector, get_metrics_collector
@@ -127,7 +126,7 @@ class DashboardManager:
         """
         return list(self._views.values())
 
-    def get_dashboard_data(self, view_id: str = "main") -> dict[str, Any]:
+    def get_dashboard_data(self, view_id: str = "main") -> dict[str, object]:
         """
         يجلب البيانات لعرض محدد.
 
@@ -135,7 +134,7 @@ class DashboardManager:
             view_id: معرف العرض
 
         Returns:
-            dict[str, Any]: البيانات المجمعة
+            dict[str, object]: البيانات المجمعة
         """
         view = self.get_view(view_id)
         if not view:
@@ -156,7 +155,7 @@ class DashboardManager:
 
         return data
 
-    def _fetch_data_for_widget(self, widget: DashboardWidget) -> Any:
+    def _fetch_data_for_widget(self, widget: DashboardWidget) -> object:
         """
         يجلب البيانات لعنصر محدد.
         """

@@ -5,7 +5,6 @@
 """
 
 from datetime import datetime
-from typing import Any
 
 from app.core.di import get_logger
 from app.services.overmind.agents import AgentCouncil
@@ -43,7 +42,7 @@ class SuperCollectiveIntelligence:
     async def make_autonomous_decision(
         self,
         situation: str,
-        context: dict[str, Any] | None = None,
+        context: dict[str, object] | None = None,
     ) -> Decision:
         """
         اتخاذ قرار مستقل بشكل كامل.
@@ -77,8 +76,8 @@ class SuperCollectiveIntelligence:
     async def _consult_agents(
         self,
         situation: str,
-        analysis: dict[str, Any],
-    ) -> dict[str, Any]:
+        analysis: dict[str, object],
+    ) -> dict[str, object]:
         """
         استشارة الوكلاء بشكل فعلي.
         Actual consultation with agents.
@@ -120,7 +119,7 @@ class SuperCollectiveIntelligence:
 
         return consultations
 
-    async def execute_decision(self, decision: Decision) -> dict[str, Any]:
+    async def execute_decision(self, decision: Decision) -> dict[str, object]:
         """
         تنفيذ القرار.
         """
@@ -145,7 +144,7 @@ class SuperCollectiveIntelligence:
 
         return result
 
-    def get_statistics(self) -> dict[str, Any]:
+    def get_statistics(self) -> dict[str, object]:
         """
         إحصائيات النظام.
         """

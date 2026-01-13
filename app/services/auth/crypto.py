@@ -78,7 +78,7 @@ class AuthCrypto:
     def verify_jwt(self, token: str) -> dict[str, object]:
         """التحقق من صحة توقيع JWT."""
         try:
-            # Note: The original code casts the result of jwt.decode (which is Any) to dict.
+            # Note: The original code casts the result of jwt.decode (which is object) to dict.
             return jwt.decode(token, self.settings.SECRET_KEY, algorithms=["HS256"])
         except jwt.PyJWTError as exc:
             raise HTTPException(

@@ -248,7 +248,7 @@ class IntelligentRouter:
     ) -> ProviderCandidate:
         """تطبيق استراتيجية التوجيه واختيار الأفضل."""
         strategy_impl = get_strategy(strategy)
-        # We need to cast candidates to List[Dict[str, Any]] for the strategy implementation
+        # We need to cast candidates to List[Dict[str, object]] for the strategy implementation
         # or update the strategy interface. Assuming strategy updates dicts in place.
         # Since strategy_impl is likely expecting generic dicts, we pass them.
         # The strategy updates 'score' key.

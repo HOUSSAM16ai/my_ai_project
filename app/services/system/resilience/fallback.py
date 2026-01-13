@@ -4,7 +4,6 @@ import logging
 import threading
 from collections.abc import Callable
 from enum import Enum
-from typing import Any
 
 
 class FallbackLevel(Enum):
@@ -40,7 +39,7 @@ class FallbackChain:
         with self._lock:
             self.handlers[level] = handler
 
-    def execute(self, *args, **kwargs) -> tuple[Any, FallbackLevel, bool]:
+    def execute(self, *args, **kwargs) -> tuple[object, FallbackLevel, bool]:
         """
         Execute with fallback chain
 

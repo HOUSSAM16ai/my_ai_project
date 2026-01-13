@@ -12,7 +12,6 @@
 
 import hashlib
 import json
-from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
@@ -36,7 +35,7 @@ class AuditorAgent(AgentReflector):
     def __init__(self, ai_client: AIClient) -> None:
         self.ai = ai_client
 
-    def detect_loop(self, history_hashes: list[str], current_plan: dict[str, Any]) -> None:
+    def detect_loop(self, history_hashes: list[str], current_plan: dict[str, object]) -> None:
         """
         اكتشاف التكرار المفرط (Infinite Loops).
 
@@ -59,7 +58,7 @@ class AuditorAgent(AgentReflector):
                 "تم اكتشاف حلقة استدلال مفرغة. الخطة المقترحة تكررت عدة مرات دون تقدم."
             )
 
-    def _compute_hash(self, data: dict[str, Any]) -> str:
+    def _compute_hash(self, data: dict[str, object]) -> str:
         """حساب بصمة ثابتة للبيانات."""
         try:
             # ترتيب المفاتيح لضمان الثبات
@@ -70,8 +69,8 @@ class AuditorAgent(AgentReflector):
             return "unknown_hash"
 
     async def review_work(
-        self, result: dict[str, Any], original_objective: str, context: CollaborationContext
-    ) -> dict[str, Any]:
+        self, result: dict[str, object], original_objective: str, context: CollaborationContext
+    ) -> dict[str, object]:
         """
         مراجعة نتائج العمل ومقارنتها بالهدف الأصلي باستخدام الذكاء الاصطناعي.
         """
@@ -141,7 +140,7 @@ class AuditorAgent(AgentReflector):
                 "confidence": 0.0,
             }
 
-    async def consult(self, situation: str, analysis: dict[str, Any]) -> dict[str, Any]:
+    async def consult(self, situation: str, analysis: dict[str, object]) -> dict[str, object]:
         """
         تقديم استشارة رقابية.
         Provide audit and safety consultation.

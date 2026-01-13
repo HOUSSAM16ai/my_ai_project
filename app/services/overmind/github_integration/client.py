@@ -8,7 +8,7 @@ import asyncio
 import os
 import subprocess
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from app.core.di import get_logger
 from app.services.overmind.github_integration.models import RepoInfo
@@ -22,8 +22,8 @@ try:
     PYGITHUB_AVAILABLE = True
 except ImportError:
     PYGITHUB_AVAILABLE = False
-    Github = Any  # type: ignore
-    Repository = Any  # type: ignore
+    Github = object  # type: ignore
+    Repository = object  # type: ignore
     GithubException = Exception
     logger.warning("PyGithub not installed. GitHub integration will be disabled.")
 
@@ -82,7 +82,7 @@ class GitHubClient:
             except Exception as e:
                 logger.error(f"Failed to fetch repo object: {e}")
 
-    async def run_async(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+    async def run_async(self, func: Callable[..., T], *args: object, **kwargs: object) -> T:
         """
         Executes a blocking function in the default executor.
         Use this for ALL PyGithub calls.

@@ -14,7 +14,7 @@ import time
 from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, ClassVar
+from typing import ClassVar
 
 
 class VitalType(Enum):
@@ -51,7 +51,7 @@ class WebVital:
     page_url: str | None = None
     user_id: str | None = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         """Convert to dictionary"""
         return {
             "vital_type": self.vital_type.value,
@@ -71,7 +71,7 @@ class PerformanceEntry:
     name: str
     start_time: float
     duration: float
-    attributes: dict[str, Any] = field(default_factory=dict)
+    attributes: dict[str, object] = field(default_factory=dict)
 
 
 class PerformanceMonitor:
@@ -104,7 +104,7 @@ class PerformanceMonitor:
         self.vitals: deque = deque(maxlen=10000)
         self.entries: deque = deque(maxlen=10000)
         self.marks: dict[str, float] = {}
-        self.measures: list[dict[str, Any]] = []
+        self.measures: list[dict[str, object]] = []
         self.stats = {
             "total_vitals": 0,
             "good_vitals": 0,
@@ -171,7 +171,7 @@ class PerformanceMonitor:
             return "needs-improvement"
         return "poor"
 
-    def get_vital_score(self) -> dict[str, Any]:
+    def get_vital_score(self) -> dict[str, object]:
         """
         Calculate overall Web Vitals score
         (Similar to Google PageSpeed Insights)
@@ -194,7 +194,7 @@ class PerformanceMonitor:
             "good_vitals": good,
         }
 
-    def get_statistics(self) -> dict[str, Any]:
+    def get_statistics(self) -> dict[str, object]:
         """Get performance statistics"""
         return {
             **self.stats,

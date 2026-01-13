@@ -5,7 +5,6 @@
 """
 
 from datetime import datetime
-from typing import Any
 
 from app.core.di import get_logger
 
@@ -17,12 +16,12 @@ class OperationsLogger:
 
     def __init__(self) -> None:
         """تهيئة مسجل العمليات."""
-        self.operations_log: list[dict[str, Any]] = []
+        self.operations_log: list[dict[str, object]] = []
 
     def log_operation(
         self,
         operation: str,
-        details: dict[str, Any],
+        details: dict[str, object],
         success: bool = True,
     ) -> None:
         """
@@ -44,7 +43,7 @@ class OperationsLogger:
         log_level = logger.info if success else logger.error
         log_level(f"DB Operation: {operation} - {'✓' if success else '✗'}")
 
-    def get_operations_log(self) -> list[dict[str, Any]]:
+    def get_operations_log(self) -> list[dict[str, object]]:
         """
         الحصول على سجل العمليات.
 

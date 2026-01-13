@@ -2,10 +2,13 @@
 Tests for Cache Warming (Phase 2 completion).
 """
 
-import pytest
 import asyncio
+
+import pytest
+
 from app.caching.memory_cache import InMemoryCache
 from app.caching.warming import CacheWarmer
+
 
 @pytest.mark.asyncio
 async def test_cache_warmer_simple():
@@ -33,6 +36,7 @@ async def test_cache_warmer_simple():
 
     static = await cache.get("static_blob")
     assert static == "static_data"
+
 
 @pytest.mark.asyncio
 async def test_cache_warmer_failure():

@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -16,7 +16,7 @@ class CacheProviderProtocol(Protocol):
     - Dependency Inversion Principle (DIP)
     """
 
-    async def get(self, key: str) -> Any | None:
+    async def get(self, key: str) -> object | None:
         """
         Retrieve an item from the cache.
 
@@ -24,17 +24,17 @@ class CacheProviderProtocol(Protocol):
             key (str): The unique key for the item.
 
         Returns:
-            Any | None: The cached item if found and not expired, else None.
+            object | None: The cached item if found and not expired, else None.
         """
         ...
 
-    async def put(self, key: str, value: Any, ttl: int | timedelta = 300) -> bool:
+    async def put(self, key: str, value: object, ttl: int | timedelta = 300) -> bool:
         """
         Store an item in the cache.
 
         Args:
             key (str): The unique key.
-            value (Any): The value to store (must be serializable if using remote cache).
+            value (object): The value to store (must be serializable if using remote cache).
             ttl (int | timedelta): Time To Live in seconds or timedelta object. Default 300s.
 
         Returns:
@@ -63,7 +63,7 @@ class CacheProviderProtocol(Protocol):
         """
         ...
 
-    async def get_stats(self) -> dict[str, Any]:
+    async def get_stats(self) -> dict[str, object]:
         """
         Get statistics about the cache usage.
 

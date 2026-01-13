@@ -1,5 +1,3 @@
-from typing import Any
-
 from app.core.logging import get_logger
 from app.services.chat.agents.base import AgentResponse
 
@@ -11,7 +9,7 @@ class TestAgent:
     Ensures testing coverage and determinism.
     """
 
-    async def process(self, input_data: dict[str, Any]) -> AgentResponse:
+    async def process(self, input_data: dict[str, object]) -> AgentResponse:
         """
         Verifies if tests exist or should be created.
         """

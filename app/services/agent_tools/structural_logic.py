@@ -8,7 +8,6 @@ Separated from tools to allow usage in other modules.
 import hashlib
 import json
 import os
-from typing import Any
 
 # Redefining to use direct module access for re-assignment compatibility
 from . import globals as g
@@ -155,7 +154,7 @@ def _maybe_reload_struct_map():
         _load_deep_struct_map_logic(force=False)
 
 
-def _annotate_struct_meta(abs_path: str, meta: dict[str, Any]):
+def _annotate_struct_meta(abs_path: str, meta: dict[str, object]):
     _maybe_reload_struct_map()
     if not g._DEEP_STRUCT_MAP:
         return
@@ -168,7 +167,7 @@ def _annotate_struct_meta(abs_path: str, meta: dict[str, Any]):
     meta.update({"struct_layer": layer, "struct_hotspot": hotspot, "struct_dup_group": dup_group})
 
 
-def _maybe_hash_and_size(abs_path: str, result_data: dict[str, Any]):
+def _maybe_hash_and_size(abs_path: str, result_data: dict[str, object]):
     if HASH_AFTER_WRITE and os.path.isfile(abs_path):
         try:
             result_data["sha256"] = _file_hash(abs_path)
@@ -177,7 +176,7 @@ def _maybe_hash_and_size(abs_path: str, result_data: dict[str, Any]):
             pass
 
 
-def _apply_struct_limit(meta: dict[str, Any]):
+def _apply_struct_limit(meta: dict[str, object]):
     if not DEEP_LIMIT_KEYS or not meta:
         return
     keys = list(meta.keys())
