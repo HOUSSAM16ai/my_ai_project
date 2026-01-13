@@ -80,6 +80,21 @@ type MiddlewareSpec = tuple[type[BaseHTTPMiddleware] | type, dict[str, object]]
 # تعريف نوع RouterSpec: (الموجه، البادئة)
 type RouterSpec = tuple[APIRouter, str]
 
+# إعدادات CORS الأساسية لتبسيط القراءة وإعادة الاستخدام
+BASE_CORS_OPTIONS: dict[str, object] = {
+    "allow_credentials": True,
+    "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
+    "allow_headers": [
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+        "X-CSRF-Token",
+    ],
+    "expose_headers": ["Content-Length", "Content-Range"],
+}
+
 # ==============================================================================
 # SICP: Functional Core (الجوهر الوظيفي)
 # ==============================================================================
@@ -98,31 +113,14 @@ def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
         list[MiddlewareSpec]: قائمة المواصفات.
     """
     # تجهيز إعدادات CORS
-    raw_origins = settings.BACKEND_CORS_ORIGINS
-    allow_origins = raw_origins if raw_origins else ["*"]  # Fallback
+    cors_options = _build_cors_options(settings.BACKEND_CORS_ORIGINS)
 
     # تجهيز المكدس (الترتيب مهم: من الخارج إلى الداخل)
     stack: list[MiddlewareSpec] = [
         # 1. المضيف الموثوق (Trusted Host)
         (TrustedHostMiddleware, {"allowed_hosts": settings.ALLOWED_HOSTS}),
         # 2. CORS
-        (
-            CORSMiddleware,
-            {
-                "allow_origins": allow_origins,
-                "allow_credentials": True,
-                "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
-                "allow_headers": [
-                    "Authorization",
-                    "Content-Type",
-                    "Accept",
-                    "Origin",
-                    "X-Requested-With",
-                    "X-CSRF-Token",
-                ],
-                "expose_headers": ["Content-Length", "Content-Range"],
-            },
-        ),
+        (CORSMiddleware, cors_options),
         # 3. ترويسات الأمان (Security Headers)
         (SecurityHeadersMiddleware, {}),
         # 4. تنظيف الترويسات (Clean Headers)
@@ -136,6 +134,22 @@ def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
         stack.insert(3, (RateLimitMiddleware, {}))
 
     return stack
+
+
+def _build_cors_options(origins: list[str]) -> dict[str, object]:
+    """
+    بناء خيارات CORS بشكل واضح ومتسق.
+
+    Args:
+        origins: قائمة الأصول المسموح بها.
+
+    Returns:
+        dict[str, object]: قاموس خيارات CORS الجاهز للاستخدام.
+    """
+    allow_origins = origins or ["*"]
+    options = dict(BASE_CORS_OPTIONS)
+    options["allow_origins"] = allow_origins
+    return options
 
 
 def _get_router_registry(gateway_router: APIRouter | None = None) -> list[RouterSpec]:
