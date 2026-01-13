@@ -7,14 +7,17 @@
 المعمارية:
 - L1: In-Memory (سريع جداً، محلي لكل نسخة خدمة).
 - L2: Redis (موزع، مشترك بين جميع النسخ).
+- Pub/Sub: لإبطال L1 عند حدوث تغيير في L2 من خدمة أخرى.
 """
 
 import asyncio
 import inspect
 import logging
+import uuid
 from collections.abc import Awaitable, Callable
+from typing import Any
 
-from app.caching.base import CacheBackend
+from app.caching.base import CacheBackend, PubSubBackend
 from app.caching.stats import MultiLevelCacheCounters, MultiLevelCacheStatsSnapshot
 
 logger = logging.getLogger(__name__)
@@ -31,6 +34,8 @@ class MultiLevelCache(CacheBackend):
         l2_cache: CacheBackend,
         sync_l1: bool = True,
         l1_backfill_ttl: int = 60,
+        invalidation_channel: str = "cache:invalidation",
+        node_id: str | None = None,
     ) -> None:
         """
         تهيئة المنسق.
@@ -40,13 +45,23 @@ class MultiLevelCache(CacheBackend):
             l2_cache: المستوى الثاني (Redis).
             sync_l1: هل نقوم بملء L1 عند العثور على القيمة في L2؟
             l1_backfill_ttl: مدة صلاحية L1 عند التعبئة من L2 (بالثواني).
+            invalidation_channel: اسم قناة Pub/Sub لإشعارات الإبطال.
+            node_id: معرف فريد لهذه العقدة (لمنع معالجة إشعاراتها الخاصة).
         """
         self.l1 = l1_cache
         self.l2 = l2_cache
         self.sync_l1 = sync_l1
         self.l1_backfill_ttl = l1_backfill_ttl
+        self.invalidation_channel = invalidation_channel
+        self.node_id = node_id or str(uuid.uuid4())
+
         self._stats = MultiLevelCacheCounters()
         self._key_locks: dict[str, asyncio.Lock] = {}
+        self._pubsub_task: asyncio.Task[None] | None = None
+
+        # بدء الاستماع للإشعارات إذا كان L2 يدعم Pub/Sub
+        if isinstance(self.l2, PubSubBackend):
+            self._start_listener()
 
     def _get_key_lock(self, key: str) -> asyncio.Lock:
         """الحصول على قفل خاص بالمفتاح لتجميع الطلبات المتزامنة."""
@@ -59,6 +74,63 @@ class MultiLevelCache(CacheBackend):
         """إزالة القفل الخاص بمفتاح عند عدم الحاجة إليه."""
 
         self._key_locks.pop(key, None)
+
+    def _start_listener(self) -> None:
+        """بدء مهمة الخلفية للاستماع لإشعارات الإبطال."""
+        self._pubsub_task = asyncio.create_task(self._listen_for_invalidation())
+
+    async def _listen_for_invalidation(self) -> None:
+        """الاستماع لقناة الإبطال وحذف المفاتيح من L1."""
+        if not isinstance(self.l2, PubSubBackend):
+            return
+
+        pubsub = self.l2.pubsub()
+        await pubsub.subscribe(self.invalidation_channel)
+        logger.info(
+            f"📡 Started listening for invalidation on channel: {self.invalidation_channel}"
+        )
+
+        try:
+            async for message in pubsub.listen():
+                if message["type"] != "message":
+                    continue
+
+                data = message["data"]
+                # تنسيق الرسالة المتوقع: "source_node_id:key_to_invalidate"
+                if isinstance(data, bytes):
+                    data = data.decode("utf-8")
+
+                try:
+                    parts = data.split(":", 1)
+                    if len(parts) != 2:
+                        continue
+                    source_node, key = parts
+
+                    # تجاهل الإشعارات الصادرة من هذه العقدة نفسها
+                    if source_node == self.node_id:
+                        continue
+
+                    logger.debug(f"🧹 Received invalidation for '{key}' from {source_node}")
+                    await self.l1.delete(key)
+
+                except Exception as e:
+                    logger.error(f"❌ Error processing invalidation message: {e}")
+        except asyncio.CancelledError:
+            logger.info("🛑 Invalidation listener cancelled")
+        except Exception as e:
+            logger.error(f"❌ Invalidation listener failed: {e}")
+        finally:
+            await pubsub.unsubscribe(self.invalidation_channel)
+            await pubsub.close()
+
+    async def _publish_invalidation(self, key: str) -> None:
+        """نشر إشعار إبطال."""
+        if isinstance(self.l2, PubSubBackend):
+            message = f"{self.node_id}:{key}"
+            try:
+                await self.l2.publish(self.invalidation_channel, message)
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to publish invalidation for {key}: {e}")
 
     async def get(self, key: str) -> object | None:
         """
@@ -112,6 +184,7 @@ class MultiLevelCache(CacheBackend):
         الاستراتيجية:
         1. الكتابة في L2 أولاً (لضمان التوزيع).
         2. الكتابة في L1 (أو إبطالها).
+        3. نشر إشعار إبطال لبقية العقد.
         """
         l2_success = False
         try:
@@ -128,21 +201,20 @@ class MultiLevelCache(CacheBackend):
                 logger.warning(f"⚠️ L1 Cache set error for {key}: {e}")
 
             self._stats.record_set()
-            # TODO: Publish invalidation event for other instances
-            # (سنقوم بتنفيذ هذا في مرحلة لاحقة عبر Pub/Sub)
+
+            # إشعار بقية العقد بأن القيمة تغيرت
+            await self._publish_invalidation(key)
 
             return True
 
-        # If L2 fails, we generally consider the write failed for consistency,
-        # unless we want to operate in "degraded mode" (L1 only).
-        # For now, strict consistency implies L2 is required.
+        # If L2 fails, we generally consider the write failed for consistency
         return False
 
     async def delete(self, key: str) -> bool:
         """
         حذف قيمة.
 
-        يحذف من كلا المستويين.
+        يحذف من كلا المستويين وينشر الإبطال.
         """
         l2_res = False
         try:
@@ -159,6 +231,8 @@ class MultiLevelCache(CacheBackend):
         if l1_res or l2_res:
             self._stats.record_delete()
             self._remove_key_lock(key)
+            # إشعار بقية العقد بالحذف
+            await self._publish_invalidation(key)
 
         return l2_res or l1_res
 
@@ -182,6 +256,8 @@ class MultiLevelCache(CacheBackend):
         l1 = await self.l1.clear()
         l2 = await self.l2.clear()
         self._key_locks.clear()
+        # ملاحظة: clear لا ينشر إبطالاً لكل مفتاح،
+        # في بيئة الإنتاج يفضل تجنب clear الكاملة إلا للضرورة القصوى.
         return l1 and l2
 
     async def get_stats(self) -> MultiLevelCacheStatsSnapshot:
@@ -224,3 +300,12 @@ class MultiLevelCache(CacheBackend):
         except Exception as e:
             logger.error(f"❌ L2 Cache scan error: {e}")
             return []
+
+    async def close(self) -> None:
+        """إغلاق الموارد (مثل مستمع Pub/Sub)."""
+        if self._pubsub_task:
+            self._pubsub_task.cancel()
+            try:
+                await self._pubsub_task
+            except asyncio.CancelledError:
+                pass

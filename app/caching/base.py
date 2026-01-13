@@ -5,7 +5,7 @@
 تتبع مبدأ فصل التجريد عن التنفيذ (Berkeley SICP) وتستخدم توثيق هارفارد.
 """
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -90,4 +90,19 @@ class CacheBackend(Protocol):
         Returns:
             list[str]: قائمة المفاتيح المطابقة
         """
+        ...
+
+
+@runtime_checkable
+class PubSubBackend(Protocol):
+    """
+    بروتوكول للنشر والاشتراك (للتخزين المؤقت الموزع).
+    """
+
+    async def publish(self, channel: str, message: str) -> int:
+        """نشر رسالة إلى قناة."""
+        ...
+
+    def pubsub(self) -> Any:
+        """الحصول على كائن PubSub."""
         ...

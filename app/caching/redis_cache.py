@@ -104,7 +104,9 @@ class RedisCache(CacheBackend):
         تنفيذ عملية Redis داخل قاطع الدائرة.
         """
         if not self._breaker.allow_request():
-            logger.warning(f"⚠️ Redis Circuit Breaker is OPEN. Skipping {operation_name}.")
+            logger.warning(
+                f"⚠️ Redis Circuit Breaker is OPEN. Skipping {operation_name}."
+            )
             return None
 
         try:
@@ -210,6 +212,24 @@ class RedisCache(CacheBackend):
 
         result = await self._execute_with_breaker("scan", _do_scan)
         return result if result is not None else []
+
+    async def publish(self, channel: str, message: str) -> int:
+        """
+        نشر رسالة إلى قناة (Pub/Sub).
+        """
+
+        async def _do_publish() -> int:
+            return await self._redis.publish(channel, message)
+
+        result = await self._execute_with_breaker("publish", _do_publish)
+        return result if result is not None else 0
+
+    def pubsub(self) -> Any:
+        """
+        الحصول على كائن PubSub.
+        ملاحظة: لا يخضع لقاطع الدائرة لأنه يتطلب اتصالاً مستمراً.
+        """
+        return self._redis.pubsub()
 
     async def get_stats(self) -> CacheStatsSnapshot:
         """الحصول على لقطة إحصائية (الحجم غير متاح في Redis)."""
