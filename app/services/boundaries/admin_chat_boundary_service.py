@@ -17,6 +17,7 @@ from app.services.chat.contracts import ChatDispatchResult, ChatStreamEvent
 
 logger = logging.getLogger(__name__)
 
+
 class AdminChatBoundaryService:
     """
     خدمة محادثة المسؤول (Admin Chat Service).

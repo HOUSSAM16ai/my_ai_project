@@ -1,7 +1,5 @@
 """أدوات ميتا لإدارة الأدوات واستدعائها ديناميكياً."""
 
-from typing import Any
-
 from .core import canonicalize_tool_name, resolve_tool_name, tool
 from .definitions import DISPATCH_ALLOW, ToolResult, __version__
 from .globals import (
@@ -86,7 +84,7 @@ def introspect_tools(
         "required": ["tool_name"],
     },
 )
-def dispatch_tool(tool_name: str, arguments: dict[str, Any] | None = None) -> ToolResult:
+def dispatch_tool(tool_name: str, arguments: dict[str, object] | None = None) -> ToolResult:
     arguments = arguments or {}
     if DISPATCH_ALLOW and tool_name not in DISPATCH_ALLOW:
         return ToolResult(ok=False, error="DISPATCH_NOT_ALLOWED")

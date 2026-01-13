@@ -1,7 +1,6 @@
 """أحداث النطاق النظامي والأمن والواجهات."""
 
 from dataclasses import dataclass
-from typing import Any
 
 from app.core.domain_events.base import (
     BoundedContext,
@@ -14,7 +13,7 @@ from app.core.domain_events.base import (
 @DomainEventRegistry.register
 @dataclass
 class SecurityThreatDetected(DomainEvent):
-    def __init__(self, threat_type: str, severity: str, source_ip: str, details: dict[str, Any]):
+    def __init__(self, threat_type: str, severity: str, source_ip: str, details: dict[str, object]):
         super().__init__(
             event_type="SecurityThreatDetected",
             bounded_context=BoundedContext.SECURITY_COMPLIANCE,
@@ -125,7 +124,7 @@ class NotificationRequested(DomainEvent):
 @DomainEventRegistry.register
 @dataclass
 class DataExportRequested(DomainEvent):
-    def __init__(self, export_id: str, format: str, filters: dict[str, Any]):
+    def __init__(self, export_id: str, format: str, filters: dict[str, object]):
         super().__init__(
             event_type="DataExportRequested",
             bounded_context=BoundedContext.ANALYTICS_REPORTING,

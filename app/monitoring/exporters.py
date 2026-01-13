@@ -8,9 +8,7 @@ import json
 import logging
 import time
 from abc import ABC, abstractmethod
-from typing import Any
 
-from app.core.types import JSON
 from app.monitoring.metrics import MetricsCollector
 from app.monitoring.metrics import PrometheusExporter as BasePrometheusExporter
 
@@ -32,12 +30,12 @@ class MetricExporter(ABC):
         self.collector = collector
 
     @abstractmethod
-    def export(self) -> Any:
+    def export(self) -> object:
         """
         يصدر المقاييس.
 
         Returns:
-            Any: المقاييس المصدرة
+            object: المقاييس المصدرة
         """
         pass
 
@@ -47,12 +45,12 @@ class JSONExporter(MetricExporter):
     مصدر مقاييس JSON.
     """
 
-    def export(self) -> dict[str, Any]:
+    def export(self) -> dict[str, object]:
         """
         يصدر المقاييس بتنسيق JSON.
 
         Returns:
-            dict[str, Any]: المقاييس
+            dict[str, object]: المقاييس
         """
         return self.collector.get_all_metrics()  # type: ignore[return-value]
 
@@ -121,7 +119,7 @@ class InfluxDBExporter(MetricExporter):
 
         return "\n".join(lines)
 
-    def _parse_key(self, key: str) -> dict[str, Any]:
+    def _parse_key(self, key: str) -> dict[str, object]:
         """
         يحلل مفتاح المقياس لاستخراج الاسم والتسميات.
         """

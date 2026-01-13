@@ -11,7 +11,6 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
 
 
 class ServiceHealth(Enum):
@@ -48,7 +47,7 @@ class ServiceMetrics:
     active_connections: int
     queue_depth: int
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "service_name": self.service_name,
             "timestamp": self.timestamp.isoformat(),

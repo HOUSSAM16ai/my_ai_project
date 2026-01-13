@@ -14,6 +14,10 @@ Design Pattern: Observer Pattern + Event System
 from collections import defaultdict
 from collections.abc import Callable
 
+from app.core.logging import get_logger
+
+_logger = get_logger(__name__)
+
 
 class LifecycleHooks:
     """
@@ -71,10 +75,10 @@ class LifecycleHooks:
         for callback in self._hooks.get(event, []):
             try:
                 callback(*args, **kwargs)
-            except Exception as e:
+            except Exception:
                 # Hooks should not break the pipeline
                 # Log error but continue
-                print(f"Hook error in event '{event}': {e}")
+                _logger.exception("Hook error in event '%s'", event)
 
     def clear(self, event: str | None = None) -> None:
         """

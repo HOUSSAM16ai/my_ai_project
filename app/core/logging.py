@@ -13,7 +13,7 @@ Standards:
 import logging
 import sys
 from contextvars import ContextVar
-from typing import Any, Final
+from typing import Final
 
 from pythonjsonlogger import jsonlogger
 
@@ -36,7 +36,7 @@ SENSITIVE_KEYS: Final[set[str]] = {
 class RedactingJsonFormatter(jsonlogger.JsonFormatter):
     """JSON Formatter that automatically redacts sensitive keys."""
 
-    def process_log_record(self, log_record: dict[str, Any]) -> dict[str, Any]:
+    def process_log_record(self, log_record: dict[str, object]) -> dict[str, object]:
         """Redacts sensitive keys from the log record."""
         for key in list(log_record.keys()):
             if key.lower() in SENSITIVE_KEYS:
@@ -106,7 +106,7 @@ def setup_logging(service_name: str | None = None) -> None:
     # Inject Service Name Record Factory
     old_factory = logging.getLogRecordFactory()
 
-    def record_factory(*args: Any, **kwargs: Any) -> logging.LogRecord:
+    def record_factory(*args: object, **kwargs: object) -> logging.LogRecord:
         record = old_factory(*args, **kwargs)
         record.service_name = svc_name  # type: ignore
         return record

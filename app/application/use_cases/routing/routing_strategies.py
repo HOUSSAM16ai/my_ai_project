@@ -4,7 +4,7 @@ import random
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from app.core.protocols import StrategyProtocol as StrategyInterface
 
@@ -32,7 +32,7 @@ class RoutingRequest:
     path: str
     headers: dict[str, str]
     body: dict[str, str | int | bool] = None
-    metadata: dict[str, Any] | None = None
+    metadata: dict[str, object] | None = None
 
 
 class RoutingStrategy(StrategyInterface[RoutingRequest, ServiceEndpoint], ABC):
@@ -46,7 +46,7 @@ class RoutingStrategy(StrategyInterface[RoutingRequest, ServiceEndpoint], ABC):
     def execute(self, request: RoutingRequest) -> ServiceEndpoint:
         """Select endpoint for request."""
 
-    def is_applicable(self, context: dict[str, Any]) -> bool:
+    def is_applicable(self, context: dict[str, object]) -> bool:
         """Check if strategy is applicable."""
         return len(self.endpoints) > 0
 

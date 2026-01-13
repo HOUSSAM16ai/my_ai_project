@@ -36,7 +36,6 @@ import threading
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -237,7 +236,7 @@ class CircuitBreaker:
         """Get current failure count"""
         return self._failure_count
 
-    def get_stats(self) -> dict[str, Any]:
+    def get_stats(self) -> dict[str, object]:
         """Get circuit breaker statistics"""
         with self._lock:
             return {
@@ -315,7 +314,7 @@ class CircuitBreakerRegistry:
                 breaker.reset()
             logger.info("All circuit breakers reset")
 
-    def get_all_stats(self) -> dict[str, dict[str, Any]]:
+    def get_all_stats(self) -> dict[str, dict[str, object]]:
         """Get statistics for all circuit breakers"""
         with self._breakers_lock:
             return {name: breaker.get_stats() for name, breaker in self._breakers.items()}
@@ -380,7 +379,7 @@ def reset_all_circuit_breakers() -> None:
     registry.reset_all()
 
 
-def get_all_circuit_breaker_stats() -> dict[str, dict[str, Any]]:
+def get_all_circuit_breaker_stats() -> dict[str, dict[str, object]]:
     """Get statistics for all circuit breakers"""
     registry = CircuitBreakerRegistry.get_instance()
     return registry.get_all_stats()

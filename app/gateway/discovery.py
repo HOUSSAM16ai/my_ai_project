@@ -10,7 +10,6 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any
 
 from app.gateway.config import ServiceEndpoint
 from app.gateway.registry import ServiceHealth, ServiceRegistry
@@ -33,7 +32,7 @@ class ServiceInstance:
     endpoint: ServiceEndpoint
     registered_at: datetime = field(default_factory=datetime.utcnow)
     last_heartbeat: datetime = field(default_factory=datetime.utcnow)
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
 type HealthCheckCallback = Callable[[str, ServiceHealth], None]
@@ -84,7 +83,7 @@ class ServiceDiscovery:
     def register_service(
         self,
         endpoint: ServiceEndpoint,
-        metadata: dict[str, Any] | None = None,
+        metadata: dict[str, object] | None = None,
     ) -> ServiceInstance:
         """
         يسجل خدمة جديدة.
@@ -303,12 +302,12 @@ class ServiceDiscovery:
         if removed > 0:
             logger.warning(f"⚠️ Removed {removed} unhealthy instances of {name}")
 
-    def get_service_stats(self) -> dict[str, Any]:
+    def get_service_stats(self) -> dict[str, object]:
         """
         يحصل على إحصائيات الخدمات.
 
         Returns:
-            dict[str, Any]: إحصائيات مفصلة
+            dict[str, object]: إحصائيات مفصلة
         """
         stats = {
             "total_services": len(self._instances),

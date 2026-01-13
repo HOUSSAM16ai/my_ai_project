@@ -5,8 +5,6 @@ Policy-Based Access Control (PBAC) middleware.
 Enforces access rules based on configurable policies.
 """
 
-from typing import Any
-
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
@@ -29,7 +27,7 @@ class PolicyEnforcer(BaseMiddleware):
 
     def _setup(self):
         """Initialize policy engine"""
-        self.policies: dict[str, dict[str, Any]] = self.config.get("policies", {})
+        self.policies: dict[str, dict[str, object]] = self.config.get("policies", {})
         self.enforced_count = 0
         self.violations = 0
 
@@ -57,7 +55,7 @@ class PolicyEnforcer(BaseMiddleware):
             )
         return MiddlewareResult.success()
 
-    def _get_policy_for_path(self, path: str) -> dict[str, Any] | None:
+    def _get_policy_for_path(self, path: str) -> dict[str, object] | None:
         """
         Get policy for a specific path
 
@@ -74,7 +72,7 @@ class PolicyEnforcer(BaseMiddleware):
                 return policy
         return None
 
-    def _check_policy(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
+    def _check_policy(self, ctx: RequestContext, policy: dict[str, object]) -> bool:
         """Check if request satisfies policy - KISS principle applied"""
         if not self._check_roles(ctx, policy):
             return False
@@ -86,7 +84,7 @@ class PolicyEnforcer(BaseMiddleware):
             return False
         return self._check_ip_access(ctx, policy)
 
-    def _check_roles(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
+    def _check_roles(self, ctx: RequestContext, policy: dict[str, object]) -> bool:
         """Check if user has required roles"""
         required_roles = policy.get("required_roles", [])
         if not required_roles:
@@ -94,7 +92,7 @@ class PolicyEnforcer(BaseMiddleware):
         user_roles = ctx.get_metadata("user_roles", [])
         return any(role in user_roles for role in required_roles)
 
-    def _check_permissions(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
+    def _check_permissions(self, ctx: RequestContext, policy: dict[str, object]) -> bool:
         """Check if user has required permissions"""
         required_permissions = policy.get("required_permissions", [])
         if not required_permissions:
@@ -102,20 +100,20 @@ class PolicyEnforcer(BaseMiddleware):
         user_permissions = ctx.get_metadata("user_permissions", [])
         return all(perm in user_permissions for perm in required_permissions)
 
-    def _check_authentication(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
+    def _check_authentication(self, ctx: RequestContext, policy: dict[str, object]) -> bool:
         """Check if authentication is satisfied"""
         if policy.get("require_authentication", False):
             return bool(ctx.user_id)
         return True
 
-    def _check_method(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
+    def _check_method(self, ctx: RequestContext, policy: dict[str, object]) -> bool:
         """Check if HTTP method is allowed"""
         allowed_methods = policy.get("allowed_methods", [])
         if not allowed_methods:
             return True
         return ctx.method in allowed_methods
 
-    def _check_ip_access(self, ctx: RequestContext, policy: dict[str, Any]) -> bool:
+    def _check_ip_access(self, ctx: RequestContext, policy: dict[str, object]) -> bool:
         """Check IP whitelist and blacklist"""
         # Check whitelist first
         ip_whitelist = policy.get("ip_whitelist", [])
@@ -125,7 +123,7 @@ class PolicyEnforcer(BaseMiddleware):
         ip_blacklist = policy.get("ip_blacklist", [])
         return not (ip_blacklist and ctx.ip_address in ip_blacklist)
 
-    def add_policy(self, path: str, policy: dict[str, Any]) -> None:
+    def add_policy(self, path: str, policy: dict[str, object]) -> None:
         """
         Add a new policy
 

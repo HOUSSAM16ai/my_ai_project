@@ -9,7 +9,6 @@ import time
 import traceback
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
 
 from app.services.overmind.tool_canonicalizer import canonicalize_tool_name as new_canonicalizer
 
@@ -47,9 +46,9 @@ class ToolExecutionContext:
 
     name: str
     trace_id: str
-    meta_entry: dict[str, Any]
-    func: Callable[..., Any]
-    kwargs: dict[str, Any]
+    meta_entry: dict[str, object]
+    func: Callable[..., object]
+    kwargs: dict[str, object]
 
 
 @dataclass
@@ -64,7 +63,7 @@ class ToolExecutionInfo:
     elapsed_ms: float
     category: str
     capabilities: list[str]
-    meta_entry: dict[str, Any]
+    meta_entry: dict[str, object]
     trace_id: str
 
 
@@ -101,7 +100,7 @@ def _validate_tool_names(name: str, aliases: list[str]) -> None:
 def _create_tool_metadata(
     name: str,
     description: str,
-    parameters: dict[str, Any],
+    parameters: dict[str, object],
     category: str,
     aliases: list[str],
     allow_disable: bool,
@@ -128,7 +127,7 @@ def _create_tool_metadata(
 def _register_main_tool(
     name: str,
     description: str,
-    parameters: dict[str, Any],
+    parameters: dict[str, object],
     category: str,
     aliases: list[str],
     allow_disable: bool,
@@ -149,7 +148,7 @@ def _register_main_tool(
 def _register_tool_aliases(
     name: str,
     description: str,
-    parameters: dict[str, Any],
+    parameters: dict[str, object],
     category: str,
     aliases: list[str],
     allow_disable: bool,
@@ -180,7 +179,7 @@ def _register_tool_aliases(
 # ======================================================================================
 # Policy Hooks (stubs)
 # ======================================================================================
-def policy_can_execute(tool_name: str, args: dict[str, Any]) -> bool:
+def policy_can_execute(tool_name: str, args: dict[str, object]) -> bool:
     """يحدد إمكانية تنفيذ الأداة بناءً على السياسة المعلنة."""
     _ = args
     meta = _TOOL_REGISTRY.get(tool_name)
@@ -193,7 +192,7 @@ def policy_can_execute(tool_name: str, args: dict[str, Any]) -> bool:
     return os.getenv("TOOL_POLICY_ALLOW_WRITE", "false").lower() == "true"
 
 
-def transform_arguments(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+def transform_arguments(tool_name: str, args: dict[str, object]) -> dict[str, object]:
     """يحول الوسائط قبل تمريرها للأداة مع الحفاظ على سلامة المدخلات."""
     _ = tool_name
     return args
@@ -208,12 +207,12 @@ def _validate_type(name: str, value: dict[str, str | int | bool], expected: str)
         raise TypeError(f"Parameter '{name}' must be of type '{expected}'.")
 
 
-def _validate_arguments(schema: dict[str, Any], args: dict[str, Any]) -> dict[str, Any]:
+def _validate_arguments(schema: dict[str, object], args: dict[str, object]) -> dict[str, object]:
     if not isinstance(schema, dict) or schema.get("type") != "object":
         return args
     properties = schema.get("properties", {}) or {}
     required = schema.get("required", []) or []
-    cleaned: dict[str, Any] = {}
+    cleaned: dict[str, object] = {}
     for field, meta in properties.items():
         if field in args:
             value = args[field]
@@ -281,14 +280,14 @@ def has_tool(name: str) -> bool:
     return resolve_tool_name(name) is not None
 
 
-def get_tool(name: str) -> dict[str, Any] | None:
+def get_tool(name: str) -> dict[str, object] | None:
     cname = resolve_tool_name(name)
     if not cname:
         return None
     return _TOOL_REGISTRY.get(cname)
 
 
-def list_tools(include_aliases: bool = False) -> list[dict[str, Any]]:
+def list_tools(include_aliases: bool = False) -> list[dict[str, object]]:
     out = []
     for meta in _TOOL_REGISTRY.values():
         if not include_aliases and meta.get("is_alias"):
@@ -303,7 +302,7 @@ def list_tools(include_aliases: bool = False) -> list[dict[str, Any]]:
 def _register_tool_metadata(
     name: str,
     description: str,
-    parameters: dict[str, Any],
+    parameters: dict[str, object],
     category: str,
     aliases: list[str],
     allow_disable: bool,
@@ -337,7 +336,7 @@ def _register_tool_metadata(
     )
 
 
-def _apply_autofill(kwargs: dict[str, Any], canonical_name: str, trace_id: str):
+def _apply_autofill(kwargs: dict[str, object], canonical_name: str, trace_id: str):
     """Apply autofill logic for write operations."""
     if not AUTOFILL:
         return
@@ -429,7 +428,7 @@ def _build_result_metadata(
 def tool(
     name: str,
     description: str,
-    parameters: dict[str, Any] | None = None,
+    parameters: dict[str, object] | None = None,
     *,
     category: str = "general",
     aliases: list[str] | None = None,
@@ -454,7 +453,7 @@ def tool(
     aliases = aliases or []
     capabilities = capabilities or []
 
-    def decorator(func: Callable[..., Any]) -> None:
+    def decorator(func: Callable[..., object]) -> None:
         with _REGISTRY_LOCK:
             _register_tool_metadata(
                 name, description, parameters, category, aliases, allow_disable, capabilities
@@ -516,8 +515,8 @@ def _execute_tool_with_error_handling(ctx: ToolExecutionContext) -> ToolResult:
         return ToolResult(ok=False, error=str(e))
 
 
-def get_tools_schema(include_disabled: bool = False) -> list[dict[str, Any]]:
-    schema: list[dict[str, Any]] = []
+def get_tools_schema(include_disabled: bool = False) -> list[dict[str, object]]:
+    schema: list[dict[str, object]] = []
     for meta in _TOOL_REGISTRY.values():
         if meta.get("is_alias"):
             continue

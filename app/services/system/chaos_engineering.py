@@ -9,7 +9,6 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
 
 
 class FaultType(Enum):
@@ -61,7 +60,7 @@ class FaultInjection:
     fault_id: str
     fault_type: FaultType
     target_service: str
-    parameters: dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, object] = field(default_factory=dict)
     probability: float = 1.0
     blast_radius: BlastRadiusLevel = BlastRadiusLevel.LIMITED
     duration_seconds: int = 60
@@ -82,8 +81,8 @@ class ChaosExperiment:
     started_at: datetime | None = None
     completed_at: datetime | None = None
     hypothesis_validated: bool | None = None
-    observations: list[dict[str, Any]] = field(default_factory=list)
-    metrics: dict[str, Any] = field(default_factory=dict)
+    observations: list[dict[str, object]] = field(default_factory=list)
+    metrics: dict[str, object] = field(default_factory=dict)
     auto_rollback: bool = True
     blast_radius: BlastRadiusLevel = BlastRadiusLevel.LIMITED
 
@@ -121,7 +120,7 @@ class ChaosMonkey:
         self.active_faults: dict[str, FaultInjection] = {}
         self.lock = threading.RLock()
 
-    def _get_fault_parameters(self, fault_type: FaultType) -> dict[str, Any]:
+    def _get_fault_parameters(self, fault_type: FaultType) -> dict[str, object]:
         """Get parameters for fault type"""
         if fault_type == FaultType.LATENCY:
             return {"delay_ms": random.randint(100, 5000)}
@@ -185,7 +184,7 @@ class ChaosEngineer:
         for _fault in experiment.fault_injections:
             pass
 
-    def get_experiment_report(self, experiment_id: str) -> dict[str, Any] | None:
+    def get_experiment_report(self, experiment_id: str) -> dict[str, object] | None:
         """Get detailed experiment report"""
         with self.lock:
             experiment = self.experiments.get(experiment_id)
@@ -206,7 +205,7 @@ class ChaosEngineer:
                 "blast_radius": experiment.blast_radius.value,
             }
 
-    def get_metrics(self) -> dict[str, Any]:
+    def get_metrics(self) -> dict[str, object]:
         """Get chaos engineering metrics"""
         with self.lock:
             total_experiments = len(self.experiments)

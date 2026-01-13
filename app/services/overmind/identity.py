@@ -14,6 +14,9 @@
 - Single Source of Truth: مصدر واحد للحقيقة
 """
 
+from collections.abc import Callable
+from dataclasses import dataclass
+
 from app.core.agents.principles import get_agent_principles
 from app.core.agents.system_principles import (
     format_architecture_system_principles,
@@ -24,6 +27,14 @@ from app.core.agents.system_principles import (
 from app.core.di import get_logger
 
 logger = get_logger(__name__)
+
+
+@dataclass(frozen=True)
+class _QuestionHandler:
+    """يمثل قاعدة توجيه سؤال إلى إجابة محددة."""
+
+    predicate: Callable[[str], bool]
+    responder: Callable[[], str]
 
 
 class OvermindIdentity:
@@ -86,7 +97,7 @@ class OvermindIdentity:
             "philosophy": {
                 "heritage": "The Dual Heritage - Harvard CS50 2025 + Berkeley SICP",
                 "principles": [
-                    "Strictest Typing: No Any, explicit types everywhere",
+                    "Strictest Typing: No object, explicit types everywhere",
                     "Clarity: Understandable by beginners, robust for enterprise",
                     "Legendary Arabic Documentation",
                     "Abstraction Barriers: Separate implementation from usage",
@@ -196,6 +207,26 @@ class OvermindIdentity:
                 ],
             },
         }
+        self._question_handlers: list[_QuestionHandler] = [
+            _QuestionHandler(self._is_founder_question, self._answer_founder_question),
+            _QuestionHandler(self._is_overmind_question, self._answer_overmind_question),
+            _QuestionHandler(
+                self._is_agent_principles_question, self._answer_agent_principles_question
+            ),
+            _QuestionHandler(
+                self._is_system_principles_question, self._answer_system_principles_question
+            ),
+            _QuestionHandler(
+                self._is_architecture_principles_question,
+                self._answer_architecture_principles_question,
+            ),
+            _QuestionHandler(self._is_agents_question, self._answer_agents_question),
+            _QuestionHandler(self._is_capabilities_question, self._answer_capabilities_question),
+            _QuestionHandler(self._is_project_question, self._answer_project_question),
+            _QuestionHandler(self._is_philosophy_question, self._answer_philosophy_question),
+            _QuestionHandler(self._is_birth_date_question, self._answer_birth_date_question),
+            _QuestionHandler(self._is_history_question, self._answer_history_question),
+        ]
 
     def get_founder(self) -> str:
         """
@@ -308,28 +339,9 @@ class OvermindIdentity:
         q = question.lower()
 
         # التحقق من نوع السؤال وتوجيهه للـ handler المناسب
-        if self._is_founder_question(q):
-            return self._answer_founder_question()
-        if self._is_overmind_question(q):
-            return self._answer_overmind_question()
-        if self._is_agent_principles_question(q):
-            return self._answer_agent_principles_question()
-        if self._is_system_principles_question(q):
-            return self._answer_system_principles_question()
-        if self._is_architecture_principles_question(q):
-            return self._answer_architecture_principles_question()
-        if self._is_agents_question(q):
-            return self._answer_agents_question()
-        if self._is_capabilities_question(q):
-            return self._answer_capabilities_question()
-        if self._is_project_question(q):
-            return self._answer_project_question()
-        if self._is_philosophy_question(q):
-            return self._answer_philosophy_question()
-        if self._is_birth_date_question(q):
-            return self._answer_birth_date_question()
-        if self._is_history_question(q):
-            return self._answer_history_question()
+        for handler in self._question_handlers:
+            if handler.predicate(q):
+                return handler.responder()
         return self._answer_unknown_question()
 
     def _is_founder_question(self, q: str) -> bool:

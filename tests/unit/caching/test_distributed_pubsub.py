@@ -2,7 +2,8 @@
 اختبارات التخزين المؤقت الموزع مع Pub/Sub.
 """
 
-from unittest.mock import AsyncMock, MagicMock
+import asyncio
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -63,19 +64,14 @@ async def test_listener_processes_message(l1_mock, l2_mock):
 
     # Mock listen iterator
     async def msg_gen():
-        yield {
-            "type": "message",
-            "data": "other_node:key_to_delete"
-        }
+        yield {"type": "message", "data": "other_node:key_to_delete"}
         # Stop iteration
-        return
 
     pubsub_mock.listen.side_effect = msg_gen
 
     cache = MultiLevelCache(l1_mock, l2_mock, node_id="my_node")
 
     # Wait briefly for the task to process
-    import asyncio
     await asyncio.sleep(0.01)
 
     l1_mock.delete.assert_awaited_with("key_to_delete")
@@ -90,11 +86,7 @@ async def test_listener_ignores_own_message(l1_mock, l2_mock):
     l2_mock.pubsub.return_value = pubsub_mock
 
     async def msg_gen():
-        yield {
-            "type": "message",
-            "data": "my_node:key_to_delete"
-        }
-        return
+        yield {"type": "message", "data": "my_node:key_to_delete"}
 
     pubsub_mock.listen.side_effect = msg_gen
 

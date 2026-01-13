@@ -545,6 +545,11 @@ def _to_sqlite_ddl(sql: str) -> str:
     return re.sub(r"ADD COLUMN IF NOT EXISTS", "ADD COLUMN", sql, flags=re.IGNORECASE)
 
 
+def _apply_dialect_ddl(conn: AsyncConnection, sql: str) -> str:
+    """يوائم جملة SQL حسب محرك قاعدة البيانات المستخدم."""
+    return _to_sqlite_ddl(sql) if conn.dialect.name == "sqlite" else sql
+
+
 def _assert_schema_whitelist_alignment() -> None:
     """Ensures schema matches whitelist."""
 
@@ -617,20 +622,14 @@ async def _fix_missing_column(
     if col not in auto_fix_queries:
         return False
 
-    query = auto_fix_queries[col]
-    if conn.dialect.name == "sqlite":
-        query = _to_sqlite_ddl(query)
+    query = _apply_dialect_ddl(conn, auto_fix_queries[col])
 
     try:
         await conn.execute(text(query))
         logger.info(f"✅ Added missing column: {table_name}.{col}")
 
         if col in index_queries:
-            idx_query = index_queries[col]
-            # SQLite indexes are same syntax mostly, but ensure no Postgres specifics
-            if conn.dialect.name == "sqlite":
-                idx_query = _to_sqlite_ddl(idx_query)
-
+            idx_query = _apply_dialect_ddl(conn, index_queries[col])
             await conn.execute(text(idx_query))
             logger.info(f"✅ Created index for: {table_name}.{col}")
 
@@ -707,10 +706,7 @@ async def _ensure_missing_indexes(
             continue
 
         try:
-            ddl_query = (
-                _to_sqlite_ddl(index_query) if conn.dialect.name == "sqlite" else index_query
-            )
-            await conn.execute(text(ddl_query))
+            await conn.execute(text(_apply_dialect_ddl(conn, index_query)))
             fixed_indexes.append(f"{table_name}.{index_name}")
             logger.info(f"✅ Created missing index: {table_name}.{index_name}")
         except Exception as exc:
@@ -749,10 +745,7 @@ async def validate_and_fix_schema(auto_fix: bool = True) -> SchemaValidationResu
 
                     if create_query and auto_fix:
                         try:
-                            if conn.dialect.name == "sqlite":
-                                create_query = _to_sqlite_ddl(create_query)
-
-                            await conn.execute(text(create_query))
+                            await conn.execute(text(_apply_dialect_ddl(conn, create_query)))
                             logger.info(f"✅ Created missing table: {table_name}")
                             existing_columns = set(schema_info.get("columns", []))
                             results["fixed_columns"].extend(

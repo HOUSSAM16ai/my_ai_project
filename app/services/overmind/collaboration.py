@@ -18,7 +18,6 @@
 
 import time
 from collections import defaultdict
-from typing import Any
 
 from app.core.di import get_logger
 
@@ -46,8 +45,8 @@ class AgentContribution:
         self,
         agent_name: str,
         action: str,
-        input_data: Any = None,
-        output_data: Any = None,
+        input_data: object = None,
+        output_data: object = None,
         success: bool = True,
         error_message: str | None = None,
     ) -> None:
@@ -67,7 +66,7 @@ class AgentContribution:
         self.success = success  # النجاح/الفشل
         self.error_message = error_message  # رسالة الخطأ
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         """
         تحويل المساهمة إلى dictionary.
 
@@ -113,14 +112,14 @@ class CollaborationHub:
             - defaultdict(list) تُنشئ dict يُنشئ list تلقائياً للمفاتيح الجديدة
         """
         # الذاكرة المشتركة بين جميع الوكلاء
-        self.shared_memory: dict[str, Any] = {}
+        self.shared_memory: dict[str, object] = {}
 
         # تاريخ المساهمات من كل وكيل
         self.contributions: list[AgentContribution] = []
 
         # الإشعارات المعلقة لكل وكيل
         # defaultdict يُنشئ list فارغة تلقائياً عند أول وصول
-        self.pending_notifications: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        self.pending_notifications: dict[str, list[dict[str, object]]] = defaultdict(list)
 
         # إحصائيات الأداء
         self.stats: dict[str, int] = {
@@ -129,7 +128,7 @@ class CollaborationHub:
             "failed_contributions": 0,  # المساهمات الفاشلة
         }
 
-    def store_data(self, key: str, value: Any) -> None:
+    def store_data(self, key: str, value: object) -> None:
         """
         تخزين بيانات في الذاكرة المشتركة.
 
@@ -148,7 +147,7 @@ class CollaborationHub:
         self.shared_memory[key] = value
         logger.debug(f"Stored '{key}' in shared memory")
 
-    def retrieve_data(self, key: str, default: Any = None) -> Any:
+    def retrieve_data(self, key: str, default: object = None) -> object:
         """
         استرجاع بيانات من الذاكرة المشتركة.
 
@@ -173,8 +172,8 @@ class CollaborationHub:
         self,
         agent_name: str,
         action: str,
-        input_data: Any = None,
-        output_data: Any = None,
+        input_data: object = None,
+        output_data: object = None,
         success: bool = True,
         error_message: str | None = None,
     ) -> None:
@@ -226,7 +225,7 @@ class CollaborationHub:
 
         logger.info(f"Agent '{agent_name}' contributed: {action} ({'✓' if success else '✗'})")
 
-    def notify_agent(self, target_agent: str, message: dict[str, Any]) -> None:
+    def notify_agent(self, target_agent: str, message: dict[str, object]) -> None:
         """
         إرسال إشعار لوكيل معين.
 
@@ -251,7 +250,7 @@ class CollaborationHub:
         self.pending_notifications[target_agent].append(message)
         logger.debug(f"Notification queued for '{target_agent}'")
 
-    def get_notifications(self, agent_name: str) -> list[dict[str, Any]]:
+    def get_notifications(self, agent_name: str) -> list[dict[str, object]]:
         """
         استرجاع جميع الإشعارات المعلقة لوكيل معين.
 
@@ -276,7 +275,7 @@ class CollaborationHub:
             logger.debug(f"Retrieved {len(notifications)} notification(s) for '{agent_name}'")
         return notifications
 
-    def get_agent_summary(self, agent_name: str) -> dict[str, Any]:
+    def get_agent_summary(self, agent_name: str) -> dict[str, object]:
         """
         الحصول على ملخص مساهمات وكيل معين.
 
@@ -310,7 +309,7 @@ class CollaborationHub:
             "success_rate": successes / len(agent_contributions) if agent_contributions else 0.0,
         }
 
-    def get_full_report(self) -> dict[str, Any]:
+    def get_full_report(self) -> dict[str, object]:
         """
         الحصول على تقرير شامل لجميع الأنشطة.
 

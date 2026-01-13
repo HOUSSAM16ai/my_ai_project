@@ -6,7 +6,7 @@ Contains Mission, MissionPlan, Task, MissionEvent, and related Enums.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text, func
 from sqlalchemy.orm import relationship
@@ -121,9 +121,9 @@ class MissionPlan(SQLModel, table=True):
     )
     score: float = Field(default=0.0)
     rationale: str | None = Field(sa_column=Column(Text))
-    raw_json: Any | None = Field(sa_column=Column(JSONText))
-    stats_json: Any | None = Field(sa_column=Column(JSONText))
-    warnings_json: Any | None = Field(sa_column=Column(JSONText))
+    raw_json: object | None = Field(sa_column=Column(JSONText))
+    stats_json: object | None = Field(sa_column=Column(JSONText))
+    warnings_json: object | None = Field(sa_column=Column(JSONText))
     content_hash: str | None = Field(max_length=64)
 
     created_at: datetime = Field(
@@ -150,7 +150,7 @@ class Task(SQLModel, table=True):
     task_key: str = Field(max_length=50)
     description: str | None = Field(sa_column=Column(Text))
     tool_name: str | None = Field(max_length=100)
-    tool_args_json: Any | None = Field(default=None, sa_column=Column(JSONText))
+    tool_args_json: object | None = Field(default=None, sa_column=Column(JSONText))
     status: TaskStatus = Field(
         default=TaskStatus.PENDING,
         sa_column=Column(FlexibleEnum(TaskStatus)),
@@ -160,9 +160,9 @@ class Task(SQLModel, table=True):
     priority: int = Field(default=0)
     risk_level: str | None = Field(max_length=50)
     criticality: str | None = Field(max_length=50)
-    depends_on_json: Any | None = Field(default=None, sa_column=Column(JSONText))
+    depends_on_json: object | None = Field(default=None, sa_column=Column(JSONText))
     result_text: str | None = Field(sa_column=Column(Text))
-    result_meta_json: Any | None = Field(default=None, sa_column=Column(JSONText))
+    result_meta_json: object | None = Field(default=None, sa_column=Column(JSONText))
     error_text: str | None = Field(sa_column=Column(Text))
 
     started_at: datetime | None = Field(sa_column=Column(DateTime(timezone=True)))
@@ -197,7 +197,7 @@ class MissionEvent(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     mission_id: int = Field(foreign_key="missions.id", index=True)
     event_type: MissionEventType = Field(sa_column=Column(FlexibleEnum(MissionEventType)))
-    payload_json: Any | None = Field(default=None, sa_column=Column(JSONText))
+    payload_json: object | None = Field(default=None, sa_column=Column(JSONText))
 
     created_at: datetime = Field(
         default_factory=utc_now,

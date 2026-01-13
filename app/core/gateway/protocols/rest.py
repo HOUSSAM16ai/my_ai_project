@@ -1,5 +1,4 @@
 import contextlib
-from typing import Any
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -14,7 +13,7 @@ class RESTAdapter(ProtocolAdapter):
         """Validate REST request"""
         return True, None
 
-    async def transform_request(self, request: Request) -> dict[str, Any]:
+    async def transform_request(self, request: Request) -> dict[str, object]:
         """Transform REST request"""
         body = {}
         with contextlib.suppress(Exception):
@@ -28,6 +27,6 @@ class RESTAdapter(ProtocolAdapter):
             "body": body,
         }
 
-    def transform_response(self, response_data: dict[str, Any]) -> dict[str, str | int | bool]:
+    def transform_response(self, response_data: dict[str, object]) -> dict[str, str | int | bool]:
         """Transform to REST response"""
         return JSONResponse(content=response_data)

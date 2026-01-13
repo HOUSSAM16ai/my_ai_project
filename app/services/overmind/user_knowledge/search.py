@@ -8,8 +8,6 @@
 - Performance: استعلامات محسّنة
 """
 
-from typing import Any
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +21,7 @@ async def search_users(
     session: AsyncSession,
     query: str,
     limit: int = 10,
-) -> list[dict[str, Any]]:
+) -> list[dict[str, object]]:
     """
     البحث عن مستخدمين.
 

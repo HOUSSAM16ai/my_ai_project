@@ -7,7 +7,6 @@
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -372,12 +371,12 @@ class RBACManager:
 
         return list(self._user_roles[user_id].roles)
 
-    def get_stats(self) -> dict[str, Any]:
+    def get_stats(self) -> dict[str, object]:
         """
         يحصل على إحصائيات RBAC.
 
         Returns:
-            dict[str, Any]: إحصائيات مفصلة
+            dict[str, object]: إحصائيات مفصلة
         """
         return {
             "total_roles": len(self._roles),

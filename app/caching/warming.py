@@ -14,8 +14,7 @@ import asyncio
 import logging
 import time
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 from app.caching.base import CacheBackend
 
@@ -27,7 +26,7 @@ class WarmerTask:
     """تعريف مهمة تسخين."""
 
     name: str
-    func: Callable[[], Awaitable[Any]] | Callable[[], Any]
+    func: Callable[[], Awaitable[object]] | Callable[[], object]
     priority: int = 10  # الأولوية (الأعلى ينفذ أولاً)
     ttl: int | None = None  # مدة بقاء البيانات (اختياري، يعتمد على المنطق داخل الدالة)
 
@@ -44,7 +43,7 @@ class CacheWarmer:
     def register(
         self,
         name: str,
-        func: Callable[[], Awaitable[Any]] | Callable[[], Any],
+        func: Callable[[], Awaitable[object]] | Callable[[], object],
         priority: int = 10,
         ttl: int | None = None,
     ) -> None:
@@ -118,10 +117,11 @@ class CacheWarmer:
 
         # دعم الدوال المتزامنة وغير المتزامنة
         import inspect
+
         if inspect.iscoroutinefunction(task.func):
-            result = await task.func() # type: ignore
+            result = await task.func()  # type: ignore
         else:
-            result = task.func() # type: ignore
+            result = task.func()  # type: ignore
 
         # إذا أرجعت الدالة قيمة (وليست None)، نفترض أنها تريد تخزينها تحت اسم المهمة
         if result is not None:

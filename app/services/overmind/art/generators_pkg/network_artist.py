@@ -6,7 +6,6 @@ Responsible for visualizing networks and relationships.
 """
 
 import math
-from typing import Any
 
 from app.services.overmind.art.styles import ArtStyle, VisualTheme
 
@@ -25,7 +24,7 @@ class NetworkArtist:
 
     def create_dependency_web(
         self,
-        nodes: list[dict[str, Any]],
+        nodes: list[dict[str, object]],
         edges: list[tuple[str, str]],
         title: str = "Code Dependencies",
     ) -> str:
@@ -74,7 +73,7 @@ class NetworkArtist:
         '''
 
     def _calculate_node_positions(
-        self, nodes: list[dict[str, Any]], center_x: int, center_y: int, radius: int
+        self, nodes: list[dict[str, object]], center_x: int, center_y: int, radius: int
     ) -> dict[str, tuple[float, float]]:
         """Calculate node positions in a circle."""
         num_nodes = len(nodes)
@@ -113,7 +112,7 @@ class NetworkArtist:
         return svg
 
     def _draw_nodes(
-        self, nodes: list[dict[str, Any]], node_positions: dict[str, tuple[float, float]]
+        self, nodes: list[dict[str, object]], node_positions: dict[str, tuple[float, float]]
     ) -> str:
         """Draw nodes with labels."""
         num_nodes = len(nodes)

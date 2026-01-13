@@ -10,7 +10,7 @@ from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, TypeVar
+from typing import TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -121,9 +121,9 @@ class CircuitBreaker:
 
     async def call(
         self,
-        func: Callable[..., Coroutine[Any, Any, T]],
-        *args: Any,
-        **kwargs: Any,
+        func: Callable[..., Coroutine[object, object, T]],
+        *args: object,
+        **kwargs: object,
     ) -> T:
         """
         ينفذ دالة مع حماية قاطع الدائرة.
@@ -222,12 +222,12 @@ class CircuitBreaker:
         self._half_open_calls = 0
         logger.info(f"✅ Circuit breaker CLOSED for: {self.name}")
 
-    def get_stats(self) -> dict[str, Any]:
+    def get_stats(self) -> dict[str, object]:
         """
         يحصل على إحصائيات القاطع.
 
         Returns:
-            dict[str, Any]: إحصائيات مفصلة
+            dict[str, object]: إحصائيات مفصلة
         """
         return {
             "name": self.name,
@@ -296,12 +296,12 @@ class CircuitBreakerRegistry:
 
         return self._breakers[name]
 
-    def get_all_stats(self) -> dict[str, Any]:
+    def get_all_stats(self) -> dict[str, object]:
         """
         يحصل على إحصائيات جميع القواطع.
 
         Returns:
-            dict[str, Any]: إحصائيات مفصلة
+            dict[str, object]: إحصائيات مفصلة
         """
         return {name: breaker.get_stats() for name, breaker in self._breakers.items()}
 

@@ -7,11 +7,14 @@
 import time
 from dataclasses import dataclass
 
+from app.core.logging import get_logger
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 
 TelemetryValue = str | int | float | bool | None
+
+_logger = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -99,8 +102,8 @@ class TelemetryBridge(BaseMiddleware):
         for exporter in self.exporters:
             try:
                 self._export_to(exporter, snapshot.to_dict())
-            except Exception as exc:  # pragma: no cover - حماية من أعطال المصدّر
-                print(f"Telemetry export error ({exporter}): {exc}")
+            except Exception:  # pragma: no cover - حماية من أعطال المصدّر
+                _logger.exception("Telemetry export error (%s)", exporter)
 
     def _prepare_telemetry_data(
         self, ctx: RequestContext, result: MiddlewareResult

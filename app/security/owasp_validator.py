@@ -537,18 +537,8 @@ class OWASPValidator:
         Validate a single file for OWASP Top 10 issues
         """
         try:
-            with open(file_path, encoding="utf-8") as f:
-                code = f.read()
-
-            all_issues = []
-            all_issues.extend(self.validate_authentication_code(code, file_path))
-            all_issues.extend(self.validate_access_control(code, file_path))
-            all_issues.extend(self.validate_injection_prevention(code, file_path))
-            all_issues.extend(self.validate_cryptography(code, file_path))
-            all_issues.extend(self.validate_session_management(code, file_path))
-            all_issues.extend(self.validate_logging_monitoring(code, file_path))
-
-            return all_issues
+            code = self._read_code(file_path)
+            return self._collect_issues(code, file_path)
         except Exception as e:
             return [
                 SecurityIssue(
@@ -562,22 +552,9 @@ class OWASPValidator:
 
     def generate_report(self, issues: list[SecurityIssue]) -> SecurityReport:
         """يولد تقرير أمني متكامل باستخدام تراكيب بيانات محددة الأنواع."""
-        severity_counts: dict[SecuritySeverity, int] = dict.fromkeys(SecuritySeverity, 0)
-        for issue in issues:
-            severity_counts[issue.severity] += 1
-
-        category_counts: dict[OWASPCategory, int] = {}
-        for issue in issues:
-            category_counts[issue.category] = category_counts.get(issue.category, 0) + 1
-
-        risk_score = min(
-            100,
-            severity_counts[SecuritySeverity.CRITICAL] * 20
-            + severity_counts[SecuritySeverity.HIGH] * 10
-            + severity_counts[SecuritySeverity.MEDIUM] * 5
-            + severity_counts[SecuritySeverity.LOW] * 2,
-        )
-
+        severity_counts = self._count_severities(issues)
+        category_counts = self._count_categories(issues)
+        risk_score = self._calculate_risk_score(severity_counts)
         return {
             "total_issues": len(issues),
             "risk_score": risk_score,
@@ -587,7 +564,61 @@ class OWASPValidator:
             "category_breakdown": {
                 category.value: count for category, count in category_counts.items()
             },
-            "critical_issues": [
+            "critical_issues": self._build_critical_summaries(issues),
+            "compliance_status": self._build_compliance_status(risk_score),
+        }
+
+    def _read_code(self, file_path: str) -> str:
+        """يقرأ محتوى الملف النصي بطريقة واضحة ومباشرة."""
+        with open(file_path, encoding="utf-8") as handle:
+            return handle.read()
+
+    def _collect_issues(self, code: str, file_path: str) -> list[SecurityIssue]:
+        """يجمع نتائج جميع وحدات الفحص في قائمة واحدة."""
+        issue_groups = [
+            self.validate_authentication_code,
+            self.validate_access_control,
+            self.validate_injection_prevention,
+            self.validate_cryptography,
+            self.validate_session_management,
+            self.validate_logging_monitoring,
+        ]
+        issues: list[SecurityIssue] = []
+        for validator in issue_groups:
+            issues.extend(validator(code, file_path))
+        return issues
+
+    def _count_severities(self, issues: list[SecurityIssue]) -> dict[SecuritySeverity, int]:
+        """يحصر عدد القضايا حسب درجة الخطورة."""
+        severity_counts: dict[SecuritySeverity, int] = dict.fromkeys(SecuritySeverity, 0)
+        for issue in issues:
+            severity_counts[issue.severity] += 1
+        return severity_counts
+
+    def _count_categories(self, issues: list[SecurityIssue]) -> dict[OWASPCategory, int]:
+        """يحصر عدد القضايا حسب تصنيف OWASP."""
+        category_counts: dict[OWASPCategory, int] = {}
+        for issue in issues:
+            category_counts[issue.category] = category_counts.get(issue.category, 0) + 1
+        return category_counts
+
+    def _calculate_risk_score(self, severity_counts: dict[SecuritySeverity, int]) -> int:
+        """يحسب درجة المخاطر بناءً على عدد القضايا الحرجة والعالية والمتوسطة."""
+        score = (
+            severity_counts[SecuritySeverity.CRITICAL] * 20
+            + severity_counts[SecuritySeverity.HIGH] * 10
+            + severity_counts[SecuritySeverity.MEDIUM] * 5
+            + severity_counts[SecuritySeverity.LOW] * 2
+        )
+        return min(100, score)
+
+    def _build_critical_summaries(self, issues: list[SecurityIssue]) -> list[CriticalIssueSummary]:
+        """يبني قائمة مبسطة للقضايا الحرجة فقط."""
+        critical: list[CriticalIssueSummary] = []
+        for issue in issues:
+            if issue.severity != SecuritySeverity.CRITICAL:
+                continue
+            critical.append(
                 {
                     "title": issue.title,
                     "category": issue.category.value,
@@ -595,12 +626,13 @@ class OWASPValidator:
                     "line": issue.line_number,
                     "recommendation": issue.recommendation,
                 }
-                for issue in issues
-                if issue.severity == SecuritySeverity.CRITICAL
-            ],
-            "compliance_status": {
-                "OWASP_Top_10": risk_score < 20,
-                "PCI_DSS": risk_score < 10,
-                "SOC2": risk_score < 15,
-            },
+            )
+        return critical
+
+    def _build_compliance_status(self, risk_score: int) -> ComplianceStatus:
+        """يبني حالة الامتثال للمعايير وفق درجة المخاطر."""
+        return {
+            "OWASP_Top_10": risk_score < 20,
+            "PCI_DSS": risk_score < 10,
+            "SOC2": risk_score < 15,
         }

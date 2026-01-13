@@ -4,7 +4,6 @@ Tool registry with thread-safe operations.
 
 import logging
 import threading
-from typing import Any
 
 from app.services.agent_tools.tool_model import Tool
 
@@ -84,7 +83,7 @@ class ToolRegistry:
                 tools = [t for t in tools if t.config.category == category]
             return tools
 
-    def get_stats(self) -> dict[str, Any]:
+    def get_stats(self) -> dict[str, object]:
         """Get registry statistics."""
         with self._lock:
             return {

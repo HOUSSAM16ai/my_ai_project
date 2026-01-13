@@ -6,7 +6,6 @@ Integrates with observability systems for security monitoring.
 """
 
 import time
-from typing import Any
 
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
@@ -29,8 +28,8 @@ class TelemetryGuard(BaseMiddleware):
 
     def _setup(self):
         """Initialize telemetry collections"""
-        self.security_events: list[dict[str, Any]] = []
-        self.audit_trail: list[dict[str, Any]] = []
+        self.security_events: list[dict[str, object]] = []
+        self.audit_trail: list[dict[str, object]] = []
         self.metrics: dict[str, int] = {
             "total_requests": 0,
             "blocked_requests": 0,
@@ -103,19 +102,19 @@ class TelemetryGuard(BaseMiddleware):
             duration = time.time() - start_time
             ctx.add_metadata("security_duration", duration)
 
-    def _add_security_event(self, event: dict[str, Any]):
+    def _add_security_event(self, event: dict[str, object]):
         """Add security event with size limit"""
         self.security_events.append(event)
         if len(self.security_events) > self.max_events:
             self.security_events = self.security_events[-self.max_events :]
 
-    def _add_audit_entry(self, entry: dict[str, Any]):
+    def _add_audit_entry(self, entry: dict[str, object]):
         """Add audit entry with size limit"""
         self.audit_trail.append(entry)
         if len(self.audit_trail) > self.max_events:
             self.audit_trail = self.audit_trail[-self.max_events :]
 
-    def get_recent_events(self, limit: int = 100) -> list[dict[str, Any]]:
+    def get_recent_events(self, limit: int = 100) -> list[dict[str, object]]:
         """
         Get recent security events
 

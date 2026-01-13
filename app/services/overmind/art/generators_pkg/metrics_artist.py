@@ -6,7 +6,6 @@ Responsible for visualizing software metrics artistically.
 """
 
 import math
-from typing import Any
 
 from app.services.overmind.art.styles import ArtStyle, VisualTheme
 
@@ -206,7 +205,7 @@ class MetricsArtist:
 
     def _calculate_bar_dimensions(
         self, data: dict[str, float], chart_width: int, chart_height: int
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """Calculate bar dimensions and spacing."""
         num_bars = len(data)
         bar_width = chart_width / (num_bars * 2)
@@ -228,7 +227,7 @@ class MetricsArtist:
     def _draw_bars(
         self,
         data: dict[str, float],
-        config: dict[str, Any],
+        config: dict[str, object],
         margin: int,
         height: int,
         chart_height: int,

@@ -1,6 +1,5 @@
 import subprocess
 from pathlib import Path
-from typing import Any
 
 
 class GitAnalyzer:
@@ -9,7 +8,7 @@ class GitAnalyzer:
     def __init__(self, repo_path: Path):
         self.repo_path = repo_path
 
-    def analyze_file_history(self, file_path: str) -> dict[str, Any]:
+    def analyze_file_history(self, file_path: str) -> dict[str, object]:
         """
         تحليل تاريخ تعديلات الملف.
 

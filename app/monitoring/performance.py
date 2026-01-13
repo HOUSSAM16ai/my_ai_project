@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import wraps
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from app.monitoring.metrics import get_metrics_collector
 
@@ -41,7 +41,7 @@ class PerformanceMetrics:
     duration_ms: float | None = None
     success: bool = True
     error: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
 class PerformanceTracker:
@@ -74,7 +74,7 @@ class PerformanceTracker:
     async def track_operation(
         self,
         operation_name: str,
-        metadata: dict[str, Any] | None = None,
+        metadata: dict[str, object] | None = None,
     ):
         """
         يتتبع عملية غير متزامنة.
@@ -150,7 +150,7 @@ class PerformanceTracker:
             op_name = operation_name or func.__name__
 
             @wraps(func)
-            def wrapper(*args: Any, **kwargs: Any) -> T:
+            def wrapper(*args: object, **kwargs: object) -> T:
                 start_time = time.perf_counter()
                 success = True
                 error = None
@@ -186,7 +186,7 @@ class PerformanceTracker:
     def track_async(
         self,
         operation_name: str | None = None,
-    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
         """
         ديكوريتر لتتبع دالة غير متزامنة.
 
@@ -204,11 +204,11 @@ class PerformanceTracker:
             ```
         """
 
-        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        def decorator(func: Callable[..., object]) -> Callable[..., object]:
             op_name = operation_name or func.__name__
 
             @wraps(func)
-            async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            async def wrapper(*args: object, **kwargs: object) -> object:
                 async with self.track_operation(op_name):
                     return await func(*args, **kwargs)
 
@@ -269,7 +269,7 @@ class PerformanceTracker:
     def get_operation_stats(
         self,
         operation_name: str,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         يحصل على إحصائيات عملية.
 
@@ -277,7 +277,7 @@ class PerformanceTracker:
             operation_name: اسم العملية
 
         Returns:
-            dict[str, Any]: إحصائيات مفصلة
+            dict[str, object]: إحصائيات مفصلة
         """
         operations = [
             op for op in self._completed_operations if op.operation_name == operation_name
@@ -308,12 +308,12 @@ class PerformanceTracker:
             "p99_duration_ms": sorted(durations)[int(len(durations) * 0.99)] if durations else 0.0,
         }
 
-    def get_all_stats(self) -> dict[str, Any]:
+    def get_all_stats(self) -> dict[str, object]:
         """
         يحصل على إحصائيات جميع العمليات.
 
         Returns:
-            dict[str, Any]: إحصائيات شاملة
+            dict[str, object]: إحصائيات شاملة
         """
         operation_names = {op.operation_name for op in self._completed_operations}
 

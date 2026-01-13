@@ -9,7 +9,7 @@ Following Hexagonal Architecture / Ports & Adapters pattern.
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Protocol
 
 from app.services.serving.domain.models import (
     ModelMetrics,
@@ -71,7 +71,7 @@ class MetricsRepository(Protocol):
         """Get recent metrics for a model"""
         ...
 
-    def get_summary(self, version_id: str) -> dict[str, Any]:
+    def get_summary(self, version_id: str) -> dict[str, object]:
         """Get aggregated metrics summary"""
         ...
 

@@ -2,10 +2,11 @@
 Tests for Cache Invalidation and Tagging (Phase 2 completion).
 """
 
-import asyncio
 import pytest
-from app.caching.memory_cache import InMemoryCache
+
 from app.caching.invalidation import InvalidationManager
+from app.caching.memory_cache import InMemoryCache
+
 
 @pytest.mark.asyncio
 async def test_invalidation_pattern():
@@ -23,6 +24,7 @@ async def test_invalidation_pattern():
     assert await cache.get("user:1:profile") is None
     assert await cache.get("user:1:settings") is None
     assert await cache.get("user:2:profile") == "data3"
+
 
 @pytest.mark.asyncio
 async def test_tagging_logic():
@@ -56,6 +58,7 @@ async def test_tagging_logic():
 
     # Tag entry itself should be gone
     assert await cache.exists("tag:electronics") is False
+
 
 @pytest.mark.asyncio
 async def test_tagging_empty():

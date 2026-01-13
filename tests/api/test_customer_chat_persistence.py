@@ -104,9 +104,7 @@ async def test_customer_chat_enforces_ownership(test_app, db_session) -> None:
                 token_other = await _register_and_login(ac, "other@example.com")
 
                 with TestClient(test_app) as client:
-                    with client.websocket_connect(
-                        f"/api/chat/ws?token={token_owner}"
-                    ) as websocket:
+                    with client.websocket_connect(f"/api/chat/ws?token={token_owner}") as websocket:
                         websocket.send_json({"question": "Explain math vectors"})
                         while True:
                             payload = websocket.receive_json()

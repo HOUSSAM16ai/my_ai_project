@@ -45,7 +45,9 @@ class ZeroTrustMiddleware(ConditionalMiddleware):
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
         """Verify Zero Trust session - KISS principle applied"""
         if self._config_error or self.zero_trust is None:
-            return MiddlewareResult.unauthorized(message="Zero Trust configuration missing").with_details(
+            return MiddlewareResult.unauthorized(
+                message="Zero Trust configuration missing"
+            ).with_details(
                 reason=self._config_error or "Zero Trust not initialized",
             )
         session_id = self._get_session_id(ctx)

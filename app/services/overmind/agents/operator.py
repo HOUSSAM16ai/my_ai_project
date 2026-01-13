@@ -12,7 +12,6 @@
 """
 
 import json
-from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
@@ -46,8 +45,8 @@ class OperatorAgent(AgentExecutor):
         self.ai = ai_client
 
     async def execute_tasks(
-        self, design: dict[str, Any], context: CollaborationContext
-    ) -> dict[str, Any]:
+        self, design: dict[str, object], context: CollaborationContext
+    ) -> dict[str, object]:
         """
         تنفيذ المهام الواردة في التصميم.
         Execute tasks from the design plan.
@@ -80,7 +79,7 @@ class OperatorAgent(AgentExecutor):
         context.update("last_execution_report", report)
         return report
 
-    async def consult(self, situation: str, analysis: dict[str, Any]) -> dict[str, Any]:
+    async def consult(self, situation: str, analysis: dict[str, object]) -> dict[str, object]:
         """
         تقديم استشارة حول الموقف من منظور تشغيلي.
         Provide consultation on the situation from an operational perspective.
@@ -103,7 +102,9 @@ class OperatorAgent(AgentExecutor):
             "confidence": 80.0,
         }
 
-    async def _consult_with_ai(self, situation: str, analysis: dict[str, Any]) -> dict[str, Any]:
+    async def _consult_with_ai(
+        self, situation: str, analysis: dict[str, object]
+    ) -> dict[str, object]:
         """
         استخدام AI لتقديم الاستشارة.
         """
@@ -138,7 +139,7 @@ class OperatorAgent(AgentExecutor):
                 "confidence": 50.0,
             }
 
-    def _validate_design(self, design: dict[str, Any]) -> dict[str, Any] | None:
+    def _validate_design(self, design: dict[str, object]) -> dict[str, object] | None:
         """
         التحقق من صحة التصميم.
         Validate design for errors.
@@ -156,7 +157,7 @@ class OperatorAgent(AgentExecutor):
             }
         return None
 
-    def _create_empty_tasks_report(self) -> dict[str, Any]:
+    def _create_empty_tasks_report(self) -> dict[str, object]:
         """
         إنشاء تقرير للتصميم بدون مهام.
         Create report for design with no tasks.
@@ -170,8 +171,8 @@ class OperatorAgent(AgentExecutor):
         }
 
     async def _execute_task_list(
-        self, tasks_data: list[dict[str, Any]], context: CollaborationContext
-    ) -> tuple[list[dict[str, Any]], str]:
+        self, tasks_data: list[dict[str, object]], context: CollaborationContext
+    ) -> tuple[list[dict[str, object]], str]:
         """
         تنفيذ قائمة المهام.
         Execute list of tasks sequentially.
@@ -197,10 +198,10 @@ class OperatorAgent(AgentExecutor):
     async def _execute_single_task(
         self,
         index: int,
-        task_def: dict[str, Any],
-        tasks_data: list[dict[str, Any]],
+        task_def: dict[str, object],
+        tasks_data: list[dict[str, object]],
         context: CollaborationContext,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         تنفيذ مهمة واحدة.
         Execute a single task.
@@ -223,7 +224,9 @@ class OperatorAgent(AgentExecutor):
 
         return {"name": task_name, "tool": tool_name, "result": exec_result}
 
-    def _create_task_object(self, task_def: dict[str, Any], context: CollaborationContext) -> Task:
+    def _create_task_object(
+        self, task_def: dict[str, object], context: CollaborationContext
+    ) -> Task:
         """
         إنشاء كائن مهمة مؤقت.
         Create ephemeral task object for execution.
@@ -249,7 +252,7 @@ class OperatorAgent(AgentExecutor):
             return context.shared_memory.get("mission_id", 0)
         return 0
 
-    async def _execute_task_safely(self, task: Task, task_name: str) -> dict[str, Any]:
+    async def _execute_task_safely(self, task: Task, task_name: str) -> dict[str, object]:
         """
         تنفيذ المهمة مع معالجة الأخطاء.
         Execute task with error handling.
@@ -265,8 +268,8 @@ class OperatorAgent(AgentExecutor):
             return {"status": "failed", "error": f"{type(e).__name__}: {e!s}"}
 
     def _create_execution_report(
-        self, overall_status: str, results: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+        self, overall_status: str, results: list[dict[str, object]]
+    ) -> dict[str, object]:
         """
         إنشاء تقرير التنفيذ النهائي.
         Create final execution report.

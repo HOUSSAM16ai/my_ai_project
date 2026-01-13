@@ -6,8 +6,6 @@ CRUD Router - عمليات البيانات العامة
 يعتمد على `CrudBoundaryService` لتنفيذ المنطق، مما يضمن فصل طبقة العرض عن طبقة البيانات.
 """
 
-from typing import Any
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,7 +18,7 @@ router = APIRouter(tags=["CRUD"])
 
 
 def _to_api_paginated_response(
-    boundary_result: BoundaryPaginatedResponse[Any],
+    boundary_result: BoundaryPaginatedResponse[object],
 ) -> PaginatedResponse[GenericResourceResponse]:
     """
     يحول استجابة التقسيم إلى الصفحات من طبقة الحدود إلى نموذج الـ API الموحد.

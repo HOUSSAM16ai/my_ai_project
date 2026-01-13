@@ -16,7 +16,7 @@
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Any, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -34,7 +34,7 @@ T = TypeVar("T")
 
 # بروتوكول استدعاء تسجيل الأحداث
 class EventLogger(Protocol):
-    async def __call__(self, event_type: str, payload: dict[str, Any]) -> None: ...
+    async def __call__(self, event_type: str, payload: dict[str, object]) -> None: ...
 
 
 class CognitiveCritique(BaseModel):
@@ -54,9 +54,9 @@ class CognitiveState(BaseModel):
 
     mission_id: int
     objective: str
-    plan: dict[str, Any] | None = None
-    design: dict[str, Any] | None = None
-    execution_result: dict[str, Any] | None = None
+    plan: dict[str, object] | None = None
+    design: dict[str, object] | None = None
+    execution_result: dict[str, object] | None = None
     critique: CognitiveCritique | None = None
     iteration_count: int = Field(0, description="عدد المحاولات الحالية")
     max_iterations: int = Field(5, description="الحد الأقصى لمحاولات التصحيح الذاتي")
@@ -90,8 +90,8 @@ class SuperBrain:
         self.auditor = auditor
 
     async def _create_safe_logger(
-        self, log_event: Callable[[str, dict[str, Any]], Awaitable[None]] | None
-    ) -> Callable[[str, dict[str, Any]], Awaitable[None]]:
+        self, log_event: Callable[[str, dict[str, object]], Awaitable[None]] | None
+    ) -> Callable[[str, dict[str, object]], Awaitable[None]]:
         """
         إنشاء دالة تسجيل آمنة.
 
@@ -102,7 +102,7 @@ class SuperBrain:
             دالة تسجيل آمنة
         """
 
-        async def safe_log(evt_type: str, data: dict[str, Any]) -> None:
+        async def safe_log(evt_type: str, data: dict[str, object]) -> None:
             if log_event:
                 await log_event(evt_type, data)
 
@@ -112,7 +112,7 @@ class SuperBrain:
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
+        safe_log: Callable[[str, dict[str, object]], Awaitable[None]],
     ) -> CognitiveCritique:
         """
         معالجة مرحلة التخطيط والمراجعة.
@@ -171,7 +171,7 @@ class SuperBrain:
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
+        safe_log: Callable[[str, dict[str, object]], Awaitable[None]],
     ) -> None:
         """
         الكشف عن الحلقات المفرغة ومعالجتها.
@@ -209,7 +209,7 @@ class SuperBrain:
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
+        safe_log: Callable[[str, dict[str, object]], Awaitable[None]],
     ) -> None:
         """
         تنفيذ مرحلة التصميم.
@@ -231,7 +231,7 @@ class SuperBrain:
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
+        safe_log: Callable[[str, dict[str, object]], Awaitable[None]],
     ) -> None:
         """
         تنفيذ مرحلة التنفيذ.
@@ -253,7 +253,7 @@ class SuperBrain:
         self,
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
-        safe_log: Callable[[str, dict[str, Any]], Awaitable[None]],
+        safe_log: Callable[[str, dict[str, object]], Awaitable[None]],
     ) -> None:
         """
         تنفيذ مرحلة الانعكاس والمراجعة النهائية.
@@ -283,9 +283,9 @@ class SuperBrain:
         self,
         mission: Mission,
         *,
-        context: dict[str, Any] | None = None,
-        log_event: Callable[[str, dict[str, Any]], Awaitable[None]] | None = None,
-    ) -> dict[str, Any]:
+        context: dict[str, object] | None = None,
+        log_event: Callable[[str, dict[str, object]], Awaitable[None]] | None = None,
+    ) -> dict[str, object]:
         """
         تنفيذ الحلقة المعرفية الكاملة للمهمة.
         Execute complete cognitive loop for mission.
@@ -330,7 +330,7 @@ class SuperBrain:
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
         safe_log,
-    ) -> dict[str, Any] | None:
+    ) -> dict[str, object] | None:
         """
         تنفيذ دورة معرفية كاملة.
         Execute one complete cognitive cycle (plan → design → execute → review).
@@ -447,7 +447,7 @@ class SuperBrain:
         agent_name: str,
         action: Callable[[], Awaitable[T]],
         timeout: float,
-        log_func: Callable[[str, dict[str, Any]], Awaitable[None]],
+        log_func: Callable[[str, dict[str, object]], Awaitable[None]],
     ) -> T:
         """
         منفذ المرحلة المعرفي العام (Generic Cognitive Phase Executor).

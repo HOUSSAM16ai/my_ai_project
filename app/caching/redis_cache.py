@@ -16,9 +16,9 @@ import hashlib
 import json
 import logging
 import random
-from typing import Any
 
 import redis.asyncio as redis
+
 from app.caching.base import CacheBackend
 from app.caching.stats import CacheCounters, CacheStatsSnapshot
 from app.core.resilience.circuit_breaker import (
@@ -98,15 +98,13 @@ class RedisCache(CacheBackend):
         return ttl_val + jitter
 
     async def _execute_with_breaker(
-        self, operation_name: str, func: Any, *args: Any, **kwargs: Any
-    ) -> Any | None:
+        self, operation_name: str, func: object, *args: object, **kwargs: object
+    ) -> object | None:
         """
         تنفيذ عملية Redis داخل قاطع الدائرة.
         """
         if not self._breaker.allow_request():
-            logger.warning(
-                f"⚠️ Redis Circuit Breaker is OPEN. Skipping {operation_name}."
-            )
+            logger.warning(f"⚠️ Redis Circuit Breaker is OPEN. Skipping {operation_name}.")
             return None
 
         try:
@@ -124,7 +122,7 @@ class RedisCache(CacheBackend):
         """
 
         # دالة مساعدة لتغليف الاستدعاء
-        async def _do_get() -> Any:
+        async def _do_get() -> object:
             value = await self._redis.get(key)
             if value is None:
                 return None
@@ -213,9 +211,7 @@ class RedisCache(CacheBackend):
         result = await self._execute_with_breaker("scan", _do_scan)
         return result if result is not None else []
 
-    async def set_add(
-        self, key: str, members: list[str], ttl: int | None = None
-    ) -> bool:
+    async def set_add(self, key: str, members: list[str], ttl: int | None = None) -> bool:
         """إضافة عناصر إلى مجموعة Redis."""
         if not members:
             return True
@@ -265,7 +261,7 @@ class RedisCache(CacheBackend):
         result = await self._execute_with_breaker("publish", _do_publish)
         return result if result is not None else 0
 
-    def pubsub(self) -> Any:
+    def pubsub(self) -> object:
         """
         الحصول على كائن PubSub.
         ملاحظة: لا يخضع لقاطع الدائرة لأنه يتطلب اتصالاً مستمراً.

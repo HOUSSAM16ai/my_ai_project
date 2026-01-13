@@ -4,7 +4,6 @@ Tool definition and configuration.
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
 
 
 @dataclass
@@ -12,7 +11,7 @@ class ToolResult:
     """Standardized tool output."""
 
     ok: bool
-    data: dict[str, Any] | None = None
+    data: dict[str, object] | None = None
     error: str | None = None
 
 
@@ -22,7 +21,7 @@ class ToolConfig:
 
     name: str
     description: str
-    parameters: dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, object] = field(default_factory=dict)
     category: str = "general"
     aliases: list[str] = field(default_factory=list)
     allow_disable: bool = True
@@ -80,7 +79,7 @@ class Tool:
             self.error_count += 1
             raise
 
-    def get_stats(self) -> dict[str, Any]:
+    def get_stats(self) -> dict[str, object]:
         """Get tool statistics."""
         return {
             "name": self.name,
@@ -95,7 +94,7 @@ def tool(
     description: str,
     category: str = "general",
     capabilities: list[str] | None = None,
-    parameters: dict[str, Any] | None = None,
+    parameters: dict[str, object] | None = None,
     aliases: list[str] | None = None,
 ):
     """Decorator to register a function as a tool."""

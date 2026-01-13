@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
 
 
 class DataDomainType(Enum):
@@ -52,15 +51,15 @@ class DataContract:
     name: str
     description: str
     schema_version: str
-    schema_definition: dict[str, Any]
+    schema_definition: dict[str, object]
     compatibility_mode: SchemaCompatibility
     owners: list[str]
     consumers: list[str]
-    sla_guarantees: dict[str, Any]
+    sla_guarantees: dict[str, object]
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     status: DataProductStatus = DataProductStatus.ACTIVE
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass
@@ -75,7 +74,7 @@ class DataProduct:
     contracts: list[str]  # Contract IDs
     quality_metrics: dict[str, float]
     access_patterns: list[str]
-    lineage: dict[str, Any]
+    lineage: dict[str, object]
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     status: DataProductStatus = DataProductStatus.ACTIVE
 
@@ -91,7 +90,7 @@ class BoundedContext:
     data_products: list[str]
     upstream_contexts: list[str]
     downstream_contexts: list[str]
-    governance_policies: dict[str, Any]
+    governance_policies: dict[str, object]
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -103,7 +102,7 @@ class GovernancePolicy:
     name: str
     description: str
     level: GovernanceLevel
-    rules: list[dict[str, Any]]
+    rules: list[dict[str, object]]
     applicable_domains: list[DataDomainType]
     enforcement_actions: list[str]
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
@@ -133,7 +132,7 @@ class SchemaEvolution:
     contract_id: str
     from_version: str
     to_version: str
-    changes: list[dict[str, Any]]
+    changes: list[dict[str, object]]
     compatibility: SchemaCompatibility
     migration_scripts: list[str]
     validated_at: datetime

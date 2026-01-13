@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import logging
 from math import ceil
-from typing import Any
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -120,8 +119,8 @@ class CrudBoundaryService:
         per_page: int = 20,
         sort_by: str | None = None,
         order: str = "asc",
-        filters: dict[str, Any] | None = None,
-    ) -> PaginatedResponse[Any]:
+        filters: dict[str, object] | None = None,
+    ) -> PaginatedResponse[object]:
         """
         Generic list items method to support generic CRUD router.
         Maps resource_type to specific method call.
@@ -146,7 +145,7 @@ class CrudBoundaryService:
         # Fallback or error for unknown resources
         raise ValueError(f"Unknown resource type: {resource_type}")
 
-    async def get_item(self, resource_type: str, item_id: str) -> Any | None:
+    async def get_item(self, resource_type: str, item_id: str) -> object | None:
         """
         Generic get item method.
         """
@@ -159,14 +158,14 @@ class CrudBoundaryService:
         return None
 
     async def create_item(
-        self, resource_type: str, payload: dict[str, Any]
+        self, resource_type: str, payload: dict[str, object]
     ) -> dict[str, str | int | bool]:
         """Generic create item stub."""
         # Implement actual creation logic mapping
         return {"status": "created", "resource": resource_type}
 
     async def update_item(
-        self, resource_type: str, item_id: str, payload: dict[str, Any]
+        self, resource_type: str, item_id: str, payload: dict[str, object]
     ) -> dict[str, str | int | bool]:
         """Generic update item stub."""
         return {"status": "updated", "resource": resource_type}

@@ -60,7 +60,9 @@ class DataManager:
             columns = ", ".join([quote_identifier(col) for col in data])
             placeholders = ", ".join([f":{col}" for col in data])
 
-            insert_sql = f"INSERT INTO {quote_identifier(table_name)} ({columns}) VALUES ({placeholders})"
+            insert_sql = (
+                f"INSERT INTO {quote_identifier(table_name)} ({columns}) VALUES ({placeholders})"
+            )
 
             await self._session.execute(text(insert_sql), data)
             await self._session.commit()

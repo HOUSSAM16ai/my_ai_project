@@ -4,8 +4,6 @@
 يجمع كافة موجهات النظام الفرعية ويصدرها كواجهة موحدة.
 """
 
-from typing import Any
-
 from fastapi import APIRouter, Depends, Response, status
 
 from app.api.routers.system.root import root_router
@@ -83,5 +81,5 @@ async def system_info(
     """
     جلب معلومات النظام الأساسية.
     """
-    info: dict[str, Any] = await system_service.get_system_info()
+    info: dict[str, object] = await system_service.get_system_info()
     return SystemInfoResponse.model_validate(info)

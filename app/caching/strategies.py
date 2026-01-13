@@ -9,7 +9,7 @@ import asyncio
 import time
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from app.caching.base import CacheBackend
 
@@ -118,12 +118,12 @@ class StrategicMemoryCache(CacheBackend):
     """
 
     def __init__(self, policy: EvictionPolicy[str], default_ttl: int = 300) -> None:
-        self._storage: dict[str, tuple[Any, float]] = {}
+        self._storage: dict[str, tuple[object, float]] = {}
         self._policy = policy
         self._default_ttl = default_ttl
         self._lock = asyncio.Lock()
 
-    async def get(self, key: str) -> Any | None:
+    async def get(self, key: str) -> object | None:
         """استرجاع قيمة مع تحديث السياسة."""
         async with self._lock:
             if key not in self._storage:
@@ -140,7 +140,7 @@ class StrategicMemoryCache(CacheBackend):
     async def set(
         self,
         key: str,
-        value: Any,
+        value: object,
         ttl: int | None = None,
     ) -> bool:
         """تخزين قيمة وتطبيق سياسة الطرد."""

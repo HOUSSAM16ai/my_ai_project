@@ -20,6 +20,8 @@ Status: ✅ Wave 10 Refactored
 
 from __future__ import annotations
 
+from app.core.logging import get_logger
+
 # Import from new modular structure
 from .horizontal_scaling import (
     ChaosMonkey,
@@ -53,9 +55,14 @@ __all__ = [
 # Singleton instance
 _orchestrator_instance = get_scaling_orchestrator()
 
+_logger = get_logger(__name__)
+
 if __name__ == "__main__":
     import json
 
     svc = get_scaling_orchestrator()
-    print("=== Horizontal Scaling Service Diagnostics (Refactored) ===")
-    print(json.dumps(svc.get_cluster_stats(), ensure_ascii=False, indent=2))
+    _logger.info("=== Horizontal Scaling Service Diagnostics (Refactored) ===")
+    _logger.info(
+        "Cluster stats: %s",
+        json.dumps(svc.get_cluster_stats(), ensure_ascii=False, indent=2),
+    )

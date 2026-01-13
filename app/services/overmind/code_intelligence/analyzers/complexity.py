@@ -1,5 +1,4 @@
 import ast
-from typing import Any
 
 
 class ComplexityAnalyzer(ast.NodeVisitor):
@@ -7,8 +6,8 @@ class ComplexityAnalyzer(ast.NodeVisitor):
 
     def __init__(self):
         self.file_complexity = 0
-        self.functions: list[dict[str, Any]] = []
-        self.classes: list[dict[str, Any]] = []
+        self.functions: list[dict[str, object]] = []
+        self.classes: list[dict[str, object]] = []
         self.current_class: str | None = None
         self.imports: list[str] = []
         self.max_nesting = 0

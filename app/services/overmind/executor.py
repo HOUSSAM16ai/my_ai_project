@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["TaskExecutor"]
 
 # تعريف نوع السجل: قاموس يربط الاسم بدالة (متزامنة أو غير متزامنة)
-# نستخدم object بدلاً من Any للدلالة على أن النتيجة يمكن أن تكون أي شيء
+# نستخدم object بدلاً من object للدلالة على أن النتيجة يمكن أن تكون أي شيء
 type ToolRegistry = dict[str, Callable[..., Awaitable[object] | object]]
 
 

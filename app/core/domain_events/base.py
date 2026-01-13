@@ -11,7 +11,7 @@ Core Domain Events Base Classes.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, ClassVar
+from typing import ClassVar
 
 
 class EventCategory(Enum):
@@ -49,7 +49,7 @@ class DomainEvent:
     """
 
     event_type: str = field(init=True)
-    payload: dict[str, Any] = field(default_factory=dict)
+    payload: dict[str, object] = field(default_factory=dict)
     event_id: str | None = None
     occurred_at: datetime = field(default_factory=datetime.utcnow)
     bounded_context: BoundedContext = BoundedContext.UNKNOWN

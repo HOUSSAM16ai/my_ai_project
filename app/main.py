@@ -41,7 +41,9 @@ def create_app(
 
     effective_settings = settings_override or get_settings()
     resolved_static = (
-        effective_settings.ENABLE_STATIC_FILES if enable_static_files is None else enable_static_files
+        effective_settings.ENABLE_STATIC_FILES
+        if enable_static_files is None
+        else enable_static_files
     )
     delegate_static = resolved_static and static_dir is None
     kernel = RealityKernel(settings=effective_settings, enable_static_files=delegate_static)

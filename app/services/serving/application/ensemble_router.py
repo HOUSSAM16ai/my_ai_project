@@ -9,7 +9,6 @@ from __future__ import annotations
 import threading
 import uuid
 from collections import Counter
-from typing import Any
 
 from app.services.serving.domain.models import EnsembleConfig, ModelResponse
 
@@ -64,12 +63,12 @@ class EnsembleRouter:
         result_counts = Counter(str(r) for r in results)
         return result_counts.most_common(1)[0][0]
 
-    def _averaging_aggregation(self, responses: list[ModelResponse]) -> dict[str, Any]:
+    def _averaging_aggregation(self, responses: list[ModelResponse]) -> dict[str, object]:
         """المتوسط (للقيم الرقمية)"""
         results = [r.output_data for r in responses if r.success]
         return {"averaged_results": results}
 
-    def _default_aggregation(self, responses: list[ModelResponse]) -> dict[str, Any]:
+    def _default_aggregation(self, responses: list[ModelResponse]) -> dict[str, object]:
         """الافتراضي: إرجاع جميع النتائج"""
         return {
             "ensemble_results": [r.output_data for r in responses],

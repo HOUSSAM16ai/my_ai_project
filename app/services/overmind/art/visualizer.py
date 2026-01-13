@@ -13,8 +13,6 @@ CS73 Core Concepts:
 - Visual Storytelling: السرد البصري
 """
 
-from typing import Any
-
 from app.services.overmind.art.styles import ArtStyle, VisualTheme
 
 
@@ -37,7 +35,7 @@ class CodeArtVisualizer:
         self.palette = VisualTheme.get_palette(style)
 
     def create_complexity_art(
-        self, complexity_data: dict[str, Any], title: str = "Code Complexity Landscape"
+        self, complexity_data: dict[str, object], title: str = "Code Complexity Landscape"
     ) -> str:
         """
         إنشاء فن بصري من بيانات التعقيد.
@@ -133,7 +131,7 @@ class CodeArtVisualizer:
         </svg>'''
 
     def create_metrics_dashboard(
-        self, metrics: dict[str, Any], title: str = "Code Metrics Art"
+        self, metrics: dict[str, object], title: str = "Code Metrics Art"
     ) -> str:
         """
         إنشاء لوحة فنية من المقاييس البرمجية.
@@ -195,7 +193,7 @@ class CodeArtVisualizer:
 
         return self.palette.accent
 
-    def _create_metric_card(self, name: str, value: Any, color: str) -> str:
+    def _create_metric_card(self, name: str, value: object, color: str) -> str:
         """إنشاء بطاقة فنية لمقياس واحد"""
         text_color = VisualTheme.get_contrasting_color(color)
 
@@ -238,7 +236,7 @@ class MissionFlowArtist:
         self.palette = VisualTheme.get_palette(style)
 
     def create_mission_timeline(
-        self, mission_data: dict[str, Any], title: str = "Mission Journey"
+        self, mission_data: dict[str, object], title: str = "Mission Journey"
     ) -> str:
         """
         إنشاء خط زمني فني للمهمة.
@@ -325,7 +323,7 @@ class DataArtGenerator:
         self.palette = VisualTheme.get_palette(style)
 
     def generate_code_pattern(
-        self, code_data: dict[str, Any], size: tuple[int, int] = (600, 600)
+        self, code_data: dict[str, object], size: tuple[int, int] = (600, 600)
     ) -> str:
         """
         توليد نمط فني من بنية الكود.

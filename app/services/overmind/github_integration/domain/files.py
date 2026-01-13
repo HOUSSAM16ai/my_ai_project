@@ -1,5 +1,3 @@
-from typing import Any
-
 from app.core.di import get_logger
 from app.services.overmind.github_integration.client import GitHubClient
 from app.services.overmind.github_integration.models import GitHubFileContent
@@ -13,7 +11,7 @@ class FileManager:
 
     async def get_file_content(
         self, file_path: str, branch: str = "main"
-    ) -> GitHubFileContent | dict[str, Any]:
+    ) -> GitHubFileContent | dict[str, object]:
         if not self.client.repo_object:
             return {"success": False, "error": "Repository not initialized"}
 
@@ -43,7 +41,7 @@ class FileManager:
         content: str,
         message: str,
         branch: str = "main",
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         if not self.client.repo_object:
             return {"success": False, "error": "Repository not initialized"}
 

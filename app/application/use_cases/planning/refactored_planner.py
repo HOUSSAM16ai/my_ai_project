@@ -1,7 +1,6 @@
 """Refactored planner using clean architecture."""
 
 from dataclasses import dataclass
-from typing import Any
 
 from app.core.protocols import PlannerProtocol as PlannerInterface
 from app.infrastructure.patterns import EventBus, get_event_bus
@@ -14,7 +13,7 @@ class Task:
     task_id: str
     description: str
     tool_name: str
-    tool_args: dict[str, Any]
+    tool_args: dict[str, object]
     dependencies: list[str]
 
 
@@ -25,7 +24,7 @@ class Plan:
     plan_id: str
     objective: str
     tasks: list[Task]
-    metadata: dict[str, Any]
+    metadata: dict[str, object]
 
 
 class PlanValidator:
@@ -90,7 +89,7 @@ class PlanOptimizer:
 class ContextAnalyzer:
     """Analyzes planning context."""
 
-    def analyze(self, objective: str, context: dict[str, Any] | None) -> dict[str, Any]:
+    def analyze(self, objective: str, context: dict[str, object] | None) -> dict[str, object]:
         """Analyze context and extract insights."""
         analysis = {
             "objective_length": len(objective),
@@ -126,7 +125,7 @@ class TaskGenerator:
     """Generates tasks for plans."""
 
     def generate_tasks(
-        self, objective: str, analysis: dict[str, Any], max_tasks: int | None = None
+        self, objective: str, analysis: dict[str, object], max_tasks: int | None = None
     ) -> list[Task]:
         """Generate tasks based on objective and analysis."""
         tasks = []
@@ -284,9 +283,9 @@ class RefactoredPlanner(PlannerInterface):
     def generate_plan(
         self,
         objective: str,
-        context: dict[str, Any] | None = None,
+        context: dict[str, object] | None = None,
         max_tasks: int | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """Generate plan using clean architecture."""
         from uuid import uuid4
 
@@ -311,7 +310,7 @@ class RefactoredPlanner(PlannerInterface):
 
         return self._to_dict(plan)
 
-    def validate_plan(self, plan: dict[str, Any]) -> bool:
+    def validate_plan(self, plan: dict[str, object]) -> bool:
         """Validate plan dictionary."""
         try:
             plan_obj = self._from_dict(plan)
@@ -345,7 +344,7 @@ class RefactoredPlanner(PlannerInterface):
         )
         self.event_bus.publish(event)
 
-    def _to_dict(self, plan: Plan) -> dict[str, Any]:
+    def _to_dict(self, plan: Plan) -> dict[str, object]:
         """Convert plan to dictionary."""
         return {
             "plan_id": plan.plan_id,
@@ -363,7 +362,7 @@ class RefactoredPlanner(PlannerInterface):
             "metadata": plan.metadata,
         }
 
-    def _from_dict(self, data: dict[str, Any]) -> Plan:
+    def _from_dict(self, data: dict[str, object]) -> Plan:
         """Convert dictionary to plan."""
         tasks = [
             Task(

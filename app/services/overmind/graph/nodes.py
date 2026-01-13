@@ -5,7 +5,6 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
 
 from app.core.ai_gateway import AIClient, get_ai_client
 
@@ -24,8 +23,8 @@ class AgentMessage:
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     sender_id: str = ""
     target_id: str = ""
-    content: dict[str, Any] = field(default_factory=dict)
-    metadata: dict[str, Any] = field(default_factory=dict)
+    content: dict[str, object] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
 class AgentNode:

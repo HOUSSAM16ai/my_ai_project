@@ -9,7 +9,6 @@ Load plugins with dependency resolution
 """
 
 import logging
-from typing import Any
 
 from app.core.protocols import PluginProtocol as IPlugin
 from app.core.registry.plugin_registry import registry
@@ -26,7 +25,7 @@ class PluginLoader:
     def __init__(self):
         self._loaded: set[str] = set()
 
-    async def load(self, plugin: IPlugin, config: dict[str, Any] | None = None) -> bool:
+    async def load(self, plugin: IPlugin, config: dict[str, object] | None = None) -> bool:
         """
         تحميل إضافة
         Load a plugin with its dependencies

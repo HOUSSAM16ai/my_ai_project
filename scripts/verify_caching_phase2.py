@@ -6,13 +6,15 @@ Bypasses pytest collection overhead.
 import asyncio
 import logging
 import sys
-from app.caching.memory_cache import InMemoryCache
+
 from app.caching.invalidation import InvalidationManager
+from app.caching.memory_cache import InMemoryCache
 from app.caching.warming import CacheWarmer
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("verifier")
+
 
 async def test_tagging():
     logger.info("🧪 Testing Tagging Logic...")
@@ -50,6 +52,7 @@ async def test_tagging():
     assert await cache.exists("tag:electronics") is False
     logger.info("✅ Tag cleanup verified.")
 
+
 async def test_warming():
     logger.info("🧪 Testing Cache Warming...")
     cache = InMemoryCache()
@@ -79,6 +82,7 @@ async def test_warming():
     assert static == "static_data"
     logger.info("✅ Warm-up data persistence verified.")
 
+
 async def main():
     try:
         await test_tagging()
@@ -90,6 +94,7 @@ async def main():
     except Exception as e:
         logger.error(f"❌ Error: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

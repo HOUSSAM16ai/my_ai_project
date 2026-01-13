@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
@@ -19,7 +17,7 @@ class GraphQLAdapter(ProtocolAdapter):
         except Exception:
             return False, "Invalid JSON body"
 
-    async def transform_request(self, request: Request) -> dict[str, Any]:
+    async def transform_request(self, request: Request) -> dict[str, object]:
         """Transform GraphQL request"""
         data = await request.json()
         return {
@@ -29,6 +27,6 @@ class GraphQLAdapter(ProtocolAdapter):
             "metadata": {"protocol": "graphql"},
         }
 
-    def transform_response(self, response_data: dict[str, Any]) -> dict[str, str | int | bool]:
+    def transform_response(self, response_data: dict[str, object]) -> dict[str, str | int | bool]:
         """Transform to GraphQL response"""
         return JSONResponse(content={"data": response_data, "errors": None})

@@ -6,7 +6,6 @@ import uuid
 from collections import defaultdict, deque
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any
 
 from app.services.data_mesh.domain.models import (
     BoundedContext,
@@ -37,7 +36,7 @@ class DataMeshManager:
             lambda: deque(maxlen=1000)
         )
         self.schema_evolutions: dict[str, list[SchemaEvolution]] = defaultdict(list)
-        self.event_streams: dict[str, deque[dict[str, Any]]] = defaultdict(
+        self.event_streams: dict[str, deque[dict[str, object]]] = defaultdict(
             lambda: deque(maxlen=10000)
         )
         self.lock = threading.RLock()
@@ -126,7 +125,7 @@ class DataMeshManager:
 
             return True
 
-    def register_product(self, product_def: dict[str, Any], owner_id: str) -> DataProduct:
+    def register_product(self, product_def: dict[str, object], owner_id: str) -> DataProduct:
         """
         تسجيل منتج بيانات جديد.
         """
@@ -143,7 +142,7 @@ class DataMeshManager:
         if not owner_id:
             raise ValueError("Owner ID is required")
 
-    def _create_product_entity(self, product_def: dict[str, Any], owner_id: str) -> DataProduct:
+    def _create_product_entity(self, product_def: dict[str, object], owner_id: str) -> DataProduct:
         return DataProduct(
             product_id=product_def["product_id"],
             name=product_def["name"],
@@ -160,9 +159,9 @@ class DataMeshManager:
     def evolve_contract_schema(
         self,
         contract_id: str,
-        new_schema: dict[str, Any],
+        new_schema: dict[str, object],
         new_version: str,
-        changes: list[dict[str, Any]],
+        changes: list[dict[str, object]],
     ) -> SchemaEvolution | None:
         """
         تطور مخطط العقد وتتحقق من التوافق.
@@ -190,7 +189,10 @@ class DataMeshManager:
         return evolution
 
     def _check_schema_compatibility(
-        self, old_schema: dict[str, Any], new_schema: dict[str, Any], changes: list[dict[str, Any]]
+        self,
+        old_schema: dict[str, object],
+        new_schema: dict[str, object],
+        changes: list[dict[str, object]],
     ) -> SchemaCompatibility | None:
         """
         التحقق من توافق المخطط مع السياسات.
@@ -211,7 +213,7 @@ class DataMeshManager:
         contract_id: str,
         contract_version: str,
         new_version: str,
-        changes: list[dict[str, Any]],
+        changes: list[dict[str, object]],
         compatibility: SchemaCompatibility,
     ) -> SchemaEvolution:
         """
@@ -233,7 +235,7 @@ class DataMeshManager:
         self,
         contract: DataContract,
         evolution: SchemaEvolution,
-        new_schema: dict[str, Any],
+        new_schema: dict[str, object],
         new_version: str,
     ) -> None:
         """
@@ -256,7 +258,10 @@ class DataMeshManager:
         return all(field in schema for field in required_fields)
 
     def _detect_schema_compatibility(
-        self, old_schema: dict[str, Any], new_schema: dict[str, Any], changes: list[dict[str, Any]]
+        self,
+        old_schema: dict[str, object],
+        new_schema: dict[str, object],
+        changes: list[dict[str, object]],
     ) -> SchemaCompatibility:
         breaking_change_types = ["field_removed", "field_type_changed", "constraint_added"]
 
@@ -321,7 +326,7 @@ class DataMeshManager:
 
         return True
 
-    def _evaluate_governance_rule(self, contract: DataContract, rule: dict[str, Any]) -> bool:
+    def _evaluate_governance_rule(self, contract: DataContract, rule: dict[str, object]) -> bool:
         rule_type = rule.get("type")
         if rule_type == "compatibility_mode":
             allowed_modes = rule.get("allowed", [])
@@ -364,7 +369,7 @@ class DataMeshManager:
         logging.getLogger(__name__).warning(f"Governance action: {policy.name} - {reason}")
         # In future: implement specific actions like blocking consumption
 
-    def get_quality_summary(self, product_id: str) -> dict[str, Any] | None:
+    def get_quality_summary(self, product_id: str) -> dict[str, object] | None:
         metrics_list = list(self.quality_metrics.get(product_id, []))
         if not metrics_list:
             return None
@@ -384,7 +389,7 @@ class DataMeshManager:
             "sample_count": len(recent_metrics),
         }
 
-    def _publish_event(self, event_type: str, payload: dict[str, Any]) -> None:
+    def _publish_event(self, event_type: str, payload: dict[str, object]) -> None:
         event = {
             "event_id": str(uuid.uuid4()),
             "event_type": event_type,
@@ -395,17 +400,17 @@ class DataMeshManager:
             self.event_streams[event_type].append(event)
 
     def subscribe_to_events(
-        self, event_type: str, callback: Callable[[dict[str, Any]], None]
+        self, event_type: str, callback: Callable[[dict[str, object]], None]
     ) -> str:
         subscription_id = str(uuid.uuid4())
         logging.getLogger(__name__).info(f"Subscribed to {event_type}: {subscription_id}")
         return subscription_id
 
-    def get_event_stream(self, event_type: str, limit: int = 100) -> list[dict[str, Any]]:
+    def get_event_stream(self, event_type: str, limit: int = 100) -> list[dict[str, object]]:
         events = list(self.event_streams.get(event_type, []))
         return events[-limit:]
 
-    def get_mesh_metrics(self) -> dict[str, Any]:
+    def get_mesh_metrics(self) -> dict[str, object]:
         return {
             "bounded_contexts": len(self.bounded_contexts),
             "data_contracts": len(self.data_contracts),

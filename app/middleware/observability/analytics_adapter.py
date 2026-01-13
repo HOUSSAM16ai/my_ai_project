@@ -7,11 +7,14 @@
 import time
 from dataclasses import dataclass
 
+from app.core.logging import get_logger
 from app.middleware.core.base_middleware import BaseMiddleware
 from app.middleware.core.context import RequestContext
 from app.middleware.core.result import MiddlewareResult
 
 AnalyticsValue = str | int | float | bool | None
+
+_logger = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -78,8 +81,8 @@ class AnalyticsAdapter(BaseMiddleware):
         for platform in self.platforms:
             try:
                 self._send_to_platform(platform, event.to_dict())
-            except Exception as exc:  # pragma: no cover - حماية من مزود خارجي
-                print(f"Analytics error ({platform}): {exc}")
+            except Exception:  # pragma: no cover - حماية من مزود خارجي
+                _logger.exception("Analytics error (%s)", platform)
 
     def _prepare_analytics_event(
         self, ctx: RequestContext, result: MiddlewareResult

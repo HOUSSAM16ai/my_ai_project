@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Any
 
 from fastapi import Request
 
@@ -13,11 +12,11 @@ class ProtocolAdapter(ABC):
         pass
 
     @abstractmethod
-    async def transform_request(self, request: Request) -> dict[str, Any]:
+    async def transform_request(self, request: Request) -> dict[str, object]:
         """Transform request to internal format"""
         pass
 
     @abstractmethod
-    def transform_response(self, response_data: dict[str, Any]) -> dict[str, str | int | bool]:
+    def transform_response(self, response_data: dict[str, object]) -> dict[str, str | int | bool]:
         """Transform internal format to protocol format"""
         pass

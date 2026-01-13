@@ -6,7 +6,6 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
 
 
 class HealthCheckType(Enum):
@@ -36,7 +35,7 @@ class HealthCheckResult:
     healthy: bool
     timestamp: datetime
     latency_ms: float
-    details: dict[str, Any] = field(default_factory=dict)
+    details: dict[str, object] = field(default_factory=dict)
     error: str | None = None
 
 
@@ -112,7 +111,7 @@ class HealthChecker:
         with self._lock:
             self.consecutive_failures += 1
 
-    def _create_success_result(self, latency_ms: float, result: Any) -> HealthCheckResult:
+    def _create_success_result(self, latency_ms: float, result: object) -> HealthCheckResult:
         """
         إنشاء نتيجة نجاح | Create success result
 

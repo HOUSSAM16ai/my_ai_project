@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.overmind.database_tools.validators import quote_identifier, validate_identifier
 
+
 async def fetch_all_tables(session: AsyncSession) -> list[str]:
     """يسترجع قائمة الجداول في قاعدة البيانات الحالية."""
     query = text(

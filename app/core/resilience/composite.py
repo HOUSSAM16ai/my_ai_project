@@ -4,7 +4,7 @@ Composite resilience policy combining multiple patterns.
 
 import logging
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from app.core.resilience.bulkhead import Bulkhead
 from app.core.resilience.circuit_breaker import CircuitBreaker
@@ -91,7 +91,7 @@ class CompositeResiliencePolicy:
 
         return await wrapped_func()
 
-    def get_stats(self) -> dict[str, Any]:
+    def get_stats(self) -> dict[str, object]:
         """Get statistics from all policies."""
         stats = {}
 

@@ -1,29 +1,28 @@
 from abc import ABC, abstractmethod
-from typing import Any
 
 from app.core.gateway.models import RoutingStrategy
 
 
 class BaseRoutingStrategy(ABC):
     @abstractmethod
-    def calculate_scores(self, candidates: list[dict[str, Any]]) -> None:
+    def calculate_scores(self, candidates: list[dict[str, object]]) -> None:
         pass
 
 
 class CostOptimizedStrategy(BaseRoutingStrategy):
-    def calculate_scores(self, candidates: list[dict[str, Any]]) -> None:
+    def calculate_scores(self, candidates: list[dict[str, object]]) -> None:
         for c in candidates:
             c["score"] = 1.0 / (c["cost"] + 0.001)
 
 
 class LatencyBasedStrategy(BaseRoutingStrategy):
-    def calculate_scores(self, candidates: list[dict[str, Any]]) -> None:
+    def calculate_scores(self, candidates: list[dict[str, object]]) -> None:
         for c in candidates:
             c["score"] = 1.0 / (c["latency"] + 0.001)
 
 
 class IntelligentRoutingStrategy(BaseRoutingStrategy):
-    def calculate_scores(self, candidates: list[dict[str, Any]]) -> None:
+    def calculate_scores(self, candidates: list[dict[str, object]]) -> None:
         if not candidates:
             return
 
@@ -48,7 +47,7 @@ class IntelligentRoutingStrategy(BaseRoutingStrategy):
 
 
 class FallbackStrategy(BaseRoutingStrategy):
-    def calculate_scores(self, candidates: list[dict[str, Any]]) -> None:
+    def calculate_scores(self, candidates: list[dict[str, object]]) -> None:
         for c in candidates:
             cost_score = 1.0 / (c["cost"] + 0.001)
             latency_score = 1.0 / (c["latency"] + 0.001)

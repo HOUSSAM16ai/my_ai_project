@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Final, TypedDict
 
-from app.core.types import JSON, JSONDict
+from app.core.types import JSON
 
 logger = logging.getLogger(__name__)
 
