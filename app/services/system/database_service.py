@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Any
+import re
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import AppSettings
 
 logger = logging.getLogger(__name__)
+
+_READ_ONLY_PREFIXES = ("SELECT", "WITH")
+_FORBIDDEN_SQL = re.compile(r";|\\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE)\\b")
 
 
 class DatabaseService:
@@ -21,11 +24,13 @@ class DatabaseService:
         self.settings = settings
         self.logger = logger or logging.getLogger(__name__)
 
-    async def check_health(self) -> dict[str, Any]:
+    async def check_health(self) -> dict[str, object]:
         """
         Checks database health.
         """
         try:
+            if self.session is None:
+                raise RuntimeError("Database session غير متوفر.")
             start = asyncio.get_event_loop().time()
             await self.session.execute(text("SELECT 1"))
             end = asyncio.get_event_loop().time()
@@ -34,16 +39,14 @@ class DatabaseService:
             self.logger.error(f"Health check failed: {e}")
             return {"status": "unhealthy", "error": str(e)}
 
-    async def get_database_health(self) -> dict[str, Any]:
+    async def get_database_health(self) -> dict[str, object]:
         return await self.check_health()
 
-    async def get_all_tables(self) -> list[dict[str, Any]]:
-        # This requires sync inspection usually, or specific async driver calls.
-        # For now, return mock to satisfy interface
-        return []
+    async def get_all_tables(self) -> list[dict[str, object]]:
+        raise NotImplementedError("خدمة الجداول غير مفعلة حتى يتم تنفيذها بالكامل.")
 
-    async def get_table_schema(self, table_name: str) -> dict[str, Any]:
-        return {"name": table_name, "columns": []}
+    async def get_table_schema(self, table_name: str) -> dict[str, object]:
+        raise NotImplementedError("خدمة مخطط الجداول غير مفعلة حتى يتم تنفيذها بالكامل.")
 
     async def get_table_data(
         self,
@@ -53,27 +56,36 @@ class DatabaseService:
         search: str | None = None,
         order_by: str | None = None,
         order_dir: str = "asc",
-    ) -> dict[str, Any]:
-        return {"items": [], "total": 0}
+    ) -> dict[str, object]:
+        raise NotImplementedError("خدمة بيانات الجداول غير مفعلة حتى يتم تنفيذها بالكامل.")
 
-    async def get_record(self, table_name: str, record_id: int) -> dict[str, Any]:
-        return {}
+    async def get_record(self, table_name: str, record_id: int) -> dict[str, object]:
+        raise NotImplementedError("خدمة استرجاع السجل غير مفعلة حتى يتم تنفيذها بالكامل.")
 
-    async def create_record(self, table_name: str, data: dict[str, Any]) -> dict[str, Any]:
-        return data
+    async def create_record(self, table_name: str, data: dict[str, object]) -> dict[str, object]:
+        raise NotImplementedError("خدمة إنشاء السجل غير مفعلة حتى يتم تنفيذها بالكامل.")
 
     async def update_record(
-        self, table_name: str, record_id: int, data: dict[str, Any]
-    ) -> dict[str, Any]:
-        return data
+        self, table_name: str, record_id: int, data: dict[str, object]
+    ) -> dict[str, object]:
+        raise NotImplementedError("خدمة تحديث السجل غير مفعلة حتى يتم تنفيذها بالكامل.")
 
-    async def delete_record(self, table_name: str, record_id: int) -> dict[str, Any]:
-        return {"id": record_id}
+    async def delete_record(self, table_name: str, record_id: int) -> dict[str, object]:
+        raise NotImplementedError("خدمة حذف السجل غير مفعلة حتى يتم تنفيذها بالكامل.")
 
-    async def execute_query(self, sql: str) -> dict[str, Any]:
+    async def execute_query(self, sql: str) -> dict[str, object]:
         try:
+            if self.session is None:
+                raise RuntimeError("Database session غير متوفر.")
+            normalized = " ".join(sql.strip().split())
+            if not normalized:
+                raise ValueError("الاستعلام فارغ.")
+            upper_sql = normalized.upper()
+            if not upper_sql.startswith(_READ_ONLY_PREFIXES) or _FORBIDDEN_SQL.search(upper_sql):
+                raise ValueError("يسمح فقط باستعلامات القراءة بدون أوامر متعددة.")
             result = await self.session.execute(text(sql))
-            return {"status": "success", "rowcount": result.rowcount}
+            rows = [dict(row._mapping) for row in result]
+            return {"status": "success", "rows": rows, "row_count": len(rows)}
         except Exception as e:
             return {"status": "error", "message": str(e)}
 

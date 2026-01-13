@@ -4,6 +4,7 @@ Hyper-Core Registry & Decorators
 The central nervous system of the toolset.
 """
 
+import os
 import time
 import traceback
 from collections.abc import Callable
@@ -181,8 +182,15 @@ def _register_tool_aliases(
 # ======================================================================================
 def policy_can_execute(tool_name: str, args: dict[str, Any]) -> bool:
     """يحدد إمكانية تنفيذ الأداة بناءً على السياسة المعلنة."""
-    _ = (tool_name, args)
-    return True
+    _ = args
+    meta = _TOOL_REGISTRY.get(tool_name)
+    if not meta:
+        return False
+    description = meta.get("description", "")
+    is_write = _looks_like_write(description)
+    if not is_write:
+        return True
+    return os.getenv("TOOL_POLICY_ALLOW_WRITE", "false").lower() == "true"
 
 
 def transform_arguments(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:

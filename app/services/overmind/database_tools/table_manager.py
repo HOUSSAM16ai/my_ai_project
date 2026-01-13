@@ -4,13 +4,17 @@
 مسؤول عن إدارة الجداول: إنشاء، حذف، قائمة، تفاصيل.
 """
 
-from typing import Any
-
 from sqlalchemy import MetaData, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.di import get_logger
 from app.services.overmind.database_tools.operations_logger import OperationsLogger
+from app.services.overmind.database_tools.validators import (
+    ensure_table_exists,
+    quote_identifier,
+    validate_column_type,
+    validate_identifier,
+)
 
 logger = get_logger(__name__)
 
@@ -62,7 +66,7 @@ class TableManager:
             self._logger.log_operation("list_tables", {"error": str(e)}, success=False)
             return []
 
-    async def get_table_details(self, table_name: str) -> dict[str, Any]:
+    async def get_table_details(self, table_name: str) -> dict[str, object]:
         """
         الحصول على تفاصيل كاملة عن جدول.
 
@@ -79,6 +83,7 @@ class TableManager:
                 - row_count: عدد الصفوف
         """
         try:
+            await ensure_table_exists(self._session, table_name)
             # جمع جميع التفاصيل
             columns = await self._get_columns(table_name)
             primary_keys = await self._get_primary_keys(table_name)
@@ -102,7 +107,7 @@ class TableManager:
             )
             return {}
 
-    async def _get_columns(self, table_name: str) -> list[dict[str, Any]]:
+    async def _get_columns(self, table_name: str) -> list[dict[str, object]]:
         """
         استعلام معلومات الأعمدة.
 
@@ -249,19 +254,20 @@ class TableManager:
         Returns:
             عدد الصفوف
         """
-        count_query = text(f'SELECT COUNT(*) FROM "{table_name}"')
+        await ensure_table_exists(self._session, table_name)
+        count_query = text(f"SELECT COUNT(*) FROM {quote_identifier(table_name)}")
         result = await self._session.execute(count_query)
-        return result.scalar()
+        return result.scalar() or 0
 
     def _build_table_details(
         self,
         table_name: str,
-        columns: list[dict[str, Any]],
+        columns: list[dict[str, object]],
         primary_keys: list[str],
         foreign_keys: list[dict[str, str]],
         indexes: list[dict[str, str]],
         row_count: int,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         بناء كائن التفاصيل من المكونات المجمعة.
 
@@ -292,7 +298,7 @@ class TableManager:
         self,
         table_name: str,
         columns: dict[str, str],
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         إنشاء جدول جديد.
 
@@ -306,11 +312,15 @@ class TableManager:
         """
         try:
             # بناء استعلام CREATE TABLE
+            validate_identifier(table_name)
             columns_sql = ", ".join(
-                [f'"{col_name}" {col_type}' for col_name, col_type in columns.items()]
+                [
+                    f"{quote_identifier(col_name)} {validate_column_type(col_type)}"
+                    for col_name, col_type in columns.items()
+                ]
             )
 
-            create_sql = f'CREATE TABLE "{table_name}" ({columns_sql})'
+            create_sql = f"CREATE TABLE {quote_identifier(table_name)} ({columns_sql})"
 
             await self._session.execute(text(create_sql))
             await self._session.commit()
@@ -340,7 +350,7 @@ class TableManager:
         self,
         table_name: str,
         cascade: bool = False,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         حذف جدول.
 
@@ -355,8 +365,9 @@ class TableManager:
             ⚠️ هذه عملية خطيرة - البيانات ستُحذف نهائياً!
         """
         try:
+            validate_identifier(table_name)
             cascade_sql = " CASCADE" if cascade else ""
-            drop_sql = f'DROP TABLE IF EXISTS "{table_name}"{cascade_sql}'
+            drop_sql = f"DROP TABLE IF EXISTS {quote_identifier(table_name)}{cascade_sql}"
 
             await self._session.execute(text(drop_sql))
             await self._session.commit()

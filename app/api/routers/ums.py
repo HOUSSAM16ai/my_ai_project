@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import desc, select
 
 from app.api.schemas.ums import (
     AdminCreateUserRequest,
@@ -27,7 +27,7 @@ from app.api.schemas.ums import (
     UserOut,
 )
 from app.core.domain.audit import AuditLog
-from app.core.domain.user import User, UserStatus
+from app.core.domain.user import Role, User, UserRole, UserStatus
 from app.deps.auth import CurrentUser, get_auth_service, get_current_user, require_permissions
 from app.middleware.rate_limiter_middleware import rate_limit
 from app.services.audit import AuditService
@@ -271,12 +271,26 @@ async def list_users(
     _: CurrentUser = Depends(require_permissions(USERS_READ)),
     auth_service: AuthService = Depends(get_auth_service),
 ) -> list[UserOut]:
-    result = await auth_service.session.execute(select(User))
-    users = result.scalars().all()
-    rbac = auth_service.rbac
+    result = await auth_service.session.execute(
+        select(User, Role.name)
+        .select_from(User)
+        .join(UserRole, UserRole.user_id == User.id, isouter=True)
+        .join(Role, Role.id == UserRole.role_id, isouter=True)
+    )
+    rows = result.all()
+    users: dict[int, User] = {}
+    roles_map: dict[int, list[str]] = {}
+    for user, role_name in rows:
+        if user.id is None:
+            continue
+        users[user.id] = user
+        if role_name:
+            roles_map.setdefault(user.id, []).append(role_name)
+        else:
+            roles_map.setdefault(user.id, [])
+
     output: list[UserOut] = []
-    for user in users:
-        roles = await rbac.user_roles(user.id)
+    for user_id, user in users.items():
         output.append(
             UserOut(
                 id=user.id,
@@ -284,7 +298,7 @@ async def list_users(
                 full_name=user.full_name,
                 is_active=user.is_active,
                 status=user.status,
-                roles=roles,
+                roles=sorted(set(roles_map.get(user_id, []))),
             )
         )
     return output
@@ -426,8 +440,16 @@ async def assign_role(
 async def list_audit(
     _: CurrentUser = Depends(require_permissions(AUDIT_READ)),
     auth_service: AuthService = Depends(get_auth_service),
+    limit: int = 100,
+    offset: int = 0,
 ) -> list[dict]:
-    result = await auth_service.session.execute(select(AuditLog))
+    if limit < 1 or limit > 500:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="limit out of range")
+    if offset < 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="offset out of range")
+    result = await auth_service.session.execute(
+        select(AuditLog).order_by(desc(AuditLog.created_at)).limit(limit).offset(offset)
+    )
     rows = result.scalars().all()
     return [row.model_dump() for row in rows]
 

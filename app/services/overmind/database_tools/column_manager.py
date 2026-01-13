@@ -4,13 +4,18 @@
 مسؤول عن إدارة الأعمدة: إضافة، حذف.
 """
 
-from typing import Any
-
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.di import get_logger
 from app.services.overmind.database_tools.operations_logger import OperationsLogger
+from app.services.overmind.database_tools.validators import (
+    ensure_columns_exist,
+    ensure_table_exists,
+    quote_identifier,
+    validate_column_type,
+    validate_identifier,
+)
 
 logger = get_logger(__name__)
 
@@ -38,7 +43,7 @@ class ColumnManager:
         table_name: str,
         column_name: str,
         column_type: str,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         إضافة عمود جديد إلى جدول موجود.
 
@@ -51,7 +56,14 @@ class ColumnManager:
             dict: نتيجة الإضافة
         """
         try:
-            alter_sql = f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" {column_type}'
+            validate_identifier(table_name)
+            validate_identifier(column_name)
+            validate_column_type(column_type)
+            await ensure_table_exists(self._session, table_name)
+            alter_sql = (
+                f"ALTER TABLE {quote_identifier(table_name)} "
+                f"ADD COLUMN {quote_identifier(column_name)} {column_type}"
+            )
 
             await self._session.execute(text(alter_sql))
             await self._session.commit()
@@ -83,7 +95,7 @@ class ColumnManager:
         self,
         table_name: str,
         column_name: str,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         حذف عمود من جدول.
 
@@ -98,7 +110,13 @@ class ColumnManager:
             ⚠️ البيانات في العمود ستُحذف نهائياً!
         """
         try:
-            alter_sql = f'ALTER TABLE "{table_name}" DROP COLUMN "{column_name}"'
+            validate_identifier(table_name)
+            validate_identifier(column_name)
+            await ensure_columns_exist(self._session, table_name, {column_name})
+            alter_sql = (
+                f"ALTER TABLE {quote_identifier(table_name)} "
+                f"DROP COLUMN {quote_identifier(column_name)}"
+            )
 
             await self._session.execute(text(alter_sql))
             await self._session.commit()

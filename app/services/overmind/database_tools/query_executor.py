@@ -4,7 +4,7 @@
 مسؤول عن تنفيذ استعلامات SQL مخصصة.
 """
 
-from typing import Any
+import re
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +13,9 @@ from app.core.di import get_logger
 from app.services.overmind.database_tools.operations_logger import OperationsLogger
 
 logger = get_logger(__name__)
+
+_READ_ONLY_PREFIXES = ("SELECT", "WITH")
+_FORBIDDEN_SQL = re.compile(r";|\\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE)\\b")
 
 
 class QueryExecutor:
@@ -36,8 +39,8 @@ class QueryExecutor:
     async def execute_sql(
         self,
         sql: str,
-        params: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        params: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         """
         تنفيذ استعلام SQL مخصص.
 
@@ -53,10 +56,15 @@ class QueryExecutor:
             ⚠️ تأكد من صحة الاستعلام قبل التنفيذ!
         """
         try:
+            normalized = " ".join(sql.strip().split())
+            upper_sql = normalized.upper()
+            if not upper_sql.startswith(_READ_ONLY_PREFIXES) or _FORBIDDEN_SQL.search(upper_sql):
+                raise ValueError("يسمح فقط باستعلامات القراءة بدون أوامر متعددة.")
+
             result = await self._session.execute(text(sql), params or {})
 
-            # إذا كان استعلام تحديد (SELECT)، أرجع النتائج
-            if sql.strip().upper().startswith("SELECT"):
+            # إذا كان استعلام تحديد (SELECT/CTE)، أرجع النتائج
+            if upper_sql.startswith(_READ_ONLY_PREFIXES):
                 rows = []
                 for row in result:
                     rows.append(dict(row._mapping))
@@ -66,13 +74,6 @@ class QueryExecutor:
                     "rows": rows,
                     "row_count": len(rows),
                 }
-            # إذا كان استعلام تعديل، commit
-            await self._session.commit()
-
-            return {
-                "success": True,
-                "affected_rows": result.rowcount,
-            }
 
         except Exception as e:
             await self._session.rollback()

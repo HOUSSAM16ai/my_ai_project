@@ -4,13 +4,17 @@
 مسؤول عن إدارة البيانات: إدخال، استعلام، تعديل، حذف.
 """
 
-from typing import Any
-
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.di import get_logger
 from app.services.overmind.database_tools.operations_logger import OperationsLogger
+from app.services.overmind.database_tools.validators import (
+    ensure_columns_exist,
+    ensure_table_exists,
+    quote_identifier,
+    validate_identifier,
+)
 
 logger = get_logger(__name__)
 
@@ -36,8 +40,8 @@ class DataManager:
     async def insert_data(
         self,
         table_name: str,
-        data: dict[str, Any],
-    ) -> dict[str, Any]:
+        data: dict[str, object],
+    ) -> dict[str, object]:
         """
         إدخال بيانات جديدة في جدول.
 
@@ -49,10 +53,14 @@ class DataManager:
             dict: نتيجة الإدخال
         """
         try:
-            columns = ", ".join([f'"{col}"' for col in data])
+            validate_identifier(table_name)
+            if not data:
+                raise ValueError("لا يمكن إدخال سجل فارغ.")
+            await ensure_columns_exist(self._session, table_name, set(data.keys()))
+            columns = ", ".join([quote_identifier(col) for col in data])
             placeholders = ", ".join([f":{col}" for col in data])
 
-            insert_sql = f'INSERT INTO "{table_name}" ({columns}) VALUES ({placeholders})'
+            insert_sql = f"INSERT INTO {quote_identifier(table_name)} ({columns}) VALUES ({placeholders})"
 
             await self._session.execute(text(insert_sql), data)
             await self._session.commit()
@@ -81,10 +89,10 @@ class DataManager:
     async def query_table(
         self,
         table_name: str,
-        where: dict[str, Any] | None = None,
+        where: dict[str, object] | None = None,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         استعلام بيانات من جدول.
 
@@ -98,19 +106,28 @@ class DataManager:
             dict: نتيجة الاستعلام
         """
         try:
-            query = f'SELECT * FROM "{table_name}"'
-            params: dict[str, Any] = {}
+            validate_identifier(table_name)
+            await ensure_table_exists(self._session, table_name)
+            query = f"SELECT * FROM {quote_identifier(table_name)}"
+            params: dict[str, object] = {}
 
             if where:
-                where_clauses = [f'"{col}" = :{col}' for col in where]
+                await ensure_columns_exist(self._session, table_name, set(where.keys()))
+                where_clauses = [f"{quote_identifier(col)} = :{col}" for col in where]
                 query += " WHERE " + " AND ".join(where_clauses)
                 params.update(where)
 
-            if limit:
-                query += f" LIMIT {limit}"
+            if limit is not None:
+                if limit < 0:
+                    raise ValueError("limit يجب أن يكون صفراً أو قيمة موجبة.")
+                query += " LIMIT :limit"
+                params["limit"] = limit
 
-            if offset:
-                query += f" OFFSET {offset}"
+            if offset is not None:
+                if offset < 0:
+                    raise ValueError("offset يجب أن يكون صفراً أو قيمة موجبة.")
+                query += " OFFSET :offset"
+                params["offset"] = offset
 
             result = await self._session.execute(text(query), params)
             rows = []
@@ -141,9 +158,9 @@ class DataManager:
     async def update_data(
         self,
         table_name: str,
-        data: dict[str, Any],
-        where: dict[str, Any],
-    ) -> dict[str, Any]:
+        data: dict[str, object],
+        where: dict[str, object],
+    ) -> dict[str, object]:
         """
         تعديل بيانات في جدول.
 
@@ -156,10 +173,22 @@ class DataManager:
             dict: نتيجة التعديل
         """
         try:
-            set_clauses = [f'"{col}" = :set_{col}' for col in data]
-            where_clauses = [f'"{col}" = :where_{col}' for col in where]
+            validate_identifier(table_name)
+            if not data:
+                raise ValueError("لا يمكن تحديث جدول بدون بيانات.")
+            if not where:
+                raise ValueError("شروط التعديل مطلوبة لمنع التحديث الشامل.")
+            await ensure_columns_exist(
+                self._session, table_name, set(data.keys()).union(where.keys())
+            )
+            set_clauses = [f"{quote_identifier(col)} = :set_{col}" for col in data]
+            where_clauses = [f"{quote_identifier(col)} = :where_{col}" for col in where]
 
-            update_sql = f'UPDATE "{table_name}" SET {", ".join(set_clauses)} WHERE {" AND ".join(where_clauses)}'
+            update_sql = (
+                f"UPDATE {quote_identifier(table_name)} "
+                f"SET {', '.join(set_clauses)} "
+                f"WHERE {' AND '.join(where_clauses)}"
+            )
 
             params = {f"set_{k}": v for k, v in data.items()}
             params.update({f"where_{k}": v for k, v in where.items()})
@@ -191,8 +220,8 @@ class DataManager:
     async def delete_data(
         self,
         table_name: str,
-        where: dict[str, Any],
-    ) -> dict[str, Any]:
+        where: dict[str, object],
+    ) -> dict[str, object]:
         """
         حذف بيانات من جدول.
 
@@ -207,9 +236,15 @@ class DataManager:
             ⚠️ البيانات ستُحذف نهائياً - احذر!
         """
         try:
-            where_clauses = [f'"{col}" = :{col}' for col in where]
+            validate_identifier(table_name)
+            if not where:
+                raise ValueError("شروط الحذف مطلوبة لمنع الحذف الشامل.")
+            await ensure_columns_exist(self._session, table_name, set(where.keys()))
+            where_clauses = [f"{quote_identifier(col)} = :{col}" for col in where]
 
-            delete_sql = f'DELETE FROM "{table_name}" WHERE {" AND ".join(where_clauses)}'
+            delete_sql = (
+                f"DELETE FROM {quote_identifier(table_name)} WHERE {' AND '.join(where_clauses)}"
+            )
 
             result = await self._session.execute(text(delete_sql), where)
             await self._session.commit()

@@ -16,6 +16,7 @@ from typing import Final, NotRequired, TypedDict
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from app.core.agents.system_principles import format_architecture_system_principles
 from app.core.database import engine
 
 logger = logging.getLogger(__name__)
@@ -830,6 +831,13 @@ async def validate_schema_on_startup() -> None:
     Start-up Validation Hook.
     """
     logger.info("🔍 Validating database schema... (جاري فحص مخطط قاعدة البيانات)")
+    logger.info(
+        format_architecture_system_principles(
+            header="مبادئ المعمارية وحوكمة البيانات (Validation Context):",
+            bullet="-",
+            include_header=True,
+        )
+    )
 
     results = await validate_and_fix_schema(auto_fix=True)
 

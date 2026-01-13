@@ -97,6 +97,10 @@ class RequestContext:
                 return value
         return default
 
+    def get_raw_request(self) -> Request | None:
+        """يوفر وصولاً آمناً لكائن الطلب الأصلي عند الحاجة."""
+        return self._raw_request
+
     def to_dict(self) -> dict[str, object]:
         """يحّول السياق إلى قاموس مناسب للتسجيل أو التسلسل."""
         return {

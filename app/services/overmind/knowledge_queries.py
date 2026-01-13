@@ -3,6 +3,7 @@
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.overmind.database_tools.validators import quote_identifier, validate_identifier
 
 async def fetch_all_tables(session: AsyncSession) -> list[str]:
     """يسترجع قائمة الجداول في قاعدة البيانات الحالية."""
@@ -21,7 +22,8 @@ async def fetch_all_tables(session: AsyncSession) -> list[str]:
 
 async def fetch_table_count(session: AsyncSession, table_name: str) -> int:
     """يسترجع عدد السجلات داخل جدول محدد."""
-    query = text(f"SELECT COUNT(*) FROM {table_name}")
+    safe_table = quote_identifier(validate_identifier(table_name))
+    query = text(f"SELECT COUNT(*) FROM {safe_table}")
     result = await session.execute(query)
     count = result.scalar()
     return count or 0
@@ -32,6 +34,7 @@ async def fetch_table_columns(
     table_name: str,
 ) -> list[dict[str, object]]:
     """يسترجع معلومات الأعمدة لجدول محدد."""
+    validate_identifier(table_name)
     columns_query = text(
         """
         SELECT
@@ -66,6 +69,7 @@ async def fetch_table_columns(
 
 async def fetch_primary_keys(session: AsyncSession, table_name: str) -> list[str]:
     """يسترجع المفاتيح الأساسية لجدول محدد."""
+    validate_identifier(table_name)
     pk_query = text(
         """
         SELECT a.attname
@@ -86,6 +90,7 @@ async def fetch_foreign_keys(
     table_name: str,
 ) -> list[dict[str, str]]:
     """يسترجع المفاتيح الأجنبية لجدول محدد."""
+    validate_identifier(table_name)
     fk_query = text(
         """
         SELECT

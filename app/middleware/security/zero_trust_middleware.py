@@ -32,13 +32,22 @@ class ZeroTrustMiddleware(ConditionalMiddleware):
 
     def _setup(self):
         """Initialize Zero Trust authenticator"""
-        secret_key = self.config.get("secret_key", "change-me-in-production")
-        self.zero_trust = ZeroTrustAuthenticator(secret_key)
         self.verified_count = 0
         self.failed_count = 0
+        secret_key = self.config.get("secret_key")
+        self._config_error: str | None = None
+        if not secret_key or secret_key == "change-me-in-production":
+            self._config_error = "Zero Trust secret key is not configured."
+            self.zero_trust = None
+            return
+        self.zero_trust = ZeroTrustAuthenticator(secret_key)
 
     def process_request(self, ctx: RequestContext) -> MiddlewareResult:
         """Verify Zero Trust session - KISS principle applied"""
+        if self._config_error or self.zero_trust is None:
+            return MiddlewareResult.unauthorized(message="Zero Trust configuration missing").with_details(
+                reason=self._config_error or "Zero Trust not initialized",
+            )
         session_id = self._get_session_id(ctx)
 
         if not session_id:
@@ -72,7 +81,7 @@ class ZeroTrustMiddleware(ConditionalMiddleware):
         """Perform continuous verification of session"""
         return self.zero_trust.continuous_verify(
             session_id,
-            ctx._raw_request,
+            ctx.get_raw_request(),
         )
 
     def _create_invalid_session_response(self, session_id: str) -> MiddlewareResult:
@@ -89,7 +98,9 @@ class ZeroTrustMiddleware(ConditionalMiddleware):
 
     def _handle_error(self, error: Exception) -> MiddlewareResult:
         """Handle Zero Trust errors gracefully"""
-        return MiddlewareResult.success().with_metadata("zero_trust_error", str(error))
+        return MiddlewareResult.unauthorized(message="Zero Trust verification error").with_details(
+            reason=str(error),
+        )
 
     def get_statistics(self) -> dict:
         """Return Zero Trust statistics"""
