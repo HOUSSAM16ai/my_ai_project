@@ -1,117 +1,20 @@
 """
-بوابة السياسات للأسئلة التعليمية.
+خدمة السياسات (Policy Service).
 
-تهدف هذه الوحدة إلى منع التصعيد أو الحقن عبر فرض نطاقات محتوى مسموح بها
-للمستخدمين القياسيين قبل تمرير الأسئلة إلى محركات الذكاء الاصطناعي.
+تطبق القواعد والتحليلات لتصنيف طلبات المستخدمين وضمان سلامة المحتوى.
 """
 
-from __future__ import annotations
-
 import hashlib
-import re
-from dataclasses import dataclass
 
-ALLOWED_DOMAINS = {"math", "physics", "programming", "engineering", "science"}
-ALLOWED_ARABIC_EDU = {
-    "رياضيات",
-    "فيزياء",
-    "برمجة",
-    "هندسة",
-    "علوم",
-    "خوارزمية",
-    "معادلة",
-    "تفاضل",
-    "تكامل",
-    "احتمالات",
-}
-ALLOWED_EDU_VERBS = {
-    "تعلم",
-    "تعليم",
-    "شرح",
-    "اشرح",
-    "فسر",
-    "حل",
-    "حلل",
-    "ادرس",
-    "learn",
-    "study",
-    "explain",
-    "teach",
-}
-ALLOWED_GREETINGS = {"hello", "hi", "hey", "السلام", "السلام عليكم", "مرحبا", "أهلاً"}
-DISALLOWED_KEYWORDS = {
-    "admin",
-    "apikey",
-    "api key",
-    "code",
-    "codebase",
-    "config",
-    "credential",
-    "database",
-    "db password",
-    "env",
-    "exploit",
-    "injection",
-    "key",
-    "password",
-    "prompt",
-    "repo",
-    "secret",
-    "system prompt",
-    "token",
-    "tool",
-}
-
-
-def _normalize_text(text: str) -> str:
-    """
-    توحيد النص العربي والإنجليزي لتسهيل تصنيف الأسئلة.
-
-    Args:
-        text: النص الخام من المستخدم.
-
-    Returns:
-        نص موحد بدون تشكيل أو رموز زائدة.
-    """
-    normalized = text.lower().strip()
-    normalized = normalized.replace("أ", "ا").replace("إ", "ا").replace("آ", "ا")
-    normalized = normalized.replace("ى", "ي").replace("ة", "ه")
-    normalized = re.sub(r"[\u064b-\u065f]", "", normalized)
-    normalized = re.sub(r"[^\w\s]", " ", normalized, flags=re.UNICODE)
-    return re.sub(r"\s+", " ", normalized).strip()
-
-
-def _normalize_terms(terms: set[str]) -> set[str]:
-    """
-    توحيد قائمة المصطلحات لمطابقة أكثر تسامحاً.
-
-    Args:
-        terms: مجموعة المصطلحات الأصلية.
-
-    Returns:
-        مجموعة المصطلحات بعد التطبيع.
-    """
-    return {_normalize_text(term) for term in terms}
-
-
-NORMALIZED_ALLOWED_DOMAINS = _normalize_terms(ALLOWED_DOMAINS)
-NORMALIZED_ALLOWED_ARABIC_EDU = _normalize_terms(ALLOWED_ARABIC_EDU)
-NORMALIZED_ALLOWED_EDU_VERBS = _normalize_terms(ALLOWED_EDU_VERBS)
-NORMALIZED_ALLOWED_GREETINGS = _normalize_terms(ALLOWED_GREETINGS)
-NORMALIZED_DISALLOWED_KEYWORDS = _normalize_terms(DISALLOWED_KEYWORDS)
-
-
-@dataclass(frozen=True)
-class PolicyDecision:
-    """
-    نتيجة تقييم السياسة الأمنية للسؤال.
-    """
-
-    allowed: bool
-    reason: str
-    classification: str
-    redaction_hash: str
-    refusal_message: str | None
+from app.services.policy.models import PolicyDecision
+from app.services.policy.normalization import (
+    NORMALIZED_ALLOWED_ARABIC_EDU,
+    NORMALIZED_ALLOWED_DOMAINS,
+    NORMALIZED_ALLOWED_EDU_VERBS,
+    NORMALIZED_ALLOWED_GREETINGS,
+    NORMALIZED_DISALLOWED_KEYWORDS,
+    _normalize_text,
+)
 
 
 class PolicyService:
