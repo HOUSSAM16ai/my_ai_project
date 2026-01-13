@@ -5,6 +5,8 @@
 تتبع مبدأ فصل التجريد عن التنفيذ (Berkeley SICP) وتستخدم توثيق هارفارد.
 """
 
+from __future__ import annotations
+
 from typing import Any, Protocol, runtime_checkable
 
 
@@ -89,6 +91,46 @@ class CacheBackend(Protocol):
 
         Returns:
             list[str]: قائمة المفاتيح المطابقة
+        """
+        ...
+
+    async def set_add(self, key: str, members: list[str], ttl: int | None = None) -> bool:
+        """
+        إضافة عناصر إلى مجموعة (Set).
+        مفيد لإدارة العلامات (Tags) والعلاقات.
+
+        Args:
+            key: مفتاح المجموعة
+            members: العناصر المراد إضافتها
+            ttl: مدة الصلاحية (اختياري)
+
+        Returns:
+            bool: True إذا تمت العملية بنجاح
+        """
+        ...
+
+    async def set_remove(self, key: str, members: list[str]) -> bool:
+        """
+        حذف عناصر من مجموعة.
+
+        Args:
+            key: مفتاح المجموعة
+            members: العناصر المراد حذفها
+
+        Returns:
+            bool: True إذا تمت العملية بنجاح
+        """
+        ...
+
+    async def set_members(self, key: str) -> set[str]:
+        """
+        الحصول على جميع عناصر المجموعة.
+
+        Args:
+            key: مفتاح المجموعة
+
+        Returns:
+            set[str]: مجموعة العناصر
         """
         ...
 

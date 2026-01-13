@@ -213,6 +213,47 @@ class RedisCache(CacheBackend):
         result = await self._execute_with_breaker("scan", _do_scan)
         return result if result is not None else []
 
+    async def set_add(
+        self, key: str, members: list[str], ttl: int | None = None
+    ) -> bool:
+        """إضافة عناصر إلى مجموعة Redis."""
+        if not members:
+            return True
+
+        ttl_val = self._resolve_ttl(ttl)
+
+        async def _do_sadd() -> bool:
+            pipe = self._redis.pipeline()
+            pipe.sadd(key, *members)
+            if ttl_val > 0:
+                pipe.expire(key, ttl_val)
+            await pipe.execute()
+            return True
+
+        result = await self._execute_with_breaker("set_add", _do_sadd)
+        return result is True
+
+    async def set_remove(self, key: str, members: list[str]) -> bool:
+        """حذف عناصر من مجموعة Redis."""
+        if not members:
+            return True
+
+        async def _do_srem() -> bool:
+            await self._redis.srem(key, *members)
+            return True
+
+        result = await self._execute_with_breaker("set_remove", _do_srem)
+        return result is True
+
+    async def set_members(self, key: str) -> set[str]:
+        """الحصول على عناصر مجموعة Redis."""
+
+        async def _do_smembers() -> set[str]:
+            return await self._redis.smembers(key)
+
+        result = await self._execute_with_breaker("set_members", _do_smembers)
+        return result if result is not None else set()
+
     async def publish(self, channel: str, message: str) -> int:
         """
         نشر رسالة إلى قناة (Pub/Sub).

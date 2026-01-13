@@ -42,6 +42,47 @@ class InvalidationManager:
         logger.info(f"🧹 Invalidated {count} keys matching pattern '{pattern}'")
         return count
 
+    async def add_tags(self, key: str, tags: list[str], ttl: int | None = None) -> None:
+        """
+        ربط مفتاح بمجموعة من العلامات (Tags) لتسهيل الإبطال الجماعي.
+
+        Args:
+            key: المفتاح الأصلي (e.g., "product:123")
+            tags: قائمة العلامات (e.g., ["category:electronics", "vendor:sony"])
+            ttl: مدة صلاحية ارتباط العلامة (يفضل أن يطابق صلاحية المفتاح الأصلي).
+        """
+        for tag in tags:
+            tag_key = f"tag:{tag}"
+            await self.backend.set_add(tag_key, [key], ttl=ttl)
+
+    async def invalidate_tag(self, tag: str) -> int:
+        """
+        إبطال جميع المفاتيح المرتبطة بعلامة معينة.
+
+        Args:
+            tag: اسم العلامة (e.g., "category:electronics")
+
+        Returns:
+            int: عدد المفاتيح التي تم إبطالها.
+        """
+        tag_key = f"tag:{tag}"
+        keys = await self.backend.set_members(tag_key)
+
+        if not keys:
+            return 0
+
+        count = 0
+        # حذف المفاتيح الفعلية
+        for key in keys:
+            if await self.backend.delete(key):
+                count += 1
+
+        # حذف سجل العلامة نفسه
+        await self.backend.delete(tag_key)
+
+        logger.info(f"🏷️ Invalidated {count} keys for tag '{tag}'")
+        return count
+
     async def invalidate_user_cache(self, user_id: str) -> int:
         """
         مساعد لإبطال كل ما يخص مستخدم معين.

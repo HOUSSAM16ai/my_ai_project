@@ -10,6 +10,8 @@
 - الأمان: استخدام AsyncIO Lock لضمان سلامة البيانات في البيئة غير المتزامنة.
 """
 
+from __future__ import annotations
+
 import asyncio
 import fnmatch
 import inspect
@@ -233,3 +235,64 @@ class InMemoryCache(CacheBackend):
                 if fnmatch.fnmatch(key, pattern):
                     keys.append(key)
             return keys
+
+    async def set_add(
+        self, key: str, members: list[str], ttl: int | None = None
+    ) -> bool:
+        """إضافة عناصر إلى مجموعة (Internal Set)."""
+        ttl_val = self._resolve_ttl(ttl)
+        expire_at = time.time() + ttl_val if ttl_val > 0 else float("inf")
+
+        async with self._lock:
+            # إذا كان المفتاح موجوداً ولكنه ليس مجموعة، نقوم بالكتابة فوقه
+            if key in self._cache:
+                current_val, _ = self._cache[key]
+                if not isinstance(current_val, set):
+                    # Overwrite
+                    val_set = set(members)
+                    self._cache[key] = (val_set, expire_at)
+                    return True
+                else:
+                    # Update existing set
+                    current_val.update(members)
+                    # Update Expiry? Usually yes on write.
+                    if ttl_val > 0:
+                        self._cache[key] = (current_val, expire_at)
+                    return True
+            else:
+                # Create new set
+                val_set = set(members)
+                self._cache[key] = (val_set, expire_at)
+                self._stats.record_set()
+                return True
+
+    async def set_remove(self, key: str, members: list[str]) -> bool:
+        """حذف عناصر من مجموعة."""
+        async with self._lock:
+            if key in self._cache:
+                current_val, expire_at = self._cache[key]
+                if isinstance(current_val, set):
+                    current_val.difference_update(members)
+                    # إذا أصبحت المجموعة فارغة، هل نحذف المفتاح؟
+                    # Redis يبقي المفتاح فارغاً (أحياناً) أو يحذفه. SREM يحذف المفتاح إذا فرغ.
+                    if not current_val:
+                        del self._cache[key]
+                        self._remove_key_lock(key)
+                return True
+            return False
+
+    async def set_members(self, key: str) -> set[str]:
+        """الحصول على عناصر المجموعة."""
+        async with self._lock:
+            if key not in self._cache:
+                return set()
+
+            current_val, expire_at = self._cache[key]
+            if time.time() > expire_at:
+                del self._cache[key]
+                self._remove_key_lock(key)
+                return set()
+
+            if isinstance(current_val, set):
+                return current_val.copy()  # Return copy to be safe
+            return set()
