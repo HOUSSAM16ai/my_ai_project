@@ -315,8 +315,11 @@ const App = () => {
 
 const DashboardLayout = ({ user, onLogout }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [theme, setTheme] = useState('dark');
     const [conversations, setConversations] = useState([]);
     const [isLoadingConvs, setIsLoadingConvs] = useState(false);
+    const menuRef = useRef(null);
 
     const endpoint = user.is_admin ? '/admin/api/chat/ws' : '/api/chat/ws';
     const convEndpoint = user.is_admin ? '/admin/api/conversations' : '/api/chat/conversations';
@@ -361,21 +364,82 @@ const DashboardLayout = ({ user, onLogout }) => {
         setIsSidebarOpen(false);
     };
 
+    useEffect(() => {
+        const storedTheme = localStorage.getItem('theme');
+        const initialTheme = storedTheme === 'light' ? 'light' : 'dark';
+        setTheme(initialTheme);
+    }, []);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dir = 'rtl';
+        localStorage.setItem('theme', theme);
+    }, [theme]);
+
+    useEffect(() => {
+        const handleOutsideClick = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, []);
+
+    const handleToggleTheme = () => {
+        setTheme((prevTheme) => (prevTheme === 'dark' ? 'light' : 'dark'));
+        setIsMenuOpen(false);
+    };
+
+    const handleOpenConversations = () => {
+        setIsSidebarOpen(true);
+        setIsMenuOpen(false);
+    };
+
+    const handleLogout = () => {
+        setIsMenuOpen(false);
+        onLogout();
+    };
+
     return (
         <div className="app-container">
             <div className="header">
-                <div style={{display: 'flex', alignItems: 'center'}}>
-                    <button className="mobile-menu-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
-                        <i className="fas fa-bars"></i>
-                    </button>
-                    <h2 style={{margin:0, textAlign: 'left', fontSize: '1.2rem'}}>
+                <div className="header-title">
+                    <h2>
                         {user.is_admin ? 'OVERMIND CLI' : 'Overmind Education'}
-                        <span style={{fontSize: '0.8rem', marginLeft: '10px', color: '#666', fontWeight: 'normal'}}>
-                            {status === 'connected' ? <span style={{color: 'green'}}>● Online</span> : <span style={{color: 'red'}}>● {status}</span>}
+                        <span className="header-status">
+                            {status === 'connected' ? <span className="status-online">● Online</span> : <span className="status-offline">● {status}</span>}
                         </span>
                     </h2>
                 </div>
-                <button onClick={onLogout} className="logout-btn"><i className="fas fa-sign-out-alt"></i></button>
+                <div className="header-actions" ref={menuRef}>
+                    <button
+                        className="header-menu-btn"
+                        onClick={() => setIsMenuOpen((prev) => !prev)}
+                        aria-expanded={isMenuOpen}
+                        aria-haspopup="true"
+                        type="button"
+                    >
+                        <i className="fas fa-ellipsis-v"></i>
+                    </button>
+                    {isMenuOpen && (
+                        <div className="header-menu" role="menu">
+                            <button type="button" className="header-menu-item" onClick={handleOpenConversations} role="menuitem">
+                                <i className="fas fa-comments"></i>
+                                <span>المحادثات</span>
+                            </button>
+                            <button type="button" className="header-menu-item" onClick={handleToggleTheme} role="menuitem">
+                                <i className={`fas ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
+                                <span>{theme === 'dark' ? 'الوضع النهاري' : 'الوضع المظلم'}</span>
+                            </button>
+                            <button type="button" className="header-menu-item" onClick={handleLogout} role="menuitem">
+                                <i className="fas fa-sign-out-alt"></i>
+                                <span>تسجيل الخروج</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="dashboard-layout">
@@ -393,7 +457,7 @@ const DashboardLayout = ({ user, onLogout }) => {
                                  className={`conversation-item ${conversationId === conv.conversation_id ? 'active' : ''}`}
                                  onClick={() => loadConversation(conv.conversation_id)}
                              >
-                                 <i className="fas fa-comment-alt" style={{marginRight: '8px'}}></i>
+                                 <i className="fas fa-comment-alt conversation-item__icon"></i>
                                  {conv.title || `Chat ${conv.conversation_id}`}
                              </div>
                          ))}
@@ -461,7 +525,7 @@ const ChatInterface = ({ messages, onSendMessage, status, user }) => {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Type a message..."
+                    placeholder="اكتب رسالتك هنا..."
                     rows="1"
                     disabled={status !== 'connected'}
                 />
