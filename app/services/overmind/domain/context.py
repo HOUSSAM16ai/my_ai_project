@@ -10,8 +10,6 @@
 - توثيق "Legendary" باللغة العربية.
 """
 
-from typing import Any
-
 from app.core.protocols import CollaborationContext
 
 
@@ -22,20 +20,20 @@ class InMemoryCollaborationContext(CollaborationContext):
     يستخدم لتمرير المعلومات والحالة بين الوكلاء خلال دورة حياة المهمة الواحدة.
     """
 
-    def __init__(self, initial_data: dict[str, Any] | None = None) -> None:
-        self.shared_memory: dict[str, Any] = initial_data or {}
+    def __init__(self, initial_data: dict[str, object] | None = None) -> None:
+        self.shared_memory: dict[str, object] = initial_data or {}
 
-    def update(self, key: str, value: Any) -> None:
+    def update(self, key: str, value: object) -> None:
         """
         تحديث قيمة في الذاكرة المشتركة.
 
         Args:
             key (str): المفتاح.
-            value (Any): القيمة الجديدة.
+            value (object): القيمة الجديدة.
         """
         self.shared_memory[key] = value
 
-    def get(self, key: str) -> Any | None:
+    def get(self, key: str) -> object | None:
         """
         استرجاع قيمة من الذاكرة المشتركة.
 
@@ -43,6 +41,6 @@ class InMemoryCollaborationContext(CollaborationContext):
             key (str): المفتاح.
 
         Returns:
-            Any | None: القيمة المطلوبة أو None إذا لم تكن موجودة.
+            object | None: القيمة المطلوبة أو None إذا لم تكن موجودة.
         """
         return self.shared_memory.get(key)

@@ -12,7 +12,6 @@
 """
 
 import json
-from typing import Any
 
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
@@ -34,21 +33,21 @@ class StrategistAgent(AgentPlanner):
     def __init__(self, ai_client: AIClient) -> None:
         self.ai = ai_client
 
-    async def create_plan(self, objective: str, context: CollaborationContext) -> dict[str, Any]:
+    async def create_plan(self, objective: str, context: CollaborationContext) -> dict[str, object]:
         """
         إنشاء خطة استراتيجية محكمة.
 
         يستخدم نموذج LLM المتطور لتوليد خطة بصيغة JSON صارمة.
         """
-        logger.info(f"Strategist is devising a plan for: {objective}")
+        logger.info("Strategist is devising a plan for: %s", objective)
 
         try:
             # إنشاء الخطة باستخدام الذكاء الاصطناعي
             plan_data = await self._generate_plan_with_ai(objective, context)
 
             # تحديث الذاكرة المشتركة
-            context.update("last_plan", plan_data)
-            logger.info(f"Strategist: Plan created with {len(plan_data.get('steps', []))} steps")
+            self._record_plan_in_context(context, plan_data)
+            logger.info("Strategist: Plan created with %s steps", _count_steps(plan_data))
 
             return plan_data
 
@@ -59,7 +58,7 @@ class StrategistAgent(AgentPlanner):
 
     async def _generate_plan_with_ai(
         self, objective: str, context: CollaborationContext
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         توليد الخطة باستخدام الذكاء الاصطناعي.
 
@@ -84,7 +83,7 @@ class StrategistAgent(AgentPlanner):
         logger.info(f"Strategist: Received AI response ({len(response_text)} chars)")
 
         # تنظيف وتحليل الرد
-        plan_data = self._parse_ai_response(response_text)
+        plan_data = self._parse_json_response(response_text)
 
         # التحقق من الصحة
         self._validate_plan(plan_data)
@@ -142,11 +141,9 @@ class StrategistAgent(AgentPlanner):
         shared_data = context.shared_memory
         return f"Objective: {objective}\nContext: {json.dumps(shared_data, default=str)}"
 
-    def _parse_ai_response(self, response_text: str) -> dict[str, Any]:
+    def _parse_json_response(self, response_text: str) -> dict[str, object]:
         """
-        تحليل رد الذكاء الاصطناعي.
-
-        Parse AI response.
+        تحليل رد الذكاء الاصطناعي كـ JSON منظم.
 
         Args:
             response_text: نص الرد
@@ -155,9 +152,12 @@ class StrategistAgent(AgentPlanner):
             بيانات الخطة
         """
         cleaned_response = self._clean_json_block(response_text)
-        return json.loads(cleaned_response)
+        parsed = json.loads(cleaned_response)
+        if not isinstance(parsed, dict):
+            raise ValueError("AI response did not contain a JSON object")
+        return parsed
 
-    def _validate_plan(self, plan_data: dict[str, Any]) -> None:
+    def _validate_plan(self, plan_data: dict[str, object]) -> None:
         """
         التحقق من صحة بيانات الخطة.
 
@@ -174,7 +174,7 @@ class StrategistAgent(AgentPlanner):
 
     def _handle_json_decode_error(
         self, error: json.JSONDecodeError, response_text: str | None
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         معالجة خطأ تحليل JSON.
 
@@ -208,7 +208,7 @@ class StrategistAgent(AgentPlanner):
             ],
         }
 
-    def _handle_general_error(self, error: Exception) -> dict[str, Any]:
+    def _handle_general_error(self, error: Exception) -> dict[str, object]:
         """
         معالجة الأخطاء العامة.
 
@@ -233,7 +233,7 @@ class StrategistAgent(AgentPlanner):
             ],
         }
 
-    def _create_ai_unavailable_plan(self) -> dict[str, Any]:
+    def _create_ai_unavailable_plan(self) -> dict[str, object]:
         """
         إنشاء خطة لحالة عدم توفر خدمة AI.
 
@@ -262,7 +262,7 @@ class StrategistAgent(AgentPlanner):
             text = text.split("```")[1].split("```")[0]
         return text.strip()
 
-    async def consult(self, situation: str, analysis: dict[str, Any]) -> dict[str, Any]:
+    async def consult(self, situation: str, analysis: dict[str, object]) -> dict[str, object]:
         """
         تقديم استشارة استراتيجية.
         Provide strategic consultation on the situation.
@@ -276,7 +276,37 @@ class StrategistAgent(AgentPlanner):
         """
         logger.info("Strategist is being consulted...")
 
-        system_prompt = """
+        system_prompt = self._build_consult_system_prompt()
+        user_message = self._build_consult_user_message(situation, analysis)
+
+        try:
+            response_text = await self.ai.send_message(
+                system_prompt=system_prompt, user_message=user_message, temperature=0.3
+            )
+
+            return self._parse_json_response(response_text)
+        except Exception as exc:
+            return self._handle_consult_error(exc)
+
+    def _record_plan_in_context(
+        self,
+        context: CollaborationContext,
+        plan_data: dict[str, object],
+    ) -> None:
+        """
+        تسجيل الخطة في سياق التعاون.
+
+        Args:
+            context: سياق التعاون
+            plan_data: بيانات الخطة
+        """
+        context.update("last_plan", plan_data)
+
+    def _build_consult_system_prompt(self) -> str:
+        """
+        بناء تعليمات الاستشارة الاستراتيجية للنظام.
+        """
+        return """
         أنت "الاستراتيجي" (The Strategist).
         دورك هو تحليل الموقف من منظور استراتيجي بعيد المدى.
 
@@ -293,18 +323,27 @@ class StrategistAgent(AgentPlanner):
         }
         """
 
-        user_message = f"Situation: {situation}\nAnalysis: {json.dumps(analysis, default=str)}"
+    def _build_consult_user_message(
+        self, situation: str, analysis: dict[str, object]
+    ) -> str:
+        """
+        بناء رسالة المستخدم للاستشارة الاستراتيجية.
+        """
+        return f"Situation: {situation}\nAnalysis: {json.dumps(analysis, default=str)}"
 
-        try:
-            response_text = await self.ai.send_message(
-                system_prompt=system_prompt, user_message=user_message, temperature=0.3
-            )
+    def _handle_consult_error(self, error: Exception) -> dict[str, object]:
+        """
+        معالجة أخطاء الاستشارة وإرجاع توصية احتياطية.
+        """
+        logger.warning("Strategist consultation failed: %s", error)
+        return {
+            "recommendation": "Adopt a cautious strategic approach (AI consultation failed).",
+            "confidence": 50.0,
+        }
 
-            clean_json = self._clean_json_block(response_text)
-            return json.loads(clean_json)
-        except Exception as e:
-            logger.warning(f"Strategist consultation failed: {e}")
-            return {
-                "recommendation": "Adopt a cautious strategic approach (AI consultation failed).",
-                "confidence": 50.0,
-            }
+
+def _count_steps(plan_data: dict[str, object]) -> int:
+    """يحسب عدد خطوات الخطة بشكل آمن."""
+
+    steps = plan_data.get("steps")
+    return len(steps) if isinstance(steps, list) else 0
