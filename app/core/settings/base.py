@@ -134,6 +134,25 @@ def _normalize_csv_or_list(value: list[str] | str | None) -> list[str]:
     return []
 
 
+def _is_valid_email(value: str) -> bool:
+    """يتحقق من تنسيق بريد إلكتروني بسيط وآمن للاستخدام الإداري."""
+    candidate = value.strip().lower()
+    if not candidate or " " in candidate:
+        return False
+    if candidate.count("@") != 1:
+        return False
+    local, _, domain = candidate.partition("@")
+    if not local or not domain:
+        return False
+    if local.startswith(".") or local.endswith(".") or ".." in local:
+        return False
+    if "." not in domain or domain.startswith(".") or domain.endswith(".") or ".." in domain:
+        return False
+    if len(domain.split(".")[-1]) < 2:
+        return False
+    return True
+
+
 def _lenient_json_loads(value: str) -> object:
     """Parses environment values as JSON, allowing simple strings on failure."""
     try:
@@ -310,12 +329,31 @@ class AppSettings(BaseServiceSettings):
 
     @model_validator(mode="after")
     def validate_production_security(self) -> "AppSettings":
-        """Strict Production Guardrails"""
+        """ضوابط صارمة لأمان بيئات الإنتاج."""
         if self.ENVIRONMENT == "production":
             if self.ALLOWED_HOSTS == ["*"]:
                 raise ValueError("SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production.")
             if self.BACKEND_CORS_ORIGINS == ["*"]:
                 raise ValueError("SECURITY RISK: BACKEND_CORS_ORIGINS cannot be '*' in production.")
+        return self
+
+    @model_validator(mode="after")
+    def validate_admin_credentials(self) -> "AppSettings":
+        """يفرض ضبط بيانات اعتماد المسؤول بشكل آمن في بيئة الإنتاج."""
+        if self.ENVIRONMENT == "production":
+            admin_password = self.ADMIN_PASSWORD.strip()
+            admin_email = self.ADMIN_EMAIL.strip().lower()
+
+            if not admin_password:
+                raise ValueError("ADMIN_PASSWORD must be set in production")
+            if admin_password == "change_me_please_123!":
+                raise ValueError("ADMIN_PASSWORD must be changed from default in production")
+            if len(admin_password) < 12:
+                raise ValueError("ADMIN_PASSWORD must be at least 12 characters in production")
+            if not admin_email or admin_email == "admin@cogniforge.com":
+                raise ValueError("ADMIN_EMAIL must be customized in production")
+            if not _is_valid_email(admin_email):
+                raise ValueError("ADMIN_EMAIL must be a valid email address in production")
         return self
 
 
