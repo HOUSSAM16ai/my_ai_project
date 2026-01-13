@@ -1,44 +1,43 @@
-# app/core/cognitive_cache.py
 """
-THE COGNITIVE RESONANCE ENGINE (V1 - OMEGA).
+Semantic Cache Module (Cognitive Resonance Engine).
 
 This module implements a "Hyper-Dimensional Semantic Cache" that transcends
 traditional exact-match caching. It utilizes "Resonance Algorithms" to detect
-semantic similarity between queries, allowing the system to recall answers
-to questions that are "spiritually identical" even if syntactically different.
+semantic similarity between queries.
 
-TECHNOLOGIES:
-- Token-Set Holography (Jaccard Similarity on N-grams).
-- Structural Echo Detection (Sequence Matching).
-- Adaptive Resonance Thresholding.
+Refactored to be Async and Type-Safe (Harvard/Berkeley Standards).
 """
 
 import logging
 import re
 import time
 from collections import deque
-from dataclasses import dataclass, field
 from difflib import SequenceMatcher
+from typing import ClassVar
+
+from pydantic import BaseModel, Field
+
+from app.core.types import JSONDict
 
 logger = logging.getLogger(__name__)
 
 # --- Configuration ---
-RESONANCE_THRESHOLD = 0.60  # Tuned for high-recall in V1 (Caveman-speak compatibility)
+RESONANCE_THRESHOLD = 0.60
 CACHE_TTL = 3600  # 1 Hour
-MAX_MEMORY_SLOTS = 1000  # Max number of semantic patterns to hold
+MAX_MEMORY_SLOTS = 1000
 
 
-@dataclass
-class SemanticEngram:
+class SemanticEngram(BaseModel):
     """
     Represents a stored memory pattern in the Cognitive Cache.
+    Using Pydantic for validation.
     """
 
     original_prompt: str
-    context_hash: str  # Hash of the conversation history to ensure context safety
+    context_hash: str
     normalized_tokens: set[str]
-    response_payload: list[dict]  # The full chat history or response chunks
-    created_at: float = field(default_factory=time.time)
+    response_payload: list[JSONDict]
+    created_at: float = Field(default_factory=time.time)
     access_count: int = 0
 
     @property
@@ -46,29 +45,51 @@ class SemanticEngram:
         return (time.time() - self.created_at) > CACHE_TTL
 
 
-class CognitiveResonanceEngine:
+class SemanticCache:
     """
     The Brain that remembers.
-    Implements fuzzy semantic matching without heavy ML dependencies.
+    Implements fuzzy semantic matching asynchronously.
     """
 
-    def __init__(self):
+    # Singleton instance holder
+    _instance: ClassVar["SemanticCache | None"] = None
+
+    def __init__(self) -> None:
         self.memory: deque[SemanticEngram] = deque(maxlen=MAX_MEMORY_SLOTS)
         self._stats = {"hits": 0, "misses": 0, "evictions": 0}
+
+    @classmethod
+    def get_instance(cls) -> "SemanticCache":
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
 
     def _normalize(self, text: str) -> set[str]:
         """
         Reduces text to its atomic semantic tokens.
-        - Lowercase
-        - Remove punctuation
-        - Stop word filtering (basic)
+        CPU-bound, but fast enough for now.
         """
         text = text.lower()
         # Remove non-alphanumeric (keep spaces)
         text = re.sub(r"[^a-z0-9\s]", "", text)
         tokens = set(text.split())
-        # Basic stop words (can be expanded)
-        stop_words = {"the", "is", "at", "which", "on", "a", "an", "and", "or", "of", "to"}
+        # Basic stop words
+        stop_words = {
+            "the",
+            "is",
+            "at",
+            "which",
+            "on",
+            "a",
+            "an",
+            "and",
+            "or",
+            "of",
+            "to",
+            "in",
+            "for",
+            "with",
+        }
         return tokens - stop_words
 
     def _calculate_resonance(
@@ -76,7 +97,6 @@ class CognitiveResonanceEngine:
     ) -> float:
         """
         Calculates the "Resonance Score" (Similarity) between two inputs.
-        Combines Token Overlap (Jaccard) with Structural Similarity.
         """
         if not tokens_a or not tokens_b:
             return 0.0
@@ -86,13 +106,12 @@ class CognitiveResonanceEngine:
         union = len(tokens_a.union(tokens_b))
         jaccard_score = intersection / union if union > 0 else 0.0
 
-        # 2. Containment Bonus (If one is a subset of the other)
-        # Helps with "tell joke computers" vs "tell me a joke about computers"
+        # 2. Containment Bonus
         min_len = min(len(tokens_a), len(tokens_b))
         containment_score = intersection / min_len if min_len > 0 else 0.0
 
-        # 3. Structural Similarity (Sequence Matcher) - computationally more expensive but more accurate for order
-        # We only run this if Jaccard is promising (> 0.3) to save CPU
+        # 3. Structural Similarity (Sequence Matcher)
+        # Only run if Jaccard is promising (> 0.2) to save CPU
         structural_score = 0.0
         if jaccard_score > 0.2:
             structural_score = SequenceMatcher(None, text_a, text_b).ratio()
@@ -101,22 +120,25 @@ class CognitiveResonanceEngine:
         # Jaccard: 30%, Containment: 30%, Structure: 40%
         return (jaccard_score * 0.3) + (containment_score * 0.3) + (structural_score * 0.4)
 
-    def _find_best_match(
-        self, input_tokens: set[str], prompt: str, context_hash: str
-    ) -> tuple[SemanticEngram | None, float]:
+    async def recall(self, prompt: str, context_hash: str) -> list[JSONDict] | None:
         """
-        Scans memory for the most resonant engram.
+        Attempts to recall a memory that resonates with the input prompt.
+        Async to allow for potential future database offloading without changing API.
         """
-        best_engram = None
+        input_tokens = self._normalize(prompt)
+        if not input_tokens:
+            return None
+
+        # In a real async scenario with a DB, we would await a DB call here.
+        # For in-memory deque, we just run it. If it becomes slow, we can
+        # offload to a thread pool.
+        best_engram: SemanticEngram | None = None
         best_score = 0.0
 
-        # Linear scan of memory (acceptable for <1000 items).
-        # For larger scales, we would use LSH (Locality Sensitive Hashing).
         for engram in self.memory:
             if engram.is_expired:
                 continue
 
-            # Strict Context Check: Different context = Different universe.
             if engram.context_hash != context_hash:
                 continue
 
@@ -127,19 +149,6 @@ class CognitiveResonanceEngine:
             if score > best_score:
                 best_score = score
                 best_engram = engram
-
-        return best_engram, best_score
-
-    def recall(self, prompt: str, context_hash: str) -> list[dict] | None:
-        """
-        Attempts to recall a memory that resonates with the input prompt.
-        Must match context_hash exactly (Safety First!) but allows fuzzy match on prompt.
-        """
-        input_tokens = self._normalize(prompt)
-        if not input_tokens:
-            return None
-
-        best_engram, best_score = self._find_best_match(input_tokens, prompt, context_hash)
 
         if best_score >= RESONANCE_THRESHOLD and best_engram:
             logger.info(
@@ -153,7 +162,9 @@ class CognitiveResonanceEngine:
         self._stats["misses"] += 1
         return None
 
-    def memorize(self, prompt: str, context_hash: str, response: list[dict]) -> None:
+    async def memorize(
+        self, prompt: str, context_hash: str, response: list[JSONDict]
+    ) -> None:
         """
         Stores a new experience in the Cognitive Cache.
         """
@@ -167,16 +178,17 @@ class CognitiveResonanceEngine:
             normalized_tokens=tokens,
             response_payload=response,
         )
-        self.memory.appendleft(engram)  # MRU (Most Recently Used) logic via appendleft + maxlen
+        self.memory.appendleft(engram)
         logger.debug(f"Memorized new pattern: '{prompt[:30]}...'")
 
-    def get_stats(self) -> None:
-        return {**self._stats, "memory_usage": len(self.memory), "capacity": MAX_MEMORY_SLOTS}
+    def get_stats(self) -> dict[str, int]:
+        return {
+            **self._stats,
+            "memory_usage": len(self.memory),
+            "capacity": MAX_MEMORY_SLOTS,
+        }
 
 
-# Singleton Instance
-_cognitive_engine = CognitiveResonanceEngine()
-
-
-def get_cognitive_engine() -> CognitiveResonanceEngine:
-    return _cognitive_engine
+def get_semantic_cache() -> SemanticCache:
+    """Dependency Injection Provider"""
+    return SemanticCache.get_instance()

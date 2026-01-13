@@ -15,7 +15,7 @@ import httpx
 
 # Config imports
 from app.core.ai_config import get_ai_config
-from app.core.cognitive_cache import get_cognitive_engine
+from app.caching.semantic import get_semantic_cache
 from app.core.gateway.circuit_breaker import CircuitBreaker
 from app.core.gateway.connection import BASE_TIMEOUT, ConnectionManager
 
@@ -191,7 +191,7 @@ class NeuralRoutingMesh:
 
         # 1. Check Cache
         if messages[-1].get("role") == "user":
-            cached_memory = get_cognitive_engine().recall(prompt, context_hash)
+            cached_memory = await get_semantic_cache().recall(prompt, context_hash)
             if cached_memory:
                 async for chunk in self._yield_cached_response(cached_memory, prompt):
                     yield chunk  # type: ignore
@@ -268,7 +268,7 @@ class NeuralRoutingMesh:
             self._record_metrics(node, prompt, duration, True)
 
             if node.model_id != SAFETY_NET_MODEL_ID:
-                get_cognitive_engine().memorize(prompt, context_hash, full_response_chunks)  # type: ignore
+                await get_semantic_cache().memorize(prompt, context_hash, full_response_chunks)  # type: ignore
 
         except AIRateLimitError as e:
             duration = (time.time() - start_time) * 1000
