@@ -7,7 +7,10 @@ import logging
 import os
 from datetime import datetime
 
-from app.core.agents.system_principles import format_system_principles
+from app.core.agents.system_principles import (
+    format_architecture_system_principles,
+    format_system_principles,
+)
 
 # Import for type checking mostly, or inside function to avoid heavy load
 # from app.services.agent_tools.domain.metrics import get_project_metrics_handler
@@ -57,11 +60,17 @@ def _get_system_principles_prompt() -> str:
     Returns:
         str: نص المبادئ الصارمة المهيأ للإدراج في السياق.
     """
-    return format_system_principles(
+    system_principles = format_system_principles(
         header="## 📜 المبادئ الصارمة للنظام",
         bullet="-",
         include_header=True,
     )
+    architecture_principles = format_architecture_system_principles(
+        header="## 🏛️ مبادئ المعمارية وحوكمة البيانات الأساسية",
+        bullet="-",
+        include_header=True,
+    )
+    return "\n\n".join([system_principles, architecture_principles])
 
 
 # =============================================================================
