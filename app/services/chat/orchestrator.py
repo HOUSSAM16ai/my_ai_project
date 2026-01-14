@@ -107,8 +107,16 @@ class ChatOrchestrator:
         """
         start_time = time.time()
 
-        # Check if we should use the new Multi-Agent System (Admin/Governance tasks)
-        # For this fix, we prioritize the new agent system for specific intents
+        # 0. الكشف عن النية أولاً (Detect Intent First)
+        # This is moved up to allow routing to specialized agents based on intent
+        intent_result = await self._intent_detector.detect(question)
+
+        logger.info(
+            f"Intent detected: {intent_result.intent} (confidence={intent_result.confidence:.2f})",
+            extra={"user_id": user_id, "conversation_id": conversation_id},
+        )
+
+        # Check if we should use the new Multi-Agent System (Admin, Analytics, Curriculum)
         admin_keywords = [
             "users",
             "count",
@@ -136,15 +144,29 @@ class ChatOrchestrator:
         ]
         is_admin_query = any(k in question.lower() for k in admin_keywords)
 
-        if is_admin_query:
+        # New: Check for Specialized Educational Intents
+        from app.services.chat.intent_detector import ChatIntent
+        is_specialized_intent = intent_result.intent in (
+            ChatIntent.ANALYTICS_REPORT,
+            ChatIntent.CURRICULUM_PLAN
+        )
+
+        if is_admin_query or is_specialized_intent:
             logger.info("Delegating to Multi-Agent Orchestrator", extra={"user_id": user_id})
             agent = OrchestratorAgent(ai_client, self.tool_registry)
 
             # Use a buffer to collect the full response for caching later
             full_response_buffer = []
 
+            # Pass context to agent (user_id is critical for security)
+            context = {
+                "user_id": user_id,
+                "conversation_id": conversation_id,
+                "intent": intent_result.intent
+            }
+
             # Iterate over the async generator from agent.run
-            async for chunk in agent.run(question):
+            async for chunk in agent.run(question, context=context):
                 full_response_buffer.append(chunk)
                 yield chunk
 
@@ -157,7 +179,7 @@ class ChatOrchestrator:
             logger.debug(f"Agent processed in {duration:.2f}ms")
             return
 
-        # 0. التحقق من الذاكرة الدلالية (Check Semantic Cache)
+        # 1. التحقق من الذاكرة الدلالية (Check Semantic Cache)
         cached_response = await self._semantic_cache.get(question)
         if cached_response:
             logger.info("Serving from Semantic Cache", extra={"user_id": user_id})
@@ -168,13 +190,6 @@ class ChatOrchestrator:
             return
 
         # Fallback to legacy Strategy Pattern for other chats
-        # 1. الكشف عن النية (Detect Intent)
-        intent_result = await self._intent_detector.detect(question)
-
-        logger.info(
-            f"Intent detected: {intent_result.intent} (confidence={intent_result.confidence:.2f})",
-            extra={"user_id": user_id, "conversation_id": conversation_id},
-        )
 
         # 2. بناء السياق (Build Context)
         context = ChatContext(

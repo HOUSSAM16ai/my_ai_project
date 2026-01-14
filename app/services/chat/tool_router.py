@@ -31,6 +31,8 @@ class ToolRouter:
         ChatIntent.DEFAULT,
         ChatIntent.HELP,
         ChatIntent.DEEP_ANALYSIS,
+        ChatIntent.ANALYTICS_REPORT,
+        ChatIntent.CURRICULUM_PLAN,
     }
 
     def authorize_intent(self, *, role: str, intent: ChatIntent) -> ToolAuthorizationDecision:
