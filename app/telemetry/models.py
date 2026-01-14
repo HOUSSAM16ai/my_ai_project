@@ -52,7 +52,7 @@ class TraceContext:
             return cls(
                 trace_id=trace_id,
                 span_id=parent_span_id,
-                parent_span_id=None,
+                parent_span_id=parent_span_id,
                 sampled=sampled,
                 baggage=baggage,
             )

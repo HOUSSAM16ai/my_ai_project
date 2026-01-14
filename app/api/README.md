@@ -100,7 +100,7 @@ app/api/
 
 **Endpoints:**
 ```python
-POST   /admin/api/chat/stream                    # Admin chat streaming
+WS     /admin/api/chat/ws                        # Admin chat streaming (WebSocket)
 GET    /admin/api/chat/latest                    # Get latest conversation snapshot
 GET    /admin/api/conversations                  # List conversations
 GET    /admin/api/conversations/{id}             # Get conversation details
@@ -108,23 +108,9 @@ GET    /admin/api/conversations/{id}             # Get conversation details
 
 **مثال:**
 ```python
-@router.post("/api/chat/stream")
-async def chat_stream(
-    chat_request: ChatRequest,
-    user_id: int = Depends(get_current_user_id),
-    ai_client: AIClient = Depends(get_ai_client),
-    service: AdminChatBoundaryService = Depends(get_admin_service),
-    session_factory: Callable[[], AsyncSession] = Depends(get_session_factory),
-) -> StreamingResponse:
-    """Admin chat streaming endpoint."""
-    stream = service.orchestrate_chat_stream(
-        user_id,
-        chat_request.question,
-        chat_request.conversation_id,
-        ai_client,
-        session_factory,
-    )
-    return StreamingResponse(stream, media_type="text/event-stream")
+@router.websocket("/api/chat/ws")
+async def chat_stream_ws(...):
+    """Admin chat streaming endpoint عبر WebSocket."""
 ```
 
 ---

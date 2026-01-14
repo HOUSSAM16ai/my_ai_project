@@ -144,7 +144,7 @@ class SQLAlchemyAdminPresenceDiagnostic:
         result = await session.execute(
             select(User.id).where(User.email == self._admin_email).limit(1)
         )
-        return result.scalar_one_or_none() is not None
+        return result.scalars().first() is not None
 
 
 class SystemService:

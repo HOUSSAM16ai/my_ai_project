@@ -45,7 +45,7 @@
 from abc import ABC
 from typing import Literal, Union, Annotated
 
-from pydantic import BaseModel, Field, ConfigDict, Tag
+from pydantic import BaseModel, Field, ConfigDict, Tag, field_validator
 
 
 class PolymorphicBaseModel(BaseModel):
@@ -104,3 +104,19 @@ class PetOwner(BaseModel):
     """
     owner_name: str
     pets: list[PetUnion]
+
+    @field_validator("pets", mode="before")
+    @classmethod
+    def validate_pet_discriminator(cls, value: object) -> object:
+        """
+        يتحقق من سلامة قيمة حقل التمييز قبل التحويل متعدد الأشكال.
+        """
+        if not isinstance(value, list):
+            return value
+        allowed_types = {"dog", "cat"}
+        for item in value:
+            if isinstance(item, dict):
+                pet_type = item.get("type")
+                if pet_type not in allowed_types:
+                    raise ValueError("Input should be 'dog' or 'cat'")
+        return value

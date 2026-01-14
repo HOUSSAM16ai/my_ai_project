@@ -198,55 +198,56 @@
                     const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
                     
                     // Real API call to OVERMIND CLI MINDGATE
-                    const response = await fetch('/admin/api/chat/stream', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...(token && { 'Authorization': `Bearer ${token}` })
-                        },
-                        body: JSON.stringify({ 
-                            question: currentInput,
-                            conversation_id: null 
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`API Error: ${response.status}`);
-                    }
-
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
+                    const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+                    const wsUrl = `${scheme}://${window.location.host}/admin/api/chat/ws?token=${token || ''}`;
+                    const socket = new WebSocket(wsUrl);
                     let fullContent = '';
 
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
-
-                        const chunk = decoder.decode(value);
-                        const lines = chunk.split('\n');
-
-                        for (const line of lines) {
-                            if (line.startsWith('data: ')) {
-                                try {
-                                    const data = JSON.parse(line.slice(6));
-                                    const content = data?.choices?.[0]?.delta?.content || data?.content || '';
-                                    if (content) {
-                                        fullContent += content;
-                                        setMessages(prev => {
-                                            const newMsgs = [...prev];
-                                            newMsgs[newMsgs.length - 1] = { 
-                                                ...newMsgs[newMsgs.length - 1], 
-                                                content: fullContent 
-                                            };
-                                            return newMsgs;
-                                        });
-                                    }
-                                } catch (e) {
-                                    // Skip non-JSON lines
-                                }
+                    const handleMessage = (payload) => {
+                        if (payload?.type === 'delta') {
+                            const content = payload?.payload?.content || '';
+                            if (content) {
+                                fullContent += content;
+                                setMessages(prev => {
+                                    const newMsgs = [...prev];
+                                    newMsgs[newMsgs.length - 1] = {
+                                        ...newMsgs[newMsgs.length - 1],
+                                        content: fullContent
+                                    };
+                                    return newMsgs;
+                                });
                             }
+                            return;
                         }
-                    }
+                        if (payload?.type === 'complete') {
+                            socket.close();
+                            return;
+                        }
+                        if (payload?.type === 'error') {
+                            throw new Error(payload?.payload?.details || 'Stream error');
+                        }
+                    };
+
+                    socket.onopen = () => {
+                        socket.send(JSON.stringify({
+                            question: currentInput,
+                            conversation_id: null
+                        }));
+                    };
+
+                    socket.onmessage = (event) => {
+                        try {
+                            const payload = JSON.parse(event.data);
+                            handleMessage(payload);
+                        } catch (e) {
+                            // Ignore non-JSON events
+                        }
+                    };
+
+                    await new Promise((resolve, reject) => {
+                        socket.onerror = () => reject(new Error('WebSocket error'));
+                        socket.onclose = () => resolve();
+                    });
                 } catch (error) {
                     console.error('Chat error:', error);
                     // Fallback: Show error message

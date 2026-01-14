@@ -79,7 +79,12 @@ class MultiLevelCache(CacheBackend):
 
     def _start_listener(self) -> None:
         """بدء مهمة الخلفية للاستماع لإشعارات الإبطال."""
-        self._pubsub_task = asyncio.create_task(self._listen_for_invalidation())
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            logger.warning("⚠️ No running event loop; skipping pub/sub listener startup.")
+            return
+        self._pubsub_task = loop.create_task(self._listen_for_invalidation())
 
     async def _listen_for_invalidation(self) -> None:
         """الاستماع لقناة الإبطال وحذف المفاتيح من L1."""
@@ -93,7 +98,10 @@ class MultiLevelCache(CacheBackend):
         )
 
         try:
-            async for message in pubsub.listen():
+            listen_stream = pubsub.listen()
+            if inspect.isawaitable(listen_stream):
+                listen_stream = await listen_stream
+            async for message in listen_stream:
                 if message["type"] != "message":
                     continue
 
