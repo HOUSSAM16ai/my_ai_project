@@ -17,6 +17,10 @@ from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
 from app.core.domain.mission import Task, TaskStatus
 from app.core.protocols import AgentExecutor, CollaborationContext
+from app.services.overmind.dec_pomdp_proof import (
+    build_dec_pomdp_consultation_payload,
+    is_dec_pomdp_proof_question,
+)
 from app.services.overmind.executor import TaskExecutor
 
 logger = get_logger(__name__)
@@ -92,6 +96,9 @@ class OperatorAgent(AgentExecutor):
             dict: التوصية والثقة
         """
         logger.info("Operator is being consulted...")
+
+        if is_dec_pomdp_proof_question(situation):
+            return build_dec_pomdp_consultation_payload("operator")
 
         if self.ai:
             return await self._consult_with_ai(situation, analysis)

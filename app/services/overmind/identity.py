@@ -25,6 +25,11 @@ from app.core.agents.system_principles import (
     get_system_principles,
 )
 from app.core.di import get_logger
+from app.services.overmind.dec_pomdp_proof import (
+    build_dec_pomdp_proof_summary,
+    format_dec_pomdp_proof_summary,
+    is_dec_pomdp_proof_question,
+)
 
 logger = get_logger(__name__)
 
@@ -226,6 +231,7 @@ class OvermindIdentity:
             _QuestionHandler(self._is_philosophy_question, self._answer_philosophy_question),
             _QuestionHandler(self._is_birth_date_question, self._answer_birth_date_question),
             _QuestionHandler(self._is_history_question, self._answer_history_question),
+            _QuestionHandler(self._is_dec_pomdp_question, self._answer_dec_pomdp_question),
         ]
 
     def get_founder(self) -> str:
@@ -425,6 +431,10 @@ class OvermindIdentity:
         """التحقق إذا كان السؤال عن التاريخ."""
         return any(keyword in q for keyword in ["تاريخ", "history", "متى", "when"])
 
+    def _is_dec_pomdp_question(self, q: str) -> bool:
+        """التحقق إذا كان السؤال عن برهان Dec-POMDP وNEXP."""
+        return is_dec_pomdp_proof_question(q)
+
     def _answer_founder_question(self) -> str:
         """الإجابة على أسئلة المؤسس."""
         founder = self._identity["founder"]
@@ -518,6 +528,11 @@ class OvermindIdentity:
         history = self._identity["history"]["milestones"]
         milestones = "\n".join(f"• {m['date']}: {m['event']}" for m in history)
         return f"أهم المعالم في تاريخي:\n{milestones}"
+
+    def _answer_dec_pomdp_question(self) -> str:
+        """الإجابة على أسئلة برهان شمولية NEXP لمسألة Dec-POMDP."""
+        summary = build_dec_pomdp_proof_summary()
+        return format_dec_pomdp_proof_summary(summary)
 
     def _answer_unknown_question(self) -> str:
         """الإجابة على أسئلة غير معروفة."""

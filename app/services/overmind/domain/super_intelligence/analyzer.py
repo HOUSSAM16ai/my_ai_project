@@ -7,6 +7,7 @@
 from datetime import datetime
 
 from app.core.di import get_logger
+from app.services.overmind.domain.super_intelligence.expertise import build_expertise_profile
 
 logger = get_logger(__name__)
 
@@ -38,6 +39,7 @@ class SituationAnalyzer:
         strategic_value = SituationAnalyzer._estimate_strategic_value(signal_scores, context)
         depth_profile = SituationAnalyzer._build_depth_profile(situation, context, signal_scores)
         depth_score = depth_profile["depth_score"]
+        expertise_profile = build_expertise_profile(situation)
 
         analysis = {
             "situation": situation,
@@ -51,6 +53,7 @@ class SituationAnalyzer:
             "strategic_value_score": strategic_value,
             "depth_score": depth_score,
             "depth_profile": depth_profile,
+            "expertise_profile": expertise_profile,
             "stakeholders": [],
             "constraints": [],
             "opportunities": [],

@@ -16,6 +16,10 @@ import json
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
 from app.core.protocols import AgentReflector, CollaborationContext
+from app.services.overmind.dec_pomdp_proof import (
+    build_dec_pomdp_consultation_payload,
+    is_dec_pomdp_proof_question,
+)
 from app.services.overmind.domain.exceptions import StalemateError
 
 logger = get_logger(__name__)
@@ -153,6 +157,9 @@ class AuditorAgent(AgentReflector):
             dict: التوصية والثقة
         """
         logger.info("Auditor is being consulted...")
+
+        if is_dec_pomdp_proof_question(situation):
+            return build_dec_pomdp_consultation_payload("auditor")
 
         system_prompt = """
         أنت "المدقق" (The Auditor).

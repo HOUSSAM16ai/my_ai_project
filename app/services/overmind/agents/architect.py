@@ -16,6 +16,10 @@ import json
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
 from app.core.protocols import AgentArchitect, CollaborationContext
+from app.services.overmind.dec_pomdp_proof import (
+    build_dec_pomdp_consultation_payload,
+    is_dec_pomdp_proof_question,
+)
 
 logger = get_logger(__name__)
 
@@ -184,6 +188,9 @@ class ArchitectAgent(AgentArchitect):
             dict: التوصية والثقة
         """
         logger.info("Architect is being consulted...")
+
+        if is_dec_pomdp_proof_question(situation):
+            return build_dec_pomdp_consultation_payload("architect")
 
         system_prompt = """
         أنت "المعماري" (The Architect).

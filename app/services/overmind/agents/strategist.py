@@ -16,6 +16,10 @@ import json
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
 from app.core.protocols import AgentPlanner, CollaborationContext
+from app.services.overmind.dec_pomdp_proof import (
+    build_dec_pomdp_consultation_payload,
+    is_dec_pomdp_proof_question,
+)
 
 logger = get_logger(__name__)
 
@@ -275,6 +279,9 @@ class StrategistAgent(AgentPlanner):
             dict: التوصية والثقة
         """
         logger.info("Strategist is being consulted...")
+
+        if is_dec_pomdp_proof_question(situation):
+            return build_dec_pomdp_consultation_payload("strategist")
 
         system_prompt = self._build_consult_system_prompt()
         user_message = self._build_consult_user_message(situation, analysis)
