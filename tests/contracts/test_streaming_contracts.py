@@ -34,6 +34,23 @@ def test_message_envelope_accepts_required_fields() -> None:
     assert envelope.type == MessageType.CONNECTED
 
 
+def test_message_envelope_validates_ack_payload() -> None:
+    envelope = MessageEnvelope(
+        id="msg_ack",
+        type=MessageType.ACK,
+        timestamp=datetime(2024, 1, 1, 12, 1, 0),
+        direction=EnvelopeDirection.CLIENT_TO_SERVER,
+        sender="client",
+        recipient="gateway",
+        correlation_id="corr_ack",
+        trace_id="trace_ack",
+        sequence=2,
+        payload={"sequence_from": 1, "sequence_to": 2},
+    )
+
+    assert envelope.payload["sequence_to"] == 2
+
+
 def test_stream_subscribe_allows_resume() -> None:
     subscribe = StreamSubscribe(session_id="session_1", last_sequence=10)
 
@@ -49,6 +66,22 @@ def test_stream_ack_requires_range() -> None:
 def test_stream_ack_rejects_invalid_range() -> None:
     with pytest.raises(ValidationError):
         StreamAck(sequence_from=9, sequence_to=4)
+
+
+def test_message_envelope_rejects_invalid_ack_payload() -> None:
+    with pytest.raises(ValidationError):
+        MessageEnvelope(
+            id="msg_bad_ack",
+            type=MessageType.ACK,
+            timestamp=datetime(2024, 1, 1, 12, 2, 0),
+            direction=EnvelopeDirection.CLIENT_TO_SERVER,
+            sender="client",
+            recipient="gateway",
+            correlation_id="corr_bad",
+            trace_id="trace_bad",
+            sequence=3,
+            payload={"sequence_from": 5, "sequence_to": 1},
+        )
 
 
 def test_tool_result_can_include_error() -> None:
