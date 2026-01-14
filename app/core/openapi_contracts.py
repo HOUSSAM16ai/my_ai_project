@@ -7,34 +7,51 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+def _load_spec_text(spec_path: Path) -> tuple[str, str] | None:
+    """يحمل نص عقد OpenAPI ويعيد الامتداد والنص إن كان الملف موجوداً."""
+
+    if not spec_path.exists():
+        return None
+    return spec_path.suffix.lower(), spec_path.read_text(encoding="utf-8")
+
+
+def _parse_json_payload(text: str) -> dict[str, object] | None:
+    """يفكك نص JSON ويعيد القاموس أو None عند عدم توافق الصيغة."""
+
+    payload = json.loads(text)
+    if isinstance(payload, dict):
+        return payload
+    return None
+
+
 def load_contract_paths(spec_path: Path) -> set[str]:
     """تحميل مسارات عقد OpenAPI من ملف JSON أو YAML بأسلوب خفيف وآمن."""
 
-    if not spec_path.exists():
+    loaded = _load_spec_text(spec_path)
+    if loaded is None:
         return set()
 
-    if spec_path.suffix.lower() == ".json":
-        payload = json.loads(spec_path.read_text(encoding="utf-8"))
-        if isinstance(payload, dict):
-            return _extract_paths_from_json(payload)
-        return set()
+    suffix, text = loaded
+    if suffix == ".json":
+        payload = _parse_json_payload(text)
+        return _extract_paths_from_json(payload) if payload else set()
 
-    return _extract_paths_from_yaml(spec_path.read_text(encoding="utf-8"))
+    return _extract_paths_from_yaml(text)
 
 
 def load_contract_operations(spec_path: Path) -> dict[str, set[str]]:
     """تحميل العمليات لكل مسار ضمن عقد OpenAPI بصيغة خفيفة."""
 
-    if not spec_path.exists():
+    loaded = _load_spec_text(spec_path)
+    if loaded is None:
         return {}
 
-    if spec_path.suffix.lower() == ".json":
-        payload = json.loads(spec_path.read_text(encoding="utf-8"))
-        if isinstance(payload, dict):
-            return _extract_operations_from_json(payload)
-        return {}
+    suffix, text = loaded
+    if suffix == ".json":
+        payload = _parse_json_payload(text)
+        return _extract_operations_from_json(payload) if payload else {}
 
-    return _extract_operations_from_yaml(spec_path.read_text(encoding="utf-8"))
+    return _extract_operations_from_yaml(text)
 
 
 @dataclass(frozen=True)
