@@ -8,6 +8,15 @@ from collections.abc import Callable
 from pathlib import Path
 
 from app.core.logging import get_logger
+from app.services.chat.tools.curriculum import (
+    adjust_difficulty_level,
+    get_learning_path_progress,
+    recommend_next_mission,
+)
+from app.services.chat.tools.reporting import (
+    analyze_learning_curve,
+    get_student_diagnostic_report,
+)
 from app.services.codebase.introspection import introspection_service
 from app.services.overmind.knowledge import DatabaseKnowledge, ProjectKnowledge
 from app.services.overmind.user_knowledge.service import UserKnowledge
@@ -26,6 +35,7 @@ class ToolRegistry:
         self._register_defaults()
 
     def _register_defaults(self) -> None:
+        # Admin / Core Tools
         self.register("get_user_count", self._get_user_count)
         self.register("list_users", self._list_users)
         self.register("get_user_profile", self._get_user_profile)
@@ -39,6 +49,13 @@ class ToolRegistry:
         self.register("find_symbol", self._find_symbol)
         self.register("find_route", self._find_route)
         self.register("read_file_snippet", self._read_file_snippet)
+
+        # Educational / Student Tools
+        self.register("get_student_diagnostic_report", get_student_diagnostic_report)
+        self.register("analyze_learning_curve", analyze_learning_curve)
+        self.register("recommend_next_mission", recommend_next_mission)
+        self.register("get_learning_path_progress", get_learning_path_progress)
+        self.register("adjust_difficulty_level", adjust_difficulty_level)
 
     def register(self, name: str, func: Callable) -> None:
         self._tools[name] = func

@@ -2,11 +2,14 @@ import re
 
 from app.core.ai_gateway import AIClient
 from app.core.logging import get_logger
+from app.services.chat.agents.analytics import AnalyticsAgent
 from app.services.chat.agents.api_contract import APIContractAgent
+from app.services.chat.agents.curriculum import CurriculumAgent
 from app.services.chat.agents.data_access import DataAccessAgent
 from app.services.chat.agents.refactor import RefactorAgent
 from app.services.chat.agents.test_agent import TestAgent
 from app.services.chat.context_service import get_context_service
+from app.services.chat.intent_detector import ChatIntent, IntentDetector
 from app.services.chat.tools import ToolRegistry
 
 logger = get_logger("orchestrator-agent")
@@ -25,15 +28,20 @@ class OrchestratorAgent:
     def __init__(self, ai_client: AIClient, tools: ToolRegistry) -> None:
         self.ai_client = ai_client
         self.tools = tools
+        self.intent_detector = IntentDetector()
+
+        # Agents
         self.api_agent = APIContractAgent()
         self.data_agent = DataAccessAgent()
         self.refactor_agent = RefactorAgent()
         self.test_agent = TestAgent()
+        self.analytics_agent = AnalyticsAgent(tools)
+        self.curriculum_agent = CurriculumAgent(tools)
 
     async def run(self, question: str, context: dict[str, object] | None = None):
         """
         حلقة التنفيذ الرئيسية (Streaming Version):
-        1. تحليل النية.
+        1. تحليل النية (محدث لاستخدام IntentDetector).
         2. التحقق من الحوكمة.
         3. تنفيذ الأدوات.
         4. صياغة إجابة دقيقة.
@@ -42,13 +50,33 @@ class OrchestratorAgent:
 
         normalized = question.strip()
         lowered = normalized.lower()
+        context = context or {}
 
-        handler = self._select_handler(lowered)
+        # 1. Advanced Intent Detection
+        intent_result = await self.intent_detector.detect(normalized)
+        logger.info(f"Detected intent: {intent_result.intent}")
+
+        # 2. Select Handler based on Intent or Legacy Regex
+        handler = self._resolve_handler(intent_result, lowered)
+
         try:
-            # If the handler is the fallback (LLM), it might yield chunks
-            # If it's a tool handler, it currently returns a string.
-            # We need to standardize on yielding.
-            result = await handler(normalized, lowered)
+            # If the handler is the fallback (LLM) or agent, it might yield chunks
+            if handler == self._handle_analytics:
+                # Security: Ensure user_id comes from authenticated context, do not default to 1
+                result = self.analytics_agent.process(context)
+            elif handler == self._handle_curriculum:
+                # Refine intent for Curriculum Agent
+                if self._is_path_progress_query(lowered):
+                    context["intent_type"] = "path_progress"
+                elif self._is_difficulty_adjustment(lowered):
+                    context["intent_type"] = "difficulty_adjust"
+                    context["feedback"] = "too_hard" if "صعب" in lowered else "good"
+                else:
+                    context["intent_type"] = "recommendation"
+
+                result = self.curriculum_agent.process(context)
+            else:
+                result = await handler(normalized, lowered)
 
             # If result is an async generator, yield from it
             if hasattr(result, "__aiter__"):
@@ -62,8 +90,20 @@ class OrchestratorAgent:
             logger.error("Orchestrator failed", exc_info=exc)
             yield f"تعذر تنفيذ الطلب بدقة: {exc}"
 
+    def _resolve_handler(self, intent_result, lowered: str):
+        """توجيه الطلب بناءً على كاشف النوايا أو القواعد القديمة."""
+
+        # New Intents
+        if intent_result.intent == ChatIntent.ANALYTICS_REPORT:
+            return self._handle_analytics
+        if intent_result.intent == ChatIntent.CURRICULUM_PLAN:
+            return self._handle_curriculum
+
+        # Legacy Regex Checks
+        return self._select_handler(lowered)
+
     def _select_handler(self, lowered: str):
-        """اختيار معالج مناسب حسب كلمات مفتاحية."""
+        """اختيار معالج مناسب حسب كلمات مفتاحية (Legacy)."""
         if self._is_user_count_query(lowered):
             return self._handle_user_count
         if self._is_user_list_query(lowered):
@@ -418,6 +458,15 @@ class OrchestratorAgent:
             f"{formatted_lines}"
         )
 
+    # --- New Agent Handlers (Placeholders for typing consistency) ---
+    # The actual dispatch logic is in run(), calling agent.process() directly
+
+    async def _handle_analytics(self, *args):
+        pass
+
+    async def _handle_curriculum(self, *args):
+        pass
+
     async def _handle_fallback(self, question: str, __: str):
         """
         معالجة الاستفسارات العامة غير المطابقة لأوامر الأدمن الصريحة.
@@ -503,6 +552,12 @@ class OrchestratorAgent:
         if match:
             return match.group(1)
         return None
+
+    def _is_path_progress_query(self, lowered: str) -> bool:
+        return any(x in lowered for x in ["مسار", "path", "تقدم", "progress", "milestone"])
+
+    def _is_difficulty_adjustment(self, lowered: str) -> bool:
+        return any(x in lowered for x in ["صعب", "hard", "easy", "سهل", "تغيير المستوى", "change level"])
 
     def _extract_search_query(self, question: str) -> str | None:
         quoted = self._extract_quoted_text(question)
