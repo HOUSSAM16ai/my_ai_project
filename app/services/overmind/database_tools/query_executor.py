@@ -15,7 +15,8 @@ from app.services.overmind.database_tools.operations_logger import OperationsLog
 logger = get_logger(__name__)
 
 _READ_ONLY_PREFIXES = ("SELECT", "WITH")
-_FORBIDDEN_SQL = re.compile(r";|\\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE)\\b")
+_WRITE_PREFIXES = ("UPDATE", "INSERT", "DELETE")
+_FORBIDDEN_SQL = re.compile(r";")
 
 
 class QueryExecutor:
@@ -58,8 +59,10 @@ class QueryExecutor:
         try:
             normalized = " ".join(sql.strip().split())
             upper_sql = normalized.upper()
-            if not upper_sql.startswith(_READ_ONLY_PREFIXES) or _FORBIDDEN_SQL.search(upper_sql):
-                raise ValueError("يسمح فقط باستعلامات القراءة بدون أوامر متعددة.")
+            if _FORBIDDEN_SQL.search(upper_sql):
+                raise ValueError("يمنع تنفيذ أكثر من عبارة في طلب واحد.")
+            if not upper_sql.startswith(_READ_ONLY_PREFIXES + _WRITE_PREFIXES):
+                raise ValueError("نوع الاستعلام غير مدعوم ضمن المنفذ الحالي.")
 
             result = await self._session.execute(text(sql), params or {})
 
@@ -74,6 +77,11 @@ class QueryExecutor:
                     "rows": rows,
                     "row_count": len(rows),
                 }
+            await self._session.commit()
+            return {
+                "success": True,
+                "affected_rows": result.rowcount,
+            }
 
         except Exception as e:
             await self._session.rollback()

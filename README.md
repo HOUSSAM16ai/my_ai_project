@@ -177,6 +177,22 @@ class UserService:
 
 📖 **دليل كامل:** [`docs/API_FIRST_ARCHITECTURE.md`](docs/API_FIRST_ARCHITECTURE.md)
 
+### ✅ بث WebSocket فائق الأداء
+
+يعتمد النظام على **WebSocket streaming** للمحادثات الحية عبر FastAPI، مما يضمن:
+- تدفق فوري للأجزاء (`delta`) مع إنهاء منضبط (`complete`)
+- قابلية عالية للتوسع مع واجهات UI متعددة (Next.js أو أي عميل WebSocket)
+- فصل واضح بين طبقة النقل وحدود الخدمات
+
+📖 **مراجع التنفيذ:** `app/api/routers/admin.py`, `app/api/routers/customer_chat.py`, `app/services/admin/chat_streamer.py`, `app/services/customer/chat_streamer.py`.
+
+### ✅ Supabase + PostgreSQL جاهزية تشغيلية
+
+يتم توجيه الاتصال بقاعدة البيانات عبر طبقة إعدادات موحدة تدعم PostgreSQL و Supabase،
+مع توافق واضح مع أنماط SSL والتحقق الصارم لبيئات الإنتاج.
+
+📖 **مراجع التنفيذ:** `app/core/settings/base.py`, `docs/archive/fix_reports/ENUM_CASE_SENSITIVITY_FIX.md`.
+
 ### ✅ SOLID Principles (100% Compliance)
 
 #### S - Single Responsibility

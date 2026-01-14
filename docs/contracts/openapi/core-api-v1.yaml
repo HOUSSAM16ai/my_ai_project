@@ -1237,16 +1237,6 @@ paths:
         '200':
           description: Latest chat messages
 
-  /api/chat/stream:
-    post:
-      tags:
-        - Agents
-      summary: Chat Stream
-      operationId: chatStream
-      responses:
-        '200':
-          description: Chat stream started
-
   /api/chat/conversations:
     get:
       tags:
@@ -1282,16 +1272,6 @@ paths:
       responses:
         '200':
           description: Latest admin chat messages
-
-  /admin/api/chat/stream:
-    post:
-      tags:
-        - Admin
-      summary: Admin Chat Stream
-      operationId: adminChatStream
-      responses:
-        '200':
-          description: Admin chat stream started
 
   /admin/api/conversations:
     get:

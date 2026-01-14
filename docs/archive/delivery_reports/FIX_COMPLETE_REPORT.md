@@ -97,7 +97,7 @@ CircuitBreakerConfig(
 
 #### الحل
 بعد إصلاح المشكلتين 1 و 2، أصبح النظام الآن:
-- ✅ يستقبل الطلبات على `/admin/api/chat/stream`
+- ✅ يستخدم قناة WebSocket على `/admin/api/chat/ws`
 - ✅ يعالج الأسئلة ويرسلها إلى AI
 - ✅ يبث الردود بشكل streaming
 
@@ -380,7 +380,7 @@ systemctl restart cogniforge
 curl http://localhost:8000/health
 
 # اختبار admin chat
-curl -X POST http://localhost:8000/admin/api/chat/stream \
+ws://localhost:8000/admin/api/chat/ws
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"question": "مرحبا"}'

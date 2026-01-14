@@ -16,6 +16,27 @@
     <!-- Performance Monitoring -->
     <script src="/performance-monitor.js"></script>
     <link rel="stylesheet" href="/css/legacy-style.css">
+    <script>
+        const IS_CODESPACES = window.location.hostname.includes("github.dev");
+        const IS_CLOUD_ENV = IS_CODESPACES || window.location.hostname.includes("gitpod") || window.location.hostname.includes("preview");
+        const MAX_MESSAGES = IS_CLOUD_ENV ? 200 : 500;
+        const STREAM_UPDATE_THROTTLE = IS_CLOUD_ENV ? 120 : 30;
+        const STREAM_MICRO_DELAY = IS_CLOUD_ENV ? 25 : 5;
+
+        console.log("Startup Diagnostics", { IS_CODESPACES, IS_CLOUD_ENV });
+        console.log(`Environment: ${IS_CODESPACES ? "CODESPACES" : "LOCAL"}`);
+
+        if (window.performance && window.performance.memory) {
+            const percentUsed = (window.performance.memory.usedJSHeapSize / window.performance.memory.jsHeapSizeLimit) * 100;
+            if (percentUsed > 95) {
+                console.warn("Memory exhaustion detected; consider reloading.");
+            }
+        }
+
+        fetch('/health').catch(() => {
+            console.warn("Health monitoring ping failed");
+        });
+    </script>
 </head>
 <body>
     <div id="root"></div>

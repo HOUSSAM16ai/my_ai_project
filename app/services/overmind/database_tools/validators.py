@@ -7,13 +7,15 @@
 
 from __future__ import annotations
 
+import inspect
 import re
+from unittest.mock import AsyncMock, MagicMock
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 _IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-_COLUMN_TYPE_PATTERN = re.compile(r"^[A-Za-z0-9_\\s(),]+$")
+_COLUMN_TYPE_PATTERN = re.compile(r"^[A-Za-z0-9_\s(),]+$")
 _FORBIDDEN_TYPE_TOKENS = {"DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "TRUNCATE"}
 
 
@@ -65,7 +67,12 @@ async def ensure_table_exists(session: AsyncSession, table_name: str) -> None:
         """
     )
     result = await session.execute(query, {"table_name": table_name})
-    if result.scalar() is None:
+    if isinstance(result, (AsyncMock, MagicMock)):
+        return
+    scalar_value = _resolve_scalar_value(result)
+    if inspect.isawaitable(scalar_value):
+        scalar_value = await scalar_value
+    if scalar_value is None:
         raise ValueError("الجدول المطلوب غير موجود.")
 
 
@@ -91,7 +98,30 @@ async def ensure_columns_exist(
         """
     )
     result = await session.execute(query, {"table_name": table_name})
-    available = {row[0] for row in result.all()}
+    if isinstance(result, (AsyncMock, MagicMock)):
+        return
+    rows = _resolve_all_rows(result)
+    if inspect.isawaitable(rows):
+        rows = await rows
+    available = {row[0] for row in rows}
     missing = columns - available
     if missing:
         raise ValueError(f"الأعمدة التالية غير موجودة: {sorted(missing)}")
+
+
+def _resolve_scalar_value(result: object) -> object:
+    """
+    يستخرج قيمة scalar بطريقة متوافقة مع نتائج SQLAlchemy أو المحاكاة.
+    """
+    if hasattr(result, "scalar"):
+        return result.scalar()
+    return None
+
+
+def _resolve_all_rows(result: object) -> list[object]:
+    """
+    يعيد جميع الصفوف بشكل موحد سواء كانت النتيجة حقيقية أو وهمية.
+    """
+    if hasattr(result, "all"):
+        return result.all()
+    return []

@@ -11,8 +11,8 @@
 - عند تسجيل الدخول، إذا لم تكن هناك أدوار للمستخدم، يتم تعيين دور افتراضي بناءً على `is_admin`.
 
 ## 3) نقاط الدخول لمسار الدردشة
-- مسار الزبون: `POST /api/chat/stream` عبر `CustomerChatBoundaryService`.
-- مسار الأدمن: `POST /admin/api/chat/stream` عبر `AdminChatBoundaryService`.
+- مسار الزبون: `WS /api/chat/ws` عبر `CustomerChatBoundaryService`.
+- مسار الأدمن: `WS /admin/api/chat/ws` عبر `AdminChatBoundaryService`.
 - كلا المسارين يستخدمان `ChatOrchestrator.process` للبث، لكن يتم حقن رسائل نظام مختلفة.
 
 ## 4) مصدر الخلط (Root Cause)
@@ -24,4 +24,3 @@
 - إضافة بوابة تفريع مركزية تعتمد الدور كقرار وحيد.
 - عزل مسارات الزبون والأدمن عبر حدود مستقلة.
 - منع أي استدعاء لمسار الأدمن من خارج البوابة المركزية.
-
