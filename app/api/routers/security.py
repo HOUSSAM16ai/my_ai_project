@@ -21,6 +21,7 @@ from app.api.schemas.security import (
     UserResponse,
 )
 from app.core.database import AsyncSession, get_db
+from app.core.settings.base import get_settings
 from app.services.boundaries.auth_boundary_service import AuthBoundaryService
 
 router = APIRouter(tags=["Security"])
@@ -34,6 +35,19 @@ logger = logging.getLogger(__name__)
 def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthBoundaryService:
     """Dependency to get the Auth Boundary Service."""
     return AuthBoundaryService(db)
+
+
+def _ensure_mock_tokens_allowed() -> None:
+    """
+    يتحقق من السماح باستخدام واجهات الرموز الوهمية خارج الإنتاج.
+
+    Raises:
+        HTTPException: عند محاولة استخدام واجهات الرموز الوهمية في الإنتاج أو التهيئة المرحلية.
+    """
+
+    settings = get_settings()
+    if settings.ENVIRONMENT in ("production", "staging"):
+        raise HTTPException(status_code=404, detail="Endpoint not available")
 
 
 # ==============================================================================
@@ -91,6 +105,7 @@ async def login(
 )
 async def generate_token(request: TokenRequest) -> TokenGenerateResponse:
     # Mock endpoint kept for compatibility with tests
+    _ensure_mock_tokens_allowed()
     if not request.user_id:
         raise HTTPException(status_code=400, detail="user_id required")
 
@@ -103,6 +118,7 @@ async def generate_token(request: TokenRequest) -> TokenGenerateResponse:
 
 @router.post("/token/verify", response_model=TokenVerifyResponse)
 async def verify_token(request: TokenVerifyRequest) -> TokenVerifyResponse:
+    _ensure_mock_tokens_allowed()
     if not request.token:
         raise HTTPException(status_code=400, detail="token required")
     return TokenVerifyResponse(status="success", data={"valid": True})

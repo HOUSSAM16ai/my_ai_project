@@ -330,11 +330,13 @@ class AppSettings(BaseServiceSettings):
     @model_validator(mode="after")
     def validate_production_security(self) -> "AppSettings":
         """ضوابط صارمة لأمان بيئات الإنتاج."""
-        if self.ENVIRONMENT == "production":
+        if self.ENVIRONMENT in ("production", "staging"):
             if self.ALLOWED_HOSTS == ["*"]:
-                raise ValueError("SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production.")
+                raise ValueError("SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production/staging.")
             if self.BACKEND_CORS_ORIGINS == ["*"]:
-                raise ValueError("SECURITY RISK: BACKEND_CORS_ORIGINS cannot be '*' in production.")
+                raise ValueError(
+                    "SECURITY RISK: BACKEND_CORS_ORIGINS cannot be '*' in production/staging."
+                )
         return self
 
     @model_validator(mode="after")

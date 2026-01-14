@@ -199,8 +199,8 @@
                     
                     // Real API call to OVERMIND CLI MINDGATE
                     const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-                    const wsUrl = `${scheme}://${window.location.host}/admin/api/chat/ws?token=${token || ''}`;
-                    const socket = new WebSocket(wsUrl);
+                    const wsUrl = `${scheme}://${window.location.host}/admin/api/chat/ws`;
+                    const socket = token ? new WebSocket(wsUrl, ["jwt", token]) : new WebSocket(wsUrl);
                     let fullContent = '';
 
                     const handleMessage = (payload) => {

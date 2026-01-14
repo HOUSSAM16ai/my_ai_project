@@ -173,8 +173,8 @@ class JWTHandler:
             logger.warning("⚠️ Token has expired")
             return None
 
-        except jwt.InvalidTokenError as exc:
-            logger.warning(f"⚠️ Invalid token: {exc}")
+        except jwt.InvalidTokenError:
+            logger.warning("⚠️ Invalid token")
             return None
 
     def refresh_access_token(self, refresh_token: str) -> str | None:
