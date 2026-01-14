@@ -53,6 +53,8 @@ class CustomerChatStreamer:
                 ai_client=ai_client,
                 history_messages=history,
                 session_factory=session_factory_func,
+                force_multi_agent=True,
+                chat_role="customer",
             ):
                 if not content:
                     continue

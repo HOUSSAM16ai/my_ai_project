@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.ai_gateway import AIClient
 from app.core.patterns.strategy import Strategy, StrategyRegistry
 from app.services.chat.agents.orchestrator import OrchestratorAgent
+from app.services.chat.agents.multi_agent_context import MultiAgentContextBuilder
 from app.services.chat.context import ChatContext
 from app.services.chat.handlers.strategy_handlers import (
     CodeSearchHandler,
@@ -99,16 +100,17 @@ class ChatOrchestrator:
         ai_client: AIClient,
         history_messages: list[dict[str, str]],
         session_factory: Callable[[], AsyncSession] | None = None,
+        force_multi_agent: bool = False,
+        chat_role: str = "customer",
     ) -> AsyncGenerator[str, None]:
         """
         معالجة طلب المحادثة.
 
-        تم تحديثها لتستخدم OrchestratorAgent في حالات الإدارة.
+        تم تحديثها لتستخدم OrchestratorAgent عند تفعيل المسار متعدد الوكلاء.
         """
         start_time = time.time()
 
-        # Check if we should use the new Multi-Agent System (Admin/Governance tasks)
-        # For this fix, we prioritize the new agent system for specific intents
+        # اختيار المسار متعدد الوكلاء مباشرة عند الطلب أو عند كشف نية إدارية
         admin_keywords = [
             "users",
             "count",
@@ -136,25 +138,11 @@ class ChatOrchestrator:
         ]
         is_admin_query = any(k in question.lower() for k in admin_keywords)
 
-        if is_admin_query:
-            logger.info("Delegating to Multi-Agent Orchestrator", extra={"user_id": user_id})
-            agent = OrchestratorAgent(ai_client, self.tool_registry)
-
-            # Use a buffer to collect the full response for caching later
-            full_response_buffer = []
-
-            # Iterate over the async generator from agent.run
-            async for chunk in agent.run(question):
-                full_response_buffer.append(chunk)
+        if force_multi_agent or is_admin_query:
+            async for chunk in self._run_multi_agent(
+                question, user_id, ai_client, start_time, history_messages, chat_role
+            ):
                 yield chunk
-
-            # تخزين الاستجابة في الذاكرة الدلالية
-            full_response = "".join(full_response_buffer)
-            if full_response:
-                await self._semantic_cache.set(question, full_response)
-
-            duration = (time.time() - start_time) * 1000
-            logger.debug(f"Agent processed in {duration:.2f}ms")
             return
 
         # 0. التحقق من الذاكرة الدلالية (Check Semantic Cache)
@@ -208,6 +196,38 @@ class ChatOrchestrator:
 
         duration = (time.time() - start_time) * 1000
         logger.debug(f"Request processed in {duration:.2f}ms")
+
+    async def _run_multi_agent(
+        self,
+        question: str,
+        user_id: int,
+        ai_client: AIClient,
+        start_time: float,
+        history_messages: list[dict[str, str]],
+        chat_role: str,
+    ) -> AsyncGenerator[str, None]:
+        """
+        تشغيل المسار متعدد الوكلاء مع تخزين الاستجابة في الذاكرة الدلالية.
+        """
+
+        logger.info("Delegating to Multi-Agent Orchestrator", extra={"user_id": user_id})
+        agent = OrchestratorAgent(ai_client, self.tool_registry)
+        context_builder = MultiAgentContextBuilder()
+        context_payload = context_builder.build(
+            question=question, history=history_messages, role=chat_role
+        ).to_payload()
+
+        full_response_buffer: list[str] = []
+        async for chunk in agent.run(question, context=context_payload):
+            full_response_buffer.append(chunk)
+            yield chunk
+
+        full_response = "".join(full_response_buffer)
+        if full_response:
+            await self._semantic_cache.set(question, full_response)
+
+        duration = (time.time() - start_time) * 1000
+        logger.debug(f"Agent processed in {duration:.2f}ms")
 
     @staticmethod
     async def dispatch(

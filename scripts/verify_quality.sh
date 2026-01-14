@@ -204,6 +204,9 @@ if [ "$RUN_MODE" = "all" ]; then
     radon mi app/ -nb --min B --show | tee /tmp/radon-mi.txt
     echo -e "${GREEN}✅ Maintainability index complete${NC}"
     echo ""
+
+    run_check "Agentic standards audit" "python scripts/verify_agentic_standards.py" true
+    echo ""
     
     # Xenon complexity check (informational)
     run_check "Xenon complexity threshold" "xenon --max-absolute B --max-modules B --max-average A app/" false || true

@@ -8,6 +8,10 @@ from collections.abc import Callable
 from pathlib import Path
 
 from app.core.logging import get_logger
+from app.services.chat.agents.api_first_framework import (
+    get_framework_overview,
+    get_unit_detail,
+)
 from app.services.codebase.introspection import introspection_service
 from app.services.overmind.knowledge import DatabaseKnowledge, ProjectKnowledge
 from app.services.overmind.user_knowledge.service import UserKnowledge
@@ -39,6 +43,8 @@ class ToolRegistry:
         self.register("find_symbol", self._find_symbol)
         self.register("find_route", self._find_route)
         self.register("read_file_snippet", self._read_file_snippet)
+        self.register("get_api_first_framework_overview", self._get_api_first_framework_overview)
+        self.register("get_api_first_framework_unit", self._get_api_first_framework_unit)
 
     def register(self, name: str, func: Callable) -> None:
         self._tools[name] = func
@@ -137,6 +143,15 @@ class ToolRegistry:
             "lines": snippet,
             "total_lines": total_lines,
         }
+
+    async def _get_api_first_framework_overview(self) -> list[dict[str, object]]:
+        return get_framework_overview()
+
+    async def _get_api_first_framework_unit(self, unit_id: int) -> dict[str, object]:
+        unit = get_unit_detail(unit_id)
+        if unit is None:
+            return {"error": f"الوحدة {unit_id} غير موجودة."}
+        return unit
 
     @staticmethod
     def _redact_args(args: dict[str, object]) -> dict[str, object]:

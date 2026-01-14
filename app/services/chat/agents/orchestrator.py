@@ -5,6 +5,7 @@ from app.core.logging import get_logger
 from app.services.chat.agents.api_contract import APIContractAgent
 from app.services.chat.agents.data_access import DataAccessAgent
 from app.services.chat.agents.refactor import RefactorAgent
+from app.services.chat.agents.sector_advisor import SectorAdvisorAgent
 from app.services.chat.agents.test_agent import TestAgent
 from app.services.chat.context_service import get_context_service
 from app.services.chat.tools import ToolRegistry
@@ -29,6 +30,7 @@ class OrchestratorAgent:
         self.data_agent = DataAccessAgent()
         self.refactor_agent = RefactorAgent()
         self.test_agent = TestAgent()
+        self.sector_agent = SectorAdvisorAgent(ai_client)
 
     async def run(self, question: str, context: dict[str, object] | None = None):
         """
@@ -48,7 +50,7 @@ class OrchestratorAgent:
             # If the handler is the fallback (LLM), it might yield chunks
             # If it's a tool handler, it currently returns a string.
             # We need to standardize on yielding.
-            result = await handler(normalized, lowered)
+            result = await handler(normalized, lowered, context or {})
 
             # If result is an async generator, yield from it
             if hasattr(result, "__aiter__"):
@@ -86,6 +88,10 @@ class OrchestratorAgent:
             return self._handle_code_search
         if self._is_file_snippet_query(lowered):
             return self._handle_file_snippet
+        if self._is_sector_future_query(lowered):
+            return self._handle_sector_future
+        if self._is_api_first_query(lowered):
+            return self._handle_api_first_framework
         return self._handle_fallback
 
     def _is_user_count_query(self, lowered: str) -> bool:
@@ -224,6 +230,40 @@ class OrchestratorAgent:
             ]
         )
 
+    def _is_sector_future_query(self, lowered: str) -> bool:
+        return any(
+            phrase in lowered
+            for phrase in [
+                "education",
+                "medicine",
+                "accounting",
+                "finance",
+                "industry",
+                "agriculture",
+                "التعليم",
+                "الطب",
+                "المحاسبة",
+                "المالية",
+                "الصناعة",
+                "الزراعة",
+                "المستقبل",
+                "future",
+            ]
+        )
+
+    def _is_api_first_query(self, lowered: str) -> bool:
+        return any(
+            phrase in lowered
+            for phrase in [
+                "api first",
+                "api-first",
+                "إطار التقييم",
+                "الكفاءة المعمارية",
+                "العقد أولاً",
+                "التوصيف الدلالي",
+            ]
+        )
+
     @staticmethod
     def _format_user_lines(users: list[dict[str, object]]) -> list[str]:
         """
@@ -238,7 +278,9 @@ class OrchestratorAgent:
             )
         return lines
 
-    async def _handle_user_count(self, _: str, lowered: str) -> str:
+    async def _handle_user_count(
+        self, _: str, lowered: str, context: dict[str, object]
+    ) -> str:
         gov_response = await self.data_agent.process(
             {"entity": "user", "operation": "count", "access_method": "service_api"}
         )
@@ -250,7 +292,9 @@ class OrchestratorAgent:
             return "لا يوجد مستخدمون مسجلون حالياً ضمن المنصة. (0 users)"
         return f"عدد المستخدمين الحاليين في المنصة هو: {count}. ({count} users)"
 
-    async def _handle_user_list(self, question: str, lowered: str) -> str:
+    async def _handle_user_list(
+        self, question: str, lowered: str, context: dict[str, object]
+    ) -> str:
         gov_response = await self.data_agent.process(
             {
                 "entity": "user",
@@ -270,7 +314,9 @@ class OrchestratorAgent:
         lines = self._format_user_lines(users)
         return "قائمة المستخدمين (موجز):\n" + "\n".join(lines)
 
-    async def _handle_user_profile(self, question: str, lowered: str) -> str:
+    async def _handle_user_profile(
+        self, question: str, lowered: str, context: dict[str, object]
+    ) -> str:
         user_id = self._extract_user_id(question)
         if user_id is None:
             return "يرجى تزويدي بمعرّف المستخدم (ID) لعرض ملفه الكامل."
@@ -303,7 +349,9 @@ class OrchestratorAgent:
             f"- آخر نشاط: {stats.get('last_activity')}"
         )
 
-    async def _handle_user_statistics(self, question: str, lowered: str) -> str:
+    async def _handle_user_statistics(
+        self, question: str, lowered: str, context: dict[str, object]
+    ) -> str:
         user_id = self._extract_user_id(question)
         if user_id is None:
             return "يرجى تحديد رقم المستخدم للحصول على إحصائياته."
@@ -332,7 +380,9 @@ class OrchestratorAgent:
             f"- آخر نشاط: {stats.get('last_activity')}"
         )
 
-    async def _handle_database_query(self, question: str, lowered: str) -> str:
+    async def _handle_database_query(
+        self, question: str, lowered: str, context: dict[str, object]
+    ) -> str:
         table_name = self._extract_table_name(lowered)
         if table_name and ("count" in lowered or "عدد" in lowered):
             count = await self.tools.execute("get_table_count", {"table_name": table_name})
@@ -348,7 +398,9 @@ class OrchestratorAgent:
         tables = await self.tools.execute("get_database_tables", {})
         return "جداول قاعدة البيانات:\n" + "\n".join(f"- {name}" for name in tables[:50])
 
-    async def _handle_database_map(self, _: str, __: str) -> str:
+    async def _handle_database_map(
+        self, _: str, __: str, context: dict[str, object]
+    ) -> str:
         db_map = await self.tools.execute("get_database_map", {})
         tables = db_map.get("tables", [])
         relationships = db_map.get("relationships", [])
@@ -364,7 +416,9 @@ class OrchestratorAgent:
             f"- أمثلة علاقات:\n{formatted_relationships}"
         )
 
-    async def _handle_project_query(self, _: str, __: str) -> str:
+    async def _handle_project_query(
+        self, _: str, __: str, context: dict[str, object]
+    ) -> str:
         knowledge = await self.tools.execute("get_project_overview", {})
         structure = knowledge.get("structure", {})
         database = knowledge.get("database", {})
@@ -377,21 +431,27 @@ class OrchestratorAgent:
             f"- المسار الجذري: {structure.get('root_path')}"
         )
 
-    async def _handle_route_query(self, question: str, lowered: str) -> str:
+    async def _handle_route_query(
+        self, question: str, lowered: str, context: dict[str, object]
+    ) -> str:
         fragment = self._extract_route_fragment(question)
         if not fragment:
             return "يرجى تحديد جزء من مسار الـ API للبحث عنه."
         results = await self.tools.execute("find_route", {"path_fragment": fragment})
         return self._format_code_locations(results, f"نتائج المسارات المحتملة لـ '{fragment}'")
 
-    async def _handle_symbol_query(self, question: str, lowered: str) -> str:
+    async def _handle_symbol_query(
+        self, question: str, lowered: str, context: dict[str, object]
+    ) -> str:
         symbol = self._extract_symbol_name(question)
         if not symbol:
             return "يرجى تحديد اسم الدالة/الكلاس المراد البحث عنه."
         results = await self.tools.execute("find_symbol", {"symbol": symbol})
         return self._format_code_locations(results, f"تعريفات '{symbol}'")
 
-    async def _handle_code_search(self, question: str, lowered: str) -> str:
+    async def _handle_code_search(
+        self, question: str, lowered: str, context: dict[str, object]
+    ) -> str:
         query = self._extract_search_query(question)
         if not query:
             return "يرجى تحديد كلمة مفتاحية أو اسم ميزة للبحث عنها في الشيفرة."
@@ -401,7 +461,9 @@ class OrchestratorAgent:
         results = await self.tools.execute("search_codebase", {"query": query})
         return self._format_code_locations(results, f"نتائج البحث عن '{query}'")
 
-    async def _handle_file_snippet(self, question: str, lowered: str) -> str:
+    async def _handle_file_snippet(
+        self, question: str, lowered: str, context: dict[str, object]
+    ) -> str:
         file_path, start_line, end_line = self._extract_file_and_line(question)
         if not file_path or start_line is None:
             return "يرجى تحديد مسار الملف ورقم السطر (مثال: app/services/chat/orchestrator.py:120)."
@@ -418,7 +480,54 @@ class OrchestratorAgent:
             f"{formatted_lines}"
         )
 
-    async def _handle_fallback(self, question: str, __: str):
+    async def _handle_sector_future(
+        self, question: str, lowered: str, context: dict[str, object]
+    ):
+        """
+        توجيه الاستفسارات القطاعية المستقبلية إلى وكيل متخصص.
+        """
+
+        sector_key = self._resolve_sector_key(lowered)
+        if sector_key is None:
+            return "يرجى تحديد المجال (التعليم، الطب، المحاسبة، المالية، الصناعة، الزراعة)."
+
+        async for chunk in self.sector_agent.stream_guidance(
+            sector_key=sector_key, question=question, context=context
+        ):
+            yield chunk
+
+    async def _handle_api_first_framework(
+        self, question: str, lowered: str, context: dict[str, object]
+    ) -> str:
+        """
+        تقديم الإطار المرجعي لـ API First كوحدات قابلة للاستدعاء.
+        """
+
+        unit_id = self._extract_unit_id(lowered)
+        if unit_id is None:
+            overview = await self.tools.execute("get_api_first_framework_overview", {})
+            lines = ["إطار API First يتكوّن من الوحدات التالية:"]
+            for unit in overview:
+                lines.append(f"- {unit['unit_id']}. {unit['title']}")
+            lines.append("اطلب تفاصيل وحدة بكتابة: وحدة 3 أو Unit 3.")
+            return "\n".join(lines)
+
+        unit = await self.tools.execute(
+            "get_api_first_framework_unit", {"unit_id": unit_id}
+        )
+        if unit.get("error"):
+            return str(unit["error"])
+        focus_text = "\n".join(f"- {item}" for item in unit.get("focus", []))
+        questions_text = "\n".join(
+            f"- {item}" for item in unit.get("sample_questions", [])
+        )
+        return (
+            f"الوحدة {unit['unit_id']}: {unit['title']}\n"
+            f"محاور التركيز:\n{focus_text}\n"
+            f"أسئلة محورية:\n{questions_text}"
+        )
+
+    async def _handle_fallback(self, question: str, __: str, context: dict[str, object]):
         """
         معالجة الاستفسارات العامة غير المطابقة لأوامر الأدمن الصريحة.
         تعتمد على نموذج الذكاء الاصطناعي لتقديم إجابة واقعية بدلاً من رد ثابت.
@@ -429,6 +538,8 @@ class OrchestratorAgent:
         except Exception as exc:
             logger.error("فشل تحميل سياق الأدمن", exc_info=exc)
             system_prompt = "أنت مساعد إداري محترف يجيب بإيجاز ودقة."
+
+        system_prompt = self._merge_system_context(system_prompt, context)
 
         try:
             # We manually construct the message list here to use stream_chat directly
@@ -459,6 +570,28 @@ class OrchestratorAgent:
                 "تعذر توليد إجابة دقيقة حالياً. "
                 "يرجى إعادة صياغة السؤال أو تحديد المجال المطلوب بدقة."
             )
+
+    @staticmethod
+    def _merge_system_context(base_prompt: str, context: dict[str, object]) -> str:
+        """
+        دمج سياق الوكلاء المتعددين ضمن تعليمات النظام.
+        """
+
+        project_context = str(context.get("project_context", "")).strip()
+        history_excerpt = str(context.get("history_excerpt", "")).strip()
+        api_first_framework = str(context.get("api_first_framework", "")).strip()
+        system_prompt = str(context.get("system_prompt", "")).strip()
+
+        merged = base_prompt
+        if system_prompt:
+            merged = system_prompt
+        if project_context:
+            merged = f"{merged}\n\n## سياق المشروع\n{project_context}"
+        if history_excerpt:
+            merged = f"{merged}\n\n## ملخص المحادثة\n{history_excerpt}"
+        if api_first_framework:
+            merged = f"{merged}\n\n{api_first_framework}"
+        return merged
 
     def _extract_limit(self, lowered: str) -> int | None:
         match = re.search(r"(?:limit|أول|first)\s+(\d+)", lowered)
@@ -518,6 +651,38 @@ class OrchestratorAgent:
         match = re.search(r"['\\\"]([^'\\\"]+)['\\\"]", question)
         if match:
             return match.group(1).strip()
+        return None
+
+    @staticmethod
+    def _extract_unit_id(text: str) -> int | None:
+        match = re.search(r"(?:unit|وحدة)\s*(\d+)", text, re.IGNORECASE)
+        if not match:
+            return None
+        return int(match.group(1))
+
+    @staticmethod
+    def _resolve_sector_key(lowered: str) -> str | None:
+        """
+        تحويل السؤال إلى مفتاح قطاعي موحد.
+        """
+
+        mappings = {
+            "التعليم": "education",
+            "education": "education",
+            "الطب": "medicine",
+            "medicine": "medicine",
+            "المحاسبة": "accounting",
+            "accounting": "accounting",
+            "المالية": "finance",
+            "finance": "finance",
+            "الصناعة": "industry",
+            "industry": "industry",
+            "الزراعة": "agriculture",
+            "agriculture": "agriculture",
+        }
+        for key, value in mappings.items():
+            if key in lowered:
+                return value
         return None
 
     def _format_code_locations(self, results: list[dict[str, object]], title: str) -> str:

@@ -152,6 +152,8 @@ class AdminChatStreamer:
             ai_client=ai_client,
             history_messages=history_casted,
             session_factory=session_factory_func,
+            force_multi_agent=True,
+            chat_role="admin",
         ):
             if not content_part:
                 continue

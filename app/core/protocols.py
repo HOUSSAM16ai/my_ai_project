@@ -16,6 +16,7 @@
 """
 
 import asyncio
+from dataclasses import dataclass
 from collections.abc import AsyncGenerator
 from typing import Protocol, runtime_checkable
 
@@ -196,6 +197,81 @@ class CollaborationContext(Protocol):
     def update(self, key: str, value: dict[str, str | int | bool]) -> None: ...
 
     def get(self, key: str) -> object | None: ...
+
+
+@dataclass(frozen=True)
+class MCPToolDescriptor:
+    """
+    واصف الأداة القياسي لبروتوكول MCP.
+
+    يضمن هذا الوصف أن يتم الإعلان عن الأدوات كبيانات قابلة للاكتشاف،
+    مع مخططات واضحة للمدخلات والمخرجات.
+    """
+
+    name: str
+    description: str
+    input_schema: dict[str, object]
+    output_schema: dict[str, object]
+
+
+@runtime_checkable
+class MCPServerProtocol(Protocol):
+    """
+    بروتوكول خادم MCP لاكتشاف الأدوات واستدعائها بأمان.
+    """
+
+    def list_tools(self) -> list[MCPToolDescriptor]:
+        """إرجاع جميع الأدوات المتاحة عبر MCP."""
+        ...
+
+    async def invoke_tool(self, name: str, payload: dict[str, object]) -> dict[str, object]:
+        """تنفيذ أداة محددة وإرجاع نتيجتها بشكل موحد."""
+        ...
+
+
+@runtime_checkable
+class AgentHandoffProtocol(Protocol):
+    """
+    بروتوكول تفويض وتسليم السياق بين الوكلاء (A2A).
+    """
+
+    async def handoff(
+        self, objective: str, context: dict[str, object], constraints: dict[str, object]
+    ) -> dict[str, object]:
+        """تسليم السياق والأهداف إلى وكيل آخر واستقبال نتيجة التنفيذ."""
+        ...
+
+
+@runtime_checkable
+class GraphMemoryProtocol(Protocol):
+    """
+    بروتوكول ذاكرة GraphRAG لإدارة الرسوم البيانية المعرفية.
+    """
+
+    def upsert_entities(self, entities: list[dict[str, object]]) -> None:
+        """تسجيل أو تحديث الكيانات داخل الذاكرة المهيكلة."""
+        ...
+
+    def upsert_relations(self, relations: list[dict[str, object]]) -> None:
+        """تسجيل أو تحديث العلاقات بين الكيانات."""
+        ...
+
+    def query(self, seed_ids: list[str], max_hops: int = 2) -> dict[str, object]:
+        """استرجاع السياق عبر الرسم البياني وفق عدد القفزات."""
+        ...
+
+
+@runtime_checkable
+class LongMemoryEvaluatorProtocol(Protocol):
+    """
+    بروتوكول تقييم الذاكرة طويلة المدى وفق LongMemEval.
+    """
+
+    def evaluate(
+        self, events: list[dict[str, object]], queries: list[dict[str, object]]
+    ) -> dict[str, object]:
+        """تنفيذ تقييم شامل لقدرات الذاكرة طويلة المدى."""
+        ...
 
 
 @runtime_checkable

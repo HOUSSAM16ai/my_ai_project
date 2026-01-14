@@ -23,6 +23,15 @@ from app.services.project_context.application.analyzers.issues import IssueAnaly
 from app.services.project_context.application.analyzers.search import SearchAnalyzer
 from app.services.project_context.application.analyzers.stats import CodeStatsAnalyzer
 from app.services.project_context.application.analyzers.structure import StructureAnalyzer
+from app.services.project_context.application.memory_services import (
+    InMemoryGraphMemory,
+    LongMemoryEvaluator,
+)
+from app.services.project_context.domain.graph_rag import (
+    GraphEntity,
+    GraphRAGIndex,
+    GraphRelation,
+)
 from app.services.project_context.domain.models import (
     CodeStatistics,
     FileAnalysis,
@@ -63,6 +72,8 @@ class ProjectContextService:
         self.deep_analyzer = DeepFileAnalyzer(self.project_root)
         self.search_analyzer = SearchAnalyzer(self.project_root)
         self.arch_analyzer = ArchitectureAnalyzer(self.project_root)
+        self.graph_memory = InMemoryGraphMemory()
+        self.long_memory_evaluator = LongMemoryEvaluator()
 
     def get_project_structure(self) -> ProjectStructure:
         """الحصول على بنية دليل المشروع الفعلية."""
@@ -188,6 +199,7 @@ class ProjectContextService:
             "models": self.get_models_info(),
             "services": self.get_services_info(),
             "routes": self.get_api_routes_info(),
+            "components": self.get_key_components(),
             "issues": self.get_recent_issues(),
             "strengths": self.get_strengths(),
         }
@@ -221,7 +233,137 @@ class ProjectContextService:
         sections.extend(self._build_analysis_section(i_list, str_list))  # type: ignore
         sections.append(f"## ⏰ Analysis Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
+        graph_index = self.build_knowledge_graph(data)
+        sections.extend(self._render_graph_section(graph_index))
+
         return sections
+
+    def build_knowledge_graph(self, data: dict[str, object]) -> GraphRAGIndex:
+        """
+        بناء رسم بياني معرفي للمشروع باستخدام GraphRAG.
+
+        Args:
+            data: بيانات المشروع المجمعة.
+
+        Returns:
+            GraphRAGIndex: فهرس الرسم البياني النهائي.
+        """
+
+        root_entity = GraphEntity(
+            entity_id="project:root",
+            entity_type="project",
+            attributes={"name": self.project_root.name},
+        )
+
+        services = [str(name) for name in data.get("services", [])]
+        routes = [str(name) for name in data.get("routes", [])]
+        models = [str(name) for name in data.get("models", [])]
+        components = data.get("components", [])
+
+        entities = [root_entity]
+        relations: list[GraphRelation] = []
+
+        entities.extend(self._entities_from_collection("service", services))
+        entities.extend(self._entities_from_collection("route", routes))
+        entities.extend(self._entities_from_collection("model", models))
+        entities.extend(self._entities_from_components(components))
+
+        relations.extend(
+            self._relations_from_collection("project:root", "exposes_service", services)
+        )
+        relations.extend(self._relations_from_collection("project:root", "exposes_route", routes))
+        relations.extend(self._relations_from_collection("project:root", "contains_model", models))
+
+        for component in components:
+            relations.append(
+                GraphRelation(
+                    source_id="project:root",
+                    target_id=f"component:{component.name}",
+                    relation_type="contains_component",
+                    metadata={"path": component.path},
+                )
+            )
+
+        self.graph_memory.upsert_entities([entity.__dict__ for entity in entities])
+        self.graph_memory.upsert_relations([relation.__dict__ for relation in relations])
+
+        return self.graph_memory.snapshot()
+
+    def _entities_from_collection(self, entity_type: str, names: list[str]) -> list[GraphEntity]:
+        """تحويل قائمة بسيطة إلى كيانات GraphRAG."""
+
+        return [
+            GraphEntity(
+                entity_id=f"{entity_type}:{name}",
+                entity_type=entity_type,
+                attributes={"name": name},
+            )
+            for name in names
+        ]
+
+    def _entities_from_components(self, components: list[KeyComponent]) -> list[GraphEntity]:
+        """تحويل المكونات الرئيسية إلى كيانات معرفية."""
+
+        entities: list[GraphEntity] = []
+        for component in components:
+            entities.append(
+                GraphEntity(
+                    entity_id=f"component:{component.name}",
+                    entity_type="component",
+                    attributes={
+                        "name": component.name,
+                        "path": component.path,
+                        "lines": component.lines,
+                    },
+                )
+            )
+        return entities
+
+    def _relations_from_collection(
+        self, source_id: str, relation_type: str, names: list[str]
+    ) -> list[GraphRelation]:
+        """إنشاء علاقات من الجذر إلى الكيانات الفرعية."""
+
+        return [
+            GraphRelation(
+                source_id=source_id,
+                target_id=f"{relation_type.split('_')[-1]}:{name}",
+                relation_type=relation_type,
+                metadata={},
+            )
+            for name in names
+        ]
+
+    def _render_graph_section(self, index: GraphRAGIndex) -> list[str]:
+        """إنشاء قسم ملخص للرسم البياني المعرفي."""
+
+        node_count = len(index.nodes)
+        relation_count = sum(len(relations) for relations in index.adjacency.values())
+        sample_nodes = sorted(index.nodes.keys())[:5]
+
+        return [
+            "",
+            "## 🧠 GRAPH-RAG KNOWLEDGE SNAPSHOT",
+            f"- Nodes: {node_count}",
+            f"- Relations: {relation_count}",
+            f"- Sample Nodes: {', '.join(sample_nodes) if sample_nodes else 'N/A'}",
+        ]
+
+    def evaluate_long_memory(
+        self, events: list[dict[str, object]], queries: list[dict[str, object]]
+    ) -> dict[str, object]:
+        """
+        تقييم الذاكرة طويلة المدى وفق معيار LongMemEval.
+
+        Args:
+            events: قائمة الأحداث التاريخية.
+            queries: قائمة الاستعلامات للاختبار.
+
+        Returns:
+            dict[str, object]: النتائج المعيارية للتقييم.
+        """
+
+        return self.long_memory_evaluator.evaluate(events, queries)
 
     def _build_statistics_section(self, stats: CodeStatistics) -> list[str]:
         """بناء قسم إحصائيات الكود."""
