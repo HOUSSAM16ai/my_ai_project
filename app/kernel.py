@@ -55,6 +55,10 @@ from app.core.openapi_contracts import (
     default_contract_path,
     load_contract_operations,
 )
+from app.core.asyncapi_contracts import (
+    default_asyncapi_contract_path,
+    validate_asyncapi_contract_structure,
+)
 from app.gateway import APIGateway, ServiceRegistry
 from app.gateway.config import DEFAULT_GATEWAY_CONFIG, GatewayConfig
 from app.middleware.fastapi_error_handlers import add_error_handlers
@@ -410,22 +414,30 @@ def _validate_contract_alignment(app: FastAPI) -> None:
     contract_operations = load_contract_operations(spec_path)
     if not contract_operations:
         logger.warning("⚠️ لم يتم العثور على عقد OpenAPI للتحقق من التوافق.")
-        return
-
-    report = compare_contract_to_runtime(
-        contract_operations=contract_operations,
-        runtime_schema=app.openapi(),
-    )
-    if report.is_clean():
-        logger.info("✅ Contract alignment verified against runtime schema.")
-        return
-
-    if report.missing_paths:
-        logger.warning(
-            "⚠️ مسارات العقد غير موجودة في التشغيل: %s",
-            sorted(report.missing_paths),
+    else:
+        report = compare_contract_to_runtime(
+            contract_operations=contract_operations,
+            runtime_schema=app.openapi(),
         )
+        if report.is_clean():
+            logger.info("✅ Contract alignment verified against runtime schema.")
+        else:
+            if report.missing_paths:
+                logger.warning(
+                    "⚠️ مسارات العقد غير موجودة في التشغيل: %s",
+                    sorted(report.missing_paths),
+                )
 
-    if report.missing_operations:
-        summary = {path: sorted(methods) for path, methods in report.missing_operations.items()}
-        logger.warning("⚠️ عمليات العقد غير موجودة في التشغيل: %s", summary)
+            if report.missing_operations:
+                summary = {
+                    path: sorted(methods)
+                    for path, methods in report.missing_operations.items()
+                }
+                logger.warning("⚠️ عمليات العقد غير موجودة في التشغيل: %s", summary)
+
+    asyncapi_report = validate_asyncapi_contract_structure(default_asyncapi_contract_path())
+    if not asyncapi_report.is_clean():
+        raise ValueError(
+            "AsyncAPI contract validation failed: "
+            + "; ".join(asyncapi_report.errors)
+        )
