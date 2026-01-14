@@ -17,6 +17,7 @@ from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
 from app.core.domain.user import User
 from app.deps.auth import CurrentUser, require_permissions
+from app.api.routers.ws_auth import extract_websocket_auth
 from app.services.auth.token_decoder import decode_user_id
 from app.services.boundaries.customer_chat_boundary_service import CustomerChatBoundaryService
 from app.services.chat.contracts import ChatDispatchRequest
@@ -87,7 +88,7 @@ async def chat_stream_ws(
     """
     قناة WebSocket لبث محادثة تعليمية للمستخدم القياسي.
     """
-    token = websocket.query_params.get("token")
+    token, selected_protocol = extract_websocket_auth(websocket)
     if not token:
         await websocket.close(code=4401)
         return
@@ -103,7 +104,7 @@ async def chat_stream_ws(
         await websocket.close(code=4401)
         return
 
-    await websocket.accept()
+    await websocket.accept(subprotocol=selected_protocol)
 
     if actor.is_admin:
         await websocket.send_json(
