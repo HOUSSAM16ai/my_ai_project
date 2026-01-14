@@ -6,6 +6,7 @@
 
 from fastapi import APIRouter, Depends, Response, status
 
+from app.api.routers.system.asyncapi import router as asyncapi_router
 from app.api.routers.system.root import root_router
 from app.api.schemas.system.responses import HealthResponse, HealthzResponse, SystemInfoResponse
 from app.application.interfaces import HealthCheckService, SystemService
@@ -17,6 +18,8 @@ __all__ = ["root_router", "router"]
 # إنشاء كائن الموجه (Router Instance) - النطاق الفرعي
 router = APIRouter(prefix="/system", tags=["System"])
 
+# دمج موجه AsyncAPI
+router.include_router(asyncapi_router)
 
 @router.get(
     "/health",
