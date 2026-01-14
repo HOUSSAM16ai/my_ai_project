@@ -36,6 +36,7 @@ from app.api.routers import (
     crud,
     customer_chat,
     data_mesh,
+    missions,
     observability,
     overmind,
     security,
@@ -200,6 +201,7 @@ def _base_router_registry() -> list[RouterSpec]:
         (customer_chat.router, ""),
         (agents.router, ""),
         (overmind.router, ""),
+        (missions.router, ""),
     ]
 
 
