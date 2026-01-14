@@ -145,7 +145,7 @@ def default_contract_path() -> Path:
     """يبني المسار الافتراضي لعقد OpenAPI الأساسي."""
 
     return (
-        Path(__file__).resolve().parents[3] / "docs" / "contracts" / "openapi" / "core-api-v1.yaml"
+        Path(__file__).resolve().parents[2] / "docs" / "contracts" / "openapi" / "core-api-v1.yaml"
     )
 
 

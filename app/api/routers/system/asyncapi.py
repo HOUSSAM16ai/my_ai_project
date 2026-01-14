@@ -1,13 +1,14 @@
 """
-AsyncAPI 3.0 Documentation Endpoint.
+واجهة توثيق AsyncAPI 3.0.
 
-Exposes the AsyncAPI schema generated from the system's current state.
+تعرض هذه الوحدة المخطط الناتج من حالة النظام مع التحقق من الدلالات.
 """
 
 from fastapi import APIRouter
 from starlette.responses import JSONResponse
 
 from app.core.docs.asyncapi.builder import AsyncAPIBuilder
+from app.core.docs.asyncapi.consumption import assert_no_mixed_consumption
 from app.core.docs.asyncapi.models import Parameter, Schema
 from app.core.event_bus_impl import get_event_bus
 
@@ -16,11 +17,10 @@ router = APIRouter()
 @router.get("/asyncapi.json", response_class=JSONResponse, tags=["System"])
 async def get_asyncapi_schema():
     """
-    Returns the AsyncAPI 3.0 documentation for the system events.
+    يعيد هذا المسار توثيق AsyncAPI 3.0 لأحداث النظام.
 
-    This endpoint dynamically generates the schema based on the current system configuration,
-    demonstrating the "separation of concerns" capability (Q2) by defining reusable channels
-    and distinct operations.
+    يقوم المسار بتوليد المخطط ديناميكياً وفق إعدادات النظام الحالية، مع التحقق
+    من عدم خلط دلالات الاستهلاك في القناة الواحدة.
     """
     builder = AsyncAPIBuilder(
         title="CogniForge Event System",
@@ -67,4 +67,5 @@ async def get_asyncapi_schema():
 
     # 3. Serialize
     # Pydantic models to dict
+    assert_no_mixed_consumption(builder.doc)
     return builder.doc.model_dump(by_alias=True, exclude_none=True)
