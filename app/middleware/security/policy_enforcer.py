@@ -42,7 +42,16 @@ class PolicyEnforcer(BaseMiddleware):
             MiddlewareResult indicating if access is allowed
         """
         self.enforced_count += 1
-        if ctx.path in ["/health", "/api/health", "/ping", "/", "/login"]:
+        if ctx.path in [
+            "/health",
+            "/api/health",
+            "/ping",
+            "/",
+            "/login",
+            "/api/security/login",
+            "/api/security/register",
+            "/api/security/health",
+        ]:
             return MiddlewareResult.success()
         policy = self._get_policy_for_path(ctx.path)
         if not policy:
