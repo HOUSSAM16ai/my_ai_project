@@ -37,6 +37,40 @@ def _should_skip(path: Path, include_hidden: bool) -> bool:
     return any(part.startswith(".") for part in path.parts)
 
 
+def _safe_size(path: Path) -> int:
+    """يستخرج حجم المسار عند توفره مع تجنب الأعطال غير المتوقعة."""
+
+    if not path.exists():
+        return 0
+    return path.stat().st_size
+
+
+def _is_leaf(is_directory: bool, depth: int, max_depth: int | None) -> bool:
+    """يتحقق من أن العقدة الحالية ورقة أو وصلت إلى الحد الأقصى للعمق."""
+
+    if not is_directory:
+        return True
+    return max_depth is not None and depth >= max_depth
+
+
+def _build_node(
+    path: Path,
+    root: Path,
+    *,
+    kind: str,
+    size: int,
+    children: list[NodeStats],
+) -> NodeStats:
+    """ينشئ عقدة منسقة اعتماداً على البيانات المحسوبة."""
+
+    return NodeStats(
+        path=str(path.relative_to(root)),
+        kind=kind,
+        size_bytes=size,
+        children=children,
+    )
+
+
 def build_repository_map(
     root: Path, *, include_hidden: bool = False, max_depth: int | None = None
 ) -> NodeStats:
@@ -50,21 +84,12 @@ def build_repository_map(
     def walk(current: Path, depth: int) -> NodeStats:
         is_directory = current.is_dir()
         kind = "directory" if is_directory else "file"
-        if not is_directory:
-            size = current.stat().st_size if current.exists() else 0
-            return NodeStats(
-                path=str(current.relative_to(normalized_root)),
+        if _is_leaf(is_directory, depth, max_depth):
+            return _build_node(
+                current,
+                normalized_root,
                 kind=kind,
-                size_bytes=size,
-                children=[],
-            )
-
-        if max_depth is not None and depth >= max_depth:
-            size = current.stat().st_size if current.exists() else 0
-            return NodeStats(
-                path=str(current.relative_to(normalized_root)),
-                kind=kind,
-                size_bytes=size,
+                size=_safe_size(current),
                 children=[],
             )
 
@@ -75,10 +100,11 @@ def build_repository_map(
             children.append(walk(child, depth + 1))
 
         total_size = sum(child.size_bytes for child in children)
-        return NodeStats(
-            path=str(current.relative_to(normalized_root)),
+        return _build_node(
+            current,
+            normalized_root,
             kind=kind,
-            size_bytes=total_size,
+            size=total_size,
             children=children,
         )
 

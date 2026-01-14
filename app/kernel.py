@@ -265,6 +265,26 @@ def _configure_static_files(app: FastAPI, *, enable_static_files: bool) -> None:
         logger.info("🚀 Running in API-only mode (no static files)")
 
 
+def _normalize_settings(
+    settings: AppSettings | dict[str, object],
+) -> tuple[AppSettings, dict[str, object]]:
+    """
+    يطبع إعدادات التطبيق على شكل كائن وقاموس بطريقة موحدة.
+
+    Args:
+        settings: إعدادات التطبيق بصيغة كائن أو قاموس.
+
+    Returns:
+        tuple[AppSettings, dict[str, object]]: الكائن الكامل وقاموس القيم.
+    """
+    if isinstance(settings, dict):
+        settings_obj = AppSettings(**settings)
+        settings_dict = settings_obj.model_dump()
+        return settings_obj, settings_dict
+
+    return settings, settings.model_dump()
+
+
 # ==============================================================================
 # The Evaluator (مُنفذ النظام)
 # ==============================================================================
@@ -294,12 +314,7 @@ class RealityKernel:
         """
         validate_system_principles()
         validate_architecture_system_principles()
-        if isinstance(settings, dict):
-            self.settings_obj = AppSettings(**settings)
-            self.settings_dict = self.settings_obj.model_dump()
-        else:
-            self.settings_obj = settings
-            self.settings_dict = settings.model_dump()
+        self.settings_obj, self.settings_dict = _normalize_settings(settings)
 
         self.enable_static_files = enable_static_files
 
@@ -307,7 +322,7 @@ class RealityKernel:
         self.app: Final[FastAPI] = self._construct_app()
 
     def get_app(self) -> FastAPI:
-        """Returns the constructed application."""
+        """يعيد التطبيق النهائي بعد إتمام عملية البناء."""
         return self.app
 
     def _construct_app(self) -> FastAPI:
