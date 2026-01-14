@@ -15,6 +15,8 @@ class ChatIntent(str, Enum):
     PROJECT_INDEX = "PROJECT_INDEX"
     DEEP_ANALYSIS = "DEEP_ANALYSIS"
     MISSION_COMPLEX = "MISSION_COMPLEX"
+    ANALYTICS_REPORT = "ANALYTICS_REPORT"
+    CURRICULUM_PLAN = "CURRICULUM_PLAN"
     HELP = "HELP"
     DEFAULT = "DEFAULT"
 
@@ -71,6 +73,16 @@ class IntentDetector:
             IntentPattern(
                 pattern=r"(حلل|analyze|explain)\s+(.+)",
                 intent=ChatIntent.DEEP_ANALYSIS,
+                extractor=self._empty_params,
+            ),
+            IntentPattern(
+                pattern=r"(مستواي|أدائي|نقاط ضعفي|تقييم|level|performance|weakness|report)",
+                intent=ChatIntent.ANALYTICS_REPORT,
+                extractor=self._empty_params,
+            ),
+            IntentPattern(
+                pattern=r"(تمرين|واجب|مسار|تعلم|exercise|homework|learning path|challenge)",
+                intent=ChatIntent.CURRICULUM_PLAN,
                 extractor=self._empty_params,
             ),
             IntentPattern(
