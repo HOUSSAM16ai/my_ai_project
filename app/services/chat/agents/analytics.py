@@ -1,11 +1,12 @@
 """
-وكيل تحليل الأداء (Analytics Agent) - النسخة المحسنة.
+وكيل تحليل الأداء (Analytics Agent) - النسخة الخارقة (Superhuman Edition).
 
-يستخدم بيانات حقيقية لتقديم تقارير دقيقة ومخصصة.
+يستخدم الذكاء الاصطناعي لتحليل سجلات الدردشة والمهام بدقة متناهية.
 """
 
 from typing import AsyncGenerator
 
+from app.core.ai_gateway import AIClient
 from app.core.logging import get_logger
 from app.services.chat.tools import ToolRegistry
 
@@ -14,88 +15,86 @@ logger = get_logger("analytics-agent")
 
 class AnalyticsAgent:
     """
-    وكيل متخصص في تحليل بيانات الطلاب التعليمية وتقديم تقارير تشخيصية.
+    وكيل متخصص في تحليل بيانات الطلاب التعليمية وتقديم تقارير تشخيصية "عبقرية".
     """
 
-    def __init__(self, tools: ToolRegistry) -> None:
+    def __init__(self, tools: ToolRegistry, ai_client: AIClient | None = None) -> None:
         self.tools = tools
+        self.ai_client = ai_client
 
     async def process(self, context: dict[str, object]) -> AsyncGenerator[str, None]:
         """
-        تنفيذ عملية التحليل بناءً على السياق.
+        تنفيذ عملية التحليل العميق باستخدام AI Client مباشرة.
         """
-        logger.info("Analytics agent started processing")
+        logger.info("Analytics agent started processing (Superhuman Mode)")
 
         user_id = context.get("user_id")
         if not user_id:
             yield "عذراً، لم أتمكن من تحديد هوية المستخدم لتحليل بياناته."
             return
 
-        yield "🔍 **جاري تحليل سجلك التعليمي بالكامل...**\n"
-
-        # 1. Fetch Diagnostic Report
-        try:
-            report = await self.tools.execute("get_student_diagnostic_report", {"user_id": user_id})
-        except Exception as e:
-            logger.error(f"Error fetching report: {e}")
-            yield "حدث خطأ أثناء جلب تقرير الأداء."
+        if not self.ai_client:
+            yield "⚠️ خطأ داخلي: لم يتم تزويد الوكيل بمحرك الذكاء الاصطناعي."
             return
 
-        if "error" in report:
-            yield f"تعذر الوصول لبيانات الطالب: {report.get('error')}"
+        yield "🔍 **جاري استدعاء سجلاتك الدراسية وتحليل محادثاتك السابقة بالكامل...**\n"
+
+        # 1. Fetch Comprehensive Data (Chat Logs + Missions)
+        try:
+            data = await self.tools.execute("fetch_comprehensive_student_history", {"user_id": user_id})
+        except Exception as e:
+            logger.error(f"Error fetching comprehensive history: {e}")
+            yield "حدث خطأ أثناء جلب البيانات."
             return
 
-        # 2. Analyze Learning Curve
-        try:
-            curve = await self.tools.execute("analyze_learning_curve", {"user_id": user_id})
-        except Exception as e:
-            logger.warning(f"Error analyzing curve: {e}")
-            curve = {}
+        # 2. Construct the Superhuman Prompt
+        chat_logs = data.get("chat_history_text", "No logs.")
+        missions = data.get("missions_summary", {})
+        stats = data.get("profile_stats", {})
 
-        # 3. Stream the formatted response
-        yield self._format_response(report, curve)
+        system_prompt = (
+            "You are a Superhuman Educational Analyst and Mentor (المرشد الأكاديمي العبقري).\n"
+            "Your goal is to analyze the student's *entire* interaction history to provide a deep, psychological, and academic diagnosis.\n"
+            "DO NOT just list stats. Analyze the *content* of their questions.\n\n"
+            "Data Provided:\n"
+            f"1. **Chat Logs (Last ~60 messages):**\n{chat_logs}\n\n"
+            f"2. **Mission History:**\n{missions}\n\n"
+            f"3. **Stats:**\n{stats}\n\n"
+            "**Output Requirements:**\n"
+            "- Tone: Professional, Encouraging, Highly Insightful (Arabic).\n"
+            "- **Cognitive Analysis:** How does the student think? Are they confused by syntax or logic? Do they ask deep questions?\n"
+            "- **Curriculum Alignment:** Where do they stand vs a standard roadmap?\n"
+            "- **Weaknesses:** Specific concepts they struggled with in the chat.\n"
+            "- **Actionable Plan:** 3 specific, non-generic steps.\n"
+            "- Format with Markdown headers, bullet points, and emojis."
+        )
 
-    def _format_response(self, report: dict, curve: dict) -> str:
-        """
-        تنسيق التقرير النهائي بصيغة احترافية تتفاعل مع المحتوى الحقيقي.
-        """
-        metrics = report.get("metrics", {})
-        recent = report.get("recent_activity", [])
-        topics = report.get("topics_covered", [])
-        recommendations = report.get("recommendations", [])
-
-        # بناء قائمة المهام الحديثة
-        recent_list = ""
-        if recent:
-            for m in recent:
-                icon = "✅" if m['status'] == 'success' else "⏳"
-                recent_list += f"- {icon} **{m['title']}** ({m['date'][:10]})\n"
-        else:
-            recent_list = "لا توجد نشاطات حديثة.\n"
-
-        # بناء المواضيع
-        topics_str = ", ".join(topics) if topics else "عام"
-
-        response = [
-            "## 📊 تقرير الأداء الشخصي",
-            f"مرحباً بك. قمت بتحليل {metrics.get('total_missions')} مهمة تعليمية خاصة بك.",
-            "",
-            "### 📈 مؤشرات الإنجاز",
-            f"- **نسبة النجاح:** {metrics.get('completion_rate', '0%')}",
-            f"- **المهام المكتملة:** {metrics.get('completed_missions', 0)}",
-            f"- **المواضيع التي ركزت عليها:** {topics_str}",
-            "",
-            "### 🕒 النشاط الأخير",
-            recent_list,
-            "",
-            "### 💡 تشخيص الذكاء الاصطناعي",
-            f"- **نمط التعلم:** {curve.get('trend', 'غير محدد')}",
-            f"- **الاستمرارية:** {curve.get('consistency_score', 'N/A')}",
-            "",
-            "### 🚀 الخطوات القادمة المقترحة",
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": "حلل أدائي الدراسي بناءً على كل ما تعرفه عني."}
         ]
 
-        for rec in recommendations:
-            response.append(f"- {rec}")
+        # 3. Stream the AI Analysis
+        yield "\n" # Spacing
 
-        return "\n".join(response)
+        try:
+            async for chunk in self.ai_client.stream_chat(messages):
+                # Extract content depending on client wrapper structure
+                content = ""
+                if isinstance(chunk, dict):
+                    # OpenAI-like format
+                    choices = chunk.get("choices", [])
+                    if choices:
+                        delta = choices[0].get("delta", {})
+                        content = delta.get("content", "")
+                elif hasattr(chunk, "choices"):
+                     # Object format
+                     if chunk.choices:
+                         content = chunk.choices[0].delta.content or ""
+
+                if content:
+                    yield content
+
+        except Exception as exc:
+            logger.error(f"AI Analysis Failed: {exc}")
+            yield "\n⚠️ حدث خطأ أثناء توليد التحليل الذكي. يرجى المحاولة لاحقاً."
