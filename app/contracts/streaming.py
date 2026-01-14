@@ -56,24 +56,6 @@ class EnvelopeDirection(StrEnum):
     AGENT_TO_AGENT = "agent_to_agent"
 
 
-class MessageEnvelope(RobustBaseModel):
-    """
-    مغلف الرسائل الموحّد لجميع أحداث البث.
-    """
-
-    id: str = Field(..., min_length=1, description="معرف الرسالة الفريد")
-    type: MessageType = Field(..., description="نوع الرسالة")
-    version: Literal["v1"] = Field("v1", description="نسخة البروتوكول")
-    timestamp: datetime = Field(..., description="وقت إنشاء الرسالة")
-    direction: EnvelopeDirection = Field(..., description="اتجاه الرسالة")
-    sender: str = Field(..., min_length=1, description="المرسل")
-    recipient: str | None = Field(None, description="المستقبل")
-    correlation_id: str = Field(..., min_length=1, description="معرف الربط")
-    trace_id: str = Field(..., min_length=1, description="معرف التتبع")
-    sequence: int | None = Field(None, ge=0, description="رقم التسلسل")
-    payload: dict[str, object] = Field(..., description="محتوى الرسالة")
-
-
 class StreamSubscribe(RobustBaseModel):
     """
     رسالة الاشتراك في جلسة بث.
@@ -146,3 +128,40 @@ class ToolResult(RobustBaseModel):
     status: str = Field(..., min_length=1, description="حالة التنفيذ")
     output: dict[str, object] | None = Field(None, description="مخرجات الأداة")
     error: StreamError | None = Field(None, description="خطأ الأداة إن وجد")
+
+
+class MessageEnvelope(RobustBaseModel):
+    """
+    مغلف الرسائل الموحّد لجميع أحداث البث.
+    """
+
+    id: str = Field(..., min_length=1, description="معرف الرسالة الفريد")
+    type: MessageType = Field(..., description="نوع الرسالة")
+    version: Literal["v1"] = Field("v1", description="نسخة البروتوكول")
+    timestamp: datetime = Field(..., description="وقت إنشاء الرسالة")
+    direction: EnvelopeDirection = Field(..., description="اتجاه الرسالة")
+    sender: str = Field(..., min_length=1, description="المرسل")
+    recipient: str | None = Field(None, description="المستقبل")
+    correlation_id: str = Field(..., min_length=1, description="معرف الربط")
+    trace_id: str = Field(..., min_length=1, description="معرف التتبع")
+    sequence: int | None = Field(None, ge=0, description="رقم التسلسل")
+    payload: dict[str, object] = Field(..., description="محتوى الرسالة")
+
+    @model_validator(mode="after")
+    def _validate_payload_shape(self) -> "MessageEnvelope":
+        """
+        يضمن مطابقة الحمولة للنوع المُعلن في الرسالة.
+        """
+        if self.type == MessageType.ACK:
+            StreamAck.model_validate(self.payload)
+        elif self.type == MessageType.SUBSCRIBE:
+            StreamSubscribe.model_validate(self.payload)
+        elif self.type == MessageType.HEARTBEAT:
+            StreamHeartbeat.model_validate(self.payload)
+        elif self.type == MessageType.ERROR:
+            StreamError.model_validate(self.payload)
+        elif self.type == MessageType.TOOL_CALL:
+            ToolCall.model_validate(self.payload)
+        elif self.type == MessageType.TOOL_RESULT:
+            ToolResult.model_validate(self.payload)
+        return self
