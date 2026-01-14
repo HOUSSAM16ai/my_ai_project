@@ -33,6 +33,7 @@ from app.services.chat.handlers.strategy_handlers import (
 )
 from app.services.chat.intent_detector import IntentDetector
 from app.services.chat.ports import IntentDetectorPort
+from app.caching.semantic import SemanticCache
 from app.services.chat.tools import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -49,8 +50,9 @@ class ChatOrchestrator:
 
     المسؤوليات:
     1. الكشف عن نية المستخدم (Intent Detection).
-    2. بناء سياق المحادثة (Context Building).
-    3. اختيار وتنفيذ المعالج المناسب (Strategy Execution).
+    2. فحص الذاكرة الدلالية (Semantic Caching).
+    3. بناء سياق المحادثة (Context Building).
+    4. اختيار وتنفيذ المعالج المناسب (Strategy Execution).
     """
 
     def __init__(
@@ -58,10 +60,12 @@ class ChatOrchestrator:
         intent_detector: IntentDetectorPort | None = None,
         registry: StrategyRegistry[ChatContext, AsyncGenerator[str, None]] | None = None,
         handlers: list[Strategy[ChatContext, AsyncGenerator[str, None]]] | None = None,
+        semantic_cache: SemanticCache | None = None,
     ) -> None:
-        """يبني المنسق مع دعم حقن مكونات الكشف والمعالجة."""
+        """يبني المنسق مع دعم حقن مكونات الكشف والمعالجة والذاكرة."""
         self._intent_detector = intent_detector or IntentDetector()
         self._handlers = registry or StrategyRegistry[ChatContext, AsyncGenerator[str, None]]()
+        self._semantic_cache = semantic_cache or SemanticCache()
         self._initialize_handlers(handlers)
 
         # Multi-Agent System Initialization
@@ -137,15 +141,27 @@ class ChatOrchestrator:
             agent = OrchestratorAgent(ai_client, self.tool_registry)
             response = await agent.run(question)
 
+            # تخزين الاستجابة في الذاكرة الدلالية
+            if response:
+                await self._semantic_cache.set(question, response)
+
             # Yield response as chunks to match the interface
-            # In a real streaming scenario, the agent would yield chunks.
-            # Here we simulate streaming the final result.
             chunk_size = 50
             for i in range(0, len(response), chunk_size):
                 yield response[i : i + chunk_size]
 
             duration = (time.time() - start_time) * 1000
             logger.debug(f"Agent processed in {duration:.2f}ms")
+            return
+
+        # 0. التحقق من الذاكرة الدلالية (Check Semantic Cache)
+        cached_response = await self._semantic_cache.get(question)
+        if cached_response:
+            logger.info("Serving from Semantic Cache", extra={"user_id": user_id})
+            # محاكاة التدفق من الكاش
+            chunk_size = 50
+            for i in range(0, len(cached_response), chunk_size):
+                yield cached_response[i : i + chunk_size]
             return
 
         # Fallback to legacy Strategy Pattern for other chats
@@ -173,8 +189,19 @@ class ChatOrchestrator:
         # 3. تنفيذ الاستراتيجية (Execute Strategy)
         result = await self._handlers.execute(context)
         if result:
+            # تجميع الاستجابة لتخزينها في الكاش لاحقاً
+            full_response_buffer = []
             async for chunk in result:
+                full_response_buffer.append(chunk)
                 yield chunk
+
+            # تخزين النتيجة الكاملة في الذاكرة الدلالية (في الخلفية)
+            full_response = "".join(full_response_buffer)
+            if full_response:
+                # نستخدم create_task لتجنب حظر الاستجابة، لكن يجب الحذر من دورة حياة الحلقة
+                # بما أننا في دالة غير متزامنة، يمكننا انتظاره بسرعة أو تركه للمنستقبل
+                # هنا سننتظره لضمان التخزين (بما أنه سريع في الذاكرة)
+                await self._semantic_cache.set(question, full_response)
 
         duration = (time.time() - start_time) * 1000
         logger.debug(f"Request processed in {duration:.2f}ms")
