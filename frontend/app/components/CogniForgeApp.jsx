@@ -487,15 +487,43 @@ const DashboardLayout = ({ user, onLogout }) => {
 const ChatInterface = ({ messages, onSendMessage, status, user }) => {
     const [input, setInput] = useState('');
     const messagesEndRef = useRef(null);
+    const messagesContainerRef = useRef(null);
+    const [autoScroll, setAutoScroll] = useState(true);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = useCallback(() => {
+        if (messagesEndRef.current) {
+             // Use scrollIntoView with 'auto' for instant update during streaming to prevent jitter
+             // or 'smooth' only for new messages.
+             // But for streaming 'auto' is often better to avoid the "machine gun" smooth-scroll lag.
+             messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
+    }, []);
+
+    // Smart scroll handling
+    useEffect(() => {
+        if (autoScroll) {
+            const container = messagesContainerRef.current;
+            if (container) {
+                // If we are close to bottom, snap to bottom
+                const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+                if (isNearBottom) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            }
+        }
+    }, [messages, autoScroll]);
+
+    const handleScroll = () => {
+        const container = messagesContainerRef.current;
+        if (container) {
+            const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+            setAutoScroll(isNearBottom);
+        }
     };
-
-    useEffect(() => { scrollToBottom(); }, [messages]);
 
     const handleSend = () => {
         if (!input.trim()) return;
+        setAutoScroll(true); // Re-enable auto-scroll on send
         onSendMessage(input);
         setInput('');
     };
@@ -509,7 +537,7 @@ const ChatInterface = ({ messages, onSendMessage, status, user }) => {
 
     return (
         <div className="chat-container">
-            <div className="messages">
+            <div className="messages" ref={messagesContainerRef} onScroll={handleScroll}>
                 {messages.length === 0 ? (
                     <div className="welcome-message">
                          <i className={`fas ${user.is_admin ? 'fa-brain' : 'fa-graduation-cap'}`} style={{fontSize: '3em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>

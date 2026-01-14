@@ -30,9 +30,9 @@ class OrchestratorAgent:
         self.refactor_agent = RefactorAgent()
         self.test_agent = TestAgent()
 
-    async def run(self, question: str, context: dict[str, object] | None = None) -> str:
+    async def run(self, question: str, context: dict[str, object] | None = None):
         """
-        حلقة التنفيذ الرئيسية:
+        حلقة التنفيذ الرئيسية (Streaming Version):
         1. تحليل النية.
         2. التحقق من الحوكمة.
         3. تنفيذ الأدوات.
@@ -45,10 +45,22 @@ class OrchestratorAgent:
 
         handler = self._select_handler(lowered)
         try:
-            return await handler(normalized, lowered)
+            # If the handler is the fallback (LLM), it might yield chunks
+            # If it's a tool handler, it currently returns a string.
+            # We need to standardize on yielding.
+            result = await handler(normalized, lowered)
+
+            # If result is an async generator, yield from it
+            if hasattr(result, "__aiter__"):
+                async for chunk in result:
+                    yield chunk
+            else:
+                # It's a string, yield it directly
+                yield str(result)
+
         except Exception as exc:
             logger.error("Orchestrator failed", exc_info=exc)
-            return f"تعذر تنفيذ الطلب بدقة: {exc}"
+            yield f"تعذر تنفيذ الطلب بدقة: {exc}"
 
     def _select_handler(self, lowered: str):
         """اختيار معالج مناسب حسب كلمات مفتاحية."""
@@ -406,7 +418,7 @@ class OrchestratorAgent:
             f"{formatted_lines}"
         )
 
-    async def _handle_fallback(self, _: str, __: str) -> str:
+    async def _handle_fallback(self, question: str, __: str):
         """
         معالجة الاستفسارات العامة غير المطابقة لأوامر الأدمن الصريحة.
         تعتمد على نموذج الذكاء الاصطناعي لتقديم إجابة واقعية بدلاً من رد ثابت.
@@ -419,10 +431,31 @@ class OrchestratorAgent:
             system_prompt = "أنت مساعد إداري محترف يجيب بإيجاز ودقة."
 
         try:
-            return await self.ai_client.send_message(system_prompt, _)
+            # We manually construct the message list here to use stream_chat directly
+            # This bypasses the send_message string accumulator
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": question},
+            ]
+
+            async for chunk in self.ai_client.stream_chat(messages):
+                # Extract content from chunk structure
+                # The structure depends on what mesh.stream_chat yields
+                # mesh.stream_chat yields: {"choices": [{"delta": {"content": ...}}]}
+
+                content = ""
+                # Handle direct dict access safely
+                choices = chunk.get("choices", [])
+                if choices:
+                    delta = choices[0].get("delta", {})
+                    content = delta.get("content", "")
+
+                if content:
+                    yield content
+
         except Exception as exc:
             logger.error("فشل الرد عبر نموذج الذكاء الاصطناعي", exc_info=exc)
-            return (
+            yield (
                 "تعذر توليد إجابة دقيقة حالياً. "
                 "يرجى إعادة صياغة السؤال أو تحديد المجال المطلوب بدقة."
             )

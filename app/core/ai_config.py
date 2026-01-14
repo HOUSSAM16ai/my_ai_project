@@ -63,6 +63,7 @@ class AvailableModels:
     PHI_3_MINI_FREE = "microsoft/phi-3-mini-128k-instruct:free"
     KAT_CODER_PRO_FREE = "kwaipilot/kat-coder-pro:free"
     QWEN_QWEN3_CODER_FREE = "qwen/qwen3-coder:free"
+    DEVSTRAL_2512 = "mistralai/devstral-2512:free"
 
 
 class ActiveModels:
@@ -84,9 +85,9 @@ class ActiveModels:
     ╚═══════════════════════════════════════════════════════════════════════════════════╝
     """
 
-    PRIMARY = AvailableModels.CLAUDE_OPUS_4_5
+    PRIMARY = AvailableModels.DEVSTRAL_2512
     LOW_COST = "deepseek/deepseek-v3.2-exp"
-    GATEWAY_PRIMARY = AvailableModels.CLAUDE_OPUS_4_5
+    GATEWAY_PRIMARY = AvailableModels.DEVSTRAL_2512
     GATEWAY_FALLBACK_1 = AvailableModels.GEMINI_2_FLASH_EXP_FREE
     GATEWAY_FALLBACK_2 = AvailableModels.QWEN_QWEN3_CODER_FREE
     GATEWAY_FALLBACK_3 = AvailableModels.KAT_CODER_PRO_FREE
