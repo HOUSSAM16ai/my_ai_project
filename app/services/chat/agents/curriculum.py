@@ -1,10 +1,7 @@
 """
-وكيل المناهج (Curriculum Agent).
+وكيل المناهج (Curriculum Agent) - النسخة المحسنة.
 
-مسؤول عن:
-1. اقتراح مسارات تعلم مخصصة.
-2. تعديل مستوى الصعوبة (Adaptive Learning).
-3. اختيار التمارين المناسبة للمستوى الحالي.
+يقترح محتوى بناءً على سياق المستخدم الفعلي.
 """
 
 from typing import AsyncGenerator
@@ -45,7 +42,7 @@ class CurriculumAgent:
                 yield chunk
 
     async def _handle_recommendation(self, user_id: int) -> AsyncGenerator[str, None]:
-        yield "جاري البحث عن أنسب تمرين لمستواك الحالي... 🎯\n"
+        yield "🤔 **أبحث لك عن التحدي الأنسب لمستواك الحالي...**\n"
 
         try:
             mission = await self.tools.execute("recommend_next_mission", {"user_id": user_id})
@@ -54,14 +51,12 @@ class CurriculumAgent:
             yield "حدث خطأ أثناء البحث عن مهام."
             return
 
-        if "message" in mission:
-            yield mission["message"]
-            return
-
         yield (
-            f"### 🚀 المهمة المقترحة: {mission.get('title')}\n\n"
-            f"{mission.get('description')}\n\n"
-            f"**لماذا اخترنا هذا لك؟**\n{mission.get('reason')}"
+            f"### 🎯 اقتراح المهمة القادمة\n"
+            f"**العنوان:** {mission.get('title')}\n\n"
+            f"**الوصف:** {mission.get('description')}\n\n"
+            f"**السبب:** {mission.get('reason')}\n\n"
+            f"هل تود البدء بهذه المهمة؟ (اكتب 'ابدأ' للتنفيذ)"
         )
 
     async def _handle_path_progress(self, user_id: int) -> str:
@@ -71,11 +66,15 @@ class CurriculumAgent:
             logger.error(f"Error fetching progress: {e}")
             return "تعذر جلب بيانات المسار."
 
+        achievements = progress.get('recent_achievements', [])
+        achievements_text = "\n".join([f"- {a}" for a in achievements]) if achievements else "لا توجد إنجازات مسجلة بعد."
+
         return (
-            f"## 🗺️ مسار التعلم الخاص بك\n"
+            f"## 🗺️ خارطة طريقك التعليمية\n"
             f"- **المرحلة الحالية:** {progress.get('current_stage')}\n"
-            f"- **نسبة الإنجاز:** {progress.get('progress_percentage')}%\n"
-            f"- **المحطة القادمة:** {progress.get('next_milestone')}"
+            f"- **نسبة الإنجاز الكلية:** {progress.get('progress_percentage')}%\n"
+            f"- **عدد المهام المنجزة:** {progress.get('completed_count')}\n"
+            f"\n### 🏆 آخر الإنجازات:\n{achievements_text}"
         )
 
     async def _handle_difficulty_adjustment(self, user_id: int, feedback: str) -> str:
