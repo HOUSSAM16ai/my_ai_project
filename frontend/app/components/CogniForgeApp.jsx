@@ -363,6 +363,7 @@ const DashboardLayout = ({ user, onLogout }) => {
         clearMessages();
         setConversationId(null);
         setIsSidebarOpen(false);
+        setIsMenuOpen(false); // Close menu if open
     };
 
     useEffect(() => {
@@ -426,9 +427,13 @@ const DashboardLayout = ({ user, onLogout }) => {
                     </button>
                     {isMenuOpen && (
                         <div className="header-menu" role="menu">
+                            <button type="button" className="header-menu-item" onClick={handleNewChat} role="menuitem">
+                                <i className="fas fa-plus"></i>
+                                <span>New Chat</span>
+                            </button>
                             <button type="button" className="header-menu-item" onClick={handleOpenConversations} role="menuitem">
-                                <i className="fas fa-comments"></i>
-                                <span>المحادثات</span>
+                                <i className="fas fa-history"></i>
+                                <span>المحادثات السابقة</span>
                             </button>
                             <button type="button" className="header-menu-item" onClick={handleToggleTheme} role="menuitem">
                                 <i className={`fas ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
@@ -447,9 +452,10 @@ const DashboardLayout = ({ user, onLogout }) => {
                 <div className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`} onClick={() => setIsSidebarOpen(false)}></div>
                 <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
                      <div className="sidebar-header">
-                         <button className="new-chat-btn" onClick={handleNewChat}>
-                             <i className="fas fa-plus"></i> New Chat
-                         </button>
+                        <h3>المحادثات</h3>
+                        <button className="close-sidebar-btn" onClick={() => setIsSidebarOpen(false)}>
+                            <i className="fas fa-times"></i>
+                        </button>
                      </div>
                      <div className="conversation-list">
                          {conversations.map(conv => (
@@ -526,12 +532,12 @@ const ChatInterface = ({ messages, onSendMessage, status, user }) => {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="اكتب رسالتك هنا..."
+                    placeholder="اكتب سؤالك..."
                     rows="1"
                     disabled={status !== 'connected'}
                 />
                 <button onClick={handleSend} disabled={status !== 'connected' || !input.trim()}>
-                    <i className="fas fa-paper-plane"></i>
+                    <i className="fas fa-arrow-up"></i>
                 </button>
             </div>
         </div>

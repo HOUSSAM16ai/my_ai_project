@@ -141,35 +141,58 @@ button:hover {
     min-height: 0;
     overflow: hidden;
     position: relative;
+    /* Removed flex-direction row since we want the sidebar to be an overlay by default or separate */
 }
 
+/* Sidebar as a dedicated overlay/drawer style */
 .sidebar {
-    width: 260px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    max-width: 320px; /* Or 100% on mobile, see media query */
+    height: 100%;
     background-color: var(--sidebar-bg);
-    border-left: 1px solid var(--border-color); /* Right side border in RTL (left visually) */
+    border-left: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    padding: 15px;
+    padding: 20px;
     overflow-y: auto;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 100;
+    transform: translateX(100%); /* Hidden by default (RTL: right side) */
+}
+
+.sidebar.open {
+    transform: translateX(0);
 }
 
 .sidebar-header {
-    padding-bottom: 15px;
-    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
 }
 
-.new-chat-btn {
-    background-color: var(--background-color);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
 }
+
+.close-sidebar-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    width: auto;
+    padding: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+/* Removed .new-chat-btn styles as it is now in the menu */
 
 .conversation-list {
     display: flex;
@@ -488,26 +511,11 @@ button:hover {
         padding: 10px 15px;
     }
 
-    .dashboard-layout {
-        flex-direction: row;
-    }
-
+    /* .sidebar styles are now global (overlay style), but verify max-width */
     .sidebar {
-        position: absolute;
-        top: 0;
-        right: 0; /* Slide from Right in RTL */
-        left: auto;
-        height: 100%;
         width: 85%;
-        max-width: 320px;
-        transform: translateX(100%); /* Start hidden right */
-        box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        background-color: var(--background-color);
-        border-left: 1px solid var(--border-color);
-    }
-
-    .sidebar.open {
-        transform: translateX(0);
+        max-width: 320px; /* Keep consistent width */
+        box-shadow: -5px 0 20px rgba(0,0,0,0.3);
     }
 
     .sidebar-overlay {
@@ -516,12 +524,12 @@ button:hover {
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0,0,0,0.5);
+        background: rgba(0,0,0,0.6);
         z-index: 90;
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.3s;
-        backdrop-filter: blur(2px);
+        backdrop-filter: blur(3px);
     }
 
     .sidebar-overlay.visible {
@@ -530,7 +538,7 @@ button:hover {
     }
 
     .messages {
-        padding: 20px; /* Smaller padding on mobile */
+        padding: 20px;
     }
 
     .input-area {
