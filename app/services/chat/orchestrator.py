@@ -139,16 +139,19 @@ class ChatOrchestrator:
         if is_admin_query:
             logger.info("Delegating to Multi-Agent Orchestrator", extra={"user_id": user_id})
             agent = OrchestratorAgent(ai_client, self.tool_registry)
-            response = await agent.run(question)
+
+            # Use a buffer to collect the full response for caching later
+            full_response_buffer = []
+
+            # Iterate over the async generator from agent.run
+            async for chunk in agent.run(question):
+                full_response_buffer.append(chunk)
+                yield chunk
 
             # تخزين الاستجابة في الذاكرة الدلالية
-            if response:
-                await self._semantic_cache.set(question, response)
-
-            # Yield response as chunks to match the interface
-            chunk_size = 50
-            for i in range(0, len(response), chunk_size):
-                yield response[i : i + chunk_size]
+            full_response = "".join(full_response_buffer)
+            if full_response:
+                await self._semantic_cache.set(question, full_response)
 
             duration = (time.time() - start_time) * 1000
             logger.debug(f"Agent processed in {duration:.2f}ms")
