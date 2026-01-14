@@ -15,6 +15,7 @@ from app.services.chat.tools.curriculum import (
 )
 from app.services.chat.tools.reporting import (
     analyze_learning_curve,
+    fetch_comprehensive_student_history,
     get_student_diagnostic_report,
 )
 from app.services.codebase.introspection import introspection_service
@@ -52,6 +53,7 @@ class ToolRegistry:
 
         # Educational / Student Tools
         self.register("get_student_diagnostic_report", get_student_diagnostic_report)
+        self.register("fetch_comprehensive_student_history", fetch_comprehensive_student_history)
         self.register("analyze_learning_curve", analyze_learning_curve)
         self.register("recommend_next_mission", recommend_next_mission)
         self.register("get_learning_path_progress", get_learning_path_progress)

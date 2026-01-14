@@ -7,6 +7,7 @@ from typing import cast
 from sqlalchemy import desc, func, select
 
 from app.core.database import async_session_factory
+from app.core.domain.chat import CustomerMessage, MessageRole, CustomerConversation
 from app.core.domain.mission import Mission, MissionStatus, Task, TaskStatus
 from app.core.logging import get_logger
 from app.services.overmind.user_knowledge.service import UserKnowledge
@@ -14,38 +15,77 @@ from app.services.overmind.user_knowledge.service import UserKnowledge
 logger = get_logger("reporting-tools")
 
 
-async def get_student_diagnostic_report(user_id: int) -> dict[str, object]:
+async def fetch_comprehensive_student_history(user_id: int) -> dict[str, object]:
     """
-    توليد تقرير تشخيصي شامل للطالب يغطي الأداء والتقدم ونقاط القوة،
-    معتمد على بيانات حقيقية من المهام (Missions).
+    جلب تاريخ الطالب الشامل (محادثات + مهام) لتحليله بالذكاء الاصطناعي.
     """
-    async with UserKnowledge() as knowledge:
-        profile = await knowledge.get_user_complete_profile(user_id)
+    async with async_session_factory() as session:
+        # 1. جلب المحادثات السابقة (آخر 50 رسالة من آخر 5 محادثات مثلاً)
+        chat_logs = await _fetch_raw_chat_logs(session, user_id, message_limit=60)
 
-    if "error" in profile:
-        return profile
+        # 2. جلب تفاصيل المهام
+        missions_summary = await _get_detailed_missions_summary(user_id)
 
-    # جلب تفاصيل المهام الحقيقية
-    missions_summary = await _get_detailed_missions_summary(user_id)
-
-    # دمج البيانات
-    stats = profile.get("statistics", {})
-    performance = profile.get("performance", {})
+        # 3. جلب الملف الشخصي
+        async with UserKnowledge() as knowledge:
+            profile = await knowledge.get_user_complete_profile(user_id)
 
     return {
         "user_id": user_id,
-        "basic_info": profile.get("basic"),
-        "metrics": {
-            "completion_rate": _calculate_completion_rate(stats),
-            "total_missions": stats.get("total_missions", 0),
-            "completed_missions": stats.get("completed_missions", 0),
-            "total_interactions": stats.get("total_chat_messages"),
-        },
-        "recent_activity": missions_summary["recent_missions"],
-        "topics_covered": missions_summary["topics"],  # استنتاج المواضيع من عناوين المهام
-        "performance_indicators": performance,
-        "recommendations": _generate_smart_recommendations(missions_summary),
+        "chat_history_text": chat_logs,
+        "missions_summary": missions_summary,
+        "profile_stats": profile.get("statistics", {})
     }
+
+async def _fetch_raw_chat_logs(session, user_id: int, message_limit: int = 60) -> str:
+    """
+    تجميع سجلات الدردشة كنص خام للتحليل.
+    """
+    # جلب معرفات آخر محادثات للمستخدم
+    conv_stmt = (
+        select(CustomerConversation.id)
+        .where(CustomerConversation.user_id == user_id)
+        .order_by(desc(CustomerConversation.updated_at))
+        .limit(5)
+    )
+    conv_result = await session.execute(conv_stmt)
+    conv_ids = conv_result.scalars().all()
+
+    if not conv_ids:
+        return "لا توجد سجلات محادثة سابقة."
+
+    # جلب الرسائل من هذه المحادثات
+    msg_stmt = (
+        select(CustomerMessage)
+        .where(CustomerMessage.conversation_id.in_(conv_ids))
+        .order_by(desc(CustomerMessage.created_at))
+        .limit(message_limit)
+    )
+    msg_result = await session.execute(msg_stmt)
+    messages = msg_result.scalars().all()
+
+    # إعادة ترتيب زمني
+    messages.reverse()
+
+    logs = []
+    for msg in messages:
+        role_label = "Student" if msg.role == MessageRole.USER else "AI Tutor"
+        # اقتطاع المحتوى الطويل جداً لتوفير التوكنز
+        content = msg.content[:500] + "..." if len(msg.content) > 500 else msg.content
+        logs.append(f"{role_label} ({msg.created_at.strftime('%Y-%m-%d %H:%M')}): {content}")
+
+    return "\n".join(logs)
+
+
+async def get_student_diagnostic_report(user_id: int) -> dict[str, object]:
+    """
+    (Legacy Wrapper) توليد تقرير تشخيصي شامل للطالب يغطي الأداء والتقدم ونقاط القوة،
+    معتمد على بيانات حقيقية من المهام (Missions).
+    """
+    # This is kept for backward compatibility if needed, but the Agent now prefers 'fetch_comprehensive_student_history'
+    # calling the same internal logic
+    return await fetch_comprehensive_student_history(user_id)
+
 
 async def analyze_learning_curve(user_id: int) -> dict[str, object]:
     """
@@ -83,7 +123,7 @@ async def _get_detailed_missions_summary(user_id: int) -> dict[str, object]:
             select(Mission)
             .where(Mission.initiator_id == user_id)
             .order_by(desc(Mission.created_at))
-            .limit(5)
+            .limit(10)
         )
         result = await session.execute(stmt)
         missions = result.scalars().all()
@@ -98,11 +138,9 @@ async def _get_detailed_missions_summary(user_id: int) -> dict[str, object]:
             "status": m.status.value,
             "date": m.created_at.isoformat(),
         })
-        # استخراج كلمات مفتاحية بسيطة كـ "مواضيع"
-        # في نظام حقيقي، نستخدم NLP أو Tags
         words = m.objective.split()
         if len(words) > 0:
-            topics.add(words[0]) # مجرد مثال
+            topics.add(words[0])
 
     return {
         "recent_missions": recent,

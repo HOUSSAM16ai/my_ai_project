@@ -35,7 +35,8 @@ class OrchestratorAgent:
         self.data_agent = DataAccessAgent()
         self.refactor_agent = RefactorAgent()
         self.test_agent = TestAgent()
-        self.analytics_agent = AnalyticsAgent(tools)
+        # Pass AI Client to Analytics Agent for Superhuman capabilities
+        self.analytics_agent = AnalyticsAgent(tools, ai_client)
         self.curriculum_agent = CurriculumAgent(tools)
 
     async def run(self, question: str, context: dict[str, object] | None = None):
