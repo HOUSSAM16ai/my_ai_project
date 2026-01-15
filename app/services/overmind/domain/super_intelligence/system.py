@@ -15,6 +15,8 @@ from app.services.overmind.domain.super_intelligence.synthesizer import Decision
 
 logger = get_logger(__name__)
 
+_SUCCESS_CONFIDENCE_THRESHOLD = 70.0
+
 
 class SuperCollectiveIntelligence:
     """
@@ -50,26 +52,11 @@ class SuperCollectiveIntelligence:
         logger.info("=== Making Autonomous Decision ===")
         context = context or {}
 
-        # 1. التحليل
         analysis = await SituationAnalyzer.analyze(situation, context)
-
-        # 2. الاستشارة (Delegate to internal method for now, can be extracted later)
         consultations = await self._consult_agents(situation, analysis)
-
-        # 3. التركيب
         decision = await DecisionSynthesizer.synthesize(situation, analysis, consultations)
-
-        # 4. التسجيل
-        if self.hub:
-            # Check if store_data is async or sync. Assuming sync based on previous code,
-            # but usually I/O is async. If it fails, wrap in try/except.
-            try:
-                self.hub.store_data("last_autonomous_decision", decision.model_dump())
-            except Exception as e:
-                logger.warning(f"Failed to store decision in hub: {e}")
-
-        self.decision_history.append(decision)
-        self.total_decisions += 1
+        self._store_decision_in_hub(decision)
+        self._record_decision(decision)
 
         return decision
 
@@ -79,43 +66,20 @@ class SuperCollectiveIntelligence:
         analysis: dict[str, object],
     ) -> dict[str, object]:
         """
-        استشارة الوكلاء بشكل فعلي.
-        Actual consultation with agents.
+        استشارة الوكلاء بشكل فعلي وبأسلوب موحد.
         """
         logger.info("Consulting agents...")
 
-        # استخدام الوكلاء الحقيقيين (Actual Agents Consultation)
-        # ملاحظة: نستخدم getattr أو نثق بأن الوكلاء يمتلكون الدالة consult التي أضفناها
-        # (Duck Typing).
+        consultations: dict[str, object] = {}
+        for agent_name, agent in self._get_agent_specs():
+            consultations[agent_name] = await self._consult_agent(
+                agent_name=agent_name,
+                agent=agent,
+                situation=situation,
+                analysis=analysis,
+            )
 
-        # 1. الاستراتيجي
-        strategist_res = await self.council.strategist.consult(situation, analysis)  # type: ignore
-
-        # 2. المعماري
-        architect_res = await self.council.architect.consult(situation, analysis)  # type: ignore
-
-        # 3. المشغل
-        operator_res = await self.council.operator.consult(situation, analysis)  # type: ignore
-
-        # 4. المدقق
-        auditor_res = await self.council.auditor.consult(situation, analysis)  # type: ignore
-
-        consultations = {
-            "strategist": strategist_res,
-            "architect": architect_res,
-            "operator": operator_res,
-            "auditor": auditor_res,
-        }
-
-        if self.hub:
-            for agent, data in consultations.items():
-                self.hub.record_contribution(
-                    agent_name=agent,
-                    action="consultation",
-                    input_data={"situation": situation[:50]},
-                    output_data=data,
-                    success=True,
-                )
+        self._record_consultations(situation=situation, consultations=consultations)
 
         return consultations
 
@@ -123,38 +87,110 @@ class SuperCollectiveIntelligence:
         """
         تنفيذ القرار.
         """
-        logger.info(f"Executing decision: {decision.id}")
+        logger.info("Executing decision: %s", decision.id)
 
         decision.executed = True
-        execution_success = decision.confidence_score > 70
+        execution_success = decision.confidence_score > _SUCCESS_CONFIDENCE_THRESHOLD
 
-        result = {
-            "decision_id": decision.id,
-            "executed": True,
-            "success": execution_success,
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-
-        if execution_success:
-            self.successful_decisions += 1
-            decision.outcome = "success"
-        else:
-            self.failed_decisions += 1
-            decision.outcome = "failed"
-
-        return result
+        self._update_execution_outcome(decision, execution_success)
+        return self._build_execution_result(decision, execution_success)
 
     def get_statistics(self) -> dict[str, object]:
         """
         إحصائيات النظام.
         """
-        success_rate = 0.0
-        if self.total_decisions > 0:
-            success_rate = (self.successful_decisions / self.total_decisions) * 100
+        success_rate = self._calculate_success_rate()
 
         return {
             "total_decisions": self.total_decisions,
             "successful": self.successful_decisions,
             "failed": self.failed_decisions,
             "success_rate": success_rate,
+        }
+
+    def _calculate_success_rate(self) -> float:
+        """يحسب معدل النجاح كنسبة مئوية مع تفادي القسمة على صفر."""
+        if self.total_decisions == 0:
+            return 0.0
+        return (self.successful_decisions / self.total_decisions) * 100
+
+    def _record_decision(self, decision: Decision) -> None:
+        """يسجل القرار داخلياً ويحدث العدادات."""
+        self.decision_history.append(decision)
+        self.total_decisions += 1
+
+    def _store_decision_in_hub(self, decision: Decision) -> None:
+        """يحاول حفظ القرار الأخير داخل مركز التعاون إن توفر."""
+        if not self.hub:
+            return
+
+        try:
+            self.hub.store_data("last_autonomous_decision", decision.model_dump())
+        except Exception as exc:
+            logger.warning("Failed to store decision in hub: %s", exc)
+
+    def _get_agent_specs(self) -> list[tuple[str, object]]:
+        """يعيد قائمة الوكلاء الفعليين مع أسمائهم لتسهيل التكرار المنظم."""
+        return [
+            ("strategist", self.council.strategist),
+            ("architect", self.council.architect),
+            ("operator", self.council.operator),
+            ("auditor", self.council.auditor),
+        ]
+
+    async def _consult_agent(
+        self,
+        *,
+        agent_name: str,
+        agent: object,
+        situation: str,
+        analysis: dict[str, object],
+    ) -> object:
+        """ينفذ استشارة وكيل واحد مع تحقق صريح من توفر التابع المطلوب."""
+        consult = getattr(agent, "consult", None)
+        if not callable(consult):
+            raise ValueError(f"Agent '{agent_name}' does not implement consult()")
+
+        return await consult(situation, analysis)
+
+    def _record_consultations(
+        self,
+        *,
+        situation: str,
+        consultations: dict[str, object],
+    ) -> None:
+        """يسجل نتائج الاستشارات داخل مركز التعاون عند توفره."""
+        if not self.hub:
+            return
+
+        for agent, data in consultations.items():
+            self.hub.record_contribution(
+                agent_name=agent,
+                action="consultation",
+                input_data={"situation": situation[:50]},
+                output_data=data,
+                success=True,
+            )
+
+    def _update_execution_outcome(self, decision: Decision, success: bool) -> None:
+        """يحدث نتيجة التنفيذ ويعدل عدادات النجاح والفشل."""
+        if success:
+            self.successful_decisions += 1
+            decision.outcome = "success"
+            return
+
+        self.failed_decisions += 1
+        decision.outcome = "failed"
+
+    def _build_execution_result(
+        self,
+        decision: Decision,
+        success: bool,
+    ) -> dict[str, object]:
+        """يبني نتيجة التنفيذ بصيغة موحدة."""
+        return {
+            "decision_id": decision.id,
+            "executed": True,
+            "success": success,
+            "timestamp": datetime.utcnow().isoformat(),
         }
