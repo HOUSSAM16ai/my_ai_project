@@ -33,6 +33,12 @@ class ToolRouter:
         ChatIntent.DEEP_ANALYSIS,
         ChatIntent.ANALYTICS_REPORT,
         ChatIntent.CURRICULUM_PLAN,
+        ChatIntent.LEARNING_SUMMARY,
+        ChatIntent.MISSION_COMPLEX,
+        # Allow search/read to reach the Agent, which will enforce finer-grained control
+        ChatIntent.CODE_SEARCH,
+        ChatIntent.FILE_READ,
+        ChatIntent.PROJECT_INDEX,
     }
 
     def authorize_intent(self, *, role: str, intent: ChatIntent) -> ToolAuthorizationDecision:
