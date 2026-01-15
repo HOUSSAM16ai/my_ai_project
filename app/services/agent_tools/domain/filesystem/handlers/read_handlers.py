@@ -5,6 +5,30 @@ Handlers for reading files.
 import gzip
 import os
 
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None
+
+try:
+    import docx
+except ImportError:
+    docx = None
+
+try:
+    import openpyxl
+    import pandas as pd
+except ImportError:
+    openpyxl = None
+    pd = None
+
+try:
+    from PIL import Image
+    import pytesseract
+except ImportError:
+    Image = None
+    pytesseract = None
+
 from app.services.agent_tools.domain.filesystem.config import MAX_READ_BYTES
 from app.services.agent_tools.domain.filesystem.validators.path_validator import (
     validate_file,
@@ -72,9 +96,62 @@ def read_file_logic(
                 },
             )
 
-        # Normal Text
-        with open(abs_path, encoding="utf-8", errors="replace") as f:
-            content = f.read(max_eff + 10)
+        # PDF Handling
+        if abs_path.lower().endswith(".pdf"):
+            if PdfReader is None:
+                return ToolResult(ok=False, error="PYPDF_NOT_INSTALLED")
+            try:
+                reader = PdfReader(abs_path)
+                full_text = []
+                for page in reader.pages:
+                    text = page.extract_text()
+                    if text:
+                        full_text.append(text)
+                content = "\n".join(full_text)
+            except Exception as e:
+                return ToolResult(ok=False, error=f"PDF_READ_ERROR: {str(e)}")
+
+        # Word Handling (.docx)
+        elif abs_path.lower().endswith(".docx"):
+            if docx is None:
+                return ToolResult(ok=False, error="PYTHON_DOCX_NOT_INSTALLED")
+            try:
+                doc = docx.Document(abs_path)
+                content = "\n".join([para.text for para in doc.paragraphs])
+            except Exception as e:
+                return ToolResult(ok=False, error=f"DOCX_READ_ERROR: {str(e)}")
+
+        # Excel Handling (.xlsx)
+        elif abs_path.lower().endswith(".xlsx"):
+            if pd is None:
+                return ToolResult(ok=False, error="PANDAS_OPENPYXL_NOT_INSTALLED")
+            try:
+                # Read all sheets
+                dfs = pd.read_excel(abs_path, sheet_name=None)
+                full_text = []
+                for sheet_name, df in dfs.items():
+                    full_text.append(f"--- Sheet: {sheet_name} ---")
+                    full_text.append(df.to_string())
+                content = "\n\n".join(full_text)
+            except Exception as e:
+                return ToolResult(ok=False, error=f"XLSX_READ_ERROR: {str(e)}")
+
+        # Image Handling (.png, .jpg, .jpeg)
+        elif abs_path.lower().endswith((".png", ".jpg", ".jpeg")):
+            if pytesseract is None or Image is None:
+                return ToolResult(ok=False, error="OCR_LIBRARIES_NOT_INSTALLED")
+            try:
+                img = Image.open(abs_path)
+                content = pytesseract.image_to_string(img)
+                if not content.strip():
+                     content = "[OCR returned no text. Image might be blank or Tesseract not configured correctly.]"
+            except Exception as e:
+                return ToolResult(ok=False, error=f"IMAGE_OCR_ERROR: {str(e)}")
+
+        else:
+            # Normal Text
+            with open(abs_path, encoding="utf-8", errors="replace") as f:
+                content = f.read(max_eff + 10)
 
         truncated = len(content) > max_eff
         preview = content[:max_eff]
