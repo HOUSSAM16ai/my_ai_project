@@ -37,7 +37,10 @@ from app.services.overmind.knowledge_queries import (
     fetch_table_count,
 )
 from app.services.overmind.knowledge_schema import build_schema_object, log_schema_info
-from app.services.overmind.knowledge_structure import build_project_structure
+from app.services.overmind.knowledge_structure import (
+    build_microservices_summary,
+    build_project_structure,
+)
 from app.services.overmind.knowledge_timestamp import build_project_timestamp
 
 logger = get_logger(__name__)
@@ -267,6 +270,15 @@ class ProjectKnowledge:
         """
         return build_project_structure(self.project_root)
 
+    def get_microservices_info(self) -> dict[str, object]:
+        """
+        الحصول على ملخص الخدمات المصغرة (Microservices).
+
+        Returns:
+            dict: معلومات عن عدد الخدمات وأسمائها
+        """
+        return build_microservices_summary(self.project_root)
+
     async def get_complete_knowledge(self) -> dict[str, object]:
         """
         الحصول على المعرفة الكاملة والشاملة عن المشروع.
@@ -285,6 +297,7 @@ class ProjectKnowledge:
             "database": await self.get_database_info(),
             "environment": self.get_environment_info(),
             "structure": self.get_project_structure(),
+            "microservices": self.get_microservices_info(),
             "timestamp": build_project_timestamp(self.project_root),
         }
 

@@ -27,3 +27,22 @@ def build_project_structure(project_root: Path) -> dict[str, object]:
         ]
 
     return structure
+
+
+def build_microservices_summary(project_root: Path) -> dict[str, object]:
+    """يبني ملخصاً للخدمات المصغرة اعتماداً على مجلد microservices."""
+    microservices_dir = project_root / "microservices"
+    services: list[str] = []
+
+    if microservices_dir.exists():
+        for item in microservices_dir.iterdir():
+            if item.is_dir() and (item / "main.py").exists():
+                services.append(item.name)
+
+    services.sort()
+
+    return {
+        "root": str(microservices_dir),
+        "total_services": len(services),
+        "services": services,
+    }
