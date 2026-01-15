@@ -84,7 +84,7 @@ class IntentDetector:
             IntentPattern(
                 pattern=(
                     r"(ملخص|تلخيص|خلاصة|لخص|summarize|summary)"
-                    r".*(ما تعلمت|ما تعلمته|تعلمي|what i learned|what i've learned|my learning)"
+                    r".*(ما تعلمت|ما تعلمته|تعلمي|محادثاتي|دردشاتي|سجلي|what i learned|what i've learned|my learning|my chats|my history)"
                 ),
                 intent=ChatIntent.LEARNING_SUMMARY,
                 extractor=self._empty_params,
