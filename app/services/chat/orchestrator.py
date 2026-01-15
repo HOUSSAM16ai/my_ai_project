@@ -185,7 +185,8 @@ class ChatOrchestrator:
             ChatIntent.ADMIN_QUERY,
             ChatIntent.ANALYTICS_REPORT,
             ChatIntent.LEARNING_SUMMARY,
-            ChatIntent.CURRICULUM_PLAN
+            ChatIntent.CURRICULUM_PLAN,
+            ChatIntent.CONTENT_RETRIEVAL
         )
 
         if is_agent_intent:
