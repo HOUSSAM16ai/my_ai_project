@@ -8,6 +8,7 @@ from typing import AsyncGenerator
 
 from app.core.ai_gateway import AIClient
 from app.core.logging import get_logger
+from app.services.chat.intent_detector import ChatIntent
 from app.services.chat.tools import ToolRegistry
 
 logger = get_logger("analytics-agent")
@@ -48,30 +49,21 @@ class AnalyticsAgent:
             return
 
         # 2. Construct the Superhuman Prompt
-        chat_logs = data.get("chat_history_text", "No logs.")
+        chat_logs = str(data.get("chat_history_text", "No logs."))
         missions = data.get("missions_summary", {})
         stats = data.get("profile_stats", {})
+        intent = context.get("intent")
 
-        system_prompt = (
-            "You are a Superhuman Educational Analyst and Mentor (المرشد الأكاديمي العبقري).\n"
-            "Your goal is to analyze the student's *entire* interaction history to provide a deep, psychological, and academic diagnosis.\n"
-            "DO NOT just list stats. Analyze the *content* of their questions.\n\n"
-            "Data Provided:\n"
-            f"1. **Chat Logs (Last ~60 messages):**\n{chat_logs}\n\n"
-            f"2. **Mission History:**\n{missions}\n\n"
-            f"3. **Stats:**\n{stats}\n\n"
-            "**Output Requirements:**\n"
-            "- Tone: Professional, Encouraging, Highly Insightful (Arabic).\n"
-            "- **Cognitive Analysis:** How does the student think? Are they confused by syntax or logic? Do they ask deep questions?\n"
-            "- **Curriculum Alignment:** Where do they stand vs a standard roadmap?\n"
-            "- **Weaknesses:** Specific concepts they struggled with in the chat.\n"
-            "- **Actionable Plan:** 3 specific, non-generic steps.\n"
-            "- Format with Markdown headers, bullet points, and emojis."
+        system_prompt, user_prompt = self._build_analysis_prompts(
+            chat_logs=chat_logs,
+            missions=missions,
+            stats=stats,
+            intent=intent,
         )
 
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": "حلل أدائي الدراسي بناءً على كل ما تعرفه عني."}
+            {"role": "user", "content": user_prompt},
         ]
 
         # 3. Stream the AI Analysis
@@ -98,3 +90,63 @@ class AnalyticsAgent:
         except Exception as exc:
             logger.error(f"AI Analysis Failed: {exc}")
             yield "\n⚠️ حدث خطأ أثناء توليد التحليل الذكي. يرجى المحاولة لاحقاً."
+
+    def _build_analysis_prompts(
+        self,
+        *,
+        chat_logs: str,
+        missions: dict[str, object],
+        stats: dict[str, object],
+        intent: object,
+    ) -> tuple[str, str]:
+        """
+        بناء توجيهات تحليلية متقدمة حسب نية الطالب.
+
+        Args:
+            chat_logs: سجلات المحادثات النصية المختصرة.
+            missions: ملخص المهام والإنجازات التعليمية.
+            stats: إحصاءات الأداء العامة.
+            intent: نية المحادثة الحالية (إن وُجدت).
+
+        Returns:
+            tuple: (system_prompt, user_prompt) لتغذية نموذج التحليل.
+        """
+        base_data = (
+            "بيانات الطالب:\n"
+            f"1) سجلات المحادثة (آخر ~60 رسالة):\n{chat_logs}\n\n"
+            f"2) سجل المهام التعليمية:\n{missions}\n\n"
+            f"3) إحصاءات الأداء:\n{stats}\n"
+        )
+
+        if intent == ChatIntent.LEARNING_SUMMARY:
+            system_prompt = (
+                "أنت Overmind، محلل تعليمي فائق التطور.\n"
+                "مهمتك: تقديم ملخص عميق ومهني لكل ما تعلمه الطالب حتى الآن، "
+                "مع تحليل معرفي وسلوكي يوضح تطور الفهم، الخرائط المفاهيمية، "
+                "ونقاط التحول في طريقة التفكير.\n\n"
+                "متطلبات الإخراج:\n"
+                "- لغة عربية احترافية دقيقة.\n"
+                "- تحليل متعدد الطبقات (مفاهيم، مهارات، أنماط تفكير، تطبيقات).\n"
+                "- إبراز ما تم اكتسابه وما يزال يحتاج تثبيتاً.\n"
+                "- اقتراح 3 خطوات متقدمة مبنية على الدليل.\n"
+                "- استخدم Markdown بعناوين واضحة وقوائم منظمة.\n\n"
+                f"{base_data}"
+            )
+            user_prompt = "قدّم ملخصاً تحليلياً عميقاً لكل ما تعلمته حتى الآن."
+            return system_prompt, user_prompt
+
+        system_prompt = (
+            "أنت Overmind، المرشد الأكاديمي العبقري.\n"
+            "هدفك تحليل تاريخ تفاعل الطالب بالكامل لتقديم تشخيص معرفي وأكاديمي عميق.\n"
+            "لا تكتفِ بعرض الأرقام، بل حلّل المحتوى والأسئلة والسياق.\n\n"
+            "متطلبات الإخراج:\n"
+            "- نبرة احترافية مشجعة وبصيرة عالية.\n"
+            "- تحليل طريقة التفكير ونمط الاستيعاب.\n"
+            "- مواءمة التقدم مع خارطة منهج قياسية.\n"
+            "- تحديد نقاط الضعف المفاهيمية الحقيقية.\n"
+            "- خطة عمل بثلاث خطوات محددة.\n"
+            "- تنسيق Markdown بعناوين ورموز تعبيرية.\n\n"
+            f"{base_data}"
+        )
+        user_prompt = "حلل أدائي الدراسي بناءً على كل ما تعرفه عني."
+        return system_prompt, user_prompt

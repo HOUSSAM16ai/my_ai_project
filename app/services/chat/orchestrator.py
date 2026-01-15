@@ -214,7 +214,8 @@ class ChatOrchestrator:
         from app.services.chat.intent_detector import ChatIntent
         is_specialized_intent = intent_result.intent in (
             ChatIntent.ANALYTICS_REPORT,
-            ChatIntent.CURRICULUM_PLAN
+            ChatIntent.LEARNING_SUMMARY,
+            ChatIntent.CURRICULUM_PLAN,
         )
 
         if is_admin_query or is_specialized_intent:
