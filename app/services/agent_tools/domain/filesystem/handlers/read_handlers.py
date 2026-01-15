@@ -138,6 +138,8 @@ def read_file_logic(
 
         # Image Handling (.png, .jpg, .jpeg)
         elif abs_path.lower().endswith((".png", ".jpg", ".jpeg")):
+            # Note: This uses OCR to extract text from images/charts.
+            # It captures labels and embedded text but does not describe visual patterns (requires Vision LLM).
             if pytesseract is None or Image is None:
                 return ToolResult(ok=False, error="OCR_LIBRARIES_NOT_INSTALLED")
             try:
