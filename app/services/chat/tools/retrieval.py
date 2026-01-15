@@ -18,6 +18,7 @@ async def search_educational_content(
     query: str,
     year: str | None = None,
     subject: str | None = None,
+    branch: str | None = None,
     exam_ref: str | None = None,
     exercise_id: str | None = None
 ) -> str:
@@ -30,6 +31,7 @@ async def search_educational_content(
         query (str): نص البحث العام (مثلاً "الاحتمالات" أو "التمرين الأول").
         year (str | None): السنة الدراسية (مثلاً "2024").
         subject (str | None): المادة (مثلاً "Mathematics" أو "رياضيات").
+        branch (str | None): الشعبة (مثلاً "Science", "Experimental Sciences", "علوم تجريبية").
         exam_ref (str | None): مرجع الامتحان (مثلاً "Subject 1" أو "الموضوع الأول").
         exercise_id (str | None): رقم التمرين (مثلاً "1" أو "Exercise 1").
 
@@ -43,6 +45,8 @@ async def search_educational_content(
         tags.append(f"year:{year}")
     if subject:
         tags.append(f"subject:{subject}")
+    if branch:
+        tags.append(f"branch:{branch}")
     if exam_ref:
         tags.append(f"exam_ref:{exam_ref}")
 
@@ -87,7 +91,7 @@ async def search_educational_content(
 
     except (httpx.ConnectError, httpx.TimeoutException):
         logger.warning(f"Could not connect to Memory Agent at {memory_url}. Switching to local knowledge base fallback.")
-        return _search_local_knowledge_base(full_query, year, subject, exam_ref)
+        return _search_local_knowledge_base(full_query, year, subject, branch, exam_ref)
 
     except httpx.HTTPStatusError as e:
         logger.error(f"Memory Agent returned error: {e.response.status_code}")
@@ -96,7 +100,7 @@ async def search_educational_content(
         logger.error(f"Search failed: {e}", exc_info=True)
         return "عذرًا، حدث خطأ غير متوقع أثناء البحث."
 
-def _search_local_knowledge_base(query: str, year: str | None, subject: str | None, exam_ref: str | None) -> str:
+def _search_local_knowledge_base(query: str, year: str | None, subject: str | None, branch: str | None, exam_ref: str | None) -> str:
     """
     بحث احتياطي في الملفات المحلية في حال تعطل خدمة الذاكرة.
     """
@@ -122,13 +126,40 @@ def _search_local_knowledge_base(query: str, year: str | None, subject: str | No
 
                     try:
                         metadata = yaml.safe_load(frontmatter_raw)
-                        # Check metadata filters
-                        if year and str(metadata.get("metadata", {}).get("year", "")) != str(year):
+                        meta_dict = metadata.get("metadata", {})
+
+                        # Flexible Matching Logic for Fallback
+
+                        # 1. Check Year (Exact match usually required)
+                        if year and str(meta_dict.get("year", "")) != str(year):
                             continue
-                        if subject and subject.lower() not in str(metadata.get("metadata", {}).get("subject", "")).lower():
-                            continue
-                        if exam_ref and exam_ref.lower() not in str(metadata.get("metadata", {}).get("exam_ref", "")).lower():
-                            continue
+
+                        # 2. Check Subject (Fuzzy match)
+                        if subject:
+                            file_subject = str(meta_dict.get("subject", "")).lower()
+                            if subject.lower() not in file_subject and file_subject not in subject.lower():
+                                continue
+
+                        # 3. Check Branch (List or String, Fuzzy match)
+                        if branch:
+                            file_branch = meta_dict.get("branch", "")
+                            branch_query = branch.lower()
+
+                            # Handle if branch in file is a list
+                            if isinstance(file_branch, list):
+                                # Check if ANY of the file's branches match the query
+                                if not any(b.lower() in branch_query or branch_query in b.lower() for b in file_branch):
+                                    continue
+                            else:
+                                # String comparison
+                                if str(file_branch).lower() not in branch_query and branch_query not in str(file_branch).lower():
+                                    continue
+
+                        # 4. Check Exam Ref (Subject 1/2) - Fuzzy match
+                        if exam_ref:
+                            file_ref = str(meta_dict.get("exam_ref", "")).lower()
+                            if exam_ref.lower() not in file_ref and file_ref not in exam_ref.lower():
+                                continue
 
                         # If metadata matches, check body for query terms
                         # For very specific lookups like "Exercise 1", we want high relevance.
@@ -137,7 +168,6 @@ def _search_local_knowledge_base(query: str, year: str | None, subject: str | No
                              matches.append(body.strip())
                         elif len(matches) == 0:
                              # If we haven't found exact matches but metadata matches, add it as a candidate
-                             # This handles cases where query is vague but metadata is precise
                              matches.append(body.strip())
 
                     except yaml.YAMLError:

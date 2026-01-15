@@ -2,7 +2,7 @@
 metadata:
   year: "2024"
   subject: "Mathematics"
-  branch: "Scientific"
+  branch: ["Scientific", "Experimental Sciences", "علوم تجريبية", "رياضيات"]
   exam_ref: "Subject 1"
   topics: ["Probability", "Complex Numbers"]
 ---
