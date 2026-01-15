@@ -47,81 +47,48 @@ class IntentDetector:
     def __init__(self) -> None:
         self._patterns = self._build_patterns()
 
-    def _build_patterns(
-        self,
-    ) -> list[IntentPattern]:
+    def _build_patterns(self) -> list[IntentPattern]:
         """يبني قواعد النمط كنصوص قابلة للتمديد وفق مبدأ البيانات ككود."""
         return [
-            # Admin / System Queries (Higher Priority)
-            IntentPattern(
-                pattern=r"(user|users|مستخدم|مستخدمين|count users|list users|profile|stats|أعضاء)",
-                intent=ChatIntent.ADMIN_QUERY,
-                extractor=self._empty_params,
+            IntentPattern(pattern=pattern, intent=intent, extractor=extractor)
+            for pattern, intent, extractor in self._pattern_specs()
+        ]
+
+    def _pattern_specs(self) -> list[tuple[str, ChatIntent, Callable[[re.Match[str]], dict[str, str]]]]:
+        """يعرف مواصفات النمط بشكل موحد وقابل للتوسع."""
+        admin_queries = [
+            r"(user|users|مستخدم|مستخدمين|count users|list users|profile|stats|أعضاء)",
+            r"(database|schema|tables|db map|قاعدة بيانات|جداول|مخطط|بنية البيانات)",
+            r"(route|endpoint|api path|مسار api|نقطة نهاية|services|microservices|خدمات|مصغرة)",
+            r"(structure|project info|هيكل المشروع|معلومات المشروع|بنية النظام)",
+        ]
+        analytics_keywords = (
+            r"(مستواي|أدائي|نقاط ضعفي|نقاط الضعف|تقييم|level|performance|weakness|report"
+            r"|تشخيص\s*(نقاط|الضعف|أداء|الأداء))"
+        )
+        return [
+            *[
+                (pattern, ChatIntent.ADMIN_QUERY, self._empty_params)
+                for pattern in admin_queries
+            ],
+            (r"(اقرأ|read|show|display)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_READ, self._extract_path),
+            (r"(اكتب|write|create)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_WRITE, self._extract_path),
+            (r"(ابحث|search|find)\s+(عن|for)?\s*(.+)", ChatIntent.CODE_SEARCH, self._extract_query),
+            (r"(فهرس|index)\s+(المشروع|project)", ChatIntent.PROJECT_INDEX, self._empty_params),
+            (r"(حلل|analyze|explain)\s+(.+)", ChatIntent.DEEP_ANALYSIS, self._empty_params),
+            (analytics_keywords, ChatIntent.ANALYTICS_REPORT, self._empty_params),
+            (
+                r"(ملخص|تلخيص|خلاصة|لخص|summarize|summary)"
+                r".*(ما تعلمت|ما تعلمته|تعلمي|محادثاتي|دردشاتي|سجلي|what i learned|what i've learned|my learning|my chats|my history)",
+                ChatIntent.LEARNING_SUMMARY,
+                self._empty_params,
             ),
-            IntentPattern(
-                pattern=r"(database|schema|tables|db map|قاعدة بيانات|جداول|مخطط|بنية البيانات)",
-                intent=ChatIntent.ADMIN_QUERY,
-                extractor=self._empty_params,
+            (
+                r"(تمرين|واجب|مسار|تعلم|exercise|homework|learning path|challenge)",
+                ChatIntent.CURRICULUM_PLAN,
+                self._empty_params,
             ),
-            IntentPattern(
-                pattern=r"(route|endpoint|api path|مسار api|نقطة نهاية|services|microservices|خدمات|مصغرة)",
-                intent=ChatIntent.ADMIN_QUERY,
-                extractor=self._empty_params,
-            ),
-             IntentPattern(
-                pattern=r"(structure|project info|هيكل المشروع|معلومات المشروع|بنية النظام)",
-                intent=ChatIntent.ADMIN_QUERY,
-                extractor=self._empty_params,
-            ),
-            # Standard Patterns
-            IntentPattern(
-                pattern=r"(اقرأ|read|show|display)\s+(ملف|file)\s+(.+)",
-                intent=ChatIntent.FILE_READ,
-                extractor=self._extract_path,
-            ),
-            IntentPattern(
-                pattern=r"(اكتب|write|create)\s+(ملف|file)\s+(.+)",
-                intent=ChatIntent.FILE_WRITE,
-                extractor=self._extract_path,
-            ),
-            IntentPattern(
-                pattern=r"(ابحث|search|find)\s+(عن|for)?\s*(.+)",
-                intent=ChatIntent.CODE_SEARCH,
-                extractor=self._extract_query,
-            ),
-            IntentPattern(
-                pattern=r"(فهرس|index)\s+(المشروع|project)",
-                intent=ChatIntent.PROJECT_INDEX,
-                extractor=self._empty_params,
-            ),
-            IntentPattern(
-                pattern=r"(حلل|analyze|explain)\s+(.+)",
-                intent=ChatIntent.DEEP_ANALYSIS,
-                extractor=self._empty_params,
-            ),
-            IntentPattern(
-                pattern=r"(مستواي|أدائي|نقاط ضعفي|تقييم|level|performance|weakness|report)",
-                intent=ChatIntent.ANALYTICS_REPORT,
-                extractor=self._empty_params,
-            ),
-            IntentPattern(
-                pattern=(
-                    r"(ملخص|تلخيص|خلاصة|لخص|summarize|summary)"
-                    r".*(ما تعلمت|ما تعلمته|تعلمي|محادثاتي|دردشاتي|سجلي|what i learned|what i've learned|my learning|my chats|my history)"
-                ),
-                intent=ChatIntent.LEARNING_SUMMARY,
-                extractor=self._empty_params,
-            ),
-            IntentPattern(
-                pattern=r"(تمرين|واجب|مسار|تعلم|exercise|homework|learning path|challenge)",
-                intent=ChatIntent.CURRICULUM_PLAN,
-                extractor=self._empty_params,
-            ),
-            IntentPattern(
-                pattern=r"(مساعدة|help)",
-                intent=ChatIntent.HELP,
-                extractor=self._empty_params,
-            ),
+            (r"(مساعدة|help)", ChatIntent.HELP, self._empty_params),
         ]
 
     async def detect(self, question: str) -> IntentResult:
