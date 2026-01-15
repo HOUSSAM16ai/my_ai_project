@@ -545,3 +545,24 @@ button:hover {
         padding: 15px;
     }
 }
+
+/* Math Rendering Fixes for RTL Layout */
+.katex {
+    direction: ltr !important;
+    unicode-bidi: isolate;
+    text-align: left;
+}
+
+.katex-display {
+    direction: ltr !important;
+    unicode-bidi: isolate;
+    text-align: center; /* Display math is usually centered */
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+/* Ensure math inside markdown flows correctly */
+.markdown-content .katex {
+    direction: ltr;
+}
