@@ -512,10 +512,28 @@ class OrchestratorAgent:
             system_prompt = "\n\n".join([system_prompt, self.system_context])
 
         try:
+            # 1. Inject History if available
+            history_context = ""
+            if self.history_messages:
+                # Format last few messages for context
+                # Assuming history_messages is list of dicts with 'role' and 'content'
+                recent = self.history_messages[-10:] # Last 10 messages
+                history_text = "\n".join([f"{msg.get('role', 'unknown')}: {msg.get('content', '')}" for msg in recent])
+                history_context = f"\n\nسياق المحادثة السابقة (للرجوع إليه):\n{history_text}\n"
+
+            # 2. Update System Prompt with Memory Awareness
+            memory_directive = (
+                "\nملاحظة: لديك صلاحية الوصول إلى ذاكرة المحادثة السابقة (أعلاه). "
+                "إذا سأل المستخدم عن شيء سابق، استخدم السياق المرفق للإجابة. "
+                "لا تقل 'لا أتذكر' أو 'لا أستطيع الوصول' إذا كانت المعلومة موجودة في السياق."
+            )
+
+            final_system_prompt = system_prompt + history_context + memory_directive
+
             # We manually construct the message list here to use stream_chat directly
             # This bypasses the send_message string accumulator
             messages = [
-                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": final_system_prompt},
                 {"role": "user", "content": question},
             ]
 
