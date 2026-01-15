@@ -84,7 +84,7 @@ class IntentDetector:
                 self._empty_params,
             ),
             (
-                r"(تمرين|واجب|مسار|تعلم|exercise|homework|learning path|challenge)",
+                r"(واجب|مسار|تعلم|homework|learning path|challenge)",
                 ChatIntent.CURRICULUM_PLAN,
                 self._empty_params,
             ),
