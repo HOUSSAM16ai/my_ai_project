@@ -1,7 +1,5 @@
 import re
 import logging
-import json
-from typing import Any
 from collections.abc import AsyncGenerator
 
 from app.core.ai_gateway import AIClient
@@ -28,7 +26,11 @@ class AdminAgent:
         self.data_agent = DataAccessAgent()
         self.refactor_agent = RefactorAgent()
 
-    async def run(self, question: str, context: dict[str, Any] | None = None) -> AsyncGenerator[str, None]:
+    async def run(
+        self,
+        question: str,
+        context: dict[str, object] | None = None,
+    ) -> AsyncGenerator[str, None]:
         """معالجة الطلب الإداري وتوليد الاستجابة."""
         lowered = question.lower().strip()
         handler = self._resolve_handler(lowered)
@@ -65,6 +67,8 @@ class AdminAgent:
             return self._handle_database_map
         if self._is_database_query(lowered):
             return self._handle_database_query
+        if self._is_microservices_query(lowered):
+            return self._handle_microservices_query
         if self._is_project_query(lowered):
             return self._handle_project_query
         if self._is_route_query(lowered):
@@ -89,10 +93,12 @@ class AdminAgent:
         2. COUNT_USERS: معرفة عدد المستخدمين.
         3. DB_SCHEMA: عرض مخطط جداول قاعدة البيانات.
         4. PROJECT_INFO: معلومات عن هيكل المشروع والملفات.
-        5. CODE_SEARCH: البحث في الكود المصدري.
+        5. MICROSERVICES_INFO: معلومات عن الخدمات المصغرة.
+        6. CODE_SEARCH: البحث في الكود المصدري.
 
         إذا كان السؤال غامضًا، حاول ربطه بأقرب أداة.
-        إذا كان السؤال عن "الخدمات المصغرة" (microservices) أو "البنية"، استخدم PROJECT_INFO.
+        إذا كان السؤال عن "الخدمات المصغرة" (microservices) استخدم MICROSERVICES_INFO.
+        إذا كان السؤال عن "البنية" أو "هيكل المشروع"، استخدم PROJECT_INFO.
         إذا كان السؤال عن "أسماء المستخدمين" أو "الأعضاء"، استخدم LIST_USERS.
 
         يجب أن يكون ردك النهائي هو الإجابة الدقيقة بناءً على الأداة المناسبة.
@@ -102,6 +108,7 @@ class AdminAgent:
         - إذا طلب قائمة مستخدمين: قل "EXECUTE_TOOL: list_users"
         - إذا طلب عدد مستخدمين: قل "EXECUTE_TOOL: get_user_count"
         - إذا طلب معلومات المشروع: قل "EXECUTE_TOOL: get_project_overview"
+        - إذا طلب معلومات الخدمات المصغرة: قل "EXECUTE_TOOL: get_microservices_overview"
         - غير ذلك: أجب كخبير نظام بناءً على معرفتك العامة بالسياق المرفق.
         """
 
@@ -131,6 +138,8 @@ class AdminAgent:
             yield await self._handle_user_count(question, question.lower())
         elif "EXECUTE_TOOL: get_project_overview" in full_response:
             yield await self._handle_project_query(question, question.lower())
+        elif "EXECUTE_TOOL: get_microservices_overview" in full_response:
+            yield await self._handle_microservices_query(question, question.lower())
         else:
             # Yield the LLM explanation directly
             yield full_response
@@ -157,6 +166,19 @@ class AdminAgent:
 
     def _is_project_query(self, lowered: str) -> bool:
         return any(x in lowered for x in ["project", "structure", "architecture", "المشروع", "بنية المشروع", "هيكل المشروع"])
+
+    def _is_microservices_query(self, lowered: str) -> bool:
+        return any(
+            x in lowered
+            for x in [
+                "microservices",
+                "microservice",
+                "الخدمات المصغرة",
+                "خدمات مصغرة",
+                "عدد الخدمات",
+                "خدمة مصغرة",
+            ]
+        )
 
     def _is_file_snippet_query(self, lowered: str) -> bool:
         return ".py" in lowered and ("line" in lowered or "سطر" in lowered or ":" in lowered)
@@ -267,6 +289,24 @@ class AdminAgent:
     async def _handle_project_query(self, _: str, __: str) -> str:
         k = await self.tools.execute("get_project_overview", {})
         return f"المشروع: {k.get('project_name')} (v{k.get('version')})\nملفات Python: {k.get('structure', {}).get('python_files')}"
+
+    async def _handle_microservices_query(self, question: str, lowered: str) -> str:
+        k = await self.tools.execute("get_microservices_overview", {})
+        total = int(k.get("total_services", 0))
+        raw_services = k.get("services", [])
+        services = [str(name) for name in raw_services] if isinstance(raw_services, list) else []
+        if total == 0:
+            return "لا توجد خدمات مصغرة معرفة حالياً."
+
+        wants_names = any(
+            token in lowered
+            for token in ["ما هي", "اسم", "الأسماء", "قائمة", "list", "اسماء", "أسماء"]
+        )
+        summary = f"عدد الخدمات المصغرة: {total}."
+        if wants_names:
+            lines = "\n".join(f"- {name}" for name in services)
+            return f"{summary}\nأسماء الخدمات:\n{lines}"
+        return summary
 
     async def _handle_route_query(self, question: str, lowered: str) -> str:
         f = self._extract_route_fragment(question)

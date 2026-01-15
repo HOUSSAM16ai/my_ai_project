@@ -42,6 +42,7 @@ class ToolRegistry:
         self.register("get_user_profile", self._get_user_profile)
         self.register("get_user_statistics", self._get_user_statistics)
         self.register("get_project_overview", self._get_project_overview)
+        self.register("get_microservices_overview", self._get_microservices_overview)
         self.register("get_database_tables", self._get_database_tables)
         self.register("get_table_schema", self._get_table_schema)
         self.register("get_table_count", self._get_table_count)
@@ -94,6 +95,10 @@ class ToolRegistry:
     async def _get_project_overview(self) -> dict[str, object]:
         knowledge = ProjectKnowledge()
         return await knowledge.get_complete_knowledge()
+
+    async def _get_microservices_overview(self) -> dict[str, object]:
+        knowledge = ProjectKnowledge()
+        return knowledge.get_microservices_info()
 
     async def _get_database_tables(self) -> list[str]:
         async with DatabaseKnowledge() as db_knowledge:
