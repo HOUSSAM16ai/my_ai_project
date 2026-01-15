@@ -1,5 +1,5 @@
 """
-منسق المحادثات (Chat Orchestrator) - النسخة المحسنة.
+منسق المحادثات (Chat Orchestrator) - النسخة المبسطة.
 ---------------------------------------------------------
 تمت إعادة الهيكلة لتقليل التعقيد وتحسين القابلية للصيانة.
 يعتمد نمط الاستراتيجية (Strategy Pattern) لاختيار المعالج المناسب بناءً على نية المستخدم.
@@ -36,7 +36,7 @@ from app.services.chat.handlers.strategy_handlers import (
     MissionComplexHandler,
     ProjectIndexHandler,
 )
-from app.services.chat.intent_detector import IntentDetector
+from app.services.chat.intent_detector import ChatIntent, IntentDetector
 from app.services.chat.ports import IntentDetectorPort
 from app.caching.semantic import SemanticCache
 from app.services.chat.tools import ToolRegistry
@@ -167,14 +167,11 @@ class ChatOrchestrator:
         """
         معالجة طلب المحادثة.
 
-        تم تحديثها لتستخدم OrchestratorAgent في حالات الإدارة.
+        تم تحديثها لتستخدم OrchestratorAgent في حالات الإدارة والتعليم.
         """
         start_time = time.time()
 
-        system_context = self._build_overmind_system_context()
-
-        # 0. الكشف عن النية أولاً (Detect Intent First)
-        # This is moved up to allow routing to specialized agents based on intent
+        # 0. الكشف عن النية (Intent Detection)
         intent_result = await self._intent_detector.detect(question)
 
         logger.info(
@@ -182,84 +179,53 @@ class ChatOrchestrator:
             extra={"user_id": user_id, "conversation_id": conversation_id},
         )
 
-        # Check if we should use the new Multi-Agent System (Admin, Analytics, Curriculum)
-        admin_keywords = [
-            "users",
-            "count",
-            "find",
-            "locate",
-            "search",
-            "admin",
-            "database",
-            "schema",
-            "tables",
-            "project",
-            "route",
-            "endpoint",
-            "مستخدم",
-            "المستخدمين",
-            "عدد",
-            "قاعدة البيانات",
-            "قواعد البيانات",
-            "الجداول",
-            "المشروع",
-            "بنية",
-            "مسار",
-            "سطر",
-            "ملف",
-        ]
-        is_admin_query = any(k in question.lower() for k in admin_keywords)
-
-        # New: Check for Specialized Educational Intents
-        from app.services.chat.intent_detector import ChatIntent
-        is_specialized_intent = intent_result.intent in (
+        # 1. التوجيه الذكي للوكلاء (Smart Dispatching)
+        # تشمل: استعلامات الأدمن، التحليلات، المناهج
+        is_agent_intent = intent_result.intent in (
+            ChatIntent.ADMIN_QUERY,
             ChatIntent.ANALYTICS_REPORT,
             ChatIntent.LEARNING_SUMMARY,
-            ChatIntent.CURRICULUM_PLAN,
+            ChatIntent.CURRICULUM_PLAN
         )
 
-        if is_admin_query or is_specialized_intent:
-            logger.info("Delegating to Multi-Agent Orchestrator", extra={"user_id": user_id})
+        if is_agent_intent:
+            logger.info(f"Delegating intent {intent_result.intent} to OrchestratorAgent", extra={"user_id": user_id})
+
+            # بناء السياق المشترك
+            system_context = self._build_overmind_system_context()
             agent = OrchestratorAgent(ai_client, self.tool_registry)
 
-            # Use a buffer to collect the full response for caching later
-            full_response_buffer = []
-
-            # Pass context to agent (user_id is critical for security)
             context = {
                 "user_id": user_id,
                 "conversation_id": conversation_id,
                 "intent": intent_result.intent,
                 "system_context": system_context,
+                "history_messages": history_messages
             }
 
-            # Iterate over the async generator from agent.run
+            full_response_buffer = []
             async for chunk in agent.run(question, context=context):
                 full_response_buffer.append(chunk)
                 yield chunk
 
-            # تخزين الاستجابة في الذاكرة الدلالية
+            # تخزين في الكاش
             full_response = "".join(full_response_buffer)
             if full_response:
                 await self._semantic_cache.set(question, full_response)
 
-            duration = (time.time() - start_time) * 1000
-            logger.debug(f"Agent processed in {duration:.2f}ms")
             return
 
-        # 1. التحقق من الذاكرة الدلالية (Check Semantic Cache)
+        # 2. التحقق من الذاكرة الدلالية (Semantic Cache) - للنوايا العادية
         cached_response = await self._semantic_cache.get(question)
         if cached_response:
             logger.info("Serving from Semantic Cache", extra={"user_id": user_id})
-            # محاكاة التدفق من الكاش
             chunk_size = 50
             for i in range(0, len(cached_response), chunk_size):
                 yield cached_response[i : i + chunk_size]
             return
 
-        # Fallback to legacy Strategy Pattern for other chats
-
-        # 2. بناء السياق (Build Context)
+        # 3. المعالجة التقليدية (Legacy Strategy Pattern)
+        # للنوايا مثل: قراءة ملف، بحث كود، مساعدة، دردشة عامة
         context = ChatContext(
             question=question,
             user_id=user_id,
@@ -272,21 +238,15 @@ class ChatOrchestrator:
             session_factory=session_factory,
         )
 
-        # 3. تنفيذ الاستراتيجية (Execute Strategy)
         result = await self._handlers.execute(context)
         if result:
-            # تجميع الاستجابة لتخزينها في الكاش لاحقاً
             full_response_buffer = []
             async for chunk in result:
                 full_response_buffer.append(chunk)
                 yield chunk
 
-            # تخزين النتيجة الكاملة في الذاكرة الدلالية (في الخلفية)
             full_response = "".join(full_response_buffer)
             if full_response:
-                # نستخدم create_task لتجنب حظر الاستجابة، لكن يجب الحذر من دورة حياة الحلقة
-                # بما أننا في دالة غير متزامنة، يمكننا انتظاره بسرعة أو تركه للمنستقبل
-                # هنا سننتظره لضمان التخزين (بما أنه سريع في الذاكرة)
                 await self._semantic_cache.set(question, full_response)
 
         duration = (time.time() - start_time) * 1000

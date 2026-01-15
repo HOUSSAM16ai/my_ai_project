@@ -18,6 +18,7 @@ class ChatIntent(str, Enum):
     ANALYTICS_REPORT = "ANALYTICS_REPORT"
     LEARNING_SUMMARY = "LEARNING_SUMMARY"
     CURRICULUM_PLAN = "CURRICULUM_PLAN"
+    ADMIN_QUERY = "ADMIN_QUERY"
     HELP = "HELP"
     DEFAULT = "DEFAULT"
 
@@ -51,6 +52,28 @@ class IntentDetector:
     ) -> list[IntentPattern]:
         """يبني قواعد النمط كنصوص قابلة للتمديد وفق مبدأ البيانات ككود."""
         return [
+            # Admin / System Queries (Higher Priority)
+            IntentPattern(
+                pattern=r"(user|users|مستخدم|مستخدمين|count users|list users|profile|stats)",
+                intent=ChatIntent.ADMIN_QUERY,
+                extractor=self._empty_params,
+            ),
+            IntentPattern(
+                pattern=r"(database|schema|tables|db map|قاعدة بيانات|جداول|مخطط)",
+                intent=ChatIntent.ADMIN_QUERY,
+                extractor=self._empty_params,
+            ),
+            IntentPattern(
+                pattern=r"(route|endpoint|api path|مسار api|نقطة نهاية)",
+                intent=ChatIntent.ADMIN_QUERY,
+                extractor=self._empty_params,
+            ),
+             IntentPattern(
+                pattern=r"(structure|project info|هيكل المشروع|معلومات المشروع)",
+                intent=ChatIntent.ADMIN_QUERY,
+                extractor=self._empty_params,
+            ),
+            # Standard Patterns
             IntentPattern(
                 pattern=r"(اقرأ|read|show|display)\s+(ملف|file)\s+(.+)",
                 intent=ChatIntent.FILE_READ,
