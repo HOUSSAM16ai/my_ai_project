@@ -1,0 +1,86 @@
+name: Knowledge Ingestion
+
+on:
+  push:
+    paths:
+      - 'knowledge_base/**'
+    branches:
+      - main
+      - master
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required to detect changed files
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system dependencies (OCR)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr libtesseract-dev
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+          # Ensure ingestion script specific deps are present if not in requirements.txt (safeguard)
+          pip install pypdf python-docx openpyxl pandas pillow pytesseract httpx
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: knowledge_base/**
+          escape_json: false
+          json: true
+
+      - name: Ingest Knowledge
+        if: steps.changed-files.outputs.any_changed == 'true'
+        env:
+          MEMORY_API_URL: ${{ secrets.MEMORY_AGENT_API_URL }}
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        run: |
+          if [ -z "$MEMORY_API_URL" ]; then
+            echo "::warning::MEMORY_AGENT_API_URL secret is not set. Skipping upload."
+            echo "To enable auto-ingestion, set the MEMORY_AGENT_API_URL secret in repository settings."
+            DRY_RUN_FLAG="--dry-run"
+          else
+            DRY_RUN_FLAG=""
+          fi
+
+          # Use Python to handle the JSON array of files safely (handles spaces/special chars)
+          python3 -c "
+          import os
+          import json
+          import subprocess
+          import sys
+
+          files = json.loads(os.environ['CHANGED_FILES'])
+          api_url = os.environ.get('MEMORY_API_URL', '')
+          dry_run = '$DRY_RUN_FLAG'
+
+          for file_path in files:
+              print(f'---------------------------------------------------')
+              print(f'🚀 Processing: {file_path}')
+              if os.path.exists(file_path):
+                  cmd = ['python', 'scripts/ingest_knowledge.py', file_path]
+                  if api_url:
+                      cmd.extend(['--url', api_url])
+                  if dry_run:
+                      cmd.append(dry_run)
+
+                  try:
+                      subprocess.run(cmd, check=True)
+                  except subprocess.CalledProcessError:
+                      print(f'❌ Failed to ingest {file_path}')
+                      sys.exit(1)
+              else:
+                  print(f'⚠️ File {file_path} was deleted or does not exist.')
+          "
