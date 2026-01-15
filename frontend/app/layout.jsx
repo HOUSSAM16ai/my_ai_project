@@ -1,4 +1,5 @@
 import "./globals.css";
+import 'katex/dist/katex.min.css';
 
 export const metadata = {
   title: "CogniForge Next Gateway",
