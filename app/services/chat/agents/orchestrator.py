@@ -167,10 +167,52 @@ class OrchestratorAgent:
             return
 
         if self._should_return_raw(search_result):
+            # 1. Yield the Literal Content (Raw Transfer)
             yield search_result
+
+            # 2. Yield Separator
+            yield "\n\n---\n\n"
+
+            # 3. Generate and Yield AI Explanation/Analysis
+            async for chunk in self._generate_explanation(question, search_result):
+                yield chunk
             return
 
         yield self._build_strict_content_only_message()
+
+    async def _generate_explanation(self, question: str, content: str) -> AsyncGenerator[str, None]:
+        """توليد شرح أو تحليل للمحتوى المسترجع باستخدام LLM."""
+
+        system_prompt = (
+            "أنت مساعد تعليمي ذكي (Overmind). "
+            "مهمتك هي شرح التمرين أو المحتوى الذي تم استرجاعه للطالب، أو تقديم إرشادات للحل (دون إعطاء الحل النهائي مباشرة إذا كان تمريناً للتقييم). "
+            "استخدم النص المسترجع أدناه كسياق أساسي للإجابة. "
+            "لا تكرر كتابة نص التمرين مرة أخرى، فقد تم عرضه بالفعل. "
+            "ركز على الفهم، المفاهيم الأساسية، وطريقة التفكير."
+        )
+
+        user_message = f"""
+سؤال الطالب: {question}
+
+المحتوى المسترجع (تمرين/موضوع):
+{content}
+
+المطلوب: قدم شرحاً أو تلميحات مفيدة حول هذا المحتوى.
+"""
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ]
+
+        async for chunk in self.ai_client.stream_chat(messages):
+            if hasattr(chunk, "choices"):
+                delta = chunk.choices[0].delta if chunk.choices else None
+                content = delta.content if delta else ""
+            else:
+                content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+
+            if content:
+                yield content
 
     def _should_return_raw(self, search_result: str) -> bool:
         """تحديد ما إذا كان يجب إرجاع المحتوى الخام دون توليد إضافي."""
