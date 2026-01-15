@@ -158,42 +158,15 @@ class OrchestratorAgent:
             exam_ref=exam_ref
         )
 
+        if self._is_no_content(search_result):
+            yield self._build_strict_content_only_message()
+            return
+
         if self._should_return_raw(search_result):
             yield search_result
             return
 
-        # 3. Stream Response
-        # We wrap the result in a helpful message using the LLM to format it nicely,
-        # OR just yield it directly if it's already formatted by the tool.
-        # The tool returns raw text or formatted text. Let's wrap it in an LLM call for the best experience.
-
-        system_prompt = get_context_service().get_customer_system_prompt()
-        prompt = f"""
-User asked: "{question}"
-
-Search Results:
-{search_result}
-
-INSTRUCTIONS:
-- If content was found, present it clearly to the user.
-- Use the exact text provided in the search results.
-- Do NOT refuse to show it.
-- If no content found, apologize and suggest what is available.
-"""
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt}
-        ]
-
-        async for chunk in self.ai_client.stream_chat(messages):
-             if hasattr(chunk, "choices"):
-                delta = chunk.choices[0].delta if chunk.choices else None
-                content = delta.content if delta else ""
-             else:
-                content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
-
-             if content:
-                yield content
+        yield self._build_strict_content_only_message()
 
     def _should_return_raw(self, search_result: str) -> bool:
         """تحديد ما إذا كان يجب إرجاع المحتوى الخام دون توليد إضافي."""
@@ -201,10 +174,33 @@ INSTRUCTIONS:
         raw_markers = (
             "نتائج البحث في المصادر التعليمية",
             "نتائج البحث في المصادر المحلية",
+        )
+        return (
+            bool(normalized)
+            and any(marker in normalized for marker in raw_markers)
+            and "\n---\n" in normalized
+            and not self._is_no_content(normalized)
+        )
+
+    def _is_no_content(self, search_result: str) -> bool:
+        """تحديد ما إذا كانت نتيجة البحث فارغة أو غير متوفرة."""
+        normalized = search_result.strip()
+        no_content_markers = (
             "لم يتم العثور على محتوى مطابق",
             "قاعدة المعرفة المحلية غير موجودة",
+            "حدث خطأ أثناء استرجاع المعلومات",
+            "عذرًا، حدث خطأ غير متوقع أثناء البحث",
         )
-        return bool(normalized) and any(marker in normalized for marker in raw_markers)
+        return bool(normalized) and any(marker in normalized for marker in no_content_markers)
+
+    def _build_strict_content_only_message(self) -> str:
+        """إنشاء رسالة توضح أن الردود محصورة بمحتوى التمارين فقط."""
+        lines = [
+            "عذرًا، لا يمكنني تقديم إجابة عامة أو إنشاء محتوى جديد.",
+            "هذا المسار يجيب فقط بنص التمارين المخزنة في قاعدة المنصة.",
+            "إذا أردت تمرينًا محددًا، اطلبه بصيغة: التمرين الأول/الثاني، الموضوع الأول، سنة 2024.",
+        ]
+        return "\n".join(lines)
 
     async def _handle_chat_fallback(self, question: str, context: dict) -> AsyncGenerator[str, None]:
         """معالجة المحادثة العامة باستخدام LLM مع السياق."""
