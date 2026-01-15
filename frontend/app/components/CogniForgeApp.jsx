@@ -62,15 +62,29 @@ class ErrorBoundary extends React.Component {
     }
 }
 
+const preprocessMath = (content) => {
+    if (!content) return "";
+
+    // 1. Replace block delimiters \[ ... \] with $$ ... $$
+    let processed = content.replace(/\\\[([\s\S]*?)\\\]/g, '$$$$$1$$$$');
+
+    // 2. Replace inline delimiters \( ... \) with $ ... $
+    processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$');
+
+    return processed;
+};
+
 const Markdown = memo(({ content }) => {
     const safeContent = (content || "");
+    const processedContent = preprocessMath(safeContent);
+
     return (
         <div className="markdown-content">
             <ReactMarkdown
                 remarkPlugins={[remarkMath]}
                 rehypePlugins={[rehypeKatex]}
             >
-                {safeContent}
+                {processedContent}
             </ReactMarkdown>
         </div>
     );
