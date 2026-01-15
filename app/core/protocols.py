@@ -243,6 +243,21 @@ class AgentReflector(Protocol):
 
 
 @runtime_checkable
+class AgentMemory(Protocol):
+    """
+    بروتوكول وكيل الذاكرة (Memory Agent).
+    """
+
+    async def capture_memory(
+        self,
+        context: CollaborationContext,
+        *,
+        label: str,
+        payload: dict[str, object],
+    ) -> dict[str, object]: ...
+
+
+@runtime_checkable
 class MissionStateManagerProtocol(Protocol):
     """
     بروتوكول مدير حالة المهمة (Mission State Manager Protocol).

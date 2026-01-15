@@ -29,6 +29,7 @@ class OrchestratorAgent:
         self.ai_client = ai_client
         self.tools = tools
         self.intent_detector = IntentDetector()
+        self.system_context: str | None = None
 
         # Agents
         self.api_agent = APIContractAgent()
@@ -52,6 +53,7 @@ class OrchestratorAgent:
         normalized = question.strip()
         lowered = normalized.lower()
         context = context or {}
+        self.system_context = context.get("system_context") if context else None
 
         # 1. Advanced Intent Detection
         intent_result = await self.intent_detector.detect(normalized)
@@ -479,6 +481,9 @@ class OrchestratorAgent:
         except Exception as exc:
             logger.error("فشل تحميل سياق الأدمن", exc_info=exc)
             system_prompt = "أنت مساعد إداري محترف يجيب بإيجاز ودقة."
+
+        if self.system_context:
+            system_prompt = "\n\n".join([system_prompt, self.system_context])
 
         try:
             # We manually construct the message list here to use stream_chat directly
