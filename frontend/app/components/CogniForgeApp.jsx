@@ -1,21 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import showdown from 'showdown';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 // ══════════════════════════════════════════════════════════════════════
 // PERFORMANCE CONFIGURATION & UTILS
 // ══════════════════════════════════════════════════════════════════════
-
-const showdownConverter = new showdown.Converter({
-    simplifiedAutoLink: true,
-    excludeTrailingPunctuationFromURLs: true,
-    strikethrough: true,
-    tables: true,
-    tasklists: true,
-    simpleLineBreaks: true,
-    openLinksInNewWindow: true
-});
 
 const isBrowser = typeof window !== 'undefined';
 const IS_CODESPACES = isBrowser && (window.location.hostname.includes('github.dev') ||
@@ -24,9 +16,6 @@ const IS_CODESPACES = isBrowser && (window.location.hostname.includes('github.de
 const IS_CLOUD_ENV = isBrowser && (IS_CODESPACES ||
     window.location.hostname.includes('gitpod.io') ||
     window.location.hostname.includes('repl.it'));
-
-const MAX_MESSAGES = 50; // Increased for better history
-const STREAM_UPDATE_THROTTLE = 100; // Smoother typing
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? '';
 const apiUrl = (path) => `${API_ORIGIN}${path}`;
@@ -75,15 +64,16 @@ class ErrorBoundary extends React.Component {
 
 const Markdown = memo(({ content }) => {
     const safeContent = (content || "");
-    // Simple optimistic rendering to avoid showdown overhead on every keystroke if very long
-    // But for now, just render.
-    let html;
-    try {
-        html = showdownConverter.makeHtml(safeContent);
-    } catch (error) {
-        html = `<pre>${safeContent}</pre>`;
-    }
-    return <div className="markdown-content" dangerouslySetInnerHTML={{ __html: html }} />;
+    return (
+        <div className="markdown-content">
+            <ReactMarkdown
+                remarkPlugins={[remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+            >
+                {safeContent}
+            </ReactMarkdown>
+        </div>
+    );
 });
 Markdown.displayName = 'Markdown';
 
@@ -101,6 +91,60 @@ const useChat = (endpoint, token, onConversationUpdate) => {
     const socketRef = useRef(null);
     const reconnectTimeoutRef = useRef(null);
     const mountedRef = useRef(true);
+
+    const addMessage = useCallback((msg) => {
+        setMessages(prev => [...prev, msg]);
+    }, []);
+
+    const handleMessage = useCallback((data) => {
+        const { type, payload } = data;
+
+        if (type === 'status') return;
+
+        if (type === 'conversation_init') {
+            if (payload?.conversation_id) {
+                setConversationId(payload.conversation_id);
+            }
+            if (onConversationUpdate) onConversationUpdate();
+            return;
+        }
+
+        if (type === 'error') {
+            const details = payload?.details || 'Unknown error';
+            addMessage({ id: generateId(), role: 'assistant', content: `Error: ${details}`, isError: true });
+            return;
+        }
+
+        if (type === 'delta') {
+            const content = payload?.content || '';
+            if (!content) return;
+
+            setMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last && last.role === 'assistant' && !last.isComplete && !last.isError) {
+                    // Append to last message
+                    const updated = { ...last, content: last.content + content };
+                    return [...prev.slice(0, -1), updated];
+                } else {
+                    if (last && last.role === 'user') {
+                        return [...prev, { id: generateId(), role: 'assistant', content: content, isComplete: false }];
+                    }
+                     return [...prev, { id: generateId(), role: 'assistant', content: content, isComplete: false }];
+                }
+            });
+            return;
+        }
+
+        if (type === 'complete') {
+             setMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last && last.role === 'assistant') {
+                    return [...prev.slice(0, -1), { ...last, isComplete: true }];
+                }
+                return prev;
+            });
+        }
+    }, [onConversationUpdate, setConversationId, addMessage]);
 
     const connect = useCallback(() => {
         if (!token || !endpoint || !mountedRef.current) return;
@@ -133,7 +177,6 @@ const useChat = (endpoint, token, onConversationUpdate) => {
                 console.log('WebSocket closed', e.code, e.reason);
                 if (mountedRef.current) {
                     setStatus('disconnected');
-                    // Auto-reconnect if not closed cleanly/intentionally (logic can be refined)
                     if (e.code !== 1000 && e.code !== 4403 && e.code !== 4401) {
                         clearTimeout(reconnectTimeoutRef.current);
                         reconnectTimeoutRef.current = setTimeout(connect, 3000);
@@ -150,61 +193,7 @@ const useChat = (endpoint, token, onConversationUpdate) => {
             console.error("Socket creation failed", err);
             setStatus('error');
         }
-    }, [token, endpoint]);
-
-    const handleMessage = useCallback((data) => {
-        const { type, payload } = data;
-
-        if (type === 'status') return;
-
-        if (type === 'conversation_init') {
-            if (payload?.conversation_id) {
-                setConversationId(payload.conversation_id);
-            }
-            if (onConversationUpdate) onConversationUpdate();
-            return;
-        }
-
-        if (type === 'error') {
-            const details = payload?.details || 'Unknown error';
-            addMessage({ id: generateId(), role: 'assistant', content: `Error: ${details}`, isError: true });
-            return;
-        }
-
-        if (type === 'delta') {
-            const content = payload?.content || '';
-            if (!content) return;
-
-            setMessages(prev => {
-                const last = prev[prev.length - 1];
-                if (last && last.role === 'assistant' && !last.isComplete && !last.isError) {
-                    // Append to last message
-                    const updated = { ...last, content: last.content + content };
-                    return [...prev.slice(0, -1), updated];
-                } else {
-                    // New message chunk (shouldn't happen often if we handle 'complete' right, but handle start of stream)
-                    // Actually, for a new stream, we should have added a placeholder in sendMessage.
-                    // But if we receive a delta and the last message is USER, we need a new assistant block.
-                    if (last && last.role === 'user') {
-                        return [...prev, { id: generateId(), role: 'assistant', content: content, isComplete: false }];
-                    }
-                    // Fallback append
-                     return [...prev, { id: generateId(), role: 'assistant', content: content, isComplete: false }];
-                }
-            });
-            return;
-        }
-
-        if (type === 'complete') {
-             setMessages(prev => {
-                const last = prev[prev.length - 1];
-                if (last && last.role === 'assistant') {
-                    return [...prev.slice(0, -1), { ...last, isComplete: true }];
-                }
-                return prev;
-            });
-        }
-    }, [onConversationUpdate, setConversationId, setMessages]); // Added dependencies
+    }, [token, endpoint, handleMessage]);
 
     useEffect(() => {
         mountedRef.current = true;
@@ -216,25 +205,16 @@ const useChat = (endpoint, token, onConversationUpdate) => {
         };
     }, [connect]);
 
-    const addMessage = (msg) => {
-        setMessages(prev => [...prev, msg]);
-    };
-
     const sendMessage = useCallback((text) => {
         if (!text.trim()) return;
 
         if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-             // Try to reconnect?
-             // For now, just show error
              addMessage({ id: generateId(), role: 'assistant', content: 'Connection lost. Please wait...', isError: true });
-             connect(); // Trigger reconnect
+             connect();
              return;
         }
 
-        // Add user message
         addMessage({ id: generateId(), role: 'user', content: text });
-
-        // Add placeholder for assistant
         addMessage({ id: generateId(), role: 'assistant', content: '', isComplete: false });
 
         const payload = { question: text };
@@ -242,10 +222,9 @@ const useChat = (endpoint, token, onConversationUpdate) => {
 
         socketRef.current.send(JSON.stringify(payload));
 
-    }, [conversationId, connect]);
+    }, [conversationId, connect, addMessage]);
 
     const clearMessages = () => setMessages([]);
-
     const setMessagesSafe = (msgs) => setMessages(msgs);
 
     return { messages, sendMessage, status, conversationId, setConversationId, clearMessages, setMessages: setMessagesSafe };
