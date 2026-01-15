@@ -1,5 +1,6 @@
 import re
 import logging
+import json
 from typing import Any
 from collections.abc import AsyncGenerator
 
@@ -21,8 +22,9 @@ class AdminAgent:
     - استكشاف بنية المشروع والشيفرة.
     """
 
-    def __init__(self, tools: ToolRegistry) -> None:
+    def __init__(self, tools: ToolRegistry, ai_client: AIClient | None = None) -> None:
         self.tools = tools
+        self.ai_client = ai_client
         self.data_agent = DataAccessAgent()
         self.refactor_agent = RefactorAgent()
 
@@ -32,8 +34,19 @@ class AdminAgent:
         handler = self._resolve_handler(lowered)
 
         try:
-            result = await handler(question, lowered)
-            yield result
+            # 1. Direct Regex Match (Fast Path)
+            if handler != self._handle_unknown_admin_query:
+                result = await handler(question, lowered)
+                yield result
+            else:
+                # 2. Dynamic Router (LLM Fallback)
+                # If we have AI Client, ask it to route or execute tools
+                if self.ai_client:
+                    async for chunk in self._handle_dynamic_router(question, context):
+                        yield chunk
+                else:
+                    yield await self._handle_unknown_admin_query(question, lowered)
+
         except Exception as e:
             logger.error(f"AdminAgent failed: {e}", exc_info=True)
             yield f"حدث خطأ أثناء تنفيذ الأمر الإداري: {e}"
@@ -64,6 +77,63 @@ class AdminAgent:
             return self._handle_file_snippet
 
         return self._handle_unknown_admin_query
+
+    async def _handle_dynamic_router(self, question: str, context: dict | None) -> AsyncGenerator[str, None]:
+        """استخدام الذكاء الاصطناعي لفهم الطلبات الإدارية المعقدة وتوجيهها للأدوات."""
+
+        system_prompt = """
+        أنت وكيل إداري ذكي (Admin Agent). مهمتك هي مساعدة مسؤول النظام في فهم حالة النظام.
+
+        لديك الأدوات التالية (Tools) التي يمكنك استدعاؤها أو الاستدلال بنتائجها:
+        1. LIST_USERS: عرض قائمة المستخدمين.
+        2. COUNT_USERS: معرفة عدد المستخدمين.
+        3. DB_SCHEMA: عرض مخطط جداول قاعدة البيانات.
+        4. PROJECT_INFO: معلومات عن هيكل المشروع والملفات.
+        5. CODE_SEARCH: البحث في الكود المصدري.
+
+        إذا كان السؤال غامضًا، حاول ربطه بأقرب أداة.
+        إذا كان السؤال عن "الخدمات المصغرة" (microservices) أو "البنية"، استخدم PROJECT_INFO.
+        إذا كان السؤال عن "أسماء المستخدمين" أو "الأعضاء"، استخدم LIST_USERS.
+
+        يجب أن يكون ردك النهائي هو الإجابة الدقيقة بناءً على الأداة المناسبة.
+        إذا كنت بحاجة لتنفيذ أداة، قم بذكر اسم الأداة بوضوح في سياق تفكيرك، وسأقوم أنا بتنفيذها لك (محاكاة).
+
+        للحفاظ على البساطة في هذه المرحلة، إذا طابق السؤال إحدى الحالات التالية، أجب بنمط محدد:
+        - إذا طلب قائمة مستخدمين: قل "EXECUTE_TOOL: list_users"
+        - إذا طلب عدد مستخدمين: قل "EXECUTE_TOOL: get_user_count"
+        - إذا طلب معلومات المشروع: قل "EXECUTE_TOOL: get_project_overview"
+        - غير ذلك: أجب كخبير نظام بناءً على معرفتك العامة بالسياق المرفق.
+        """
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": question}
+        ]
+
+        # Use AI to decide
+        # Note: We are using stream_chat, so we need to buffer the response to check for commands
+        full_response = ""
+        async for chunk in self.ai_client.stream_chat(messages):
+            # Extract content from chunk structure
+            content = ""
+            if hasattr(chunk, "choices"):
+                delta = chunk.choices[0].delta if chunk.choices else None
+                content = delta.content if delta else ""
+            else:
+                content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+
+            full_response += content
+
+        # Check for command
+        if "EXECUTE_TOOL: list_users" in full_response:
+            yield await self._handle_user_list(question, question.lower())
+        elif "EXECUTE_TOOL: get_user_count" in full_response:
+            yield await self._handle_user_count(question, question.lower())
+        elif "EXECUTE_TOOL: get_project_overview" in full_response:
+            yield await self._handle_project_query(question, question.lower())
+        else:
+            # Yield the LLM explanation directly
+            yield full_response
 
     # --- Matchers ---
 
