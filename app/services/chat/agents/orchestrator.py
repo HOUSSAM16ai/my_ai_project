@@ -150,16 +150,12 @@ class OrchestratorAgent:
             exam_ref = "Subject 2"
 
         # 2. Call Retrieval Tool
-        # Use execute method of ToolRegistry since it's a flat registry
-        search_result = await self.tools.execute(
-            "search_educational_content",
-            {
-                "query": question,
-                "year": year,
-                "subject": subject,
-                "branch": branch,
-                "exam_ref": exam_ref
-            }
+        search_result = await self.tools.retrieval.search_educational_content(
+            query=question,
+            year=year,
+            subject=subject,
+            branch=branch,
+            exam_ref=exam_ref
         )
 
         if self._is_no_content(search_result):
