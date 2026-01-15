@@ -78,9 +78,11 @@ async def search_educational_content(
             results = response.json()
 
             if not results or not isinstance(results, list):
-                # Try local fallback if API returns empty (and we might have local files)
-                # But usually empty API means truly empty. Let's strictly use fallback on Connection Error.
-                return "لم يتم العثور على محتوى مطابق في قاعدة المعرفة."
+                # If API returns empty, TRY LOCAL FALLBACK ANYWAY.
+                # This is crucial for environments where Memory Agent might be active but empty,
+                # while critical knowledge exists in local Markdown files.
+                logger.info("Memory Agent returned no results. Attempting local fallback.")
+                return _search_local_knowledge_base(full_query, year, subject, branch, exam_ref)
 
             formatted_output = "نتائج البحث في المصادر التعليمية:\n\n"
             for item in results:
@@ -102,7 +104,7 @@ async def search_educational_content(
 
 def _search_local_knowledge_base(query: str, year: str | None, subject: str | None, branch: str | None, exam_ref: str | None) -> str:
     """
-    بحث احتياطي في الملفات المحلية في حال تعطل خدمة الذاكرة.
+    بحث احتياطي في الملفات المحلية في حال تعطل خدمة الذاكرة أو عدم وجود نتائج.
     """
     kb_path = Path("knowledge_base")
     if not kb_path.exists():
@@ -111,7 +113,15 @@ def _search_local_knowledge_base(query: str, year: str | None, subject: str | No
     matches = []
 
     # Normalize query terms
-    query_terms = query.lower().split()
+    query_lower = query.lower()
+
+    # Keyword Mapping for Arabic/English
+    keywords = {
+        "exercise 1": ["exercise 1", "التمرين الأول"],
+        "exercise 2": ["exercise 2", "التمرين الثاني"],
+        "probability": ["probability", "الاحتمالات"],
+        "complex numbers": ["complex numbers", "الأعداد المركبة"]
+    }
 
     for md_file in kb_path.glob("*.md"):
         try:
@@ -161,13 +171,28 @@ def _search_local_knowledge_base(query: str, year: str | None, subject: str | No
                             if exam_ref.lower() not in file_ref and file_ref not in exam_ref.lower():
                                 continue
 
-                        # If metadata matches, check body for query terms
-                        # For very specific lookups like "Exercise 1", we want high relevance.
-                        # Simple keyword matching:
-                        if all(term in body.lower() for term in query_terms):
-                             matches.append(body.strip())
-                        elif len(matches) == 0:
-                             # If we haven't found exact matches but metadata matches, add it as a candidate
+                        # 5. Smart Content Filtering based on Query
+                        # If query asks for "Exercise 1", restrict content to that section if possible,
+                        # or at least ensure the file contains it.
+
+                        body_lower = body.lower()
+                        is_relevant = False
+
+                        # Check for specific exercise requests
+                        req_ex1 = any(k in query_lower for k in keywords["exercise 1"])
+                        req_ex2 = any(k in query_lower for k in keywords["exercise 2"])
+
+                        if req_ex1:
+                            if any(k in body_lower for k in keywords["exercise 1"]):
+                                is_relevant = True
+                        elif req_ex2:
+                            if any(k in body_lower for k in keywords["exercise 2"]):
+                                is_relevant = True
+                        else:
+                            # General query match
+                            is_relevant = True
+
+                        if is_relevant:
                              matches.append(body.strip())
 
                     except yaml.YAMLError:
