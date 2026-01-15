@@ -11,6 +11,8 @@ from app.services.chat.agents.test_agent import TestAgent
 from app.services.chat.context_service import get_context_service
 from app.services.chat.intent_detector import ChatIntent, IntentDetector
 from app.services.chat.tools import ToolRegistry
+from app.services.overmind.agents.memory import MemoryAgent
+from app.services.overmind.domain.context import InMemoryCollaborationContext
 
 logger = get_logger("orchestrator-agent")
 
@@ -23,6 +25,7 @@ class OrchestratorAgent:
     - تحليل الاستفسار الإداري.
     - توجيه الطلبات إلى الأدوات المناسبة.
     - دمج النتائج في رد واضح وقابل للتنفيذ.
+    - التعامل مع وكيل الذاكرة (Memory Agent) للتحليل والحفظ.
     """
 
     def __init__(self, ai_client: AIClient, tools: ToolRegistry) -> None:
@@ -39,6 +42,8 @@ class OrchestratorAgent:
         # Pass AI Client to Analytics Agent for Superhuman capabilities
         self.analytics_agent = AnalyticsAgent(tools, ai_client)
         self.curriculum_agent = CurriculumAgent(tools)
+        # Memory Agent Client (connects to microservice)
+        self.memory_agent = MemoryAgent()
 
     async def run(self, question: str, context: dict[str, object] | None = None):
         """
@@ -47,6 +52,7 @@ class OrchestratorAgent:
         2. التحقق من الحوكمة.
         3. تنفيذ الأدوات.
         4. صياغة إجابة دقيقة.
+        5. حفظ السياق في وكيل الذاكرة.
         """
         logger.info(f"Orchestrator received: {question}")
 
@@ -55,9 +61,27 @@ class OrchestratorAgent:
         context = context or {}
         self.system_context = context.get("system_context") if context else None
 
+        # Pass history to self context if available
+        self.history_messages = context.get("history_messages", [])
+
         # 1. Advanced Intent Detection
         intent_result = await self.intent_detector.detect(normalized)
         logger.info(f"Detected intent: {intent_result.intent}")
+
+        # Capture initial memory intent
+        if self.memory_agent:
+            # Fire and forget memory capture to avoid latency in response
+            # Note: In a real async environment, we might want to gather this or run in background
+            # For now we'll do it quietly if possible, or just log if it fails
+            try:
+                collab_context = InMemoryCollaborationContext({"intent": intent_result.intent.value})
+                await self.memory_agent.capture_memory(
+                    collab_context,
+                    label="user_intent",
+                    payload={"question": normalized, "intent": intent_result.intent.value}
+                )
+            except Exception as e:
+                logger.warning(f"Failed to capture initial memory: {e}")
 
         # 2. Select Handler based on Intent or Legacy Regex
         handler = self._resolve_handler(intent_result, lowered)
