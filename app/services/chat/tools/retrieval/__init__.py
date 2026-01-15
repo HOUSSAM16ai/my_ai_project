@@ -5,14 +5,16 @@
 بدرجة دقة عالية باستخدام الوسوم (Tags) والتصنيف الدلالي.
 """
 
-import httpx
 import os
-import glob
-import yaml
 from pathlib import Path
+
+import httpx
+import yaml
+
 from app.core.logging import get_logger
 
 logger = get_logger("tool-retrieval")
+
 
 async def search_educational_content(
     query: str,
@@ -20,7 +22,7 @@ async def search_educational_content(
     subject: str | None = None,
     branch: str | None = None,
     exam_ref: str | None = None,
-    exercise_id: str | None = None
+    exercise_id: str | None = None,
 ) -> str:
     """
     يبحث في قاعدة المعرفة التعليمية عن محتوى محدد.
@@ -63,11 +65,8 @@ async def search_educational_content(
 
     search_payload = {
         "query": full_query,
-        "filters": {
-            "tags": tags
-        },
+        "filters": {"tags": tags},
         "limit": 5,
-        "min_score": 0.7
     }
 
     try:
@@ -97,12 +96,18 @@ async def search_educational_content(
 
     except httpx.HTTPStatusError as e:
         logger.error(f"Memory Agent returned error: {e.response.status_code}")
-        return "حدث خطأ أثناء استرجاع المعلومات من المصادر."
+        return _search_local_knowledge_base(full_query, year, subject, branch, exam_ref)
     except Exception as e:
         logger.error(f"Search failed: {e}", exc_info=True)
-        return "عذرًا، حدث خطأ غير متوقع أثناء البحث."
+        return _search_local_knowledge_base(full_query, year, subject, branch, exam_ref)
 
-def _search_local_knowledge_base(query: str, year: str | None, subject: str | None, branch: str | None, exam_ref: str | None) -> str:
+def _search_local_knowledge_base(
+    query: str,
+    year: str | None,
+    subject: str | None,
+    branch: str | None,
+    exam_ref: str | None,
+) -> str:
     """
     بحث احتياطي في الملفات المحلية في حال تعطل خدمة الذاكرة أو عدم وجود نتائج.
     """
@@ -193,7 +198,7 @@ def _search_local_knowledge_base(query: str, year: str | None, subject: str | No
                             is_relevant = True
 
                         if is_relevant:
-                             matches.append(body.strip())
+                            matches.append(body.strip())
 
                     except yaml.YAMLError:
                         logger.error(f"Failed to parse YAML in {md_file}")

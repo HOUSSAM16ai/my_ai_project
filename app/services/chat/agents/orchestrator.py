@@ -158,6 +158,10 @@ class OrchestratorAgent:
             exam_ref=exam_ref
         )
 
+        if self._should_return_raw(search_result):
+            yield search_result
+            return
+
         # 3. Stream Response
         # We wrap the result in a helpful message using the LLM to format it nicely,
         # OR just yield it directly if it's already formatted by the tool.
@@ -190,6 +194,17 @@ INSTRUCTIONS:
 
              if content:
                 yield content
+
+    def _should_return_raw(self, search_result: str) -> bool:
+        """تحديد ما إذا كان يجب إرجاع المحتوى الخام دون توليد إضافي."""
+        normalized = search_result.strip()
+        raw_markers = (
+            "نتائج البحث في المصادر التعليمية",
+            "نتائج البحث في المصادر المحلية",
+            "لم يتم العثور على محتوى مطابق",
+            "قاعدة المعرفة المحلية غير موجودة",
+        )
+        return bool(normalized) and any(marker in normalized for marker in raw_markers)
 
     async def _handle_chat_fallback(self, question: str, context: dict) -> AsyncGenerator[str, None]:
         """معالجة المحادثة العامة باستخدام LLM مع السياق."""
