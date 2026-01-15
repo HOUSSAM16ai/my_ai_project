@@ -16,8 +16,10 @@ from app.core.ai_gateway import get_ai_client
 from app.services.agent_tools import get_registry
 from app.services.overmind.agents.architect import ArchitectAgent
 from app.services.overmind.agents.auditor import AuditorAgent
+from app.services.overmind.agents.memory import MemoryAgent
 from app.services.overmind.agents.operator import OperatorAgent
 from app.services.overmind.agents.strategist import StrategistAgent
+from app.services.overmind.collaboration import CollaborationHub
 from app.services.overmind.domain.cognitive import SuperBrain
 from app.services.overmind.executor import TaskExecutor
 from app.services.overmind.orchestrator import OvermindOrchestrator
@@ -55,11 +57,18 @@ async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
     architect = ArchitectAgent(ai_client)
     operator = OperatorAgent(executor)
     auditor = AuditorAgent(ai_client)
+    memory_agent = MemoryAgent()
 
     # 5. The SuperBrain (Cognitive Domain)
     # Refactoring: Using keyword arguments for Static Connascence
+    collaboration_hub = CollaborationHub()
     brain = SuperBrain(
-        strategist=strategist, architect=architect, operator=operator, auditor=auditor
+        strategist=strategist,
+        architect=architect,
+        operator=operator,
+        auditor=auditor,
+        collaboration_hub=collaboration_hub,
+        memory_agent=memory_agent,
     )
 
     # 6. The Orchestrator

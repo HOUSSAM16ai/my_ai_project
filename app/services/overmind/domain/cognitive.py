@@ -21,8 +21,16 @@ from typing import Protocol, TypeVar
 from pydantic import BaseModel, Field
 
 from app.core.domain.mission import Mission
-from app.core.protocols import AgentArchitect, AgentExecutor, AgentPlanner, AgentReflector
+from app.core.protocols import (
+    AgentArchitect,
+    AgentExecutor,
+    AgentMemory,
+    AgentPlanner,
+    AgentReflector,
+)
+from app.services.overmind.collaboration import CollaborationHub
 from app.services.overmind.domain.context import InMemoryCollaborationContext
+from app.services.overmind.domain.council_session import CouncilSession
 from app.services.overmind.domain.enums import CognitiveEvent, CognitivePhase, OvermindMessage
 from app.services.overmind.domain.exceptions import StalemateError
 
@@ -83,11 +91,15 @@ class SuperBrain:
         architect: AgentArchitect,
         operator: AgentExecutor,
         auditor: AgentReflector,
+        collaboration_hub: CollaborationHub | None = None,
+        memory_agent: AgentMemory | None = None,
     ) -> None:
         self.strategist = strategist
         self.architect = architect
         self.operator = operator
         self.auditor = auditor
+        self.collaboration_hub = collaboration_hub
+        self.memory_agent = memory_agent
 
     async def _create_safe_logger(
         self, log_event: Callable[[str, dict[str, object]], Awaitable[None]] | None
@@ -113,6 +125,7 @@ class SuperBrain:
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
         safe_log: Callable[[str, dict[str, object]], Awaitable[None]],
+        session: CouncilSession | None,
     ) -> CognitiveCritique:
         """
         معالجة مرحلة التخطيط والمراجعة.
@@ -129,19 +142,22 @@ class SuperBrain:
             RuntimeError: في حال مشاكل في خدمة الذكاء الاصطناعي
         """
         # طلب خطة جديدة
-        state.plan = await self._execute_phase(
+        state.plan = await self._execute_agent_action(
             phase_name=CognitivePhase.PLANNING,
             agent_name="Strategist",
             action=lambda: self.strategist.create_plan(state.objective, collab_context),
             timeout=120.0,
             log_func=safe_log,
+            session=session,
+            input_data={"objective": state.objective},
+            collab_context=collab_context,
         )
 
         # الكشف عن الحلقات المفرغة (Loop Detection)
-        await self._detect_and_handle_stalemate(state, collab_context, safe_log)
+        await self._detect_and_handle_stalemate(state, collab_context, safe_log, session)
 
         # مراجعة الخطة (Auditor)
-        raw_critique = await self._execute_phase(
+        raw_critique = await self._execute_agent_action(
             phase_name=CognitivePhase.REVIEW_PLAN,
             agent_name="Auditor",
             action=lambda: self.auditor.review_work(
@@ -149,6 +165,9 @@ class SuperBrain:
             ),
             timeout=60.0,
             log_func=safe_log,
+            session=session,
+            input_data={"plan_keys": list(state.plan.keys()) if isinstance(state.plan, dict) else []},
+            collab_context=collab_context,
         )
 
         critique = CognitiveCritique(
@@ -172,6 +191,7 @@ class SuperBrain:
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
         safe_log: Callable[[str, dict[str, object]], Awaitable[None]],
+        session: CouncilSession | None,
     ) -> None:
         """
         الكشف عن الحلقات المفرغة ومعالجتها.
@@ -202,6 +222,15 @@ class SuperBrain:
                 "Warning: You are repeating failed plans. CHANGE STRATEGY IMMEDIATELY. "
                 "Do not use the same tools or logic.",
             )
+            if session:
+                session.notify_agent(
+                    "strategist",
+                    {
+                        "type": "stalemate_detected",
+                        "reason": str(e),
+                        "guidance": "Change strategy immediately.",
+                    },
+                )
             # إعادة رفع الخطأ للمعالجة في المستوى الأعلى
             raise
 
@@ -210,6 +239,7 @@ class SuperBrain:
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
         safe_log: Callable[[str, dict[str, object]], Awaitable[None]],
+        session: CouncilSession | None,
     ) -> None:
         """
         تنفيذ مرحلة التصميم.
@@ -219,12 +249,15 @@ class SuperBrain:
             collab_context: سياق التعاون
             safe_log: دالة التسجيل الآمنة
         """
-        state.design = await self._execute_phase(
+        state.design = await self._execute_agent_action(
             phase_name=CognitivePhase.DESIGN,
             agent_name="Architect",
             action=lambda: self.architect.design_solution(state.plan, collab_context),
             timeout=120.0,
             log_func=safe_log,
+            session=session,
+            input_data={"plan_keys": list(state.plan.keys()) if isinstance(state.plan, dict) else []},
+            collab_context=collab_context,
         )
 
     async def _execute_execution_phase(
@@ -232,6 +265,7 @@ class SuperBrain:
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
         safe_log: Callable[[str, dict[str, object]], Awaitable[None]],
+        session: CouncilSession | None,
     ) -> None:
         """
         تنفيذ مرحلة التنفيذ.
@@ -241,12 +275,17 @@ class SuperBrain:
             collab_context: سياق التعاون
             safe_log: دالة التسجيل الآمنة
         """
-        state.execution_result = await self._execute_phase(
+        state.execution_result = await self._execute_agent_action(
             phase_name=CognitivePhase.EXECUTION,
             agent_name="Operator",
             action=lambda: self.operator.execute_tasks(state.design, collab_context),
             timeout=300.0,
             log_func=safe_log,
+            session=session,
+            input_data={
+                "design_keys": list(state.design.keys()) if isinstance(state.design, dict) else []
+            },
+            collab_context=collab_context,
         )
 
     async def _execute_reflection_phase(
@@ -254,6 +293,7 @@ class SuperBrain:
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
         safe_log: Callable[[str, dict[str, object]], Awaitable[None]],
+        session: CouncilSession | None,
     ) -> None:
         """
         تنفيذ مرحلة الانعكاس والمراجعة النهائية.
@@ -263,7 +303,7 @@ class SuperBrain:
             collab_context: سياق التعاون
             safe_log: دالة التسجيل الآمنة
         """
-        raw_final_critique = await self._execute_phase(
+        raw_final_critique = await self._execute_agent_action(
             phase_name=CognitivePhase.REFLECTION,
             agent_name="Auditor",
             action=lambda: self.auditor.review_work(
@@ -271,6 +311,13 @@ class SuperBrain:
             ),
             timeout=60.0,
             log_func=safe_log,
+            session=session,
+            input_data={
+                "execution_keys": list(state.execution_result.keys())
+                if isinstance(state.execution_result, dict)
+                else []
+            },
+            collab_context=collab_context,
         )
 
         state.critique = CognitiveCritique(
@@ -302,7 +349,11 @@ class SuperBrain:
             RuntimeError: في حال فشل المهمة بعد استنفاد المحاولات
         """
         state = CognitiveState(mission_id=mission.id, objective=mission.objective)
-        collab_context = InMemoryCollaborationContext(context)
+        base_context = dict(context or {})
+        base_context["mission_id"] = mission.id
+        base_context["objective"] = mission.objective
+        collab_context = InMemoryCollaborationContext(base_context)
+        session = CouncilSession(hub=self.collaboration_hub, context=collab_context)
         safe_log = await self._create_safe_logger(log_event)
 
         while state.iteration_count < state.max_iterations:
@@ -311,13 +362,15 @@ class SuperBrain:
 
             try:
                 # محاولة تنفيذ دورة معرفية كاملة | Try complete cognitive cycle
-                result = await self._execute_cognitive_cycle(state, collab_context, safe_log)
+                result = await self._execute_cognitive_cycle(
+                    state, collab_context, safe_log, session
+                )
 
                 if result is not None:
                     return result
 
             except StalemateError as se:
-                self._handle_stalemate(se, state, collab_context, safe_log)
+                self._handle_stalemate(se, state, collab_context, safe_log, session)
 
             except Exception as e:
                 await self._handle_phase_error(e, state, safe_log)
@@ -330,6 +383,7 @@ class SuperBrain:
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
         safe_log,
+        session: CouncilSession | None,
     ) -> dict[str, object] | None:
         """
         تنفيذ دورة معرفية كاملة.
@@ -340,18 +394,20 @@ class SuperBrain:
         """
         # المرحلة 1: التخطيط | Planning phase
         if not state.plan or state.current_phase == CognitivePhase.RE_PLANNING:
-            planning_success = await self._try_planning_phase(state, collab_context, safe_log)
+            planning_success = await self._try_planning_phase(
+                state, collab_context, safe_log, session
+            )
             if not planning_success:
                 return None  # إعادة المحاولة
 
         # المرحلة 2: التصميم | Design phase
-        await self._execute_design_phase(state, collab_context, safe_log)
+        await self._execute_design_phase(state, collab_context, safe_log, session)
 
         # المرحلة 3: التنفيذ | Execution phase
-        await self._execute_execution_phase(state, collab_context, safe_log)
+        await self._execute_execution_phase(state, collab_context, safe_log, session)
 
         # المرحلة 4: المراجعة | Review phase
-        await self._execute_reflection_phase(state, collab_context, safe_log)
+        await self._execute_reflection_phase(state, collab_context, safe_log, session)
 
         # التحقق من النجاح | Check success
         if state.critique.approved:
@@ -359,7 +415,7 @@ class SuperBrain:
             return state.execution_result or {}
 
         # إعداد للإعادة | Prepare for retry
-        await self._prepare_for_retry(state, collab_context, safe_log)
+        await self._prepare_for_retry(state, collab_context, safe_log, session)
         return None
 
     async def _try_planning_phase(
@@ -367,6 +423,7 @@ class SuperBrain:
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
         safe_log,
+        session: CouncilSession | None,
     ) -> bool:
         """
         محاولة تنفيذ مرحلة التخطيط.
@@ -376,7 +433,7 @@ class SuperBrain:
             bool: True إذا نجح، False إذا يحتاج إعادة
         """
         try:
-            critique = await self._handle_planning_phase(state, collab_context, safe_log)
+            critique = await self._handle_planning_phase(state, collab_context, safe_log, session)
 
             if not critique.approved:
                 state.current_phase = CognitivePhase.RE_PLANNING
@@ -395,6 +452,7 @@ class SuperBrain:
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
         safe_log,
+        session: CouncilSession | None,
     ) -> None:
         """
         إعداد الحالة لإعادة المحاولة.
@@ -405,6 +463,15 @@ class SuperBrain:
         )
         state.current_phase = CognitivePhase.RE_PLANNING
         collab_context.update("feedback_from_execution", state.critique.feedback)
+        if session:
+            session.notify_agent(
+                "strategist",
+                {
+                    "type": "critique_failed",
+                    "feedback": state.critique.feedback,
+                    "iteration": state.iteration_count,
+                },
+            )
 
     def _handle_stalemate(
         self,
@@ -412,6 +479,7 @@ class SuperBrain:
         state: CognitiveState,
         collab_context: InMemoryCollaborationContext,
         safe_log,
+        session: CouncilSession | None,
     ) -> None:
         """
         معالجة حالة الجمود.
@@ -423,6 +491,11 @@ class SuperBrain:
             "CRITICAL: INFINITE LOOP DETECTED. TRY SOMETHING DRASTICALLY DIFFERENT.",
         )
         state.current_phase = CognitivePhase.RE_PLANNING
+        if session:
+            session.notify_agent(
+                "strategist",
+                {"type": "critical_stalemate", "reason": str(error)},
+            )
 
     async def _handle_phase_error(
         self,
@@ -481,3 +554,76 @@ class SuperBrain:
             raise RuntimeError(error_msg) from None
         except Exception as e:
             raise e
+
+    async def _execute_agent_action(
+        self,
+        *,
+        phase_name: str,
+        agent_name: str,
+        action: Callable[[], Awaitable[T]],
+        timeout: float,
+        log_func: Callable[[str, dict[str, object]], Awaitable[None]],
+        session: CouncilSession | None,
+        input_data: dict[str, object],
+        collab_context: InMemoryCollaborationContext,
+    ) -> T:
+        """
+        تنفيذ مرحلة مع تسجيل مساهمة الوكيل في الجلسة.
+
+        Args:
+            phase_name: اسم المرحلة.
+            agent_name: اسم الوكيل.
+            action: الدالة المراد تنفيذها.
+            timeout: المهلة الزمنية.
+            log_func: دالة التسجيل.
+            session: جلسة المجلس (اختيارية).
+            input_data: ملخص المدخلات.
+        """
+        try:
+            result = await self._execute_phase(
+                phase_name=phase_name,
+                agent_name=agent_name,
+                action=action,
+                timeout=timeout,
+                log_func=log_func,
+            )
+            if session:
+                session.record_action(
+                    agent_name=agent_name,
+                    action=str(phase_name),
+                    input_data=input_data,
+                    output_data=result,
+                    success=True,
+                )
+            if self.memory_agent:
+                await self.memory_agent.capture_memory(
+                    collab_context,
+                    label=str(phase_name),
+                    payload={
+                        "agent": agent_name,
+                        "input": input_data,
+                        "output": result,
+                    },
+                )
+            return result
+        except Exception as exc:
+            if session:
+                session.record_action(
+                    agent_name=agent_name,
+                    action=str(phase_name),
+                    input_data=input_data,
+                    output_data={"error": str(exc)},
+                    success=False,
+                    error_message=str(exc),
+                )
+            if self.memory_agent:
+                await self.memory_agent.capture_memory(
+                    collab_context,
+                    label=f"{phase_name}_error",
+                    payload={
+                        "agent": agent_name,
+                        "input": input_data,
+                        "error": str(exc),
+                    },
+                )
+            raise
