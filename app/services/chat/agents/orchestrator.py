@@ -99,6 +99,8 @@ class OrchestratorAgent:
         # New Intents
         if intent_result.intent == ChatIntent.ANALYTICS_REPORT:
             return self._handle_analytics
+        if intent_result.intent == ChatIntent.LEARNING_SUMMARY:
+            return self._handle_analytics
         if intent_result.intent == ChatIntent.CURRICULUM_PLAN:
             return self._handle_curriculum
 
