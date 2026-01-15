@@ -12,7 +12,7 @@ from enum import Enum
 
 
 class FaultType(Enum):
-    """Types of faults to inject"""
+    """أنواع الأعطال التي يمكن حقنها."""
 
     LATENCY = "latency"
     ERROR = "error"
@@ -24,7 +24,7 @@ class FaultType(Enum):
 
 
 class ExperimentStatus(Enum):
-    """Experiment execution status"""
+    """حالات تنفيذ التجارب."""
 
     SCHEDULED = "scheduled"
     RUNNING = "running"
@@ -34,7 +34,7 @@ class ExperimentStatus(Enum):
 
 
 class BlastRadiusLevel(Enum):
-    """Control blast radius of experiments"""
+    """مستويات نطاق تأثير التجارب."""
 
     MINIMAL = "minimal"
     LIMITED = "limited"
@@ -44,7 +44,7 @@ class BlastRadiusLevel(Enum):
 
 @dataclass
 class SteadyStateHypothesis:
-    """Hypothesis about system steady state"""
+    """فرضية الحالة المستقرة للنظام."""
 
     hypothesis_id: str
     description: str
@@ -55,7 +55,7 @@ class SteadyStateHypothesis:
 
 @dataclass
 class FaultInjection:
-    """Fault injection configuration"""
+    """تهيئة حقن الأعطال."""
 
     fault_id: str
     fault_type: FaultType
@@ -70,7 +70,7 @@ class FaultInjection:
 
 @dataclass
 class ChaosExperiment:
-    """Chaos experiment definition"""
+    """تعريف تجربة الفوضى."""
 
     experiment_id: str
     name: str
@@ -89,7 +89,7 @@ class ChaosExperiment:
 
 @dataclass
 class GameDay:
-    """Game Day simulation event"""
+    """فعالية محاكاة يوم الفوضى."""
 
     game_day_id: str
     name: str
@@ -101,11 +101,22 @@ class GameDay:
     runbook_url: str | None = None
 
 
+@dataclass(frozen=True)
+class ExperimentConfig:
+    """تهيئة موحدة لإنشاء تجربة فوضى."""
+
+    name: str
+    description: str
+    steady_state_hypothesis: SteadyStateHypothesis
+    fault_injections: list[FaultInjection]
+    blast_radius: BlastRadiusLevel = BlastRadiusLevel.LIMITED
+
+
 class ChaosMonkey:
     """
-    Chaos Monkey - Randomly injects faults into services
+    قرد الفوضى - يحقن أعطالًا عشوائية في الخدمات.
 
-    Inspired by Netflix's Chaos Monkey
+    مستوحى من Chaos Monkey الخاص بـ Netflix.
     """
 
     def __init__(
@@ -121,7 +132,7 @@ class ChaosMonkey:
         self.lock = threading.RLock()
 
     def _get_fault_parameters(self, fault_type: FaultType) -> dict[str, object]:
-        """Get parameters for fault type"""
+        """إرجاع معلمات مناسبة لنوع العطل."""
         if fault_type == FaultType.LATENCY:
             return {"delay_ms": random.randint(100, 5000)}
         if fault_type == FaultType.ERROR:
@@ -136,9 +147,9 @@ class ChaosMonkey:
 
 class ChaosEngineer:
     """
-    Chaos Engineering Service
+    خدمة هندسة الفوضى.
 
-    Manages chaos experiments and validates system resilience
+    تدير تجارب الفوضى وتتحقق من متانة النظام.
     """
 
     def __init__(self):
@@ -148,44 +159,38 @@ class ChaosEngineer:
         self.experiment_history: deque = deque(maxlen=100)
         self.lock = threading.RLock()
 
-    # TODO: Reduce parameters (6 params) - Use config object
-    def create_experiment(
-        self,
-        name: str,
-        description: str,
-        steady_state_hypothesis: SteadyStateHypothesis,
-        fault_injections: list[FaultInjection],
-        blast_radius: BlastRadiusLevel = BlastRadiusLevel.LIMITED,
-    ) -> str:
-        """Create a chaos experiment"""
+    def create_experiment(self, config: ExperimentConfig) -> str:
+        """إنشاء تجربة فوضى اعتمادًا على تهيئة موحدة."""
         experiment_id = str(uuid.uuid4())
         experiment = ChaosExperiment(
             experiment_id=experiment_id,
-            name=name,
-            description=description,
-            steady_state_hypothesis=steady_state_hypothesis,
-            fault_injections=fault_injections,
-            blast_radius=blast_radius,
+            name=config.name,
+            description=config.description,
+            steady_state_hypothesis=config.steady_state_hypothesis,
+            fault_injections=config.fault_injections,
+            blast_radius=config.blast_radius,
         )
         with self.lock:
             self.experiments[experiment_id] = experiment
-        logging.getLogger(__name__).info(f"Chaos experiment created: {name} ({experiment_id})")
+        logging.getLogger(__name__).info(
+            f"Chaos experiment created: {config.name} ({experiment_id})"
+        )
         return experiment_id
 
     def _activate_fault(self, fault: FaultInjection):
-        """Activate a fault injection"""
+        """تفعيل حقن عطل محدد."""
         logging.getLogger(__name__).warning(
             f"Activating fault: {fault.fault_type.value} on {fault.target_service}"
         )
 
     def _rollback_faults(self, experiment: ChaosExperiment):
-        """Rollback all faults in experiment"""
+        """إرجاع جميع الأعطال في التجربة."""
         logging.getLogger(__name__).info(f"Rolling back faults for experiment: {experiment.name}")
         for _fault in experiment.fault_injections:
             pass
 
     def get_experiment_report(self, experiment_id: str) -> dict[str, object] | None:
-        """Get detailed experiment report"""
+        """الحصول على تقرير مفصل عن تجربة محددة."""
         with self.lock:
             experiment = self.experiments.get(experiment_id)
             if not experiment:
@@ -206,7 +211,7 @@ class ChaosEngineer:
             }
 
     def get_metrics(self) -> dict[str, object]:
-        """Get chaos engineering metrics"""
+        """الحصول على مؤشرات هندسة الفوضى."""
         with self.lock:
             total_experiments = len(self.experiments)
             completed = sum(
@@ -229,7 +234,7 @@ _chaos_lock = threading.Lock()
 
 
 def get_chaos_engineer() -> ChaosEngineer:
-    """Get singleton chaos engineer instance"""
+    """الحصول على نسخة وحيدة لخدمة هندسة الفوضى."""
     global _chaos_engineer_instance
     if _chaos_engineer_instance is None:
         with _chaos_lock:

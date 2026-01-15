@@ -1,4 +1,4 @@
-"""Refactored planner using clean architecture."""
+"""مخطط مُعاد هيكلته وفق بنية نظيفة ومتماسكة."""
 
 from dataclasses import dataclass
 
@@ -8,7 +8,7 @@ from app.infrastructure.patterns import EventBus, get_event_bus
 
 @dataclass
 class Task:
-    """Task entity."""
+    """كيان المهمة ضمن الخطة."""
 
     task_id: str
     description: str
@@ -19,7 +19,7 @@ class Task:
 
 @dataclass
 class Plan:
-    """Plan entity."""
+    """كيان الخطة الذي يجمع المهام والبيانات الوصفية."""
 
     plan_id: str
     objective: str
@@ -28,10 +28,10 @@ class Plan:
 
 
 class PlanValidator:
-    """Validates plans."""
+    """يتحقق من صحة الخطة وبنيتها."""
 
     def validate(self, plan: Plan) -> tuple[bool, list[str]]:
-        """Validate plan structure and dependencies."""
+        """التحقق من بنية الخطة واعتماديات المهام."""
         errors = []
 
         if not plan.objective:
@@ -50,10 +50,10 @@ class PlanValidator:
 
 
 class PlanOptimizer:
-    """Optimizes plan execution order."""
+    """يحسّن ترتيب تنفيذ المهام وفق الاعتماديات."""
 
     def optimize(self, plan: Plan) -> Plan:
-        """Optimize task order based on dependencies."""
+        """تحسين ترتيب المهام بناءً على الاعتمادات."""
         sorted_tasks = self._topological_sort(plan.tasks)
         return Plan(
             plan_id=plan.plan_id,
@@ -63,7 +63,7 @@ class PlanOptimizer:
         )
 
     def _topological_sort(self, tasks: list[Task]) -> list[Task]:
-        """Sort tasks topologically."""
+        """فرز المهام طوبولوجيًا وفق الاعتماديات."""
         task_map = {task.task_id: task for task in tasks}
         visited = set()
         result = []
@@ -87,10 +87,10 @@ class PlanOptimizer:
 
 
 class ContextAnalyzer:
-    """Analyzes planning context."""
+    """يحلل سياق التخطيط ويستخرج الإشارات الأساسية."""
 
     def analyze(self, objective: str, context: dict[str, object] | None) -> dict[str, object]:
-        """Analyze context and extract insights."""
+        """تحليل السياق واستخلاص المؤشرات الرئيسية."""
         analysis = {
             "objective_length": len(objective),
             "complexity": self._estimate_complexity(objective),
@@ -105,7 +105,7 @@ class ContextAnalyzer:
         return analysis
 
     def _estimate_complexity(self, objective: str) -> str:
-        """Estimate objective complexity."""
+        """تقدير تعقيد الهدف."""
         word_count = len(objective.split())
         if word_count < 5:
             return "simple"
@@ -114,7 +114,7 @@ class ContextAnalyzer:
         return "complex"
 
     def _detect_language(self, text: str) -> str:
-        """Detect text language."""
+        """تحديد لغة النص بشكل مبدئي."""
         arabic_chars = sum(1 for c in text if "\u0600" <= c <= "\u06ff")
         if arabic_chars > len(text) * 0.3:
             return "arabic"
@@ -122,12 +122,12 @@ class ContextAnalyzer:
 
 
 class TaskGenerator:
-    """Generates tasks for plans."""
+    """ينشئ المهام المطلوبة لبناء خطة تنفيذية."""
 
     def generate_tasks(
         self, objective: str, analysis: dict[str, object], max_tasks: int | None = None
     ) -> list[Task]:
-        """Generate tasks based on objective and analysis."""
+        """توليد المهام وفق الهدف والتحليل."""
         tasks = []
         complexity = analysis.get("complexity", "medium")
 
@@ -144,7 +144,7 @@ class TaskGenerator:
         return tasks
 
     def _generate_simple_tasks(self, objective: str) -> list[Task]:
-        """Generate tasks for simple objectives."""
+        """توليد مهام لهدف بسيط."""
         return [
             Task(
                 task_id="task_1",
@@ -156,7 +156,7 @@ class TaskGenerator:
         ]
 
     def _generate_medium_tasks(self, objective: str) -> list[Task]:
-        """Generate tasks for medium objectives."""
+        """توليد مهام لهدف متوسط التعقيد."""
         return [
             Task(
                 task_id="task_1",
@@ -184,9 +184,7 @@ class TaskGenerator:
     def _generate_complex_tasks(self, objective: str) -> list[Task]:
         """
         إنشاء مهام للأهداف المعقدة
-        Generate tasks for complex objectives.
-
-        Creates a 5-stage pipeline: analysis → decomposition → execution → integration → validation
+        بناء خط أنابيب من خمس مراحل: التحليل ← التفكيك ← التنفيذ ← الدمج ← التحقق
         """
         tasks = []
         tasks.append(self._create_analysis_task(objective))
@@ -197,10 +195,7 @@ class TaskGenerator:
         return tasks
 
     def _create_analysis_task(self, objective: str) -> Task:
-        """
-        إنشاء مهمة التحليل العميق
-        Create deep analysis task.
-        """
+        """إنشاء مهمة التحليل العميق."""
         return Task(
             task_id="task_1",
             description="Deep analysis",
@@ -210,10 +205,7 @@ class TaskGenerator:
         )
 
     def _create_decomposition_task(self) -> Task:
-        """
-        إنشاء مهمة تفكيك الهدف
-        Create objective breakdown task.
-        """
+        """إنشاء مهمة تفكيك الهدف."""
         return Task(
             task_id="task_2",
             description="Break down objective",
@@ -223,10 +215,7 @@ class TaskGenerator:
         )
 
     def _create_execution_task(self) -> Task:
-        """
-        إنشاء مهمة التنفيذ المتوازي
-        Create parallel execution task.
-        """
+        """إنشاء مهمة التنفيذ المتوازي."""
         return Task(
             task_id="task_3",
             description="Execute sub-tasks",
@@ -236,10 +225,7 @@ class TaskGenerator:
         )
 
     def _create_integration_task(self) -> Task:
-        """
-        إنشاء مهمة دمج النتائج
-        Create results integration task.
-        """
+        """إنشاء مهمة دمج النتائج."""
         return Task(
             task_id="task_4",
             description="Integrate results",
@@ -249,10 +235,7 @@ class TaskGenerator:
         )
 
     def _create_validation_task(self) -> Task:
-        """
-        إنشاء مهمة التحقق والتحقيق
-        Create verification and validation task.
-        """
+        """إنشاء مهمة التحقق والتحقيق."""
         return Task(
             task_id="task_5",
             description="Verify and validate",
@@ -262,23 +245,28 @@ class TaskGenerator:
         )
 
 
-class RefactoredPlanner(PlannerInterface):
-    """Clean, maintainable planner implementation."""
+@dataclass(frozen=True)
+class PlannerConfig:
+    """تهيئة موحدة لمكونات المخطط المعاد هيكلته."""
 
-    # TODO: Reduce parameters (6 params) - Use config object
-    def __init__(
-        self,
-        event_bus: EventBus | None = None,
-        validator: PlanValidator | None = None,
-        optimizer: PlanOptimizer | None = None,
-        context_analyzer: ContextAnalyzer | None = None,
-        task_generator: TaskGenerator | None = None,
-    ):
-        self.event_bus = event_bus or get_event_bus()
-        self.validator = validator or PlanValidator()
-        self.optimizer = optimizer or PlanOptimizer()
-        self.context_analyzer = context_analyzer or ContextAnalyzer()
-        self.task_generator = task_generator or TaskGenerator()
+    event_bus: EventBus
+    validator: PlanValidator
+    optimizer: PlanOptimizer
+    context_analyzer: ContextAnalyzer
+    task_generator: TaskGenerator
+
+
+class RefactoredPlanner(PlannerInterface):
+    """مخطط نظيف ومتماسك مع فصل واضح للمسؤوليات."""
+
+    def __init__(self, config: PlannerConfig | None = None):
+        self.config = config or PlannerConfig(
+            event_bus=get_event_bus(),
+            validator=PlanValidator(),
+            optimizer=PlanOptimizer(),
+            context_analyzer=ContextAnalyzer(),
+            task_generator=TaskGenerator(),
+        )
 
     def generate_plan(
         self,
@@ -286,12 +274,12 @@ class RefactoredPlanner(PlannerInterface):
         context: dict[str, object] | None = None,
         max_tasks: int | None = None,
     ) -> dict[str, object]:
-        """Generate plan using clean architecture."""
+        """توليد خطة وفق مسار واضح وقابل للتحقق."""
         from uuid import uuid4
 
-        analysis = self.context_analyzer.analyze(objective, context)
+        analysis = self.config.context_analyzer.analyze(objective, context)
 
-        tasks = self.task_generator.generate_tasks(objective, analysis, max_tasks)
+        tasks = self.config.task_generator.generate_tasks(objective, analysis, max_tasks)
 
         plan = Plan(
             plan_id=str(uuid4()),
@@ -300,9 +288,9 @@ class RefactoredPlanner(PlannerInterface):
             metadata={"analysis": analysis, "context": context or {}},
         )
 
-        plan = self.optimizer.optimize(plan)
+        plan = self.config.optimizer.optimize(plan)
 
-        is_valid, errors = self.validator.validate(plan)
+        is_valid, errors = self.config.validator.validate(plan)
         if not is_valid:
             raise ValueError(f"Invalid plan: {errors}")
 
@@ -311,16 +299,16 @@ class RefactoredPlanner(PlannerInterface):
         return self._to_dict(plan)
 
     def validate_plan(self, plan: dict[str, object]) -> bool:
-        """Validate plan dictionary."""
+        """التحقق من صحة القاموس الذي يمثل الخطة."""
         try:
             plan_obj = self._from_dict(plan)
-            is_valid, _ = self.validator.validate(plan_obj)
+            is_valid, _ = self.config.validator.validate(plan_obj)
             return is_valid
         except Exception:
             return False
 
     def get_capabilities(self) -> set[str]:
-        """Get planner capabilities."""
+        """إرجاع قدرات المخطط بشكل معلن."""
         return {
             "semantic",
             "multi-step",
@@ -331,7 +319,7 @@ class RefactoredPlanner(PlannerInterface):
         }
 
     def _publish_event(self, event_type: str, plan: Plan):
-        """Publish planning event."""
+        """نشر حدث التخطيط على قناة الأحداث."""
         from app.infrastructure.patterns import Event
 
         event = Event(
@@ -342,10 +330,10 @@ class RefactoredPlanner(PlannerInterface):
                 "task_count": len(plan.tasks),
             },
         )
-        self.event_bus.publish(event)
+        self.config.event_bus.publish(event)
 
     def _to_dict(self, plan: Plan) -> dict[str, object]:
-        """Convert plan to dictionary."""
+        """تحويل الخطة إلى قاموس قابل للنقل."""
         return {
             "plan_id": plan.plan_id,
             "objective": plan.objective,
@@ -363,7 +351,7 @@ class RefactoredPlanner(PlannerInterface):
         }
 
     def _from_dict(self, data: dict[str, object]) -> Plan:
-        """Convert dictionary to plan."""
+        """تحويل القاموس إلى كائن خطة."""
         tasks = [
             Task(
                 task_id=t["task_id"],
