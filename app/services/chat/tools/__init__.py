@@ -18,6 +18,7 @@ from app.services.chat.tools.reporting import (
     fetch_comprehensive_student_history,
     get_student_diagnostic_report,
 )
+from app.services.chat.tools.retrieval import search_educational_content
 from app.services.codebase.introspection import introspection_service
 from app.services.overmind.knowledge import DatabaseKnowledge, ProjectKnowledge
 from app.services.overmind.user_knowledge.service import UserKnowledge
@@ -59,6 +60,7 @@ class ToolRegistry:
         self.register("recommend_next_mission", recommend_next_mission)
         self.register("get_learning_path_progress", get_learning_path_progress)
         self.register("adjust_difficulty_level", adjust_difficulty_level)
+        self.register("search_educational_content", search_educational_content)
 
     def register(self, name: str, func: Callable) -> None:
         self._tools[name] = func
