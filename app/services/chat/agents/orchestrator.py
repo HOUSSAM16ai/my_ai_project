@@ -31,7 +31,8 @@ class OrchestratorAgent:
         self.intent_detector = IntentDetector()
 
         # Sub-Agents
-        self.admin_agent = AdminAgent(tools)
+        # Inject AIClient into AdminAgent for dynamic routing
+        self.admin_agent = AdminAgent(tools, ai_client=ai_client)
         self.analytics_agent = AnalyticsAgent(tools, ai_client)
         self.curriculum_agent = CurriculumAgent(tools)
         self.memory_agent = MemoryAgent()
