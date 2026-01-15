@@ -19,7 +19,7 @@ from app.core.domain.user import User
 from app.services.audit import AuditService
 from app.services.chat.contracts import ChatDispatchResult, ChatStreamEvent
 from app.services.chat.education_policy_gate import EducationPolicyDecision, EducationPolicyGate
-from app.services.chat.intent_detector import IntentDetector
+from app.services.chat.intent_detector import ChatIntent, IntentDetector
 from app.services.chat.tool_router import ToolRouter
 from app.services.customer.chat_persistence import CustomerChatPersistence
 from app.services.customer.chat_streamer import CustomerChatStreamer
@@ -203,6 +203,23 @@ class CustomerChatBoundaryService:
             stream = self._refusal_stream(conversation, decision.refusal_message)
             return ChatDispatchResult(status_code=200, stream=stream)
 
+        if intent_result.intent != ChatIntent.CONTENT_RETRIEVAL:
+            refusal_text = self._build_strict_education_refusal()
+            await self.save_message(
+                conversation.id,
+                MessageRole.USER,
+                question,
+                {"classification": "education_strict", "blocked": "true"},
+            )
+            await self.save_message(
+                conversation.id,
+                MessageRole.ASSISTANT,
+                refusal_text,
+                {"classification": "education_strict", "refusal": "true"},
+            )
+            stream = self._refusal_stream(conversation, refusal_text)
+            return ChatDispatchResult(status_code=200, stream=stream)
+
         await self.save_message(
             conversation.id,
             MessageRole.USER,
@@ -267,6 +284,15 @@ class CustomerChatBoundaryService:
             ip=ip,
             user_agent=user_agent,
         )
+
+    def _build_strict_education_refusal(self) -> str:
+        """إنشاء رسالة توضح أن الردود محصورة بمحتوى التمارين المقدمة فقط."""
+        lines = [
+            "عذرًا، هذا المسار التعليمي يجيب فقط من محتوى التمارين التي تم توفيرها.",
+            "لا يمكنني تقديم إجابات عامة أو إنشاء محتوى جديد خارج قاعدة التمارين.",
+            "إذا أردت نتيجة محددة، اطلبها بصيغة: التمرين الأول/الثاني، الموضوع الأول، سنة 2024.",
+        ]
+        return "\n".join(lines)
 
     async def _refusal_stream(
         self,
