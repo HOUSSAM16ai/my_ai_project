@@ -72,20 +72,25 @@ class IntentDetector:
                 (pattern, ChatIntent.ADMIN_QUERY, self._empty_params)
                 for pattern in admin_queries
             ],
+            (
+                r"^(تمارين|تمرين|exercises?|exam|subject|موضوع)\b(.+)?",
+                ChatIntent.CONTENT_RETRIEVAL,
+                self._extract_query_optional,
+            ),
             (r"(اقرأ|read|show|display)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_READ, self._extract_path),
             (r"(اكتب|write|create)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_WRITE, self._extract_path),
             (
-                r"((أ|ا)عطني|هات|provide|give me|show me)\s+(.*)(نص|text|exercise|question|exam|تمرين|سؤال|موضوع|اختبار)(.+)?",
+                r"((أ|ا)عطني|هات|provide|give me|show me)\s+(.*)(نص|text|exercise|exercises|question|exam|تمرين|تمارين|سؤال|موضوع|اختبار)(.+)?",
                 ChatIntent.CONTENT_RETRIEVAL,
                 self._extract_query_optional
             ),
             (
-                r"((أ|ا)ريد|بدي|i want|need)\s+(.*)(تمرين|سؤال|موضوع|exam|exercise|question|subject)(.+)?",
+                r"((أ|ا)ريد|بدي|i want|need)\s+(.*)(تمرين|تمارين|سؤال|موضوع|exam|exercise|exercises|question|subject)(.+)?",
                 ChatIntent.CONTENT_RETRIEVAL,
                 self._extract_query_optional
             ),
             (
-                r"(بحث|ابحث|search|find)\s+(عن|for)?\s*(.*)(تمرين|سؤال|موضوع|exam|exercise|question|subject)(.+)?",
+                r"(بحث|ابحث|search|find)\s+(عن|for)?\s*(.*)(تمرين|تمارين|سؤال|موضوع|exam|exercise|exercises|question|subject)(.+)?",
                 ChatIntent.CONTENT_RETRIEVAL,
                 self._extract_query_optional
             ),
