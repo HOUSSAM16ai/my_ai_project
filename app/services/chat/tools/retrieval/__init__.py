@@ -83,12 +83,8 @@ async def search_educational_content(
                 logger.info("Memory Agent returned no results. Attempting local fallback.")
                 return _search_local_knowledge_base(full_query, year, subject, branch, exam_ref)
 
-            formatted_output = "نتائج البحث في المصادر التعليمية:\n\n"
-            for item in results:
-                content = item.get("content", "")
-                formatted_output += f"---\n{content}\n"
-
-            return formatted_output
+            contents = [item.get("content", "") for item in results if item.get("content", "")]
+            return "\n\n".join(contents).strip()
 
     except (httpx.ConnectError, httpx.TimeoutException):
         logger.warning(f"Could not connect to Memory Agent at {memory_url}. Switching to local knowledge base fallback.")
@@ -210,8 +206,4 @@ def _search_local_knowledge_base(
     if not matches:
         return "لم يتم العثور على محتوى مطابق في الملفات المحلية (وضع عدم الاتصال)."
 
-    output = "نتائج البحث في المصادر المحلية (وضع عدم الاتصال):\n\n"
-    for match in matches[:3]: # Limit to top 3
-        output += f"---\n{match}\n"
-
-    return output
+    return "\n\n".join(matches[:3]).strip()

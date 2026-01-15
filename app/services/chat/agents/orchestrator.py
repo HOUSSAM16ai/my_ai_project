@@ -172,19 +172,22 @@ class OrchestratorAgent:
         """تحديد ما إذا كان يجب إرجاع المحتوى الخام دون توليد إضافي."""
         normalized = search_result.strip()
         raw_markers = (
-            "نتائج البحث في المصادر التعليمية",
-            "نتائج البحث في المصادر المحلية",
+            "# بكالوريا",
+            "## التمرين",
+            "التمرين الأول",
+            "التمرين الثاني",
         )
         return (
             bool(normalized)
             and any(marker in normalized for marker in raw_markers)
-            and "\n---\n" in normalized
             and not self._is_no_content(normalized)
         )
 
     def _is_no_content(self, search_result: str) -> bool:
         """تحديد ما إذا كانت نتيجة البحث فارغة أو غير متوفرة."""
         normalized = search_result.strip()
+        if not normalized:
+            return True
         no_content_markers = (
             "لم يتم العثور على محتوى مطابق",
             "قاعدة المعرفة المحلية غير موجودة",
