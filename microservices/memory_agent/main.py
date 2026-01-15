@@ -35,6 +35,23 @@ class MemoryResponse(BaseModel):
     tags: list[str]
 
 
+class MemorySearchFilters(BaseModel):
+    """مرشحات البحث بالوسوم."""
+
+    tags: list[str] = Field(default_factory=list, description="وسوم التصفية المطلوبة")
+
+
+class MemorySearchRequest(BaseModel):
+    """حمولة البحث عن الذاكرة عبر POST."""
+
+    query: str = Field(default="", description="نص البحث")
+    filters: MemorySearchFilters = Field(
+        default_factory=MemorySearchFilters,
+        description="مرشحات البحث الدلالي",
+    )
+    limit: int = Field(default=10, ge=1, le=50, description="عدد النتائج المطلوب")
+
+
 def _build_router(settings: MemoryAgentSettings) -> APIRouter:
     """ينشئ موجهات الوكيل."""
 
@@ -77,7 +94,7 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
 
     @router.get("/memories/search", response_model=list[MemoryResponse])
     async def search_memories(
-        query: str = "", session: AsyncSession = Depends(get_session)
+        query: str = "", limit: int = 10, session: AsyncSession = Depends(get_session)
     ) -> list[MemoryResponse]:
         """
         يبحث عن عناصر ذاكرة مطابقة للاستعلام.
@@ -99,6 +116,43 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
                     | (col(Tag.name).ilike(f"%{normalized}%"))
                 )
             )
+
+        statement = statement.limit(limit)
+
+        result = await session.execute(statement)
+        memories = result.scalars().all()
+
+        return [
+            MemoryResponse(entry_id=m.id, content=m.content, tags=[t.name for t in m.tags])
+            for m in memories
+        ]
+
+    @router.post("/memories/search", response_model=list[MemoryResponse])
+    async def search_memories_post(
+        payload: MemorySearchRequest, session: AsyncSession = Depends(get_session)
+    ) -> list[MemoryResponse]:
+        """
+        يبحث عن عناصر ذاكرة مع دعم مرشحات الوسوم عبر POST.
+        """
+
+        normalized = payload.query.strip().lower()
+        tags = [tag.strip() for tag in payload.filters.tags if tag.strip()]
+
+        statement = select(Memory).options(selectinload(Memory.tags))
+
+        if normalized or tags:
+            statement = statement.distinct().outerjoin(Memory.tags)
+
+        if normalized:
+            statement = statement.where(
+                (col(Memory.content).ilike(f"%{normalized}%"))
+                | (col(Tag.name).ilike(f"%{normalized}%"))
+            )
+
+        if tags:
+            statement = statement.where(col(Tag.name).in_(tags))
+
+        statement = statement.limit(payload.limit)
 
         result = await session.execute(statement)
         memories = result.scalars().all()

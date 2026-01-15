@@ -9,6 +9,10 @@ metadata:
   session: "دورة 2024"
   duration: "03:30"
   language: "ar"
+  render:
+    layout: "exam"
+    math: "latex"
+    density: "high"
   topics:
     - probability
     - complex numbers
