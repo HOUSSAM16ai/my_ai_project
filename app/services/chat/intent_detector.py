@@ -75,7 +75,12 @@ class IntentDetector:
             (r"(اقرأ|read|show|display)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_READ, self._extract_path),
             (r"(اكتب|write|create)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_WRITE, self._extract_path),
             (
-                r"(أعطني|هات|provide|give me|show me)\s+(.*)(نص|text|exercise|question|exam|تمرين|سؤال|موضوع|اختبار)(.+)?",
+                r"((أ|ا)عطني|هات|provide|give me|show me)\s+(.*)(نص|text|exercise|question|exam|تمرين|سؤال|موضوع|اختبار)(.+)?",
+                ChatIntent.CONTENT_RETRIEVAL,
+                self._extract_query_optional
+            ),
+            (
+                r"((أ|ا)ريد|بدي|i want|need)\s+(.*)(تمرين|سؤال|موضوع|exam|exercise|question|subject)(.+)?",
                 ChatIntent.CONTENT_RETRIEVAL,
                 self._extract_query_optional
             ),
