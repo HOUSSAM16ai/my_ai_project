@@ -7,25 +7,33 @@ metadata:
   topics: ["Probability", "Complex Numbers"]
 ---
 
-# Subject 1: Mathematics - Baccalaureate 2024
+# الموضوع الأول
 
-## Exercise 1: Probabilities
-[PLACEHOLDER: PASTE THE EXACT TEXT OF EXERCISE 1 HERE]
-(Ensure all numbers, fractions, and formulas are written in LaTeX format like $P(A) = 0.5$)
+## التمرين الأول: ( 04 نقاط )
 
-## Exercise 2: Complex Numbers
-[PLACEHOLDER: PASTE THE EXACT TEXT OF EXERCISE 2 HERE]
-(Ensure complex numbers z are formatted correctly, e.g., $z = a + bi$)
+يحتوي كيس على 11 كرة متماثلة لا نفرق بينها باللمس موزعة كما يلي: كريتان بيضاوان مرقمتان بـ: $1$ ، $3$
+وأربع كرات حمراء مرقمة بـ: $0$ ، $1$ ، $1$ ، $1$ وخمس كرات خضراء مرقمة بـ: $0$ ، $1$ ، $1$ ، $3$ ، $4$
+I ) نسحب عشوائيا وفي آن واحد 3 كرات من الكيس ونعتبر الحوادث الآتية:
+$A$ : " الحصول على 3 كرات من نفس اللون " ، $B$ : " الحصول على 3 كرات جداء أرقامها عدد فردي "
+$C$ : " الحصول على 3 كرات جداء أرقامها عدد زوجي "
 
----
-metadata:
-  year: "2024"
-  subject: "Mathematics"
-  branch: "Scientific"
-  exam_ref: "Subject 2"
-  topics: ["Functions", "Sequences"]
----
+1) أ) احسب $P(A)$ احتمال الحادثة $A$ و بيّن أن: $P(B) = \frac{56}{165}$ ثم استنتج $P(C)$
+ب) احسب الاحتمال الشرطي $P_A(B)$
+2) $X$ المتغير العشوائي الذي يرفق بكل عملية سحب لثلاث كرات، عدد الكرات التي تحمل رقما زوجيا.
+أ) عين قانون الاحتمال للمتغير العشوائي $X$ ثم احسب أمله الرياضياتي $E(X)$
+ب) احسب احتمال الحادثة $(X > 1)$
 
-# Subject 2: Mathematics - Baccalaureate 2024
+II ) نسحب الآن من الكيس عشوائيا 3 كرات على التوالي وبدون إرجاع.
+- احسب احتمال الحادثة $D$ : " الحصول على 3 كرات جداء أرقامها معدوم "
 
-(Structure provided for completeness, though specific request focused on Subject 1)
+## التمرين الثاني : ( 04 نقاط )
+
+I) حل في مجموعة الأعداد المركبة $\mathbb{C}$ المعادلة ذات المجهول $z$ الآتية:
+$$(z - 1 + 2\sqrt{3})[z^2 - 2(1-\sqrt{3})z + 5 - 2\sqrt{3}] = 0$$
+
+II) في المستوي المركب المنسوب إلى المعلم المتعامد والمتجانس $(O; \vec{u}, \vec{v})$ ، نعتبر النقط $A$ ، $B$ و $C$
+التي لاحقاتها على الترتيب $z_A$ ، $z_B$ و $z_C$ حيث: $z_A = 1 - \sqrt{3} + i$ ، $z_B = 1 - 2\sqrt{3}$ و $z_C = \overline{z_A}$
+
+1) اكتب كلّا من $1 - z_A$ ، $z_C - 1$ و $z_B$ على الشكل المثلثي.
+2) جد لاحقة النقطة $D$ مرجح الجملة المثقلة $\{(A;1),(B;-1),(C;1)\}$
+3) بيّن أن الرباعي $ABCD$ معين.
