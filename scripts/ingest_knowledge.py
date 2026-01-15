@@ -16,7 +16,7 @@ import argparse
 import json
 import os
 import sys
-from typing import List, Dict
+from typing import List, Dict, Generator, Iterator
 
 # Lazy imports to avoid startup crash if deps missing
 try:
@@ -45,106 +45,108 @@ except ImportError:
 CHUNK_SIZE = 1000  # Characters per chunk
 OVERLAP = 100      # Overlap between chunks
 
-def read_pdf(path: str) -> str:
-    """Reads text from a PDF file."""
+def read_pdf_generator(path: str) -> Iterator[str]:
+    """Yields text from a PDF file page by page to handle large files."""
     if PdfReader is None:
         raise ImportError("pypdf is required for PDF ingestion")
 
     try:
         reader = PdfReader(path)
-        full_text = []
-        print(f"📖 Reading PDF: {path} ({len(reader.pages)} pages)...")
+        print(f"📖 Reading PDF Stream: {path} ({len(reader.pages)} pages)...")
         for i, page in enumerate(reader.pages):
             text = page.extract_text()
             if text:
-                full_text.append(text)
-        return "\n".join(full_text)
+                yield text
+            if (i + 1) % 10 == 0:
+                print(f"  - Processed {i + 1} pages...", end='\r')
+        print(f"  - Finished reading {len(reader.pages)} pages.     ")
     except Exception as e:
         print(f"❌ Error reading PDF: {e}")
         sys.exit(1)
 
-def read_docx(path: str) -> str:
-    """Reads text from a Word file."""
+def read_docx_generator(path: str) -> Iterator[str]:
+    """Yields text from a Word file paragraph by paragraph."""
     if docx is None:
         raise ImportError("python-docx is required for Word ingestion")
 
     try:
         doc = docx.Document(path)
-        print(f"📖 Reading Word Doc: {path} ({len(doc.paragraphs)} paragraphs)...")
-        return "\n".join([para.text for para in doc.paragraphs])
+        print(f"📖 Reading Word Doc Stream: {path} ({len(doc.paragraphs)} paragraphs)...")
+        for para in doc.paragraphs:
+            if para.text:
+                yield para.text + "\n"
     except Exception as e:
         print(f"❌ Error reading DOCX: {e}")
         sys.exit(1)
 
-def read_xlsx(path: str) -> str:
-    """Reads text from an Excel file."""
+def read_xlsx_generator(path: str) -> Iterator[str]:
+    """Yields text from an Excel file sheet by sheet."""
     if pd is None:
         raise ImportError("pandas and openpyxl are required for Excel ingestion")
 
     try:
-        print(f"📖 Reading Excel: {path}...")
-        dfs = pd.read_excel(path, sheet_name=None)
-        full_text = []
-        for sheet_name, df in dfs.items():
-            full_text.append(f"--- Sheet: {sheet_name} ---")
-            full_text.append(df.to_string())
-        return "\n\n".join(full_text)
+        print(f"📖 Reading Excel Stream: {path}...")
+        # Note: pandas read_excel loads full file, but we can iterate sheets
+        xl = pd.ExcelFile(path)
+        for sheet_name in xl.sheet_names:
+            yield f"--- Sheet: {sheet_name} ---\n"
+            df = xl.parse(sheet_name)
+            yield df.to_string() + "\n\n"
     except Exception as e:
         print(f"❌ Error reading Excel: {e}")
         sys.exit(1)
 
-def read_image(path: str) -> str:
-    """Reads text from an Image using OCR."""
+def read_image_generator(path: str) -> Iterator[str]:
+    """Yields text from an Image using OCR."""
     if Image is None or pytesseract is None:
         raise ImportError("pillow and pytesseract are required for Image OCR")
 
     try:
-        print(f"👁️ Reading Image (OCR): {path}...")
+        print(f"👁️ Reading Image Stream (OCR): {path}...")
         img = Image.open(path)
         text = pytesseract.image_to_string(img)
         if not text.strip():
             print("⚠️ Warning: OCR returned empty text.")
-        return text
+        yield text
     except Exception as e:
         print(f"❌ Error reading Image: {e}")
         sys.exit(1)
 
-def read_text_file(path: str) -> str:
-    """Reads text from a plain text file."""
+def read_text_file_generator(path: str) -> Iterator[str]:
+    """Yields text from a plain text file line by line."""
     try:
+        print(f"📖 Reading Text Stream: {path}...")
         with open(path, 'r', encoding='utf-8') as f:
-            return f.read()
+            for line in f:
+                yield line
     except Exception as e:
         print(f"❌ Error reading file: {e}")
         sys.exit(1)
 
-def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = OVERLAP) -> List[str]:
-    """Splits text into overlapping chunks."""
-    chunks = []
-    start = 0
-    while start < len(text):
-        end = start + chunk_size
-        chunk = text[start:end]
-        chunks.append(chunk)
-        start += chunk_size - overlap
-    return chunks
+def stream_chunks(text_generator: Iterator[str], chunk_size: int = CHUNK_SIZE, overlap: int = OVERLAP) -> Iterator[str]:
+    """Consumes text stream and yields overlapping chunks without loading full file."""
+    buffer = ""
 
-def prepare_payloads(chunks: List[str], filename: str) -> List[Dict]:
-    """Prepares JSON payloads for Memory Agent."""
-    payloads = []
-    base_name = os.path.basename(filename)
-    ext = os.path.splitext(filename)[1].lower().replace('.', '')
+    for text_part in text_generator:
+        buffer += text_part
 
-    for i, chunk in enumerate(chunks):
-        payload = {
-            "content": chunk,
-            "tags": ["ingested", f"{ext}_import", base_name, f"chunk_{i}"]
-        }
-        payloads.append(payload)
-    return payloads
+        while len(buffer) >= chunk_size:
+            # Extract chunk
+            chunk = buffer[:chunk_size]
+            yield chunk
+
+            # Keep overlap + remaining
+            # Optimally, we advance by (chunk_size - overlap)
+            # buffer becomes buffer[chunk_size - overlap:]
+            advance = chunk_size - overlap
+            buffer = buffer[advance:]
+
+    # Yield remaining buffer if not empty
+    if buffer:
+        yield buffer
 
 def main():
-    parser = argparse.ArgumentParser(description="Ingest knowledge from files into Memory Agent format.")
+    parser = argparse.ArgumentParser(description="Ingest knowledge from files into Memory Agent format (Streaming Mode).")
     parser.add_argument("file", help="Path to the file (PDF, DOCX, XLSX, JPG, PNG, TXT)")
     parser.add_argument("--url", help="Memory Agent API URL (e.g., http://localhost:8001/memories)", default=None)
     parser.add_argument("--dry-run", action="store_true", help="Print payloads without sending", default=False)
@@ -156,60 +158,60 @@ def main():
         sys.exit(1)
 
     ext = os.path.splitext(args.file)[1].lower()
+    base_name = os.path.basename(args.file)
+    ext_clean = ext.replace('.', '')
 
-    # 1. Select Strategy
+    # 1. Select Generator
     if ext == '.pdf':
-        content = read_pdf(args.file)
+        text_stream = read_pdf_generator(args.file)
     elif ext == '.docx':
-        content = read_docx(args.file)
+        text_stream = read_docx_generator(args.file)
     elif ext == '.xlsx':
-        content = read_xlsx(args.file)
+        text_stream = read_xlsx_generator(args.file)
     elif ext in ['.png', '.jpg', '.jpeg']:
-        content = read_image(args.file)
+        text_stream = read_image_generator(args.file)
     else:
-        content = read_text_file(args.file)
+        text_stream = read_text_file_generator(args.file)
 
-    if not content:
-        print("⚠️  Warning: No content extracted from file.")
-        sys.exit(0)
+    # 2. Stream Chunks & Process
+    chunk_stream = stream_chunks(text_stream)
 
-    print(f"✅ Extracted {len(content)} characters.")
+    print(f"⚡ Processing stream...")
 
-    # 2. Chunk Content
-    chunks = chunk_text(content)
-    print(f"🧩 Split into {len(chunks)} chunks.")
+    chunk_count = 0
+    success_count = 0
 
-    # 3. Prepare Payloads
-    payloads = prepare_payloads(chunks, args.file)
+    import httpx
 
-    # 4. Output or Send
-    if args.url and not args.dry_run:
-        import httpx
-        print(f"🚀 Sending to Memory Agent at {args.url}...")
-        success_count = 0
-        for p in payloads:
+    # We iterate over chunks as they are generated
+    for i, chunk in enumerate(chunk_stream):
+        chunk_count += 1
+        payload = {
+            "content": chunk,
+            "tags": ["ingested", f"{ext_clean}_import", base_name, f"chunk_{i}"]
+        }
+
+        # 3. Output or Send Immediately
+        if args.url and not args.dry_run:
             try:
-                response = httpx.post(args.url, json=p)
+                response = httpx.post(args.url, json=payload, timeout=10.0)
                 if response.status_code == 200:
                     success_count += 1
-                    print(f"  - Chunk {p['tags'][-1]} sent ✅")
+                    # print(f"  - Chunk {i} sent ✅", end='\r')
                 else:
-                    print(f"  - Chunk {p['tags'][-1]} failed ❌ ({response.status_code})")
+                    print(f"  - Chunk {i} failed ❌ ({response.status_code})")
             except Exception as e:
-                print(f"  - Connection error: {e}")
-                break
-        print(f"🏁 Completed. Sent {success_count}/{len(payloads)} chunks.")
-    else:
-        print("\n📦 Generated Payloads (JSON Preview):")
-        print(json.dumps(payloads[:3], indent=2, ensure_ascii=False))
-        if len(payloads) > 3:
-            print(f"... and {len(payloads) - 3} more chunks.")
+                print(f"  - Chunk {i} Error: {e}")
+        else:
+            # Dry run: just print summary every 10 chunks or full JSON for first few
+            if i < 3:
+                print(json.dumps(payload, indent=2, ensure_ascii=False))
+            elif i == 3:
+                print("... (streaming continues) ...")
 
-        # Save to file for inspection
-        output_file = f"{args.file}.json"
-        with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(payloads, f, indent=2, ensure_ascii=False)
-        print(f"\n💾 Full output saved to {output_file}")
+    print(f"\n🏁 Completed. Processed {chunk_count} chunks.")
+    if args.url and not args.dry_run:
+        print(f"🚀 Successfully sent: {success_count}/{chunk_count}")
 
 if __name__ == "__main__":
     main()
