@@ -73,6 +73,11 @@ class IntentDetector:
                 for pattern in admin_queries
             ],
             (
+                r"(نص|text)\s+(التمرين|تمرين|exercise|exercises)\b(.+)?",
+                ChatIntent.CONTENT_RETRIEVAL,
+                self._extract_query_optional,
+            ),
+            (
                 r"^(تمارين|تمرين|exercises?|exam|subject|موضوع)\b(.+)?",
                 ChatIntent.CONTENT_RETRIEVAL,
                 self._extract_query_optional,

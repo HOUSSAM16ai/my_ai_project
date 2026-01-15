@@ -128,9 +128,14 @@ class CustomerChatBoundaryService:
             )
         role_label = "STANDARD_USER"
         intent_result = await self.intent_detector.detect(question)
+        effective_intent = intent_result.intent
+        if effective_intent != ChatIntent.CONTENT_RETRIEVAL and self._looks_like_content_request(
+            question
+        ):
+            effective_intent = ChatIntent.CONTENT_RETRIEVAL
         tool_decision = self.tool_router.authorize_intent(
             role=role_label,
-            intent=intent_result.intent,
+            intent=effective_intent,
         )
 
         conversation = await self.get_or_create_conversation(user, question, conversation_id)
@@ -140,7 +145,7 @@ class CustomerChatBoundaryService:
             await self._record_tool_blocked(
                 user_id=user.id,
                 conversation_id=conversation.id,
-                intent=intent_result.intent.value,
+                intent=effective_intent.value,
                 reason_code=tool_decision.reason_code,
                 ip=ip,
                 user_agent=user_agent,
@@ -152,7 +157,7 @@ class CustomerChatBoundaryService:
                 {
                     "classification": "tool_access",
                     "blocked": "true",
-                    "intent": intent_result.intent.value,
+                    "intent": effective_intent.value,
                     "reason_code": tool_decision.reason_code,
                 },
             )
@@ -203,7 +208,7 @@ class CustomerChatBoundaryService:
             stream = self._refusal_stream(conversation, decision.refusal_message)
             return ChatDispatchResult(status_code=200, stream=stream)
 
-        if intent_result.intent != ChatIntent.CONTENT_RETRIEVAL:
+        if effective_intent != ChatIntent.CONTENT_RETRIEVAL:
             refusal_text = self._build_strict_education_refusal()
             await self.save_message(
                 conversation.id,
@@ -293,6 +298,23 @@ class CustomerChatBoundaryService:
             "إذا أردت نتيجة محددة، اطلبها بصيغة: التمرين الأول/الثاني، الموضوع الأول، سنة 2024.",
         ]
         return "\n".join(lines)
+
+    def _looks_like_content_request(self, question: str) -> bool:
+        """تعرف سريع على الطلبات التعليمية التي تشير لتمارين مخزنة."""
+        lowered = question.lower()
+        keywords = (
+            "تمرين",
+            "تمارين",
+            "موضوع",
+            "بكالوريا",
+            "bac",
+            "subject",
+            "exercise",
+            "exercises",
+            "الاحتمالات",
+            "الأعداد المركبة",
+        )
+        return any(keyword in lowered for keyword in keywords)
 
     async def _refusal_stream(
         self,
