@@ -82,6 +82,10 @@ class OrchestratorAgent:
                 else:
                     yield str(result)
 
+            elif intent == ChatIntent.CONTENT_RETRIEVAL:
+                async for chunk in self._handle_content_retrieval(normalized, context):
+                    yield chunk
+
             else:
                 # Fallback to pure LLM Chat
                 async for chunk in self._handle_chat_fallback(normalized, context):
@@ -116,13 +120,86 @@ class OrchestratorAgent:
         else:
             context["intent_type"] = "recommendation"
 
+    async def _handle_content_retrieval(self, question: str, context: dict) -> AsyncGenerator[str, None]:
+        """معالجة استرجاع المحتوى التعليمي (تمارين، امتحانات)."""
+        logger.info(f"Handling content retrieval for: {question}")
+
+        # 1. Extract Search Parameters (Best Effort via Heuristics or pass full query)
+        # Ideally, we would use an LLM call here to extract precise JSON params,
+        # but for speed and robustness, we will pass the full question as the query.
+        # The tool `search_educational_content` handles semantic search.
+
+        # Check for specific year/subject in the question to aid the tool
+        year = "2024" if "2024" in question else None
+        subject = None
+        if any(w in question for w in ["math", "رياضيات", "رياضه"]):
+            subject = "Mathematics"
+        elif any(w in question for w in ["physics", "فيزياء"]):
+            subject = "Physics"
+
+        branch = None
+        if any(w in question for w in ["science", "experimental", "علوم", "تجريبية", "تجريبيه"]):
+            branch = "Experimental Sciences"
+        elif any(w in question for w in ["math expert", "technician", "تقني", "رياضي"]):
+            branch = "Mathematics"
+
+        exam_ref = None
+        if any(w in question for w in ["subject 1", "topic 1", "first subject", "موضوع 1", "موضوع الاول", "الموضوع الأول"]):
+            exam_ref = "Subject 1"
+        elif any(w in question for w in ["subject 2", "topic 2", "second subject", "موضوع 2", "موضوع الثاني", "الموضوع الثاني"]):
+            exam_ref = "Subject 2"
+
+        # 2. Call Retrieval Tool
+        search_result = await self.tools.retrieval.search_educational_content(
+            query=question,
+            year=year,
+            subject=subject,
+            branch=branch,
+            exam_ref=exam_ref
+        )
+
+        # 3. Stream Response
+        # We wrap the result in a helpful message using the LLM to format it nicely,
+        # OR just yield it directly if it's already formatted by the tool.
+        # The tool returns raw text or formatted text. Let's wrap it in an LLM call for the best experience.
+
+        system_prompt = get_context_service().get_customer_system_prompt()
+        prompt = f"""
+User asked: "{question}"
+
+Search Results:
+{search_result}
+
+INSTRUCTIONS:
+- If content was found, present it clearly to the user.
+- Use the exact text provided in the search results.
+- Do NOT refuse to show it.
+- If no content found, apologize and suggest what is available.
+"""
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ]
+
+        async for chunk in self.ai_client.stream_chat(messages):
+             if hasattr(chunk, "choices"):
+                delta = chunk.choices[0].delta if chunk.choices else None
+                content = delta.content if delta else ""
+             else:
+                content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+
+             if content:
+                yield content
+
     async def _handle_chat_fallback(self, question: str, context: dict) -> AsyncGenerator[str, None]:
         """معالجة المحادثة العامة باستخدام LLM مع السياق."""
         system_context = context.get("system_context", "")
 
         # Load Base Prompt
+        # Use Customer Prompt by default for better user alignment, or Admin if context demands.
+        # Given "Overmind Education" context, Customer Prompt is safer.
         try:
-            base_prompt = get_context_service().get_admin_system_prompt()
+            base_prompt = get_context_service().get_customer_system_prompt()
         except Exception:
             base_prompt = "أنت مساعد ذكي."
 
