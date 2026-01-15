@@ -7,6 +7,9 @@
 
 import httpx
 import os
+import glob
+import yaml
+from pathlib import Path
 from app.core.logging import get_logger
 
 logger = get_logger("tool-retrieval")
@@ -44,8 +47,6 @@ async def search_educational_content(
         tags.append(f"exam_ref:{exam_ref}")
 
     # If explicit exercise ID is requested, add it to query to boost relevance
-    # or look for tags if implemented in ingestion (exercise_id isn't standard in our current ingestion logic yet,
-    # but the text segmentation might handle it). We will rely on semantic search + tags.
     full_query = query
     if exercise_id:
         full_query = f"{query} {exercise_id}"
@@ -61,8 +62,8 @@ async def search_educational_content(
         "filters": {
             "tags": tags
         },
-        "limit": 5, # Fetch enough context
-        "min_score": 0.7 # Ensure relevance
+        "limit": 5,
+        "min_score": 0.7
     }
 
     try:
@@ -73,23 +74,84 @@ async def search_educational_content(
             results = response.json()
 
             if not results or not isinstance(results, list):
+                # Try local fallback if API returns empty (and we might have local files)
+                # But usually empty API means truly empty. Let's strictly use fallback on Connection Error.
                 return "لم يتم العثور على محتوى مطابق في قاعدة المعرفة."
 
-            # Format results
             formatted_output = "نتائج البحث في المصادر التعليمية:\n\n"
             for item in results:
                 content = item.get("content", "")
-                # Extract metadata if available in response
                 formatted_output += f"---\n{content}\n"
 
             return formatted_output
 
-    except httpx.ConnectError:
-        logger.error(f"Could not connect to Memory Agent at {memory_url}")
-        return "عذرًا، خدمة الذاكرة غير متاحة حاليًا للبحث في المصادر."
+    except (httpx.ConnectError, httpx.TimeoutException):
+        logger.warning(f"Could not connect to Memory Agent at {memory_url}. Switching to local knowledge base fallback.")
+        return _search_local_knowledge_base(full_query, year, subject, exam_ref)
+
     except httpx.HTTPStatusError as e:
         logger.error(f"Memory Agent returned error: {e.response.status_code}")
         return "حدث خطأ أثناء استرجاع المعلومات من المصادر."
     except Exception as e:
         logger.error(f"Search failed: {e}", exc_info=True)
         return "عذرًا، حدث خطأ غير متوقع أثناء البحث."
+
+def _search_local_knowledge_base(query: str, year: str | None, subject: str | None, exam_ref: str | None) -> str:
+    """
+    بحث احتياطي في الملفات المحلية في حال تعطل خدمة الذاكرة.
+    """
+    kb_path = Path("knowledge_base")
+    if not kb_path.exists():
+        return "قاعدة المعرفة المحلية غير موجودة."
+
+    matches = []
+
+    # Normalize query terms
+    query_terms = query.lower().split()
+
+    for md_file in kb_path.glob("*.md"):
+        try:
+            content = md_file.read_text(encoding="utf-8")
+
+            # Extract frontmatter
+            if content.startswith("---"):
+                parts = content.split("---", 2)
+                if len(parts) >= 3:
+                    frontmatter_raw = parts[1]
+                    body = parts[2]
+
+                    try:
+                        metadata = yaml.safe_load(frontmatter_raw)
+                        # Check metadata filters
+                        if year and str(metadata.get("metadata", {}).get("year", "")) != str(year):
+                            continue
+                        if subject and subject.lower() not in str(metadata.get("metadata", {}).get("subject", "")).lower():
+                            continue
+                        if exam_ref and exam_ref.lower() not in str(metadata.get("metadata", {}).get("exam_ref", "")).lower():
+                            continue
+
+                        # If metadata matches, check body for query terms
+                        # For very specific lookups like "Exercise 1", we want high relevance.
+                        # Simple keyword matching:
+                        if all(term in body.lower() for term in query_terms):
+                             matches.append(body.strip())
+                        elif len(matches) == 0:
+                             # If we haven't found exact matches but metadata matches, add it as a candidate
+                             # This handles cases where query is vague but metadata is precise
+                             matches.append(body.strip())
+
+                    except yaml.YAMLError:
+                        logger.error(f"Failed to parse YAML in {md_file}")
+                        continue
+        except Exception as e:
+            logger.error(f"Error reading file {md_file}: {e}")
+            continue
+
+    if not matches:
+        return "لم يتم العثور على محتوى مطابق في الملفات المحلية (وضع عدم الاتصال)."
+
+    output = "نتائج البحث في المصادر المحلية (وضع عدم الاتصال):\n\n"
+    for match in matches[:3]: # Limit to top 3
+        output += f"---\n{match}\n"
+
+    return output
