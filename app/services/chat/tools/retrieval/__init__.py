@@ -104,15 +104,49 @@ async def search_educational_content(
                 if not content:
                     continue
 
+                # --- STRICT METADATA VERIFICATION ---
+                # Even if API returns results, we must verify they match the requested params.
+                # This prevents "Fuzzy Match" or "Wrong Year" leaks.
+                payload = item.get("payload") or item.get("metadata") or {}
+
+                # 1. Check Year
+                if year and str(payload.get("year", "")) != str(year):
+                    logger.warning(f"Skipping result with mismatched year: {payload.get('year')} != {year}")
+                    continue
+
+                # 2. Check Subject (Loose string match)
+                if subject:
+                    item_subject = str(payload.get("subject", "")).lower()
+                    if subject.lower() not in item_subject and item_subject not in subject.lower():
+                        logger.warning(f"Skipping result with mismatched subject: {item_subject} != {subject}")
+                        continue
+
+                # 3. Check Exam Ref
+                if exam_ref:
+                    item_ref = str(payload.get("exam_ref", "")).lower()
+                    if exam_ref.lower() not in item_ref and item_ref not in exam_ref.lower():
+                        logger.warning(f"Skipping result with mismatched exam_ref: {item_ref} != {exam_ref}")
+                        continue
+
                 # Try granular extraction
                 extracted = _extract_specific_exercise(content, full_query)
-                if extracted:
-                    contents.append(extracted)
-                elif not is_specific:
-                    # Only include full content if the user didn't ask for a specific exercise/topic that we failed to find
-                    contents.append(content)
 
-            # Deduplicate contents (remove chunks that are substrings of fuller docs)
+                final_content = ""
+                if extracted:
+                    final_content = extracted
+                elif not is_specific:
+                    # Only include full content if the user didn't ask for a specific exercise/topic
+                    final_content = content
+
+                if final_content:
+                    # Add Source Header for Clarity
+                    source_label = f"--- Source: {payload.get('year', '')} {payload.get('exam_ref', '')} ---"
+                    contents.append(f"{source_label}\n\n{final_content}")
+
+            if not contents and is_specific:
+                 return "عذراً، لم أتمكن من العثور على التمرين المحدد في السياق المطلوب."
+
+            # Deduplicate contents
             unique_contents = _deduplicate_contents(contents)
 
             return "\n\n".join(unique_contents).strip()
@@ -132,9 +166,16 @@ async def search_educational_content(
 def _is_specific_request(query: str) -> bool:
     """Check if the query is requesting a specific exercise or topic."""
     query_lower = query.lower()
-    # Check for explicit exercise keywords
+
+    # 1. Check for explicit exercise keywords/numbers
     if any(k in query_lower for k in ["exercise", "تمرين", "تمارين", "ex1", "ex2", "ex3", "ex4"]):
         return True
+
+    # 2. Check for Topic Keywords (If user asks for 'Probability', they want THAT, not the whole exam)
+    for keywords in _TOPIC_MAP.values():
+        if any(k in query_lower for k in keywords):
+            return True
+
     return False
 
 
@@ -173,15 +214,13 @@ def _extract_specific_exercise(content: str, query: str) -> str | None:
 
     # --- PHASE 1: Header Extraction ---
     # Extract Title (H1) and Exam Card (## بطاقة الامتحان)
-    # Filter out blockquotes that are internal instructions (starting with >)
     header_lines = []
     capture_card = False
 
     for line in lines:
         stripped = line.strip()
 
-        # Stop header capture if we hit an Exercise, or a big separator that isn't part of the card
-        # Enhanced check to catch ##, ###, etc.
+        # Stop header capture if we hit an Exercise
         if (stripped.startswith("#") and ("التمرين" in stripped or "Exercise" in stripped)):
             break
 
@@ -197,11 +236,8 @@ def _extract_specific_exercise(content: str, query: str) -> str | None:
             continue
 
         if capture_card:
-            # If we hit a new section (that isn't a list item), stop card capture
             if line.startswith("## ") or line.startswith("# "):
                 capture_card = False
-                # If it's the start of an exercise, loop will break in next iteration or condition
-            # Check for block separator `---` which often ends the card
             elif line.startswith("---"):
                 capture_card = False
             else:
@@ -331,15 +367,13 @@ def _search_local_knowledge_base(
                         # 5. Extract Specific Exercise if requested
                         extracted_exercise = _extract_specific_exercise(body, query)
 
+                        is_specific = _is_specific_request(query)
+
                         if extracted_exercise:
                             matches.append(extracted_exercise)
-                        else:
-                            # If no specific exercise requested (or extraction failed),
-                            # check if the file itself is generally relevant.
-                            is_specific = _is_specific_request(query)
-
-                            if not is_specific:
-                                matches.append(body.strip())
+                        elif not is_specific:
+                            # Only append full body if request was NOT specific
+                            matches.append(body.strip())
 
                     except yaml.YAMLError:
                         logger.error(f"Failed to parse YAML in {md_file}")
@@ -390,7 +424,6 @@ def _deduplicate_contents(contents: list[str]) -> list[str]:
                 break
 
             # 2. Fuzzy inclusion check via Token Overlap (Robust against formatting/headers)
-            # Use token overlap coefficient (Intersection / Len(Short))
             try:
                 # Simple tokenization: split by whitespace
                 tokens_short = set(content_core.split())
@@ -406,8 +439,7 @@ def _deduplicate_contents(contents: list[str]) -> list[str]:
                     if overlap > 0.9:
                         is_duplicate = True
             except Exception as e:
-                logger.warning(f"Deduplication error: {e}")
-                # Fallback to difflib if tokenization fails (unlikely for string)
+                # Fallback to difflib if tokenization fails
                 pass
 
             if is_duplicate:
