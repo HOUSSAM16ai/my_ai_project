@@ -177,23 +177,35 @@ class OrchestratorAgent:
             yield "\n\n---\n\n"
 
             # 3. Generate and Yield AI Explanation/Analysis
-            async for chunk in self._generate_explanation(question, search_result):
+            personalization_context = await self._build_personalization_context(context)
+            async for chunk in self._generate_explanation(
+                question,
+                search_result,
+                personalization_context,
+            ):
                 yield chunk
             return
 
         yield self._build_strict_content_only_message()
 
-    async def _generate_explanation(self, question: str, content: str) -> AsyncGenerator[str, None]:
-        """توليد شرح أو تحليل للمحتوى المسترجع باستخدام LLM."""
+    async def _generate_explanation(
+        self,
+        question: str,
+        content: str,
+        personalization_context: str,
+    ) -> AsyncGenerator[str, None]:
+        """توليد شرح أو تحليل للمحتوى المسترجع مع مراعاة ملف الطالب."""
 
         system_prompt = (
             "أنت مساعد تعليمي ذكي (Overmind). "
             "مهمتك هي شرح التمرين أو المحتوى الذي تم استرجاعه للطالب، أو تقديم إرشادات للحل (دون إعطاء الحل النهائي مباشرة إذا كان تمريناً للتقييم). "
             "استخدم النص المسترجع أدناه كسياق أساسي للإجابة. "
             "لا تكرر كتابة نص التمرين مرة أخرى، فقد تم عرضه بالفعل. "
-            "ركز على الفهم، المفاهيم الأساسية، وطريقة التفكير."
+            "ركز على الفهم، المفاهيم الأساسية، وطريقة التفكير. "
+            "قدّم شرحاً عميقاً متعدد الطبقات يتدرّج من التعريف إلى التطبيق."
         )
 
+        personalization_block = f"\n\n{personalization_context}" if personalization_context else ""
         user_message = f"""
 سؤال الطالب: {question}
 
@@ -201,6 +213,7 @@ class OrchestratorAgent:
 {content}
 
 المطلوب: قدم شرحاً أو تلميحات مفيدة حول هذا المحتوى.
+{personalization_block}
 """
         messages = [
             {"role": "system", "content": system_prompt},
@@ -277,8 +290,11 @@ class OrchestratorAgent:
             "\n2. إذا سأل الطالب سؤالاً تعليمياً عاماً (مثل: اشرح لي الاحتمالات) ولم يوجد سياق، اشرح له المفهوم علمياً ومنهجياً بوضوح."
             "\n3. ممنوع تماماً اختراع نصوص تمارين أو امتحانات رسمية (بكالوريا) غير موجودة في السياق (Hallucination)."
             "\n4. اشرح 'لماذا' و 'كيف' (Methodology) وليس فقط النتيجة."
-            "\n5. كن مشجعاً، صبوراً، وتصرف كأستاذ خصوصي ممتاز."
+            "\n5. قدّم شرحاً عميقاً ومتدرجاً، مع أمثلة إن لزم."
+            "\n6. كن مشجعاً، صبوراً، وتصرف كأستاذ خصوصي ممتاز."
         )
+
+        personalization_context = await self._build_personalization_context(context)
 
         # Construct History
         history_msgs = context.get("history_messages", [])
@@ -287,7 +303,10 @@ class OrchestratorAgent:
             recent = history_msgs[-10:]
             history_text = "\nSIAQ:\n" + "\n".join([f"{m.get('role')}: {m.get('content')}" for m in recent])
 
-        final_prompt = f"{base_prompt}\n{strict_instruction}\n{system_context}\n{history_text}"
+        personalization_block = f"\n{personalization_context}" if personalization_context else ""
+        final_prompt = (
+            f"{base_prompt}\n{strict_instruction}{personalization_block}\n{system_context}\n{history_text}"
+        )
 
         messages = [
             {"role": "system", "content": final_prompt},
@@ -303,3 +322,128 @@ class OrchestratorAgent:
 
             if content:
                 yield content
+
+    async def _build_personalization_context(self, context: dict[str, object]) -> str:
+        """بناء سياق شخصي موجز لدعم إجابة مخصصة للطالب."""
+        cached_context = context.get("personalization_context")
+        if isinstance(cached_context, str):
+            return cached_context
+
+        user_id = context.get("user_id")
+        if not isinstance(user_id, int):
+            return ""
+
+        try:
+            payload = await self.tools.execute(
+                "fetch_comprehensive_student_history",
+                {"user_id": user_id},
+            )
+        except Exception as exc:
+            logger.warning("Failed to fetch student context: %s", exc)
+            return ""
+
+        if not isinstance(payload, dict):
+            return ""
+
+        stats = payload.get("profile_stats")
+        missions = payload.get("missions_summary")
+
+        profile = self._derive_learning_profile(stats, missions)
+        summary_lines = self._format_profile_summary(stats, missions, profile)
+        if not summary_lines:
+            return ""
+
+        personalization_context = "\n".join(summary_lines)
+        context["personalization_context"] = personalization_context
+        return personalization_context
+
+    def _derive_learning_profile(
+        self,
+        stats: object,
+        missions: object,
+    ) -> dict[str, str]:
+        """اشتقاق مستوى الطالب ونبرة الإرشاد المطلوبة من البيانات المتاحة."""
+        level = "متوسط"
+        tone = "مشجع"
+        pacing = "متوازن"
+
+        if isinstance(stats, dict):
+            total_missions = stats.get("total_missions")
+            completed_missions = stats.get("completed_missions")
+            failed_missions = stats.get("failed_missions")
+            total_messages = stats.get("total_chat_messages")
+
+            if isinstance(total_missions, int) and total_missions <= 1:
+                level = "مبتدئ"
+                pacing = "بطيء مع خطوات واضحة"
+            if isinstance(completed_missions, int) and isinstance(total_missions, int) and total_missions > 0:
+                completion_ratio = completed_missions / total_missions
+                if completion_ratio >= 0.75:
+                    level = "متقدم"
+                    pacing = "سريع مع تحديات إضافية"
+            if isinstance(failed_missions, int) and failed_missions >= 2:
+                tone = "داعِم مع إعادة تبسيط"
+                pacing = "متدرج مع أمثلة إضافية"
+            if isinstance(total_messages, int) and total_messages < 5:
+                tone = "ترحيبي وهادئ"
+
+        focus = "الربط بين الفكرة والخطوات العملية"
+        if isinstance(missions, dict):
+            topics = missions.get("topics")
+            if isinstance(topics, list):
+                topic_list = [topic for topic in topics if isinstance(topic, str)]
+                if topic_list:
+                    focus = f"ربط الشرح بمواضيع الطالب الحديثة مثل: {', '.join(topic_list[:3])}"
+
+        return {
+            "level": level,
+            "tone": tone,
+            "pacing": pacing,
+            "focus": focus,
+        }
+
+    def _format_profile_summary(
+        self,
+        stats: object,
+        missions: object,
+        profile: dict[str, str],
+    ) -> list[str]:
+        """صياغة ملخص شخصي قابل للإدراج داخل تعليمات الوكيل."""
+        lines: list[str] = ["ملف الطالب المختصر (للتخصيص فقط):"]
+        lines.append(f"- مستوى تقريبي: {profile['level']}")
+        lines.append(f"- أسلوب الشرح: {profile['tone']}، بإيقاع {profile['pacing']}")
+        lines.append(f"- محور التركيز: {profile['focus']}")
+
+        if isinstance(stats, dict):
+            total_missions = stats.get("total_missions")
+            completed_missions = stats.get("completed_missions")
+            failed_missions = stats.get("failed_missions")
+            total_messages = stats.get("total_chat_messages")
+            last_activity = stats.get("last_activity")
+            if isinstance(total_missions, int):
+                lines.append(f"- إجمالي المهام: {total_missions}")
+            if isinstance(completed_missions, int):
+                lines.append(f"- المهام المكتملة: {completed_missions}")
+            if isinstance(failed_missions, int):
+                lines.append(f"- المهام غير المكتملة: {failed_missions}")
+            if isinstance(total_messages, int):
+                lines.append(f"- إجمالي رسائل التعلم: {total_messages}")
+            if isinstance(last_activity, str) and last_activity:
+                lines.append(f"- آخر نشاط: {last_activity}")
+
+        if isinstance(missions, dict):
+            topics = missions.get("topics")
+            recent = missions.get("recent_missions")
+            if isinstance(topics, list):
+                topic_list = [topic for topic in topics if isinstance(topic, str)]
+                if topic_list:
+                    lines.append(f"- مواضيع حديثة: {', '.join(topic_list[:6])}")
+            if isinstance(recent, list) and recent:
+                latest = recent[0]
+                if isinstance(latest, dict):
+                    title = latest.get("title")
+                    status = latest.get("status")
+                    if isinstance(title, str) and isinstance(status, str):
+                        lines.append(f"- آخر مهمة: {title} ({status})")
+
+        return lines if len(lines) > 1 else []
