@@ -19,6 +19,18 @@ const nextConfig = {
             destination: process.env.API_URL
             ? `${process.env.API_URL}/admin/api/:path*`
             : 'http://127.0.0.1:8000/admin/api/:path*',
+        },
+        {
+            source: '/auth/:path*',
+            destination: process.env.API_URL
+            ? `${process.env.API_URL}/auth/:path*`
+            : 'http://127.0.0.1:8000/auth/:path*',
+        },
+        {
+            source: '/api/security/:path*',
+            destination: process.env.API_URL
+            ? `${process.env.API_URL}/api/security/:path*`
+            : 'http://127.0.0.1:8000/api/security/:path*',
         }
       ]
     },
