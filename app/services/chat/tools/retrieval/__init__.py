@@ -7,6 +7,7 @@
 
 import os
 import re
+import difflib
 from pathlib import Path
 
 import httpx
@@ -356,25 +357,60 @@ def _search_local_knowledge_base(
     return "\n\n".join(unique_matches[:3]).strip()
 
 
+def _get_core_content(content: str) -> str:
+    """Helper to strip the file header if present (separated by ---)."""
+    if "\n\n---\n\n" in content:
+        return content.split("\n\n---\n\n")[-1]
+    return content
+
+
 def _deduplicate_contents(contents: list[str]) -> list[str]:
     """
-    Deduplicates content by removing items that are substrings of longer items.
+    Deduplicates content by removing items that are substrings (or fuzzy matches) of longer items.
     Useful when we retrieve both a full document and a chunk of it.
     """
     if not contents:
         return []
 
     # Sort by length descending (longest first)
-    # We want to keep the one with the most context (Header + Exercise)
     sorted_contents = sorted(contents, key=len, reverse=True)
 
     unique_contents = []
     for content in sorted_contents:
-        # Check if this content is a substring of any already kept content
+        # Check if this content is a substring/fuzzy match of any already kept content
         is_duplicate = False
+        content_core = _get_core_content(content)
+
         for kept in unique_contents:
-            if content in kept:
+            kept_core = _get_core_content(kept)
+
+            # 1. Strict substring check (fastest)
+            if content_core in kept_core:
                 is_duplicate = True
+                break
+
+            # 2. Fuzzy inclusion check via Token Overlap (Robust against formatting/headers)
+            # Use token overlap coefficient (Intersection / Len(Short))
+            try:
+                # Simple tokenization: split by whitespace
+                tokens_short = set(content_core.split())
+                tokens_long = set(kept_core.split())
+
+                if not tokens_short:
+                    is_duplicate = True # Empty content considered duplicate
+                else:
+                    intersection = tokens_short.intersection(tokens_long)
+                    overlap = len(intersection) / len(tokens_short)
+
+                    # Threshold: if > 90% of tokens in the short content are present in the long content
+                    if overlap > 0.9:
+                        is_duplicate = True
+            except Exception as e:
+                logger.warning(f"Deduplication error: {e}")
+                # Fallback to difflib if tokenization fails (unlikely for string)
+                pass
+
+            if is_duplicate:
                 break
 
         if not is_duplicate:
