@@ -8,8 +8,6 @@ export default function Home() {
     <main>
        {/* Load font awesome as it was used in legacy app */}
        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-       {/* Load legacy CSS */}
-       <link rel="stylesheet" href="/css/styles.css" />
 
        <CogniForgeApp />
 

@@ -1,33 +1,38 @@
 :root {
-    --background-color: #000000;
-    --text-color: #ffffff;
-    --primary-color: #00aaff;
-    --secondary-color: #000000;
-    --border-color: #333333;
-    --input-bg-color: #1a1a1a;
-    --error-color: #ff4d4d;
-    --sidebar-bg: #000000;
-    --header-shadow: none;
-    --font-primary: "IBM Plex Sans Arabic", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --background-color: #050506;
+    --surface-color: #0f1116;
+    --text-color: #f7f3ec;
+    --primary-color: #d4af37;
+    --secondary-color: #0b0c10;
+    --border-color: rgba(212, 175, 55, 0.28);
+    --input-bg-color: rgba(17, 18, 24, 0.9);
+    --error-color: #ff6b6b;
+    --sidebar-bg: #0b0c10;
+    --header-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+    --font-display: "Noto Naskh Arabic", "IBM Plex Sans Arabic", "Cairo", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-primary: var(--font-display);
 }
 
 :root[data-theme="light"] {
-    --background-color: #ffffff;
-    --text-color: #000000;
-    --primary-color: #000000;
+    --background-color: #faf8f4;
+    --surface-color: #ffffff;
+    --text-color: #151515;
+    --primary-color: #b5851a;
     --secondary-color: #ffffff;
-    --border-color: #e5e5e5;
-    --input-bg-color: #f4f4f4;
+    --border-color: rgba(181, 133, 26, 0.25);
+    --input-bg-color: #ffffff;
     --error-color: #c62828;
     --sidebar-bg: #ffffff;
-    --header-shadow: none;
+    --header-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
 }
 
 body, html {
     height: 100%;
     margin: 0;
     font-family: var(--font-primary);
-    background-color: var(--background-color);
+    background: radial-gradient(1200px circle at 10% 0%, rgba(212, 175, 55, 0.16), transparent 60%),
+        radial-gradient(900px circle at 90% 15%, rgba(0, 170, 255, 0.12), transparent 55%),
+        var(--background-color);
     color: var(--text-color);
     overflow: hidden;
     direction: rtl; /* Global RTL */
@@ -65,19 +70,21 @@ body, html {
 }
 
 .login-form, .register-form {
-    background-color: var(--secondary-color);
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)) var(--secondary-color);
     padding: 40px;
-    border-radius: 8px; /* Clean look */
+    border-radius: 16px;
     width: 100%;
     max-width: 400px;
     border: 1px solid var(--border-color);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
 }
 
 h2 {
     color: var(--text-color);
     text-align: center;
     margin-bottom: 20px;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.3px;
 }
 
 .input-group {
@@ -87,8 +94,8 @@ h2 {
 .input-group input {
     width: 100%;
     padding: 14px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 12px;
     background-color: var(--input-bg-color);
     color: var(--text-color);
     box-sizing: border-box;
@@ -108,11 +115,11 @@ h2 {
 button {
     width: 100%;
     padding: 14px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background-color: var(--text-color);
-    color: var(--background-color);
-    font-weight: 600;
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.95), rgba(234, 210, 134, 0.85));
+    color: #1a1a1a;
+    font-weight: 700;
     cursor: pointer;
     transition: opacity 0.3s;
     font-family: inherit;
@@ -154,6 +161,7 @@ button:hover {
     height: 100%;
     background-color: var(--sidebar-bg);
     border-left: 1px solid var(--border-color);
+    box-shadow: -20px 0 60px rgba(0, 0, 0, 0.35);
     display: flex;
     flex-direction: column;
     padding: 20px;
@@ -179,7 +187,7 @@ button:hover {
 .sidebar-header h3 {
     margin: 0;
     font-size: 1.2rem;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .close-sidebar-btn {
@@ -233,7 +241,7 @@ button:hover {
     min-height: 0;
     overflow: hidden;
     position: relative;
-    background-color: var(--background-color);
+    background-color: transparent;
 }
 
 .chat-container {
@@ -253,23 +261,24 @@ button:hover {
     justify-content: space-between;
     align-items: center;
     padding: 15px 20px;
-    background-color: var(--sidebar-bg);
+    background: linear-gradient(180deg, rgba(15, 17, 22, 0.98), rgba(15, 17, 22, 0.92));
     z-index: 50;
     position: relative;
     direction: rtl;
+    box-shadow: var(--header-shadow);
 }
 
 .header-title h2 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     text-align: right;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .header-status {
     font-size: 0.8rem;
     margin-inline-start: 10px;
-    color: #888;
+    color: rgba(247, 243, 236, 0.6);
     font-weight: normal;
 }
 
@@ -285,12 +294,12 @@ button:hover {
     position: absolute;
     top: calc(100% + 5px);
     left: 20px;
-    background: var(--background-color);
+    background: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     min-width: 200px;
     padding: 5px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -319,7 +328,7 @@ button:hover {
 .messages {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 40px; /* Generous padding like a document */
+    padding: 48px; /* Generous padding like a document */
     content-visibility: auto;
     overscroll-behavior-y: contain;
     direction: rtl; /* Pure RTL */
@@ -343,9 +352,9 @@ button:hover {
 }
 
 .message.user .message-bubble {
-    font-weight: 700; /* Bold */
-    color: var(--text-color);
-    font-size: 1.1rem; /* Slightly larger heading-like */
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1.15rem;
     margin-bottom: 8px;
     display: inline-block; /* Or block */
     width: 100%;
@@ -359,8 +368,8 @@ button:hover {
 .message.assistant .message-bubble {
     font-weight: 400;
     color: var(--text-color);
-    font-size: 1.05rem;
-    line-height: 1.8; /* Professional leading */
+    font-size: 1.08rem;
+    line-height: 1.9;
 }
 
 /* Common Bubble Reset */
@@ -378,7 +387,7 @@ button:hover {
     display: flex;
     padding: 20px 40px;
     gap: 12px;
-    background-color: var(--background-color);
+    background-color: transparent;
     max-width: 900px;
     margin: 0 auto;
     width: 100%;
@@ -391,9 +400,9 @@ button:hover {
     flex-grow: 1;
     padding: 16px;
     border: none;
-    border-top: 1px solid var(--border-color);
-    border-radius: 0;
-    background-color: transparent;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 14px;
+    background-color: rgba(10, 10, 12, 0.6);
     color: var(--text-color);
     resize: none;
     max-height: 200px;
@@ -403,35 +412,35 @@ button:hover {
     text-align: right;
     line-height: 1.6;
     outline: none;
-    box-shadow: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
 
 .input-area textarea::placeholder {
-    color: #666;
+    color: rgba(247, 243, 236, 0.45);
     opacity: 0.7;
 }
 
 .input-area textarea:focus {
-    border-color: var(--text-color);
+    border-color: rgba(212, 175, 55, 0.6);
 }
 
 .input-area button {
     width: 40px;
     height: 40px;
     min-width: 40px;
-    border-radius: 4px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
-    background-color: transparent;
-    color: var(--text-color);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.95), rgba(234, 210, 134, 0.85));
+    color: #1a1a1a;
     border: none;
     align-self: flex-end; /* Bottom align with text */
     margin-bottom: 10px;
 }
 .input-area button:hover {
-    background-color: var(--input-bg-color);
+    filter: brightness(1.05);
 }
 
 /* Markdown Content */
@@ -449,6 +458,7 @@ button:hover {
     color: var(--text-color);
     text-align: right;
     font-weight: 700;
+    font-family: var(--font-display);
 }
 
 .markdown-content ul, .markdown-content ol {
@@ -467,7 +477,7 @@ button:hover {
 }
 
 .markdown-content code {
-    background-color: rgba(128, 128, 128, 0.2);
+    background-color: rgba(212, 175, 55, 0.15);
     padding: 0.2em 0.4em;
     border-radius: 4px;
     font-family: 'Courier New', Courier, monospace;
@@ -478,9 +488,9 @@ button:hover {
 }
 
 .markdown-content pre {
-    background-color: #111;
+    background-color: rgba(11, 12, 16, 0.9);
     padding: 20px;
-    border-radius: 4px;
+    border-radius: 12px;
     overflow-x: auto;
     margin: 1.5em 0;
     direction: ltr;

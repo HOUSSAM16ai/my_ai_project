@@ -208,7 +208,7 @@ class CustomerChatBoundaryService:
             stream = self._refusal_stream(conversation, decision.refusal_message)
             return ChatDispatchResult(status_code=200, stream=stream)
 
-        if effective_intent != ChatIntent.CONTENT_RETRIEVAL:
+        if effective_intent != ChatIntent.CONTENT_RETRIEVAL and decision.category != "education":
             refusal_text = self._build_strict_education_refusal()
             await self.save_message(
                 conversation.id,
@@ -291,11 +291,11 @@ class CustomerChatBoundaryService:
         )
 
     def _build_strict_education_refusal(self) -> str:
-        """إنشاء رسالة توضح أن الردود محصورة بمحتوى التمارين المقدمة فقط."""
+        """إنشاء رسالة توضح أن المسار مخصص للأسئلة التعليمية فقط."""
         lines = [
-            "عذرًا، هذا المسار التعليمي يجيب فقط من محتوى التمارين التي تم توفيرها.",
-            "لا يمكنني تقديم إجابات عامة أو إنشاء محتوى جديد خارج قاعدة التمارين.",
-            "إذا أردت نتيجة محددة، اطلبها بصيغة: التمرين الأول/الثاني، الموضوع الأول، سنة 2024.",
+            "عذرًا، هذا المسار مخصص للأسئلة التعليمية فقط.",
+            "يمكنك طرح سؤال حول تمرين أو مفهوم علمي وسأساعدك وفق السياق المتاح.",
+            "للاسترجاع الدقيق، استخدم صيغة مثل: التمرين الأول، الموضوع الأول، سنة 2024.",
         ]
         return "\n".join(lines)
 
