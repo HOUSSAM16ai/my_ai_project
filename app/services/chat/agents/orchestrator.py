@@ -263,6 +263,14 @@ class OrchestratorAgent:
         except Exception:
             base_prompt = "أنت مساعد ذكي."
 
+        # Strict Mode Enforcement
+        # Ensure the LLM knows it is strictly bound to the educational context if present in history
+        strict_instruction = (
+            "\nتنبيه هام جداً: إجاباتك يجب أن تكون محصورة فقط ضمن البيانات والنصوص التعليمية الموجودة في سياق المحادثة (SIAQ). "
+            "أي إجابة عامة أو من خارج السياق تعتبر ممنوعة. "
+            "إذا لم تجد المعلومة في سياق المحادثة، اطلب من الطالب تحديد التمرين أولاً."
+        )
+
         # Construct History
         history_msgs = context.get("history_messages", [])
         history_text = ""
@@ -270,7 +278,7 @@ class OrchestratorAgent:
             recent = history_msgs[-10:]
             history_text = "\nSIAQ:\n" + "\n".join([f"{m.get('role')}: {m.get('content')}" for m in recent])
 
-        final_prompt = f"{base_prompt}\n{system_context}\n{history_text}"
+        final_prompt = f"{base_prompt}\n{strict_instruction}\n{system_context}\n{history_text}"
 
         messages = [
             {"role": "system", "content": final_prompt},
