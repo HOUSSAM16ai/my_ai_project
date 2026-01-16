@@ -1,4 +1,5 @@
 import logging
+import json
 from collections.abc import AsyncGenerator
 
 from app.core.ai_gateway import AIClient
@@ -19,11 +20,8 @@ class OrchestratorAgent:
     """
     الوكيل المنسق (Orchestrator Agent).
 
-    يعمل كنقطة دخول مركزية لتوجيه الطلبات إلى الوكلاء المتخصصين:
-    1. AdminAgent: للمهام الإدارية والاستعلامات عن النظام.
-    2. AnalyticsAgent: لتحليل الأداء والتقارير.
-    3. CurriculumAgent: لإدارة المسار التعليمي.
-    4. Fallback (AI): للمحادثات العامة.
+    يعمل كنقطة دخول مركزية لتوجيه الطلبات إلى الوكلاء المتخصصين.
+    يدعم استرجاع المحتوى الدقيق باستخدام الأدوات الجديدة والبحث الدلالي.
     """
 
     def __init__(self, ai_client: AIClient, tools: ToolRegistry) -> None:
@@ -32,7 +30,6 @@ class OrchestratorAgent:
         self.intent_detector = IntentDetector()
 
         # Sub-Agents
-        # Inject AIClient into AdminAgent for dynamic routing
         self.admin_agent = AdminAgent(tools, ai_client=ai_client)
         self.analytics_agent = AnalyticsAgent(tools, ai_client)
         self.curriculum_agent = CurriculumAgent(tools)
@@ -42,14 +39,12 @@ class OrchestratorAgent:
     async def run(self, question: str, context: dict[str, object] | None = None) -> AsyncGenerator[str, None]:
         """
         واجهة موحدة لمعالجة الطلبات.
-        يقوم بكشف النية وتوجيه الطلب للوكيل المناسب، ويعيد النتائج كتدفق (Stream).
         """
         logger.info(f"Orchestrator received: {question}")
         normalized = question.strip()
         context = context or {}
 
         # 1. Intent Detection
-        # If intent is already passed in context (from ChatOrchestrator), use it.
         if "intent" in context and isinstance(context["intent"], ChatIntent):
             intent = context["intent"]
         else:
@@ -66,7 +61,6 @@ class OrchestratorAgent:
                     yield chunk
 
             elif intent in (ChatIntent.ANALYTICS_REPORT, ChatIntent.LEARNING_SUMMARY):
-                # Analytics agent might not be async generator yet, adapt if needed
                 result = self.analytics_agent.process(context)
                 if hasattr(result, "__aiter__"):
                     async for chunk in result:
@@ -75,8 +69,8 @@ class OrchestratorAgent:
                     yield str(result)
 
             elif intent == ChatIntent.CURRICULUM_PLAN:
-                # Curriculum Agent specifics
                 self._enrich_curriculum_context(context, normalized)
+                context["user_message"] = normalized
                 result = self.curriculum_agent.process(context)
                 if hasattr(result, "__aiter__"):
                     async for chunk in result:
@@ -89,7 +83,6 @@ class OrchestratorAgent:
                     yield chunk
 
             else:
-                # Fallback to pure LLM Chat
                 async for chunk in self._handle_chat_fallback(normalized, context):
                     yield chunk
 
@@ -98,7 +91,6 @@ class OrchestratorAgent:
             yield "عذرًا، حدث خطأ غير متوقع أثناء معالجة طلبك."
 
     async def _capture_memory_intent(self, question: str, intent: ChatIntent) -> None:
-        """تسجيل النية في الذاكرة بشكل صامت."""
         if not self.memory_agent:
             return
         try:
@@ -112,7 +104,6 @@ class OrchestratorAgent:
             logger.warning(f"Memory capture failed: {e}")
 
     def _enrich_curriculum_context(self, context: dict, question: str) -> None:
-        """إضافة تفاصيل للمسار التعليمي بناءً على نص السؤال."""
         lowered = question.lower()
         if any(x in lowered for x in ["مسار", "path", "تقدم", "progress"]):
             context["intent_type"] = "path_progress"
@@ -123,72 +114,103 @@ class OrchestratorAgent:
             context["intent_type"] = "recommendation"
 
     async def _handle_content_retrieval(self, question: str, context: dict) -> AsyncGenerator[str, None]:
-        """معالجة استرجاع المحتوى التعليمي (تمارين، امتحانات)."""
+        """
+        معالجة استرجاع المحتوى:
+        1. استخراج الفلاتر بذكاء (AI Extraction) من النص الطبيعي.
+        2. البحث عن IDs باستخدام search_content (الذي يدعم الآن الكلمات المتعددة).
+        3. جلب المحتوى الخام وعرضه.
+        4. توليد الشرح.
+        """
         logger.info(f"Handling content retrieval for: {question}")
 
-        # 1. Extract Search Parameters (Best Effort via Heuristics or pass full query)
-        # Ideally, we would use an LLM call here to extract precise JSON params,
-        # but for speed and robustness, we will pass the full question as the query.
-        # The tool `search_educational_content` handles semantic search.
+        # Step 1: Intelligent Search Parameter Extraction using LLM
+        # This converts "Math 2024 probability" into structured {"year": 2024, "subject": "Math", "q": "probability"}
+        params = await self._ai_extract_search_params(question)
 
-        # Check for specific year/subject in the question to aid the tool
-        year = "2024" if "2024" in question else None
-        subject = None
-        if any(w in question for w in ["math", "رياضيات", "رياضه"]):
-            subject = "Mathematics"
-        elif any(w in question for w in ["physics", "فيزياء"]):
-            subject = "Physics"
+        candidates = await self.tools.execute("search_content", params)
 
-        branch = None
-        if any(w in question for w in ["science", "experimental", "علوم", "تجريبية", "تجريبيه"]):
-            branch = "Experimental Sciences"
-        elif any(w in question for w in ["math expert", "technician", "تقني", "رياضي"]):
-            branch = "Mathematics"
-
-        exam_ref = None
-        if any(w in question for w in ["subject 1", "topic 1", "first subject", "موضوع 1", "موضوع الاول", "الموضوع الأول"]):
-            exam_ref = "Subject 1"
-        elif any(w in question for w in ["subject 2", "topic 2", "second subject", "موضوع 2", "موضوع الثاني", "الموضوع الثاني"]):
-            exam_ref = "Subject 2"
-
-        # 2. Call Retrieval Tool
-        # Use execute method of ToolRegistry since it's a flat registry
-        search_result = await self.tools.execute(
-            "search_educational_content",
-            {
-                "query": question,
-                "year": year,
-                "subject": subject,
-                "branch": branch,
-                "exam_ref": exam_ref
-            }
-        )
-
-        if self._is_no_content(search_result):
-            # If no content is found, fallback to Smart Tutor Chat
-            # This handles cases like "Explain X" which get misclassified as Content Retrieval
-            async for chunk in self._handle_chat_fallback(question, context):
+        if not candidates:
+             async for chunk in self._handle_chat_fallback(question, context):
                 yield chunk
-            return
+             return
 
-        if self._should_return_raw(search_result):
-            # 1. Yield the Literal Content (Raw Transfer)
-            yield search_result
+        # Pick the best candidate (Logic: Top 1)
+        best_candidate = candidates[0]
+        content_id = best_candidate["id"]
+        title = best_candidate["title"]
 
-            # 2. Yield Separator
+        yield f"✅ **تم العثور على:** {title} ({content_id})\n\n"
+
+        # Step 2: Fetch Raw Content
+        raw_data = await self.tools.execute("get_content_raw", {"content_id": content_id})
+
+        if raw_data and raw_data.get("content"):
+            yield "---\n\n"
+            yield raw_data["content"]
             yield "\n\n---\n\n"
 
-            # 3. Generate and Yield AI Explanation/Analysis
+            # Step 3: AI Explanation
             personalization_context = await self._build_education_brief(context)
             async for chunk in self._generate_explanation(
                 question,
-                search_result,
+                raw_data["content"],
                 personalization_context,
             ):
                 yield chunk
-            return
+        else:
+            yield "عذراً، تعذر تحميل نص المحتوى."
 
-        yield self._build_strict_content_only_message()
+    async def _ai_extract_search_params(self, question: str) -> dict:
+        """
+        Uses LLM to extract structured search parameters from natural language.
+        Fallback to heuristics if LLM fails.
+        """
+        system_prompt = (
+            "You are a search query parser for an educational database. "
+            "Extract parameters from the user's request into a JSON object. "
+            "Fields: q (keywords), year (int), subject (Mathematics, Physics, Experimental Sciences), level, type (exercise, lesson). "
+            "If a field is not present, omit it. "
+            "Example: 'Math exercises 2024 probability' -> {'q': 'probability', 'year': 2024, 'subject': 'Mathematics'}"
+        )
+
+        try:
+            # Quick parsing call
+            response = await self.ai_client.generate(
+                model="gpt-4o-mini", # Use a fast model if available, or default
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": question}
+                ],
+                response_format={"type": "json_object"}
+            )
+            content = response.choices[0].message.content
+            params = json.loads(content)
+
+            # Ensure limit default
+            params["limit"] = 5
+
+            # Fallback for 'q' if empty, use original question
+            if not params.get("q") and not params.get("year"):
+                 params["q"] = question
+
+            return params
+
+        except Exception as e:
+            logger.warning(f"AI parameter extraction failed: {e}. using heuristics.")
+            return self._heuristic_extract_search_params(question)
+
+    def _heuristic_extract_search_params(self, question: str) -> dict:
+        """Fallback heuristic parameter extraction."""
+        params = {"q": question, "limit": 5}
+
+        if "2024" in question: params["year"] = 2024
+
+        if any(w in question for w in ["math", "رياضيات", "رياضه"]):
+            params["subject"] = "Mathematics"
+        elif any(w in question for w in ["physics", "فيزياء"]):
+            params["subject"] = "Physics"
+
+        return params
 
     async def _generate_explanation(
         self,
@@ -196,15 +218,15 @@ class OrchestratorAgent:
         content: str,
         personalization_context: str,
     ) -> AsyncGenerator[str, None]:
-        """توليد شرح أو تحليل للمحتوى المسترجع مع مراعاة ملف الطالب."""
+        """توليد شرح أو تحليل للمحتوى المسترجع."""
 
         system_prompt = (
             "أنت مساعد تعليمي ذكي (Overmind). "
-            "مهمتك هي شرح التمرين أو المحتوى الذي تم استرجاعه للطالب، أو تقديم إرشادات للحل (دون إعطاء الحل النهائي مباشرة إذا كان تمريناً للتقييم). "
-            "استخدم النص المسترجع أدناه كسياق أساسي للإجابة. "
-            "لا تكرر كتابة نص التمرين مرة أخرى، فقد تم عرضه بالفعل. "
+            "مهمتك هي شرح التمرين أو المحتوى الذي تم استرجاعه للطالب. "
+            "استخدم النص المسترجع أدناه كسياق أساسي. "
+            "لا تكرر كتابة نص التمرين مرة أخرى. "
             "ركز على الفهم، المفاهيم الأساسية، وطريقة التفكير. "
-            "قدّم شرحاً عميقاً متعدد الطبقات يتدرّج من التعريف إلى التطبيق."
+            "إذا طلب الطالب الحل، قدم تلميحات أو خطوات الحل، ولا تعطِ الجواب النهائي مباشرة إلا إذا كان الغرض المراجعة."
         )
 
         if personalization_context:
@@ -216,10 +238,10 @@ class OrchestratorAgent:
         user_message = f"""
 سؤال الطالب: {question}
 
-المحتوى المسترجع (تمرين/موضوع):
+المحتوى المسترجع:
 {content}
 
-المطلوب: قدم شرحاً أو تلميحات مفيدة حول هذا المحتوى.
+المطلوب: قدم شرحاً أو تلميحات مفيدة.
 """
         messages = [
             {"role": "system", "content": system_prompt},
@@ -236,73 +258,26 @@ class OrchestratorAgent:
             if content:
                 yield content
 
-    def _should_return_raw(self, search_result: str) -> bool:
-        """تحديد ما إذا كان يجب إرجاع المحتوى الخام دون توليد إضافي."""
-        normalized = search_result.strip()
-        raw_markers = (
-            "# بكالوريا",
-            "## التمرين",
-            "التمرين الأول",
-            "التمرين الثاني",
-        )
-        return (
-            bool(normalized)
-            and any(marker in normalized for marker in raw_markers)
-            and not self._is_no_content(normalized)
-        )
-
-    def _is_no_content(self, search_result: str) -> bool:
-        """تحديد ما إذا كانت نتيجة البحث فارغة أو غير متوفرة."""
-        normalized = search_result.strip()
-        if not normalized:
-            return True
-        no_content_markers = (
-            "لم يتم العثور على محتوى مطابق",
-            "قاعدة المعرفة المحلية غير موجودة",
-            "حدث خطأ أثناء استرجاع المعلومات",
-            "عذرًا، حدث خطأ غير متوقع أثناء البحث",
-        )
-        return bool(normalized) and any(marker in normalized for marker in no_content_markers)
-
-    def _build_strict_content_only_message(self) -> str:
-        """إنشاء رسالة توضح أن الردود محصورة بمحتوى التمارين فقط."""
-        lines = [
-            "عذرًا، لا يمكنني تقديم إجابة عامة أو إنشاء محتوى جديد.",
-            "هذا المسار يجيب فقط بنص التمارين المخزنة في قاعدة المنصة.",
-            "إذا أردت تمرينًا محددًا، اطلبه بصيغة: التمرين الأول/الثاني، الموضوع الأول، سنة 2024.",
-        ]
-        return "\n".join(lines)
-
     async def _handle_chat_fallback(self, question: str, context: dict) -> AsyncGenerator[str, None]:
-        """معالجة المحادثة العامة باستخدام LLM مع السياق."""
+        """معالجة المحادثة العامة."""
         system_context = context.get("system_context", "")
 
-        # Load Base Prompt
-        # Use Customer Prompt by default for better user alignment, or Admin if context demands.
-        # Given "Overmind Education" context, Customer Prompt is safer.
         try:
             base_prompt = get_context_service().get_customer_system_prompt()
         except Exception:
             base_prompt = "أنت مساعد ذكي."
 
-        # Strict Mode Enforcement
-        # Ensure the LLM knows it is strictly bound to the educational context if present in history
         strict_instruction = (
-            "\nأنت معلم ذكي ومحترف (Smart Tutor)."
-            "\nسياق المحادثة (SIAQ) قد يحتوي على التمارين والدروس السابقة."
-            "\nهدفك: مساعدة الطالب في فهم دروسه وتمارينه."
+            "\nأنت معلم ذكي ومحترف."
             "\nالقواعد:"
-            "\n1. إذا توفر سياق (SIAQ)، اعتمد عليه للإجابة بدقة."
-            "\n2. إذا سأل الطالب سؤالاً تعليمياً عاماً (مثل: اشرح لي الاحتمالات) ولم يوجد سياق، اشرح له المفهوم علمياً ومنهجياً بوضوح."
-            "\n3. ممنوع تماماً اختراع نصوص تمارين أو امتحانات رسمية (بكالوريا) غير موجودة في السياق (Hallucination)."
-            "\n4. اشرح 'لماذا' و 'كيف' (Methodology) وليس فقط النتيجة."
-            "\n5. قدّم شرحاً عميقاً ومتدرجاً، مع أمثلة إن لزم."
-            "\n6. كن مشجعاً، صبوراً، وتصرف كأستاذ خصوصي ممتاز."
+            "\n1. إذا توفر سياق (SIAQ)، اعتمد عليه."
+            "\n2. ممنوع اختراع نصوص تمارين."
+            "\n3. اشرح 'لماذا' و 'كيف'."
         )
 
         personalization_context = await self._build_education_brief(context)
 
-        # Construct History
+        # History
         history_msgs = context.get("history_messages", [])
         history_text = ""
         if history_msgs:
@@ -312,7 +287,7 @@ class OrchestratorAgent:
         personalization_block = ""
         if personalization_context:
             personalization_block = (
-                "\nمرجع الجودة التعليمية الموحد:\n"
+                "\nمرجع الجودة:\n"
                 f"{personalization_context}"
             )
         final_prompt = (
@@ -325,7 +300,7 @@ class OrchestratorAgent:
         ]
 
         async for chunk in self.ai_client.stream_chat(messages):
-            if hasattr(chunk, "choices"): # Handle different SDK response shapes
+            if hasattr(chunk, "choices"):
                 delta = chunk.choices[0].delta if chunk.choices else None
                 content = delta.content if delta else ""
             else:
@@ -335,7 +310,7 @@ class OrchestratorAgent:
                 yield content
 
     async def _build_education_brief(self, context: dict[str, object]) -> str:
-        """بناء موجز تعليمي موحد لدعم الإجابات عبر جميع الوكلاء."""
+        """بناء موجز تعليمي."""
         cached_context = context.get("education_brief")
         if isinstance(cached_context, str):
             return cached_context

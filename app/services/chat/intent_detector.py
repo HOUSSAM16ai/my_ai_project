@@ -72,32 +72,17 @@ class IntentDetector:
                 (pattern, ChatIntent.ADMIN_QUERY, self._empty_params)
                 for pattern in admin_queries
             ],
+            # Flexible Content Retrieval: Catch implicit content requests
+            # e.g., "Math 2024", "Probability", "Subject 1", "Lesson about X"
+            (
+                r"((أ|ا)ريد|بدي|i want|need|show|أعطني|هات|give me)?\s*(.*)(20[1-2][0-9]|bac|بكالوريا|subject|topic|lesson|درس|موضوع|تمارين|تمرين|exam|exercise|exercises|question|احتمالات|دوال|متتاليات|probability|functions|sequences)(.+)?",
+                ChatIntent.CONTENT_RETRIEVAL,
+                self._extract_query_optional,
+            ),
             (
                 r"(نص|text)\s+(التمرين|تمرين|exercise|exercises)\b(.+)?",
                 ChatIntent.CONTENT_RETRIEVAL,
                 self._extract_query_optional,
-            ),
-            (
-                r"^(تمارين|تمرين|exercises?|exam|subject|موضوع)\b(.+)?",
-                ChatIntent.CONTENT_RETRIEVAL,
-                self._extract_query_optional,
-            ),
-            (r"(اقرأ|read|show|display)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_READ, self._extract_path),
-            (r"(اكتب|write|create)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_WRITE, self._extract_path),
-            (
-                r"((أ|ا)عطني|هات|provide|give me|show me)\s+(.*)(نص|text|exercise|exercises|question|exam|تمرين|تمارين|سؤال|موضوع|اختبار)(.+)?",
-                ChatIntent.CONTENT_RETRIEVAL,
-                self._extract_query_optional
-            ),
-            (
-                r"((أ|ا)ريد|بدي|i want|need)\s+(.*)(تمرين|تمارين|سؤال|موضوع|exam|exercise|exercises|question|subject)(.+)?",
-                ChatIntent.CONTENT_RETRIEVAL,
-                self._extract_query_optional
-            ),
-            (
-                r"(بحث|ابحث|search|find)\s+(عن|for)?\s*(.*)(تمرين|تمارين|سؤال|موضوع|exam|exercise|exercises|question|subject)(.+)?",
-                ChatIntent.CONTENT_RETRIEVAL,
-                self._extract_query_optional
             ),
             (r"(ابحث|search|find)\s+(عن|for)?\s*(.+)", ChatIntent.CODE_SEARCH, self._extract_query),
             (r"(فهرس|index)\s+(المشروع|project)", ChatIntent.PROJECT_INDEX, self._empty_params),
@@ -110,7 +95,7 @@ class IntentDetector:
                 self._empty_params,
             ),
             (
-                r"(واجب|مسار|تعلم|homework|learning path|challenge)",
+                r"(واجب|مسار|تعلم|homework|learning path|challenge|خطة|خريطة|منهج|plan|roadmap|study plan|ابدأ|start studying)",
                 ChatIntent.CURRICULUM_PLAN,
                 self._empty_params,
             ),
@@ -150,17 +135,14 @@ class IntentDetector:
     def _extract_query_optional(self, match: re.Match[str]) -> dict[str, str]:
         """يستخرج عبارة البحث من التطابق إذا وجدت."""
         groups = match.groups()
-        # Find the last group that is not None and not the keyword itself if possible
-        # Or just join all relevant parts?
-        # In regex above: group(3) or group(4) usually captures the "rest".
-        # For "(أعطني) (نص) (.+)" -> group 3 is the query.
-        # For "(بحث) (عن) (تمرين) (.+)" -> group 4 is query.
+        # Fallback to the full match if explicit groups aren't clean
+        # But we want to avoid capturing "Give me" as part of the query if possible
 
-        # Let's try to grab the last capturing group
-        content = groups[-1]
-        if content:
-            return {"query": content.strip()}
-        return {"query": match.group(0).strip()} # Fallback to full match
+        # In the new regex: group 3 is the "pre-keyword" content, group 4 is keyword, group 5 is suffix
+        # Full query should be the concatenation of relevant parts or the whole match
+
+        # Return full match string as query for the Orchestrator to parse intelligently
+        return {"query": match.group(0).strip()}
 
     @staticmethod
     def _empty_params(_: re.Match[str]) -> dict[str, str]:

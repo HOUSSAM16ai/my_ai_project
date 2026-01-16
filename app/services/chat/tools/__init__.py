@@ -8,6 +8,12 @@ from collections.abc import Callable
 from pathlib import Path
 
 from app.core.logging import get_logger
+from app.services.chat.tools.content import (
+    get_content_raw,
+    get_curriculum_structure,
+    get_solution_raw,
+    search_content,
+)
 from app.services.chat.tools.curriculum import (
     adjust_difficulty_level,
     get_learning_path_progress,
@@ -61,6 +67,12 @@ class ToolRegistry:
         self.register("get_learning_path_progress", get_learning_path_progress)
         self.register("adjust_difficulty_level", adjust_difficulty_level)
         self.register("search_educational_content", search_educational_content)
+
+        # New Content Tools
+        self.register("get_curriculum_structure", get_curriculum_structure)
+        self.register("search_content", search_content)
+        self.register("get_content_raw", get_content_raw)
+        self.register("get_solution_raw", get_solution_raw)
 
     def register(self, name: str, func: Callable) -> None:
         self._tools[name] = func
