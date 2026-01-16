@@ -81,8 +81,11 @@ async def run_async_migrations() -> None:
 
     connect_args = {}
     # Apply Supabase/PgBouncer compatibility fix if using PostgreSQL
-    if "postgresql" in settings.DATABASE_URL:
+    # Note: asyncpg requires prepared_statement_cache_size=0 alongside statement_cache_size=0
+    # to fully disable prepared statements for transaction poolers.
+    if "postgresql" in settings.DATABASE_URL or "asyncpg" in settings.DATABASE_URL:
         connect_args["statement_cache_size"] = 0
+        connect_args["prepared_statement_cache_size"] = 0
 
     connectable = create_async_engine(
         settings.DATABASE_URL,
