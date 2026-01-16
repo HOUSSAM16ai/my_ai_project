@@ -6,6 +6,7 @@
 """
 
 import os
+import re
 from pathlib import Path
 
 import httpx
@@ -97,6 +98,78 @@ async def search_educational_content(
         logger.error(f"Search failed: {e}", exc_info=True)
         return _search_local_knowledge_base(full_query, year, subject, branch, exam_ref)
 
+
+def _extract_specific_exercise(content: str, query: str) -> str | None:
+    """
+    Extracts a specific exercise from the Markdown content based on headers.
+    Returns None if no specific exercise is requested or found.
+    """
+    query_lower = query.lower()
+
+    # Identify if a specific exercise is requested
+    target_exercise = None
+    if any(k in query_lower for k in ["exercise 1", "التمرين الأول", "تمرين 1", "ex1"]):
+        target_exercise = 1
+    elif any(k in query_lower for k in ["exercise 2", "التمرين الثاني", "تمرين 2", "ex2"]):
+        target_exercise = 2
+    elif any(k in query_lower for k in ["exercise 3", "التمرين الثالث", "تمرين 3", "ex3"]):
+        target_exercise = 3
+    elif any(k in query_lower for k in ["exercise 4", "التمرين الرابع", "تمرين 4", "ex4"]):
+        target_exercise = 4
+
+    if target_exercise is None:
+        return None
+
+    # Split by Markdown headers (### or ##)
+    # We look for lines starting with ## or ### followed by "التمرين" or "Exercise" and the number
+
+    lines = content.split('\n')
+    extracted_lines = []
+    capture = False
+
+    # Simple state machine to capture text between headers
+    header_pattern = re.compile(r'^(#{2,3})\s*(.*)')
+
+    # Specific patterns for the target exercise
+    target_patterns = [
+        f"التمرين {target_exercise}",
+        f"Exercise {target_exercise}",
+        f"التمرين الأول" if target_exercise == 1 else "___",
+        f"التمرين الثاني" if target_exercise == 2 else "___",
+        f"التمرين الثالث" if target_exercise == 3 else "___",
+        f"التمرين الرابع" if target_exercise == 4 else "___",
+    ]
+
+    for line in lines:
+        match = header_pattern.match(line)
+        if match:
+            header_text = match.group(2)
+            # Check if this header marks the start of our target
+            is_target_header = any(p in header_text for p in target_patterns)
+
+            if is_target_header:
+                capture = True
+                extracted_lines.append(line)
+                continue
+            elif capture:
+                # We hit another header while capturing -> Stop if it's a sibling header
+                # (e.g. we are in ### Ex 1, and hit ### Ex 2)
+                # But if we are in ## Subject and hit ### Ex 1, we shouldn't stop?
+                # Actually, usually exercises are siblings.
+                # Let's assume any header of same or higher level (fewer #) stops it.
+                # For safety, let's stop at any "Exercise/التمرين" header.
+                if "التمرين" in header_text or "Exercise" in header_text:
+                    capture = False
+
+        if capture:
+            extracted_lines.append(line)
+
+    if extracted_lines:
+        return "\n".join(extracted_lines).strip()
+
+    return None
+
+
 def _search_local_knowledge_base(
     query: str,
     year: str | None,
@@ -112,17 +185,6 @@ def _search_local_knowledge_base(
         return "قاعدة المعرفة المحلية غير موجودة."
 
     matches = []
-
-    # Normalize query terms
-    query_lower = query.lower()
-
-    # Keyword Mapping for Arabic/English
-    keywords = {
-        "exercise 1": ["exercise 1", "التمرين الأول"],
-        "exercise 2": ["exercise 2", "التمرين الثاني"],
-        "probability": ["probability", "الاحتمالات"],
-        "complex numbers": ["complex numbers", "الأعداد المركبة"]
-    }
 
     for md_file in kb_path.glob("*.md"):
         try:
@@ -172,29 +234,26 @@ def _search_local_knowledge_base(
                             if exam_ref.lower() not in file_ref and file_ref not in exam_ref.lower():
                                 continue
 
-                        # 5. Smart Content Filtering based on Query
-                        # If query asks for "Exercise 1", restrict content to that section if possible,
-                        # or at least ensure the file contains it.
+                        # 5. Extract Specific Exercise if requested
+                        extracted_exercise = _extract_specific_exercise(body, query)
 
-                        body_lower = body.lower()
-                        is_relevant = False
-
-                        # Check for specific exercise requests
-                        req_ex1 = any(k in query_lower for k in keywords["exercise 1"])
-                        req_ex2 = any(k in query_lower for k in keywords["exercise 2"])
-
-                        if req_ex1:
-                            if any(k in body_lower for k in keywords["exercise 1"]):
-                                is_relevant = True
-                        elif req_ex2:
-                            if any(k in body_lower for k in keywords["exercise 2"]):
-                                is_relevant = True
+                        if extracted_exercise:
+                            matches.append(extracted_exercise)
                         else:
-                            # General query match
-                            is_relevant = True
+                            # If no specific exercise requested (or extraction failed),
+                            # check if the file itself is generally relevant.
+                            # But wait, if extraction failed despite request, should we return whole file?
+                            # User wants strictness.
+                            # If extraction returns None but query had "Exercise X", maybe we shouldn't return anything?
+                            # Current logic: If extraction returns None, it might mean "Exercise X" wasn't found in THIS file.
+                            # So we only append if it's a general match.
 
-                        if is_relevant:
-                            matches.append(body.strip())
+                            is_specific_request = any(k in query.lower() for k in ["exercise", "التمرين"])
+
+                            if not is_specific_request:
+                                matches.append(body.strip())
+
+                            # If specific request and not found in this file, we just continue to next file.
 
                     except yaml.YAMLError:
                         logger.error(f"Failed to parse YAML in {md_file}")
