@@ -111,10 +111,10 @@ async def search_educational_content(
                     # Only include full content if the user didn't ask for a specific exercise/topic that we failed to find
                     contents.append(content)
 
-            # If we filtered everything out but had results in strict mode, return empty implies not found.
-            # But the orchestrator handles empty string as "No content".
+            # Deduplicate contents (remove chunks that are substrings of fuller docs)
+            unique_contents = _deduplicate_contents(contents)
 
-            return "\n\n".join(contents).strip()
+            return "\n\n".join(unique_contents).strip()
 
     except (httpx.ConnectError, httpx.TimeoutException):
         logger.warning(f"Could not connect to Memory Agent at {memory_url}. Switching to local knowledge base fallback.")
@@ -180,7 +180,8 @@ def _extract_specific_exercise(content: str, query: str) -> str | None:
         stripped = line.strip()
 
         # Stop header capture if we hit an Exercise, or a big separator that isn't part of the card
-        if (stripped.startswith("## ") and ("التمرين" in stripped or "Exercise" in stripped)):
+        # Enhanced check to catch ##, ###, etc.
+        if (stripped.startswith("#") and ("التمرين" in stripped or "Exercise" in stripped)):
             break
 
         # Capture H1
@@ -349,4 +350,34 @@ def _search_local_knowledge_base(
     if not matches:
         return "لم يتم العثور على محتوى مطابق في الملفات المحلية (وضع عدم الاتصال)."
 
-    return "\n\n".join(matches[:3]).strip()
+    # Deduplicate matches
+    unique_matches = _deduplicate_contents(matches)
+
+    return "\n\n".join(unique_matches[:3]).strip()
+
+
+def _deduplicate_contents(contents: list[str]) -> list[str]:
+    """
+    Deduplicates content by removing items that are substrings of longer items.
+    Useful when we retrieve both a full document and a chunk of it.
+    """
+    if not contents:
+        return []
+
+    # Sort by length descending (longest first)
+    # We want to keep the one with the most context (Header + Exercise)
+    sorted_contents = sorted(contents, key=len, reverse=True)
+
+    unique_contents = []
+    for content in sorted_contents:
+        # Check if this content is a substring of any already kept content
+        is_duplicate = False
+        for kept in unique_contents:
+            if content in kept:
+                is_duplicate = True
+                break
+
+        if not is_duplicate:
+            unique_contents.append(content)
+
+    return unique_contents
