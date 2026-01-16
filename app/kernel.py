@@ -33,6 +33,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.api.routers import (
     admin,
     agents,
+    content,
     crud,
     customer_chat,
     data_mesh,
@@ -202,6 +203,7 @@ def _base_router_registry() -> list[RouterSpec]:
         (agents.router, ""),
         (overmind.router, ""),
         (missions.router, ""),
+        (content.router, ""),
     ]
 
 
