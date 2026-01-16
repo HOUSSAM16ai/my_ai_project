@@ -3,25 +3,9 @@
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum
 
-
-class ChatIntent(str, Enum):
-    """نوايا المحادثة المعتمدة في طبقة التوجيه."""
-
-    FILE_READ = "FILE_READ"
-    FILE_WRITE = "FILE_WRITE"
-    CODE_SEARCH = "CODE_SEARCH"
-    PROJECT_INDEX = "PROJECT_INDEX"
-    DEEP_ANALYSIS = "DEEP_ANALYSIS"
-    MISSION_COMPLEX = "MISSION_COMPLEX"
-    ANALYTICS_REPORT = "ANALYTICS_REPORT"
-    LEARNING_SUMMARY = "LEARNING_SUMMARY"
-    CURRICULUM_PLAN = "CURRICULUM_PLAN"
-    CONTENT_RETRIEVAL = "CONTENT_RETRIEVAL"
-    ADMIN_QUERY = "ADMIN_QUERY"
-    HELP = "HELP"
-    DEFAULT = "DEFAULT"
+from app.services.chat.enums import ChatIntent
+from app.services.chat.intent_patterns import COMPLEX_MISSION_INDICATORS, PATTERN_DEFINITIONS
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,71 +35,24 @@ class IntentDetector:
     def _build_patterns(self) -> list[IntentPattern]:
         """يبني قواعد النمط كنصوص قابلة للتمديد وفق مبدأ البيانات ككود."""
         return [
-            IntentPattern(pattern=pattern, intent=intent, extractor=extractor)
-            for pattern, intent, extractor in self._pattern_specs()
+            IntentPattern(
+                pattern=pattern,
+                intent=intent,
+                extractor=self._get_extractor_for_intent(intent)
+            )
+            for pattern, intent in PATTERN_DEFINITIONS
         ]
 
-    def _pattern_specs(self) -> list[tuple[str, ChatIntent, Callable[[re.Match[str]], dict[str, str]]]]:
-        """يعرف مواصفات النمط بشكل موحد وقابل للتوسع."""
-        admin_queries = [
-            r"(user|users|مستخدم|مستخدمين|count users|list users|profile|stats|أعضاء)",
-            r"(database|schema|tables|db map|قاعدة بيانات|جداول|مخطط|بنية البيانات)",
-            r"(route|endpoint|api path|مسار api|نقطة نهاية|services|microservices|خدمات|مصغرة)",
-            r"(structure|project info|هيكل المشروع|معلومات المشروع|بنية النظام)",
-        ]
-        analytics_keywords = (
-            r"(مستواي|أدائي|نقاط ضعفي|نقاط الضعف|تقييم|level|performance|weakness|report"
-            r"|تشخيص\s*(نقاط|الضعف|أداء|الأداء))"
-        )
-        return [
-            *[
-                (pattern, ChatIntent.ADMIN_QUERY, self._empty_params)
-                for pattern in admin_queries
-            ],
-            (
-                r"(نص|text)\s+(التمرين|تمرين|exercise|exercises)\b(.+)?",
-                ChatIntent.CONTENT_RETRIEVAL,
-                self._extract_query_optional,
-            ),
-            (
-                r"^(تمارين|تمرين|exercises?|exam|subject|موضوع)\b(.+)?",
-                ChatIntent.CONTENT_RETRIEVAL,
-                self._extract_query_optional,
-            ),
-            (r"(اقرأ|read|show|display)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_READ, self._extract_path),
-            (r"(اكتب|write|create)\s+(ملف|file)\s+(.+)", ChatIntent.FILE_WRITE, self._extract_path),
-            (
-                r"((أ|ا)عطني|هات|provide|give me|show me)\s+(.*)(نص|text|exercise|exercises|question|exam|تمرين|تمارين|سؤال|موضوع|اختبار)(.+)?",
-                ChatIntent.CONTENT_RETRIEVAL,
-                self._extract_query_optional
-            ),
-            (
-                r"((أ|ا)ريد|بدي|i want|need)\s+(.*)(تمرين|تمارين|سؤال|موضوع|exam|exercise|exercises|question|subject)(.+)?",
-                ChatIntent.CONTENT_RETRIEVAL,
-                self._extract_query_optional
-            ),
-            (
-                r"(بحث|ابحث|search|find)\s+(عن|for)?\s*(.*)(تمرين|تمارين|سؤال|موضوع|exam|exercise|exercises|question|subject)(.+)?",
-                ChatIntent.CONTENT_RETRIEVAL,
-                self._extract_query_optional
-            ),
-            (r"(ابحث|search|find)\s+(عن|for)?\s*(.+)", ChatIntent.CODE_SEARCH, self._extract_query),
-            (r"(فهرس|index)\s+(المشروع|project)", ChatIntent.PROJECT_INDEX, self._empty_params),
-            (r"(حلل|analyze|explain)\s+(.+)", ChatIntent.DEEP_ANALYSIS, self._empty_params),
-            (analytics_keywords, ChatIntent.ANALYTICS_REPORT, self._empty_params),
-            (
-                r"(ملخص|تلخيص|خلاصة|لخص|summarize|summary)"
-                r".*(ما تعلمت|ما تعلمته|تعلمي|محادثاتي|دردشاتي|سجلي|what i learned|what i've learned|my learning|my chats|my history)",
-                ChatIntent.LEARNING_SUMMARY,
-                self._empty_params,
-            ),
-            (
-                r"(واجب|مسار|تعلم|homework|learning path|challenge)",
-                ChatIntent.CURRICULUM_PLAN,
-                self._empty_params,
-            ),
-            (r"(مساعدة|help)", ChatIntent.HELP, self._empty_params),
-        ]
+    def _get_extractor_for_intent(self, intent: ChatIntent) -> Callable[[re.Match[str]], dict[str, str]]:
+        """يعيد دالة استخراج المعاملات المناسبة للنية."""
+        if intent in (ChatIntent.FILE_READ, ChatIntent.FILE_WRITE):
+            return self._extract_path
+        if intent == ChatIntent.CODE_SEARCH:
+            return self._extract_query
+        if intent == ChatIntent.CONTENT_RETRIEVAL:
+            return self._extract_query_optional
+        # Default for ADMIN_QUERY, ANALYTICS, etc.
+        return self._empty_params
 
     async def detect(self, question: str) -> IntentResult:
         """يكشف نية المستخدم من السؤال بعد تبسيط النص."""
@@ -150,17 +87,10 @@ class IntentDetector:
     def _extract_query_optional(self, match: re.Match[str]) -> dict[str, str]:
         """يستخرج عبارة البحث من التطابق إذا وجدت."""
         groups = match.groups()
-        # Find the last group that is not None and not the keyword itself if possible
-        # Or just join all relevant parts?
-        # In regex above: group(3) or group(4) usually captures the "rest".
-        # For "(أعطني) (نص) (.+)" -> group 3 is the query.
-        # For "(بحث) (عن) (تمرين) (.+)" -> group 4 is query.
-
-        # Let's try to grab the last capturing group
         content = groups[-1]
         if content:
             return {"query": content.strip()}
-        return {"query": match.group(0).strip()} # Fallback to full match
+        return {"query": match.group(0).strip()}
 
     @staticmethod
     def _empty_params(_: re.Match[str]) -> dict[str, str]:
@@ -173,14 +103,4 @@ class IntentDetector:
 
     def _is_complex_mission(self, question: str) -> bool:
         """يتحقق مما إذا كان السؤال يشير إلى مهمة معقدة."""
-        indicators = [
-            "قم ب",
-            "نفذ",
-            "أنشئ",
-            "طور",
-            "implement",
-            "create",
-            "build",
-            "develop",
-        ]
-        return any(indicator in question.lower() for indicator in indicators)
+        return any(indicator in question.lower() for indicator in COMPLEX_MISSION_INDICATORS)

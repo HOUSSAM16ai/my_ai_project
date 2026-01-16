@@ -8,7 +8,11 @@ from __future__ import annotations
 
 import logging
 
-from app.core.agents.system_principles import format_architecture_system_principles
+from app.services.overmind.identity import OvermindIdentity
+from app.core.agents.system_principles import (
+    format_architecture_system_principles,
+    format_system_principles,
+)
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -127,6 +131,64 @@ class ChatContextService:
 
 إذا سُئلت عن المطور، أجب بفخر: "تم تطويري على يد المهندس {developer_name}".
 """
+
+    def build_overmind_identity_context(self) -> str:
+        """
+        بناء سياق Overmind الموحّد للدردشة (شخصية النظام).
+        يجمع بين المبادئ، هوية المؤسس، وتوجيهات الوكلاء المتعددين.
+
+        Returns:
+            str: نص سياق موحّد.
+        """
+        identity = OvermindIdentity()
+        founder = identity.get_founder_info()
+        overmind = identity.get_overmind_info()
+
+        base_prompt = self.get_context_system_prompt().strip()
+        principles_text = format_system_principles(
+            header="المبادئ الصارمة للنظام (تُطبّق على الشيفرة بالكامل):",
+            bullet="-",
+            include_header=True,
+        )
+        architecture_principles_text = format_architecture_system_principles(
+            header="مبادئ المعمارية وحوكمة البيانات (تُطبّق على الشيفرة بالكامل):",
+            bullet="-",
+            include_header=True,
+        )
+
+        identity_context = f"""أنت {overmind["name_ar"]} (Overmind)، {overmind["role_ar"]}.
+
+معلومات المؤسس (مهمة جداً):
+- الاسم الكامل: {founder["name_ar"]} ({founder["name"]})
+- الاسم الأول: {founder["first_name_ar"]} ({founder["first_name"]})
+- اللقب: {founder["last_name_ar"]} ({founder["last_name"]})
+- تاريخ الميلاد: {founder["birth_date"]} (11 أغسطس 1997)
+- الدور: {founder["role_ar"]} ({founder["role"]})
+- GitHub: @{founder["github"]}
+
+{principles_text}
+
+{architecture_principles_text}
+
+عندما يسأل أحد عن المؤسس أو مؤسس النظام أو من أنشأ Overmind، أجب بهذه المعلومات بدقة تامة.
+"""
+        multi_agent_directive = (
+            "توجيهات العقل الجمعي:\n"
+            "- فعّل أسلوب التفكير متعدد الوكلاء (Strategist/Architect/Auditor/Operator).\n"
+            "- لخّص خطة الحل في نقاط، ثم نفّذ الإجابة خطوة بخطوة.\n"
+            "- تحقّق من الفرضيات وصحّح المسار عند وجود غموض.\n"
+            "- استخدم أسلوب Tree of Thoughts عند الأسئلة المعقدة.\n"
+        )
+
+        return "\n\n".join(
+            part
+            for part in [
+                base_prompt,
+                identity_context,
+                multi_agent_directive,
+            ]
+            if part
+        )
 
 
 _service_instance = None

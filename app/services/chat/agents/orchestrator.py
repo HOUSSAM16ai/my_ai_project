@@ -6,7 +6,8 @@ from app.services.chat.agents.admin import AdminAgent
 from app.services.chat.agents.analytics import AnalyticsAgent
 from app.services.chat.agents.curriculum import CurriculumAgent
 from app.services.chat.context_service import get_context_service
-from app.services.chat.intent_detector import ChatIntent, IntentDetector
+from app.services.chat.enums import ChatIntent
+from app.services.chat.intent_detector import IntentDetector
 from app.services.chat.tools import ToolRegistry
 from app.services.overmind.agents.memory import MemoryAgent
 from app.services.overmind.domain.context import InMemoryCollaborationContext

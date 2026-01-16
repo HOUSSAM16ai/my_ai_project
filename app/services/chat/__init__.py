@@ -9,7 +9,8 @@ from app.services.chat.handlers.strategy_handlers import (
     MissionComplexHandler,
     ProjectIndexHandler,
 )
-from app.services.chat.intent_detector import ChatIntent, IntentDetector, IntentResult
+from app.services.chat.enums import ChatIntent
+from app.services.chat.intent_detector import IntentDetector, IntentResult
 from app.services.chat.orchestrator import ChatOrchestrator
 from app.services.chat.security import ErrorSanitizer, PathValidator
 

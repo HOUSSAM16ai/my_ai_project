@@ -8,7 +8,7 @@ from typing import AsyncGenerator
 
 from app.core.ai_gateway import AIClient
 from app.core.logging import get_logger
-from app.services.chat.intent_detector import ChatIntent
+from app.services.chat.enums import ChatIntent
 from app.services.chat.tools import ToolRegistry
 
 logger = get_logger("analytics-agent")

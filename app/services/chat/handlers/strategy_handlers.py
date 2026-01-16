@@ -16,6 +16,7 @@ from app.core.domain.mission import Mission, MissionEvent, MissionEventType, Mis
 from app.core.patterns.strategy import Strategy
 from app.services.chat.context import ChatContext
 from app.services.chat.context_service import get_context_service
+from app.services.chat.enums import ChatIntent
 from app.services.overmind.factory import create_overmind
 from app.services.overmind.identity import OvermindIdentity
 
@@ -42,7 +43,7 @@ class FileReadHandler(IntentHandler):
     """Handle file read requests."""
 
     def __init__(self):
-        super().__init__("FILE_READ", priority=10)
+        super().__init__(ChatIntent.FILE_READ, priority=10)
 
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
         """Execute file read."""
@@ -80,7 +81,7 @@ class FileWriteHandler(IntentHandler):
     """Handle file write requests."""
 
     def __init__(self):
-        super().__init__("FILE_WRITE", priority=10)
+        super().__init__(ChatIntent.FILE_WRITE, priority=10)
 
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
         """Execute file write."""
@@ -98,7 +99,7 @@ class CodeSearchHandler(IntentHandler):
     """Handle code search requests."""
 
     def __init__(self):
-        super().__init__("CODE_SEARCH", priority=10)
+        super().__init__(ChatIntent.CODE_SEARCH, priority=10)
 
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
         """Execute code search."""
@@ -129,7 +130,7 @@ class ProjectIndexHandler(IntentHandler):
     """Handle project indexing requests."""
 
     def __init__(self):
-        super().__init__("PROJECT_INDEX", priority=10)
+        super().__init__(ChatIntent.PROJECT_INDEX, priority=10)
 
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
         """Execute project indexing."""
@@ -150,7 +151,7 @@ class DeepAnalysisHandler(IntentHandler):
     """Handle deep analysis requests."""
 
     def __init__(self):
-        super().__init__("DEEP_ANALYSIS", priority=10)
+        super().__init__(ChatIntent.DEEP_ANALYSIS, priority=10)
 
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
         """Execute deep analysis."""
@@ -172,7 +173,7 @@ class MissionComplexHandler(IntentHandler):
     """
 
     def __init__(self):
-        super().__init__("MISSION_COMPLEX", priority=10)
+        super().__init__(ChatIntent.MISSION_COMPLEX, priority=10)
 
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
         """
@@ -283,7 +284,7 @@ class HelpHandler(IntentHandler):
     """Handle help requests."""
 
     def __init__(self):
-        super().__init__("HELP", priority=10)
+        super().__init__(ChatIntent.HELP, priority=10)
 
     async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
         """Show help."""
@@ -300,7 +301,7 @@ class DefaultChatHandler(IntentHandler):
     """Default chat handler (fallback)."""
 
     def __init__(self):
-        super().__init__("DEFAULT", priority=-1)
+        super().__init__(ChatIntent.DEFAULT, priority=-1)
         self._identity = OvermindIdentity()
         self._context_service = get_context_service()
 

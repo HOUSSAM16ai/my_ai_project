@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.services.chat.intent_detector import ChatIntent
+from app.services.chat.enums import ChatIntent
 
 
 @dataclass(frozen=True)

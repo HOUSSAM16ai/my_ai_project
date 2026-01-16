@@ -36,11 +36,11 @@ from app.services.chat.handlers.strategy_handlers import (
     MissionComplexHandler,
     ProjectIndexHandler,
 )
-from app.services.chat.intent_detector import ChatIntent, IntentDetector
+from app.services.chat.enums import ChatIntent
+from app.services.chat.intent_detector import IntentDetector
 from app.services.chat.ports import IntentDetectorPort
 from app.caching.semantic import SemanticCache
 from app.services.chat.tools import ToolRegistry
-from app.services.overmind.identity import OvermindIdentity
 
 logger = logging.getLogger(__name__)
 
@@ -97,64 +97,6 @@ class ChatOrchestrator:
         for handler in resolved_handlers:
             self._handlers.register(handler)
 
-    def _build_overmind_system_context(self) -> str:
-        """
-        بناء سياق Overmind الموحّد للدردشة.
-
-        Returns:
-            str: نص سياق موحّد يغذي LLMs عبر منظومة Overmind.
-        """
-        identity = OvermindIdentity()
-        context_service = get_context_service()
-        founder = identity.get_founder_info()
-        overmind = identity.get_overmind_info()
-
-        base_prompt = context_service.get_context_system_prompt().strip()
-        principles_text = format_system_principles(
-            header="المبادئ الصارمة للنظام (تُطبّق على الشيفرة بالكامل):",
-            bullet="-",
-            include_header=True,
-        )
-        architecture_principles_text = format_architecture_system_principles(
-            header="مبادئ المعمارية وحوكمة البيانات (تُطبّق على الشيفرة بالكامل):",
-            bullet="-",
-            include_header=True,
-        )
-
-        identity_context = f"""أنت {overmind["name_ar"]} (Overmind)، {overmind["role_ar"]}.
-
-معلومات المؤسس (مهمة جداً):
-- الاسم الكامل: {founder["name_ar"]} ({founder["name"]})
-- الاسم الأول: {founder["first_name_ar"]} ({founder["first_name"]})
-- اللقب: {founder["last_name_ar"]} ({founder["last_name"]})
-- تاريخ الميلاد: {founder["birth_date"]} (11 أغسطس 1997)
-- الدور: {founder["role_ar"]} ({founder["role"]})
-- GitHub: @{founder["github"]}
-
-{principles_text}
-
-{architecture_principles_text}
-
-عندما يسأل أحد عن المؤسس أو مؤسس النظام أو من أنشأ Overmind، أجب بهذه المعلومات بدقة تامة.
-"""
-        multi_agent_directive = (
-            "توجيهات العقل الجمعي:\n"
-            "- فعّل أسلوب التفكير متعدد الوكلاء (Strategist/Architect/Auditor/Operator).\n"
-            "- لخّص خطة الحل في نقاط، ثم نفّذ الإجابة خطوة بخطوة.\n"
-            "- تحقّق من الفرضيات وصحّح المسار عند وجود غموض.\n"
-            "- استخدم أسلوب Tree of Thoughts عند الأسئلة المعقدة.\n"
-        )
-
-        return "\n\n".join(
-            part
-            for part in [
-                base_prompt,
-                identity_context,
-                multi_agent_directive,
-            ]
-            if part
-        )
-
     async def process(
         self,
         question: str,
@@ -193,7 +135,7 @@ class ChatOrchestrator:
             logger.info(f"Delegating intent {intent_result.intent} to OrchestratorAgent", extra={"user_id": user_id})
 
             # بناء السياق المشترك
-            system_context = self._build_overmind_system_context()
+            system_context = get_context_service().build_overmind_identity_context()
             agent = OrchestratorAgent(ai_client, self.tool_registry)
 
             context = {

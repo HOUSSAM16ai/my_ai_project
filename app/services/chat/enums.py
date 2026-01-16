@@ -1,0 +1,23 @@
+"""
+تعدادات الدردشة (Chat Enums).
+"""
+
+from enum import Enum
+
+
+class ChatIntent(str, Enum):
+    """نوايا المحادثة المعتمدة في طبقة التوجيه."""
+
+    FILE_READ = "FILE_READ"
+    FILE_WRITE = "FILE_WRITE"
+    CODE_SEARCH = "CODE_SEARCH"
+    PROJECT_INDEX = "PROJECT_INDEX"
+    DEEP_ANALYSIS = "DEEP_ANALYSIS"
+    MISSION_COMPLEX = "MISSION_COMPLEX"
+    ANALYTICS_REPORT = "ANALYTICS_REPORT"
+    LEARNING_SUMMARY = "LEARNING_SUMMARY"
+    CURRICULUM_PLAN = "CURRICULUM_PLAN"
+    CONTENT_RETRIEVAL = "CONTENT_RETRIEVAL"
+    ADMIN_QUERY = "ADMIN_QUERY"
+    HELP = "HELP"
+    DEFAULT = "DEFAULT"
