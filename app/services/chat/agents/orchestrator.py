@@ -1,6 +1,7 @@
 import logging
 import json
 from collections.abc import AsyncGenerator
+from typing import Optional
 
 from app.core.ai_gateway import AIClient
 from app.services.chat.agents.admin import AdminAgent
@@ -124,7 +125,6 @@ class OrchestratorAgent:
         logger.info(f"Handling content retrieval for: {question}")
 
         # Step 1: Intelligent Search Parameter Extraction using LLM
-        # This converts "Math 2024 probability" into structured {"year": 2024, "subject": "Math", "q": "probability"}
         params = await self._ai_extract_search_params(question)
 
         candidates = await self.tools.execute("search_content", params)
@@ -152,12 +152,15 @@ class OrchestratorAgent:
             yield raw_data["content"]
             yield "\n\n---\n\n"
 
-            # Step 3: AI Explanation
+            # Step 3: AI Explanation with Official Solution
             personalization_context = await self._build_education_brief(context)
+            solution = raw_data.get("solution")
+
             async for chunk in self._generate_explanation(
                 question,
                 raw_data["content"],
                 personalization_context,
+                solution=solution
             ):
                 yield chunk
         else:
@@ -220,32 +223,41 @@ class OrchestratorAgent:
         question: str,
         content: str,
         personalization_context: str,
+        solution: Optional[str] = None
     ) -> AsyncGenerator[str, None]:
-        """توليد شرح أو تحليل للمحتوى المسترجع."""
+        """
+        توليد شرح أو تحليل للمحتوى المسترجع.
+        يستخدم 'الحل الرسمي' (Official Solution) كمرجع أساسي (Source of Truth) إذا توفر.
+        """
+
+        # بناء التعليمات الأساسية (System Prompt)
+        # نركز على كون الوكيل "Smart Tutor" يشرح بعمق ويبسط المعلومة بناءً على الحل الرسمي.
 
         system_prompt = (
-            "أنت مساعد تعليمي ذكي (Overmind). "
-            "مهمتك هي شرح التمرين أو المحتوى الذي تم استرجاعه للطالب. "
-            "استخدم النص المسترجع أدناه كسياق أساسي. "
-            "لا تكرر كتابة نص التمرين مرة أخرى. "
-            "ركز على الفهم، المفاهيم الأساسية، وطريقة التفكير. "
-            "إذا طلب الطالب الحل، قدم تلميحات أو خطوات الحل، ولا تعطِ الجواب النهائي مباشرة إلا إذا كان الغرض المراجعة."
+            "أنت 'Overmind'، المعلم الذكي فائق القدرات (Smart Tutor)."
+            "\nمهمتك: تقديم شرح فاخر (Luxury)، عميق، ومبسط للتمرين المسترجع."
+            "\n\nالتعليمات الصارمة:"
+            "\n1. التزم كلياً بـ 'الحل الرسمي' (Official Solution) الموجود في السياق أدناه. هو المصدر الوحيد للحقيقة."
+            "\n2. لا تكتفِ بسرد الحل؛ اشرح 'لماذا' و 'كيف' وصلنا لهذه النتيجة."
+            "\n3. بسّط المفاهيم المعقدة لتناسب طالباً ذا قدرات محدودة، لكن بأسلوب راقٍ واحترافي."
+            "\n4. إذا لم يوجد حل رسمي، استخدم خبرتك لشرح المفهوم دون اختراع أرقام."
+            "\n5. الهدف: جعل الطالب يفهم أعمق التفاصيل بسهولة تامة."
         )
 
         if personalization_context:
-            system_prompt = (
-                f"{system_prompt}\n\n"
-                "مرجع الجودة التعليمية الموحد:\n"
-                f"{personalization_context}"
-            )
-        user_message = f"""
-سؤال الطالب: {question}
+            system_prompt += f"\n\nمرجع الجودة التعليمية الموحد:\n{personalization_context}"
 
-المحتوى المسترجع:
-{content}
+        # بناء رسالة المستخدم (Context Injection)
+        user_message = f"سؤال الطالب: {question}\n\n"
+        user_message += f"نص التمرين (Exercise):\n{content}\n\n"
 
-المطلوب: قدم شرحاً أو تلميحات مفيدة.
-"""
+        if solution:
+            user_message += f"الحل الرسمي (Official Solution - STRICTLY ADHERE TO THIS):\n{solution}\n\n"
+        else:
+            user_message += "ملاحظة: لا يوجد حل رسمي مسجل. اشرح المفهوم العام فقط.\n\n"
+
+        user_message += "المطلوب: اشرح الحل للطالب بأسلوب 'Smart Tutor' (عميق، مبسط، واحترافي)."
+
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
