@@ -130,6 +130,9 @@ class OrchestratorAgent:
         candidates = await self.tools.execute("search_content", params)
 
         if not candidates:
+             logger.info("No content found for query, falling back to smart tutor.")
+             # Inject a hint into context so fallback knows we missed a search
+             context["search_miss"] = True
              async for chunk in self._handle_chat_fallback(question, context):
                 yield chunk
              return
@@ -267,12 +270,16 @@ class OrchestratorAgent:
         except Exception:
             base_prompt = "أنت مساعد ذكي."
 
+        # SMART TUTOR LOGIC
+        # We permit general explanation if no specific exercise is loaded,
+        # but strictly forbid fabricating specific numbers/exercises.
         strict_instruction = (
-            "\nأنت معلم ذكي ومحترف."
-            "\nالقواعد:"
-            "\n1. إذا توفر سياق (SIAQ)، اعتمد عليه."
-            "\n2. ممنوع اختراع نصوص تمارين."
-            "\n3. اشرح 'لماذا' و 'كيف'."
+            "\nأنت معلم ذكي ومحترف (Smart Tutor)."
+            "\nالقواعد الصارمة:"
+            "\n1. إذا توفر محتوى تمرين في السياق (SIAQ)، التزم به حرفياً."
+            "\n2. إذا لم يتوفر تمرين، اشرح المفهوم العلمي/الرياضي بشكل عام (General Concept) وشامل."
+            "\n3. ممنوع منعاً باتاً اختراع تمارين أو أرقام من خيالك. قل 'لا يوجد تمرين محدد، لكن الفكرة هي...'."
+            "\n4. اشرح 'لماذا' و 'كيف' دائماً لتبسيط التعقيدات."
         )
 
         personalization_context = await self._build_education_brief(context)
@@ -282,7 +289,7 @@ class OrchestratorAgent:
         history_text = ""
         if history_msgs:
             recent = history_msgs[-10:]
-            history_text = "\nSIAQ:\n" + "\n".join([f"{m.get('role')}: {m.get('content')}" for m in recent])
+            history_text = "\nSIAQ (History):\n" + "\n".join([f"{m.get('role')}: {m.get('content')}" for m in recent])
 
         personalization_block = ""
         if personalization_context:
