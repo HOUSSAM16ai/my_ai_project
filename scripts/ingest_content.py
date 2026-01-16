@@ -14,10 +14,11 @@ import yaml
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import async_session_factory
+# Import the engine and factory from the core database module
+from app.core.database import async_session_factory, engine
 from app.core.settings.base import get_settings
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 CONTENT_ROOT = Path("content")
@@ -28,7 +29,7 @@ def parse_pack(file_path: Path):
 
     parts = content.split("\n\n", 1)
     if len(parts) < 2:
-        logger.error(f"Invalid pack format: {file_path}")
+        logger.error(f"Invalid pack format (missing header/body split): {file_path}")
         return None
 
     yaml_header = parts[0]
@@ -41,16 +42,25 @@ def parse_pack(file_path: Path):
         return None
 
     exercises = []
-    pattern = re.compile(r"\[ex:\s*([\w-]+)\]\s*(.*?)(?=\n\[ex:|\Z)", re.DOTALL)
+    # Regex to find [ex: ID] blocks
+    # Logic: Match [ex: ID] -> Capture ID -> Capture everything until next [ex: or End of String
+    pattern = re.compile(r"\[ex:\s*([\w-]+)\](.*?)(?=\n\[ex:|\Z)", re.DOTALL)
 
     matches = pattern.finditer(body)
 
     for match in matches:
         ex_id = match.group(1)
         raw_content_block = match.group(2).strip()
+
+        # Heuristic: First line is title, rest is content
         lines = raw_content_block.split('\n', 1)
+        if not lines:
+            continue
+
         title = lines[0].strip()
         md_content = lines[1].strip() if len(lines) > 1 else ""
+
+        # Reconstruct full markdown for display
         full_md = f"# {title}\n\n{md_content}"
 
         exercises.append({
@@ -63,9 +73,10 @@ def parse_pack(file_path: Path):
     return exercises
 
 async def ingest_pack(file_path: Path, session: AsyncSession):
-    logger.info(f"Ingesting {file_path}")
+    logger.info(f"Processing pack: {file_path}")
     items = parse_pack(file_path)
     if not items:
+        logger.warning(f"No items found in {file_path}")
         return
 
     # Determine dialect safely
@@ -80,6 +91,7 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
         sha256 = hashlib.sha256(md_content.encode('utf-8')).hexdigest()
         content_type = metadata.get('type', 'exercise')
 
+        # Upsert into content_items
         query_items = text("""
             INSERT INTO content_items (
                 id, type, title, level, subject, set_name, year, lang, md_content, source_path, sha256, updated_at
@@ -107,9 +119,12 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
             "sha256": sha256
         })
 
-        plain_text = md_content
+        # Upsert into content_search
+        plain_text = md_content  # In a real app, we'd strip markdown syntax
 
         if is_postgres:
+            # Check if tsvector column exists (it should, but just to be safe in logic)
+            # We assume the schema migration added it.
             query_search = text("""
                 INSERT INTO content_search (content_id, plain_text, tsvector)
                 VALUES (:id, :plain_text, to_tsvector('simple', :plain_text))
@@ -118,6 +133,7 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
                     tsvector = to_tsvector('simple', EXCLUDED.plain_text)
             """)
         else:
+            # Fallback for SQLite
              query_search = text("""
                 INSERT INTO content_search (content_id, plain_text)
                 VALUES (:id, :plain_text)
@@ -130,20 +146,34 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
             "plain_text": plain_text
         })
 
+        logger.info(f"Ingested item: {ex_id}")
+
     await session.commit()
-    logger.info(f"Ingested {len(items)} items from {file_path}")
 
 async def main():
     files = list(CONTENT_ROOT.rglob("*.md"))
     if not files:
-        logger.warning("No packs found.")
+        logger.warning("No packs found in content directory.")
         return
 
     logger.info(f"Found {len(files)} packs to ingest.")
 
-    async with async_session_factory() as session:
-        for file_path in files:
-            await ingest_pack(file_path, session)
+    try:
+        async with async_session_factory() as session:
+            for file_path in files:
+                try:
+                    await ingest_pack(file_path, session)
+                except Exception as e:
+                    logger.error(f"Failed to ingest {file_path}: {e}")
+                    await session.rollback()
+    finally:
+        # Crucial: Close the engine to release connections and allow script to exit
+        logger.info("Disposing database engine...")
+        await engine.dispose()
+        logger.info("Done.")
 
 if __name__ == "__main__":
+    if sys.platform == 'win32':
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     asyncio.run(main())
