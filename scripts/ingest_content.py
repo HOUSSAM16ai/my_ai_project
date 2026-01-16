@@ -15,11 +15,37 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Import the engine and factory from the core database module
-from app.core.database import async_session_factory, engine
 from app.core.settings.base import get_settings
+# Bypass the app.core.database factory to ensure we have full control over the engine creation for this script
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Direct Engine Creation for Script (Bypassing potential factory issues)
+settings = get_settings()
+db_url = settings.DATABASE_URL
+connect_args = {}
+
+if "postgresql" in db_url or "asyncpg" in db_url:
+    connect_args = {
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0
+    }
+
+engine = create_async_engine(
+    db_url,
+    echo=False,
+    connect_args=connect_args
+)
+
+async_session_factory = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
 
 CONTENT_ROOT = Path("content")
 
@@ -69,6 +95,21 @@ def parse_pack(file_path: Path):
             "md_content": full_md,
             "metadata": metadata
         })
+
+    # Regex to find [sol: ID] blocks
+    sol_pattern = re.compile(r"\[sol:\s*([\w-]+)\](.*?)(?=\n\[sol:|\Z)", re.DOTALL)
+    sol_matches = sol_pattern.finditer(body)
+
+    solutions = {}
+    for match in sol_matches:
+        ex_id = match.group(1)
+        content = match.group(2).strip()
+        solutions[ex_id] = content
+
+    # Merge solutions into exercises
+    for ex in exercises:
+        if ex["id"] in solutions:
+            ex["solution_md"] = solutions[ex["id"]]
 
     return exercises
 
@@ -127,10 +168,10 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
             # We assume the schema migration added it.
             query_search = text("""
                 INSERT INTO content_search (content_id, plain_text, tsvector)
-                VALUES (:id, :plain_text, to_tsvector('simple', :plain_text))
+                VALUES (:id, :plain_text, to_tsvector('arabic', :plain_text))
                 ON CONFLICT (content_id) DO UPDATE SET
                     plain_text = EXCLUDED.plain_text,
-                    tsvector = to_tsvector('simple', EXCLUDED.plain_text)
+                    tsvector = to_tsvector('arabic', EXCLUDED.plain_text)
             """)
         else:
             # Fallback for SQLite
@@ -145,6 +186,29 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
             "id": ex_id,
             "plain_text": plain_text
         })
+
+        # Upsert into content_solutions if present
+        if "solution_md" in item:
+            # Check if updated_at column exists in schema or just skip it for now.
+            # Based on the error, content_solutions doesn't have updated_at.
+            # We will remove it from the query.
+
+            # Use sha256 for solution as well
+            sol_sha256 = hashlib.sha256(item["solution_md"].encode('utf-8')).hexdigest()
+
+            query_solution = text("""
+                INSERT INTO content_solutions (content_id, solution_md, sha256)
+                VALUES (:id, :solution_md, :sha256)
+                ON CONFLICT (content_id) DO UPDATE SET
+                    solution_md = EXCLUDED.solution_md,
+                    sha256 = EXCLUDED.sha256
+            """)
+            await session.execute(query_solution, {
+                "id": ex_id,
+                "solution_md": item["solution_md"],
+                "sha256": sol_sha256
+            })
+            logger.info(f"Ingested solution for: {ex_id}")
 
         logger.info(f"Ingested item: {ex_id}")
 

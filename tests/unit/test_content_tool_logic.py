@@ -28,18 +28,23 @@ async def test_search_content_query_generation():
         params = args[1]
 
         # Check SQL structure
-        assert "SELECT id, title" in sql
-        assert "FROM content_items" in sql
+        assert "SELECT i.id, i.title" in sql
+        assert "FROM content_items i" in sql
+        assert "LEFT JOIN content_search cs" in sql
 
-        # Check Params
-        assert "q_0" in params
-        assert "q_1" in params
-        assert params["q_0"] == "%Math%"
-        assert params["q_1"] == "%2024%"
+        # Check Params (Updated keys for body/title split)
+        # title query keys: tq_0, tq_1
+        # body query keys: bq_0, bq_1
+        assert "tq_0" in params
+        assert "bq_0" in params
+        assert params["tq_0"] == "%Math%"
+        assert params["bq_0"] == "%Math%"
+
+        assert params["tq_1"] == "%2024%"
         assert params["limit"] == 5
 
-        # Check Logic (Title Only)
-        assert "title LIKE :q_0" in sql
-        assert "md_content LIKE" not in sql # Verification of the FIX
+        # Check Logic (Hybrid)
+        assert "title LIKE :tq_0" in sql
+        assert "cs.plain_text LIKE :bq_0" in sql
 
         print("Test passed!")
