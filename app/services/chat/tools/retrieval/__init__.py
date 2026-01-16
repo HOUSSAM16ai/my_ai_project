@@ -139,7 +139,8 @@ def _is_specific_request(query: str) -> bool:
 
 def _extract_specific_exercise(content: str, query: str) -> str | None:
     """
-    Extracts a specific exercise from the Markdown content based on headers.
+    Extracts a specific exercise from the Markdown content based on headers,
+    preserving the File Header (Title + Exam Card) for context.
     Supports both number-based (Exercise 1) and topic-based (Probability) extraction.
     """
     query_lower = query.lower()
@@ -168,6 +169,45 @@ def _extract_specific_exercise(content: str, query: str) -> str | None:
         return None
 
     lines = content.split('\n')
+
+    # --- PHASE 1: Header Extraction ---
+    # Extract Title (H1) and Exam Card (## بطاقة الامتحان)
+    # Filter out blockquotes that are internal instructions (starting with >)
+    header_lines = []
+    capture_card = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Stop header capture if we hit an Exercise, or a big separator that isn't part of the card
+        if (stripped.startswith("## ") and ("التمرين" in stripped or "Exercise" in stripped)):
+            break
+
+        # Capture H1
+        if line.startswith("# "):
+            header_lines.append(line)
+            continue
+
+        # Capture Exam Card
+        if "## بطاقة الامتحان" in stripped or "## Exam Card" in stripped:
+            header_lines.append(line)
+            capture_card = True
+            continue
+
+        if capture_card:
+            # If we hit a new section (that isn't a list item), stop card capture
+            if line.startswith("## ") or line.startswith("# "):
+                capture_card = False
+                # If it's the start of an exercise, loop will break in next iteration or condition
+            # Check for block separator `---` which often ends the card
+            elif line.startswith("---"):
+                capture_card = False
+            else:
+                header_lines.append(line)
+
+    header_text = "\n".join(header_lines).strip()
+
+    # --- PHASE 2: Exercise Extraction ---
     extracted_lines = []
     capture = False
 
@@ -188,21 +228,21 @@ def _extract_specific_exercise(content: str, query: str) -> str | None:
     for line in lines:
         match = header_pattern.match(line)
         if match:
-            header_text = match.group(2)
+            header_text_match = match.group(2)
 
             # Check Match
             is_match = False
 
             # 1. Check Number
             if target_exercise_num:
-                if any(p in header_text for p in number_patterns):
+                if any(p in header_text_match for p in number_patterns):
                     is_match = True
 
             # 2. Check Topic
             elif target_topics:
                 # Enforce "Exercise" in header to avoid matching random sections
-                if "التمرين" in header_text or "Exercise" in header_text:
-                    if any(t in header_text.lower() for t in target_topics):
+                if "التمرين" in header_text_match or "Exercise" in header_text_match:
+                    if any(t in header_text_match.lower() for t in target_topics):
                         is_match = True
 
             if is_match:
@@ -211,14 +251,17 @@ def _extract_specific_exercise(content: str, query: str) -> str | None:
                 continue
             elif capture:
                 # Stop at next header that looks like a new section
-                if "التمرين" in header_text or "Exercise" in header_text or "الموضوع" in header_text or "Subject" in header_text or "وسوم" in header_text:
+                if "التمرين" in header_text_match or "Exercise" in header_text_match or "الموضوع" in header_text_match or "Subject" in header_text_match or "وسوم" in header_text_match:
                     capture = False
 
         if capture:
             extracted_lines.append(line)
 
     if extracted_lines:
-        return "\n".join(extracted_lines).strip()
+        exercise_text = "\n".join(extracted_lines).strip()
+        if header_text:
+            return f"{header_text}\n\n---\n\n{exercise_text}"
+        return exercise_text
 
     return None
 
