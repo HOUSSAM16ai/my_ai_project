@@ -4,8 +4,7 @@
 
 from typing import Literal
 
-from sqlalchemy import desc, not_, select
-from sqlmodel import col
+from sqlalchemy import desc, select, text
 
 from app.core.database import async_session_factory
 from app.core.domain.mission import Mission, MissionStatus
@@ -25,17 +24,9 @@ async def recommend_next_mission(user_id: int, difficulty: str = "medium") -> di
             Mission.status == MissionStatus.SUCCESS
         )
         completed_res = await session.execute(completed_stmt)
-        completed_titles = {row[0] for row in completed_res.all()}
+        # completed_titles = {row[0] for row in completed_res.all()}
 
         # 2. البحث عن مهام "Pending" أو أفكار جديدة
-        # هنا نفترض وجود مهام مجهزة مسبقاً في النظام (Pool of missions)
-        # أو نقترح مهمة بناءً على نمط.
-        # بما أن هذا النظام يعتمد على إنشاء المهام ديناميكياً، سنقوم باقتراح "موضوع" جديد.
-
-        # لغرض هذا التطوير، سنبحث عن مهام موجودة لم يكملها المستخدم (من مستخدمين آخرين مثلاً كقوالب)
-        # أو نقترح تحدياً عاماً.
-
-        # تحسين: اقتراح مبني على آخر مهمة ناجحة
         last_mission_stmt = (
             select(Mission)
             .where(Mission.initiator_id == user_id, Mission.status == MissionStatus.SUCCESS)
@@ -47,6 +38,24 @@ async def recommend_next_mission(user_id: int, difficulty: str = "medium") -> di
 
         suggestion_title = "مقدمة في البرمجة"
         suggestion_desc = "ابدأ رحلتك التعليمية بأساسيات بايثون."
+
+        # محاولة البحث عن محتوى حقيقي في قاعدة البيانات لاقتراحه
+        try:
+             # البحث عن موضوع عشوائي أو أول موضوع في المستوى الأول
+             content_query = text("""
+                SELECT title, subject, level, id
+                FROM content_items
+                ORDER BY level ASC, id ASC
+                LIMIT 1
+             """)
+             content_res = await session.execute(content_query)
+             content_row = content_res.fetchone()
+
+             if content_row:
+                 suggestion_title = content_row.title
+                 suggestion_desc = f"درس في مادة {content_row.subject} - المستوى {content_row.level}"
+        except Exception as e:
+            logger.warning(f"Could not fetch real content for recommendation: {e}")
 
         if last_mission:
             # منطق بسيط لاقتراح الخطوة التالية

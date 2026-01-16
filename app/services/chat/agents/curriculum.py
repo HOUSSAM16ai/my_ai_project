@@ -1,9 +1,10 @@
 """
-وكيل المناهج (Curriculum Agent) - النسخة المحسنة.
+وكيل المناهج (Curriculum Agent) - النسخة المحسنة (Super Agent).
 
-يقترح محتوى بناءً على سياق المستخدم الفعلي.
+مسؤول عن تخطيط الرحلة التعليمية، وبناء خرائط طريق (Roadmaps)، واقتراح المحتوى بدقة.
 """
 
+import json
 from typing import AsyncGenerator
 
 from app.core.logging import get_logger
@@ -14,7 +15,13 @@ logger = get_logger("curriculum-agent")
 
 class CurriculumAgent:
     """
-    وكيل "المصمم التعليمي" المسؤول عن توجيه رحلة التعلم واختيار المحتوى.
+    وكيل "المصمم التعليمي" (Instructional Designer).
+
+    القدرات:
+    1. تحليل طلب الطالب (Intent Analysis).
+    2. استرجاع هيكلة المنهج المتاحة (Curriculum Structure).
+    3. بناء خطة دراسية مخصصة (Personalized Roadmap).
+    4. تتبع التقدم (Progress Tracking).
     """
 
     def __init__(self, tools: ToolRegistry) -> None:
@@ -22,24 +29,73 @@ class CurriculumAgent:
 
     async def process(self, context: dict[str, object]) -> AsyncGenerator[str, None]:
         """
-        معالجة طلبات المحتوى والتمارين.
+        نقطة الدخول الرئيسية لمعالجة طلبات المناهج.
         """
         logger.info("Curriculum agent started processing")
 
         intent_type = context.get("intent_type", "recommendation")
         user_id = context.get("user_id")
+        user_message = context.get("user_message", "")
 
         if not user_id:
             yield "عذراً، أحتاج لمعرفة هويتك لتقديم توصيات مناسبة."
             return
 
-        if intent_type == "path_progress":
+        # توجيه الطلبات بناءً على الكلمات المفتاحية أو نوع النية
+        if "خطة" in str(user_message) or "plan" in str(user_message).lower() or "roadmap" in str(user_message).lower() or "ابدأ" in str(user_message):
+             async for chunk in self._handle_study_plan(user_id, str(user_message)):
+                 yield chunk
+        elif intent_type == "path_progress":
             yield await self._handle_path_progress(user_id)
         elif intent_type == "difficulty_adjust":
              yield await self._handle_difficulty_adjustment(user_id, context.get("feedback", "good"))
         else:
             async for chunk in self._handle_recommendation(user_id):
                 yield chunk
+
+    async def _handle_study_plan(self, user_id: int, request_text: str) -> AsyncGenerator[str, None]:
+        """
+        إنشاء خطة دراسية منظمة بناءً على المحتوى المتوفر.
+        """
+        yield "🗺️ **جارٍ إعداد خريطتك الدراسية المخصصة...**\n"
+
+        # 1. جلب هيكلة المنهج
+        try:
+            # يمكن هنا استخراج المادة من النص إذا لزم الأمر، لكن سنجلب كل شيء حالياً
+            structure = await self.tools.execute("get_curriculum_structure", {})
+        except Exception as e:
+            logger.error(f"Error fetching curriculum structure: {e}")
+            yield "حدث خطأ أثناء استرجاع المناهج المتاحة."
+            return
+
+        if not structure:
+            yield "للاسف، لا يوجد محتوى تعليمي متاح حالياً في النظام لبناء خطة."
+            return
+
+        # 2. بناء الخطة (هنا نقوم بمحاكاة ذكاء الوكيل في ترتيب المواضيع)
+        # في المستقبل يمكن استخدام LLM لترتيب المواضيع بناءً على طلب المستخدم بدقة أكبر
+
+        response_lines = ["### 🎓 الخطة الدراسية المقترحة\n"]
+        response_lines.append(f"بناءً على طلبك: '{request_text}'، إليك المسار التعليمي المتاح:\n")
+
+        # تحويل الهيكلية إلى عرض نصي جذاب (Markdown)
+        for subject, levels in structure.items():
+            response_lines.append(f"#### 📚 مادة: {subject}")
+            for level, packs in levels.items():
+                response_lines.append(f"**المستوى: {level}**")
+                for pack_name, lessons in packs.items():
+                    response_lines.append(f"- 📦 **{pack_name}**")
+                    for i, lesson in enumerate(lessons):
+                        # رابط للمحتوى (سنستخدم ID لتمكين المستخدم من طلبه لاحقاً)
+                        title = lesson['title']
+                        l_id = lesson['id']
+                        # إضافة زر أو أمر مباشر (Frontend friendly suggestion)
+                        response_lines.append(f"  - {i+1}. {title} `[عرض: {l_id}]`")
+            response_lines.append("\n---\n")
+
+        response_lines.append("\n💡 **نصيحة:** يمكنك نسخ كود الدرس (مثلاً `ex:101`) وطلبه مباشرة، أو قل 'ابدأ الدرس الأول'.")
+
+        yield "\n".join(response_lines)
 
     async def _handle_recommendation(self, user_id: int) -> AsyncGenerator[str, None]:
         yield "🤔 **أبحث لك عن التحدي الأنسب لمستواك الحالي...**\n"
