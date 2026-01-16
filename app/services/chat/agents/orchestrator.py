@@ -163,7 +163,10 @@ class OrchestratorAgent:
         )
 
         if self._is_no_content(search_result):
-            yield self._build_strict_content_only_message()
+            # If no content is found, fallback to Smart Tutor Chat
+            # This handles cases like "Explain X" which get misclassified as Content Retrieval
+            async for chunk in self._handle_chat_fallback(question, context):
+                yield chunk
             return
 
         if self._should_return_raw(search_result):
