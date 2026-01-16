@@ -37,8 +37,12 @@ async def get_curriculum_structure(level: Optional[str] = None, lang: str = "ar"
         # Order by hierarchy to make processing easier
         query_str += " ORDER BY subject, level, set_name, id"
 
-        result = await session.execute(text(query_str), params)
-        rows = result.fetchall()
+        try:
+            result = await session.execute(text(query_str), params)
+            rows = result.fetchall()
+        except Exception as e:
+            logger.error(f"Failed to fetch curriculum structure: {e}")
+            return {}
 
     structure = {}
 
@@ -106,8 +110,10 @@ async def search_content(
                         continue
 
                     param_key = f"q_{i}"
-                    # AND logic for each keyword: item must contain ALL keywords
-                    query_str += f" AND (title LIKE :{param_key} OR md_content LIKE :{param_key})"
+                    # OPTIMIZATION: Removed `OR md_content LIKE` to prevent timeouts on large text fields.
+                    # We rely on Title matching for now as it's indexed/fast.
+                    # Future: Use `content_search` table with FTS.
+                    query_str += f" AND (title LIKE :{param_key})"
                     params[param_key] = f"%{clean_kw}%"
 
         if level:
@@ -133,8 +139,12 @@ async def search_content(
         query_str += " ORDER BY year DESC, id ASC LIMIT :limit"
         params["limit"] = limit
 
-        result = await session.execute(text(query_str), params)
-        rows = result.fetchall()
+        try:
+            result = await session.execute(text(query_str), params)
+            rows = result.fetchall()
+        except Exception as e:
+            logger.error(f"Search content failed: {e}")
+            return []
 
     items = []
     for row in rows:
@@ -157,8 +167,12 @@ async def get_content_raw(content_id: str) -> Optional[Dict[str, str]]:
     """
     async with async_session_factory() as session:
         query_str = "SELECT md_content FROM content_items WHERE id = :id"
-        result = await session.execute(text(query_str), {"id": content_id})
-        row = result.fetchone()
+        try:
+            result = await session.execute(text(query_str), {"id": content_id})
+            row = result.fetchone()
+        except Exception as e:
+            logger.error(f"Get content raw failed: {e}")
+            return None
 
     if not row:
         return None
@@ -175,8 +189,12 @@ async def get_solution_raw(content_id: str) -> Optional[Dict[str, Any]]:
             FROM content_solutions
             WHERE content_id = :id
         """
-        result = await session.execute(text(query_str), {"id": content_id})
-        row = result.fetchone()
+        try:
+            result = await session.execute(text(query_str), {"id": content_id})
+            row = result.fetchone()
+        except Exception as e:
+            logger.error(f"Get solution raw failed: {e}")
+            return None
 
     if not row:
         return None
