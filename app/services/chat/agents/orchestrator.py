@@ -174,15 +174,16 @@ class OrchestratorAgent:
         system_prompt = (
             "You are a search query parser for an educational database. "
             "Extract parameters from the user's request into a JSON object. "
-            "Fields: q (keywords), year (int), subject (Mathematics, Physics), set_name, level, type (exercise, lesson). "
+            "Fields: q (keywords), year (int), subject (Mathematics, Physics), branch (experimental_sciences, math_tech, etc), set_name, level, type (exercise, lesson). "
             "\nRules:"
-            "\n1. 'Subject 1' -> set_name: 'subject_1', 'Subject 2' -> set_name: 'subject_2', 'Set 2' -> set_name: '2'."
-            "\n2. 'Experimental Sciences' (علوم تجريبية) is a BRANCH, not a subject. Put it in 'q' (keywords). Do NOT put it in 'subject'."
-            "\n3. 'Mathematics' or 'Math' -> subject: 'Mathematics'."
-            "\n4. 'Baccalaureate' or 'Bac' -> level: 'baccalaureate'."
-            "\n5. If a field is not present, omit it."
+            "\n1. 'Subject 1' -> set_name: 'subject_1', 'Subject 2' -> set_name: 'subject_2'."
+            "\n2. 'Experimental Sciences' (علوم تجريبية) -> branch: 'experimental_sciences'."
+            "\n3. 'Math Tech' (تقني رياضي) -> branch: 'math_tech'."
+            "\n4. 'Mathematics' or 'Math' -> subject: 'Mathematics'."
+            "\n5. 'Baccalaureate' or 'Bac' -> level: 'baccalaureate'."
+            "\n6. If a field is not present, omit it."
             "\n\nExample 1: 'Math exercises 2024 probability' -> {'q': 'probability', 'year': 2024, 'subject': 'Mathematics'}"
-            "\nExample 2: 'Subject 1 Bac 2024 Experimental Probability' -> {'q': 'Experimental Probability', 'year': 2024, 'set_name': 'subject_1', 'level': 'baccalaureate'}"
+            "\nExample 2: 'Subject 1 Bac 2024 Experimental Probability' -> {'q': 'Probability', 'year': 2024, 'set_name': 'subject_1', 'branch': 'experimental_sciences', 'level': 'baccalaureate'}"
         )
 
         try:

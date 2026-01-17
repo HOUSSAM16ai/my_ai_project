@@ -34,6 +34,40 @@ def _normalize_set_name(val: str) -> Optional[str]:
 
     return val
 
+def _normalize_branch(val: str) -> Optional[str]:
+    """
+    Normalizes branch codes to their Arabic Title Keyword equivalents.
+    Since we lack a 'branch' column, we filter by ensuring the Title/Body contains the branch name.
+
+    Returns the Arabic keyword to search for (e.g. "علوم تجريبية").
+    """
+    if not val:
+        return None
+
+    val_lower = val.lower().strip()
+
+    # Experimental Sciences
+    if val_lower in ("experimental_sciences", "experimental sciences", "experimental", "علوم تجريبية", "تجريبية", "science"):
+        return "علوم تجريبية"
+
+    # Math Technical
+    if val_lower in ("math_tech", "math tech", "technical math", "تقني رياضي", "تقني"):
+        return "تقني رياضي"
+
+    # Mathematics (Branch)
+    if val_lower in ("mathematics_branch", "math branch", "رياضيات"):
+        return "رياضيات"
+
+    # Foreign Languages
+    if val_lower in ("foreign_languages", "languages", "لغات أجنبية", "لغات"):
+        return "لغات أجنبية"
+
+    # Literature
+    if val_lower in ("literature_philosophy", "literature", "آداب وفلسفة"):
+        return "آداب وفلسفة"
+
+    return val
+
 async def get_curriculum_structure(level: Optional[str] = None, lang: str = "ar") -> Dict[str, Any]:
     """
     جلب شجرة المنهج الدراسي بالكامل أو لمستوى محدد.
@@ -101,7 +135,9 @@ async def search_content(
     q: Optional[str] = None,
     level: Optional[str] = None,
     subject: Optional[str] = None,
+    branch: Optional[str] = None,
     set_name: Optional[str] = None,
+    year: Optional[int] = None,
     type: Optional[str] = None,
     lang: Optional[str] = None,
     limit: int = 10
@@ -234,6 +270,20 @@ async def search_content(
             norm_set = _normalize_set_name(set_name)
             query_str += " AND i.set_name = :set_name"
             params["set_name"] = norm_set
+
+        if year:
+            query_str += " AND i.year = :year"
+            params["year"] = year
+
+        if branch:
+            # Strict Branch Filtering via Title/Body Simulation
+            # Since 'branch' column is missing, we enforce that the Title matches the branch name.
+            branch_kw = _normalize_branch(branch)
+            if branch_kw:
+                # We check Title. Using Body might be too broad?
+                # Ideally, exam titles contain the branch name (e.g. "بكالوريا ... علوم تجريبية ...").
+                query_str += " AND i.title LIKE :branch_kw"
+                params["branch_kw"] = f"%{branch_kw}%"
 
         if type:
             query_str += " AND i.type = :type"
