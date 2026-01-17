@@ -1,283 +1,273 @@
+"""إعدادات اختبارات مشتركة لمعالجة التحذيرات وضبط مسار الاستيراد."""
+
 from __future__ import annotations
 
-# tests/conftest.py
 import asyncio
-import inspect
+from collections.abc import Coroutine
+from contextlib import asynccontextmanager
 import os
-import sys
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager, suppress
 from pathlib import Path
-from typing import TYPE_CHECKING
+import sys
+import warnings
+from typing import TypeVar
+
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+os.environ.setdefault("SECRET_KEY", "test_secret_key_super_secure_must_be_long_enough")
+os.environ.setdefault("ENVIRONMENT", "testing")
+os.environ.setdefault("LLM_MOCK_MODE", "1")
+os.environ.setdefault("LOG_LEVEL", "DEBUG")
+os.environ.setdefault("PROJECT_NAME", "CogniForgeTest")
+
+project_root = Path(__file__).resolve().parents[1]
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy import inspect
+from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel
 
-# Ensure repository root is prioritized in import resolution
-ROOT_DIR = Path(__file__).resolve().parent.parent
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-
-# Set environment variables for testing before importing application database
-os.environ["ENVIRONMENT"] = "testing"
-os.environ["SECRET_KEY"] = "test-secret-key-that-is-very-long-and-secure-enough-for-tests-v4"
-
-# Use in-memory database for better test isolation
-os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
-
-from app.core.database import async_session_factory as testing_session_factory
-from app.core.database import engine
-from app.core.security import generate_service_token
+from app.api.routers.admin import get_session_factory as get_admin_session_factory
+from app.api.routers.customer_chat import get_session_factory
+from app.api.routers.overmind import get_session_factory as get_overmind_session_factory
+from app.core.database import get_db
+from app.core import database as core_database
+from app.core.domain.user import User
+from app.core.settings.base import get_settings
+from app.main import create_app
+from app.services.auth import AuthService
 from tests.factories.base import MissionFactory, UserFactory
+engine: AsyncEngine = create_async_engine(
+    "sqlite+aiosqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+TestingSessionLocal = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
+_schema_initialized = False
 
-if TYPE_CHECKING:
-    from app.core.domain.models import User
+core_database.engine = engine
+core_database.async_session_factory = TestingSessionLocal
 
-TestingSessionLocal = testing_session_factory
+
+async def _ensure_schema() -> None:
+    """تهيئة مخطط قاعدة البيانات داخل الذاكرة لاختبارات SQLite."""
+    global _schema_initialized
+    if _schema_initialized:
+        return
+    from app.core.domain import models as _domain_models
+
+    async with engine.begin() as connection:
+        await connection.run_sync(SQLModel.metadata.create_all)
+    _schema_initialized = True
+
+
+TResult = TypeVar("TResult")
+
+
+def _run_async(
+    loop: asyncio.AbstractEventLoop,
+    coroutine: Coroutine[object, object, TResult],
+) -> TResult:
+    """تشغيل Coroutine داخل الحلقة المستخدمة في الاختبارات."""
+    return loop.run_until_complete(coroutine)
 
 
 @asynccontextmanager
-async def managed_test_session() -> AsyncIterator[AsyncSession]:
-    """
-    يدير دورة حياة جلسة اختبارية مع إرجاع الاتصال للمسبح بثبات.
-
-    يستخدم سياق `AsyncSession` المدمج لضمان الإغلاق التلقائي، ويضيف تراجعًا
-    دفاعيًا بعد كل استخدام لتجنب أي معاملات عالقة، ما يحافظ على البساطة
-    (KISS) ويعيد استخدام المنطق (DRY) عبر نقطة موحدة لإدارة الجلسات.
-    """
-
-    async with testing_session_factory() as session:
-        try:
-            yield session
-        finally:
-            await session.rollback()
+async def managed_test_session() -> AsyncSession:
+    """جلسة قاعدة بيانات للاختبارات تعتمد على SQLite داخل الذاكرة."""
+    await _ensure_schema()
+    async with TestingSessionLocal() as session:
+        yield session
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
-    """تسجيل خيارات تهيئة Pytest المفقودة محلياً لضمان استقرار الاختبارات."""
-
-    parser.addini(
-        "asyncio_mode",
-        "تمكين تشغيل الاختبارات غير المتزامنة حتى بدون وجود pytest-asyncio مثبتاً.",
-        default="auto",
-    )
-    parser.addini(
-        "env",
-        "تهيئة متغيرات البيئة المحددة في pytest.ini دون الحاجة إلى pytest-env.",
-        type="linelist",
-        default=[],
-    )
+    """تسجيل إعدادات ini المطلوبة لمنع تحذيرات PytestConfigWarning."""
+    parser.addini("asyncio_mode", "وضع تشغيل asyncio", default="auto")
+    parser.addini("env", "بيئة الاختبارات", type="linelist")
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """تطبيق تهيئة البيئة قبل تنفيذ أي اختبار."""
-
-    for line in config.getini("env"):
-        if "=" not in line:
-            continue
-        key, _, value = line.partition("=")
-        os.environ.setdefault(key.strip(), value.strip())
-
-    config.addinivalue_line(
-        "markers", "asyncio: تشغيل الاختبارات غير المتزامنة دون الاعتماد على pytest-asyncio."
-    )
+    """تسجيل وسم asyncio لاختبارات غير متزامنة."""
+    config.addinivalue_line("markers", "asyncio: تشغيل اختبارات غير متزامنة")
 
 
-@pytest.hookimpl(tryfirst=True)
 def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> bool | None:
-    """تنفيذ دوال الاختبار غير المتزامنة داخل حلقة حدث موحدة."""
-
-    test_func = pyfuncitem.obj
-    if not inspect.iscoroutinefunction(test_func):
-        return None
-
-    signature = inspect.signature(test_func)
-    accepted_args = {
-        name: value for name, value in pyfuncitem.funcargs.items() if name in signature.parameters
-    }
-
-    event_loop = accepted_args.get("event_loop")
-    owns_loop = False
-    if event_loop is None:
-        event_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(event_loop)
-        owns_loop = True
-
-    result = event_loop.run_until_complete(test_func(**accepted_args))
-
-    if owns_loop:
-        event_loop.close()
-
-    pyfuncitem._store["_async_result"] = result
-    return True
+    """تشغيل الاختبارات غير المتزامنة بدون الاعتماد على pytest-asyncio."""
+    if asyncio.iscoroutinefunction(pyfuncitem.obj):
+        loop = pyfuncitem.funcargs.get("event_loop")
+        if not isinstance(loop, asyncio.AbstractEventLoop):
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            pyfuncitem.funcargs["event_loop"] = loop
+        arg_names = pyfuncitem._fixtureinfo.argnames
+        kwargs = {name: pyfuncitem.funcargs[name] for name in arg_names}
+        loop.run_until_complete(pyfuncitem.obj(**kwargs))
+        return True
+    return None
 
 
-@pytest.fixture(scope="function")
-def event_loop():
-    """
-    إنشاء حلقة حدث جديدة لكل اختبار لضمان العزل الكامل
-    """
+@pytest.fixture
+def event_loop() -> asyncio.AbstractEventLoop:
+    """حلقة asyncio مخصصة للاختبارات."""
     loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    yield loop
-    # تنظيف المهام المعلقة قبل إغلاق الحلقة
     try:
-        pending = asyncio.all_tasks(loop)
-        for task in pending:
-            task.cancel()
-        if pending:
-            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-    except Exception:
-        pass
+        yield loop
     finally:
-        with suppress(Exception):
-            loop.close()
+        loop.close()
 
 
-@pytest.fixture(scope="function", autouse=True)
-def init_db(event_loop) -> None:
-    """
-    تهيئة قاعدة البيانات لكل اختبار لضمان العزل الكامل
-    """
-    import app.core.domain.models  # noqa: F401
-
-    async def _create_all() -> None:
-        async with engine.begin() as conn:
-            await conn.run_sync(SQLModel.metadata.drop_all)
-            await conn.run_sync(SQLModel.metadata.create_all)
-
-    event_loop.run_until_complete(_create_all())
+@pytest.fixture(scope="session")
+def static_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """بناء بنية ملفات ثابتة افتراضية لاختبارات الواجهة."""
+    base_dir = tmp_path_factory.mktemp("static")
+    (base_dir / "index.html").write_text(
+        "<!DOCTYPE html><html><body><div id=\"root\"></div></body></html>",
+        encoding="utf-8",
+    )
+    (base_dir / "css").mkdir()
+    (base_dir / "js").mkdir()
+    (base_dir / "css" / "superhuman-ui.css").write_text("body{}", encoding="utf-8")
+    (base_dir / "js" / "script.js").write_text("console.log('ok');", encoding="utf-8")
+    return base_dir
 
 
 @pytest.fixture(autouse=True)
-def reset_secret_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    """إعادة ضبط مفتاح التشفير قبل كل اختبار للحفاظ على استقرار التوقيعات."""
-
-    from app.core.config import get_settings
-
-    current_key = os.environ.get(
-        "SECRET_KEY", "test-secret-key-that-is-very-long-and-secure-enough-for-tests-v4"
-    )
-    get_settings.cache_clear()
-    monkeypatch.setenv("SECRET_KEY", current_key)
+def init_db(event_loop: asyncio.AbstractEventLoop) -> None:
+    """تهيئة قاعدة البيانات قبل كل اختبار."""
+    _run_async(event_loop, _ensure_schema())
 
 
-async def _reset_database(session: AsyncSession) -> None:
-    """تفريغ كافة الجداول قبل كل اختبار لضمان العزل الكامل للبيانات."""
+@pytest.fixture(autouse=True)
+def clean_db(event_loop: asyncio.AbstractEventLoop) -> None:
+    """تنظيف الجداول بعد كل اختبار لضمان العزل."""
+    yield
+    if not _schema_initialized:
+        return
+    async def _cleanup() -> None:
+        async with engine.begin() as connection:
+            table_names = await connection.run_sync(
+                lambda sync_conn: inspect(sync_conn).get_table_names()
+            )
+            if not table_names:
+                return
+            for table in reversed(SQLModel.metadata.sorted_tables):
+                if table.name in table_names:
+                    await connection.execute(table.delete())
 
-    await session.execute(text("PRAGMA foreign_keys=OFF"))
-    try:
-        for table in reversed(SQLModel.metadata.sorted_tables):
-            await session.execute(table.delete())
-    except Exception:
-        async with engine.begin() as conn:
-            await conn.run_sync(SQLModel.metadata.create_all)
-        for table in reversed(SQLModel.metadata.sorted_tables):
-            await session.execute(table.delete())
-
-    await session.execute(text("PRAGMA foreign_keys=ON"))
-    await session.commit()
+    _run_async(event_loop, _cleanup())
 
 
 @pytest.fixture
-def db_session(init_db, event_loop):
-    """
-    جلسة قاعدة بيانات معزولة لكل اختبار
-    """
-    session_context = managed_test_session()
-    session = event_loop.run_until_complete(session_context.__aenter__())
-    event_loop.run_until_complete(_reset_database(session))
+def db_session(event_loop: asyncio.AbstractEventLoop) -> AsyncSession:
+    """إرجاع جلسة قاعدة بيانات للاختبار الحالي."""
+    _run_async(event_loop, _ensure_schema())
+
+    async def _open_session() -> AsyncSession:
+        return TestingSessionLocal()
+
+    session = _run_async(event_loop, _open_session())
     try:
         yield session
     finally:
-        with suppress(Exception):
-            # تجاهل أخطاء الإغلاق إذا كانت الحلقة مغلقة بالفعل
-            event_loop.run_until_complete(session_context.__aexit__(None, None, None))
+        _run_async(event_loop, session.close())
 
 
 @pytest.fixture
-def client():
-    # LIGHTWEIGHT CLIENT: Does not depend on DB unless needed
-    import app.main
+def test_app(static_dir: Path) -> FastAPI:
+    """تهيئة تطبيق الاختبار مع تجاوز اتصال قاعدة البيانات."""
+    get_settings.cache_clear()
+    settings = get_settings()
+    app = create_app(
+        settings_override=settings,
+        static_dir=str(static_dir),
+        enable_static_files=True,
+    )
 
-    with TestClient(app.main.app) as test_client:
+    async def override_get_db():
+        async with TestingSessionLocal() as session:
+            yield session
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_session_factory] = lambda: TestingSessionLocal
+    app.dependency_overrides[get_admin_session_factory] = lambda: TestingSessionLocal
+    app.dependency_overrides[get_overmind_session_factory] = lambda: TestingSessionLocal
+    return app
+
+
+@pytest.fixture
+def client(test_app) -> TestClient:
+    """عميل HTTP متزامن للاختبارات السريعة."""
+    with TestClient(test_app) as test_client:
         yield test_client
 
 
 @pytest.fixture
-def test_app():
-    """إرجاع تطبيق FastAPI الأساسي لتمكين تجاوز التبعيات أثناء الاختبار."""
-    import app.main
-
-    return app.main.app
+def async_client(test_app, event_loop: asyncio.AbstractEventLoop) -> AsyncClient:
+    """عميل HTTP غير متزامن للاختبارات التكاملية."""
+    client_instance = AsyncClient(
+        transport=ASGITransport(app=test_app),
+        base_url="http://test",
+    )
+    try:
+        yield client_instance
+    finally:
+        _run_async(event_loop, client_instance.aclose())
 
 
 @pytest.fixture
-def async_client(init_db, event_loop):
-    """عميل HTTP غير متزامن للاختبارات مع قاعدة بيانات مهيأة مسبقاً."""
-    import app.main
-    from app.core.database import engine, get_db
+def admin_user(db_session: AsyncSession, event_loop: asyncio.AbstractEventLoop) -> User:
+    """إنشاء مستخدم إداري للاختبارات."""
+    async def _create_user() -> User:
+        user = User(full_name="Admin", email="admin@example.com", is_admin=True)
+        user.set_password("AdminPass123!")
+        db_session.add(user)
+        await db_session.commit()
+        await db_session.refresh(user)
+        return user
 
-    async def override_get_db():
-        """يوفر جلسة قاعدة بيانات ضمن سياق آمن يعيد الاتصال للمسبح بلا تسربات."""
+    return _run_async(event_loop, _create_user())
 
-        async with managed_test_session() as session:
-            yield session
 
-    app.main.app.dependency_overrides[get_db] = override_get_db
+@pytest.fixture
+def admin_auth_headers(
+    db_session: AsyncSession,
+    admin_user: User,
+    event_loop: asyncio.AbstractEventLoop,
+) -> dict[str, str]:
+    """إنشاء ترويسات مصادقة لمستخدم إداري."""
+    async def _issue_tokens() -> dict[str, str]:
+        auth = AuthService(db_session)
+        await auth.rbac.ensure_seed()
+        tokens = await auth.issue_tokens(admin_user)
+        return {"Authorization": f"Bearer {tokens['access_token']}"}
 
-    client_cm = AsyncClient(app=app.main.app, base_url="http://test")
-    client = event_loop.run_until_complete(client_cm.__aenter__())
-    try:
-        yield client
-    finally:
-        event_loop.run_until_complete(client_cm.__aexit__(None, None, None))
-        app.main.app.dependency_overrides.clear()
-        event_loop.run_until_complete(engine.dispose())
+    return _run_async(event_loop, _issue_tokens())
 
 
 @pytest.fixture
 def user_factory() -> UserFactory:
-    """مصنع كائنات المستخدمين للاستعمال داخل الاختبارات."""
-
+    """مصنع مستخدمين للاختبارات."""
     return UserFactory()
 
 
 @pytest.fixture
 def mission_factory() -> MissionFactory:
-    """مصنع مهام تجريبية لإنشاء بيانات مرتبطة بالمستخدمين."""
-
+    """مصنع مهام للاختبارات."""
     return MissionFactory()
-
-
-@pytest.fixture
-def admin_user(db_session: AsyncSession, event_loop) -> User:
-    """إنشاء مستخدم إداري حقيقي داخل قاعدة بيانات الاختبار."""
-
-    from app.core.domain.models import User
-
-    async def _create() -> User:
-        admin = User(
-            full_name="Admin User",
-            email="admin@example.com",
-            is_admin=True,
-        )
-        admin.set_password("AdminPass123!")
-        db_session.add(admin)
-        await db_session.commit()
-        await db_session.refresh(admin)
-        return admin
-
-    return event_loop.run_until_complete(_create())
-
-
-@pytest.fixture
-def admin_auth_headers(admin_user: User) -> dict[str, str]:
-    """ترويسات تفويض JWT للمستخدم الإداري لضمان سهولة الوصول في الاختبارات."""
-
-    token = generate_service_token(str(admin_user.id))
-    return {"Authorization": f"Bearer {token}"}

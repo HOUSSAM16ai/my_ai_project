@@ -59,7 +59,7 @@ class IntentDetector:
         """يعرف مواصفات النمط بشكل موحد وقابل للتوسع."""
         admin_queries = [
             r"(user|users|مستخدم|مستخدمين|count users|list users|profile|stats|أعضاء)",
-            r"(database|schema|tables|db map|قاعدة بيانات|جداول|مخطط|بنية البيانات)",
+            r"(database|schema|tables|db map|database map|قاعدة بيانات|قاعدة البيانات|جداول|مخطط|بنية البيانات|خريطة قاعدة البيانات|العلاقات)",
             r"(route|endpoint|api path|مسار api|نقطة نهاية|services|microservices|خدمات|مصغرة)",
             r"(structure|project info|هيكل المشروع|معلومات المشروع|بنية النظام)",
         ]
@@ -84,7 +84,12 @@ class IntentDetector:
                 ChatIntent.CONTENT_RETRIEVAL,
                 self._extract_query_optional,
             ),
-            (r"(ابحث|search|find)\s+(عن|for)?\s*(.+)", ChatIntent.CODE_SEARCH, self._extract_query),
+            (
+                r"(read|open|show|cat|اقرا|اقرأ|اعرض|عرض)\s+(file|ملف)\s+(.+)",
+                ChatIntent.FILE_READ,
+                self._extract_path,
+            ),
+            (r"(ابحث|search|find|where|أين|اين)\s+(عن|for)?\s*(.+)", ChatIntent.CODE_SEARCH, self._extract_query),
             (r"(فهرس|index)\s+(المشروع|project)", ChatIntent.PROJECT_INDEX, self._empty_params),
             (r"(حلل|analyze|explain)\s+(.+)", ChatIntent.DEEP_ANALYSIS, self._empty_params),
             (analytics_keywords, ChatIntent.ANALYTICS_REPORT, self._empty_params),
