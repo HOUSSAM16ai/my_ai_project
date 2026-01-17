@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { ContentNavigation } from '@/components/ContentNavigation';
-import { ExerciseDisplay } from '@/components/ExerciseDisplay';
+import { ContentNavigation } from '../../components/ContentNavigation';
+import { ExerciseDisplay } from '../../components/ExerciseDisplay';
 
 // ══════════════════════════════════════════════════════════════════════
 // PERFORMANCE CONFIGURATION & UTILS
