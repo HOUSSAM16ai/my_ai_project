@@ -85,9 +85,9 @@ class ActiveModels:
     ╚═══════════════════════════════════════════════════════════════════════════════════╝
     """
 
-    PRIMARY = AvailableModels.DEVSTRAL_2512
+    PRIMARY = AvailableModels.CLAUDE_OPUS_4_5
     LOW_COST = "deepseek/deepseek-v3.2-exp"
-    GATEWAY_PRIMARY = AvailableModels.DEVSTRAL_2512
+    GATEWAY_PRIMARY = AvailableModels.CLAUDE_OPUS_4_5
     GATEWAY_FALLBACK_1 = AvailableModels.GEMINI_2_FLASH_EXP_FREE
     GATEWAY_FALLBACK_2 = AvailableModels.QWEN_QWEN3_CODER_FREE
     GATEWAY_FALLBACK_3 = AvailableModels.KAT_CODER_PRO_FREE

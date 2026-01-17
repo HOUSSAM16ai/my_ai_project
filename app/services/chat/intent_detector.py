@@ -72,6 +72,11 @@ class IntentDetector:
                 (pattern, ChatIntent.ADMIN_QUERY, self._empty_params)
                 for pattern in admin_queries
             ],
+            (
+                r"(read|open|show|عرض|اقرأ|اقرء)\s+(file|ملف)\s+([\w\-/\.]+)",
+                ChatIntent.FILE_READ,
+                self._extract_path,
+            ),
             # Flexible Content Retrieval: Catch implicit content requests
             # e.g., "Math 2024", "Probability", "Subject 1", "Lesson about X"
             (

@@ -133,46 +133,47 @@ class CustomerChatBoundaryService:
             question
         ):
             effective_intent = ChatIntent.CONTENT_RETRIEVAL
-        tool_decision = self.tool_router.authorize_intent(
-            role=role_label,
-            intent=effective_intent,
-        )
 
         conversation = await self.get_or_create_conversation(user, question, conversation_id)
 
-        if not tool_decision.allowed:
-            refusal_text = tool_decision.refusal_message or "عذرًا، لا يمكنني تنفيذ هذا الطلب."
-            await self._record_tool_blocked(
-                user_id=user.id,
-                conversation_id=conversation.id,
-                intent=effective_intent.value,
-                reason_code=tool_decision.reason_code,
-                ip=ip,
-                user_agent=user_agent,
+        if self._is_tool_intent(effective_intent):
+            tool_decision = self.tool_router.authorize_intent(
+                role=role_label,
+                intent=effective_intent,
             )
-            await self.save_message(
-                conversation.id,
-                MessageRole.USER,
-                "[BLOCKED REQUEST]",
-                {
-                    "classification": "tool_access",
-                    "blocked": "true",
-                    "intent": effective_intent.value,
-                    "reason_code": tool_decision.reason_code,
-                },
-            )
-            await self.save_message(
-                conversation.id,
-                MessageRole.ASSISTANT,
-                refusal_text,
-                {
-                    "classification": "tool_access",
-                    "refusal": "true",
-                    "reason_code": tool_decision.reason_code,
-                },
-            )
-            stream = self._refusal_stream(conversation, refusal_text)
-            return ChatDispatchResult(status_code=403, stream=stream)
+            if not tool_decision.allowed:
+                refusal_text = tool_decision.refusal_message or "عذرًا، لا يمكنني تنفيذ هذا الطلب."
+                await self._record_tool_blocked(
+                    user_id=user.id,
+                    conversation_id=conversation.id,
+                    intent=effective_intent.value,
+                    reason_code=tool_decision.reason_code,
+                    ip=ip,
+                    user_agent=user_agent,
+                )
+                await self.save_message(
+                    conversation.id,
+                    MessageRole.USER,
+                    "[BLOCKED REQUEST]",
+                    {
+                        "classification": "tool_access",
+                        "blocked": "true",
+                        "intent": effective_intent.value,
+                        "reason_code": tool_decision.reason_code,
+                    },
+                )
+                await self.save_message(
+                    conversation.id,
+                    MessageRole.ASSISTANT,
+                    refusal_text,
+                    {
+                        "classification": "tool_access",
+                        "refusal": "true",
+                        "reason_code": tool_decision.reason_code,
+                    },
+                )
+                stream = self._refusal_stream(conversation, refusal_text)
+                return ChatDispatchResult(status_code=403, stream=stream)
 
         decision = self.policy_gate.evaluate(question)
 
@@ -315,6 +316,15 @@ class CustomerChatBoundaryService:
             "الأعداد المركبة",
         )
         return any(keyword in lowered for keyword in keywords)
+
+    def _is_tool_intent(self, intent: ChatIntent) -> bool:
+        """تحديد ما إذا كانت النية مرتبطة بأداة تشغيلية."""
+        return intent in {
+            ChatIntent.FILE_READ,
+            ChatIntent.FILE_WRITE,
+            ChatIntent.CODE_SEARCH,
+            ChatIntent.PROJECT_INDEX,
+        }
 
     async def _refusal_stream(
         self,

@@ -1,9 +1,9 @@
-import logging
 import json
-from collections.abc import AsyncGenerator
-from typing import Optional
+import logging
+from collections.abc import AsyncGenerator, AsyncIterator
 
 from app.core.ai_gateway import AIClient
+from app.services.chat.agents.base import AgentProtocol
 from app.services.chat.agents.admin import AdminAgent
 from app.services.chat.agents.analytics import AnalyticsAgent
 from app.services.chat.agents.curriculum import CurriculumAgent
@@ -15,6 +15,27 @@ from app.services.overmind.agents.memory import MemoryAgent
 from app.services.overmind.domain.context import InMemoryCollaborationContext
 
 logger = logging.getLogger("orchestrator-agent")
+
+
+class OrchestratorStream:
+    """
+    مغلف تشغيل يتيح البث أو الانتظار النهائي لناتج الوكيل المنسق.
+    """
+
+    def __init__(self, stream: AsyncGenerator[str, None]) -> None:
+        self._stream = stream
+
+    def __aiter__(self) -> AsyncIterator[str]:
+        return self._stream
+
+    def __await__(self):  # type: ignore[override]
+        async def _collect() -> str:
+            parts: list[str] = []
+            async for chunk in self._stream:
+                parts.append(chunk)
+            return "".join(parts)
+
+        return _collect().__await__()
 
 
 class OrchestratorAgent:
@@ -37,13 +58,43 @@ class OrchestratorAgent:
         self.memory_agent = MemoryAgent()
         self.education_council = EducationCouncil(tools)
 
-    async def run(self, question: str, context: dict[str, object] | None = None) -> AsyncGenerator[str, None]:
+    @property
+    def data_agent(self) -> AgentProtocol:
+        return self.admin_agent.data_agent
+
+    @data_agent.setter
+    def data_agent(self, agent: AgentProtocol) -> None:
+        self.admin_agent.data_agent = agent
+
+    @property
+    def refactor_agent(self) -> AgentProtocol:
+        return self.admin_agent.refactor_agent
+
+    @refactor_agent.setter
+    def refactor_agent(self, agent: AgentProtocol) -> None:
+        self.admin_agent.refactor_agent = agent
+
+    def run(self, question: str, context: dict[str, object] | None = None) -> OrchestratorStream:
         """
-        واجهة موحدة لمعالجة الطلبات.
+        واجهة موحدة لمعالجة الطلبات مع دعم البث أو الرد النهائي.
         """
+        return OrchestratorStream(self._stream(question, context))
+
+    async def _stream(
+        self,
+        question: str,
+        context: dict[str, object] | None = None,
+    ) -> AsyncGenerator[str, None]:
         logger.info(f"Orchestrator received: {question}")
         normalized = question.strip()
+        lowered = normalized.lower()
         context = context or {}
+
+        admin_handler = self.admin_agent._resolve_handler(lowered)
+        if admin_handler != self.admin_agent._handle_unknown_admin_query:
+            async for chunk in self.admin_agent.run(normalized, context):
+                yield chunk
+            return
 
         # 1. Intent Detection
         if "intent" in context and isinstance(context["intent"], ChatIntent):
@@ -104,7 +155,7 @@ class OrchestratorAgent:
         except Exception as e:
             logger.warning(f"Memory capture failed: {e}")
 
-    def _enrich_curriculum_context(self, context: dict, question: str) -> None:
+    def _enrich_curriculum_context(self, context: dict[str, object], question: str) -> None:
         lowered = question.lower()
         if any(x in lowered for x in ["مسار", "path", "تقدم", "progress"]):
             context["intent_type"] = "path_progress"
@@ -114,7 +165,11 @@ class OrchestratorAgent:
         else:
             context["intent_type"] = "recommendation"
 
-    async def _handle_content_retrieval(self, question: str, context: dict) -> AsyncGenerator[str, None]:
+    async def _handle_content_retrieval(
+        self,
+        question: str,
+        context: dict[str, object],
+    ) -> AsyncGenerator[str, None]:
         """
         معالجة استرجاع المحتوى:
         1. استخراج الفلاتر بذكاء (AI Extraction) من النص الطبيعي.
@@ -230,7 +285,7 @@ class OrchestratorAgent:
         question: str,
         content: str,
         personalization_context: str,
-        solution: Optional[str] = None
+        solution: str | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         توليد شرح أو تحليل للمحتوى المسترجع.
@@ -270,17 +325,16 @@ class OrchestratorAgent:
             {"role": "user", "content": user_message}
         ]
 
-        async for chunk in self.ai_client.stream_chat(messages):
-            if hasattr(chunk, "choices"):
-                delta = chunk.choices[0].delta if chunk.choices else None
-                content = delta.content if delta else ""
-            else:
-                content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+        async for chunk in self._stream_chat(messages):
+            text = self._extract_stream_chunk(chunk)
+            if text:
+                yield text
 
-            if content:
-                yield content
-
-    async def _handle_chat_fallback(self, question: str, context: dict) -> AsyncGenerator[str, None]:
+    async def _handle_chat_fallback(
+        self,
+        question: str,
+        context: dict[str, object],
+    ) -> AsyncGenerator[str, None]:
         """معالجة المحادثة العامة."""
         system_context = context.get("system_context", "")
 
@@ -325,15 +379,10 @@ class OrchestratorAgent:
             {"role": "user", "content": question},
         ]
 
-        async for chunk in self.ai_client.stream_chat(messages):
-            if hasattr(chunk, "choices"):
-                delta = chunk.choices[0].delta if chunk.choices else None
-                content = delta.content if delta else ""
-            else:
-                content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
-
-            if content:
-                yield content
+        async for chunk in self._stream_chat(messages):
+            text = self._extract_stream_chunk(chunk)
+            if text:
+                yield text
 
     async def _build_education_brief(self, context: dict[str, object]) -> str:
         """بناء موجز تعليمي."""
@@ -350,3 +399,26 @@ class OrchestratorAgent:
         rendered = brief.render()
         context["education_brief"] = rendered
         return rendered
+
+    async def _stream_chat(self, messages: list[dict[str, str]]) -> AsyncGenerator[object, None]:
+        """ضمان تدفق متوافق مع الاستدعاءات غير المتزامنة."""
+        if self.ai_client is None:
+            return
+        stream = self.ai_client.stream_chat(messages)
+        if hasattr(stream, "__aiter__"):
+            async for chunk in stream:  # type: ignore[misc]
+                yield chunk
+            return
+        if hasattr(stream, "__await__"):
+            awaited = await stream  # type: ignore[misc]
+            async for chunk in awaited:
+                yield chunk
+
+    def _extract_stream_chunk(self, chunk: object) -> str:
+        """استخراج النص من أجزاء البث المتنوعة."""
+        if hasattr(chunk, "choices"):
+            delta = chunk.choices[0].delta if chunk.choices else None
+            return delta.content if delta else ""
+        if isinstance(chunk, dict):
+            return chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+        return str(chunk) if isinstance(chunk, str) else ""

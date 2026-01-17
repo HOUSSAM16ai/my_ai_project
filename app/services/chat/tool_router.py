@@ -38,7 +38,6 @@ class ToolRouter:
         ChatIntent.CONTENT_RETRIEVAL,
         # Allow search/read to reach the Agent, which will enforce finer-grained control
         ChatIntent.CODE_SEARCH,
-        ChatIntent.FILE_READ,
         ChatIntent.PROJECT_INDEX,
     }
 

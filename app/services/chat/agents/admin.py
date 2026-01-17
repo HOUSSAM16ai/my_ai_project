@@ -205,7 +205,7 @@ class AdminAgent:
         count = await self.tools.execute("get_user_count", {})
         if count == 0:
             return "لا يوجد مستخدمون مسجلون حالياً. (0 users)"
-        return f"عدد المستخدمين الحاليين: {count}."
+        return f"عدد المستخدمين الحاليين: {count} users."
 
     async def _handle_user_list(self, question: str, lowered: str) -> str:
         gov = await self.data_agent.process({"entity": "user", "operation": "list", "access_method": "direct_db", "purpose": "admin_analytics"})
@@ -284,7 +284,27 @@ class AdminAgent:
 
     async def _handle_database_map(self, _: str, __: str) -> str:
         m = await self.tools.execute("get_database_map", {})
-        return f"خريطة البيانات:\n- الجداول: {len(m.get('tables', []))}\n- العلاقات: {len(m.get('relationships', []))}"
+        tables = m.get("tables", [])
+        relationships = m.get("relationships", [])
+        lines = ["خريطة قاعدة البيانات:"]
+        if tables:
+            lines.append("الجداول:")
+            lines.extend(f"- {table}" for table in tables)
+        else:
+            lines.append("لا توجد جداول متاحة حالياً.")
+
+        if relationships:
+            lines.append("العلاقات:")
+            for rel in relationships:
+                from_table = rel.get("from_table")
+                from_column = rel.get("from_column")
+                to_table = rel.get("to_table")
+                to_column = rel.get("to_column")
+                lines.append(f"- {from_table}.{from_column} -> {to_table}.{to_column}")
+        else:
+            lines.append("لا توجد علاقات معرفة حالياً.")
+
+        return "\n".join(lines)
 
     async def _handle_project_query(self, _: str, __: str) -> str:
         k = await self.tools.execute("get_project_overview", {})
