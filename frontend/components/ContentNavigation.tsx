@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import useSWR from 'swr';
 import { ChevronRight, Loader2, BookOpen, GraduationCap, School, Book } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../lib/utils';
 import { Button } from './ui/button';
 
 // Generic fetcher

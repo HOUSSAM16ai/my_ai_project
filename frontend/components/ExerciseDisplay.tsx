@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import { cn } from '@/lib/utils';
+import { cn } from '../lib/utils';
 import { Button } from './ui/button';
 import { Loader2 } from 'lucide-react';
 import useSWR from 'swr';
