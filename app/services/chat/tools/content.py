@@ -14,6 +14,26 @@ from app.core.logging import get_logger
 
 logger = get_logger("content-tools")
 
+def _normalize_set_name(val: str) -> Optional[str]:
+    """
+    Normalizes 'Subject 1', 'S1', 'الموضوع الأول' -> 'subject_1'
+    Ensures strict semantic matching for exam sets.
+    """
+    if not val:
+        return None
+
+    val_lower = val.lower().strip()
+
+    # Map variations for Subject 1
+    if val_lower in ("subject 1", "subject1", "s1", "sub1", "subject_1", "الموضوع الأول", "الموضوع 1", "subject-1"):
+        return "subject_1"
+
+    # Map variations for Subject 2
+    if val_lower in ("subject 2", "subject2", "s2", "sub2", "subject_2", "الموضوع الثاني", "الموضوع 2", "subject-2"):
+        return "subject_2"
+
+    return val
+
 async def get_curriculum_structure(level: Optional[str] = None, lang: str = "ar") -> Dict[str, Any]:
     """
     جلب شجرة المنهج الدراسي بالكامل أو لمستوى محدد.
@@ -210,8 +230,10 @@ async def search_content(
             params["subject"] = subject
 
         if set_name:
+            # Normalize to ensure "Subject 1" matches "subject_1" in DB
+            norm_set = _normalize_set_name(set_name)
             query_str += " AND i.set_name = :set_name"
-            params["set_name"] = set_name
+            params["set_name"] = norm_set
 
         if type:
             query_str += " AND i.type = :type"
