@@ -36,9 +36,8 @@ class ToolRouter:
         ChatIntent.LEARNING_SUMMARY,
         ChatIntent.MISSION_COMPLEX,
         ChatIntent.CONTENT_RETRIEVAL,
-        # Allow search/read to reach the Agent, which will enforce finer-grained control
+        # Allow search to reach the Agent, which will enforce finer-grained control
         ChatIntent.CODE_SEARCH,
-        ChatIntent.FILE_READ,
         ChatIntent.PROJECT_INDEX,
     }
 

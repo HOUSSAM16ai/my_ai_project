@@ -205,7 +205,7 @@ class AdminAgent:
         count = await self.tools.execute("get_user_count", {})
         if count == 0:
             return "لا يوجد مستخدمون مسجلون حالياً. (0 users)"
-        return f"عدد المستخدمين الحاليين: {count}."
+        return f"عدد المستخدمين الحاليين: {count}. ({count} users)"
 
     async def _handle_user_list(self, question: str, lowered: str) -> str:
         gov = await self.data_agent.process({"entity": "user", "operation": "list", "access_method": "direct_db", "purpose": "admin_analytics"})
@@ -284,7 +284,17 @@ class AdminAgent:
 
     async def _handle_database_map(self, _: str, __: str) -> str:
         m = await self.tools.execute("get_database_map", {})
-        return f"خريطة البيانات:\n- الجداول: {len(m.get('tables', []))}\n- العلاقات: {len(m.get('relationships', []))}"
+        tables = [str(name) for name in m.get("tables", [])]
+        relationships = m.get("relationships", [])
+        lines = [
+            "خريطة قاعدة البيانات:",
+            f"- الجداول: {len(tables)}",
+            f"- العلاقات: {len(relationships)}",
+        ]
+        if tables:
+            lines.append("أسماء الجداول:")
+            lines.extend(f"- {table}" for table in tables)
+        return "\n".join(lines)
 
     async def _handle_project_query(self, _: str, __: str) -> str:
         k = await self.tools.execute("get_project_overview", {})

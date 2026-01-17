@@ -1,6 +1,8 @@
 import asyncio
 import importlib.util
 import os
+import sys
+import types
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -38,13 +40,18 @@ class TestCaching(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    @unittest.skipUnless(REDIS_AVAILABLE, "redis غير متاح في بيئة الاختبار")
-    @patch("app.caching.redis_cache.redis.from_url")
-    def test_redis_cache(self, mock_redis_from_url):
+    def test_redis_cache(self):
+        if not REDIS_AVAILABLE:
+            redis_module = types.ModuleType("redis")
+            redis_asyncio_module = types.ModuleType("redis.asyncio")
+            redis_asyncio_module.from_url = lambda *args, **kwargs: None
+            redis_module.asyncio = redis_asyncio_module
+            sys.modules.setdefault("redis", redis_module)
+            sys.modules.setdefault("redis.asyncio", redis_asyncio_module)
+
         async def run_test():
             # Setup Mock
             mock_client = MagicMock()
-            mock_redis_from_url.return_value = mock_client
 
             # AsyncMock for get/set methods
             async def mock_get(key):
@@ -58,17 +65,18 @@ class TestCaching(unittest.TestCase):
             mock_client.get.side_effect = mock_get
             mock_client.set.side_effect = mock_set
 
-            from app.caching.redis_cache import RedisCache
+            from app.caching import redis_cache
 
-            cache = RedisCache("redis://localhost")
+            with patch.object(redis_cache.redis, "from_url", return_value=mock_client):
+                cache = redis_cache.RedisCache("redis://localhost")
 
-            # Test Set
-            await cache.set("test_key", "test_value")
-            mock_client.set.assert_called()
+                # Test Set
+                await cache.set("test_key", "test_value")
+                mock_client.set.assert_called()
 
-            # Test Get
-            val = await cache.get("test_key")
-            self.assertEqual(val, "test_value")
+                # Test Get
+                val = await cache.get("test_key")
+                self.assertEqual(val, "test_value")
 
         asyncio.run(run_test())
 
