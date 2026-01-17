@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import { ContentNavigation } from '@/components/ContentNavigation';
+import { ExerciseDisplay } from '@/components/ExerciseDisplay';
 
 // ══════════════════════════════════════════════════════════════════════
 // PERFORMANCE CONFIGURATION & UTILS
@@ -313,6 +315,8 @@ const DashboardLayout = ({ user, onLogout }) => {
     const [theme, setTheme] = useState('dark');
     const [conversations, setConversations] = useState([]);
     const [isLoadingConvs, setIsLoadingConvs] = useState(false);
+    const [showContentNav, setShowContentNav] = useState(false);
+    const [selectedExerciseId, setSelectedExerciseId] = useState(null);
     const menuRef = useRef(null);
 
     const endpoint = user.is_admin ? '/admin/api/chat/ws' : '/api/chat/ws';
@@ -397,8 +401,13 @@ const DashboardLayout = ({ user, onLogout }) => {
         onLogout();
     };
 
+    const handleSelectContent = (id) => {
+        setSelectedExerciseId(id);
+        setShowContentNav(false);
+    };
+
     return (
-        <div className="app-container">
+        <div className="app-container relative">
             <div className="header">
                 <div className="header-title">
                     <h2>
@@ -464,20 +473,41 @@ const DashboardLayout = ({ user, onLogout }) => {
                      </div>
                 </div>
 
-                <div className="chat-area">
+                <div className="chat-area relative">
+                    {/* Exercise Modal/Overlay */}
+                    {selectedExerciseId && (
+                        <div className="absolute inset-4 z-40 animate-in fade-in zoom-in-95">
+                            <ExerciseDisplay
+                                contentId={selectedExerciseId}
+                                onClose={() => setSelectedExerciseId(null)}
+                            />
+                        </div>
+                    )}
+
                     <ChatInterface
                         messages={messages}
                         onSendMessage={sendMessage}
                         status={status}
                         user={user}
+                        onOpenContentNav={() => setShowContentNav(!showContentNav)}
+                        isContentNavOpen={showContentNav}
                     />
+
+                    {/* Content Navigation Popup */}
+                    <div className="absolute bottom-16 left-0 z-50">
+                        <ContentNavigation
+                            isOpen={showContentNav}
+                            onClose={() => setShowContentNav(false)}
+                            onSelectContent={handleSelectContent}
+                        />
+                    </div>
                 </div>
             </div>
         </div>
     );
 };
 
-const ChatInterface = ({ messages, onSendMessage, status, user }) => {
+const ChatInterface = ({ messages, onSendMessage, status, user, onOpenContentNav, isContentNavOpen }) => {
     const [input, setInput] = useState('');
     const messagesEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
@@ -548,7 +578,15 @@ const ChatInterface = ({ messages, onSendMessage, status, user }) => {
                 )}
                 <div ref={messagesEndRef} />
             </div>
-            <div className="input-area">
+            <div className="input-area flex items-center gap-2">
+                <button
+                    onClick={onOpenContentNav}
+                    className={`p-2 rounded-full transition-colors ${isContentNavOpen ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
+                    title="مكتبة التمارين"
+                    type="button"
+                >
+                    <i className={`fas ${isContentNavOpen ? 'fa-times' : 'fa-plus'}`}></i>
+                </button>
                 <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
@@ -556,6 +594,7 @@ const ChatInterface = ({ messages, onSendMessage, status, user }) => {
                     placeholder="اكتب سؤالك..."
                     rows="1"
                     disabled={status !== 'connected'}
+                    className="flex-1"
                 />
                 <button onClick={handleSend} disabled={status !== 'connected' || !input.trim()}>
                     <i className="fas fa-arrow-up"></i>

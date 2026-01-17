@@ -13,6 +13,7 @@ class ContentItem(SQLModel, table=True):
     type: str = Field(max_length=50, default="exercise")
     title: Optional[str] = Field(sa_column=Column(Text))
     level: Optional[str] = Field(max_length=50)
+    branch: Optional[str] = Field(max_length=100)
     subject: Optional[str] = Field(max_length=100)
     set_name: Optional[str] = Field(max_length=100)
     year: Optional[int] = Field(default=None)
@@ -34,6 +35,7 @@ class ContentSolution(SQLModel, table=True):
     steps_json: Optional[str] = Field(sa_column=Column(Text)) # Stores JSON as text
     final_answer: Optional[str] = Field(sa_column=Column(Text))
     verified_by: Optional[str] = Field(max_length=100)
+    sha256: Optional[str] = Field(max_length=64)
 
     updated_at: datetime = Field(
         default_factory=datetime.utcnow,
