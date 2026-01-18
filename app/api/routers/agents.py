@@ -10,7 +10,13 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.core.di import get_logger
 from app.deps.auth import CurrentUser, get_current_user
-from app.services.overmind.domain.api_schemas import AgentsPlanRequest, AgentsPlanResponse
+from app.services.overmind.domain.api_schemas import (
+    AgentsPlanRequest,
+    AgentsPlanResponse,
+    LangGraphRunRequest,
+    LangGraphRunResponse,
+)
+from app.services.overmind.langgraph.service import LangGraphAgentService
 from app.services.overmind.plan_registry import AgentPlanRegistry
 from app.services.overmind.plan_service import AgentPlanService
 
@@ -44,6 +50,19 @@ def get_plan_service(request: Request) -> AgentPlanService:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Agent plan service is not initialized",
+        )
+    return service
+
+
+def get_langgraph_service(request: Request) -> LangGraphAgentService:
+    """
+    الحصول على خدمة LangGraph من حالة التطبيق.
+    """
+    service = getattr(request.app.state, "langgraph_service", None)
+    if service is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="LangGraph service is not initialized",
         )
     return service
 
@@ -100,3 +119,29 @@ async def get_agent_plan(
         extra={"user_id": current.user.id, "plan_id": plan_record.data.plan_id},
     )
     return AgentsPlanResponse(status="success", data=plan_record.data)
+
+
+@router.post(
+    "/langgraph/run",
+    response_model=LangGraphRunResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        400: {"description": "Invalid LangGraph request"},
+        401: {"description": "Unauthorized"},
+        500: {"description": "LangGraph service is not initialized"},
+    },
+)
+async def run_langgraph_agents(
+    payload: LangGraphRunRequest,
+    current: CurrentUser = Depends(get_current_user),
+    service: LangGraphAgentService = Depends(get_langgraph_service),
+) -> LangGraphRunResponse:
+    """
+    تشغيل دورة LangGraph للوكلاء المتعددين.
+    """
+    result = await service.run(payload)
+    logger.info(
+        "LangGraph run completed",
+        extra={"user_id": current.user.id, "run_id": result.run_id},
+    )
+    return LangGraphRunResponse(status="success", data=result)

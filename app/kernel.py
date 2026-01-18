@@ -71,6 +71,7 @@ from app.middleware.static_files_middleware import StaticFilesConfig, setup_stat
 from app.services.bootstrap import bootstrap_admin_account
 from app.services.overmind.plan_registry import AgentPlanRegistry
 from app.services.overmind.plan_service import AgentPlanService
+from app.services.overmind.langgraph.service import LangGraphAgentService
 
 logger = logging.getLogger(__name__)
 
@@ -237,6 +238,7 @@ def _initialize_app_state(app: FastAPI) -> None:
 
     app.state.agent_plan_registry = AgentPlanRegistry()
     app.state.agent_plan_service = AgentPlanService()
+    app.state.langgraph_service = LangGraphAgentService()
     app.state.event_bus = get_event_bus()
 
     gateway_components = _build_gateway_components()
