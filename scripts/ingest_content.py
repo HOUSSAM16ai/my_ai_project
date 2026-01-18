@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.settings.base import get_settings
 # Bypass the app.core.database factory to ensure we have full control over the engine creation for this script
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sentence_transformers import SentenceTransformer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -48,6 +49,15 @@ async_session_factory = async_sessionmaker(
 )
 
 CONTENT_ROOT = Path("content")
+EMBEDDING_MODEL_NAME = "intfloat/multilingual-e5-small"
+embedding_model = None
+
+def get_embedding_model():
+    global embedding_model
+    if embedding_model is None:
+        logger.info(f"Loading embedding model: {EMBEDDING_MODEL_NAME}")
+        embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+    return embedding_model
 
 def parse_pack(file_path: Path):
     with open(file_path, "r", encoding="utf-8") as f:
@@ -135,12 +145,18 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
         # Upsert into content_items
         query_items = text("""
             INSERT INTO content_items (
-                id, type, title, level, subject, set_name, year, lang, md_content, source_path, sha256, updated_at
+                id, type, title, level, subject, branch, set_name, year, lang, md_content, source_path, sha256, updated_at
             ) VALUES (
-                :id, :type, :title, :level, :subject, :set_name, :year, :lang, :md_content, :source_path, :sha256, CURRENT_TIMESTAMP
+                :id, :type, :title, :level, :subject, :branch, :set_name, :year, :lang, :md_content, :source_path, :sha256, CURRENT_TIMESTAMP
             )
             ON CONFLICT (id) DO UPDATE SET
                 title = EXCLUDED.title,
+                level = EXCLUDED.level,
+                subject = EXCLUDED.subject,
+                branch = EXCLUDED.branch,
+                set_name = EXCLUDED.set_name,
+                year = EXCLUDED.year,
+                lang = EXCLUDED.lang,
                 md_content = EXCLUDED.md_content,
                 sha256 = EXCLUDED.sha256,
                 updated_at = CURRENT_TIMESTAMP
@@ -152,6 +168,7 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
             "title": item["title"],
             "level": metadata.get("level"),
             "subject": metadata.get("subject"),
+            "branch": metadata.get("branch"),
             "set_name": str(metadata.get("set")),
             "year": metadata.get("year"),
             "lang": metadata.get("lang"),
@@ -163,29 +180,45 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
         # Upsert into content_search
         plain_text = md_content  # In a real app, we'd strip markdown syntax
 
+        # Generate embedding
+        model = get_embedding_model()
+        # e5 models expect "query: " or "passage: " prefix usually, but for content we just embed.
+        # Actually e5-small docs say: "Each input text should start with "query: " or "passage: ".
+        # For symmetric tasks usually passage: is fine.
+        loop = asyncio.get_running_loop()
+        embedding = await loop.run_in_executor(None, lambda: model.encode(f"passage: {plain_text}").tolist())
+
         if is_postgres:
-            # Check if tsvector column exists (it should, but just to be safe in logic)
-            # We assume the schema migration added it.
+            # Upsert with vector (explicit cast for pgvector)
             query_search = text("""
-                INSERT INTO content_search (content_id, plain_text, tsvector)
-                VALUES (:id, :plain_text, to_tsvector('arabic', :plain_text))
+                INSERT INTO content_search (content_id, plain_text, tsvector, embedding)
+                VALUES (:id, :plain_text, to_tsvector('arabic', :plain_text), :embedding::vector)
                 ON CONFLICT (content_id) DO UPDATE SET
                     plain_text = EXCLUDED.plain_text,
-                    tsvector = to_tsvector('arabic', EXCLUDED.plain_text)
+                    tsvector = to_tsvector('arabic', EXCLUDED.plain_text),
+                    embedding = EXCLUDED.embedding
             """)
+            # Note: We pass the embedding as a list of floats. SQLAlchemy/AsyncPG usually handles array binding.
+            # However, pgvector often requires the input to be cast to vector explicitly in the SQL
+            # if the driver doesn't support the type natively in bind params.
+            # Passing list + ::vector cast works for list->vector conversion.
+            await session.execute(query_search, {
+                "id": ex_id,
+                "plain_text": plain_text,
+                "embedding": embedding
+            })
         else:
-            # Fallback for SQLite
+            # Fallback for SQLite (no vector)
              query_search = text("""
                 INSERT INTO content_search (content_id, plain_text)
                 VALUES (:id, :plain_text)
                 ON CONFLICT (content_id) DO UPDATE SET
                     plain_text = EXCLUDED.plain_text
             """)
-
-        await session.execute(query_search, {
-            "id": ex_id,
-            "plain_text": plain_text
-        })
+             await session.execute(query_search, {
+                "id": ex_id,
+                "plain_text": plain_text
+            })
 
         # Upsert into content_solutions if present
         if "solution_md" in item:
