@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 أدوات إدارة المحتوى التعليمي (Content Tools).
 
@@ -7,18 +9,16 @@
 3. استرجاع المحتوى الخام (Raw Content) والحلول الرسمية.
 """
 
-from typing import List, Optional, Dict, Any
+import os
 from sqlalchemy import text
 from app.core.database import async_session_factory
 from app.core.logging import get_logger
+from app.services.search_engine import get_refined_query, get_retriever
 
 logger = get_logger("content-tools")
 
-def _normalize_set_name(val: str) -> Optional[str]:
-    """
-    Normalizes 'Subject 1', 'S1', 'الموضوع الأول' -> 'subject_1'
-    Ensures strict semantic matching for exam sets.
-    """
+def _normalize_set_name(val: str) -> str | None:
+    """يوحد أسماء المجموعات لضمان مطابقة دلالية صارمة لبيانات الامتحانات."""
     if not val:
         return None
 
@@ -34,13 +34,8 @@ def _normalize_set_name(val: str) -> Optional[str]:
 
     return val
 
-def _normalize_branch(val: str) -> Optional[str]:
-    """
-    Normalizes branch codes to their Arabic Title Keyword equivalents.
-    Since we lack a 'branch' column, we filter by ensuring the Title/Body contains the branch name.
-
-    Returns the Arabic keyword to search for (e.g. "علوم تجريبية").
-    """
+def _normalize_branch(val: str) -> str | None:
+    """يوحد رموز الشعب إلى كلمات عربية معتمدة للبحث الدلالي."""
     if not val:
         return None
 
@@ -68,12 +63,23 @@ def _normalize_branch(val: str) -> Optional[str]:
 
     return val
 
-async def get_curriculum_structure(level: Optional[str] = None, lang: str = "ar") -> Dict[str, Any]:
-    """
-    جلب شجرة المنهج الدراسي بالكامل أو لمستوى محدد.
+def _extract_content_ids(nodes: list[object]) -> list[str]:
+    """يستخرج معرفات المحتوى من نواتج الاسترجاع الدلالي بشكل آمن."""
+    ids: list[str] = []
+    for node in nodes:
+        metadata = getattr(getattr(node, "node", None), "metadata", None)
+        if isinstance(metadata, dict):
+            content_id = metadata.get("content_id")
+            if isinstance(content_id, str):
+                ids.append(content_id)
+    return ids
 
-    Structure: Subject -> Branch -> Set/Pack -> Lessons
-    Returns IDs, titles, types, and counts.
+
+async def get_curriculum_structure(level: str | None = None, lang: str = "ar") -> dict[str, object]:
+    """
+    يجلب شجرة المنهج الدراسي بالكامل أو لمستوى محدد.
+
+    يبني هيكلة متدرجة: المادة -> المستوى -> الحزمة -> العناصر، مع إرجاع المعرفات والعناوين والأنواع.
     """
     async with async_session_factory() as session:
         # 1. Base Query
@@ -132,31 +138,55 @@ async def get_curriculum_structure(level: Optional[str] = None, lang: str = "ar"
     return structure
 
 async def search_content(
-    q: Optional[str] = None,
-    level: Optional[str] = None,
-    subject: Optional[str] = None,
-    branch: Optional[str] = None,
-    set_name: Optional[str] = None,
-    year: Optional[int] = None,
-    type: Optional[str] = None,
-    lang: Optional[str] = None,
-    limit: int = 10
-) -> List[Dict[str, Any]]:
+    q: str | None = None,
+    level: str | None = None,
+    subject: str | None = None,
+    branch: str | None = None,
+    set_name: str | None = None,
+    year: int | None = None,
+    type: str | None = None,
+    lang: str | None = None,
+    limit: int = 10,
+) -> list[dict[str, object]]:
     """
     بحث متقدم عن المحتوى التعليمي.
     يرجع قائمة بالنتائج مع IDs لتمكين الوكيل من الاختيار.
     """
-    async with async_session_factory() as session:
-        query_str = """
-            SELECT id, title, type, level, subject, set_name, year, lang
-            FROM content_items
-            WHERE 1=1
-        """
-        params = {}
+    semantic_ids: list[str] = []
+    refined_query = q
+    db_url = os.environ.get("DATABASE_URL")
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if q and db_url and api_key:
+        refined_query = get_refined_query(q, api_key)
+        retriever = get_retriever(db_url)
+        nodes = retriever.search(refined_query, limit=limit)
+        semantic_ids = _extract_content_ids(nodes)
 
-        if q:
+    async with async_session_factory() as session:
+        if semantic_ids:
+            id_placeholders = []
+            params: dict[str, object] = {}
+            for index, content_id in enumerate(semantic_ids):
+                key = f"id_{index}"
+                id_placeholders.append(f":{key}")
+                params[key] = content_id
+            ids_clause = ", ".join(id_placeholders)
+            query_str = f"""
+                SELECT i.id, i.title, i.type, i.level, i.subject, i.set_name, i.year, i.lang
+                FROM content_items i
+                WHERE i.id IN ({ids_clause})
+            """
+        else:
+            query_str = """
+                SELECT i.id, i.title, i.type, i.level, i.subject, i.set_name, i.year, i.lang
+                FROM content_items i
+                WHERE 1=1
+            """
+            params = {}
+
+        if refined_query and not semantic_ids:
             # Use Hybrid Search: Title Matching + Full Text Search (FTS)
-            keywords = q.strip()
+            keywords = refined_query.strip()
 
             # We construct a query that tries:
             # 1. Title ILIKE (Simulated vector-ish match)
@@ -327,10 +357,9 @@ async def search_content(
 
     return unique_items
 
-async def get_content_raw(content_id: str) -> Optional[Dict[str, str]]:
-    """
-    جلب النص الخام (Markdown) لتمرين أو درس معين، مع الحل إذا توفر.
-    """
+
+async def get_content_raw(content_id: str) -> dict[str, str] | None:
+    """يجلب النص الخام بصيغة Markdown مع الحل عند توفره."""
     async with async_session_factory() as session:
         # Fetch content and solution in one go (or separate queries)
         # Using LEFT JOIN to get solution if exists
@@ -357,10 +386,8 @@ async def get_content_raw(content_id: str) -> Optional[Dict[str, str]]:
 
     return data
 
-async def get_solution_raw(content_id: str) -> Optional[Dict[str, Any]]:
-    """
-    جلب الحل الرسمي (Official Solution) لتمرين.
-    """
+async def get_solution_raw(content_id: str) -> dict[str, object] | None:
+    """يجلب الحل الرسمي لتمرين مع الخطوات والإجابة النهائية."""
     async with async_session_factory() as session:
         query_str = """
             SELECT solution_md, steps_json, final_answer
