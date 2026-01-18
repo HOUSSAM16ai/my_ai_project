@@ -40,6 +40,7 @@ from app.api.routers import (
     missions,
     observability,
     overmind,
+    reasoning,
     security,
     system,
     ums,
@@ -204,6 +205,7 @@ def _base_router_registry() -> list[RouterSpec]:
         (overmind.router, ""),
         (missions.router, ""),
         (content.router, ""),
+        (reasoning.router, "/api/v1"),
     ]
 
 
