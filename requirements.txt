@@ -29,6 +29,7 @@ python-multipart==0.0.18
 Jinja2==3.1.6
 typer==0.20.0
 tenacity==8.2.3
+langgraph==0.2.39
 
 # Supporting Libraries
 click==8.3.1

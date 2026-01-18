@@ -183,3 +183,52 @@ class AgentsPlanResponse(RobustBaseModel):
 
     status: str = Field("success", description="حالة الاستجابة")
     data: AgentPlanData = Field(..., description="بيانات الخطة")
+
+
+class LangGraphRunRequest(RobustBaseModel):
+    """
+    طلب تشغيل LangGraph للوكلاء المتعددين.
+    """
+
+    objective: str = Field(..., min_length=5, max_length=5000, description="الهدف الرئيسي المطلوب")
+    context: dict[str, str | int | float | bool | None] = Field(
+        default_factory=dict, description="سياق إضافي لدعم الوكلاء"
+    )
+    constraints: list[str] = Field(default_factory=list, description="قيود تشغيلية أو تقنية")
+    priority: AgentPlanPriority = Field(
+        default=AgentPlanPriority.MEDIUM, description="أولوية التشغيل"
+    )
+
+
+class LangGraphTimelineEvent(RobustBaseModel):
+    """
+    سجل زمني لحدث داخل دورة LangGraph.
+    """
+
+    agent: str = Field(..., description="اسم الوكيل المساهم")
+    payload: dict[str, object] = Field(default_factory=dict, description="تفاصيل الحدث")
+
+
+class LangGraphRunData(RobustBaseModel):
+    """
+    بيانات تشغيل LangGraph كاملة.
+    """
+
+    run_id: str = Field(..., description="معرف تشغيل LangGraph")
+    objective: str = Field(..., description="الهدف الرئيسي")
+    plan: dict[str, object] | None = Field(None, description="خطة الاستراتيجي")
+    design: dict[str, object] | None = Field(None, description="تصميم المعماري")
+    execution: dict[str, object] | None = Field(None, description="نتائج المنفذ")
+    audit: dict[str, object] | None = Field(None, description="نتائج التدقيق")
+    timeline: list[LangGraphTimelineEvent] = Field(
+        default_factory=list, description="السجل الزمني للقرارات"
+    )
+
+
+class LangGraphRunResponse(RobustBaseModel):
+    """
+    استجابة تشغيل LangGraph.
+    """
+
+    status: str = Field("success", description="حالة الاستجابة")
+    data: LangGraphRunData = Field(..., description="نتائج التشغيل")
