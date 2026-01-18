@@ -25,10 +25,10 @@ services:
     restart: unless-stopped
 
     # Reverted to Bridge Mode for better VS Code integration
-    network_mode: host  # <-- CAUSE OF ISSUE
+    # network_mode: host  # <-- CAUSE OF ISSUE
 
-    # ports:
-    #   - "8000:8000"
+    ports:
+      - "8000:8000"
 
     environment:
       <<: *common-environment
