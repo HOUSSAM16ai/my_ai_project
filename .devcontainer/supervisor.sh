@@ -108,7 +108,7 @@ install_dependencies() {
     fi
     
     # Use pip with caching for faster subsequent runs
-    if pip install --no-cache-dir -r requirements.txt; then
+    if pip install -r requirements.txt; then
         lifecycle_info "✅ Dependencies installed successfully"
         return 0
     else

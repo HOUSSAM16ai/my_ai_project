@@ -48,7 +48,14 @@ services:
     volumes:
       - ..:/app  # Mount root directory to /app
       - /app/__pycache__
+      # CACHE VOLUMES: Persist package caches between rebuilds to save bandwidth
+      - pip-cache:/root/.cache/pip
+      - npm-cache:/root/.npm
 
 networks:
   default:
     driver: bridge
+
+volumes:
+  pip-cache:
+  npm-cache:

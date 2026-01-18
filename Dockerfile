@@ -11,13 +11,18 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DEFAULT_TIMEOUT=100
 
 # Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Use cache mount to prevent re-downloading apt indexes
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Use cache mount for pip to persist downloads
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
 
 # Stage 2: Final Runtime
 FROM python:3.12-slim
@@ -31,7 +36,9 @@ ENV PYTHONPATH="/app:$PYTHONPATH"
 
 # Install runtime system dependencies
 # libpq-dev is needed for asyncpg/psycopg2
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     procps \
