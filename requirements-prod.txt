@@ -8,9 +8,9 @@ alembic==1.13.1
 asyncpg==0.29.0
 aiosqlite==0.17.0
 psycopg2-binary==2.9.9
-pydantic==2.5.3
-pydantic-settings==2.1.0
-pydantic_core==2.14.6
+pydantic>=2.7.4,<3.0.0
+pydantic-settings>=2.3.0,<3.0.0
+pydantic_core>=2.18.4,<3.0.0
 PyJWT==2.8.0
 passlib==1.7.4
 bcrypt==3.2.0
@@ -24,7 +24,7 @@ python-multipart==0.0.18
 Jinja2==3.1.6
 typer==0.20.0
 tenacity==8.2.3
-langgraph==0.2.39
+langgraph>=0.2.39
 
 # Supporting Libraries
 click==8.3.1
