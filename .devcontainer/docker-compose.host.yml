@@ -37,9 +37,9 @@ services:
     healthcheck:
       test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health || exit 1"]
       interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      timeout: 30s
+      retries: 10
+      start_period: 600s
 
     # Sleep infinity - supervisor.sh handles Uvicorn startup
     # This prevents duplicate Uvicorn instances (one from docker-compose, one from supervisor.sh)
