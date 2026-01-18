@@ -3,10 +3,24 @@ from typing import List, Optional, Tuple, Any
 
 from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sentence_transformers import SentenceTransformer
+import asyncio
+
 from app.core.domain.content import ContentItem, ContentSearch, ContentSolution
 from app.services.content.domain import ContentFilter, ContentSummary, ContentDetail
 
 logger = logging.getLogger(__name__)
+
+# Global cached model (loaded lazily)
+_EMBEDDING_MODEL = None
+_EMBEDDING_MODEL_NAME = "intfloat/multilingual-e5-small"
+
+def _get_model():
+    global _EMBEDDING_MODEL
+    if _EMBEDDING_MODEL is None:
+        logger.info(f"Loading Semantic Model: {_EMBEDDING_MODEL_NAME}")
+        _EMBEDDING_MODEL = SentenceTransformer(_EMBEDDING_MODEL_NAME)
+    return _EMBEDDING_MODEL
 
 class ContentRepository:
     def __init__(self, session: AsyncSession):
@@ -14,53 +28,60 @@ class ContentRepository:
 
     async def search(self, filters: ContentFilter) -> List[ContentSummary]:
         """
-        Executes a search query against content_items and content_search.
-        Uses Full Text Search if available (Postgres), otherwise falls back to LIKE.
+        Executes a Semantic Hybrid search query against content_items and content_search.
+        Uses Vectors (pgvector) + Metadata Filters.
         """
         # Base Query
-        # We select distinct items
-        query_str = """
-            SELECT
-                i.id, i.title, i.type, i.level, i.subject, i.branch, i.set_name, i.year, i.lang
+        # We select items. If search query exists, we calculate distance.
+        select_cols = "i.id, i.title, i.type, i.level, i.subject, i.branch, i.set_name, i.year, i.lang"
+
+        query_str = f"""
+            SELECT {select_cols}
             FROM content_items i
             LEFT JOIN content_search cs ON i.id = cs.content_id
             WHERE 1=1
         """
         params = {}
+        order_clause = "ORDER BY i.year DESC NULLS LAST, i.id ASC"
 
-        # 1. Full Text / Keyword Search
+        # 1. Semantic / Keyword Search
         if filters.q:
-            keywords = filters.q.strip()
+            query_text = filters.q.strip()
 
-            # Hybrid Approach:
-            # - ILIKE for Title (High Precision)
-            # - ILIKE for Body (High Recall fallback)
+            # --- Vector Search Logic ---
+            try:
+                loop = asyncio.get_running_loop()
+                # Run embedding in thread pool to avoid blocking async loop
+                model = await loop.run_in_executor(None, _get_model)
+                embedding = await loop.run_in_executor(None, lambda: model.encode(f"query: {query_text}").tolist())
 
-            terms = keywords.split()
+                # Pass vector as string literal with explicit cast to handle asyncpg/sqlalchemy types robustly
+                # This ensures pgvector works even if the driver binding is tricky
+                vec_str = str(embedding)
 
-            # Title Conditions
-            title_conds = []
-            for i, term in enumerate(terms):
-                p_key = f"tq_{i}"
-                title_conds.append(f"i.title LIKE :{p_key}")
-                params[p_key] = f"%{term}%"
-            title_clause = " AND ".join(title_conds)
+                # Update Select to include distance (for ordering/debugging if needed)
+                # But here we mainly filter/sort.
+                # We rank by distance (lower is better)
 
-            # Body Conditions
-            body_conds = []
-            for i, term in enumerate(terms):
-                p_key = f"bq_{i}"
-                body_conds.append(f"cs.plain_text LIKE :{p_key}")
-                params[p_key] = f"%{term}%"
-            body_clause = " AND ".join(body_conds)
+                # We use the vector distance in the ORDER BY clause
+                # We assume pgvector extension is enabled and column is vector
 
-            # Combine
-            if title_clause and body_clause:
-                 query_str += f" AND (({title_clause}) OR ({body_clause}))"
-            elif title_clause:
-                 query_str += f" AND ({title_clause})"
-            elif body_clause:
-                 query_str += f" AND ({body_clause})"
+                # Note: We prioritize semantic match highly
+                order_clause = f"ORDER BY (cs.embedding <=> '{vec_str}'::vector) ASC, i.year DESC"
+
+                # Optional: We could add a WHERE clause cutoff for distance, but strict filtering is usually metadata based.
+
+            except Exception as e:
+                logger.error(f"Vector generation failed, falling back to keyword: {e}")
+                # Fallback to Keyword logic if model fails
+                terms = query_text.split()
+                conds = []
+                for i, term in enumerate(terms):
+                    p_key = f"q_{i}"
+                    conds.append(f"(i.title LIKE :{p_key} OR cs.plain_text LIKE :{p_key})")
+                    params[p_key] = f"%{term}%"
+                if conds:
+                    query_str += " AND " + " AND ".join(conds)
 
         # 2. Metadata Filters
         if filters.level:
@@ -93,7 +114,7 @@ class ContentRepository:
             params["lang"] = filters.lang
 
         # Ordering and Limiting
-        query_str += " ORDER BY i.year DESC NULLS LAST, i.id ASC LIMIT :limit"
+        query_str += f" {order_clause} LIMIT :limit"
         params["limit"] = filters.limit
 
         try:
