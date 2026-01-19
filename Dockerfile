@@ -20,9 +20,10 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
+COPY constraints.txt .
 # Use cache mount for pip to persist downloads
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.txt
+    pip install -r requirements.txt -c constraints.txt
 
 # Stage 2: Final Runtime
 FROM python:3.12-slim

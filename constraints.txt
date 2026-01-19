@@ -1,0 +1,3 @@
+# Dependency constraints to keep the resolver stable.
+pypdf==4.0.1
+llama-index-readers-file==0.1.12

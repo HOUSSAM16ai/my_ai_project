@@ -108,7 +108,7 @@ install_dependencies() {
     fi
     
     # Use pip with caching for faster subsequent runs
-    if pip install -r requirements.txt; then
+    if pip install -r requirements.txt -c constraints.txt; then
         lifecycle_info "✅ Dependencies installed successfully"
         return 0
     else
