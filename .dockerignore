@@ -17,6 +17,7 @@ env/
 .devcontainer/
 node_modules/
 **/node_modules/
+frontend/node_modules/
 .next/
 **/.next/
 .turbo/
