@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 
 @dataclass
 class ContentFilter:
@@ -30,4 +30,4 @@ class ContentDetail:
     id: str
     content_md: str
     solution_md: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, object]] = None

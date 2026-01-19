@@ -1,8 +1,10 @@
 import csv
 from pathlib import Path
 
+from app.core.logging import get_logger
 from app.services.overmind.code_intelligence.models import ProjectAnalysis
 
+logger = get_logger(__name__)
 
 def save_csv_report(analysis: ProjectAnalysis, output_path: Path) -> None:
     """Save report as CSV"""
@@ -30,8 +32,8 @@ def save_csv_report(analysis: ProjectAnalysis, output_path: Path) -> None:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
 
-        for file_metrics in analysis.files:
-            row = {k: getattr(file_metrics, k) for k in fieldnames}
-            writer.writerow(row)
+    for file_metrics in analysis.files:
+        row = {k: getattr(file_metrics, k) for k in fieldnames}
+        writer.writerow(row)
 
-    print(f"💾 CSV report saved: {output_path}")
+    logger.info("💾 CSV report saved: %s", output_path)

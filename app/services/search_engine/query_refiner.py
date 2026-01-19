@@ -1,5 +1,8 @@
 import dspy
-from typing import Optional
+
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 # Configure DSPy with the user's preferred model
 # The user specified: mistralai/devstral-2512:free via OpenRouter
@@ -44,5 +47,5 @@ def get_refined_query(user_query: str, api_key: str, model_name: str = "mistrala
 
     except Exception as e:
         # Fallback if DSPy fails (e.g. network, auth)
-        print(f"DSPy refinement failed: {e}")
+        logger.warning("DSPy refinement failed: %s", e)
         return user_query

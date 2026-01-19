@@ -54,9 +54,9 @@ class OvermindIdentity:
 
     الاستخدام:
         >>> identity = OvermindIdentity()
-        >>> print(identity.get_founder())
+        >>> logger.info(identity.get_founder())
         "Houssam Benmerah"
-        >>> print(identity.answer_question("من هو مؤسس overmind"))
+        >>> logger.info(identity.answer_question("من هو مؤسس overmind"))
         "مؤسس Overmind هو Houssam Benmerah..."
     """
 

@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import List, Optional
 import os
 from llama_index.core import VectorStoreIndex, StorageContext
 from llama_index.core.retrievers import BaseRetriever

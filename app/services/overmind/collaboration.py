@@ -263,7 +263,7 @@ class CollaborationHub:
         مثال:
             >>> notifications = hub.get_notifications("operator")
             >>> for notif in notifications:
-            ...     print(notif)
+            ...     logger.info(notif)
 
         ملاحظة:
             - .pop() تُرجع وتحذف العنصر من dictionary
@@ -287,7 +287,7 @@ class CollaborationHub:
 
         مثال:
             >>> summary = hub.get_agent_summary("strategist")
-            >>> print(f"Contributions: {summary['total_contributions']}")
+            >>> logger.info("Contributions: %s", summary['total_contributions'])
 
         ملاحظة:
             - List comprehension: [x for x in list if condition]
@@ -318,7 +318,7 @@ class CollaborationHub:
 
         مثال:
             >>> report = hub.get_full_report()
-            >>> print(json.dumps(report, indent=2))
+            >>> logger.info(json.dumps(report, indent=2))
 
         ملاحظة:
             - [c.to_dict() for c in list] تحول كل عنصر إلى dict

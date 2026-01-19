@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Mapping
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -15,7 +15,7 @@ class AuditLogEntry(BaseModel):
     action: AuditAction | str = Field(..., description="The action performed")
     target_type: str = Field(..., description="The type of the target entity")
     target_id: str | None = Field(None, description="The ID of the target entity")
-    metadata: Mapping[str, Any] = Field(default_factory=dict, description="Additional context")
+    metadata: Mapping[str, object] = Field(default_factory=dict, description="Additional context")
     ip: str | None = Field(None, description="IP address of the actor")
     user_agent: str | None = Field(None, description="User Agent of the actor")
 

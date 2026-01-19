@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 from app.core.docs.asyncapi.models import (
     AsyncAPI30,
     Channel,
@@ -48,7 +48,7 @@ class AsyncAPIBuilder:
         action: str,
         channel_ref_id: str,
         summary: str = None,
-        bindings: Optional[Dict[str, Any]] = None
+        bindings: Optional[Dict[str, object]] = None
     ):
         """
         Adds an operation that references a channel.
@@ -72,7 +72,7 @@ class AsyncAPIBuilder:
         self.doc.operations[operation_id] = operation
         return operation_id
 
-    def resolve_operation_channel(self, operation_id: str) -> Dict[str, Any]:
+    def resolve_operation_channel(self, operation_id: str) -> Dict[str, object]:
         """
         'Intelligent' helper to resolve the full context of an operation,
         merging the Operation details with the referenced Channel details.

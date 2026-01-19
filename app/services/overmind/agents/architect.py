@@ -102,7 +102,7 @@ class ArchitectAgent(AgentArchitect):
                 {
                     "name": "اسم المهمة",
                     "tool_name": "write_file",
-                    "tool_args": {"filepath": "src/main.py", "content": "print('hello')"},
+                    "tool_args": {"filepath": "src/main.py", "content": "logger.info('hello')"},
                     "description": "وصف تقني"
                 }
             ]

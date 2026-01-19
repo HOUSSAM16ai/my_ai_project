@@ -4,7 +4,6 @@
 تجميع العقد والحواف لبناء الرسم البياني (LangGraph).
 """
 
-from typing import Any
 from langgraph.graph import StateGraph, END
 from app.services.chat.graph.state import AgentState
 from app.services.chat.graph.nodes.planner import planner_node
@@ -14,7 +13,7 @@ from app.services.chat.graph.nodes.supervisor import supervisor_node
 from app.core.ai_gateway import AIClient
 from app.services.chat.tools import ToolRegistry
 
-def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> Any:
+def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object:
     """
     بناء الرسم البياني للوكلاء المتعددين.
     """

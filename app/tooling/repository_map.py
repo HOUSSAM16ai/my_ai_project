@@ -8,6 +8,10 @@ from dataclasses import dataclass
 from json import dumps
 from pathlib import Path
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 @dataclass
 class NodeStats:
@@ -147,6 +151,6 @@ def _parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = _parse_args()
-    print(
+    logger.info(
         emit_repository_map(args.root, include_hidden=args.include_hidden, max_depth=args.max_depth)
     )

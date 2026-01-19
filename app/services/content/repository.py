@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Tuple, Any
+from typing import List, Optional, Tuple
 
 from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -172,7 +172,7 @@ class ContentRepository:
             metadata={"title": row.title}
         )
 
-    async def get_tree_items(self, level: Optional[str] = None) -> List[Any]:
+    async def get_tree_items(self, level: Optional[str] = None) -> List[object]:
         """
         Fetch items for curriculum tree construction.
         """

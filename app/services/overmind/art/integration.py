@@ -69,7 +69,7 @@ class OvermindArtIntegration:
             ...     "functions": 42,
             ...     "classes": 12
             ... })
-            >>> print(art["complexity_art"])  # SVG art
+            >>> logger.info(art["complexity_art"])  # SVG art
         """
         if style:
             self.code_visualizer = CodeArtVisualizer(style)
@@ -296,7 +296,7 @@ def create_art_from_overmind_data(
     Example:
         >>> from app.services.overmind.art.integration import create_art_from_overmind_data
         >>> art = create_art_from_overmind_data(my_analysis_result)
-        >>> print(art["visualizations"]["code_intelligence"]["complexity_art"])
+        >>> logger.info(art["visualizations"]["code_intelligence"]["complexity_art"])
     """
     integration = OvermindArtIntegration(style)
     return integration.create_full_report(overmind_data, style)

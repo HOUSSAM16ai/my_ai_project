@@ -2,11 +2,15 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
+from app.core.logging import get_logger
+
 from .core import StructuralCodeIntelligence
 from .reporters.csv_reporter import save_csv_report
 from .reporters.html_reporter import generate_heatmap_html
 from .reporters.json_reporter import save_json_report
 from .reporters.markdown_reporter import generate_markdown_report
+
+logger = get_logger(__name__)
 
 
 def main() -> None:
@@ -92,7 +96,7 @@ def _generate_all_reports(analysis, output_dir: Path) -> None:
         analysis: Analysis results
         output_dir: Output directory
     """
-    print("\n📝 Generating reports...")
+    logger.info("📝 Generating reports...")
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -143,12 +147,12 @@ def _print_summary(analysis, output_dir: Path) -> None:
         analysis: Analysis results
         output_dir: Output directory
     """
-    print("\n✅ Analysis complete!")
-    print("\n📊 Summary:")
-    print(f"  - Files analyzed: {analysis.total_files}")
-    print(f"  - Critical hotspots: {len(analysis.critical_hotspots)}")
-    print(f"  - High hotspots: {len(analysis.high_hotspots)}")
-    print(f"\n📁 Reports saved to: {output_dir}")
+    logger.info("✅ Analysis complete!")
+    logger.info("📊 Summary:")
+    logger.info("  - Files analyzed: %s", analysis.total_files)
+    logger.info("  - Critical hotspots: %s", len(analysis.critical_hotspots))
+    logger.info("  - High hotspots: %s", len(analysis.high_hotspots))
+    logger.info("📁 Reports saved to: %s", output_dir)
 
 
 if __name__ == "__main__":

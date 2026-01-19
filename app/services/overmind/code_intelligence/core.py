@@ -2,11 +2,14 @@ import ast
 from datetime import datetime
 from pathlib import Path
 
+from app.core.logging import get_logger
+
 from .analyzers.complexity import ComplexityAnalyzer
 from .analyzers.git import GitAnalyzer
 from .analyzers.smells import StructuralSmellDetector
 from .models import FileMetrics, ProjectAnalysis
 
+logger = get_logger(__name__)
 
 class StructuralCodeIntelligence:
     """Main Structural Intelligence Analyzer"""
@@ -402,10 +405,9 @@ class StructuralCodeIntelligence:
         """
         طباعة رأس التحليل | Print analysis header
         """
-        print("🔍 Starting Structural Code Intelligence Analysis...")
-        print(f"📁 Repository: {self.repo_path}")
-        print(f"🎯 Target paths: {', '.join(self.target_paths)}")
-        print()
+        logger.info("🔍 Starting Structural Code Intelligence Analysis...")
+        logger.info("📁 Repository: %s", self.repo_path)
+        logger.info("🎯 Target paths: %s", ", ".join(self.target_paths))
 
     def _collect_file_metrics(self) -> list:
         """
@@ -422,13 +424,13 @@ class StructuralCodeIntelligence:
         for target in self.target_paths:
             target_path = self.repo_path / target
             if not target_path.exists():
-                print(f"⚠️  Path not found: {target_path}")
+                logger.warning("⚠️  Path not found: %s", target_path)
                 continue
 
-            print(f"📂 Analyzing {target}...")
+            logger.info("📂 Analyzing %s...", target)
             self._analyze_target_path(target_path, all_metrics)
 
-        print(f"\n✅ Analyzed {len(all_metrics)} files")
+        logger.info("✅ Analyzed %s files", len(all_metrics))
         return all_metrics
 
     def _analyze_target_path(self, target_path, all_metrics: list) -> None:
@@ -445,7 +447,7 @@ class StructuralCodeIntelligence:
                 metrics = self.analyze_file(py_file)
                 if metrics:
                     all_metrics.append(metrics)
-                    print(f"  ✓ {metrics.relative_path}")
+                    logger.info("  ✓ %s", metrics.relative_path)
 
     def _calculate_and_sort_hotspots(self, all_metrics: list) -> None:
         """
@@ -454,7 +456,7 @@ class StructuralCodeIntelligence:
         Args:
             all_metrics: قائمة المقاييس | Metrics list
         """
-        print("\n📊 Calculating hotspot scores...")
+        logger.info("📊 Calculating hotspot scores...")
         self.calculate_hotspot_scores(all_metrics)
         all_metrics.sort(key=lambda m: m.hotspot_score, reverse=True)
 
