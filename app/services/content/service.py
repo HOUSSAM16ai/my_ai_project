@@ -30,22 +30,31 @@ class ContentService:
     @staticmethod
     def normalize_branch(val: str) -> Optional[str]:
         """
-        Normalizes branch codes to Arabic Title Keyword equivalents.
+        Normalizes branch codes to database slugs (e.g., 'experimental_sciences').
         """
         if not val:
             return None
         val_lower = val.lower().strip()
 
+        # Experimental Sciences
         if val_lower in ("experimental_sciences", "experimental sciences", "experimental", "علوم تجريبية", "تجريبية", "science"):
-            return "علوم تجريبية"
+            return "experimental_sciences"
+
+        # Math Technical
         if val_lower in ("math_tech", "math tech", "technical math", "تقني رياضي", "تقني"):
-            return "تقني رياضي"
-        if val_lower in ("mathematics_branch", "math branch", "رياضيات"):
-            return "رياضيات"
+            return "math_tech"
+
+        # Mathematics
+        if val_lower in ("mathematics", "mathematics_branch", "math branch", "رياضيات"):
+            return "mathematics"
+
+        # Foreign Languages
         if val_lower in ("foreign_languages", "languages", "لغات أجنبية", "لغات"):
-            return "لغات أجنبية"
+            return "foreign_languages"
+
+        # Literature & Philosophy
         if val_lower in ("literature_philosophy", "literature", "آداب وفلسفة"):
-            return "آداب وفلسفة"
+            return "literature_philosophy"
 
         return val
 
