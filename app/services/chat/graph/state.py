@@ -5,7 +5,7 @@
 يستخدم هذا الملف لتعريف الذاكرة المشتركة بين الوكلاء.
 """
 
-from typing import Annotated, TypedDict, Union, List, Dict, Any
+from typing import Annotated, TypedDict, Union, List, Dict
 import operator
 from langchain_core.messages import BaseMessage
 
@@ -32,6 +32,6 @@ class AgentState(TypedDict):
     next: str
     plan: List[str]
     current_step_index: int
-    search_results: List[Dict[str, Any]]
-    user_context: Dict[str, Any]
+    search_results: List[Dict[str, object]]
+    user_context: Dict[str, object]
     final_response: str

@@ -7,10 +7,12 @@
 
 from pathlib import Path
 
+from app.core.logging import get_logger
 from app.services.overmind.code_intelligence.models import ProjectAnalysis
 
 from .html_templates import create_complete_html, create_file_row_html
 
+logger = get_logger(__name__)
 
 def _extract_code_smells(file_metrics) -> str:
     """
@@ -127,4 +129,4 @@ def generate_heatmap_html(analysis: ProjectAnalysis, output_path: Path) -> None:
 
     # طباعة رسالة تأكيد
     # f-string تُدرج قيمة output_path في النص
-    print(f"💾 Heatmap HTML saved: {output_path}")
+    logger.info("💾 Heatmap HTML saved: %s", output_path)

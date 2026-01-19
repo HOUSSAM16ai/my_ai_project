@@ -22,7 +22,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TypedDict, cast, Any
+from typing import TypedDict, cast
 
 from app.core.types import JSONDict, Result
 
@@ -117,7 +117,7 @@ class SchemaResolver:
         # في بيئة حقيقية يجب دعم المراجع الخارجية
         if ref.startswith("#/"):
             path = ref[2:].split("/")
-            current: Any = self.root
+            current: object = self.root
             for segment in path:
                 if isinstance(current, dict):
                     current = current.get(segment)

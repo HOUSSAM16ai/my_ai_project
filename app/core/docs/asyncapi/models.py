@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 
 class ExternalDocumentation(BaseModel):
@@ -32,7 +32,7 @@ class Message(BaseModel):
     description: Optional[str] = None
     tags: Optional[List[Tag]] = None
     externalDocs: Optional[ExternalDocumentation] = None
-    bindings: Optional[Dict[str, Any]] = None
+    bindings: Optional[Dict[str, object]] = None
 
 class Parameter(BaseModel):
     description: Optional[str] = None
@@ -54,7 +54,7 @@ class Channel(BaseModel):
     description: Optional[str] = None
     servers: Optional[List[Reference]] = None
     parameters: Optional[Dict[str, Union[Parameter, Reference]]] = None
-    bindings: Optional[Dict[str, Union[ChannelBinding, Reference, Any]]] = None
+    bindings: Optional[Dict[str, Union[ChannelBinding, Reference, object]]] = None
     tags: Optional[List[Tag]] = None
     externalDocs: Optional[ExternalDocumentation] = None
 
@@ -67,38 +67,38 @@ class Operation(BaseModel):
     security: Optional[List[Dict[str, List[str]]]] = None
     tags: Optional[List[Tag]] = None
     externalDocs: Optional[ExternalDocumentation] = None
-    bindings: Optional[Dict[str, Union[OperationBinding, Reference, Any]]] = None
+    bindings: Optional[Dict[str, Union[OperationBinding, Reference, object]]] = None
     messages: Optional[List[Reference]] = None
-    reply: Optional[Any] = None
+    reply: Optional[object] = None
 
 class Components(BaseModel):
     schemas: Optional[Dict[str, Union[Schema, Reference]]] = None
-    servers: Optional[Dict[str, Any]] = None
+    servers: Optional[Dict[str, object]] = None
     channels: Optional[Dict[str, Union[Channel, Reference]]] = None
     operations: Optional[Dict[str, Union[Operation, Reference]]] = None
     messages: Optional[Dict[str, Union[Message, Reference]]] = None
     parameters: Optional[Dict[str, Union[Parameter, Reference]]] = None
-    correlationIds: Optional[Dict[str, Any]] = None
-    operationTraits: Optional[Dict[str, Any]] = None
-    messageTraits: Optional[Dict[str, Any]] = None
-    serverBindings: Optional[Dict[str, Any]] = None
-    channelBindings: Optional[Dict[str, Any]] = None
-    operationBindings: Optional[Dict[str, Any]] = None
-    messageBindings: Optional[Dict[str, Any]] = None
+    correlationIds: Optional[Dict[str, object]] = None
+    operationTraits: Optional[Dict[str, object]] = None
+    messageTraits: Optional[Dict[str, object]] = None
+    serverBindings: Optional[Dict[str, object]] = None
+    channelBindings: Optional[Dict[str, object]] = None
+    operationBindings: Optional[Dict[str, object]] = None
+    messageBindings: Optional[Dict[str, object]] = None
 
 class Info(BaseModel):
     title: str
     version: str
     description: Optional[str] = None
     termsOfService: Optional[str] = None
-    contact: Optional[Dict[str, Any]] = None
-    license: Optional[Dict[str, Any]] = None
+    contact: Optional[Dict[str, object]] = None
+    license: Optional[Dict[str, object]] = None
 
 class AsyncAPI30(BaseModel):
     asyncapi: str = "3.0.0"
     id: Optional[str] = None
     info: Info
-    servers: Optional[Dict[str, Any]] = None
+    servers: Optional[Dict[str, object]] = None
     defaultContentType: Optional[str] = None
     channels: Optional[Dict[str, Union[Channel, Reference]]] = None
     operations: Optional[Dict[str, Union[Operation, Reference]]] = None

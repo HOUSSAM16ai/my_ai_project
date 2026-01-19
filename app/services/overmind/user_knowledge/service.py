@@ -43,8 +43,8 @@ class UserKnowledge:
     الاستخدام:
         >>> async with UserKnowledge() as uk:
         >>>     user_info = await uk.get_user_complete_profile(user_id=1)
-        >>>     print(user_info['basic']['name'])
-        >>>     print(user_info['statistics']['total_missions'])
+        >>>     logger.info(user_info['basic']['name'])
+        >>>     logger.info(user_info['statistics']['total_missions'])
     """
 
     def __init__(self) -> None:

@@ -7,13 +7,13 @@
 3. استرجاع المحتوى الخام (Raw Content) والحلول الرسمية.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 from app.services.content.service import content_service
 from app.core.logging import get_logger
 
 logger = get_logger("content-tools")
 
-async def get_curriculum_structure(level: Optional[str] = None, lang: str = "ar") -> Dict[str, Any]:
+async def get_curriculum_structure(level: Optional[str] = None, lang: str = "ar") -> Dict[str, object]:
     """
     جلب شجرة المنهج الدراسي بالكامل أو لمستوى محدد.
 
@@ -36,7 +36,7 @@ async def search_content(
     type: Optional[str] = None,
     lang: Optional[str] = None,
     limit: int = 10
-) -> List[Dict[str, Any]]:
+) -> List[Dict[str, object]]:
     """
     بحث متقدم عن المحتوى التعليمي.
     يرجع قائمة بالنتائج مع IDs لتمكين الوكيل من الاختيار.
@@ -67,7 +67,7 @@ async def get_content_raw(content_id: str) -> Optional[Dict[str, str]]:
         logger.error(f"Get content raw failed: {e}")
         return None
 
-async def get_solution_raw(content_id: str) -> Optional[Dict[str, Any]]:
+async def get_solution_raw(content_id: str) -> Optional[Dict[str, object]]:
     """
     جلب الحل الرسمي (Official Solution) لتمرين.
     """

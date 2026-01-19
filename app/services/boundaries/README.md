@@ -43,7 +43,7 @@ async for chunk in service.stream_chat(
     message="What can you help me with?",
     token="jwt_token"
 ):
-    print(chunk)
+    logger.info(chunk)
 ```
 
 **المُستخدم في:**

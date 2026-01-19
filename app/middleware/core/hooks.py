@@ -113,7 +113,7 @@ def on_before_execution(callback: Callable) -> None:
     Usage:
         @on_before_execution
         def my_hook(ctx: RequestContext) -> None:
-            print(f"Processing {ctx.path}")
+            logger.info("Processing %s", ctx.path)
     """
     _global_hooks.register("before_execution", callback)
     return callback
@@ -126,7 +126,7 @@ def on_after_success(callback: Callable) -> None:
     Usage:
         @on_after_success
         def my_hook(ctx: RequestContext, result: MiddlewareResult) -> None:
-            print("Success!")
+            logger.info("Success!")
     """
     _global_hooks.register("after_success", callback)
     return callback
@@ -139,7 +139,7 @@ def on_after_failure(callback: Callable) -> None:
     Usage:
         @on_after_failure
         def my_hook(ctx: RequestContext, result: MiddlewareResult) -> None:
-            print("Failed!")
+            logger.info("Failed!")
     """
     _global_hooks.register("after_failure", callback)
     return callback
@@ -152,7 +152,7 @@ def on_after_execution(callback: Callable) -> None:
     Usage:
         @on_after_execution
         def my_hook(ctx: RequestContext, result: MiddlewareResult) -> None:
-            print("Completed!")
+            logger.info("Completed!")
     """
     _global_hooks.register("after_execution", callback)
     return callback

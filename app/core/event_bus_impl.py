@@ -101,7 +101,7 @@ class EventBus:
         # الاشتراك في حدث
         @bus.subscribe("user.created")
         async def handle_user_created(event: Event):
-            print(f"User created: {event.payload}")
+            logger.info("User created: %s", event.payload)
 
         # نشر حدث
         await bus.publish(

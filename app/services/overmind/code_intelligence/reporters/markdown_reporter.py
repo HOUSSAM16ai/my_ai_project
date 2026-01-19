@@ -1,8 +1,10 @@
 from collections import defaultdict
 from pathlib import Path
 
+from app.core.logging import get_logger
 from app.services.overmind.code_intelligence.models import ProjectAnalysis
 
+logger = get_logger(__name__)
 
 def generate_markdown_report(analysis: ProjectAnalysis, output_path: Path) -> None:
     """
@@ -193,4 +195,4 @@ def _save_report(content: str, output_path: Path) -> None:
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(content)
 
-    print(f"💾 Markdown report saved: {output_path}")
+    logger.info("💾 Markdown report saved: %s", output_path)

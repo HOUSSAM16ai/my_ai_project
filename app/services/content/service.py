@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any, Callable
+from typing import List, Optional, Dict, Callable
 from app.core.database import async_session_factory as default_session_factory
 from app.services.content.repository import ContentRepository
 from app.services.content.domain import ContentFilter, ContentSummary, ContentDetail
@@ -69,7 +69,7 @@ class ContentService:
         type: Optional[str] = None,
         lang: Optional[str] = None,
         limit: int = 10
-    ) -> List[Dict[str, Any]]:
+    ) -> List[Dict[str, object]]:
 
         # Normalize Inputs
         norm_set = self.normalize_set_name(set_name)
@@ -121,7 +121,7 @@ class ContentService:
 
         return data
 
-    async def get_curriculum_structure(self, level: Optional[str] = None) -> Dict[str, Any]:
+    async def get_curriculum_structure(self, level: Optional[str] = None) -> Dict[str, object]:
         async with self.session_factory() as session:
             repo = ContentRepository(session)
             rows = await repo.get_tree_items(level)

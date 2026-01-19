@@ -91,7 +91,7 @@ class DatabaseKnowledge:
 
         مثال:
             >>> tables = await db_knowledge.get_all_tables()
-            >>> print(tables)
+            >>> logger.info(tables)
             ['users', 'missions', 'tasks', 'chat_messages', ...]
 
         ملاحظة:
@@ -130,7 +130,7 @@ class DatabaseKnowledge:
 
         مثال:
             >>> schema = await db_knowledge.get_table_schema("users")
-            >>> print(schema['columns'])
+            >>> logger.info(schema['columns'])
             [
                 {'name': 'id', 'type': 'INTEGER', 'nullable': False},
                 {'name': 'email', 'type': 'VARCHAR', 'nullable': False},
@@ -175,7 +175,7 @@ class DatabaseKnowledge:
 
         مثال:
             >>> count = await db_knowledge.get_table_count("users")
-            >>> print(f"Total users: {count}")
+            >>> logger.info("Total users: %s", count)
         """
         if not self._session:
             return 0
@@ -196,7 +196,7 @@ class DatabaseKnowledge:
 
         مثال:
             >>> db_map = await db_knowledge.get_full_database_map()
-            >>> print(json.dumps(db_map, indent=2))
+            >>> logger.info(json.dumps(db_map, indent=2))
 
         ملاحظة:
             - هذه دالة مكلفة (expensive) لأنها تستعلم عن كل جدول
@@ -288,8 +288,8 @@ class ProjectKnowledge:
 
         مثال:
             >>> knowledge = await project_knowledge.get_complete_knowledge()
-            >>> print(f"Tables: {knowledge['database']['total_tables']}")
-            >>> print(f"Files: {knowledge['structure']['python_files']}")
+            >>> logger.info("Tables: %s", knowledge['database']['total_tables'])
+            >>> logger.info("Files: %s", knowledge['structure']['python_files'])
         """
         knowledge = {
             "project_name": "CogniForge",

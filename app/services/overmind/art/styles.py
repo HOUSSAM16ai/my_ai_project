@@ -194,7 +194,7 @@ class VisualTheme:
 
         Example:
             >>> theme = VisualTheme.get_palette(ArtStyle.CYBERPUNK)
-            >>> print(theme.primary)
+            >>> logger.info(theme.primary)
             '#00FF41'
         """
         return cls.PALETTES.get(style, cls.PALETTES[ArtStyle.MINIMALIST])

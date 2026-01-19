@@ -34,6 +34,9 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from app.core.config import get_settings
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class AvailableModels:
@@ -159,27 +162,27 @@ class AIConfig:
 
     def print_config(self) -> None:
         """Print current configuration."""
-        print(
+        logger.info(
             """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    🧠 CURRENT AI MODELS CONFIGURATION                        ║
 ╠══════════════════════════════════════════════════════════════════════════════╣"""
         )
-        print(f"║  🎯 Primary Model:     {self.primary_model:<50} ║")
-        print(f"║  💰 Low Cost Model:    {self.low_cost_model:<50} ║")
-        print("╠══════════════════════════════════════════════════════════════════════════════╣")
-        print(f"║  🌟 Gateway Primary:   {self.gateway_primary:<50} ║")
-        print(f"║  🔄 Fallback 1:        {self.gateway_fallback_1:<50} ║")
-        print(f"║  🔄 Fallback 2:        {self.gateway_fallback_2:<50} ║")
-        print(f"║  🔄 Fallback 3:        {self.gateway_fallback_3:<50} ║")
-        print(f"║  🔄 Fallback 4:        {self.gateway_fallback_4:<50} ║")
-        print(f"║  🔄 Fallback 5:        {self.gateway_fallback_5:<50} ║")
-        print("╠══════════════════════════════════════════════════════════════════════════════╣")
-        print(f"║  ⚡ Tier NANO:         {self.tier_nano:<50} ║")
-        print(f"║  🚀 Tier FAST:         {self.tier_fast:<50} ║")
-        print(f"║  🧠 Tier SMART:        {self.tier_smart:<50} ║")
-        print(f"║  🎓 Tier GENIUS:       {self.tier_genius:<50} ║")
-        print("╚══════════════════════════════════════════════════════════════════════════════╝")
+        logger.info("║  🎯 Primary Model:     %s ║", f"{self.primary_model:<50}")
+        logger.info("║  💰 Low Cost Model:    %s ║", f"{self.low_cost_model:<50}")
+        logger.info("╠══════════════════════════════════════════════════════════════════════════════╣")
+        logger.info("║  🌟 Gateway Primary:   %s ║", f"{self.gateway_primary:<50}")
+        logger.info("║  🔄 Fallback 1:        %s ║", f"{self.gateway_fallback_1:<50}")
+        logger.info("║  🔄 Fallback 2:        %s ║", f"{self.gateway_fallback_2:<50}")
+        logger.info("║  🔄 Fallback 3:        %s ║", f"{self.gateway_fallback_3:<50}")
+        logger.info("║  🔄 Fallback 4:        %s ║", f"{self.gateway_fallback_4:<50}")
+        logger.info("║  🔄 Fallback 5:        %s ║", f"{self.gateway_fallback_5:<50}")
+        logger.info("╠══════════════════════════════════════════════════════════════════════════════╣")
+        logger.info("║  ⚡ Tier NANO:         %s ║", f"{self.tier_nano:<50}")
+        logger.info("║  🚀 Tier FAST:         %s ║", f"{self.tier_fast:<50}")
+        logger.info("║  🧠 Tier SMART:        %s ║", f"{self.tier_smart:<50}")
+        logger.info("║  🎓 Tier GENIUS:       %s ║", f"{self.tier_genius:<50}")
+        logger.info("╚══════════════════════════════════════════════════════════════════════════════╝")
 
 
 @lru_cache(maxsize=1)
@@ -192,13 +195,13 @@ ai_config = get_ai_config()
 __all__ = ["AIConfig", "ActiveModels", "AvailableModels", "ai_config", "get_ai_config"]
 
 if __name__ == "__main__":
-    print("\n📋 Available Models for Reference:")
-    print("─" * 60)
-    print(f"  OpenAI GPT-4o:           {AvailableModels.GPT_4O}")
-    print(f"  OpenAI GPT-4o-mini:      {AvailableModels.GPT_4O_MINI}")
-    print(f"  Claude 3.7 Sonnet:       {AvailableModels.CLAUDE_37_SONNET_THINKING}")
-    print(f"  Claude 3.5 Sonnet:       {AvailableModels.CLAUDE_35_SONNET}")
-    print(f"  Claude 3 Opus:           {AvailableModels.CLAUDE_3_OPUS}")
-    print("─" * 60)
+    logger.info("📋 Available Models for Reference:")
+    logger.info("─" * 60)
+    logger.info("  OpenAI GPT-4o:           %s", AvailableModels.GPT_4O)
+    logger.info("  OpenAI GPT-4o-mini:      %s", AvailableModels.GPT_4O_MINI)
+    logger.info("  Claude 3.7 Sonnet:       %s", AvailableModels.CLAUDE_37_SONNET_THINKING)
+    logger.info("  Claude 3.5 Sonnet:       %s", AvailableModels.CLAUDE_35_SONNET)
+    logger.info("  Claude 3 Opus:           %s", AvailableModels.CLAUDE_3_OPUS)
+    logger.info("─" * 60)
     config = get_ai_config()
     config.print_config()
