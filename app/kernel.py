@@ -159,15 +159,29 @@ def _build_cors_options(origins: list[str]) -> dict[str, object]:
     """
     بناء خيارات CORS بشكل واضح ومتسق.
 
+    التحسين: إضافة دعم Codespaces عبر Regex تلقائياً.
+
     Args:
         origins: قائمة الأصول المسموح بها.
 
     Returns:
         dict[str, object]: قاموس خيارات CORS الجاهز للاستخدام.
     """
-    allow_origins = origins or ["*"]
     options = dict(BASE_CORS_OPTIONS)
-    options["allow_origins"] = allow_origins
+
+    # If explicit origins are provided, use them
+    if origins and origins != ["*"]:
+         options["allow_origins"] = origins
+    else:
+         # Fallback for Development / Codespaces
+         # Note: Browsers block allow_origins=['*'] when allow_credentials=True
+         # We use allow_origin_regex to support dynamic Codespaces domains
+         # Regex matches: http(s)://*.app.github.dev AND localhost ports
+         options["allow_origin_regex"] = r"https://.*\.app\.github\.dev|http://localhost:\d+|http://127\.0\.0\.1:\d+"
+         # We must clear allow_origins if we use regex to avoid conflicts in some versions,
+         # or keep it as empty list. Starlette usually prefers one.
+         options["allow_origins"] = []
+
     return options
 
 
