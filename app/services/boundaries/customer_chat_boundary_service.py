@@ -315,7 +315,7 @@ class CustomerChatBoundaryService:
             "تمرين", "تمارين", "موضوع", "بكالوريا",
             "الاحتمالات", "الأعداد المركبة",
             "أفهم", "فهم", "اشرح", "لماذا", "كيف", "من أين",
-            "afham", "sharh", "نتيجة", "الحل", "جواب", "جاءت"
+            "afham", "sharh", "ashrah", "eshrah", "نتيجة", "الحل", "جواب", "جاءت"
         )
         if any(k in lowered for k in substring_keywords):
             return True
