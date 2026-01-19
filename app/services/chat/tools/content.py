@@ -7,8 +7,11 @@
 3. استرجاع المحتوى الخام (Raw Content) والحلول الرسمية.
 """
 
+import os
+import asyncio
 from typing import List, Optional, Dict
 from app.services.content.service import content_service
+from app.services.search_engine.query_refiner import get_refined_query
 from app.core.logging import get_logger
 
 logger = get_logger("content-tools")
@@ -42,8 +45,20 @@ async def search_content(
     يرجع قائمة بالنتائج مع IDs لتمكين الوكيل من الاختيار.
     """
     try:
+        refined_q = q
+        # Use DSPy for query refinement if an API Key is available
+        api_key = os.environ.get("OPENROUTER_API_KEY")
+        if q and api_key:
+            try:
+                logger.info(f"Refining query with DSPy: {q}")
+                # Run sync DSPy call in thread to avoid blocking loop
+                refined_q = await asyncio.to_thread(get_refined_query, q, api_key)
+                logger.info(f"Refined query: {refined_q}")
+            except Exception as dspy_error:
+                logger.warning(f"DSPy refinement failed, using original query: {dspy_error}")
+
         return await content_service.search_content(
-            q=q,
+            q=refined_q,
             level=level,
             subject=subject,
             branch=branch,
