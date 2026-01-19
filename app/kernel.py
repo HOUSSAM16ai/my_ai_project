@@ -18,6 +18,7 @@
 """
 
 import logging
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -27,6 +28,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # استيراد الموجهات بشكل صريح
@@ -271,6 +273,16 @@ def _configure_static_files(app: FastAPI, *, enable_static_files: bool) -> None:
             serve_spa=True,
         )
         setup_static_files_middleware(app, static_config)
+
+        # MOUNT CONTENT FOLDER
+        # This is critical for serving images/PDFs linked in Markdown exercises.
+        # We assume 'content' directory is at the project root.
+        content_path = os.path.join(os.getcwd(), "content")
+        if os.path.isdir(content_path):
+            app.mount("/content", StaticFiles(directory=content_path), name="content")
+            logger.info(f"📂 Mounted /content from: {content_path}")
+        else:
+            logger.warning("⚠️ Content directory not found, images may be broken.")
     else:
         logger.info("🚀 Running in API-only mode (no static files)")
 

@@ -152,14 +152,6 @@ async def search_content(
             if api_key:
                 try:
                     logger.info(f"DSPy Refining query: {q}")
-                    # Note: get_refined_query is synchronous. In async context,
-                    # we should ideally run it in an executor if it blocks (network IO).
-                    # DSPy makes network calls.
-                    # For safety, let's wrap it in to_thread if possible, or just call it
-                    # (since dspy might use requests/httpx inside).
-                    # However, dspy is often sync.
-
-                    # Assuming fast API call:
                     refined_q = get_refined_query(q, api_key=api_key)
                     logger.info(f"DSPy Refined: {q} -> {refined_q}")
                 except Exception as e:
@@ -193,7 +185,6 @@ async def search_content(
                 "set": item.set_name,
                 "year": item.year,
                 "lang": item.lang,
-                # Optional: return score if available in domain object
             })
 
         return items
@@ -203,15 +194,54 @@ async def get_content_raw(content_id: str) -> Optional[Dict[str, str]]:
     جلب النص الخام (Markdown) لتمرين أو درس معين، مع الحل إذا توفر.
     """
     async with async_session_factory() as session:
-        repo = ContentRepository(session)
-        detail = await repo.get_content_detail(content_id)
+        # We need raw SQL to fetch source_path because repository detail DTO might not have it exposed yet.
+        # But wait, we should respect the repo pattern.
+        # Let's check ContentDetail in Repo.
 
-        if not detail:
+        query_str = """
+            SELECT i.md_content, i.source_path, s.solution_md
+            FROM content_items i
+            LEFT JOIN content_solutions s ON i.id = s.content_id
+            WHERE i.id = :id
+        """
+        try:
+            result = await session.execute(text(query_str), {"id": content_id})
+            row = result.fetchone()
+        except Exception as e:
+            logger.error(f"Get content raw failed: {e}")
             return None
 
-        data = {"content": detail.content_md}
-        if detail.solution_md:
-            data["solution"] = detail.solution_md
+        if not row:
+            return None
+
+        data = {"content": row.md_content}
+        if row.solution_md:
+            data["solution"] = row.solution_md
+
+        # Add Source URL for image/pdf access
+        if row.source_path:
+             # Convert local source path to accessible URL
+             # Assuming 'content/' is mounted at root
+             # Path: content/packs/bac2024/math.md
+             # URL: /content/packs/bac2024/math.md
+             # We need to strip 'content/' prefix from path if it exists, or just ensure relative path.
+
+             rel_path = row.source_path
+             if os.path.isabs(rel_path):
+                 # Try to make it relative to CWD
+                 try:
+                     rel_path = os.path.relpath(rel_path, os.getcwd())
+                 except ValueError:
+                     pass # keep as is
+
+             # Ensure URL compatible slashes
+             rel_path = rel_path.replace("\\", "/")
+
+             # If it starts with content/, the mount is at /content
+             if not rel_path.startswith("/"):
+                 rel_path = "/" + rel_path
+
+             data["source_url"] = rel_path
 
         return data
 
