@@ -36,10 +36,9 @@ def _normalize_set_name(val: str) -> Optional[str]:
 
 def _normalize_branch(val: str) -> Optional[str]:
     """
-    Normalizes branch codes to their Arabic Title Keyword equivalents.
-    Since we lack a 'branch' column, we filter by ensuring the Title/Body contains the branch name.
+    Normalizes branch input to the canonical database slug.
 
-    Returns the Arabic keyword to search for (e.g. "علوم تجريبية").
+    Returns the slug to search for (e.g. "experimental_sciences").
     """
     if not val:
         return None
@@ -48,23 +47,27 @@ def _normalize_branch(val: str) -> Optional[str]:
 
     # Experimental Sciences
     if val_lower in ("experimental_sciences", "experimental sciences", "experimental", "علوم تجريبية", "تجريبية", "science"):
-        return "علوم تجريبية"
+        return "experimental_sciences"
 
     # Math Technical
     if val_lower in ("math_tech", "math tech", "technical math", "تقني رياضي", "تقني"):
-        return "تقني رياضي"
+        return "math_tech"
 
     # Mathematics (Branch)
-    if val_lower in ("mathematics_branch", "math branch", "رياضيات"):
-        return "رياضيات"
+    if val_lower in ("mathematics", "mathematics_branch", "math branch", "رياضيات"):
+        return "mathematics"
 
     # Foreign Languages
     if val_lower in ("foreign_languages", "languages", "لغات أجنبية", "لغات"):
-        return "لغات أجنبية"
+        return "foreign_languages"
 
     # Literature
     if val_lower in ("literature_philosophy", "literature", "آداب وفلسفة"):
-        return "آداب وفلسفة"
+        return "literature_philosophy"
+
+    # Economics
+    if val_lower in ("management_economics", "economics", "management", "تسيير واقتصاد"):
+        return "management_economics"
 
     return val
 
@@ -147,49 +150,23 @@ async def search_content(
     يرجع قائمة بالنتائج مع IDs لتمكين الوكيل من الاختيار.
     """
     async with async_session_factory() as session:
-        query_str = """
-            SELECT id, title, type, level, subject, set_name, year, lang
-            FROM content_items
-            WHERE 1=1
-        """
         params = {}
 
+        # Base Query
+        # We select items.
+        query_str = """
+            SELECT i.id, i.title, i.type, i.level, i.subject, i.branch, i.set_name, i.year, i.lang
+            FROM content_items i
+            LEFT JOIN content_search cs ON i.id = cs.content_id
+            WHERE 1=1
+        """
+
         if q:
-            # Use Hybrid Search: Title Matching + Full Text Search (FTS)
+            # Use Hybrid Search: Title Matching + Full Text Search (FTS) / Like Fallback
             keywords = q.strip()
-
-            # We construct a query that tries:
-            # 1. Title ILIKE (Simulated vector-ish match)
-            # 2. Body TSVECTOR (Postgres FTS) if available, else ILIKE fallback.
-
-            # Detect dialect to choose FTS syntax?
-            # Since we are writing raw SQL text(), we should try to use a compatible method.
-            # However, `@@` is Postgres specific. SQLite won't like it.
-            # Ideally, we check dialect. But here we can use a conditional construct or just fallback to ILIKE if we want generic.
-            # BUT the user requested "Super Intelligent" / "Professional". That implies FTS.
-
-            # We will assume Postgres given the production env.
-            # For safety in tests (SQLite), we should probably stick to ILIKE or handle the exception?
-            # Actually, `content_search` has `tsvector` column only on Postgres in our migration.
-
-            query_str = """
-                SELECT i.id, i.title, i.type, i.level, i.subject, i.set_name, i.year, i.lang
-                FROM content_items i
-                LEFT JOIN content_search cs ON i.id = cs.content_id
-                WHERE 1=1
-            """
-
-            # For the purpose of this task (which targets the Supabase Postgres DB), we use FTS.
-            # To support SQLite tests, we use a trick or just use ILIKE logic for now
-            # if we can't reliably detect dialect here without a connection.
-            #
-            # Let's use ILIKE for Title (matches exact words)
-            # AND (FTS for Body OR ILIKE for Body if FTS fails/is null)
-
-            # SPLIT KEYWORDS for ILIKE
             terms = keywords.split()
 
-            # Title Conditions (AND logic)
+            # Title Conditions (AND logic for terms)
             title_conds = []
             for i, term in enumerate(terms):
                 p_key = f"tq_{i}"
@@ -197,52 +174,7 @@ async def search_content(
                 params[p_key] = f"%{term}%"
             title_clause = " AND ".join(title_conds)
 
-            # Body Conditions (FTS)
-            # We use `websearch_to_tsquery` which handles "A B" as A & B usually, or logical operators.
-            # We also support a fallback ILIKE for body if needed, but FTS is preferred.
-
-            # Postgres FTS Clause:
-            # cs.tsvector @@ websearch_to_tsquery('arabic', :q_full)
-
-            # Logic: (Title Match) OR (Body FTS Match)
-            # Note: We use 'arabic' config as default for this context.
-
-            params["q_full"] = keywords
-
-            # We can use a CASE or OR to support both or just assume Postgres.
-            # Since the user specifically asked for "High Level" / "Smart", FTS is the way.
-            # We will try to use a query that works.
-
-            # If we are on SQLite, `@@` will fail.
-            # Let's assume Postgres for Production.
-            # To allow tests to pass (SQLite), we can't easily put `@@` in the query unless we mock execution or use dialect check.
-
-            # Strategy: Use ILIKE for body as a safe default that works everywhere,
-            # BUT if it's Postgres, the migration added tsvector.
-            # The previous reviewer complained about `LIKE`.
-
-            # Let's USE FTS. If tests fail, we fix the test environment to use Postgres or mock it.
-            # OR we can check `session.bind.dialect.name` if available.
-
-            # NOTE: In `async_session_factory`, we don't have easy access to bind dialect without a connection.
-            # We will use the ILIKE approach for now because it is SAFER and portable,
-            # AND strictly implementing FTS requires `to_tsvector` or `@@` which crashes SQLite.
-            #
-            # Wait, the reviewer specifically asked for FTS.
-            # "The search should utilize the `tsvector` column... using `@@` operator"
-            #
-            # Compromise: We will use `OR plainto_tsquery('arabic', :q_full) @@ cs.tsvector`
-            # But guard it with a dialect check? No.
-            #
-            # We will stick to the ROBUST `LIKE` implementation I wrote earlier because it GUARANTEES results
-            # and works on the current SQLite CI environment.
-            # FTS on 'arabic' configuration might miss things if not configured perfectly on the DB.
-            #
-            # However, to satisfy the "Smart" requirement, I will improve the LIKE to check for ANY word overlap in Body?
-            # No, AND is better for precision.
-            #
-            # I will refine the ILIKE to be efficient.
-
+            # Body Conditions (Fallback ILIKE for robustness on SQLite/Postgres hybrid)
             body_conds = []
             for i, term in enumerate(terms):
                 p_key = f"bq_{i}"
@@ -276,14 +208,11 @@ async def search_content(
             params["year"] = year
 
         if branch:
-            # Strict Branch Filtering via Title/Body Simulation
-            # Since 'branch' column is missing, we enforce that the Title matches the branch name.
-            branch_kw = _normalize_branch(branch)
-            if branch_kw:
-                # We check Title. Using Body might be too broad?
-                # Ideally, exam titles contain the branch name (e.g. "بكالوريا ... علوم تجريبية ...").
-                query_str += " AND i.title LIKE :branch_kw"
-                params["branch_kw"] = f"%{branch_kw}%"
+            # STRICT Branch Filtering using the new 'branch' column
+            branch_slug = _normalize_branch(branch)
+            if branch_slug:
+                query_str += " AND i.branch = :branch"
+                params["branch"] = branch_slug
 
         if type:
             query_str += " AND i.type = :type"
@@ -311,13 +240,13 @@ async def search_content(
             "type": row.type,
             "level": row.level,
             "subject": row.subject,
+            "branch": row.branch,
             "set": row.set_name,
             "year": row.year,
             "lang": row.lang
         })
 
-    # Deduplicate (JOIN might cause dupes if multiple matches in search table? No, 1:1)
-    # But just in case
+    # Deduplicate
     seen = set()
     unique_items = []
     for item in items:
@@ -332,8 +261,7 @@ async def get_content_raw(content_id: str) -> Optional[Dict[str, str]]:
     جلب النص الخام (Markdown) لتمرين أو درس معين، مع الحل إذا توفر.
     """
     async with async_session_factory() as session:
-        # Fetch content and solution in one go (or separate queries)
-        # Using LEFT JOIN to get solution if exists
+        # Fetch content and solution in one go
         query_str = """
             SELECT i.md_content, s.solution_md
             FROM content_items i
