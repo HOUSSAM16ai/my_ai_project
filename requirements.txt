@@ -66,6 +66,8 @@ pandas==2.3.3
 pillow==12.1.0
 pytesseract==0.3.13
 pyyaml==6.0.1
+# Explicitly require huggingface-hub[inference] to prevent pip backtracking on llama-index deps
+huggingface-hub[inference]>=0.23.0
 sentence-transformers
 dspy-ai
 openai
