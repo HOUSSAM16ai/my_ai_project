@@ -8,11 +8,14 @@
 """
 
 from typing import List, Optional, Dict, Any
+import os
 from sqlalchemy import text
 from app.core.database import async_session_factory
 from app.core.logging import get_logger
 from app.services.content.repository import ContentRepository
 from app.services.content.domain import ContentFilter
+from app.services.search_engine.query_refiner import get_refined_query
+from app.core.config import get_settings
 
 logger = get_logger("content-tools")
 
@@ -80,12 +83,9 @@ async def get_curriculum_structure(level: Optional[str] = None, lang: str = "ar"
     Structure: Subject -> Branch -> Set/Pack -> Lessons
     Returns IDs, titles, types, and counts.
     """
-    # Use Repository if possible, or keep optimized SQL here.
-    # Repository has `get_tree_items`. Let's use it for consistency.
     async with async_session_factory() as session:
         repo = ContentRepository(session)
         rows = await repo.get_tree_items(level=level)
-        # rows are sqlalchemy rows (id, title, type, level, subject, branch, set_name, year)
 
     structure = {}
 
@@ -136,6 +136,7 @@ async def search_content(
     يرجع قائمة بالنتائج مع IDs لتمكين الوكيل من الاختيار.
 
     USES ContentRepository for Semantic + Metadata Search.
+    USES DSPy (QueryRefiner) to optimize user queries.
     """
     async with async_session_factory() as session:
         repo = ContentRepository(session)
@@ -144,8 +145,28 @@ async def search_content(
         norm_branch = _normalize_branch(branch)
         norm_set = _normalize_set_name(set_name)
 
+        # --- DSPy INTELLIGENCE INJECTION ---
+        refined_q = q
+        if q and len(q.split()) > 1: # Only refine if enough context
+            api_key = get_settings().OPENROUTER_API_KEY
+            if api_key:
+                try:
+                    logger.info(f"DSPy Refining query: {q}")
+                    # Note: get_refined_query is synchronous. In async context,
+                    # we should ideally run it in an executor if it blocks (network IO).
+                    # DSPy makes network calls.
+                    # For safety, let's wrap it in to_thread if possible, or just call it
+                    # (since dspy might use requests/httpx inside).
+                    # However, dspy is often sync.
+
+                    # Assuming fast API call:
+                    refined_q = get_refined_query(q, api_key=api_key)
+                    logger.info(f"DSPy Refined: {q} -> {refined_q}")
+                except Exception as e:
+                    logger.warning(f"DSPy failed, using original query: {e}")
+
         filters = ContentFilter(
-            q=q,
+            q=refined_q, # Pass the SMART query
             level=level,
             subject=subject,
             branch=norm_branch,
@@ -171,7 +192,8 @@ async def search_content(
                 "branch": item.branch,
                 "set": item.set_name,
                 "year": item.year,
-                "lang": item.lang
+                "lang": item.lang,
+                # Optional: return score if available in domain object
             })
 
         return items
@@ -197,12 +219,6 @@ async def get_solution_raw(content_id: str) -> Optional[Dict[str, Any]]:
     """
     جلب الحل الرسمي (Official Solution) لتمرين.
     """
-    # Repository doesn't expose raw solution struct yet, so we keep this query or add to repo.
-    # For now, let's keep it here to avoid changing Repository interface too much unless needed.
-    # But `get_content_detail` returns solution_md.
-    # If we need `steps_json`, we might need a new method in Repo.
-    # Let's keep the existing implementation for `steps_json` if Repo doesn't have it.
-
     async with async_session_factory() as session:
         query_str = """
             SELECT solution_md, steps_json, final_answer
