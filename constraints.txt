@@ -3,3 +3,5 @@ pypdf==4.0.1
 llama-index-readers-file==0.1.12
 llama-index==0.10.58
 llama-index-core==0.10.58
+llama-index-vector-stores-supabase==0.1.2
+llama-index-embeddings-huggingface==0.1.2
