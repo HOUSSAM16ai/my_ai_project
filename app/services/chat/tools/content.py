@@ -3,7 +3,7 @@
 
 تتيح للوكلاء:
 1. استكشاف هيكلة المنهج (Subject -> Branch -> Topic).
-2. البحث عن تمارين ومحتوى باستخدام الفلاتر.
+2. البحث عن تمارين ومحتوى باستخدام الفلاتر (Semantic Search via ContentRepository).
 3. استرجاع المحتوى الخام (Raw Content) والحلول الرسمية.
 """
 
@@ -11,6 +11,8 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy import text
 from app.core.database import async_session_factory
 from app.core.logging import get_logger
+from app.services.content.repository import ContentRepository
+from app.services.content.domain import ContentFilter
 
 logger = get_logger("content-tools")
 
@@ -78,28 +80,12 @@ async def get_curriculum_structure(level: Optional[str] = None, lang: str = "ar"
     Structure: Subject -> Branch -> Set/Pack -> Lessons
     Returns IDs, titles, types, and counts.
     """
+    # Use Repository if possible, or keep optimized SQL here.
+    # Repository has `get_tree_items`. Let's use it for consistency.
     async with async_session_factory() as session:
-        # 1. Base Query
-        query_str = """
-            SELECT id, title, type, level, subject, set_name, year
-            FROM content_items
-            WHERE 1=1
-        """
-        params = {}
-
-        if level:
-            query_str += " AND level = :level"
-            params["level"] = level
-
-        # Order by hierarchy to make processing easier
-        query_str += " ORDER BY subject, level, set_name, id"
-
-        try:
-            result = await session.execute(text(query_str), params)
-            rows = result.fetchall()
-        except Exception as e:
-            logger.error(f"Failed to fetch curriculum structure: {e}")
-            return {}
+        repo = ContentRepository(session)
+        rows = await repo.get_tree_items(level=level)
+        # rows are sqlalchemy rows (id, title, type, level, subject, branch, set_name, year)
 
     structure = {}
 
@@ -148,147 +134,75 @@ async def search_content(
     """
     بحث متقدم عن المحتوى التعليمي.
     يرجع قائمة بالنتائج مع IDs لتمكين الوكيل من الاختيار.
+
+    USES ContentRepository for Semantic + Metadata Search.
     """
     async with async_session_factory() as session:
-        params = {}
+        repo = ContentRepository(session)
 
-        # Base Query
-        # We select items.
-        query_str = """
-            SELECT i.id, i.title, i.type, i.level, i.subject, i.branch, i.set_name, i.year, i.lang
-            FROM content_items i
-            LEFT JOIN content_search cs ON i.id = cs.content_id
-            WHERE 1=1
-        """
+        # Normalize Filters
+        norm_branch = _normalize_branch(branch)
+        norm_set = _normalize_set_name(set_name)
 
-        if q:
-            # Use Hybrid Search: Title Matching + Full Text Search (FTS) / Like Fallback
-            keywords = q.strip()
-            terms = keywords.split()
+        filters = ContentFilter(
+            q=q,
+            level=level,
+            subject=subject,
+            branch=norm_branch,
+            set_name=norm_set,
+            year=year,
+            type=type,
+            lang=lang,
+            limit=limit
+        )
 
-            # Title Conditions (AND logic for terms)
-            title_conds = []
-            for i, term in enumerate(terms):
-                p_key = f"tq_{i}"
-                title_conds.append(f"i.title LIKE :{p_key}")
-                params[p_key] = f"%{term}%"
-            title_clause = " AND ".join(title_conds)
+        # Execute Semantic/Hybrid Search
+        results = await repo.search(filters)
 
-            # Body Conditions (Fallback ILIKE for robustness on SQLite/Postgres hybrid)
-            body_conds = []
-            for i, term in enumerate(terms):
-                p_key = f"bq_{i}"
-                body_conds.append(f"cs.plain_text LIKE :{p_key}")
-                params[p_key] = f"%{term}%"
-            body_clause = " AND ".join(body_conds)
+        # Map Domain Objects to Dicts for Agent
+        items = []
+        for item in results:
+            items.append({
+                "id": item.id,
+                "title": item.title,
+                "type": item.type,
+                "level": item.level,
+                "subject": item.subject,
+                "branch": item.branch,
+                "set": item.set_name,
+                "year": item.year,
+                "lang": item.lang
+            })
 
-            if title_clause and body_clause:
-                 query_str += f" AND (({title_clause}) OR ({body_clause}))"
-            elif title_clause:
-                 query_str += f" AND ({title_clause})"
-            elif body_clause:
-                 query_str += f" AND ({body_clause})"
-
-        if level:
-            query_str += " AND i.level = :level"
-            params["level"] = level
-
-        if subject:
-            query_str += " AND i.subject = :subject"
-            params["subject"] = subject
-
-        if set_name:
-            # Normalize to ensure "Subject 1" matches "subject_1" in DB
-            norm_set = _normalize_set_name(set_name)
-            query_str += " AND i.set_name = :set_name"
-            params["set_name"] = norm_set
-
-        if year:
-            query_str += " AND i.year = :year"
-            params["year"] = year
-
-        if branch:
-            # STRICT Branch Filtering using the new 'branch' column
-            branch_slug = _normalize_branch(branch)
-            if branch_slug:
-                query_str += " AND i.branch = :branch"
-                params["branch"] = branch_slug
-
-        if type:
-            query_str += " AND i.type = :type"
-            params["type"] = type
-
-        if lang:
-            query_str += " AND i.lang = :lang"
-            params["lang"] = lang
-
-        query_str += " ORDER BY i.year DESC, i.id ASC LIMIT :limit"
-        params["limit"] = limit
-
-        try:
-            result = await session.execute(text(query_str), params)
-            rows = result.fetchall()
-        except Exception as e:
-            logger.error(f"Search content failed: {e}")
-            return []
-
-    items = []
-    for row in rows:
-        items.append({
-            "id": row.id,
-            "title": row.title,
-            "type": row.type,
-            "level": row.level,
-            "subject": row.subject,
-            "branch": row.branch,
-            "set": row.set_name,
-            "year": row.year,
-            "lang": row.lang
-        })
-
-    # Deduplicate
-    seen = set()
-    unique_items = []
-    for item in items:
-        if item['id'] not in seen:
-            unique_items.append(item)
-            seen.add(item['id'])
-
-    return unique_items
+        return items
 
 async def get_content_raw(content_id: str) -> Optional[Dict[str, str]]:
     """
     جلب النص الخام (Markdown) لتمرين أو درس معين، مع الحل إذا توفر.
     """
     async with async_session_factory() as session:
-        # Fetch content and solution in one go
-        query_str = """
-            SELECT i.md_content, s.solution_md
-            FROM content_items i
-            LEFT JOIN content_solutions s ON i.id = s.content_id
-            WHERE i.id = :id
-        """
-        try:
-            result = await session.execute(text(query_str), {"id": content_id})
-            row = result.fetchone()
-        except Exception as e:
-            logger.error(f"Get content raw failed: {e}")
+        repo = ContentRepository(session)
+        detail = await repo.get_content_detail(content_id)
+
+        if not detail:
             return None
 
-    if not row:
-        return None
+        data = {"content": detail.content_md}
+        if detail.solution_md:
+            data["solution"] = detail.solution_md
 
-    data = {"content": row.md_content}
-
-    if row.solution_md:
-        data["solution"] = row.solution_md
-
-    return data
+        return data
 
 async def get_solution_raw(content_id: str) -> Optional[Dict[str, Any]]:
     """
     جلب الحل الرسمي (Official Solution) لتمرين.
     """
+    # Repository doesn't expose raw solution struct yet, so we keep this query or add to repo.
+    # For now, let's keep it here to avoid changing Repository interface too much unless needed.
+    # But `get_content_detail` returns solution_md.
+    # If we need `steps_json`, we might need a new method in Repo.
+    # Let's keep the existing implementation for `steps_json` if Repo doesn't have it.
+
     async with async_session_factory() as session:
         query_str = """
             SELECT solution_md, steps_json, final_answer
