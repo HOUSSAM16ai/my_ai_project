@@ -94,7 +94,12 @@ if [ ! -f ".env" ]; then
         lifecycle_set_state "env_generated" "codespaces"
     else
         lifecycle_warn "Not in Codespaces or DATABASE_URL not set"
-        if [ -f ".env.example" ]; then
+        # Emergency Recovery: Use the fix script to inject credentials if available
+        if [ -f "scripts/fix_auth_env.py" ]; then
+            lifecycle_info "🚀 Running auto-recovery script to set credentials..."
+            python3 scripts/fix_auth_env.py
+            lifecycle_set_state "env_generated" "auto_recovery"
+        elif [ -f ".env.example" ]; then
             cp .env.example .env
             lifecycle_info "Copied .env.example to .env"
             lifecycle_set_state "env_generated" "example"
