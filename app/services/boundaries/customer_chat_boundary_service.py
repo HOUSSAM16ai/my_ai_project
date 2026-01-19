@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import re
 import logging
 from collections.abc import AsyncGenerator, Callable
 
@@ -302,20 +303,27 @@ class CustomerChatBoundaryService:
 
     def _looks_like_content_request(self, question: str) -> bool:
         """تعرف سريع على الطلبات التعليمية التي تشير لتمارين مخزنة."""
+        # Use word boundaries for English terms to avoid false positives (e.g. 'how' inside 'however')
+        # Arabic terms don't use \b comfortably without more complex regex due to morphology,
+        # so we keep them as simple substring checks or ensure whitespace context if needed.
+        # For this implementation, we mix substring for Arabic/Safe terms and regex for ambiguous English.
+
         lowered = question.lower()
-        keywords = (
-            "تمرين",
-            "تمارين",
-            "موضوع",
-            "بكالوريا",
-            "bac",
-            "subject",
-            "exercise",
-            "exercises",
-            "الاحتمالات",
-            "الأعداد المركبة",
+
+        # 1. Simple substring checks (Safe/Long terms)
+        substring_keywords = (
+            "تمرين", "تمارين", "موضوع", "بكالوريا",
+            "الاحتمالات", "الأعداد المركبة",
+            "أفهم", "فهم", "اشرح", "لماذا", "كيف", "من أين",
+            "afham", "sharh", "نتيجة", "الحل", "جواب", "جاءت"
         )
-        return any(keyword in lowered for keyword in keywords)
+        if any(k in lowered for k in substring_keywords):
+            return True
+
+        # 2. Regex for short/ambiguous English terms
+        # Matches: "bac", "subject", "exercise", "why", "how", etc. as whole words
+        pattern = r"\b(bac|subject|exercise|exercises|explain|why|how|result|solution|answer)\b"
+        return bool(re.search(pattern, lowered))
 
     def _is_tool_intent(self, intent: ChatIntent) -> bool:
         """تحديد ما إذا كانت النية مرتبطة باستخدام أدوات حساسة."""
