@@ -12,153 +12,21 @@ Standards:
 """
 
 import functools
-import json
-import logging
 import os
-import secrets
 from typing import Literal
 
 from pydantic import Field, ValidationInfo, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Logging Setup
-logger = logging.getLogger("app.core.settings")
-
-# -----------------------------------------------------------------------------
-# Helpers
-# -----------------------------------------------------------------------------
-
-_DEV_SECRET_KEY_CACHE: str | None = None
-
-
-def _get_or_create_dev_secret_key() -> str:
-    """Generates a stable development secret key to avoid session invalidation on restart."""
-    global _DEV_SECRET_KEY_CACHE
-    if _DEV_SECRET_KEY_CACHE is None:
-        _DEV_SECRET_KEY_CACHE = secrets.token_urlsafe(64)
-    return _DEV_SECRET_KEY_CACHE
-
-
-def _ensure_database_url(value: str | None, environment: str) -> str:
-    """Ensures a valid database URL exists, falling back to SQLite in Dev/Test."""
-    if value:
-        return value
-
-    if environment == "production":
-        raise ValueError("❌ CRITICAL: DATABASE_URL is missing in PRODUCTION!")
-
-    if environment == "testing":
-        return "sqlite+aiosqlite:///:memory:"
-
-    logger.warning("⚠️ No DATABASE_URL found! Activating Fallback (SQLite).")
-    return "sqlite+aiosqlite:///./backup_storage.db"
-
-
-def _upgrade_postgres_protocol(url: str) -> str:
-    """Upgrades synchronous Postgres URLs to asyncpg."""
-    if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql+asyncpg://", 1)
-    if url.startswith("postgresql://") and "asyncpg" not in url:
-        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    if url.startswith("sqlite://") and "aiosqlite" not in url:
-        return url.replace("sqlite://", "sqlite+aiosqlite://", 1)
-    return url
-
-
-def _normalize_postgres_ssl(url: str) -> str:
-    """Normalizes Postgres SSL query parameters to a single `ssl=` entry."""
-    if not url.startswith(("postgres://", "postgresql://", "postgresql+asyncpg://")):
-        return url
-
-    from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
-
-    parsed = urlparse(url)
-    if not parsed.query:
-        return url
-
-    query_items = parse_qsl(parsed.query, keep_blank_values=True)
-    sslmode_value: str | None = None
-    filtered_items: list[tuple[str, str]] = []
-    for key, value in query_items:
-        if key == "sslmode":
-            sslmode_value = value
-            continue
-        if key == "ssl":
-            continue
-        filtered_items.append((key, value))
-
-    if sslmode_value is not None:
-        filtered_items.append(("ssl", sslmode_value))
-
-    new_query = urlencode(filtered_items, doseq=True)
-    return urlunparse(parsed._replace(query=new_query))
-
-
-def _normalize_csv_or_list(value: list[str] | str | None) -> list[str]:
-    """Normalizes comma-separated strings or JSON lists into a strict list[str]."""
-    if value is None:
-        return []
-
-    def _deduplicate(items: list[str]) -> list[str]:
-        seen: set[str] = set()
-        normalized: list[str] = []
-        for item in items:
-            if item not in seen:
-                seen.add(item)
-                normalized.append(item)
-        return normalized
-
-    if isinstance(value, list):
-        cleaned = [str(item).strip() for item in value if str(item).strip()]
-        return _deduplicate(cleaned)
-
-    if isinstance(value, str):
-        candidate = value.strip()
-        if not candidate:
-            return []
-
-        # Try JSON first
-        if candidate.startswith("[") and candidate.endswith("]"):
-            try:
-                parsed = json.loads(candidate)
-                if isinstance(parsed, list):
-                    cleaned = [str(item).strip() for item in parsed if str(item).strip()]
-                    return _deduplicate(cleaned)
-            except json.JSONDecodeError:
-                pass
-
-        # Fallback to CSV
-        cleaned = [item.strip() for item in candidate.split(",") if item.strip()]
-        return _deduplicate(cleaned)
-
-    return []
-
-
-def _is_valid_email(value: str) -> bool:
-    """يتحقق من تنسيق بريد إلكتروني بسيط وآمن للاستخدام الإداري."""
-    candidate = value.strip().lower()
-    if not candidate or " " in candidate:
-        return False
-    if candidate.count("@") != 1:
-        return False
-    local, _, domain = candidate.partition("@")
-    if not local or not domain:
-        return False
-    if local.startswith(".") or local.endswith(".") or ".." in local:
-        return False
-    if "." not in domain or domain.startswith(".") or domain.endswith(".") or ".." in domain:
-        return False
-    if len(domain.split(".")[-1]) < 2:
-        return False
-    return True
-
-
-def _lenient_json_loads(value: str) -> object:
-    """Parses environment values as JSON, allowing simple strings on failure."""
-    try:
-        return json.loads(value)
-    except json.JSONDecodeError:
-        return value
+from .helpers import (
+    _ensure_database_url,
+    _get_or_create_dev_secret_key,
+    _is_valid_email,
+    _lenient_json_loads,
+    _normalize_csv_or_list,
+    _normalize_postgres_ssl,
+    _upgrade_postgres_protocol,
+)
 
 
 # -----------------------------------------------------------------------------

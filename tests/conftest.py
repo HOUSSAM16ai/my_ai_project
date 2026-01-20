@@ -5,11 +5,12 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Coroutine
 from contextlib import asynccontextmanager
+import importlib.util
 import os
 from pathlib import Path
 import sys
 import warnings
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("SECRET_KEY", "test_secret_key_super_secure_must_be_long_enough")
@@ -25,54 +26,78 @@ if str(project_root) not in sys.path:
 warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
 
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
-from sqlalchemy import inspect
-from sqlalchemy.pool import StaticPool
-from sqlmodel import SQLModel
 
-from app.api.routers.admin import get_session_factory as get_admin_session_factory
-from app.api.routers.customer_chat import get_session_factory
-from app.api.routers.overmind import get_session_factory as get_overmind_session_factory
-from app.core.database import get_db
-from app.core import database as core_database
-from app.core.domain.user import User
-from app.core.settings.base import get_settings
-from app.main import create_app
-from app.services.auth import AuthService
-from tests.factories.base import MissionFactory, UserFactory
-engine: AsyncEngine = create_async_engine(
-    "sqlite+aiosqlite:///:memory:",
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-TestingSessionLocal = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
-)
+if TYPE_CHECKING:
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from httpx import ASGITransport, AsyncClient
+    from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+    from app.core.domain.user import User
+    from app.services.auth import AuthService
+    from tests.factories.base import MissionFactory, UserFactory
+
+_engine: AsyncEngine | None = None
+_session_factory: async_sessionmaker[AsyncSession] | None = None
 _schema_initialized = False
 
-core_database.engine = engine
-core_database.async_session_factory = TestingSessionLocal
+
+def _db_dependencies_available() -> bool:
+    """يتحقق من توفر اعتمادات قاعدة البيانات قبل تهيئة أي موارد اختبارية."""
+    return (
+        importlib.util.find_spec("sqlalchemy") is not None
+        and importlib.util.find_spec("sqlmodel") is not None
+    )
+
+
+def _get_engine() -> AsyncEngine:
+    """يبني محرك SQLite داخل الذاكرة عند الحاجة فقط للاختبارات."""
+    global _engine
+    if _engine is not None:
+        return _engine
+    from sqlalchemy.ext.asyncio import create_async_engine
+    from sqlalchemy.pool import StaticPool
+
+    _engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    return _engine
+
+
+def _get_session_factory() -> async_sessionmaker[AsyncSession]:
+    """يعيد مصنع الجلسات مع ضمان ربطه بنواة قواعد البيانات للاختبارات."""
+    global _session_factory
+    if _session_factory is not None:
+        return _session_factory
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+    from app.core import database as core_database
+
+    engine = _get_engine()
+    _session_factory = async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+    )
+    core_database.engine = engine
+    core_database.async_session_factory = _session_factory
+    return _session_factory
 
 
 async def _ensure_schema() -> None:
     """تهيئة مخطط قاعدة البيانات داخل الذاكرة لاختبارات SQLite."""
     global _schema_initialized
+    if not _db_dependencies_available():
+        return
     if _schema_initialized:
         return
+    from sqlmodel import SQLModel
+
     from app.core.domain import models as _domain_models
 
+    engine = _get_engine()
     async with engine.begin() as connection:
         await connection.run_sync(SQLModel.metadata.create_all)
     _schema_initialized = True
@@ -92,8 +117,11 @@ def _run_async(
 @asynccontextmanager
 async def managed_test_session() -> AsyncSession:
     """جلسة قاعدة بيانات للاختبارات تعتمد على SQLite داخل الذاكرة."""
+    pytest.importorskip("sqlalchemy")
+    pytest.importorskip("sqlmodel")
     await _ensure_schema()
-    async with TestingSessionLocal() as session:
+    session_factory = _get_session_factory()
+    async with session_factory() as session:
         yield session
 
 
@@ -151,6 +179,8 @@ def static_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
 @pytest.fixture(autouse=True)
 def init_db(event_loop: asyncio.AbstractEventLoop) -> None:
     """تهيئة قاعدة البيانات قبل كل اختبار."""
+    if not _db_dependencies_available():
+        return
     _run_async(event_loop, _ensure_schema())
 
 
@@ -158,9 +188,15 @@ def init_db(event_loop: asyncio.AbstractEventLoop) -> None:
 def clean_db(event_loop: asyncio.AbstractEventLoop) -> None:
     """تنظيف الجداول بعد كل اختبار لضمان العزل."""
     yield
+    if not _db_dependencies_available():
+        return
     if not _schema_initialized:
         return
     async def _cleanup() -> None:
+        from sqlalchemy import inspect
+        from sqlmodel import SQLModel
+
+        engine = _get_engine()
         async with engine.begin() as connection:
             table_names = await connection.run_sync(
                 lambda sync_conn: inspect(sync_conn).get_table_names()
@@ -177,10 +213,13 @@ def clean_db(event_loop: asyncio.AbstractEventLoop) -> None:
 @pytest.fixture
 def db_session(event_loop: asyncio.AbstractEventLoop) -> AsyncSession:
     """إرجاع جلسة قاعدة بيانات للاختبار الحالي."""
+    pytest.importorskip("sqlalchemy")
+    pytest.importorskip("sqlmodel")
     _run_async(event_loop, _ensure_schema())
 
     async def _open_session() -> AsyncSession:
-        return TestingSessionLocal()
+        session_factory = _get_session_factory()
+        return session_factory()
 
     session = _run_async(event_loop, _open_session())
     try:
@@ -192,6 +231,17 @@ def db_session(event_loop: asyncio.AbstractEventLoop) -> AsyncSession:
 @pytest.fixture
 def test_app(static_dir: Path) -> FastAPI:
     """تهيئة تطبيق الاختبار مع تجاوز اتصال قاعدة البيانات."""
+    pytest.importorskip("fastapi")
+    pytest.importorskip("sqlalchemy")
+    pytest.importorskip("sqlmodel")
+    session_factory = _get_session_factory()
+    from app.api.routers.admin import get_session_factory as get_admin_session_factory
+    from app.api.routers.customer_chat import get_session_factory
+    from app.api.routers.overmind import get_session_factory as get_overmind_session_factory
+    from app.core.database import get_db
+    from app.core.settings.base import get_settings
+    from app.main import create_app
+
     get_settings.cache_clear()
     settings = get_settings()
     app = create_app(
@@ -201,19 +251,21 @@ def test_app(static_dir: Path) -> FastAPI:
     )
 
     async def override_get_db():
-        async with TestingSessionLocal() as session:
+        async with session_factory() as session:
             yield session
 
     app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_session_factory] = lambda: TestingSessionLocal
-    app.dependency_overrides[get_admin_session_factory] = lambda: TestingSessionLocal
-    app.dependency_overrides[get_overmind_session_factory] = lambda: TestingSessionLocal
+    app.dependency_overrides[get_session_factory] = lambda: session_factory
+    app.dependency_overrides[get_admin_session_factory] = lambda: session_factory
+    app.dependency_overrides[get_overmind_session_factory] = lambda: session_factory
     return app
 
 
 @pytest.fixture
 def client(test_app) -> TestClient:
     """عميل HTTP متزامن للاختبارات السريعة."""
+    from fastapi.testclient import TestClient
+
     with TestClient(test_app) as test_client:
         yield test_client
 
@@ -221,6 +273,8 @@ def client(test_app) -> TestClient:
 @pytest.fixture
 def async_client(test_app, event_loop: asyncio.AbstractEventLoop) -> AsyncClient:
     """عميل HTTP غير متزامن للاختبارات التكاملية."""
+    from httpx import ASGITransport, AsyncClient
+
     client_instance = AsyncClient(
         transport=ASGITransport(app=test_app),
         base_url="http://test",
@@ -234,6 +288,10 @@ def async_client(test_app, event_loop: asyncio.AbstractEventLoop) -> AsyncClient
 @pytest.fixture
 def admin_user(db_session: AsyncSession, event_loop: asyncio.AbstractEventLoop) -> User:
     """إنشاء مستخدم إداري للاختبارات."""
+    pytest.importorskip("sqlalchemy")
+    pytest.importorskip("sqlmodel")
+    from app.core.domain.user import User
+
     async def _create_user() -> User:
         user = User(full_name="Admin", email="admin@example.com", is_admin=True)
         user.set_password("AdminPass123!")
@@ -252,6 +310,10 @@ def admin_auth_headers(
     event_loop: asyncio.AbstractEventLoop,
 ) -> dict[str, str]:
     """إنشاء ترويسات مصادقة لمستخدم إداري."""
+    pytest.importorskip("sqlalchemy")
+    pytest.importorskip("sqlmodel")
+    from app.services.auth import AuthService
+
     async def _issue_tokens() -> dict[str, str]:
         auth = AuthService(db_session)
         await auth.rbac.ensure_seed()
@@ -264,10 +326,16 @@ def admin_auth_headers(
 @pytest.fixture
 def user_factory() -> UserFactory:
     """مصنع مستخدمين للاختبارات."""
+    pytest.importorskip("sqlmodel")
+    from tests.factories.base import UserFactory
+
     return UserFactory()
 
 
 @pytest.fixture
 def mission_factory() -> MissionFactory:
     """مصنع مهام للاختبارات."""
+    pytest.importorskip("sqlmodel")
+    from tests.factories.base import MissionFactory
+
     return MissionFactory()
