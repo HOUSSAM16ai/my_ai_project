@@ -7,6 +7,7 @@
 from langchain_core.messages import AIMessage
 from app.services.chat.graph.state import AgentState
 from app.core.ai_gateway import AIClient
+from app.core.ai_config import get_ai_config
 
 async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
     """
@@ -42,7 +43,7 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
     ]
 
     response = await ai_client.generate(
-        model="gpt-4o",
+        model=get_ai_config().primary_model,
         messages=input_messages
     )
 

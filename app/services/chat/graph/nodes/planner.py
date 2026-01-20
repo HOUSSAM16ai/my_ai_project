@@ -7,6 +7,7 @@
 from langchain_core.messages import SystemMessage, HumanMessage
 from app.services.chat.graph.state import AgentState
 from app.core.ai_gateway import AIClient
+from app.core.ai_config import get_ai_config
 import json
 
 async def planner_node(state: AgentState, ai_client: AIClient) -> dict:
@@ -33,7 +34,7 @@ async def planner_node(state: AgentState, ai_client: AIClient) -> dict:
     # For now, we ask for JSON in the prompt.
 
     response = await ai_client.generate(
-        model="gpt-4o", # Or capable model
+        model=get_ai_config().primary_model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Request: {last_message}"}
