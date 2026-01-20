@@ -79,6 +79,13 @@ class ContentService:
             best_match = matches[0]
             return reverse_map[best_match]
 
+        # 3. Substring match (Fallback)
+        # If the user input contains a known variation (e.g. "Bac 2024 Experimental Sciences" contains "Experimental Sciences")
+        for variation in all_variations:
+            # Check if variation is in value (and variation is long enough to be significant)
+            if len(variation) > 3 and variation in val_lower:
+                return reverse_map[variation]
+
         return val # Return original if no match found (pass-through)
 
     def normalize_set_name(self, val: str) -> Optional[str]:
