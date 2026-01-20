@@ -21,9 +21,9 @@ class ContentService:
         if not val:
             return None
         val_lower = val.lower().strip()
-        if val_lower in ("subject 1", "subject1", "s1", "sub1", "subject_1", "الموضوع الأول", "الموضوع 1", "subject-1"):
+        if val_lower in ("subject 1", "subject1", "s1", "sub1", "subject_1", "الموضوع الأول", "الموضوع الاول", "الموضوع 1", "subject-1"):
             return "subject_1"
-        if val_lower in ("subject 2", "subject2", "s2", "sub2", "subject_2", "الموضوع الثاني", "الموضوع 2", "subject-2"):
+        if val_lower in ("subject 2", "subject2", "s2", "sub2", "subject_2", "الموضوع الثاني", "الموضوع الثانى", "الموضوع 2", "subject-2"):
             return "subject_2"
         return val
 
@@ -37,7 +37,7 @@ class ContentService:
         val_lower = val.lower().strip()
 
         # Experimental Sciences
-        if val_lower in ("experimental_sciences", "experimental sciences", "experimental", "علوم تجريبية", "تجريبية", "science"):
+        if val_lower in ("experimental_sciences", "experimental sciences", "experimental", "علوم تجريبية", "تجريبية", "علوم تجريبة", "science"):
             return "experimental_sciences"
 
         # Math Technical
