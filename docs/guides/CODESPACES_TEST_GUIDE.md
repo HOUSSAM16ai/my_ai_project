@@ -35,6 +35,17 @@ If VS Code Web shows **Workspace does not exist**, it usually means the Codespac
 **ملاحظة بالعربية:**  
 ظهور رسالة **Workspace does not exist** يعني غالباً أن الـ Codespace تم إيقافه أو حذفه بينما التبويب ما زال مفتوحاً. أغلق التبويب، ثم افتح قائمة Codespaces من GitHub وشغّل الـ Codespace أو أنشئ واحداً جديداً على نفس الفرع، وبعدها افتحه من القائمة مباشرة.
 
+### Troubleshooting: Recovery mode بسبب خطأ في الإعدادات
+
+If you see a banner that says the Codespace is running in **recovery mode due to a configuration error**, it means the devcontainer build failed. Fix it by following these steps:
+
+1. Click **View Creation Log** to see the exact dependency error.
+2. Apply the dependency pins from this repo (the `constraints.txt` + `requirements.txt` are already aligned).
+3. Back in Codespaces, click **Rebuild Container** from the command palette or the Codespaces menu.
+
+**ملاحظة بالعربية:**  
+وضع **recovery mode** يظهر عندما يفشل بناء الـ devcontainer. افتح **View Creation Log** لمعرفة الخطأ، ثم أعد البناء عبر **Rebuild Container** بعد تطبيق الإصلاحات.
+
 ### Step 2: Wait for Application Startup
 
 The application will start automatically. Monitor the terminal for:
