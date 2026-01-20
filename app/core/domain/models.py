@@ -58,7 +58,6 @@ if TYPE_CHECKING:
 # by having them imported here where the app might initialize.
 
 with suppress(Exception):
-    # traceback.print_exc()
     # It might fail if some models are not fully defined yet or circular deps logic
     # But usually model_rebuild is robust.
     SQLModel.model_rebuild()

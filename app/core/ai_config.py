@@ -160,8 +160,8 @@ class AIConfig:
             },
         }
 
-    def print_config(self) -> None:
-        """Print current configuration."""
+    def log_config(self) -> None:
+        """Log current configuration."""
         logger.info(
             """
 ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -204,4 +204,4 @@ if __name__ == "__main__":
     logger.info("  Claude 3 Opus:           %s", AvailableModels.CLAUDE_3_OPUS)
     logger.info("─" * 60)
     config = get_ai_config()
-    config.print_config()
+    config.log_config()
