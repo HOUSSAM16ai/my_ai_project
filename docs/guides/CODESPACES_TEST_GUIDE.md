@@ -23,6 +23,18 @@ Before you begin, ensure:
 2. Click on **Code** → **Codespaces** → **Create codespace on [branch-name]**
 3. Wait for the Codespace to initialize (2-3 minutes)
 
+### Troubleshooting: "Workspace does not exist"
+
+If VS Code Web shows **Workspace does not exist**, it usually means the Codespace was stopped, renamed, or deleted while the browser tab stayed open. Use the following recovery steps:
+
+1. Close the current browser tab.
+2. Open https://github.com/codespaces and verify the Codespace is **Running**.
+3. If it is stopped, click **Start**. If it no longer exists, click **Create codespace** again on the correct branch.
+4. Reopen the Codespace from the Codespaces list instead of using the old URL.
+
+**ملاحظة بالعربية:**  
+ظهور رسالة **Workspace does not exist** يعني غالباً أن الـ Codespace تم إيقافه أو حذفه بينما التبويب ما زال مفتوحاً. أغلق التبويب، ثم افتح قائمة Codespaces من GitHub وشغّل الـ Codespace أو أنشئ واحداً جديداً على نفس الفرع، وبعدها افتحه من القائمة مباشرة.
+
 ### Step 2: Wait for Application Startup
 
 The application will start automatically. Monitor the terminal for:
