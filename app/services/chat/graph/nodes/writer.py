@@ -22,10 +22,39 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
     # --- Genius Context Firewall ---
     # Determine if user *explicitly* requested the solution/answer.
     # We use regex for robustness against slight phrasing variations.
-    solution_keywords = r"(حل|إجابة|اجابة|نتيجة|جواب|صحح|تصحيح|solution|answer|result|correct|solve)"
+    # ERROR FIX: Previous regex was too broad and triggered on "don't give me solution".
+    # New logic requires an explicit request verb OR a direct question.
 
-    # Check if the user message contains any of the solution keywords
-    user_wants_solution = bool(re.search(solution_keywords, last_user_msg.lower()))
+    request_indicators = r"(أريد|بدي|ابغى|عطيني|اعطني|هات|وريني|show|give|want|provide|display|please|plz|من فضلك|لو سمحت)"
+    target_nouns = r"(حل|إجابة|اجابة|جواب|صحح|تصحيح|solution|answer|result|correction)"
+
+    # Match if:
+    # 1. Indicator + Noun (ANY order) -> "Show solution", "Solution please"
+    # 2. Noun + Question Mark -> "Solution?"
+    # 3. Exact Noun only -> "Solution"
+
+    # We construct a regex that looks for presence of Noun AND (Indicator OR QuestionMark OR Start/End anchor)
+
+    last_msg_lower = last_user_msg.lower()
+    has_noun = bool(re.search(target_nouns, last_msg_lower))
+    is_request = bool(re.search(request_indicators, last_msg_lower))
+    is_question = "?" in last_msg_lower or "؟" in last_msg_lower
+    # Check for short phrase (e.g. "Solution", "الحل") - count tokens
+    is_short = len(last_msg_lower.split()) <= 3
+
+    # Negation check: e.g. "I don't want solution", "لا تعطيني الحل"
+    # Matches "not" followed eventually by "want/give" or "solution"
+    # Simple proximity check: "don't" ... "want/give"
+    negation_pattern = r"(don't|do not|not|no|never|لا|ما|لم|لن|ليس).{0,20}(want|need|give|show|أريد|بدي|تعطيني|عطيني|هات)"
+    has_negation = bool(re.search(negation_pattern, last_msg_lower))
+
+    user_wants_solution = False
+    if has_noun and not has_negation:
+        if is_request or is_question:
+            user_wants_solution = True
+        elif is_short:
+             # "The Solution", "الحل"
+            user_wants_solution = True
 
     # Prepare Context with Firewall
     context_text = ""
