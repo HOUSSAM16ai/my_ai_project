@@ -1,4 +1,5 @@
 from typing import List, Optional, Dict, Callable
+import difflib
 from app.core.database import async_session_factory as default_session_factory
 from app.services.content.repository import ContentRepository
 from app.services.content.domain import ContentFilter, ContentSummary, ContentDetail
@@ -10,53 +11,91 @@ class ContentService:
     and orchestrates Data Access.
     """
 
+    # Dictionary of Canonical Key -> List of Variations
+    BRANCH_MAP = {
+        "experimental_sciences": [
+            "experimental_sciences", "experimental sciences", "experimental",
+            "علوم تجريبية", "تجريبية", "علوم تجريبة", "تجريبة", "science", "ex",
+            "scien", "exp"
+        ],
+        "math_tech": [
+            "math_tech", "math tech", "technical math", "تقني رياضي", "تقني",
+            "math technique", "tm", "mt"
+        ],
+        "mathematics": [
+            "mathematics", "mathematics_branch", "math branch", "رياضيات",
+            "math", "m", "رياضي"
+        ],
+        "foreign_languages": [
+            "foreign_languages", "languages", "لغات أجنبية", "لغات", "lang", "fl"
+        ],
+        "literature_philosophy": [
+            "literature_philosophy", "literature", "آداب وفلسفة", "اداب وفلسفة",
+            "اداب", "فلسفة", "lit", "philo", "lp"
+        ]
+    }
+
+    SET_MAP = {
+        "subject_1": [
+            "subject 1", "subject1", "s1", "sub1", "subject_1",
+            "الموضوع الأول", "الموضوع الاول", "الموضوع 1", "subject-1", "first subject"
+        ],
+        "subject_2": [
+            "subject 2", "subject2", "s2", "sub2", "subject_2",
+            "الموضوع الثاني", "الموضوع الثانى", "الموضوع 2", "subject-2", "second subject"
+        ]
+    }
+
     def __init__(self, session_factory=None):
         self.session_factory = session_factory or default_session_factory
 
     @staticmethod
-    def normalize_set_name(val: str) -> Optional[str]:
+    def _fuzzy_match(val: str, mapping: Dict[str, List[str]], cutoff: float = 0.6) -> Optional[str]:
+        """
+        Fuzzy matches a value against a dictionary of variations using difflib.
+        Returns the canonical key if a match is found.
+        """
+        if not val:
+            return None
+
+        val_lower = val.lower().strip()
+
+        # 1. Exact match check (fast path)
+        for key, variations in mapping.items():
+            if val_lower in variations:
+                return key
+
+        # 2. Fuzzy match
+        # Flatten the map to valid_variations -> key
+        reverse_map = {}
+        all_variations = []
+        for key, variations in mapping.items():
+            for v in variations:
+                reverse_map[v] = key
+                all_variations.append(v)
+
+        matches = difflib.get_close_matches(val_lower, all_variations, n=1, cutoff=cutoff)
+        if matches:
+            best_match = matches[0]
+            return reverse_map[best_match]
+
+        return val # Return original if no match found (pass-through)
+
+    def normalize_set_name(self, val: str) -> Optional[str]:
         """
         Normalizes 'Subject 1', 'S1', 'الموضوع الأول' -> 'subject_1'
         """
-        if not val:
-            return None
-        val_lower = val.lower().strip()
-        if val_lower in ("subject 1", "subject1", "s1", "sub1", "subject_1", "الموضوع الأول", "الموضوع الاول", "الموضوع 1", "subject-1"):
-            return "subject_1"
-        if val_lower in ("subject 2", "subject2", "s2", "sub2", "subject_2", "الموضوع الثاني", "الموضوع الثانى", "الموضوع 2", "subject-2"):
-            return "subject_2"
-        return val
+        # Specific overrides for very short strings that might fuzzy match poorly
+        if val and val.strip() in ["1", "١"]: return "subject_1"
+        if val and val.strip() in ["2", "٢"]: return "subject_2"
 
-    @staticmethod
-    def normalize_branch(val: str) -> Optional[str]:
+        return self._fuzzy_match(val, self.SET_MAP, cutoff=0.7)
+
+    def normalize_branch(self, val: str) -> Optional[str]:
         """
         Normalizes branch codes to database slugs (e.g., 'experimental_sciences').
         """
-        if not val:
-            return None
-        val_lower = val.lower().strip()
-
-        # Experimental Sciences
-        if val_lower in ("experimental_sciences", "experimental sciences", "experimental", "علوم تجريبية", "تجريبية", "علوم تجريبة", "science"):
-            return "experimental_sciences"
-
-        # Math Technical
-        if val_lower in ("math_tech", "math tech", "technical math", "تقني رياضي", "تقني"):
-            return "math_tech"
-
-        # Mathematics
-        if val_lower in ("mathematics", "mathematics_branch", "math branch", "رياضيات"):
-            return "mathematics"
-
-        # Foreign Languages
-        if val_lower in ("foreign_languages", "languages", "لغات أجنبية", "لغات"):
-            return "foreign_languages"
-
-        # Literature & Philosophy
-        if val_lower in ("literature_philosophy", "literature", "آداب وفلسفة"):
-            return "literature_philosophy"
-
-        return val
+        return self._fuzzy_match(val, self.BRANCH_MAP, cutoff=0.6)
 
     async def search_content(
         self,
