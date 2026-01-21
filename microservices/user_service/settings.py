@@ -1,29 +1,35 @@
 """
-User Service Configuration.
+إعدادات خدمة المستخدمين.
 
-Inherits from canonical BaseServiceSettings.
+تعزل هذه الإعدادات الخدمة عن أي اعتماد مشترك مع بقية الخدمات.
 """
 
 import functools
+from typing import Literal
 
 from pydantic import Field
-from pydantic_settings import SettingsConfigDict
-
-from app.core.settings.base import BaseServiceSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class UserServiceSettings(BaseServiceSettings):
+class UserServiceSettings(BaseSettings):
     """
-    Configuration for User Service.
-    Isolated database.
+    إعدادات خدمة المستخدمين بصورة مستقلة وبسيطة.
     """
 
-    SERVICE_NAME: str = "user-service"
-    SERVICE_VERSION: str = "1.0.0"
+    SERVICE_NAME: str = Field("user-service", description="اسم الخدمة")
+    SERVICE_VERSION: str = Field("1.0.0", description="إصدار الخدمة")
 
-    # Default to a local SQLite DB for dev/testing if not provided
-    DATABASE_URL: str | None = Field(
-        default="sqlite+aiosqlite:///./user_service.db", description="User Service Database URL"
+    ENVIRONMENT: Literal["development", "staging", "production", "testing"] = Field(
+        "development", description="بيئة التشغيل"
+    )
+    DEBUG: bool = Field(False, description="تفعيل وضع التصحيح")
+    LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
+        "INFO", description="مستوى السجلات"
+    )
+
+    DATABASE_URL: str = Field(
+        "sqlite+aiosqlite:///./user_service.db",
+        description="رابط قاعدة بيانات خدمة المستخدمين",
     )
 
     model_config = SettingsConfigDict(env_prefix="USER_", env_file=".env", extra="ignore")
@@ -31,4 +37,5 @@ class UserServiceSettings(BaseServiceSettings):
 
 @functools.lru_cache(maxsize=1)
 def get_settings() -> UserServiceSettings:
+    """يبني إعدادات الخدمة مع التخزين المؤقت."""
     return UserServiceSettings()

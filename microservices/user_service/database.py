@@ -1,29 +1,86 @@
 """
-User Service Database Module.
+وحدة قاعدة البيانات لخدمة المستخدمين.
 
-Uses the Shared Kernel Factory Pattern.
+تُبقي هذه الوحدة التهيئة محلية لخدمة المستخدمين دون اعتماد مشترك.
 """
 
 import asyncio
+import logging
 import os
 from collections.abc import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.engine.url import make_url
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
-from app.core.database import create_db_engine, create_session_factory
 from microservices.user_service.models import SQLModel
 from microservices.user_service.settings import get_settings
 
-# 1. Initialize Settings
+logger = logging.getLogger(__name__)
+
 settings = get_settings()
 runtime_settings = settings
 if os.getenv("ENVIRONMENT") == "testing":
     runtime_settings = settings.model_copy(update={"DATABASE_URL": "sqlite+aiosqlite:///:memory:"})
 
-# 2. Create Engine using Shared Kernel Factory
-engine = create_db_engine(runtime_settings)
 
-# 3. Create Session Factory using Shared Kernel Factory
+def create_db_engine(
+    *,
+    database_url: str,
+    environment: str,
+    echo: bool,
+    service_name: str,
+) -> AsyncEngine:
+    """إنشاء محرك قاعدة البيانات بشكل صريح ومبسّط."""
+
+    if not database_url:
+        raise ValueError("DATABASE_URL غير مُعدّ لخدمة المستخدمين.")
+
+    engine_args: dict[str, object] = {
+        "echo": echo,
+        "pool_pre_ping": True,
+        "pool_recycle": 1800,
+    }
+
+    url_obj = make_url(database_url)
+    if "sqlite" in url_obj.drivername:
+        engine_args["connect_args"] = {"check_same_thread": False}
+        logger.info("🔌 Database (SQLite): %s", service_name)
+    elif "postgresql" in url_obj.drivername:
+        if url_obj.drivername == "postgresql":
+            url_obj = url_obj.set(drivername="postgresql+asyncpg")
+            database_url = url_obj.render_as_string(hide_password=False)
+
+        is_dev = environment in ("development", "testing")
+        engine_args["pool_size"] = 5 if is_dev else 40
+        engine_args["max_overflow"] = 10 if is_dev else 60
+        logger.info("🔌 Database (Postgres): %s", service_name)
+
+    return create_async_engine(database_url, **engine_args)
+
+
+def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+    """إنشاء مصنع جلسات لقاعدة البيانات."""
+
+    return async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+    )
+
+
+engine = create_db_engine(
+    database_url=runtime_settings.DATABASE_URL,
+    environment=runtime_settings.ENVIRONMENT,
+    echo=runtime_settings.DEBUG,
+    service_name=runtime_settings.SERVICE_NAME,
+)
 async_session_factory = create_session_factory(engine)
 
 _init_lock = asyncio.Lock()
@@ -32,20 +89,12 @@ _is_initialized = False
 
 async def init_db() -> None:
     """
-    Initialize database schema.
+    تهيئة مخطط قاعدة البيانات.
 
-    Safety:
-    - ALLOWED: Development/Testing (via create_all)
-    - FORBIDDEN: Production (Must use Alembic)
+    يُسمح بذلك فقط في التطوير والاختبار.
     """
+
     if settings.ENVIRONMENT not in ("development", "testing"):
-        # Hard fail if someone tries to auto-create in production
-        # But usually init_db is called on startup.
-        # We should probably log a warning and skip, or strictly do nothing.
-        # Standards say: "PROD hard fail always" if they try to auto-create.
-        # But if the app calls init_db() on startup, we don't want to crash the app
-        # if the DB is already there. We just want to ensure we DON'T run create_all.
-        # The best way is to strict check.
         return
 
     async with engine.begin() as conn:
@@ -64,7 +113,8 @@ async def _ensure_initialized() -> None:
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    """Dependency for DB Session."""
+    """اعتماد جلسة قاعدة بيانات لخدمة المستخدمين."""
+
     await _ensure_initialized()
     async with async_session_factory() as session:
         try:

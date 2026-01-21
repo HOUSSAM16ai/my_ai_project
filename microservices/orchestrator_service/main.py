@@ -10,13 +10,17 @@ from dataclasses import asdict, dataclass
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from microservices.orchestrator_service.database import get_session, init_db
+from microservices.orchestrator_service.errors import setup_exception_handlers
 from microservices.orchestrator_service.health import HealthResponse, build_health_payload
+from microservices.orchestrator_service.logging import get_logger, setup_logging
 from microservices.orchestrator_service.models import Task
 from microservices.orchestrator_service.settings import OrchestratorSettings, get_settings
+
+logger = get_logger("orchestrator-service")
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,9 +47,17 @@ def _build_agent_registry(settings: OrchestratorSettings) -> list[AgentEndpoint]
 
 
 class TaskResponse(BaseModel):
+    """تمثيل استجابة المهمة بعد الإنشاء."""
+
     id: UUID
     description: str
     status: str
+
+
+class TaskCreateRequest(BaseModel):
+    """حمولة إنشاء مهمة جديدة للتنسيق."""
+
+    description: str = Field(..., min_length=1, max_length=500, description="وصف المهمة")
 
 
 def _build_router(settings: OrchestratorSettings, registry: list[AgentEndpoint]) -> APIRouter:
@@ -53,24 +65,30 @@ def _build_router(settings: OrchestratorSettings, registry: list[AgentEndpoint])
 
     router = APIRouter()
 
-    @router.get("/health", response_model=HealthResponse)
+    @router.get("/health", response_model=HealthResponse, tags=["System"])
     def health_check() -> HealthResponse:
         """يفحص جاهزية الخدمة دون أي اعتماد خارجي."""
 
         return build_health_payload(settings)
 
-    @router.get("/orchestrator/agents")
+    @router.get("/orchestrator/agents", tags=["Orchestrator"], summary="عرض الوكلاء")
     def list_agents() -> dict[str, list[dict[str, str]]]:
         """يعرض سجل الوكلاء كبيانات قابلة للاستهلاك عبر الـ API."""
 
         return {"agents": [asdict(agent) for agent in registry]}
 
-    @router.post("/orchestrator/tasks", response_model=TaskResponse)
+    @router.post(
+        "/orchestrator/tasks",
+        response_model=TaskResponse,
+        tags=["Orchestrator"],
+        summary="إنشاء مهمة تنسيق",
+    )
     async def create_task(
-        description: str, session: AsyncSession = Depends(get_session)
+        payload: TaskCreateRequest, session: AsyncSession = Depends(get_session)
     ) -> TaskResponse:
-        """Create a new task."""
-        task = Task(description=description)
+        """ينشئ مهمة جديدة للتنسيق بين الوكلاء."""
+        logger.info("إنشاء مهمة تنسيق", extra={"description": payload.description})
+        task = Task(description=payload.description)
         session.add(task)
         await session.commit()
         await session.refresh(task)
@@ -81,8 +99,13 @@ def _build_router(settings: OrchestratorSettings, registry: list[AgentEndpoint])
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """يدير دورة حياة خدمة التنسيق."""
+
+    setup_logging(get_settings().SERVICE_NAME)
+    logger.info("بدء تشغيل خدمة التنسيق")
     await init_db()
     yield
+    logger.info("إيقاف خدمة التنسيق")
 
 
 def create_app(settings: OrchestratorSettings | None = None) -> FastAPI:
@@ -102,6 +125,7 @@ def create_app(settings: OrchestratorSettings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
 
+    setup_exception_handlers(app)
     app.include_router(_build_router(effective_settings, registry))
 
     return app

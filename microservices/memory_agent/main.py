@@ -8,16 +8,20 @@
 from contextlib import asynccontextmanager
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import col, select
 
 from microservices.memory_agent.database import get_session, init_db
+from microservices.memory_agent.errors import setup_exception_handlers
 from microservices.memory_agent.health import HealthResponse, build_health_payload
+from microservices.memory_agent.logging import get_logger, setup_logging
 from microservices.memory_agent.models import Memory, Tag
 from microservices.memory_agent.settings import MemoryAgentSettings, get_settings
+
+logger = get_logger("memory-agent")
 
 
 class MemoryCreateRequest(BaseModel):
@@ -57,18 +61,24 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
 
     router = APIRouter()
 
-    @router.get("/health", response_model=HealthResponse)
+    @router.get("/health", response_model=HealthResponse, tags=["System"])
     def health_check() -> HealthResponse:
         """يفحص جاهزية الوكيل دون اعتماد خارجي."""
 
         return build_health_payload(settings)
 
-    @router.post("/memories", response_model=MemoryResponse)
+    @router.post(
+        "/memories",
+        response_model=MemoryResponse,
+        tags=["Memory"],
+        summary="إنشاء عنصر ذاكرة",
+    )
     async def create_memory(
         payload: MemoryCreateRequest, session: AsyncSession = Depends(get_session)
     ) -> MemoryResponse:
         """ينشئ عنصر ذاكرة جديد ويعيده."""
 
+        logger.info("إنشاء ذاكرة", extra={"tags": payload.tags})
         # Resolve tags
         db_tags = []
         for tag_name in payload.tags:
@@ -92,9 +102,16 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
 
         return MemoryResponse(entry_id=entry.id, content=entry.content, tags=tag_names)
 
-    @router.get("/memories/search", response_model=list[MemoryResponse])
+    @router.get(
+        "/memories/search",
+        response_model=list[MemoryResponse],
+        tags=["Memory"],
+        summary="بحث عبر الاستعلام النصي",
+    )
     async def search_memories(
-        query: str = "", limit: int = 10, session: AsyncSession = Depends(get_session)
+        query: str = Query(default="", description="نص البحث"),
+        limit: int = Query(default=10, ge=1, le=50, description="حد النتائج"),
+        session: AsyncSession = Depends(get_session),
     ) -> list[MemoryResponse]:
         """
         يبحث عن عناصر ذاكرة مطابقة للاستعلام.
@@ -102,6 +119,7 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
         """
 
         normalized = query.strip().lower()
+        logger.info("بحث بالاستعلام", extra={"query": normalized, "limit": limit})
 
         statement = select(Memory).options(selectinload(Memory.tags))
 
@@ -127,7 +145,12 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
             for m in memories
         ]
 
-    @router.post("/memories/search", response_model=list[MemoryResponse])
+    @router.post(
+        "/memories/search",
+        response_model=list[MemoryResponse],
+        tags=["Memory"],
+        summary="بحث عبر حمولة موسعة",
+    )
     async def search_memories_post(
         payload: MemorySearchRequest, session: AsyncSession = Depends(get_session)
     ) -> list[MemoryResponse]:
@@ -137,6 +160,10 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
 
         normalized = payload.query.strip().lower()
         tags = [tag.strip() for tag in payload.filters.tags if tag.strip()]
+        logger.info(
+            "بحث عبر حمولة",
+            extra={"query": normalized, "tags": tags, "limit": payload.limit},
+        )
 
         statement = select(Memory).options(selectinload(Memory.tags))
 
@@ -167,8 +194,13 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """يدير دورة حياة التطبيق لوكيل الذاكرة."""
+
+    setup_logging(get_settings().SERVICE_NAME)
+    logger.info("بدء تشغيل وكيل الذاكرة")
     await init_db()
     yield
+    logger.info("إيقاف وكيل الذاكرة")
 
 
 def create_app(settings: MemoryAgentSettings | None = None) -> FastAPI:
@@ -182,6 +214,7 @@ def create_app(settings: MemoryAgentSettings | None = None) -> FastAPI:
         description="وكيل مستقل لإدارة السياق والذاكرة",
         lifespan=lifespan,
     )
+    setup_exception_handlers(app)
     app.include_router(_build_router(effective_settings))
 
     return app

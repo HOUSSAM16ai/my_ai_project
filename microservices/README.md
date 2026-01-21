@@ -315,50 +315,34 @@ open http://localhost:8005/docs
 
 ### 1. Service Discovery
 
+في بيئات الخدمات المصغّرة يُفضّل الاعتماد على أدوات اكتشاف الخدمات (مثل Consul أو DNS)
+بدلاً من الاعتماد على مكتبات مشتركة بين الخدمات. مثال مبسّط باستخدام DNS:
+
 ```python
-from app.gateway import ServiceDiscovery
-
-# تسجيل خدمة جديدة
-discovery.register_service(
-    endpoint=ServiceEndpoint(
-        name="new-service",
-        base_url="http://localhost:8006",
-    )
-)
-
-# اكتشاف خدمة
-instance = discovery.get_healthy_instance("new-service")
+service_base_url = "http://user-service:8003"
+response = await http_client.get(f"{service_base_url}/health")
 ```
 
 ### 2. Circuit Breaker
 
+يُفضّل تطبيق قاطع الدارة على مستوى كل خدمة (أو عبر Service Mesh)
+بدون مشاركة منطق عبر مكتبات مشتركة:
+
 ```python
-from app.gateway import CircuitBreaker
-
-breaker = CircuitBreaker("my-service")
-
 try:
-    result = await breaker.call(my_async_function, arg1, arg2)
-except CircuitBreakerError:
-    # استخدام fallback
+    result = await http_client.post("http://planning-agent:8001/plan", json=payload)
+except TimeoutError:
     result = fallback_value
 ```
 
 ### 3. Event Bus
 
+التكامل عبر الأحداث يجب أن يتم عبر ناقل رسائل مستقل (Kafka/RabbitMQ)
+مع عقود واضحة بدل مشاركة كود منطقي بين الخدمات:
+
 ```python
-from app.core.event_bus_impl import get_event_bus
-
-bus = get_event_bus()
-
-# الاشتراك في حدث
-@bus.subscribe("user.created")
-async def on_user_created(event: Event):
-    print(f"User created: {event.payload}")
-
-# نشر حدث
-await bus.publish(
-    event_type="user.created",
+await event_bus.publish(
+    topic="user.created",
     payload={"user_id": "123"},
     source="user-service",
 )
