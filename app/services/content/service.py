@@ -9,9 +9,9 @@ from app.services.content.repository import ContentRepository
 class ContentService:
     """طبقة خدمة لإدارة المحتوى مع توحيد المدخلات وبناء الاستعلامات."""
 
-    # Dictionary of Canonical Arabic Label -> List of Variations
+    # Dictionary of Canonical English Slug -> List of Variations (Arabic & English)
     BRANCH_MAP: dict[str, list[str]] = {
-        "علوم تجريبية": [
+        "experimental_sciences": [
             "experimental_sciences",
             "experimental sciences",
             "experimental",
@@ -23,7 +23,7 @@ class ContentService:
             "scien",
             "exp",
         ],
-        "تقني رياضي": [
+        "math_tech": [
             "math_tech",
             "math tech",
             "technical math",
@@ -33,7 +33,7 @@ class ContentService:
             "tm",
             "mt",
         ],
-        "رياضيات": [
+        "mathematics": [
             "mathematics",
             "mathematics_branch",
             "math branch",
@@ -42,7 +42,7 @@ class ContentService:
             "m",
             "رياضي",
         ],
-        "لغات أجنبية": [
+        "foreign_languages": [
             "foreign_languages",
             "languages",
             "لغات أجنبية",
@@ -50,7 +50,7 @@ class ContentService:
             "lang",
             "fl",
         ],
-        "آداب وفلسفة": [
+        "literature_philosophy": [
             "literature_philosophy",
             "literature",
             "آداب وفلسفة",
@@ -149,6 +149,7 @@ class ContentService:
         year: int | None = None,
         type: str | None = None,
         lang: str | None = None,
+        content_ids: list[str] | None = None,
         limit: int = 10,
     ) -> list[dict[str, object]]:
         """يبني استعلام بحث هجين مع فلاتر وصفية متوافقة مع الاختبارات."""
@@ -177,6 +178,15 @@ class ContentService:
                 params[body_key] = like_value
             if term_clauses:
                 query_str += " AND " + " AND ".join(term_clauses)
+
+        if content_ids:
+            # If we have explicit IDs from vector search, filter by them
+            placeholders: list[str] = []
+            for index, content_id in enumerate(content_ids):
+                key = f"cid_{index}"
+                placeholders.append(f":{key}")
+                params[key] = content_id
+            query_str += f" AND i.id IN ({', '.join(placeholders)})"
 
         if level:
             query_str += " AND i.level = :level"
