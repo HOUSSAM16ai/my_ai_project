@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+import yaml
 
 def _load_spec_text(spec_path: Path) -> tuple[str, str] | None:
     """يحمل نص عقد OpenAPI ويعيد الامتداد والنص إن كان الملف موجوداً."""
@@ -27,31 +28,38 @@ def _parse_json_payload(text: str) -> dict[str, object] | None:
 def load_contract_paths(spec_path: Path) -> set[str]:
     """تحميل مسارات عقد OpenAPI من ملف JSON أو YAML بأسلوب خفيف وآمن."""
 
-    loaded = _load_spec_text(spec_path)
-    if loaded is None:
+    payload = load_contract_schema(spec_path)
+    if payload is None:
         return set()
 
-    suffix, text = loaded
-    if suffix == ".json":
-        payload = _parse_json_payload(text)
-        return _extract_paths_from_json(payload) if payload else set()
-
-    return _extract_paths_from_yaml(text)
+    return _extract_paths_from_schema(payload)
 
 
 def load_contract_operations(spec_path: Path) -> dict[str, set[str]]:
     """تحميل العمليات لكل مسار ضمن عقد OpenAPI بصيغة خفيفة."""
 
+    payload = load_contract_schema(spec_path)
+    if payload is None:
+        return {}
+
+    return _extract_operations_from_schema(payload)
+
+
+def load_contract_schema(spec_path: Path) -> dict[str, object] | None:
+    """يحمل عقد OpenAPI كقاموس موحد بغض النظر عن صيغة الملف."""
+
     loaded = _load_spec_text(spec_path)
     if loaded is None:
-        return {}
+        return None
 
     suffix, text = loaded
     if suffix == ".json":
-        payload = _parse_json_payload(text)
-        return _extract_operations_from_json(payload) if payload else {}
+        return _parse_json_payload(text)
 
-    return _extract_operations_from_yaml(text)
+    payload = yaml.safe_load(text)
+    if isinstance(payload, dict):
+        return payload
+    return None
 
 
 @dataclass(frozen=True)
@@ -67,8 +75,21 @@ class ContractComparisonReport:
         return not self.missing_paths and not self.missing_operations
 
 
-def _extract_paths_from_json(payload: dict[str, object]) -> set[str]:
-    """استخراج المسارات من حمولة OpenAPI بصيغة JSON."""
+@dataclass(frozen=True)
+class RuntimeContractDriftReport:
+    """تقرير يكشف المسارات والعمليات غير الموثقة ضمن عقد OpenAPI."""
+
+    unexpected_paths: set[str]
+    unexpected_operations: dict[str, set[str]]
+
+    def is_clean(self) -> bool:
+        """يتحقق مما إذا كان التقرير خالياً من الانحرافات."""
+
+        return not self.unexpected_paths and not self.unexpected_operations
+
+
+def _extract_paths_from_schema(payload: dict[str, object]) -> set[str]:
+    """استخراج المسارات من حمولة OpenAPI بصيغة موحدة."""
 
     paths_node = payload.get("paths")
     if isinstance(paths_node, dict):
@@ -76,8 +97,8 @@ def _extract_paths_from_json(payload: dict[str, object]) -> set[str]:
     return set()
 
 
-def _extract_operations_from_json(payload: dict[str, object]) -> dict[str, set[str]]:
-    """استخراج العمليات لكل مسار من حمولة OpenAPI بصيغة JSON."""
+def _extract_operations_from_schema(payload: dict[str, object]) -> dict[str, set[str]]:
+    """استخراج العمليات لكل مسار من حمولة OpenAPI بصيغة موحدة."""
 
     paths_node = payload.get("paths")
     if not isinstance(paths_node, dict):
@@ -89,13 +110,6 @@ def _extract_operations_from_json(payload: dict[str, object]) -> dict[str, set[s
             continue
         operations[path] = {method.lower() for method in details if isinstance(method, str)}
     return operations
-
-
-def _extract_paths_from_yaml(text: str) -> set[str]:
-    """استخراج مسارات OpenAPI من YAML عبر مسح نصي يعتمد على التهيئة."""
-
-    operations = _extract_operations_from_yaml(text)
-    return set(operations.keys())
 
 
 def _runtime_operations_from_openapi(schema: dict[str, object]) -> dict[str, set[str]]:
@@ -149,46 +163,29 @@ def default_contract_path() -> Path:
     )
 
 
-def _extract_operations_from_yaml(text: str) -> dict[str, set[str]]:
-    """استخراج العمليات لكل مسار من YAML عبر مسح نصي مبسط."""
+def detect_runtime_drift(
+    *,
+    contract_operations: dict[str, set[str]],
+    runtime_schema: dict[str, object],
+) -> RuntimeContractDriftReport:
+    """يكشف المسارات أو العمليات غير الموثقة التي ظهرت في التشغيل."""
 
-    lines = text.splitlines()
-    operations: dict[str, set[str]] = {}
-    in_paths = False
-    base_indent: int | None = None
-    current_path: str | None = None
-    method_indent: int | None = None
+    runtime_operations = _runtime_operations_from_openapi(runtime_schema)
+    contract_paths = set(contract_operations.keys())
+    runtime_paths = set(runtime_operations.keys())
 
-    for line in lines:
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
+    unexpected_paths = runtime_paths - contract_paths
+    unexpected_operations: dict[str, set[str]] = {}
+
+    for path, runtime_methods in runtime_operations.items():
+        if path not in contract_operations:
             continue
+        contract_methods = contract_operations[path]
+        extra = runtime_methods - contract_methods
+        if extra:
+            unexpected_operations[path] = extra
 
-        if not in_paths:
-            if stripped == "paths:":
-                in_paths = True
-                base_indent = len(line) - len(line.lstrip(" "))
-            continue
-
-        if base_indent is None:
-            continue
-
-        indent = len(line) - len(line.lstrip(" "))
-        if indent <= base_indent:
-            break
-
-        if stripped.startswith("/") and stripped.endswith(":"):
-            current_path = stripped[:-1]
-            operations.setdefault(current_path, set())
-            method_indent = indent + 2
-            continue
-
-        if current_path is None or method_indent is None:
-            continue
-
-        if indent == method_indent and stripped.endswith(":"):
-            method = stripped[:-1].lower()
-            if method in {"get", "post", "put", "patch", "delete", "options", "head"}:
-                operations[current_path].add(method)
-
-    return operations
+    return RuntimeContractDriftReport(
+        unexpected_paths=unexpected_paths,
+        unexpected_operations=unexpected_operations,
+    )
