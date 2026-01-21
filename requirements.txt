@@ -4,8 +4,8 @@
 # - requirements-test.txt: Testing tools (includes prod)
 
 # Core Production Dependencies
-fastapi>=0.109.0
-uvicorn>=0.27.0
+fastapi==0.109.2
+uvicorn==0.27.1
 # starlette # Let fastapi manage starlette version
 SQLAlchemy==2.0.25
 sqlmodel==0.0.14
@@ -13,9 +13,9 @@ alembic==1.13.1
 asyncpg==0.29.0
 aiosqlite==0.17.0
 psycopg2-binary==2.9.9
-pydantic>=2.7.4,<3.0.0
-pydantic-settings>=2.3.0,<3.0.0
-pydantic_core>=2.18.4,<3.0.0
+pydantic==2.7.4
+pydantic-settings==2.3.0
+pydantic_core==2.18.4
 PyJWT==2.8.0
 passlib==1.7.4
 bcrypt==3.2.0
@@ -23,13 +23,13 @@ argon2-cffi==23.1.0
 argon2-cffi-bindings==25.1.0
 cryptography>=41.0.0
 Authlib==1.6.6
-httpx>=0.26.0
+httpx==0.27.0
 python-dotenv==1.0.1
 python-multipart==0.0.18
 Jinja2==3.1.6
 typer==0.20.0
 tenacity==8.2.3
-langgraph>=0.2.39
+langgraph==0.2.39
 
 # Supporting Libraries
 click>=8.0.0
