@@ -1,12 +1,7 @@
 """
-User Service.
-Provides isolated user management via strictly typed APIs.
+خدمة المستخدمين.
 
-Standards:
-- API First: Routes defined cleanly.
-- Shared Kernel: Uses Logging, Errors, and Settings from core.
-- Bounded Context: Owns `users` table.
-- Constitution: Rule 11 (API Interfaces), Rule 5 (Own DB), Rule 56 (Polyglot).
+تقدم إدارة مستخدمين مستقلة عبر واجهات API صارمة ومبسطة.
 """
 
 import re
@@ -20,10 +15,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.core.errors import ConflictError, setup_exception_handlers
-
-# Shared Kernel
-from app.core.logging import get_logger, setup_logging
+from microservices.user_service.errors import ConflictError, setup_exception_handlers
+from microservices.user_service.logging import get_logger, setup_logging
 from microservices.user_service.database import get_session, init_db
 
 # Local Domain
@@ -48,6 +41,7 @@ class UserCreateRequest(BaseModel):
     @field_validator("email")
     @classmethod
     def validate_email(cls, value: str) -> str:
+        """التحقق من صحة البريد الإلكتروني وتوحيد تنسيقه."""
         normalized = value.strip()
         if not _EMAIL_PATTERN.fullmatch(normalized):
             raise ValueError("Invalid email format")
@@ -74,14 +68,19 @@ def _build_router(settings: UserServiceSettings) -> APIRouter:
 
     @router.get("/health", response_model=HealthResponse, tags=["System"])
     def health_check() -> HealthResponse:
-        """Health check endpoint for Kubernetes/Docker."""
+        """نقطة فحص الصحة لبيئات التشغيل والحاويات."""
         return build_health_payload(settings)
 
-    @router.post("/users", response_model=UserResponse, tags=["Users"], summary="Create a new user")
+    @router.post(
+        "/users",
+        response_model=UserResponse,
+        tags=["Users"],
+        summary="إنشاء مستخدم جديد",
+    )
     async def create_user(
         payload: UserCreateRequest, session: AsyncSession = Depends(get_session)
     ) -> UserResponse:
-        """Create a new user with strictly validated email."""
+        """إنشاء مستخدم جديد مع تحقق صارم من البريد الإلكتروني."""
         logger.info("Creating user", extra={"email": payload.email})
 
         user = User(name=payload.name, email=payload.email)
@@ -97,18 +96,28 @@ def _build_router(settings: UserServiceSettings) -> APIRouter:
         return UserResponse(user_id=user.id, name=user.name, email=user.email)
 
     @router.get(
-        "/users/count", response_model=UserCountResponse, tags=["Users"], summary="Count users"
+        "/users/count",
+        response_model=UserCountResponse,
+        tags=["Users"],
+        summary="إجمالي عدد المستخدمين",
     )
     async def count_users(session: AsyncSession = Depends(get_session)) -> UserCountResponse:
-        """Get the total number of users."""
+        """حساب إجمالي عدد المستخدمين."""
+        logger.info("Counting users")
         statement = select(func.count(User.id))
         result = await session.execute(statement)
         count = result.scalar_one()
         return UserCountResponse(count=count)
 
-    @router.get("/users", response_model=list[UserResponse], tags=["Users"], summary="List users")
+    @router.get(
+        "/users",
+        response_model=list[UserResponse],
+        tags=["Users"],
+        summary="عرض المستخدمين",
+    )
     async def list_users(session: AsyncSession = Depends(get_session)) -> list[UserResponse]:
-        """List all users."""
+        """سرد جميع المستخدمين."""
+        logger.info("Listing users")
         statement = select(User)
         result = await session.execute(statement)
         users = result.scalars().all()
@@ -124,6 +133,7 @@ def _build_router(settings: UserServiceSettings) -> APIRouter:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """إدارة دورة حياة التطبيق (بدء/إيقاف)."""
     # Startup
     setup_logging(get_settings().SERVICE_NAME)
     logger.info("Service Starting...")
@@ -134,6 +144,7 @@ async def lifespan(app: FastAPI):
 
 
 def create_app(settings: UserServiceSettings | None = None) -> FastAPI:
+    """بناء تطبيق FastAPI لخدمة المستخدمين."""
     effective_settings = settings or get_settings()
 
     app = FastAPI(

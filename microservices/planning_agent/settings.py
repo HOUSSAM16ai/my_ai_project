@@ -5,23 +5,28 @@
 """
 
 import functools
+from typing import Literal
 
 from pydantic import Field
-from pydantic_settings import SettingsConfigDict
-
-from app.core.settings.base import BaseServiceSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class PlanningAgentSettings(BaseServiceSettings):
+class PlanningAgentSettings(BaseSettings):
     """
-    إعدادات وكيل التخطيط.
-
-    ترث من BaseServiceSettings لضمان التوافق مع المعايير الموحدة.
+    إعدادات وكيل التخطيط بصورة مستقلة وبسيطة.
     """
 
-    # Overrides (Defaults)
     SERVICE_NAME: str = Field("planning-agent", description="اسم الوكيل")
     SERVICE_VERSION: str = Field("1.0.0", description="إصدار الوكيل")
+
+    ENVIRONMENT: Literal["development", "staging", "production", "testing"] = Field(
+        "development", description="بيئة التشغيل"
+    )
+    DEBUG: bool = Field(False, description="تفعيل وضع التصحيح")
+    LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
+        "INFO", description="مستوى السجلات"
+    )
+
     DATABASE_URL: str = Field(
         "sqlite+aiosqlite:///./planning_agent.db",
         description="رابط قاعدة البيانات الخاصة بالوكيل",

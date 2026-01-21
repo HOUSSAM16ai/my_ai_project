@@ -14,9 +14,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from microservices.planning_agent.database import get_session, init_db
+from microservices.planning_agent.errors import setup_exception_handlers
 from microservices.planning_agent.health import HealthResponse, build_health_payload
+from microservices.planning_agent.logging import get_logger, setup_logging
 from microservices.planning_agent.models import Plan
 from microservices.planning_agent.settings import PlanningAgentSettings, get_settings
+
+logger = get_logger("planning-agent")
 
 
 class PlanRequest(BaseModel):
@@ -59,18 +63,24 @@ def _build_router(settings: PlanningAgentSettings) -> APIRouter:
 
     router = APIRouter()
 
-    @router.get("/health", response_model=HealthResponse)
+    @router.get("/health", response_model=HealthResponse, tags=["System"])
     def health_check() -> HealthResponse:
         """يفحص جاهزية الوكيل بشكل مستقل."""
 
         return build_health_payload(settings)
 
-    @router.post("/plans", response_model=PlanResponse)
+    @router.post(
+        "/plans",
+        response_model=PlanResponse,
+        tags=["Planning"],
+        summary="إنشاء خطة جديدة",
+    )
     async def create_plan(
         payload: PlanRequest, session: AsyncSession = Depends(get_session)
     ) -> PlanResponse:
         """ينشئ خطة تعليمية جديدة بناءً على الهدف والسياق ويحفظها."""
 
+        logger.info("توليد خطة", extra={"goal": payload.goal, "context": payload.context})
         steps = _generate_plan(payload.goal, payload.context)
 
         plan = Plan(goal=payload.goal, steps=steps)
@@ -80,7 +90,12 @@ def _build_router(settings: PlanningAgentSettings) -> APIRouter:
 
         return PlanResponse(plan_id=plan.id, goal=plan.goal, steps=plan.steps)
 
-    @router.get("/plans", response_model=list[PlanResponse])
+    @router.get(
+        "/plans",
+        response_model=list[PlanResponse],
+        tags=["Planning"],
+        summary="عرض الخطط المحفوظة",
+    )
     async def list_plans(session: AsyncSession = Depends(get_session)) -> list[PlanResponse]:
         """يعرض جميع الخطط المحفوظة."""
 
@@ -95,8 +110,13 @@ def _build_router(settings: PlanningAgentSettings) -> APIRouter:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """يدير دورة حياة وكيل التخطيط."""
+
+    setup_logging(get_settings().SERVICE_NAME)
+    logger.info("بدء تشغيل وكيل التخطيط")
     await init_db()
     yield
+    logger.info("إيقاف وكيل التخطيط")
 
 
 def create_app(settings: PlanningAgentSettings | None = None) -> FastAPI:
@@ -110,6 +130,7 @@ def create_app(settings: PlanningAgentSettings | None = None) -> FastAPI:
         description="وكيل مستقل لتوليد الخطط التعليمية",
         lifespan=lifespan,
     )
+    setup_exception_handlers(app)
     app.include_router(_build_router(effective_settings))
 
     return app

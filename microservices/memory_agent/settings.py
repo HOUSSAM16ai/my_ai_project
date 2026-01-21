@@ -5,23 +5,28 @@
 """
 
 import functools
+from typing import Literal
 
 from pydantic import Field
-from pydantic_settings import SettingsConfigDict
-
-from app.core.settings.base import BaseServiceSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class MemoryAgentSettings(BaseServiceSettings):
+class MemoryAgentSettings(BaseSettings):
     """
-    إعدادات وكيل الذاكرة.
-
-    ترث من BaseServiceSettings لضمان التوافق مع المعايير الموحدة.
+    إعدادات وكيل الذاكرة بصورة مستقلة وبسيطة.
     """
 
-    # Overrides (Defaults)
     SERVICE_NAME: str = Field("memory-agent", description="اسم الوكيل")
     SERVICE_VERSION: str = Field("1.0.0", description="إصدار الوكيل")
+
+    ENVIRONMENT: Literal["development", "staging", "production", "testing"] = Field(
+        "development", description="بيئة التشغيل"
+    )
+    DEBUG: bool = Field(False, description="تفعيل وضع التصحيح")
+    LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
+        "INFO", description="مستوى السجلات"
+    )
+
     DATABASE_URL: str = Field(
         "sqlite+aiosqlite:///./memory_agent.db",
         description="رابط قاعدة البيانات الخاصة بالوكيل",

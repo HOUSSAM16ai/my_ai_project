@@ -1,13 +1,27 @@
+"""
+خدمة المراقبة (Observability Service).
+
+توفر واجهات API مستقلة لتحليل القياسات والتنبؤ بالأحمال.
+"""
+
+from contextlib import asynccontextmanager
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
+from microservices.observability_service.errors import (
+    BadRequestError,
+    NotFoundError,
+    setup_exception_handlers,
+)
 from microservices.observability_service.health import HealthResponse, build_health_payload
+from microservices.observability_service.logging import get_logger, setup_logging
 from microservices.observability_service.models import MetricType, TelemetryData
 from microservices.observability_service.service import get_aiops_service
+from microservices.observability_service.settings import ObservabilitySettings, get_settings
 
-app = FastAPI(title="Observability Service", version="1.0.0")
+logger = get_logger("observability-service")
 
 
 class TelemetryRequest(BaseModel):
@@ -83,72 +97,154 @@ class CapacityPlanResponse(BaseModel):
     plan: CapacityPlanPayload
 
 
-@app.get("/health", response_model=HealthResponse)
-async def health_check() -> HealthResponse:
-    return build_health_payload(service_name="observability-service")
+def _register_routes(app: FastAPI, settings: ObservabilitySettings) -> None:
+    """تسجيل موجهات خدمة المراقبة بالاعتماد على الإعدادات."""
+
+    @app.get("/health", response_model=HealthResponse, tags=["System"])
+    async def health_check() -> HealthResponse:
+        """يفحص جاهزية خدمة المراقبة."""
+
+        return build_health_payload(service_name=settings.SERVICE_NAME)
 
 
-@app.get("/", response_model=RootResponse)
-async def root() -> RootResponse:
-    return RootResponse(message="Observability Service is running")
+    @app.get("/", response_model=RootResponse, tags=["System"])
+    async def root() -> RootResponse:
+        """رسالة الجذر لخدمة المراقبة."""
+
+        return RootResponse(message="Observability Service is running")
 
 
-@app.post("/telemetry", response_model=TelemetryResponse)
-async def collect_telemetry(request: TelemetryRequest) -> TelemetryResponse:
-    service = get_aiops_service()
-    data = TelemetryData(
-        metric_id=request.metric_id,
-        service_name=request.service_name,
-        metric_type=request.metric_type,
-        value=request.value,
-        timestamp=request.timestamp,
-        labels=request.labels,
-        unit=request.unit,
+    @app.post(
+        "/telemetry",
+        response_model=TelemetryResponse,
+        tags=["Telemetry"],
+        summary="استقبال قياس جديد",
     )
-    service.collect_telemetry(data)
-    return TelemetryResponse(status="collected", metric_id=request.metric_id)
+    async def collect_telemetry(request: TelemetryRequest) -> TelemetryResponse:
+        """تجميع قياسات واردة من الخدمات الأخرى."""
+
+        logger.info(
+            "استقبال قياس",
+            extra={"metric_id": request.metric_id, "service_name": request.service_name},
+        )
+        service = get_aiops_service()
+        data = TelemetryData(
+            metric_id=request.metric_id,
+            service_name=request.service_name,
+            metric_type=request.metric_type,
+            value=request.value,
+            timestamp=request.timestamp,
+            labels=request.labels,
+            unit=request.unit,
+        )
+        service.collect_telemetry(data)
+        return TelemetryResponse(status="collected", metric_id=request.metric_id)
 
 
-@app.get("/metrics", response_model=MetricsResponse)
-async def get_metrics() -> MetricsResponse:
-    service = get_aiops_service()
-    return MetricsResponse(metrics=service.get_aiops_metrics())
-
-
-@app.get("/health/{service_name}", response_model=dict[str, object])
-async def get_service_health(service_name: str) -> dict[str, object]:
-    service = get_aiops_service()
-    return service.get_service_health(service_name)
-
-
-@app.post("/forecast", response_model=ForecastResponse)
-async def forecast_load(request: ForecastRequest) -> ForecastResponse:
-    service = get_aiops_service()
-    forecast = service.forecast_load(request.service_name, request.metric_type, request.hours_ahead)
-    if not forecast:
-        raise HTTPException(status_code=404, detail="Insufficient history for forecast")
-
-    return ForecastResponse(
-        forecast_id=forecast.forecast_id,
-        predicted_load=forecast.predicted_load,
-        confidence_interval=forecast.confidence_interval,
+    @app.get(
+        "/metrics",
+        response_model=MetricsResponse,
+        tags=["Telemetry"],
+        summary="عرض مؤشرات الخدمة",
     )
+    async def get_metrics() -> MetricsResponse:
+        """إرجاع مؤشرات المراقبة الإجمالية."""
+
+        service = get_aiops_service()
+        return MetricsResponse(metrics=service.get_aiops_metrics())
 
 
-@app.post("/capacity", response_model=CapacityPlanResponse)
-async def generate_capacity_plan(request: CapacityPlanRequest) -> CapacityPlanResponse:
-    service = get_aiops_service()
-    plan = service.generate_capacity_plan(request.service_name, request.forecast_horizon_hours)
-    if not plan:
-        raise HTTPException(status_code=400, detail="Could not generate capacity plan")
-    serialized = service._serialize_capacity_plan(plan)
-    if serialized is None:
-        raise HTTPException(status_code=400, detail="Could not serialize capacity plan")
-    return CapacityPlanResponse(plan=CapacityPlanPayload(**serialized))
+    @app.get(
+        "/health/{service_name}",
+        response_model=dict[str, object],
+        tags=["Telemetry"],
+        summary="فحص صحة خدمة محددة",
+    )
+    async def get_service_health(service_name: str) -> dict[str, object]:
+        """قياس صحة خدمة محددة."""
+
+        service = get_aiops_service()
+        return service.get_service_health(service_name)
 
 
-@app.get("/anomalies/{anomaly_id}/root_cause", response_model=dict[str, object])
-async def analyze_root_cause(anomaly_id: str) -> dict[str, object]:
-    service = get_aiops_service()
-    causes = service.analyze_root_cause(anomaly_id)
-    return {"anomaly_id": anomaly_id, "root_causes": causes}
+    @app.post(
+        "/forecast",
+        response_model=ForecastResponse,
+        tags=["Forecast"],
+        summary="توليد توقعات الحمل",
+    )
+    async def forecast_load(request: ForecastRequest) -> ForecastResponse:
+        """توليد توقع للحمل المستقبلي."""
+
+        service = get_aiops_service()
+        forecast = service.forecast_load(
+            request.service_name, request.metric_type, request.hours_ahead
+        )
+        if not forecast:
+            raise NotFoundError("لا توجد بيانات كافية للتنبؤ")
+
+        return ForecastResponse(
+            forecast_id=forecast.forecast_id,
+            predicted_load=forecast.predicted_load,
+            confidence_interval=forecast.confidence_interval,
+        )
+
+
+    @app.post(
+        "/capacity",
+        response_model=CapacityPlanResponse,
+        tags=["Forecast"],
+        summary="توليد خطة السعة",
+    )
+    async def generate_capacity_plan(request: CapacityPlanRequest) -> CapacityPlanResponse:
+        """إنشاء خطة سعة بناءً على التوقعات."""
+
+        service = get_aiops_service()
+        plan = service.generate_capacity_plan(request.service_name, request.forecast_horizon_hours)
+        if not plan:
+            raise BadRequestError("تعذر توليد خطة السعة")
+        serialized = service._serialize_capacity_plan(plan)
+        if serialized is None:
+            raise BadRequestError("تعذر تحويل خطة السعة")
+        return CapacityPlanResponse(plan=CapacityPlanPayload(**serialized))
+
+
+    @app.get(
+        "/anomalies/{anomaly_id}/root_cause",
+        response_model=dict[str, object],
+        tags=["Anomalies"],
+        summary="تحليل السبب الجذري للشذوذ",
+    )
+    async def analyze_root_cause(anomaly_id: str) -> dict[str, object]:
+        """تحليل السبب الجذري لشذوذ محدد."""
+
+        service = get_aiops_service()
+        causes = service.analyze_root_cause(anomaly_id)
+        return {"anomaly_id": anomaly_id, "root_causes": causes}
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """إدارة دورة حياة خدمة المراقبة."""
+
+    setup_logging(get_settings().SERVICE_NAME)
+    logger.info("بدء تشغيل خدمة المراقبة")
+    yield
+    logger.info("إيقاف خدمة المراقبة")
+
+
+def create_app(settings: ObservabilitySettings | None = None) -> FastAPI:
+    """إنشاء تطبيق FastAPI لخدمة المراقبة مع إعدادات صريحة."""
+
+    effective_settings = settings or get_settings()
+    app = FastAPI(
+        title="Observability Service",
+        version=effective_settings.SERVICE_VERSION,
+        description="خدمة مستقلة لتحليل القياسات",
+        lifespan=lifespan,
+    )
+    _register_routes(app, effective_settings)
+    setup_exception_handlers(app)
+    return app
+
+
+app = create_app()
