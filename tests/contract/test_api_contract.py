@@ -6,7 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from app.core.openapi_contracts import load_contract_operations, load_contract_paths
+from app.core.openapi_contracts import (
+    detect_runtime_drift,
+    load_contract_operations,
+    load_contract_paths,
+)
 from app.main import create_app
 from app.services.chat.agents.api_contract import APIContractAgent
 
@@ -53,6 +57,22 @@ class TestAPIContracts:
                 missing_operations[path] = sorted(missing)
 
         assert not missing_operations, f"عمليات العقد غير موجودة: {missing_operations}"
+
+    def test_runtime_does_not_expose_undocumented_contracts(self) -> None:
+        """يتحقق من عدم وجود مسارات أو عمليات غير موثقة ضمن العقد."""
+
+        contract_operations = load_contract_operations(CONTRACT_PATH)
+        app = create_app(enable_static_files=False)
+        report = detect_runtime_drift(
+            contract_operations=contract_operations,
+            runtime_schema=app.openapi(),
+        )
+
+        assert report.is_clean(), (
+            "تم العثور على انحرافات بين التشغيل والعقد: "
+            f"paths={sorted(report.unexpected_paths)}, "
+            f"operations={ {path: sorted(methods) for path, methods in report.unexpected_operations.items()} }"
+        )
 
     @pytest.mark.asyncio
     async def test_contract_agent_validation(self) -> None:
