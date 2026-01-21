@@ -14,6 +14,7 @@ from app.core.logging import get_logger
 from app.services.content.service import content_service
 from app.services.search_engine import get_retriever
 from app.services.search_engine.query_refiner import get_refined_query
+from app.services.search_engine.fallback_expander import FallbackQueryExpander
 
 logger = get_logger("content-tools")
 
@@ -44,20 +45,35 @@ async def search_content(
     """بحث متقدم عن المحتوى التعليمي مع فلاتر قابلة للتوسع."""
     try:
         refined_q = q
-        # Use DSPy for query refinement if an API Key is available
         api_key = os.environ.get("OPENROUTER_API_KEY")
+
+        # 1. Try Smart Refinement (DSPy)
         if q and api_key:
             try:
                 logger.info(f"Refining query with DSPy: {q}")
-                # Run sync DSPy call in thread to avoid blocking loop
                 refined_q = await asyncio.to_thread(get_refined_query, q, api_key)
                 logger.info(f"Refined query: {refined_q}")
             except Exception as dspy_error:
-                logger.warning(f"DSPy refinement failed, using original query: {dspy_error}")
+                logger.warning(f"DSPy refinement failed: {dspy_error}")
+
+        # 2. Fallback Refinement (Rule-based) if DSPy skipped or failed (refined_q is still just q)
+        # We generate a list of queries to try sequentially.
+        query_candidates = [refined_q] if refined_q else []
+
+        if q and (refined_q == q):
+            logger.info("Using fallback query expander to generate variations.")
+            query_candidates = FallbackQueryExpander.generate_variations(q)
 
         content_ids: list[str] = []
 
-        if refined_q:
+        # We try to find content using the candidates.
+        # First, check if LlamaIndex works for the first candidate (usually the most specific/refined one)
+        # If LlamaIndex is active, it uses vector search which is robust.
+        # If LlamaIndex is down/skipped, we rely on SQL keyword search loops.
+
+        primary_q = query_candidates[0] if query_candidates else q
+
+        if primary_q:
             db_url = os.environ.get("DATABASE_URL")
             if db_url:
                 try:
@@ -73,29 +89,52 @@ async def search_content(
                 except Exception as e:
                     logger.warning(f"LlamaIndex search failed, falling back to basic search: {e}")
 
-        # Delegate to ContentService
-        # If refined_q is different from q, we should prefer passing refined_q?
-        # Actually, ContentService does keyword search on 'q'.
-        # If we found content_ids via LlamaIndex (semantic search), we pass them.
-        # But if LlamaIndex fails or returns nothing, we still want keyword search.
+        # Delegate to ContentService with Fallback Loop
+        # We iterate through query candidates until we find results or run out.
 
-        # If we have content_ids, they act as a filter in ContentService.
-        # If refined_q is available, we pass it as 'q' for keyword highlighting/filtering within results.
+        results = []
+        for candidate_q in query_candidates:
+            logger.info(f"Searching content with query: '{candidate_q}'")
 
-        search_q = refined_q if refined_q else q
+            # Attempt 1: Hybrid Search (Keywords + Vector IDs)
+            if content_ids:
+                logger.info(f"Applying vector filter with {len(content_ids)} IDs.")
+                results = await content_service.search_content(
+                    q=candidate_q,
+                    level=level,
+                    subject=subject,
+                    branch=branch,
+                    set_name=set_name,
+                    year=year,
+                    type=type,
+                    lang=lang,
+                    content_ids=content_ids,
+                    limit=limit,
+                )
+                if results:
+                    logger.info(f"Found {len(results)} results with query '{candidate_q}' and vector filter.")
+                    return results
+                else:
+                    logger.info("Vector filter yielded 0 results. Retrying without vector IDs.")
 
-        return await content_service.search_content(
-            q=search_q,
-            level=level,
-            subject=subject,
-            branch=branch,
-            set_name=set_name,
-            year=year,
-            type=type,
-            lang=lang,
-            content_ids=content_ids if content_ids else None,
-            limit=limit,
-        )
+            # Attempt 2: Pure Keyword Search (Fallback)
+            results = await content_service.search_content(
+                q=candidate_q,
+                level=level,
+                subject=subject,
+                branch=branch,
+                set_name=set_name,
+                year=year,
+                type=type,
+                lang=lang,
+                content_ids=None,
+                limit=limit,
+            )
+            if results:
+                logger.info(f"Found {len(results)} results with query '{candidate_q}' (Pure Keyword).")
+                return results
+
+        return results
 
     except Exception as e:
         logger.error(f"Search content failed: {e}")

@@ -2,9 +2,12 @@ import difflib
 
 from sqlalchemy import text
 
+from app.core.logging import get_logger
 from app.core.database import async_session_factory as default_session_factory
 from app.services.content.domain import ContentDetail
 from app.services.content.repository import ContentRepository
+
+logger = get_logger("content-service")
 
 class ContentService:
     """طبقة خدمة لإدارة المحتوى مع توحيد المدخلات وبناء الاستعلامات."""
@@ -219,9 +222,13 @@ class ContentService:
         query_str += " ORDER BY i.year DESC NULLS LAST, i.id ASC LIMIT :limit"
         params["limit"] = limit
 
+        logger.info(f"Executing Search SQL: {query_str}")
+        logger.info(f"Search Params: {params}")
+
         async with self.session_factory() as session:
             result = await session.execute(text(query_str), params)
             rows = result.fetchall()
+            logger.info(f"Search returned {len(rows)} rows.")
 
         return [
             {
