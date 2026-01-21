@@ -88,6 +88,26 @@
           }
         }
       }
+    },
+    "/users/count": {
+      "get": {
+        "summary": "Users Count",
+        "description": "يعرض عدد المستخدمين المسجلين.",
+        "operationId": "count_users_users_count_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Count Users Users Count Get"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

@@ -11,6 +11,13 @@ class _TestSettings(BaseServiceSettings):
     SERVICE_NAME: str = "TestService"
 
 
+@pytest.fixture(autouse=True)
+def _clear_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ينظف متغيرات البيئة الحساسة لضمان اختبار موثوق."""
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+
+
 def test_database_url_falls_back_in_development() -> None:
     settings = _TestSettings(ENVIRONMENT="development")
     assert settings.DATABASE_URL == "sqlite+aiosqlite:///./backup_storage.db"

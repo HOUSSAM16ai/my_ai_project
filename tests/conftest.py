@@ -12,8 +12,6 @@ import sys
 import warnings
 from typing import TYPE_CHECKING, TypeVar
 
-os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
-os.environ.setdefault("SECRET_KEY", "test_secret_key_super_secure_must_be_long_enough")
 os.environ.setdefault("ENVIRONMENT", "testing")
 os.environ.setdefault("LLM_MOCK_MODE", "1")
 os.environ.setdefault("LOG_LEVEL", "DEBUG")
@@ -39,6 +37,8 @@ if TYPE_CHECKING:
 _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
 _schema_initialized = False
+engine: AsyncEngine | None
+TestingSessionLocal: async_sessionmaker[AsyncSession] | None
 
 
 def _db_dependencies_available() -> bool:
@@ -86,6 +86,14 @@ def _get_session_factory() -> async_sessionmaker[AsyncSession]:
     return _session_factory
 
 
+if _db_dependencies_available():
+    engine = _get_engine()
+    TestingSessionLocal = _get_session_factory()
+else:
+    engine = None
+    TestingSessionLocal = None
+
+
 async def _ensure_schema() -> None:
     """تهيئة مخطط قاعدة البيانات داخل الذاكرة لاختبارات SQLite."""
     global _schema_initialized
@@ -96,10 +104,12 @@ async def _ensure_schema() -> None:
     from sqlmodel import SQLModel
 
     from app.core.domain import models as _domain_models
+    from app.core.db_schema import validate_and_fix_schema
 
     engine = _get_engine()
     async with engine.begin() as connection:
         await connection.run_sync(SQLModel.metadata.create_all)
+    await validate_and_fix_schema(auto_fix=True)
     _schema_initialized = True
 
 
@@ -182,6 +192,9 @@ def init_db(event_loop: asyncio.AbstractEventLoop) -> None:
     if not _db_dependencies_available():
         return
     _run_async(event_loop, _ensure_schema())
+    from app.core.db_schema import validate_and_fix_schema
+
+    _run_async(event_loop, validate_and_fix_schema(auto_fix=True))
 
 
 @pytest.fixture(autouse=True)
@@ -234,6 +247,10 @@ def test_app(static_dir: Path) -> FastAPI:
     pytest.importorskip("fastapi")
     pytest.importorskip("sqlalchemy")
     pytest.importorskip("sqlmodel")
+    os.environ.setdefault(
+        "SECRET_KEY",
+        "test-secret-key-that-is-very-long-and-secure-enough-for-tests-v4",
+    )
     session_factory = _get_session_factory()
     from app.api.routers.admin import get_session_factory as get_admin_session_factory
     from app.api.routers.customer_chat import get_session_factory

@@ -273,7 +273,7 @@ lifecycle_info "Step 5/5: Health check and readiness verification..."
 
 # CODESPACES: Longer timeout for slower cloud environment
 if [ -n "${CODESPACES:-}" ]; then
-    PORT_TIMEOUT=300
+    PORT_TIMEOUT=90
     HEALTH_TIMEOUT=120
     lifecycle_info "Using extended timeouts for Codespaces (port: ${PORT_TIMEOUT}s, health: ${HEALTH_TIMEOUT}s)"
 else

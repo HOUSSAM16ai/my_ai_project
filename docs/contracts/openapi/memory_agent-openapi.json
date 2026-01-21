@@ -112,6 +112,28 @@
           }
         }
       }
+      ,
+      "post": {
+        "summary": "Search Memories (POST)",
+        "description": "يبحث عن عناصر ذاكرة مع دعم حمولة موسعة.",
+        "operationId": "search_memories_memories_search_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemoryResponse"
+                  },
+                  "title": "Response Search Memories Memories Search Post"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

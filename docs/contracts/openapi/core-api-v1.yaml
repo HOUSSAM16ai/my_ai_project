@@ -1524,3 +1524,107 @@ paths:
       responses:
         '200':
           description: QA response
+
+  /api/missions:
+    get:
+      tags:
+        - Agents
+      summary: List Missions
+      operationId: listMissions
+      responses:
+        '200':
+          description: Missions list
+
+  /api/missions/{mission_id}:
+    get:
+      tags:
+        - Agents
+      summary: Mission Details
+      operationId: getMissionDetails
+      parameters:
+        - name: mission_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Mission details
+
+  /api/v1/agents/langgraph/run:
+    post:
+      tags:
+        - Agents
+      summary: Run LangGraph
+      operationId: runLangGraph
+      responses:
+        '201':
+          description: LangGraph run created
+
+  /system/asyncapi.json:
+    get:
+      tags:
+        - Observability
+      summary: AsyncAPI Schema
+      operationId: asyncapiSchema
+      responses:
+        '200':
+          description: AsyncAPI JSON schema
+
+  /v1/content/search:
+    get:
+      tags:
+        - CRUD
+      summary: Search Content
+      operationId: contentSearch
+      responses:
+        '200':
+          description: Content search results
+
+  /v1/content/{id}:
+    get:
+      tags:
+        - CRUD
+      summary: Get Content
+      operationId: getContent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Content details
+
+  /v1/content/{id}/raw:
+    get:
+      tags:
+        - CRUD
+      summary: Get Content Raw
+      operationId: getContentRaw
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Raw content
+
+  /v1/content/{id}/solution:
+    get:
+      tags:
+        - CRUD
+      summary: Get Content Solution
+      operationId: getContentSolution
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Content solution

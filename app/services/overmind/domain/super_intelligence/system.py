@@ -5,6 +5,7 @@
 """
 
 from datetime import datetime
+import inspect
 
 from app.core.di import get_logger
 from app.services.overmind.agents import AgentCouncil
@@ -151,7 +152,10 @@ class SuperCollectiveIntelligence:
         if not callable(consult):
             raise ValueError(f"Agent '{agent_name}' does not implement consult()")
 
-        return await consult(situation, analysis)
+        result = consult(situation, analysis)
+        if inspect.isawaitable(result):
+            return await result
+        return result
 
     def _record_consultations(
         self,

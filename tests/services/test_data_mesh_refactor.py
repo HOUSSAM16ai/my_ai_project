@@ -1,5 +1,5 @@
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 from app.main import app
 
@@ -10,7 +10,10 @@ async def test_data_mesh_refactor_verification():
     Verifies that the Data Mesh endpoints have been successfully moved to their own router
     and that the legacy Intelligent Platform endpoints are updated/removed.
     """
-    async with AsyncClient(transport=None, app=app, base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
         # 1. Verify New Data Mesh Contract Endpoint (POST /api/v1/data-mesh/contracts)
         # Note: The Blueprint maps it to /api/v1/data-mesh
 

@@ -12,7 +12,7 @@
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 from app.core.event_bus_impl import Event, EventBus
 from microservices.memory_agent.main import create_app as create_memory_app
@@ -51,13 +51,18 @@ def orchestrator_app() -> FastAPI:
     return create_orchestrator_app()
 
 
+def _build_client(app: FastAPI) -> AsyncClient:
+    """يبني عميل HTTP مربوطاً بتطبيق ASGI للاختبارات."""
+    return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+
+
 class TestMicroservicesHealth:
     """اختبارات صحة الخدمات المصغرة."""
 
     @pytest.mark.asyncio
     async def test_planning_agent_health(self, planning_app: FastAPI) -> None:
         """يختبر صحة Planning Agent."""
-        async with AsyncClient(app=planning_app, base_url="http://test") as client:
+        async with _build_client(planning_app) as client:
             response = await client.get("/health")
             assert response.status_code == 200
             data = response.json()
@@ -67,7 +72,7 @@ class TestMicroservicesHealth:
     @pytest.mark.asyncio
     async def test_memory_agent_health(self, memory_app: FastAPI) -> None:
         """يختبر صحة Memory Agent."""
-        async with AsyncClient(app=memory_app, base_url="http://test") as client:
+        async with _build_client(memory_app) as client:
             response = await client.get("/health")
             assert response.status_code == 200
             data = response.json()
@@ -77,7 +82,7 @@ class TestMicroservicesHealth:
     @pytest.mark.asyncio
     async def test_user_service_health(self, user_app: FastAPI) -> None:
         """يختبر صحة User Service."""
-        async with AsyncClient(app=user_app, base_url="http://test") as client:
+        async with _build_client(user_app) as client:
             response = await client.get("/health")
             assert response.status_code == 200
             data = response.json()
@@ -87,7 +92,7 @@ class TestMicroservicesHealth:
     @pytest.mark.asyncio
     async def test_orchestrator_health(self, orchestrator_app: FastAPI) -> None:
         """يختبر صحة Orchestrator Service."""
-        async with AsyncClient(app=orchestrator_app, base_url="http://test") as client:
+        async with _build_client(orchestrator_app) as client:
             response = await client.get("/health")
             assert response.status_code == 200
             data = response.json()
@@ -101,7 +106,7 @@ class TestPlanningAgentAPI:
     @pytest.mark.asyncio
     async def test_create_plan(self, planning_app: FastAPI) -> None:
         """يختبر إنشاء خطة."""
-        async with AsyncClient(app=planning_app, base_url="http://test") as client:
+        async with _build_client(planning_app) as client:
             response = await client.post(
                 "/plans",
                 json={
@@ -118,7 +123,7 @@ class TestPlanningAgentAPI:
     @pytest.mark.asyncio
     async def test_list_plans(self, planning_app: FastAPI) -> None:
         """يختبر عرض الخطط."""
-        async with AsyncClient(app=planning_app, base_url="http://test") as client:
+        async with _build_client(planning_app) as client:
             # إنشاء خطة أولاً
             await client.post(
                 "/plans",
@@ -139,7 +144,7 @@ class TestMemoryAgentAPI:
     @pytest.mark.asyncio
     async def test_create_memory(self, memory_app: FastAPI) -> None:
         """يختبر إنشاء ذاكرة."""
-        async with AsyncClient(app=memory_app, base_url="http://test") as client:
+        async with _build_client(memory_app) as client:
             response = await client.post(
                 "/memories",
                 json={
@@ -156,7 +161,7 @@ class TestMemoryAgentAPI:
     @pytest.mark.asyncio
     async def test_search_memories(self, memory_app: FastAPI) -> None:
         """يختبر البحث في الذاكرة."""
-        async with AsyncClient(app=memory_app, base_url="http://test") as client:
+        async with _build_client(memory_app) as client:
             # إنشاء ذاكرة أولاً
             await client.post(
                 "/memories",
@@ -180,7 +185,7 @@ class TestUserServiceAPI:
     @pytest.mark.asyncio
     async def test_create_user(self, user_app: FastAPI) -> None:
         """يختبر إنشاء مستخدم."""
-        async with AsyncClient(app=user_app, base_url="http://test") as client:
+        async with _build_client(user_app) as client:
             response = await client.post(
                 "/users",
                 json={
@@ -197,7 +202,7 @@ class TestUserServiceAPI:
     @pytest.mark.asyncio
     async def test_list_users(self, user_app: FastAPI) -> None:
         """يختبر عرض المستخدمين."""
-        async with AsyncClient(app=user_app, base_url="http://test") as client:
+        async with _build_client(user_app) as client:
             # إنشاء مستخدم أولاً
             await client.post(
                 "/users",
@@ -221,7 +226,7 @@ class TestOrchestratorAPI:
     @pytest.mark.asyncio
     async def test_list_agents(self, orchestrator_app: FastAPI) -> None:
         """يختبر عرض الوكلاء المسجلين."""
-        async with AsyncClient(app=orchestrator_app, base_url="http://test") as client:
+        async with _build_client(orchestrator_app) as client:
             response = await client.get("/orchestrator/agents")
             assert response.status_code == 200
             data = response.json()
@@ -231,8 +236,11 @@ class TestOrchestratorAPI:
     @pytest.mark.asyncio
     async def test_create_task(self, orchestrator_app: FastAPI) -> None:
         """يختبر إنشاء مهمة."""
-        async with AsyncClient(app=orchestrator_app, base_url="http://test") as client:
-            response = await client.post("/orchestrator/tasks?description=Test Task")
+        async with _build_client(orchestrator_app) as client:
+            response = await client.post(
+                "/orchestrator/tasks",
+                json={"description": "Test Task"},
+            )
             assert response.status_code == 200
             data = response.json()
             assert "id" in data
@@ -306,7 +314,7 @@ class TestEndToEndScenarios:
         3. حفظ التقدم في الذاكرة
         """
         # 1. إنشاء مستخدم
-        async with AsyncClient(app=user_app, base_url="http://test") as client:
+        async with _build_client(user_app) as client:
             user_response = await client.post(
                 "/users",
                 json={
@@ -319,7 +327,7 @@ class TestEndToEndScenarios:
             user_id = user_data["user_id"]
 
         # 2. إنشاء خطة تعليمية
-        async with AsyncClient(app=planning_app, base_url="http://test") as client:
+        async with _build_client(planning_app) as client:
             plan_response = await client.post(
                 "/plans",
                 json={
@@ -332,7 +340,7 @@ class TestEndToEndScenarios:
             plan_id = plan_data["plan_id"]
 
         # 3. حفظ التقدم في الذاكرة
-        async with AsyncClient(app=memory_app, base_url="http://test") as client:
+        async with _build_client(memory_app) as client:
             memory_response = await client.post(
                 "/memories",
                 json={
