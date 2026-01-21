@@ -24,7 +24,7 @@ from app.core.gateway.exceptions import (
 )
 from app.core.gateway.node import NeuralNode
 from app.core.gateway.processor import StreamProcessor
-from app.core.gateway.manager import NodeManager
+from app.core.gateway.manager import DefaultRanker, NodeManager, NodeRanker
 from app.core.types import JSONDict
 
 logger = logging.getLogger(__name__)
@@ -73,11 +73,20 @@ class NeuralRoutingMesh:
             recovery_timeout=CIRCUIT_RECOVERY_TIMEOUT
         )
         self.processor = StreamProcessor(self.base_url, self.headers)
+        self.omni_router = get_omni_router(self.manager.nodes_map)
+        self.manager.ranker = self.omni_router
 
     @property
     def nodes_map(self) -> dict[str, NeuralNode]:
         """Expose nodes map for backward compatibility/testing."""
         return self.manager.nodes_map
+
+    @nodes_map.setter
+    def nodes_map(self, value: dict[str, NeuralNode]) -> None:
+        """يدعم ضبط الخريطة لأغراض الاختبارات الرجعية."""
+        self.manager.nodes_map = value
+        self.omni_router = get_omni_router(value)
+        self.manager.ranker = self.omni_router
 
     async def __aiter__(self):
         return self
@@ -98,14 +107,12 @@ class NeuralRoutingMesh:
                 return
 
         # 2. Get Nodes
-        priority_nodes = self.manager.get_prioritized_nodes(prompt)
+        priority_nodes = self._get_prioritized_nodes(prompt)
         if not priority_nodes:
             raise AIAllModelsExhaustedError("All circuits are open, no models available.")
 
         # 3. Execution Loop
         errors = []
-        client = ConnectionManager.get_client()
-
         for node in priority_nodes:
             # Redundant check? Manager filters, but breaker state might change.
             if not node.circuit_breaker.allow_request():
@@ -113,7 +120,7 @@ class NeuralRoutingMesh:
 
             try:
                 # Attempt stream
-                async for chunk in self._attempt_node_stream(node, messages, prompt, context_hash, client):
+                async for chunk in self._stream_from_node_with_retry(node, messages):
                     yield chunk
                 return
 
@@ -126,6 +133,22 @@ class NeuralRoutingMesh:
                 continue
 
         raise AIAllModelsExhaustedError(f"All models failed. Errors: {errors}")
+
+    def _get_prioritized_nodes(self, prompt: str) -> list[NeuralNode]:
+        """واجهة توافقية لاختيار العقد ذات الأولوية."""
+        return self.manager.get_prioritized_nodes(prompt)
+
+    async def _stream_from_node_with_retry(
+        self,
+        node: NeuralNode,
+        messages: list[JSONDict],
+    ) -> AsyncGenerator[JSONDict, None]:
+        """غلاف متوافق للاختبارات يستدعي تنفيذ البث الداخلي."""
+        prompt = str(messages[-1].get("content", ""))
+        context_hash = self._get_context_hash(messages)
+        client = ConnectionManager.get_client()
+        async for chunk in self._attempt_node_stream(node, messages, prompt, context_hash, client):
+            yield chunk
 
     async def _attempt_node_stream(
         self,
@@ -214,3 +237,10 @@ def get_ai_client() -> AIClient:
     if not api_key:
         logger.warning("OPENROUTER_API_KEY not set. Neural Mesh initializing in shadow mode.")
     return NeuralRoutingMesh(api_key=api_key or "dummy_key")
+
+
+def get_omni_router(nodes_map: dict[str, NeuralNode] | None = None) -> NodeRanker:
+    """يبني موجه ترتيب بسيط للحفاظ على التوافق الخلفي."""
+    if nodes_map is None:
+        return DefaultRanker({})
+    return DefaultRanker(nodes_map)

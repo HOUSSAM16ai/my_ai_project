@@ -73,7 +73,21 @@ class DecisionSynthesizer:
         """
         if not consultations:
             return 0.0
-        return sum(c["confidence"] for c in consultations.values()) / len(consultations)
+        confidences: list[float] = []
+        for consultation in consultations.values():
+            value: object | None = None
+            if isinstance(consultation, dict):
+                value = consultation.get("confidence")
+            else:
+                value = getattr(consultation, "confidence", None)
+
+            if isinstance(value, (int, float)):
+                confidences.append(float(value))
+
+        if not confidences:
+            return 0.0
+
+        return sum(confidences) / len(confidences)
 
     @staticmethod
     def _determine_priority(analysis: dict[str, object]) -> DecisionPriority:

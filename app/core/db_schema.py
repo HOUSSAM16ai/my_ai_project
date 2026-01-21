@@ -528,8 +528,8 @@ def _to_sqlite_ddl(sql: str) -> str:
     # SQLite has no TIMESTAMPTZ. TIMESTAMP is a safe generic type.
     sql = re.sub(r"TIMESTAMPTZ", "TIMESTAMP", sql, flags=re.IGNORECASE)
 
-    # Replace JSON with TEXT
-    sql = re.sub(r"JSON", "TEXT", sql, flags=re.IGNORECASE)
+    # Replace JSON type with TEXT without touching column names
+    sql = re.sub(r"\bJSON\b", "TEXT", sql, flags=re.IGNORECASE)
 
     # Replace BOOLEAN with INTEGER (or keep BOOLEAN as SQLite accepts it, but 0/1 is safer for defaults)
     # Handling Defaults: DEFAULT TRUE -> DEFAULT 1

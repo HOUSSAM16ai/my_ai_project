@@ -42,7 +42,7 @@ def test_contract_alignment_for_services(
 ) -> None:
     """يتحقق من تطابق مخطط التشغيل مع عقد OpenAPI لكل خدمة."""
 
-    app = app_source() if callable(app_source) else app_source
+    app = _resolve_app(app_source)
     contract_path = _contract_path(contract_file)
     contract_operations = compare_contract_to_runtime(
         contract_operations=_load_contract_operations(contract_path),
@@ -63,7 +63,7 @@ def test_no_undocumented_paths_or_operations(
 ) -> None:
     """يتحقق من عدم وجود مسارات أو عمليات غير موثقة في التشغيل."""
 
-    app = app_source() if callable(app_source) else app_source
+    app = _resolve_app(app_source)
     contract_path = _contract_path(contract_file)
     contract_operations = _load_contract_operations(contract_path)
     drift_report = detect_runtime_drift(
@@ -85,3 +85,10 @@ def _load_contract_operations(contract_path: Path) -> dict[str, set[str]]:
     operations = load_contract_operations(contract_path)
     assert operations, f"عقد OpenAPI فارغ أو غير قابل للتحميل: {contract_path}"
     return operations
+
+
+def _resolve_app(app_source: Callable[[], FastAPI] | FastAPI) -> FastAPI:
+    """يعيد تطبيق FastAPI حتى لو كان الكائن قابلاً للاستدعاء."""
+    if isinstance(app_source, FastAPI):
+        return app_source
+    return app_source()

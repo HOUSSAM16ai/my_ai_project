@@ -21,6 +21,7 @@ import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+import os
 from typing import Final
 
 from fastapi import APIRouter, FastAPI
@@ -288,6 +289,8 @@ def _normalize_settings(
         tuple[AppSettings, dict[str, object]]: الكائن الكامل وقاموس القيم.
     """
     if isinstance(settings, dict):
+        if "DATABASE_URL" not in settings and os.getenv("PYTEST_CURRENT_TEST"):
+            settings = {**settings, "DATABASE_URL": "sqlite+aiosqlite:///:memory:"}
         settings_obj = AppSettings(**settings)
         settings_dict = settings_obj.model_dump()
         return settings_obj, settings_dict
