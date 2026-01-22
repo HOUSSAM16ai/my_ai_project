@@ -61,6 +61,25 @@ The `app/kernel.py` and `app/core` must act as the **Evaluator** of the system.
 
 ---
 
+## 📚 Active Knowledge & Skills (The Library)
+To empower agents with specialized expertise, the system includes a library of **verified skill modules**. All agents **must consult** these resources when performing relevant tasks.
+
+### 📍 Location: `docs/ai_skills/`
+
+| Skill ID | Domain | Usage |
+|----------|--------|-------|
+| `vercel-react-best-practices.md` | **Frontend (Next.js/React)** | Critical for `frontend/` changes. Covers waterfalls, bundle size, and re-renders. |
+| `web-design-guidelines.md` | **UI/UX Design** | Use for styling, layout, and component design decisions. |
+| `fastapi-templates.md` | **Backend (FastAPI)** | Scaffolding and patterns for `app/api/`. |
+| `python-performance-optimization.md` | **Python Core** | Optimization techniques for `app/core/` and heavy logic. |
+| `database-schema-designer.md` | **Database** | Guidelines for creating robust SQLModel/SQLAlchemy schemas. |
+| `crafting-effective-readmes.md` | **Documentation** | Standards for `README.md` and project documentation. |
+
+**Directive for Agents:**
+Before generating code for a specific domain, **read the corresponding skill file first** to load the "Best Practices" into your context.
+
+---
+
 ## 📜 Advanced Software Design Principles (The "Code of Conduct")
 See [PRINCIPLES.md](docs/architecture/PRINCIPLES.md) for the detailed Arabic breakdown of SOLID, Architecture, and Quality standards. All agents must strive to adhere to these principles.
 
