@@ -84,12 +84,33 @@ class FallbackQueryExpander:
         "رياضيات": "رياضيات",
     }
 
+    # Common Student Typos -> Correct Term
+    COMMON_TYPOS = {
+        "تجربة": "تجريبية", # علوم تجربة -> علوم تجريبية
+        "تجربيه": "تجريبية",
+        "تجربية": "تجريبية",
+        "تقني": "تقني",
+        "رياصي": "رياضي",
+        "رياظي": "رياضي",
+        "فلسفه": "فلسفة",
+        "اداب": "آداب",
+        "لغات": "لغات",
+        "اجنبية": "أجنبية",
+        "اجنبيه": "أجنبية",
+        "الاول": "الأول",
+        "الثاني": "الثاني",
+        "الثانى": "الثاني",
+        "الثالث": "الثالث",
+        "الرابع": "الرابع",
+    }
+
     @classmethod
     def generate_variations(cls, q: str | None) -> list[str]:
         """
         Generates a list of query variations.
         1. Original Query
         2. Translated/Normalized Query
+        3. Typo Corrected Query
         """
         if not q:
             return []
@@ -108,7 +129,6 @@ class FallbackQueryExpander:
                 translated_words.append(cls.TERM_MAPPING[word])
                 has_translation = True
             elif word.isdigit():
-                 # Skip numbers in variations to loosen search
                  pass
             else:
                 translated_words.append(word)
@@ -119,21 +139,21 @@ class FallbackQueryExpander:
                 variations.append(translated_q)
                 logger.info(f"Generated search variation (Translation): '{translated_q}'")
 
-        # Strategy 2: Arabic Normalization (Plural -> Singular)
-        # We apply this to the Original query OR the Translated query
-        # Let's apply it to the last added variation (which is the most 'Arabic' one so far)
-
+        # Strategy 2: Arabic Stemming & Typos
+        # We apply this to the last added variation
         base_for_stemming = variations[-1]
         stemmed_words = []
         has_stemming = False
 
         for word in base_for_stemming.split():
-            # Check exact match in stem map
-            if word in cls.ARABIC_STEMS:
+            # Check Typo Map first
+            if word in cls.COMMON_TYPOS:
+                stemmed_words.append(cls.COMMON_TYPOS[word])
+                has_stemming = True
+            # Then Stem Map
+            elif word in cls.ARABIC_STEMS:
                 stemmed_words.append(cls.ARABIC_STEMS[word])
                 has_stemming = True
-            # Also check if word ends with common plural markers if not in map?
-            # (Maybe too risky for simple rules, stick to map for now)
             else:
                 stemmed_words.append(word)
 
@@ -141,6 +161,6 @@ class FallbackQueryExpander:
             stemmed_q = " ".join(stemmed_words).strip()
             if stemmed_q and stemmed_q not in variations:
                 variations.append(stemmed_q)
-                logger.info(f"Generated search variation (Stemming): '{stemmed_q}'")
+                logger.info(f"Generated search variation (Stemming/Typos): '{stemmed_q}'")
 
         return variations
