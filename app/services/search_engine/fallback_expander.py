@@ -1,3 +1,4 @@
+import re
 from app.core.logging import get_logger
 
 logger = get_logger("fallback-expander")
@@ -67,21 +68,41 @@ class FallbackQueryExpander:
         "baccalaureate": "بكالوريا",
     }
 
-    # Simple Arabic Stemming/Normalization Map (Plural -> Singular)
+    # Arabic Stemming/Normalization Map (Plural/Definite -> Singular Indefinite)
+    # Target (Value) should be the simplest form that will match via LIKE %term%
     ARABIC_STEMS = {
+        # Probability
+        "الاحتمالات": "احتمال",
         "احتمالات": "احتمال",
+        "الإحتمالات": "احتمال",
+        "إحتمالات": "احتمال",
+
+        # Analysis
+        "الدوال": "دالة",
         "دوال": "دالة",
+        "المتتاليات": "متتالية",
         "متتاليات": "متتالية",
+        "النهايات": "نهاية",
         "نهايات": "نهاية",
+        "الاشتقاقية": "مشتقة",
         "اشتقاقية": "مشتقة",
+        "التكاملات": "تكامل",
         "تكاملات": "تكامل",
+        "الأعداد": "عدد",
         "أعداد": "عدد",
+        "اعداد": "عدد",
+
+        # General
+        "الحلول": "حل",
         "حلول": "حل",
+        "التمارين": "تمرين",
         "تمارين": "تمرين",
+        "المواضيع": "موضوع",
         "مواضيع": "موضوع",
+        "الشعب": "شعبة",
         "شعب": "شعبة",
-        "علوم": "علوم", # Keep as is usually
-        "رياضيات": "رياضيات",
+        "العلوم": "علوم",
+        "الرياضيات": "رياضيات",
     }
 
     # Common Student Typos -> Correct Term
@@ -104,6 +125,23 @@ class FallbackQueryExpander:
         "الرابع": "الرابع",
     }
 
+    # Stop words that cause strict keyword search to fail
+    # These are words likely to appear in a user query but NOT in the exercise title/text
+    STOP_WORDS = {
+        "في", "على", "من", "إلى", "عن",
+        "لسنة", "سنة", "عام",
+        "شعبة", "الشعبة", # Metadata
+        "مادة", "المادة",
+        "و", "أو",
+        "مع",
+        "هل", "كيف", "ما", "ماذا",
+        "اريد", "أريد", "ابحث", "أبحث",
+        "بكالوريا", "البكالوريا", "bac", # Context
+        "موضوع", "الموضوع", # Often ambiguous if not precise
+        # Branch Names (Often metadata only)
+        "علوم", "تجريبية", "رياضيات", "رياضي", "تقني", "تسيير", "اقتصاد", "لغات", "أجنبية", "آداب", "فلسفة",
+    }
+
     @classmethod
     def generate_variations(cls, q: str | None) -> list[str]:
         """
@@ -111,6 +149,8 @@ class FallbackQueryExpander:
         1. Original Query
         2. Translated/Normalized Query
         3. Typo Corrected Query
+        4. Stemmed Query (Aggressive)
+        5. Keywords Only Query (Stop Words & Metadata Removed)
         """
         if not q:
             return []
@@ -137,30 +177,77 @@ class FallbackQueryExpander:
             translated_q = " ".join(translated_words).strip()
             if translated_q and translated_q != q_lower:
                 variations.append(translated_q)
-                logger.info(f"Generated search variation (Translation): '{translated_q}'")
 
-        # Strategy 2: Arabic Stemming & Typos
-        # We apply this to the last added variation
-        base_for_stemming = variations[-1]
+        # Strategy 2: Typo Correction
+        base_for_typo = variations[-1]
+        typo_words = []
+        has_typo = False
+        for word in base_for_typo.split():
+            if word in cls.COMMON_TYPOS:
+                typo_words.append(cls.COMMON_TYPOS[word])
+                has_typo = True
+            else:
+                typo_words.append(word)
+
+        if has_typo:
+            typo_q = " ".join(typo_words).strip()
+            if typo_q not in variations:
+                variations.append(typo_q)
+
+        # Strategy 3: Aggressive Stemming (on top of Typo Fix)
+        base_for_stem = variations[-1]
         stemmed_words = []
         has_stemming = False
 
-        for word in base_for_stemming.split():
-            # Check Typo Map first
-            if word in cls.COMMON_TYPOS:
-                stemmed_words.append(cls.COMMON_TYPOS[word])
-                has_stemming = True
-            # Then Stem Map
-            elif word in cls.ARABIC_STEMS:
+        for word in base_for_stem.split():
+            # Check direct map
+            if word in cls.ARABIC_STEMS:
                 stemmed_words.append(cls.ARABIC_STEMS[word])
                 has_stemming = True
+            # Check with AL removed if length > 4
+            elif word.startswith("ال") and len(word) > 4:
+                stripped = word[2:]
+                if stripped in cls.ARABIC_STEMS:
+                    stemmed_words.append(cls.ARABIC_STEMS[stripped])
+                    has_stemming = True
+                else:
+                    stemmed_words.append(word)
             else:
                 stemmed_words.append(word)
 
         if has_stemming:
             stemmed_q = " ".join(stemmed_words).strip()
-            if stemmed_q and stemmed_q not in variations:
+            if stemmed_q not in variations:
                 variations.append(stemmed_q)
-                logger.info(f"Generated search variation (Stemming/Typos): '{stemmed_q}'")
+
+        # Strategy 4: Stop Word & Metadata Removal (Soft Keyword Search)
+        # We apply this to the BEST variation so far (Stemmed > Typo > Translated)
+        base_for_stop = variations[-1]
+        clean_words = []
+        has_stop_word = False
+
+        for word in base_for_stop.split():
+            # 1. Check Year (4 digits) -> Stop Word (Metadata)
+            if word.isdigit() and len(word) == 4 and (word.startswith("20") or word.startswith("19")):
+                has_stop_word = True
+                continue
+
+            # 2. Check Stop Words (Exact)
+            if word in cls.STOP_WORDS:
+                has_stop_word = True
+                continue
+
+            # 3. Check with AL stripped (Stop Words)
+            word_no_al = word[2:] if word.startswith("ال") and len(word) > 3 else word
+            if word_no_al in cls.STOP_WORDS:
+                has_stop_word = True
+                continue
+
+            clean_words.append(word)
+
+        if has_stop_word and clean_words:
+            clean_q = " ".join(clean_words).strip()
+            if clean_q and clean_q not in variations:
+                variations.append(clean_q)
 
         return variations
