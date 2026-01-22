@@ -2,16 +2,19 @@ import difflib
 
 from sqlalchemy import text
 
+from app.core.logging import get_logger
 from app.core.database import async_session_factory as default_session_factory
 from app.services.content.domain import ContentDetail
 from app.services.content.repository import ContentRepository
 
+logger = get_logger("content-service")
+
 class ContentService:
     """طبقة خدمة لإدارة المحتوى مع توحيد المدخلات وبناء الاستعلامات."""
 
-    # Dictionary of Canonical Arabic Label -> List of Variations
+    # Dictionary of Canonical English Slug -> List of Variations (Arabic & English)
     BRANCH_MAP: dict[str, list[str]] = {
-        "علوم تجريبية": [
+        "experimental_sciences": [
             "experimental_sciences",
             "experimental sciences",
             "experimental",
@@ -23,7 +26,7 @@ class ContentService:
             "scien",
             "exp",
         ],
-        "تقني رياضي": [
+        "math_tech": [
             "math_tech",
             "math tech",
             "technical math",
@@ -33,7 +36,7 @@ class ContentService:
             "tm",
             "mt",
         ],
-        "رياضيات": [
+        "mathematics": [
             "mathematics",
             "mathematics_branch",
             "math branch",
@@ -42,7 +45,7 @@ class ContentService:
             "m",
             "رياضي",
         ],
-        "لغات أجنبية": [
+        "foreign_languages": [
             "foreign_languages",
             "languages",
             "لغات أجنبية",
@@ -50,7 +53,7 @@ class ContentService:
             "lang",
             "fl",
         ],
-        "آداب وفلسفة": [
+        "literature_philosophy": [
             "literature_philosophy",
             "literature",
             "آداب وفلسفة",
@@ -149,6 +152,7 @@ class ContentService:
         year: int | None = None,
         type: str | None = None,
         lang: str | None = None,
+        content_ids: list[str] | None = None,
         limit: int = 10,
     ) -> list[dict[str, object]]:
         """يبني استعلام بحث هجين مع فلاتر وصفية متوافقة مع الاختبارات."""
@@ -177,6 +181,15 @@ class ContentService:
                 params[body_key] = like_value
             if term_clauses:
                 query_str += " AND " + " AND ".join(term_clauses)
+
+        if content_ids:
+            # If we have explicit IDs from vector search, filter by them
+            placeholders: list[str] = []
+            for index, content_id in enumerate(content_ids):
+                key = f"cid_{index}"
+                placeholders.append(f":{key}")
+                params[key] = content_id
+            query_str += f" AND i.id IN ({', '.join(placeholders)})"
 
         if level:
             query_str += " AND i.level = :level"
@@ -209,9 +222,13 @@ class ContentService:
         query_str += " ORDER BY i.year DESC NULLS LAST, i.id ASC LIMIT :limit"
         params["limit"] = limit
 
+        logger.info(f"Executing Search SQL: {query_str}")
+        logger.info(f"Search Params: {params}")
+
         async with self.session_factory() as session:
             result = await session.execute(text(query_str), params)
             rows = result.fetchall()
+            logger.info(f"Search returned {len(rows)} rows.")
 
         return [
             {
