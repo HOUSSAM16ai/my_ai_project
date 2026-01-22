@@ -111,11 +111,14 @@ async def search_content(
         for candidate_q in query_candidates:
             logger.info(f"Searching content with query: '{candidate_q}'")
 
-            # Attempt 1: Hybrid Search (Keywords + Vector IDs)
+            # Attempt 1: Semantic Search (Vector IDs only)
+            # If we have vector matches, we trust the semantic relevance over exact keyword matching.
+            # We pass q=None so ContentService doesn't apply a strict 'LIKE' text filter,
+            # allowing us to retrieve items that match meaning but not necessarily phrasing.
             if content_ids:
                 logger.info(f"Applying vector filter with {len(content_ids)} IDs.")
                 batch_results = await content_service.search_content(
-                    q=candidate_q,
+                    q=None,
                     level=level,
                     subject=subject,
                     branch=branch,
@@ -127,10 +130,13 @@ async def search_content(
                     limit=limit,
                 )
                 if batch_results:
-                    logger.info(f"Found {len(batch_results)} results with query '{candidate_q}' and vector filter.")
+                    logger.info(f"Found {len(batch_results)} results via Semantic Search (Vector IDs).")
                     return batch_results
                 else:
-                    logger.info("Vector filter yielded 0 results. Retrying without vector IDs.")
+                    logger.info("Vector results filtered out by metadata. Falling back to Keyword Search.")
+                    # If vector results didn't match the metadata (e.g. wrong year),
+                    # we shouldn't retry them with other candidates.
+                    content_ids = []
 
             # Attempt 2: Pure Keyword Search (Fallback)
             # This is where 'علوم تجربة' -> 'علوم تجريبية' expansion shines.
