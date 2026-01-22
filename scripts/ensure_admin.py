@@ -13,7 +13,7 @@ load_dotenv()
 from sqlalchemy import select
 
 from app.core.database import async_session_factory
-from app.models import User, pwd_context
+from app.core.domain.models import User, pwd_context
 
 
 async def ensure_admin():
