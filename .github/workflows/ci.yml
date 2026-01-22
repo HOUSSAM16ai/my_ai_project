@@ -301,7 +301,7 @@ jobs:
 
           try:
               # التحقق من أن Models يمكن استيرادها
-              from app.models import AdminConversation
+              from app.core.domain.models import AdminConversation
               print('✅ AdminConversation model imported successfully')
               
               # التحقق من وجود linked_mission_id في التعريف
