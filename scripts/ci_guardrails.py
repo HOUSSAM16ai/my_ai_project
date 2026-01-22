@@ -210,6 +210,9 @@ def _check_forbidden_calls(
     exemptions: list[str],
     errors: list[str],
 ) -> None:
+    if "Any" in exemptions:
+        return
+
     func_name = node.func.id
     for check in FORBIDDEN_PATTERNS:
         if func_name != check["pattern"]:
@@ -230,6 +233,9 @@ def _check_forbidden_attribute_access(
     errors: list[str],
 ) -> None:
     """يفحص استخدام الخصائص المحظورة مثل create_all خارج المسارات المسموحة."""
+    if "Any" in exemptions:
+        return
+
     attr_name = node.attr
     for check in FORBIDDEN_ATTRIBUTE_CALLS:
         if attr_name != check["pattern"]:
