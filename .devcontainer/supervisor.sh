@@ -107,6 +107,13 @@ install_dependencies() {
         return 1
     fi
     
+    # OPTIMIZATION: Install CPU-only torch first if not present
+    # This prevents runtime installation from downloading 2GB+ CUDA wheels if image wasn't rebuilt
+    if ! python -c "import torch" 2>/dev/null; then
+        lifecycle_info "Installing CPU-only Torch (optimization)..."
+        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu || true
+    fi
+
     # Use pip with caching for faster subsequent runs
     if pip install -r requirements.txt -c constraints.txt; then
         lifecycle_info "✅ Dependencies installed successfully"

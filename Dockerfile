@@ -22,7 +22,10 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 COPY requirements.txt .
 COPY constraints.txt .
 # Use cache mount for pip to persist downloads
+# OPTIMIZATION: Install CPU-only torch first to prevent downloading 2GB+ CUDA wheels
+# This fixes "Codespaces not launching" due to timeout/storage exhaustion
 RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu && \
     pip install -r requirements.txt -c constraints.txt
 
 # Stage 2: Final Runtime
