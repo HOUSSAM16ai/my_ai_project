@@ -1,50 +1,86 @@
+import sys
+from unittest.mock import MagicMock
+
+# Mock dspy BEFORE importing app modules to avoid slow imports/network calls
+sys.modules["dspy"] = MagicMock()
+sys.modules["app.services.search_engine.query_refiner"] = MagicMock()
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, patch
+
+# Now import the module under test
+# We also need to mock content_service import if it triggers DB connections
+# content.py imports content_service from app.services.content.service
+# app.services.content.service creates a ContentService() instance
+# which imports database stuff.
+
+# Let's mock the content_service module entirely to be safe
+mock_content_service_module = MagicMock()
+mock_content_service_instance = AsyncMock()
+mock_content_service_module.content_service = mock_content_service_instance
+sys.modules["app.services.content.service"] = mock_content_service_module
+
+# Now we can import the tool safely
 from app.services.chat.tools.content import search_content
+from app.services.search_engine.fallback_expander import FallbackQueryExpander
 
 @pytest.mark.asyncio
-async def test_search_content_query_generation():
+async def test_search_content_fallback_logic():
     """
-    Verify that search_content generates the correct SQL query parameters
-    and handles keyword splitting correctly.
+    Verify that search_content uses FallbackQueryExpander and retries with multiple candidates.
     """
-    # Mock the session factory and session
-    mock_session = AsyncMock()
-    mock_result = MagicMock()
-    mock_result.fetchall.return_value = [] # Return empty for this test
-    mock_session.execute.return_value = mock_result
 
-    mock_factory = MagicMock()
-    mock_factory.return_value.__aenter__.return_value = mock_session
-    mock_factory.return_value.__aexit__.return_value = None
+    # Setup the mock for content_service.search_content
+    # It needs to simulate:
+    # 1. No results for strict query "Complex Search 2024"
+    # 2. Results for relaxed query "Complex Search"
 
-    with patch("app.services.chat.tools.content.async_session_factory", mock_factory):
-        # Test 1: Simple Search
-        await search_content(q="Math 2024", limit=5)
+    async def side_effect(*args, **kwargs):
+        q = kwargs.get("q", "")
+        # Simulate strict failure
+        if "2024" in q:
+            return []
+        # Simulate relaxed success
+        return [{"id": "ex1", "title": "Found It"}]
 
-        # Verify call args
-        args, kwargs = mock_session.execute.call_args
-        sql = str(args[0])
-        params = args[1]
+    mock_content_service_instance.search_content.side_effect = side_effect
 
-        # Check SQL structure
-        assert "SELECT i.id, i.title" in sql
-        assert "FROM content_items i" in sql
-        assert "LEFT JOIN content_search cs" in sql
+    # We also need to ensure FallbackQueryExpander is working or mocked
+    # Since we imported it, we can use the real one or mock it.
+    # The real one is pure logic (fast), so let's use it.
 
-        # Check Params (Updated keys for body/title split)
-        # title query keys: tq_0, tq_1
-        # body query keys: bq_0, bq_1
-        assert "tq_0" in params
-        assert "bq_0" in params
-        assert params["tq_0"] == "%Math%"
-        assert params["bq_0"] == "%Math%"
+    # Act
+    # We pass a query that we know FallbackQueryExpander will strip
+    q = "Complex Search 2024"
+    results = await search_content(q=q)
 
-        assert params["tq_1"] == "%2024%"
-        assert params["limit"] == 5
+    # Assert
+    assert len(results) == 1
+    assert results[0]["title"] == "Found It"
 
-        # Check Logic (Hybrid)
-        assert "title LIKE :tq_0" in sql
-        assert "cs.plain_text LIKE :bq_0" in sql
+    # Verify it was called multiple times
+    assert mock_content_service_instance.search_content.call_count >= 2
 
-        print("Test passed!")
+    # Verify the calls included the stripped version
+    calls = mock_content_service_instance.search_content.call_args_list
+    queries_tried = [c.kwargs.get("q") for c in calls]
+
+    print(f"Queries tried: {queries_tried}")
+
+    # FallbackExpander removes 2024 as stop word
+    assert any("Complex Search" in q for q in queries_tried)
+
+@pytest.mark.asyncio
+async def test_search_content_early_return():
+    """
+    Verify that if the first candidate finds results, we stop searching.
+    """
+    # Reset mock
+    mock_content_service_instance.search_content.reset_mock()
+    mock_content_service_instance.search_content.side_effect = None
+    mock_content_service_instance.search_content.return_value = [{"id": "ex1"}]
+
+    results = await search_content(q="Simple Query")
+
+    assert len(results) == 1
+    assert results[0]["id"] == "ex1"

@@ -56,20 +56,28 @@ async def search_content(
             except Exception as dspy_error:
                 logger.warning(f"DSPy refinement failed: {dspy_error}")
 
-        # 2. Fallback Refinement (Rule-based) if DSPy skipped or failed (refined_q is still just q)
-        # We generate a list of queries to try sequentially.
-        query_candidates = [refined_q] if refined_q else []
+        # 2. Build Candidate List
+        # Priority:
+        # 1. Refined Query (usually English/Normalized)
+        # 2. Expanded Variations of Original Query (Arabic Typos/Plurals)
+        # 3. Original Query itself
 
-        if q and (refined_q == q):
-            logger.info("Using fallback query expander to generate variations.")
-            query_candidates = FallbackQueryExpander.generate_variations(q)
+        query_candidates = []
+        if refined_q and refined_q != q:
+            query_candidates.append(refined_q)
+
+        # Always add fallback variations of the original query
+        if q:
+            variations = FallbackQueryExpander.generate_variations(q)
+            for var in variations:
+                if var not in query_candidates:
+                    query_candidates.append(var)
 
         content_ids: list[str] = []
 
         # We try to find content using the candidates.
         # First, check if LlamaIndex works for the first candidate (usually the most specific/refined one)
         # If LlamaIndex is active, it uses vector search which is robust.
-        # If LlamaIndex is down/skipped, we rely on SQL keyword search loops.
 
         primary_q = query_candidates[0] if query_candidates else q
 
@@ -78,7 +86,12 @@ async def search_content(
             if db_url:
                 try:
                     retriever = get_retriever(db_url)
-                    nodes = retriever.search(refined_q)
+                    # Try searching with the refined query first
+                    nodes = retriever.search(primary_q)
+
+                    # If no results and we have multiple candidates, maybe try the second one?
+                    # For now, let's stick to primary for vector search to save time.
+
                     for node in nodes:
                         metadata = getattr(node, "node", node)
                         meta = getattr(metadata, "metadata", {})
@@ -93,13 +106,15 @@ async def search_content(
         # We iterate through query candidates until we find results or run out.
 
         results = []
+        unique_results = set()
+
         for candidate_q in query_candidates:
             logger.info(f"Searching content with query: '{candidate_q}'")
 
             # Attempt 1: Hybrid Search (Keywords + Vector IDs)
             if content_ids:
                 logger.info(f"Applying vector filter with {len(content_ids)} IDs.")
-                results = await content_service.search_content(
+                batch_results = await content_service.search_content(
                     q=candidate_q,
                     level=level,
                     subject=subject,
@@ -111,14 +126,15 @@ async def search_content(
                     content_ids=content_ids,
                     limit=limit,
                 )
-                if results:
-                    logger.info(f"Found {len(results)} results with query '{candidate_q}' and vector filter.")
-                    return results
+                if batch_results:
+                    logger.info(f"Found {len(batch_results)} results with query '{candidate_q}' and vector filter.")
+                    return batch_results
                 else:
                     logger.info("Vector filter yielded 0 results. Retrying without vector IDs.")
 
             # Attempt 2: Pure Keyword Search (Fallback)
-            results = await content_service.search_content(
+            # This is where 'علوم تجربة' -> 'علوم تجريبية' expansion shines.
+            batch_results = await content_service.search_content(
                 q=candidate_q,
                 level=level,
                 subject=subject,
@@ -130,9 +146,12 @@ async def search_content(
                 content_ids=None,
                 limit=limit,
             )
-            if results:
-                logger.info(f"Found {len(results)} results with query '{candidate_q}' (Pure Keyword).")
-                return results
+
+            if batch_results:
+                logger.info(f"Found {len(batch_results)} results with query '{candidate_q}' (Pure Keyword).")
+                # We could return immediately or accumulate?
+                # Returning immediately is safer to avoid duplicates and mixing unrelated stuff.
+                return batch_results
 
         return results
 
