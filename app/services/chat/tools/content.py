@@ -50,11 +50,11 @@ async def search_content(
         # 1. Try Smart Refinement (DSPy)
         if q and api_key:
             try:
-                logger.info(f"Refining query with DSPy: {q}")
+                logger.info(f"🔍 DSPy Active: Refining query '{q}'...")
                 refined_q = await asyncio.to_thread(get_refined_query, q, api_key)
-                logger.info(f"Refined query: {refined_q}")
+                logger.info(f"✅ DSPy Result: '{refined_q}'")
             except Exception as dspy_error:
-                logger.warning(f"DSPy refinement failed: {dspy_error}")
+                logger.warning(f"⚠️ DSPy refinement failed: {dspy_error}")
 
         # 2. Build Candidate List
         # Priority:
@@ -85,6 +85,7 @@ async def search_content(
             db_url = os.environ.get("DATABASE_URL")
             if db_url:
                 try:
+                    logger.info("🔍 LlamaIndex Active: Executing Vector Search...")
                     retriever = get_retriever(db_url)
                     # Try searching with the refined query first
                     nodes = retriever.search(primary_q)
@@ -99,8 +100,9 @@ async def search_content(
                             content_id = meta.get("content_id")
                             if isinstance(content_id, str):
                                 content_ids.append(content_id)
+                    logger.info(f"✅ LlamaIndex Retrieval: Found {len(content_ids)} relevant vector IDs.")
                 except Exception as e:
-                    logger.warning(f"LlamaIndex search failed, falling back to basic search: {e}")
+                    logger.warning(f"⚠️ LlamaIndex search failed, falling back to basic search: {e}")
 
         # Delegate to ContentService with Fallback Loop
         # We iterate through query candidates until we find results or run out.
