@@ -57,5 +57,5 @@ async def test_content_service_search_logic():
     params = args[1]
 
     # Should be normalized
-    assert params["branch"] == "علوم تجريبية"
+    assert params["branch"] == "experimental_sciences"
     assert "i.branch = :branch" in sql
