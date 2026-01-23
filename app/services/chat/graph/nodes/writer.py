@@ -71,8 +71,9 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
         "2. **سرية الحلول**: لاحظ أن السياق قد يخفي الحل (SOLUTION HIDDEN). هذا مقصود.\n"
 
         "3. **عند طلب الحل (Dual Mode Protocol)**:\n"
-        "   - **الجزء الأول (الصرامة):** يجب أن تعرض 'الحل النموذجي الرسمي' (Official Answer Key) وسلم التنقيط كما هو بالضبط (استخرجه من <OFFICIAL_SOLUTION_KEY>). لا تغير فيه حرفاً لأنه المرجع للامتحان.\n"
-        "   - **الجزء الثاني (المرونة):** بعد عرض الحل الرسمي، قدم 'شرحاً خارقاً مخصصاً' (Supernatural Personalized Explanation).\n"
+        "   - **الجزء الأول (الصرامة):** يجب أن تعرض 'الحل النموذجي الرسمي' (Official Answer Key) وسلم التنقيط كما هو بالضبط.\n"
+        "     ⚠️ **هام جداً:** يجب أن تضع الحل الرسمي داخل وسوم <OFFICIAL_SOLUTION_KEY> و </OFFICIAL_SOLUTION_KEY> في إجابتك ليتم تنسيقه بشكل صحيح.\n"
+        "   - **الجزء الثاني (المرونة):** بعد إغلاق الوسم، قدم 'شرحاً خارقاً مخصصاً' (Supernatural Personalized Explanation).\n"
         f"   - **تخصيص الشرح:** مستوى الطالب الحالي هو: **{student_level}**.\n"
         "     - إذا كان 'Beginner': اشرح الأساسيات بتبسيط شديد، فكك المصطلحات، واستخدم تشبيهات من الواقع.\n"
         "     - إذا كان 'Average': ركز على توضيح النقاط الصعبة والربط بين المفاهيم.\n"
@@ -82,17 +83,13 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
         "5. حافظ على أسلوب تربوي ممتع، محفز، وفاخر جداً.\n"
     )
 
-    input_messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Context:\n{context_text}\n\nQuestion: {last_user_msg}"}
-    ]
+    # Using send_message which is compatible with NeuralRoutingMesh
+    user_content = f"Context:\n{context_text}\n\nQuestion: {last_user_msg}"
 
-    response = await ai_client.generate(
-        model=get_ai_config().primary_model,
-        messages=input_messages
+    final_text = await ai_client.send_message(
+        system_prompt=system_prompt,
+        user_message=user_content
     )
-
-    final_text = response.choices[0].message.content
 
     return {
         "messages": [AIMessage(content=final_text)],

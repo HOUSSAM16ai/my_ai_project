@@ -77,16 +77,11 @@ async def planner_node(state: AgentState, ai_client: AIClient) -> dict:
         "Plan: ['search', 'explain']"
     )
 
-    response = await ai_client.generate(
-        model=get_ai_config().primary_model,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Request: {last_message}"}
-        ],
-        response_format={"type": "json_object"}
+    # Using send_message compatible with NeuralRoutingMesh
+    content = await ai_client.send_message(
+        system_prompt=system_prompt,
+        user_message=f"Request: {last_message}"
     )
-
-    content = response.choices[0].message.content
     try:
         plan_data = json.loads(content)
         plan = plan_data.get("steps", ["search", "explain"])
