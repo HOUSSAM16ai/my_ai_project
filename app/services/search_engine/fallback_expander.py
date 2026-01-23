@@ -130,12 +130,14 @@ class FallbackQueryExpander:
     STOP_WORDS = {
         "في", "على", "من", "إلى", "عن",
         "لسنة", "سنة", "عام",
-        "شعبة", "الشعبة", # Metadata
+        "شعبة", "الشعبة", "لشعبة", # Metadata
         "مادة", "المادة",
         "و", "أو",
         "مع",
         "هل", "كيف", "ما", "ماذا",
         "اريد", "أريد", "ابحث", "أبحث",
+        "اعطني", "أعطني", "هات", "قدم", # Action Verbs
+        "اسئلة", "أسئلة", "امتحان", # Content Types
         "بكالوريا", "البكالوريا", "bac", # Context
         "موضوع", "الموضوع", # Often ambiguous if not precise
         # Branch Names (Often metadata only)
