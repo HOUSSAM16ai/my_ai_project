@@ -13,6 +13,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
+LONG_METHOD_LINE_THRESHOLD = 50
+
+
 @dataclass
 class StyleIssue:
     """مخالفة أسلوبية مكتشفة أثناء فحص الملفات."""
@@ -245,23 +248,51 @@ class IssueAnalyzer:
     ) -> None:
         """كشف الدوال الطويلة التي تتجاوز الحد المسموح."""
         method_pattern = r"^\s*(async\s+)?def\s+(\w+)"
-        current_method = None
+        current_method: str | None = None
         method_start = 0
 
         for index, line in enumerate(lines):
             match = re.match(method_pattern, line)
             if match:
-                if current_method and (index - method_start) > 50:
-                    smells.long_methods.append(
-                        LongMethodSmell(
-                            file=rel_path,
-                            method=current_method,
-                            lines=index - method_start,
-                        )
-                    )
-                    smells.total_smells += 1
+                self._record_long_method(
+                    current_method,
+                    method_start,
+                    index,
+                    rel_path,
+                    smells,
+                )
                 current_method = match.group(2)
                 method_start = index
+        self._record_long_method(
+            current_method,
+            method_start,
+            len(lines),
+            rel_path,
+            smells,
+        )
+
+    def _record_long_method(
+        self,
+        method_name: str | None,
+        start_index: int,
+        end_index: int,
+        rel_path: str,
+        smells: CodeSmellsReport,
+    ) -> None:
+        """تسجيل الدالة الطويلة إذا تجاوزت حد الأسطر المحدد."""
+        if not method_name:
+            return
+
+        method_length = end_index - start_index
+        if method_length > LONG_METHOD_LINE_THRESHOLD:
+            smells.long_methods.append(
+                LongMethodSmell(
+                    file=rel_path,
+                    method=method_name,
+                    lines=method_length,
+                )
+            )
+            smells.total_smells += 1
 
     def _detect_magic_numbers(
         self, lines: list[str], rel_path: str, smells: CodeSmellsReport
