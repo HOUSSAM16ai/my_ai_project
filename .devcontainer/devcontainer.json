@@ -69,11 +69,6 @@
       "installZsh": true,
       "configureZshAsDefaultShell": true,
       "username": "root"
-    },
-    "ghcr.io/devcontainers/features/node:1": {
-        "version": "lts",
-        "installYarn": false,
-        "installPnpm": false
     }
   },
 
