@@ -7,7 +7,7 @@
 import functools
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,6 +30,19 @@ class PlanningAgentSettings(BaseSettings):
     DATABASE_URL: str = Field(
         "sqlite+aiosqlite:///./planning_agent.db",
         description="رابط قاعدة البيانات الخاصة بالوكيل",
+    )
+
+    # AI Settings
+    OPENROUTER_API_KEY: SecretStr | None = Field(
+        None, description="مفتاح API لخدمة OpenRouter"
+    )
+    AI_MODEL: str = Field(
+        "mistralai/mistral-7b-instruct:free",
+        description="اسم النموذج المستخدم في التخطيط",
+    )
+    AI_BASE_URL: str = Field(
+        "https://openrouter.ai/api/v1",
+        description="الرابط الأساسي لخدمة الذكاء الاصطناعي",
     )
 
     model_config = SettingsConfigDict(env_prefix="PLANNING_", env_file=".env", extra="ignore")

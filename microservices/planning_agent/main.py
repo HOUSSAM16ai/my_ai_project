@@ -5,10 +5,12 @@
 مع الالتزام بالنواة الوظيفية وقشرة تنفيذية واضحة.
 """
 
+import json
 from contextlib import asynccontextmanager
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, FastAPI
+from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -38,24 +40,66 @@ class PlanResponse(BaseModel):
     steps: list[str]
 
 
-def _generate_plan(goal: str, context: list[str]) -> list[str]:
-    """
-    يولد خطة مبسطة على شكل خطوات مرتبة.
-
-    يعتمد على بيانات الإدخال فقط لتسهيل الاختبار وإعادة الاستخدام.
-    """
-
+def _get_fallback_plan(goal: str, context: list[str]) -> list[str]:
+    """توليد خطة احتياطية عند فشل النموذج الذكي."""
     base_steps = [
         "تحليل الهدف وتجزئته إلى مهام أصغر",
         "تحديد الموارد والمراجع المطلوبة",
         "بناء تسلسل تنفيذي قابل للتتبع",
         "مراجعة الخطة وتحسينها وفق السياق",
     ]
-
     if context:
         base_steps.insert(1, f"تضمين السياق الداعم: {', '.join(context)}")
-
     return base_steps
+
+
+async def _generate_plan(
+    goal: str, context: list[str], settings: PlanningAgentSettings
+) -> list[str]:
+    """
+    يولد خطة باستخدام نموذج ذكاء اصطناعي (أو احتياطية).
+    """
+
+    if not settings.OPENROUTER_API_KEY:
+        logger.warning("مفتاح API غير موجود، استخدام الخطة الاحتياطية")
+        return _get_fallback_plan(goal, context)
+
+    client = AsyncOpenAI(
+        api_key=settings.OPENROUTER_API_KEY.get_secret_value(),
+        base_url=settings.AI_BASE_URL,
+    )
+
+    prompt = (
+        f"You are an expert educational planner. Break down the user's goal '{goal}' "
+        f"into clear, actionable steps. Context: {', '.join(context)}. "
+        "Return ONLY a JSON list of strings (e.g., [\"Step 1\", \"Step 2\"]). "
+        "Do not include markdown blocks."
+    )
+
+    try:
+        response = await client.chat.completions.create(
+            model=settings.AI_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+        )
+
+        content = response.choices[0].message.content
+        if not content:
+            raise ValueError("Empty response from AI")
+
+        # Clean markdown if present
+        if content.startswith("```json"):
+            content = content.replace("```json", "").replace("```", "")
+
+        steps = json.loads(content)
+        if not isinstance(steps, list):
+             raise ValueError("Response is not a list")
+
+        return [str(s) for s in steps]
+
+    except Exception as e:
+        logger.error("فشل توليد الخطة بالذكاء الاصطناعي: %s", e)
+        return _get_fallback_plan(goal, context)
 
 
 def _build_router(settings: PlanningAgentSettings) -> APIRouter:
@@ -81,7 +125,9 @@ def _build_router(settings: PlanningAgentSettings) -> APIRouter:
         """ينشئ خطة تعليمية جديدة بناءً على الهدف والسياق ويحفظها."""
 
         logger.info("توليد خطة", extra={"goal": payload.goal, "context": payload.context})
-        steps = _generate_plan(payload.goal, payload.context)
+
+        # استدعاء غير متزامن لتوليد الخطة
+        steps = await _generate_plan(payload.goal, payload.context, settings)
 
         plan = Plan(goal=payload.goal, steps=steps)
         session.add(plan)
