@@ -1,6 +1,7 @@
 """
-Neural Routing Mesh Module.
-Simplified for reliability and performance.
+شبكة التوجيه العصبي.
+
+تم تبسيطها لتحسين الاعتمادية والأداء مع الحفاظ على التوافق الخلفي.
 """
 
 import time
@@ -8,7 +9,7 @@ import hashlib
 import json
 import logging
 from collections.abc import AsyncGenerator
-from typing import Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
 
 # Config imports
 from app.core.ai_config import get_ai_config
@@ -18,7 +19,6 @@ from app.core.gateway.connection import ConnectionManager
 # Import new atomic modules
 from app.core.gateway.exceptions import (
     AIAllModelsExhaustedError,
-    AIConnectionError,
     AIRateLimitError,
     StreamInterruptedError,
 )
@@ -49,8 +49,7 @@ class AIClient(Protocol):
 
 class NeuralRoutingMesh:
     """
-    The 'Overmind' Router.
-    Refactored for Simplicity and Reliability (Phase 28 Cleanup).
+    موجّه "العقل الفائق" لإدارة توجيه الطلبات بشكل مبسط وموثوق.
     """
 
     def __init__(self, api_key: str):
@@ -78,7 +77,7 @@ class NeuralRoutingMesh:
 
     @property
     def nodes_map(self) -> dict[str, NeuralNode]:
-        """Expose nodes map for backward compatibility/testing."""
+        """يوفر خريطة العقد للتوافق الخلفي والاختبارات."""
         return self.manager.nodes_map
 
     @nodes_map.setter
@@ -88,7 +87,8 @@ class NeuralRoutingMesh:
         self.omni_router = get_omni_router(value)
         self.manager.ranker = self.omni_router
 
-    async def __aiter__(self):
+    async def __aiter__(self) -> "NeuralRoutingMesh":
+        """يدعم التكرار غير المتزامن على كائن الشبكة نفسه."""
         return self
 
     async def stream_chat(self, messages: list[JSONDict]) -> AsyncGenerator[JSONDict, None]:
@@ -112,7 +112,7 @@ class NeuralRoutingMesh:
             raise AIAllModelsExhaustedError("All circuits are open, no models available.")
 
         # 3. Execution Loop
-        errors = []
+        error_messages: list[str] = []
         for node in priority_nodes:
             # Redundant check? Manager filters, but breaker state might change.
             if not node.circuit_breaker.allow_request():
@@ -128,11 +128,10 @@ class NeuralRoutingMesh:
                 # Critical failure during stream - abort immediately
                 logger.critical(f"Stream interrupted for {node.model_id}. Aborting.")
                 raise
-            except (AIConnectionError, ValueError, AIRateLimitError, Exception) as e:
-                errors.append(f"{node.model_id}: {e!s}")
-                continue
+            except Exception as e:
+                error_messages.append(f"{node.model_id}: {e!s}")
 
-        raise AIAllModelsExhaustedError(f"All models failed. Errors: {errors}")
+        raise AIAllModelsExhaustedError(f"All models failed. Errors: {error_messages}")
 
     def _get_prioritized_nodes(self, prompt: str) -> list[NeuralNode]:
         """واجهة توافقية لاختيار العقد ذات الأولوية."""
@@ -159,54 +158,99 @@ class NeuralRoutingMesh:
         client: object,
     ) -> AsyncGenerator[JSONDict, None]:
         """
-        Orchestrates a single node attempt: Execution + Monitoring + Metrics.
+        يدير محاولة عقدة واحدة عبر التنفيذ والمراقبة وقياس الأداء.
         """
-        start_time = time.time() # This module still needs time for metrics
-        full_response_chunks = []
+        start_time = time.time()
+        full_response_chunks: list[JSONDict] = []
         chunks_yielded = 0
 
         try:
-            # Delegate raw streaming to Processor
-            async for chunk in self.processor.stream(node, messages, client): # type: ignore
+            async for chunk in self._stream_and_collect(node, messages, client, full_response_chunks):
                 yield chunk
-                full_response_chunks.append(chunk)
                 chunks_yielded += 1
 
-            # Success Recording
-            duration = (time.time() - start_time) * 1000
-            node.circuit_breaker.record_success()
-            self._record_metrics(node, duration, True)
-
-            if node.model_id != SAFETY_NET_MODEL_ID:
-                get_cognitive_engine().memorize(prompt, context_hash, full_response_chunks) # type: ignore
+            self._record_outcome(node, start_time, outcome="success")
+            self._memorize_response(node, prompt, context_hash, full_response_chunks)
 
         except AIRateLimitError as e:
-            duration = (time.time() - start_time) * 1000
-            node.circuit_breaker.record_saturation()
-            self._record_metrics(node, duration, False)
+            self._record_outcome(node, start_time, outcome="rate_limit")
             raise e
 
         except Exception as e:
-            duration = (time.time() - start_time) * 1000
+            self._handle_stream_failure(node, start_time, chunks_yielded, e)
 
-            # Check for partial stream failure
-            if chunks_yielded > 0:
-                node.circuit_breaker.record_failure()
-                self._record_metrics(node, duration, False)
-                raise StreamInterruptedError(f"Stream severed from {node.model_id}") from e
+    async def _stream_and_collect(
+        self,
+        node: NeuralNode,
+        messages: list[JSONDict],
+        client: object,
+        chunks: list[JSONDict],
+    ) -> AsyncGenerator[JSONDict, None]:
+        """يبث الردود ويجمعها في قائمة مشتركة لغايات التسجيل لاحقاً."""
+        async for chunk in self.processor.stream(node, messages, client):  # type: ignore
+            chunks.append(chunk)
+            yield chunk
 
-            node.circuit_breaker.record_failure()
-            self._record_metrics(node, duration, False)
-            logger.warning(f"Node {node.model_id} failed: {e}")
-            raise e
+    def _record_outcome(
+        self,
+        node: NeuralNode,
+        start_time: float,
+        outcome: Literal["success", "rate_limit", "failure"],
+    ) -> None:
+        """يوحد تسجيل نتائج التنفيذ لنجاح العقدة أو حد السرعة أو الفشل."""
+        duration_ms = self._elapsed_ms(start_time)
+        if outcome == "success":
+            node.circuit_breaker.record_success()
+            self._record_metrics(node, duration_ms, True)
+            return
+        if outcome == "rate_limit":
+            node.circuit_breaker.record_saturation()
+            self._record_metrics(node, duration_ms, False)
+            return
+        node.circuit_breaker.record_failure()
+        self._record_metrics(node, duration_ms, False)
 
-    def _record_metrics(self, node: NeuralNode, duration_ms: float, success: bool):
+    def _handle_stream_failure(
+        self,
+        node: NeuralNode,
+        start_time: float,
+        chunks_yielded: int,
+        error: Exception,
+    ) -> None:
+        """يوحد معالجة فشل البث مع التفريق بين الفشل الجزئي والكامل."""
+        self._record_outcome(node, start_time, outcome="failure")
+
+        if chunks_yielded > 0:
+            raise StreamInterruptedError(f"Stream severed from {node.model_id}") from error
+
+        logger.warning(f"Node {node.model_id} failed: {error}")
+        raise error
+
+    def _memorize_response(
+        self,
+        node: NeuralNode,
+        prompt: str,
+        context_hash: str,
+        chunks: list[JSONDict],
+    ) -> None:
+        """يحفظ الاستجابة في الذاكرة المعرفية عند توفر الشروط."""
+        if node.model_id == SAFETY_NET_MODEL_ID:
+            return
+        get_cognitive_engine().memorize(prompt, context_hash, chunks)  # type: ignore
+
+    def _elapsed_ms(self, start_time: float) -> float:
+        """يحصل على الزمن المنقضي بالمللي ثانية."""
+        return (time.time() - start_time) * 1000
+
+    def _record_metrics(self, node: NeuralNode, duration_ms: float, success: bool) -> None:
+        """يسجل مقاييس الأداء للعقدة مع احترام نموذج شبكة الأمان."""
         if node.model_id == SAFETY_NET_MODEL_ID:
             return
         log_method = logger.info if success else logger.warning
         log_method(f"AI Request: {node.model_id} | Success: {success} | Latency: {duration_ms:.2f}ms")
 
     def _get_context_hash(self, messages: list[JSONDict]) -> str:
+        """ينشئ بصمة سياق مستقرة لمحتوى الرسائل السابقة."""
         context_str = json.dumps(list(messages[:-1]), sort_keys=True)
         return hashlib.sha256(context_str.encode()).hexdigest()
 
