@@ -133,7 +133,16 @@ async def search_content(
             # so ContentService will use the text query 'q'.
 
             # Use 'q' only for Keyword Fallback
-            query_text = None if strategy["use_vectors"] else q
+            query_text = None
+            if not strategy["use_vectors"]:
+                # For Keyword Fallback, use the most "Cleaned" version to avoid AND-ing stop words.
+                # query_candidates order is roughly [Refined, Original, ..., Cleaned]
+                # We want the last candidate which represents the best keyword representation.
+                if query_candidates:
+                    query_text = query_candidates[-1]
+                    logger.info(f"🔑 Using Optimized Keyword Query: '{query_text}'")
+                else:
+                    query_text = q
 
             # For ContentService, we might want to respect the 'year' param
             # ONLY if it was explicitly passed by the caller OR if we are in Strict mode.
