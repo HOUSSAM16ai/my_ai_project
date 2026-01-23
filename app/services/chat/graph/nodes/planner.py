@@ -14,9 +14,11 @@ from app.services.chat.graph.state import AgentState
 from app.core.ai_gateway import AIClient
 from app.core.ai_config import get_ai_config
 
+import os
+
 logger = logging.getLogger(__name__)
 
-PLANNING_SERVICE_URL = "http://localhost:8001/plans"
+PLANNING_SERVICE_URL = os.getenv("PLANNING_SERVICE_URL", "http://localhost:8001/plans")
 
 async def planner_node(state: AgentState, ai_client: AIClient) -> dict:
     """

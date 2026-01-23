@@ -5,6 +5,7 @@ from llama_index.core.retrievers import BaseRetriever
 from llama_index.vector_stores.supabase import SupabaseVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.schema import NodeWithScore
+from llama_index.core.vector_stores import MetadataFilters, ExactMatchFilter
 
 # Initialize Embedding Model (Singleton to avoid reload)
 # Using the model specified in memory: intfloat/multilingual-e5-small
@@ -22,11 +23,11 @@ class LlamaIndexRetriever:
         self.collection_name = collection_name
         self.embed_model = get_embedding_model()
 
-        # Connect to Supabase Vector Store
-        # Note: generic SupabaseVectorStore usage requires postgres_connection_string
-        # We use the same URL provided by user.
+        # Ensure compatibility with 'vecs' (psycopg2)
+        postgres_url = db_url.replace("+asyncpg", "")
+
         self.vector_store = SupabaseVectorStore(
-            postgres_connection_string=db_url,
+            postgres_connection_string=postgres_url,
             collection_name=collection_name
         )
         self.index = VectorStoreIndex.from_vector_store(
@@ -36,17 +37,26 @@ class LlamaIndexRetriever:
 
     def search(self, query: str, limit: int = 5, filters: Optional[dict] = None) -> List[NodeWithScore]:
         """
-        Semantic search using LlamaIndex.
+        Semantic search using LlamaIndex with support for Metadata Filters.
         """
-        # Configure retriever
-        # We can add metadata filters here if needed using exact_match_metadata
-        # But for now we rely on the semantic match and post-filtering if necessary.
+        llama_filters = None
 
-        # Note: filters in SupabaseVectorStore are a bit specific.
-        # If we need strict filtering (year=2024), we should pass it.
-        # However, LlamaIndex standard retriever interface might need MetadataFilters.
+        if filters:
+            match_filters = []
+            if "year" in filters and filters["year"]:
+                match_filters.append(ExactMatchFilter(key="year", value=filters["year"]))
+            if "subject" in filters and filters["subject"]:
+                # Normalize/Fuzzy match might be needed upstream, assuming refined subject here
+                match_filters.append(ExactMatchFilter(key="subject", value=filters["subject"]))
 
-        retriever = self.index.as_retriever(similarity_top_k=limit)
+            if match_filters:
+                llama_filters = MetadataFilters(filters=match_filters)
+
+        retriever = self.index.as_retriever(
+            similarity_top_k=limit,
+            filters=llama_filters
+        )
+
         nodes = retriever.retrieve(query)
         return nodes
 

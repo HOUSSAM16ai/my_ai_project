@@ -13,38 +13,29 @@ from app.core.ai_config import get_ai_config
 async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
     """
     عقدة الكتابة: تصيغ الرد النهائي.
-    تطبق 'Context Firewall' لمنع تسريب الحلول.
+    تطبق 'Context Firewall' لمنع تسريب الحلول،
+    ولكن إذا طلب المستخدم الحل، تقدمه بأسلوب مزدوج:
+    1. الإجابة النموذجية الرسمية (للالتزام بسلم التنقيط).
+    2. الشرح المخصص (Personalized Explanation) حسب مستوى الطالب.
     """
     messages = state["messages"]
     last_user_msg = messages[-1].content
     search_results = state.get("search_results", [])
 
-    # --- Genius Context Firewall ---
-    # Determine if user *explicitly* requested the solution/answer.
-    # We use regex for robustness against slight phrasing variations.
-    # ERROR FIX: Previous regex was too broad and triggered on "don't give me solution".
-    # New logic requires an explicit request verb OR a direct question.
+    # Simulate diagnosis (In a real system, this comes from a Profile Service)
+    # For now, we infer broadly or default to 'Average'.
+    # We can inject this into the prompt.
+    student_level = state.get("diagnosis", "Average")
 
+    # --- Genius Context Firewall ---
     request_indicators = r"(أريد|بدي|ابغى|عطيني|اعطني|هات|وريني|show|give|want|provide|display|please|plz|من فضلك|لو سمحت)"
     target_nouns = r"(حل|إجابة|اجابة|جواب|صحح|تصحيح|solution|answer|result|correction)"
-
-    # Match if:
-    # 1. Indicator + Noun (ANY order) -> "Show solution", "Solution please"
-    # 2. Noun + Question Mark -> "Solution?"
-    # 3. Exact Noun only -> "Solution"
-
-    # We construct a regex that looks for presence of Noun AND (Indicator OR QuestionMark OR Start/End anchor)
 
     last_msg_lower = last_user_msg.lower()
     has_noun = bool(re.search(target_nouns, last_msg_lower))
     is_request = bool(re.search(request_indicators, last_msg_lower))
     is_question = "?" in last_msg_lower or "؟" in last_msg_lower
-    # Check for short phrase (e.g. "Solution", "الحل") - count tokens
     is_short = len(last_msg_lower.split()) <= 3
-
-    # Negation check: e.g. "I don't want solution", "لا تعطيني الحل"
-    # Matches "not" followed eventually by "want/give" or "solution"
-    # Simple proximity check: "don't" ... "want/give"
     negation_pattern = r"(don't|do not|not|no|never|لا|ما|لم|لن|ليس).{0,20}(want|need|give|show|أريد|بدي|تعطيني|عطيني|هات)"
     has_negation = bool(re.search(negation_pattern, last_msg_lower))
 
@@ -53,7 +44,6 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
         if is_request or is_question:
             user_wants_solution = True
         elif is_short:
-             # "The Solution", "الحل"
             user_wants_solution = True
 
     # Prepare Context with Firewall
@@ -63,28 +53,33 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
             content = item.get("content", "")
             original_solution = item.get("solution", "")
 
-            # THE FIREWALL:
-            # If user didn't ask for solution, we physically remove it from the text sent to the LLM.
-            # This makes it impossible for the LLM to leak it.
             if user_wants_solution:
+                # If user wants solution, we provide the FULL Official Solution Key
                 solution_text = original_solution
-                # Even if they want it, we wrap it to be safe/organized
-                solution_display = f"<SOLUTION>\n{solution_text}\n</SOLUTION>"
+                solution_display = f"<OFFICIAL_SOLUTION_KEY>\n{solution_text}\n</OFFICIAL_SOLUTION_KEY>"
             else:
-                # Replacement text - LLM sees this instead of the real answer
                 solution_display = "[SOLUTION HIDDEN: Student has NOT requested the solution yet.]"
 
             context_text += f"Exercise:\n{content}\n\n{solution_display}\n\n---\n"
 
     system_prompt = (
-        "أنت 'Overmind'، المعلم الذكي (Smart Tutor) والموجه الأكاديمي.\n"
-        "مهمتك: مساعدة الطالب باستخدام المحتوى المسترجع (Context) بذكاء وحكمة.\n"
-        "القواعد الصارمة:\n"
+        "أنت 'Overmind'، المعلم الذكي (Smart Tutor) والموجه الأكاديمي الفاخر.\n"
+        "مهمتك: مساعدة الطالب باستخدام المحتوى المسترجع (Context) بذكاء وحكمة.\n\n"
+
+        "القواعد الصارمة (The Golden Rules):\n"
         "1. **تحليل طلب الطالب بدقة**: إذا طلب 'تمرين' فقط، قدم نص التمرين **فقط**.\n"
-        "2. **سرية الحلول**: لاحظ أن السياق قد يخفي الحل (SOLUTION HIDDEN). هذا مقصود. لا تحاول تخمين الحل إذا كان مخفياً.\n"
-        "3. **تقديم الحل**: إذا كان الحل متاحاً (بين وسوم <SOLUTION>)، قدمه بأسلوب شرح تربوي خطوة بخطوة.\n"
-        "4. **تجنب الهلوسة**: إذا لم تجد المحتوى، اعتذر بلطف. لا تختلق رسائل نظام رسمية مثل 'Overmind system announces...'.\n"
-        "5. حافظ على أسلوب تربوي ممتع، محفز، وفاخر.\n"
+        "2. **سرية الحلول**: لاحظ أن السياق قد يخفي الحل (SOLUTION HIDDEN). هذا مقصود.\n"
+
+        "3. **عند طلب الحل (Dual Mode Protocol)**:\n"
+        "   - **الجزء الأول (الصرامة):** يجب أن تعرض 'الحل النموذجي الرسمي' (Official Answer Key) وسلم التنقيط كما هو بالضبط (استخرجه من <OFFICIAL_SOLUTION_KEY>). لا تغير فيه حرفاً لأنه المرجع للامتحان.\n"
+        "   - **الجزء الثاني (المرونة):** بعد عرض الحل الرسمي، قدم 'شرحاً خارقاً مخصصاً' (Supernatural Personalized Explanation).\n"
+        f"   - **تخصيص الشرح:** مستوى الطالب الحالي هو: **{student_level}**.\n"
+        "     - إذا كان 'Beginner': اشرح الأساسيات بتبسيط شديد، فكك المصطلحات، واستخدم تشبيهات من الواقع.\n"
+        "     - إذا كان 'Average': ركز على توضيح النقاط الصعبة والربط بين المفاهيم.\n"
+        "     - إذا كان 'Advanced': قدم تحديات إضافية، ناقش طرق حل بديلة، وركز على السرعة والدقة.\n\n"
+
+        "4. **تجنب الهلوسة**: إذا لم تجد المحتوى، اعتذر بلطف.\n"
+        "5. حافظ على أسلوب تربوي ممتع، محفز، وفاخر جداً.\n"
     )
 
     input_messages = [
