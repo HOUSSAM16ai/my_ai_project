@@ -1,5 +1,5 @@
 import pytest
-from app.services.chat.tools.content import _normalize_set_name
+from app.services.content.service import content_service
 
 def test_normalize_set_name_subject_1():
     expected = "subject_1"
@@ -10,7 +10,7 @@ def test_normalize_set_name_subject_1():
         "الموضوع الأول", "الموضوع 1"
     ]
     for i in inputs:
-        assert _normalize_set_name(i) == expected, f"Failed for input: {i}"
+        assert content_service.normalize_set_name(i) == expected, f"Failed for input: {i}"
 
 def test_normalize_set_name_subject_2():
     expected = "subject_2"
@@ -20,10 +20,10 @@ def test_normalize_set_name_subject_2():
         "الموضوع الثاني", "الموضوع 2"
     ]
     for i in inputs:
-        assert _normalize_set_name(i) == expected, f"Failed for input: {i}"
+        assert content_service.normalize_set_name(i) == expected, f"Failed for input: {i}"
 
 def test_normalize_set_name_unknown():
-    assert _normalize_set_name("unknown") == "unknown"
-    assert _normalize_set_name("bac 2024") == "bac 2024"
-    assert _normalize_set_name("") is None
-    assert _normalize_set_name(None) is None
+    assert content_service.normalize_set_name("unknown") == "unknown"
+    assert content_service.normalize_set_name("bac 2024") == "bac 2024"
+    assert content_service.normalize_set_name("") is None
+    assert content_service.normalize_set_name(None) is None
