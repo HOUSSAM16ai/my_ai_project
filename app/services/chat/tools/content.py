@@ -45,123 +45,123 @@ async def search_content(
     """بحث متقدم عن المحتوى التعليمي مع فلاتر قابلة للتوسع."""
     try:
         refined_q = q
+        metadata_filters = {}
+
         api_key = os.environ.get("OPENROUTER_API_KEY")
 
         # 1. Try Smart Refinement (DSPy)
         if q and api_key:
             try:
                 logger.info(f"🔍 DSPy Active: Refining query '{q}'...")
-                refined_q = await asyncio.to_thread(get_refined_query, q, api_key)
-                logger.info(f"✅ DSPy Result: '{refined_q}'")
+                # Returns Dict now: {'refined_query': ..., 'year': ..., 'subject': ...}
+                dspy_result = await asyncio.to_thread(get_refined_query, q, api_key)
+
+                if isinstance(dspy_result, dict):
+                    refined_q = dspy_result.get("refined_query", q)
+                    # Extract Metadata
+                    if dspy_result.get("year"):
+                        metadata_filters["year"] = dspy_result["year"]
+                        # Auto-inject into args if not provided
+                        if year is None: year = dspy_result["year"]
+
+                    if dspy_result.get("subject"):
+                        metadata_filters["subject"] = dspy_result["subject"]
+
+                    logger.info(f"✅ DSPy Result: '{refined_q}' | Metadata: {metadata_filters}")
+                else:
+                    refined_q = str(dspy_result)
+                    logger.info(f"✅ DSPy Result: '{refined_q}' (String only)")
+
             except Exception as dspy_error:
                 logger.warning(f"⚠️ DSPy refinement failed: {dspy_error}")
 
         # 2. Build Candidate List
-        # Priority:
-        # 1. Refined Query (usually English/Normalized)
-        # 2. Expanded Variations of Original Query (Arabic Typos/Plurals)
-        # 3. Original Query itself
-
         query_candidates = []
         if refined_q and refined_q != q:
             query_candidates.append(refined_q)
 
-        # Always add fallback variations of the original query
         if q:
             variations = FallbackQueryExpander.generate_variations(q)
             for var in variations:
                 if var not in query_candidates:
                     query_candidates.append(var)
 
-        content_ids: list[str] = []
+        # 3. Execution Strategy (The "Self-Correcting Loop")
+        # Attempt 1: Strict Semantic Search (Vector + Metadata Filters)
+        # Attempt 2: Relaxed Semantic Search (Vector Only)
+        # Attempt 3: Keyword Search (Fallback)
 
-        # We try to find content using the candidates.
-        # First, check if LlamaIndex works for the first candidate (usually the most specific/refined one)
-        # If LlamaIndex is active, it uses vector search which is robust.
+        strategies = [
+            {"name": "Strict Semantic", "use_vectors": True, "filters": metadata_filters},
+            {"name": "Relaxed Semantic", "use_vectors": True, "filters": {}}, # Clear filters
+            {"name": "Keyword Fallback", "use_vectors": False, "filters": {}}
+        ]
 
         primary_q = query_candidates[0] if query_candidates else q
+        db_url = os.environ.get("DATABASE_URL")
 
-        if primary_q:
-            db_url = os.environ.get("DATABASE_URL")
-            if db_url:
+        for strategy in strategies:
+            logger.info(f"🔄 Strategy: {strategy['name']}")
+
+            content_ids = []
+
+            if strategy["use_vectors"] and primary_q and db_url:
                 try:
                     logger.info("🔍 LlamaIndex Active: Executing Vector Search...")
                     retriever = get_retriever(db_url)
-                    # Try searching with the refined query first
-                    nodes = retriever.search(primary_q)
-
-                    # If no results and we have multiple candidates, maybe try the second one?
-                    # For now, let's stick to primary for vector search to save time.
+                    nodes = retriever.search(primary_q, limit=limit, filters=strategy["filters"])
 
                     for node in nodes:
                         metadata = getattr(node, "node", node)
                         meta = getattr(metadata, "metadata", {})
                         if isinstance(meta, dict):
-                            content_id = meta.get("content_id")
-                            if isinstance(content_id, str):
-                                content_ids.append(content_id)
-                    logger.info(f"✅ LlamaIndex Retrieval: Found {len(content_ids)} relevant vector IDs.")
+                            cid = meta.get("content_id")
+                            if cid: content_ids.append(cid)
+
+                    logger.info(f"✅ LlamaIndex Retrieval: Found {len(content_ids)} IDs.")
                 except Exception as e:
-                    logger.warning(f"⚠️ LlamaIndex search failed, falling back to basic search: {e}")
+                    logger.warning(f"⚠️ LlamaIndex search failed: {e}")
 
-        # Delegate to ContentService with Fallback Loop
-        # We iterate through query candidates until we find results or run out.
+            # If Semantic Search was attempted but returned nothing, and we are in Strict mode,
+            # we simply continue to the next strategy (Relaxed).
+            if strategy["use_vectors"] and not content_ids:
+                logger.info("❌ No vectors found in this strategy. Retrying...")
+                continue
 
-        results = []
-        unique_results = set()
+            # If we have IDs (or are in Keyword mode), query Postgres
+            # Note: In Keyword mode (use_vectors=False), content_ids is empty,
+            # so ContentService will use the text query 'q'.
 
-        for candidate_q in query_candidates:
-            logger.info(f"Searching content with query: '{candidate_q}'")
+            # Use 'q' only for Keyword Fallback
+            query_text = None if strategy["use_vectors"] else q
 
-            # Attempt 1: Semantic Search (Vector IDs only)
-            # If we have vector matches, we trust the semantic relevance over exact keyword matching.
-            # We pass q=None so ContentService doesn't apply a strict 'LIKE' text filter,
-            # allowing us to retrieve items that match meaning but not necessarily phrasing.
-            if content_ids:
-                logger.info(f"Applying vector filter with {len(content_ids)} IDs.")
-                batch_results = await content_service.search_content(
-                    q=None,
-                    level=level,
-                    subject=subject,
-                    branch=branch,
-                    set_name=set_name,
-                    year=year,
-                    type=type,
-                    lang=lang,
-                    content_ids=content_ids,
-                    limit=limit,
-                )
-                if batch_results:
-                    logger.info(f"Found {len(batch_results)} results via Semantic Search (Vector IDs).")
-                    return batch_results
-                else:
-                    logger.info("Vector results filtered out by metadata. Falling back to Keyword Search.")
-                    # If vector results didn't match the metadata (e.g. wrong year),
-                    # we shouldn't retry them with other candidates.
-                    content_ids = []
+            # For ContentService, we might want to respect the 'year' param
+            # ONLY if it was explicitly passed by the caller OR if we are in Strict mode.
+            # If we are in Relaxed mode, we should probably clear 'year' from the args passed to SQL
+            # to avoid the "Data Inconsistency" issue where Vector says "Match" but SQL says "Wrong Year".
 
-            # Attempt 2: Pure Keyword Search (Fallback)
-            # This is where 'علوم تجربة' -> 'علوم تجريبية' expansion shines.
+            effective_year = year
+            if strategy["name"] == "Relaxed Semantic":
+                effective_year = None # Trust the Vector completely
+
             batch_results = await content_service.search_content(
-                q=candidate_q,
+                q=query_text,
                 level=level,
                 subject=subject,
                 branch=branch,
                 set_name=set_name,
-                year=year,
+                year=effective_year, # Use relaxed year
                 type=type,
                 lang=lang,
-                content_ids=None,
+                content_ids=content_ids if strategy["use_vectors"] else None,
                 limit=limit,
             )
 
             if batch_results:
-                logger.info(f"Found {len(batch_results)} results with query '{candidate_q}' (Pure Keyword).")
-                # We could return immediately or accumulate?
-                # Returning immediately is safer to avoid duplicates and mixing unrelated stuff.
+                logger.info(f"🎉 Success! Found {len(batch_results)} results using {strategy['name']}.")
                 return batch_results
 
-        return results
+        return []
 
     except Exception as e:
         logger.error(f"Search content failed: {e}")

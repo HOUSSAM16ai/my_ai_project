@@ -1,51 +1,66 @@
 import dspy
-
+import json
+from typing import Optional, Dict, Any
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Configure DSPy with the user's preferred model
-# The user specified: mistralai/devstral-2512:free via OpenRouter
-# And provided an API Key.
-
-class QueryRefinementSignature(dspy.Signature):
+class StructuredQuerySignature(dspy.Signature):
     """
-    Refine a natural language educational query into a precise semantic search query.
-    Normalize terms like 'Exercise One' to 'Exercise 1', 'First Subject' to 'Subject 1'.
-    Extract key metadata if possible.
+    Analyze the educational query to extract specific metadata and a refined search term.
+    Focus on extracting:
+    - year: The exam year (e.g., 2024, 2023).
+    - subject: The academic subject (e.g., Mathematics, Physics).
+    - branch: The study branch (e.g., Experimental Sciences, Math Tech).
+    - refined_query: A clean, English translation of the core topic for vector search (e.g., "Probability exercises", "Complex numbers").
     """
-    user_query = dspy.InputField(desc="The raw query from the student.")
-    refined_query = dspy.OutputField(desc="The optimized query for vector search, emphasizing exam year, subject, and exercise number.")
+    user_query: str = dspy.InputField(desc="The raw query from the student.")
+    refined_query: str = dspy.OutputField(desc="The optimized search term.")
+    year: Optional[int] = dspy.OutputField(desc="The exam year if mentioned, else None.")
+    subject: Optional[str] = dspy.OutputField(desc="The subject name if mentioned, else None.")
+    branch: Optional[str] = dspy.OutputField(desc="The branch name if mentioned, else None.")
 
-class QueryRefiner(dspy.Module):
+class StructuredQueryRefiner(dspy.Module):
     def __init__(self):
         super().__init__()
-        self.prog = dspy.ChainOfThought(QueryRefinementSignature)
+        self.prog = dspy.ChainOfThought(StructuredQuerySignature)
 
     def forward(self, user_query: str):
         return self.prog(user_query=user_query)
 
-def get_refined_query(user_query: str, api_key: str, model_name: str = "mistralai/devstral-2512:free") -> str:
+def get_refined_query(user_query: str, api_key: str, model_name: str = "mistralai/devstral-2512:free") -> Dict[str, Any]:
     """
-    Uses DSPy to refine the query.
+    Uses DSPy to refine the query and extract metadata.
+    Returns a dictionary with 'refined_query', 'year', 'subject', 'branch'.
     """
     try:
-        # In DSPy 3.x, use dspy.LM
-        # We point to OpenRouter using 'openai/' prefix and custom base
         lm = dspy.LM(
             model=f"openai/{model_name}",
             api_key=api_key,
             api_base="https://openrouter.ai/api/v1",
-            max_tokens=200
+            max_tokens=300
         )
 
-        # Use context manager for thread safety
         with dspy.context(lm=lm):
-            refiner = QueryRefiner()
+            refiner = StructuredQueryRefiner()
             result = refiner(user_query=user_query)
-            return result.refined_query
+
+            # Extract and clean
+            return {
+                "refined_query": result.refined_query,
+                "year": _safe_int(result.year),
+                "subject": result.subject if result.subject and result.subject.lower() != "none" else None,
+                "branch": result.branch if result.branch and result.branch.lower() != "none" else None
+            }
 
     except Exception as e:
-        # Fallback if DSPy fails (e.g. network, auth)
-        logger.warning("DSPy refinement failed: %s", e)
-        return user_query
+        logger.warning(f"DSPy refinement failed: {e}")
+        return {"refined_query": user_query}
+
+def _safe_int(val: Any) -> Optional[int]:
+    try:
+        if val and str(val).lower() != "none":
+            return int(str(val))
+    except:
+        pass
+    return None
