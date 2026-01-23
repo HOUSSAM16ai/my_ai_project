@@ -58,9 +58,8 @@ async def test_planner_node_fallback():
     }
 
     mock_ai_client = AsyncMock()
-    mock_ai_client.generate.return_value.choices = [
-        MagicMock(message=MagicMock(content='{"steps": ["fallback_step"]}'))
-    ]
+    # Mock send_message returning a JSON string directly
+    mock_ai_client.send_message.return_value = '{"steps": ["fallback_step"]}'
 
     with patch("httpx.AsyncClient") as MockClient:
         mock_instance = MockClient.return_value
@@ -70,5 +69,5 @@ async def test_planner_node_fallback():
         result = await planner_node(mock_state, mock_ai_client)
 
         # Verify fallback was used
-        mock_ai_client.generate.assert_called_once()
+        mock_ai_client.send_message.assert_called_once()
         assert result["plan"] == ["fallback_step"]
