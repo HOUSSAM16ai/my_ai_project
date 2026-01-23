@@ -56,7 +56,7 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
             if user_wants_solution:
                 # If user wants solution, we provide the FULL Official Solution Key
                 solution_text = original_solution
-                solution_display = f"<OFFICIAL_SOLUTION_KEY>\n{solution_text}\n</OFFICIAL_SOLUTION_KEY>"
+                solution_display = f"### الحل النموذجي (Official Solution):\n{solution_text}"
             else:
                 solution_display = "[SOLUTION HIDDEN: Student has NOT requested the solution yet.]"
 
@@ -72,8 +72,8 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
 
         "3. **عند طلب الحل (Dual Mode Protocol)**:\n"
         "   - **الجزء الأول (الصرامة):** يجب أن تعرض 'الحل النموذجي الرسمي' (Official Answer Key) وسلم التنقيط كما هو بالضبط.\n"
-        "     ⚠️ **هام جداً:** يجب أن تضع الحل الرسمي داخل وسوم <OFFICIAL_SOLUTION_KEY> و </OFFICIAL_SOLUTION_KEY> في إجابتك ليتم تنسيقه بشكل صحيح.\n"
-        "   - **الجزء الثاني (المرونة):** بعد إغلاق الوسم، قدم 'شرحاً خارقاً مخصصاً' (Supernatural Personalized Explanation).\n"
+        "     ⚠️ **هام جداً:** اعرض الحل الرسمي تحت عنوان واضح (مثلاً: ### الحل النموذجي) لضمان التنسيق الجيد.\n"
+        "   - **الجزء الثاني (المرونة):** بعد الحل، قدم 'شرحاً خارقاً مخصصاً' (Supernatural Personalized Explanation).\n"
         f"   - **تخصيص الشرح:** مستوى الطالب الحالي هو: **{student_level}**.\n"
         "     - إذا كان 'Beginner': اشرح الأساسيات بتبسيط شديد، فكك المصطلحات، واستخدم تشبيهات من الواقع.\n"
         "     - إذا كان 'Average': ركز على توضيح النقاط الصعبة والربط بين المفاهيم.\n"

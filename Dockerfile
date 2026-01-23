@@ -50,6 +50,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Node.js 20 (LTS) manually to avoid devcontainer feature GPG errors
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g npm@latest
+
 # Create app user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
