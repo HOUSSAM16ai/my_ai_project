@@ -37,7 +37,7 @@ class PlanningAgentSettings(BaseSettings):
         None, description="مفتاح API لخدمة OpenRouter"
     )
     AI_MODEL: str = Field(
-        "mistralai/mistral-7b-instruct:free",
+        "mistralai/devstral-2512:free",
         description="اسم النموذج المستخدم في التخطيط",
     )
     AI_BASE_URL: str = Field(
