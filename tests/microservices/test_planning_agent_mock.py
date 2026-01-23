@@ -41,7 +41,7 @@ async def test_generate_plan_fallback_on_error():
 
         # Verify fallback steps are returned
         assert len(steps) >= 3
-        assert "تحليل الهدف" in steps[0]
+        assert "تحليل هدف" in steps[0]
 
 @pytest.mark.asyncio
 async def test_generate_plan_fallback_no_key():
@@ -51,4 +51,4 @@ async def test_generate_plan_fallback_no_key():
     steps = await _generate_plan("Learn Python", [], mock_settings)
 
     assert len(steps) >= 3
-    assert "تحليل الهدف" in steps[0]
+    assert "تحليل هدف" in steps[0]

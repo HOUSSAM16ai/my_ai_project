@@ -41,15 +41,15 @@ class PlanResponse(BaseModel):
 
 
 def _get_fallback_plan(goal: str, context: list[str]) -> list[str]:
-    """توليد خطة احتياطية عند فشل النموذج الذكي."""
+    """توليد خطة احتياطية مخصصة عند فشل النموذج الذكي."""
     base_steps = [
-        "تحليل الهدف وتجزئته إلى مهام أصغر",
-        "تحديد الموارد والمراجع المطلوبة",
-        "بناء تسلسل تنفيذي قابل للتتبع",
-        "مراجعة الخطة وتحسينها وفق السياق",
+        f"تحليل هدف '{goal}' وتجزئته إلى مهام فرعية قابلة للتنفيذ",
+        "تحديد الموارد التعليمية والمراجع الأساسية المطلوبة",
+        "إعداد جدول زمني مرن لتنفيذ الخطة خطوة بخطوة",
+        "مراجعة المخرجات وتحسين الاستيعاب بناءً على التقدم",
     ]
     if context:
-        base_steps.insert(1, f"تضمين السياق الداعم: {', '.join(context)}")
+        base_steps.insert(2, f"دمج السياق الإضافي ({', '.join(context)}) لتعزيز الفهم")
     return base_steps
 
 
@@ -69,36 +69,54 @@ async def _generate_plan(
         base_url=settings.AI_BASE_URL,
     )
 
-    prompt = (
-        f"You are an expert educational planner. Break down the user's goal '{goal}' "
-        f"into clear, actionable steps. Context: {', '.join(context)}. "
-        "Return ONLY a JSON list of strings (e.g., [\"Step 1\", \"Step 2\"]). "
-        "Do not include markdown blocks."
+    # هندسة الأوامر المتقدمة (Prompt Engineering)
+    system_prompt = (
+        "You are a World-Class Educational Strategist. "
+        "Your mission is to create a structured, step-by-step learning plan. "
+        "Reply strictly in the same language as the user's goal (likely Arabic). "
+        "Return the response as a valid JSON list of strings only. "
+        "No markdown formatting, no explanations, no keys like 'steps'."
+        "Example: [\"Step 1\", \"Step 2\"]"
     )
 
+    user_prompt = f"Goal: {goal}\nContext: {', '.join(context)}"
+
     try:
+        logger.info("Sending request to AI model", extra={"model": settings.AI_MODEL})
         response = await client.chat.completions.create(
             model=settings.AI_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.3, # تقليل العشوائية للحصول على JSON دقيق
+            response_format={"type": "json_object"}, # محاولة فرض JSON إذا كان النموذج يدعمه
         )
 
         content = response.choices[0].message.content
         if not content:
             raise ValueError("Empty response from AI")
 
-        # Clean markdown if present
-        if content.startswith("```json"):
-            content = content.replace("```json", "").replace("```", "")
+        # تنظيف المخرجات لضمان JSON صالح
+        cleaned_content = content.replace("```json", "").replace("```", "").strip()
 
-        steps = json.loads(content)
-        if not isinstance(steps, list):
-             raise ValueError("Response is not a list")
+        # محاولة التعامل مع كائن JSON بدلاً من قائمة مباشرة
+        parsed = json.loads(cleaned_content)
+
+        if isinstance(parsed, list):
+            steps = parsed
+        elif isinstance(parsed, dict):
+            # بعض النماذج قد تعيد {"steps": [...]} رغم التعليمات
+            steps = next(iter(parsed.values())) if parsed else []
+            if not isinstance(steps, list):
+                 steps = [str(parsed)]
+        else:
+             steps = [str(parsed)]
 
         return [str(s) for s in steps]
 
     except Exception as e:
-        logger.error("فشل توليد الخطة بالذكاء الاصطناعي: %s", e)
+        logger.error("AI Generation Failed", extra={"error": str(e)})
         return _get_fallback_plan(goal, context)
 
 
@@ -124,9 +142,8 @@ def _build_router(settings: PlanningAgentSettings) -> APIRouter:
     ) -> PlanResponse:
         """ينشئ خطة تعليمية جديدة بناءً على الهدف والسياق ويحفظها."""
 
-        logger.info("توليد خطة", extra={"goal": payload.goal, "context": payload.context})
+        logger.info("Start planning", extra={"goal": payload.goal})
 
-        # استدعاء غير متزامن لتوليد الخطة
         steps = await _generate_plan(payload.goal, payload.context, settings)
 
         plan = Plan(goal=payload.goal, steps=steps)
@@ -159,10 +176,10 @@ async def lifespan(app: FastAPI):
     """يدير دورة حياة وكيل التخطيط."""
 
     setup_logging(get_settings().SERVICE_NAME)
-    logger.info("بدء تشغيل وكيل التخطيط")
+    logger.info("Planning Agent Started")
     await init_db()
     yield
-    logger.info("إيقاف وكيل التخطيط")
+    logger.info("Planning Agent Stopped")
 
 
 def create_app(settings: PlanningAgentSettings | None = None) -> FastAPI:
