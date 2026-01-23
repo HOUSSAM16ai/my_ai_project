@@ -21,6 +21,14 @@ class FallbackQueryExpander:
         "dice": "نرد",
         "random variable": "متغير عشوائي",
 
+        # Branches
+        "experimental": "تجريبية",
+        "sciences": "علوم",
+        "math": "رياضيات",
+        "mathematics": "رياضيات",
+        "technique": "تقني",
+        "economy": "تسيير",
+
         # Complex Numbers
         "complex": "مركبة",
         "complex numbers": "أعداد مركبة",
@@ -59,6 +67,8 @@ class FallbackQueryExpander:
 
         # General / Exam terms
         "exercise": "تمرين",
+        "exercice": "تمرين",
+        "sujet": "موضوع",
         "problem": "مسألة",
         "solution": "حل",
         "correction": "تصحيح",
@@ -76,6 +86,13 @@ class FallbackQueryExpander:
         "احتمالات": "احتمال",
         "الإحتمالات": "احتمال",
         "إحتمالات": "احتمال",
+        "الكرات": "كرة",
+        "كرات": "كرة",
+        "الكريات": "كرة",
+        "كريات": "كرة",
+        "الالوان": "لون",
+        "الوان": "لون",
+        "ألوان": "لون",
 
         # Analysis
         "الدوال": "دالة",
@@ -97,12 +114,15 @@ class FallbackQueryExpander:
         "حلول": "حل",
         "التمارين": "تمرين",
         "تمارين": "تمرين",
+        "المسألة": "تمرين",
+        "مسألة": "تمرين",
         "المواضيع": "موضوع",
         "مواضيع": "موضوع",
         "الشعب": "شعبة",
         "شعب": "شعبة",
         "العلوم": "علوم",
         "الرياضيات": "رياضيات",
+        "والالوان": "لون",
     }
 
     # Common Student Typos -> Correct Term
@@ -129,7 +149,7 @@ class FallbackQueryExpander:
     # These are words likely to appear in a user query but NOT in the exercise title/text
     STOP_WORDS = {
         "في", "على", "من", "إلى", "عن",
-        "لسنة", "سنة", "عام",
+        "لسنة", "سنة", "عام", "للعام",
         "شعبة", "الشعبة", "لشعبة", # Metadata
         "مادة", "المادة",
         "و", "أو",
@@ -137,8 +157,12 @@ class FallbackQueryExpander:
         "هل", "كيف", "ما", "ماذا",
         "اريد", "أريد", "ابحث", "أبحث",
         "اعطني", "أعطني", "هات", "قدم", # Action Verbs
+        "شوف", "تشوفلي", "ممكن", # Dialect / Politeness
+        "نتاع", "تاع", "لي", "اللي", "ديال", # Dialect possession/relative
+        "جا", "جاء", # Dialect verbs
+        "الماضي", "المقبل", "القادم", # Relative Time
         "اسئلة", "أسئلة", "امتحان", # Content Types
-        "بكالوريا", "البكالوريا", "bac", # Context
+        "بكالوريا", "البكالوريا", "bac", "الباك", "باك", # Context
         "موضوع", "الموضوع", # Often ambiguous if not precise
         # Branch Names (Often metadata only)
         "علوم", "تجريبية", "رياضيات", "رياضي", "تقني", "تسيير", "اقتصاد", "لغات", "أجنبية", "آداب", "فلسفة",
@@ -160,6 +184,8 @@ class FallbackQueryExpander:
         variations = [q] # Always start with original
 
         q_lower = q.lower()
+        # Clean punctuation to avoid "word?" not matching "word"
+        q_lower = re.sub(r'[،؛؟!.,:;?]', ' ', q_lower)
         words = q_lower.split()
 
         # Strategy 1: Translate English/French -> Arabic
