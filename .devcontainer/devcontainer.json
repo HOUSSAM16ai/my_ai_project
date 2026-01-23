@@ -71,7 +71,9 @@
       "username": "root"
     },
     "ghcr.io/devcontainers/features/node:1": {
-        "version": "lts"
+        "version": "lts",
+        "installYarn": false,
+        "installPnpm": false
     }
   },
 
