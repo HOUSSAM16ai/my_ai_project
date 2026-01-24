@@ -28,6 +28,47 @@ _TOPIC_MAP = {
     "differential_equations": ["differential", "المعادلات التفاضلية"],
     "statistics": ["statistics", "إحصاء", "احصاء"]
 }
+_EXERCISE_ORDINALS = {
+    1: ["الأول", "الاول"],
+    2: ["الثاني", "الثانى"],
+    3: ["الثالث"],
+    4: ["الرابع"],
+}
+_EXERCISE_MARKERS_AR = ["التمرين", "تمرين"]
+_SECTION_STOP_MARKERS_AR = ["التمرين", "تمرين", "الموضوع", "وسوم"]
+_EXERCISE_MARKERS_EN_PATTERN = re.compile(r"(?:^|\b)(exercise|ex)(?:\b|$)")
+_SECTION_STOP_MARKERS_EN_PATTERN = re.compile(r"(?:^|\b)(exercise|ex|subject)(?:\b|$)")
+_EXERCISE_NUMBER_PATTERN = re.compile(
+    r"(?:^|\s)(?:exercise|ex|تمرين|التمرين)"
+    r"(?:\s+رقم|\s+no\.?|\s+num\.?|\s+number)?\s*[#(]?\s*(\d+)\s*\)?(?:\s|$)"
+)
+_EXAM_CARD_MARKERS = ["## بطاقة الامتحان", "## exam card"]
+_ARABIC_DIGIT_MAP = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
+_ARABIC_LETTER_MAP = str.maketrans(
+    {
+        "أ": "ا",
+        "إ": "ا",
+        "آ": "ا",
+        "ة": "ه",
+        "ى": "ي",
+        "ؤ": "و",
+        "ئ": "ي",
+    }
+)
+_SUBJECT_SYNONYMS = {
+    "رياضيات": ["math", "mathematics", "الرياضيات", "مادة الرياضيات"],
+    "mathematics": ["math", "رياضيات", "الرياضيات"],
+}
+_BRANCH_SYNONYMS = {
+    "علوم تجريبية": ["experimental sciences", "science", "sciences"],
+    "experimental sciences": ["علوم تجريبية", "science", "sciences"],
+}
+_EXAM_REF_SYNONYMS = {
+    "الموضوع الاول": ["subject 1", "موضوع 1", "الموضوع 1"],
+    "الموضوع الثاني": ["subject 2", "موضوع 2", "الموضوع 2"],
+    "subject 1": ["الموضوع الاول", "الموضوع 1", "موضوع 1"],
+    "subject 2": ["الموضوع الثاني", "الموضوع 2", "موضوع 2"],
+}
 
 
 async def search_educational_content(
@@ -70,15 +111,16 @@ async def search_educational_content(
     full_query = query
     if exercise_id:
         full_query = f"{query} {exercise_id}"
+    semantic_query = _expand_query_semantics(full_query, year, subject, branch, exam_ref)
 
     # Default to Memory Agent URL or localhost for dev
     memory_url = os.getenv("MEMORY_AGENT_URL") or "http://memory-agent:8002"
     search_url = f"{memory_url}/memories/search"
 
-    logger.info(f"Searching content with query='{full_query}' and tags={tags}")
+    logger.info(f"Searching content with query='{semantic_query}' and tags={tags}")
 
     search_payload = {
-        "query": full_query,
+        "query": semantic_query,
         "filters": {"tags": tags},
         "limit": 5,
     }
@@ -93,11 +135,11 @@ async def search_educational_content(
             if not results or not isinstance(results, list):
                 # If API returns empty, TRY LOCAL FALLBACK ANYWAY.
                 logger.info("Memory Agent returned no results. Attempting local fallback.")
-                return _search_local_knowledge_base(full_query, year, subject, branch, exam_ref)
+                return _search_local_knowledge_base(semantic_query, year, subject, branch, exam_ref)
 
             # Process and filter results
             contents = []
-            is_specific = _is_specific_request(full_query)
+            is_specific = _is_specific_request(semantic_query)
 
             for item in results:
                 content = item.get("content", "")
@@ -129,7 +171,7 @@ async def search_educational_content(
                         continue
 
                 # Try granular extraction
-                extracted = _extract_specific_exercise(content, full_query)
+                extracted = _extract_specific_exercise(content, semantic_query)
 
                 final_content = ""
                 if extracted:
@@ -153,27 +195,30 @@ async def search_educational_content(
 
     except (httpx.ConnectError, httpx.TimeoutException):
         logger.warning(f"Could not connect to Memory Agent at {memory_url}. Switching to local knowledge base fallback.")
-        return _search_local_knowledge_base(full_query, year, subject, branch, exam_ref)
+        return _search_local_knowledge_base(semantic_query, year, subject, branch, exam_ref)
 
     except httpx.HTTPStatusError as e:
         logger.error(f"Memory Agent returned error: {e.response.status_code}")
-        return _search_local_knowledge_base(full_query, year, subject, branch, exam_ref)
+        return _search_local_knowledge_base(semantic_query, year, subject, branch, exam_ref)
     except Exception as e:
         logger.error(f"Search failed: {e}", exc_info=True)
-        return _search_local_knowledge_base(full_query, year, subject, branch, exam_ref)
+        return _search_local_knowledge_base(semantic_query, year, subject, branch, exam_ref)
 
 
 def _is_specific_request(query: str) -> bool:
-    """Check if the query is requesting a specific exercise or topic."""
-    query_lower = query.lower()
+    """يتحقق مما إذا كان الطلب يشير إلى تمرين أو موضوع محدد."""
+    query_lower = _normalize_semantic_text(query)
 
     # 1. Check for explicit exercise keywords/numbers
-    if any(k in query_lower for k in ["exercise", "تمرين", "تمارين", "ex1", "ex2", "ex3", "ex4"]):
+    if _detect_exercise_number(query_lower) is not None:
+        return True
+    if _has_exercise_marker(query_lower):
         return True
 
     # 2. Check for Topic Keywords (If user asks for 'Probability', they want THAT, not the whole exam)
     for keywords in _TOPIC_MAP.values():
-        if any(k in query_lower for k in keywords):
+        normalized_keywords = [_normalize_semantic_text(keyword) for keyword in keywords]
+        if any(k in query_lower for k in normalized_keywords):
             return True
 
     return False
@@ -181,127 +226,290 @@ def _is_specific_request(query: str) -> bool:
 
 def _extract_specific_exercise(content: str, query: str) -> str | None:
     """
-    Extracts a specific exercise from the Markdown content based on headers,
-    preserving the File Header (Title + Exam Card) for context.
-    Supports both number-based (Exercise 1) and topic-based (Probability) extraction.
+    يستخرج تمرينًا محددًا من محتوى Markdown مع الحفاظ على رأس الملف (العنوان وبطاقة الامتحان).
+    يدعم الاستخراج حسب رقم التمرين أو حسب الموضوع.
     """
-    query_lower = query.lower()
+    query_lower = _normalize_semantic_text(query)
+    target_exercise_num = _detect_exercise_number(query_lower)
+    target_topics = _collect_target_topics(query_lower, target_exercise_num)
 
-    target_exercise_num = None
-    target_topics = []
-
-    # 1. Identify Target by Number
-    if any(k in query_lower for k in ["exercise 1", "التمرين الأول", "تمرين 1", "ex1"]):
-        target_exercise_num = 1
-    elif any(k in query_lower for k in ["exercise 2", "التمرين الثاني", "تمرين 2", "ex2"]):
-        target_exercise_num = 2
-    elif any(k in query_lower for k in ["exercise 3", "التمرين الثالث", "تمرين 3", "ex3"]):
-        target_exercise_num = 3
-    elif any(k in query_lower for k in ["exercise 4", "التمرين الرابع", "تمرين 4", "ex4"]):
-        target_exercise_num = 4
-
-    # 2. Identify Target by Topic (only if no specific number forced, or as augment)
-    if target_exercise_num is None:
-        for keywords in _TOPIC_MAP.values():
-            if any(k in query_lower for k in keywords):
-                target_topics.extend(keywords)
-
-    # If neither number nor topic is found, return None
     if target_exercise_num is None and not target_topics:
         return None
 
-    lines = content.split('\n')
+    lines = content.split("\n")
+    header_text = _extract_header_block(lines)
+    exercise_text = _extract_exercise_block(lines, target_exercise_num, target_topics)
 
-    # --- PHASE 1: Header Extraction ---
-    # Extract Title (H1) and Exam Card (## بطاقة الامتحان)
-    header_lines = []
+    if not exercise_text:
+        return None
+    if header_text:
+        return f"{header_text}\n\n---\n\n{exercise_text}"
+    return exercise_text
+
+
+def _detect_exercise_number(query_lower: str) -> int | None:
+    """
+    يحدد رقم التمرين المطلوب من نص البحث إن وجد.
+    """
+    query_normalized = _normalize_semantic_text(query_lower)
+    direct_match = _EXERCISE_NUMBER_PATTERN.search(query_normalized)
+    if direct_match:
+        try:
+            return int(direct_match.group(1))
+        except ValueError:
+            return None
+
+    for number, ordinals in _EXERCISE_ORDINALS.items():
+        for ordinal in ordinals:
+            if f"التمرين {ordinal}" in query_normalized:
+                return number
+
+    return None
+
+
+def _collect_target_topics(query_lower: str, exercise_number: int | None) -> list[str]:
+    """
+    يجمع كلمات الموضوع ذات الصلة عندما لا يوجد رقم تمرين محدد.
+    """
+    if exercise_number is not None:
+        return []
+
+    topics: list[str] = []
+    for keywords in _TOPIC_MAP.values():
+        normalized_keywords = [_normalize_semantic_text(keyword) for keyword in keywords]
+        if any(keyword in query_lower for keyword in normalized_keywords):
+            topics.extend(normalized_keywords)
+    return list(dict.fromkeys(topics))
+
+
+def _extract_header_block(lines: list[str]) -> str:
+    """
+    يستخرج عنوان الملف وبطاقة الامتحان من القسم العلوي للمستند.
+    """
+    header_lines: list[str] = []
     capture_card = False
 
     for line in lines:
         stripped = line.strip()
+        stripped_normalized = _normalize_semantic_text(stripped)
 
-        # Stop header capture if we hit an Exercise
-        if (stripped.startswith("#") and ("التمرين" in stripped or "Exercise" in stripped)):
+        if stripped.startswith("#") and _has_exercise_marker(stripped_normalized):
             break
 
-        # Capture H1
         if line.startswith("# "):
             header_lines.append(line)
             continue
 
-        # Capture Exam Card
-        if "## بطاقة الامتحان" in stripped or "## Exam Card" in stripped:
+        if any(_normalize_semantic_text(marker) in stripped_normalized for marker in _EXAM_CARD_MARKERS):
             header_lines.append(line)
             capture_card = True
             continue
 
         if capture_card:
-            if line.startswith("## ") or line.startswith("# "):
-                capture_card = False
-            elif line.startswith("---"):
+            if line.startswith("## ") or line.startswith("# ") or line.startswith("---"):
                 capture_card = False
             else:
                 header_lines.append(line)
 
-    header_text = "\n".join(header_lines).strip()
+    return "\n".join(header_lines).strip()
 
-    # --- PHASE 2: Exercise Extraction ---
-    extracted_lines = []
+
+def _extract_exercise_block(
+    lines: list[str],
+    target_exercise_num: int | None,
+    target_topics: list[str],
+) -> str | None:
+    """
+    يستخرج كتلة التمرين المطلوبة بالاعتماد على العناوين والأرقام أو الموضوعات.
+    """
+    extracted_lines: list[str] = []
     capture = False
-
-    header_pattern = re.compile(r'^(#{2,3})\s*(.*)')
-
-    # Patterns for Number
-    number_patterns = []
-    if target_exercise_num:
-        number_patterns = [
-            f"التمرين {target_exercise_num}",
-            f"Exercise {target_exercise_num}",
-            f"التمرين الأول" if target_exercise_num == 1 else "___",
-            f"التمرين الثاني" if target_exercise_num == 2 else "___",
-            f"التمرين الثالث" if target_exercise_num == 3 else "___",
-            f"التمرين الرابع" if target_exercise_num == 4 else "___",
-        ]
+    header_pattern = re.compile(r"^(#{2,3})\s*(.*)")
+    number_patterns = _build_number_patterns(target_exercise_num)
 
     for line in lines:
         match = header_pattern.match(line)
         if match:
             header_text_match = match.group(2)
-
-            # Check Match
-            is_match = False
-
-            # 1. Check Number
-            if target_exercise_num:
-                if any(p in header_text_match for p in number_patterns):
-                    is_match = True
-
-            # 2. Check Topic
-            elif target_topics:
-                # Enforce "Exercise" in header to avoid matching random sections
-                if "التمرين" in header_text_match or "Exercise" in header_text_match:
-                    if any(t in header_text_match.lower() for t in target_topics):
-                        is_match = True
+            header_text_normalized = _normalize_semantic_text(header_text_match)
+            is_match = _is_exercise_header_match(
+                header_text_normalized,
+                target_exercise_num,
+                number_patterns,
+                target_topics,
+            )
 
             if is_match:
                 capture = True
                 extracted_lines.append(line)
                 continue
-            elif capture:
-                # Stop at next header that looks like a new section
-                if "التمرين" in header_text_match or "Exercise" in header_text_match or "الموضوع" in header_text_match or "Subject" in header_text_match or "وسوم" in header_text_match:
-                    capture = False
+
+            if capture and _is_new_section_header(header_text_normalized):
+                capture = False
 
         if capture:
             extracted_lines.append(line)
 
-    if extracted_lines:
-        exercise_text = "\n".join(extracted_lines).strip()
-        if header_text:
-            return f"{header_text}\n\n---\n\n{exercise_text}"
-        return exercise_text
+    if not extracted_lines:
+        return None
+    return "\n".join(extracted_lines).strip()
 
-    return None
+
+def _build_number_patterns(target_exercise_num: int | None) -> list[str]:
+    """
+    يبني قائمة أنماط مطابقة لرقم التمرين باللغة العربية والإنجليزية.
+    """
+    if not target_exercise_num:
+        return []
+
+    ordinals = _EXERCISE_ORDINALS.get(target_exercise_num, [])
+
+    patterns = [
+        _normalize_semantic_text(f"التمرين {target_exercise_num}"),
+        _normalize_semantic_text(f"Exercise {target_exercise_num}"),
+        _normalize_semantic_text(f"التمرين ({target_exercise_num})"),
+        _normalize_semantic_text(f"Exercise ({target_exercise_num})"),
+    ]
+    patterns.extend(_normalize_semantic_text(f"التمرين {ordinal}") for ordinal in ordinals)
+    return list(dict.fromkeys(patterns))
+
+
+def _is_exercise_header_match(
+    header_text: str,
+    target_exercise_num: int | None,
+    number_patterns: list[str],
+    target_topics: list[str],
+) -> bool:
+    """
+    يتحقق مما إذا كان العنوان يمثل التمرين المطلوب حسب الرقم أو الموضوع.
+    """
+    header_normalized = _normalize_semantic_text(header_text)
+    if target_exercise_num:
+        return any(pattern in header_normalized for pattern in number_patterns)
+
+    if target_topics:
+        if _has_exercise_marker(header_normalized):
+            return any(topic in header_normalized for topic in target_topics)
+
+    return False
+
+
+def _is_new_section_header(header_text: str) -> bool:
+    """
+    يحدد ما إذا كان العنوان يمثل قسمًا جديدًا يجب إنهاء الالتقاط عنده.
+    """
+    header_normalized = _normalize_semantic_text(header_text)
+    return _has_section_stop_marker(header_normalized)
+
+
+def _normalize_text(text: str) -> str:
+    """
+    يطبع النص عبر تحويله إلى أحرف صغيرة واستبدال الأرقام العربية بأرقام لاتينية.
+    """
+    normalized = text.lower().translate(_ARABIC_DIGIT_MAP)
+    return " ".join(normalized.split())
+
+
+def _normalize_semantic_text(text: str) -> str:
+    """
+    يطبع النص دلاليًا عبر توحيد الحروف العربية وإزالة الفروقات الشائعة في الكتابة.
+    """
+    normalized = _normalize_text(text)
+    return normalized.translate(_ARABIC_LETTER_MAP)
+
+
+def _expand_query_semantics(
+    query: str,
+    year: str | None,
+    subject: str | None,
+    branch: str | None,
+    exam_ref: str | None,
+) -> str:
+    """
+    يوسّع الاستعلام بإضافة مرادفات وتهيئة دلالية لزيادة فرص المطابقة.
+    """
+    normalized_query = _normalize_semantic_text(query)
+    terms: list[str] = [normalized_query]
+    terms.extend(_expand_topic_keywords(normalized_query))
+    terms.extend(_expand_metadata_keywords(year, subject, branch, exam_ref))
+    return " ".join(_unique_nonempty_terms(terms))
+
+
+def _expand_topic_keywords(query_normalized: str) -> list[str]:
+    """
+    يضيف كلمات موضوعية مترادفة عند كشفها في الاستعلام.
+    """
+    topics: list[str] = []
+    for keywords in _TOPIC_MAP.values():
+        normalized_keywords = [_normalize_semantic_text(keyword) for keyword in keywords]
+        if any(keyword in query_normalized for keyword in normalized_keywords):
+            topics.extend(normalized_keywords)
+    return topics
+
+
+def _expand_metadata_keywords(
+    year: str | None,
+    subject: str | None,
+    branch: str | None,
+    exam_ref: str | None,
+) -> list[str]:
+    """
+    يضيف مرادفات البيانات الوصفية لضمان تطابق صيغ متعددة لنفس المعنى.
+    """
+    terms: list[str] = []
+    for value in (year, subject, branch, exam_ref):
+        if value:
+            terms.append(_normalize_semantic_text(value))
+
+    if subject:
+        subject_key = _normalize_semantic_text(subject)
+        terms.extend(_lookup_semantic_synonyms(_SUBJECT_SYNONYMS, subject_key))
+
+    if branch:
+        branch_key = _normalize_semantic_text(branch)
+        terms.extend(_lookup_semantic_synonyms(_BRANCH_SYNONYMS, branch_key))
+
+    if exam_ref:
+        exam_key = _normalize_semantic_text(exam_ref)
+        terms.extend(_lookup_semantic_synonyms(_EXAM_REF_SYNONYMS, exam_key))
+
+    return [_normalize_semantic_text(term) for term in terms]
+
+
+def _unique_nonempty_terms(terms: list[str]) -> list[str]:
+    """
+    ينقّي قائمة المصطلحات بحذف التكرارات والقيم الفارغة.
+    """
+    return [term for term in dict.fromkeys(terms) if term]
+
+
+def _lookup_semantic_synonyms(mapping: dict[str, list[str]], key: str) -> list[str]:
+    """
+    يعيد مرادفات مطبّعة وفق مفتاح مطبّع، مع تطبيع مفاتيح القاموس عند الحاجة.
+    """
+    direct = mapping.get(key)
+    if direct:
+        return direct
+    normalized_mapping = {_normalize_semantic_text(k): v for k, v in mapping.items()}
+    return normalized_mapping.get(key, [])
+
+
+def _has_exercise_marker(text_normalized: str) -> bool:
+    """
+    يتحقق مما إذا كان النص يحتوي على مؤشرات تدل على وجود تمرين.
+    """
+    if any(marker in text_normalized for marker in _EXERCISE_MARKERS_AR):
+        return True
+    return _EXERCISE_MARKERS_EN_PATTERN.search(text_normalized) is not None
+
+
+def _has_section_stop_marker(text_normalized: str) -> bool:
+    """
+    يتحقق مما إذا كان النص يمثل عنوان قسم جديد يتطلب إيقاف الالتقاط.
+    """
+    if any(marker in text_normalized for marker in _SECTION_STOP_MARKERS_AR):
+        return True
+    return _SECTION_STOP_MARKERS_EN_PATTERN.search(text_normalized) is not None
 
 
 def _search_local_knowledge_base(
