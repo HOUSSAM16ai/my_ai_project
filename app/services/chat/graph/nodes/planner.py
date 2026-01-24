@@ -1,24 +1,15 @@
 """
 عقدة المخطط (Planner Node).
 ---------------------------
-تقوم بتحليل طلب المستخدم وبناء خطة مفصلة للحل.
-تحاول الاتصال بخدمة التخطيط المصغرة (Planning Microservice) أولاً،
-وفي حال الفشل تعود لاستخدام النموذج المحلي (Fallback).
+تقوم بتحليل طلب المستخدم وبناء خطة مفصلة للحل باستخدام النموذج المدمج.
 """
 
 import json
 import logging
-import httpx
-from langchain_core.messages import SystemMessage, HumanMessage
 from app.services.chat.graph.state import AgentState
 from app.core.ai_gateway import AIClient
-from app.core.ai_config import get_ai_config
-
-import os
 
 logger = logging.getLogger(__name__)
-
-PLANNING_SERVICE_URL = os.getenv("PLANNING_SERVICE_URL", "http://localhost:8001/plans")
 
 async def planner_node(state: AgentState, ai_client: AIClient) -> dict:
     """
@@ -27,43 +18,9 @@ async def planner_node(state: AgentState, ai_client: AIClient) -> dict:
     messages = state["messages"]
     last_message = messages[-1].content if messages else ""
 
-    # محاولة الاتصال بالخدمة المصغرة أولاً
-    try:
-        logger.info("Calling Planning Agent Microservice...")
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(
-                PLANNING_SERVICE_URL,
-                json={"goal": last_message, "context": []}
-            )
-            response.raise_for_status()
-            data = response.json()
+    logger.info("Planner Node: Analyzing request...")
 
-            # تحويل خطوات الخدمة (نصوص) إلى خطوات LangGraph (أفعال)
-            # بما أن الخدمة تعيد خطوات نصية وصفية، سنقوم بتبسيطها هنا
-            # أو يمكننا الاعتماد عليها إذا كان النظام يدعم خطوات مرنة.
-            # للتوافق الحالي، سنستخدم منطق بسيط:
-
-            # إذا كانت الخدمة تعمل، نستخدم خطواتها "كما هي" في الخطة للعرض،
-            # لكن LangGraph يحتاج خطوات تنفيذية (Nodes).
-            # لذلك، سنقوم بتحويل "النوايا" إلى "عقد".
-
-            # للتبسيط في هذا التطبيق المدمج:
-            # سنفترض أن الخدمة تعيد خطوات عامة، وسنحولها إلى ['search', 'explain'] كحد أدنى
-            # ولكن، الهدف هو التكامل. لذا سنستخدم الخطوات المسترجعة إذا أمكن.
-
-            # نظراً لأن LangGraph يتوقع قيم محددة لـ "next"، سنحافظ على الهيكل القديم
-            # ولكن نثري الـ "plan" بالبيانات الجديدة.
-
-            logger.info("Planning Microservice responded successfully.")
-
-            # هنا سنقوم "بترجمة" الخطة النصية إلى أفعال
-            # (هذا منطق مؤقت لضمان التوافق مع باقي النظام)
-            return {"plan": ["search", "explain"], "current_step_index": 0, "next": "supervisor"}
-
-    except Exception as e:
-        logger.warning(f"Planning Microservice unavailable ({e}). Using Monolith Fallback.")
-
-    # Fallback: Local Logic (Monolith)
+    # Local Logic (Monolith)
     system_prompt = (
         "أنت 'المهندس المخطط' (Planner Architect) في نظام تعليمي خارق.\n"
         "مهمتك: تحليل طلب الطالب وتقسيمه إلى خطوات منطقية دقيقة.\n"
@@ -77,15 +34,19 @@ async def planner_node(state: AgentState, ai_client: AIClient) -> dict:
         "Plan: ['search', 'explain']"
     )
 
-    # Using send_message compatible with NeuralRoutingMesh
     content = await ai_client.send_message(
         system_prompt=system_prompt,
         user_message=f"Request: {last_message}"
     )
+
     try:
-        plan_data = json.loads(content)
+        # Try to parse JSON. If the model returns markdown like ```json ... ```, we might need cleanup.
+        clean_content = content.replace("```json", "").replace("```", "").strip()
+        plan_data = json.loads(clean_content)
         plan = plan_data.get("steps", ["search", "explain"])
-    except:
+    except Exception as e:
+        logger.warning(f"Failed to parse planner output: {content}. Error: {e}")
         plan = ["search", "explain"]
 
+    logger.info(f"Generated Plan: {plan}")
     return {"plan": plan, "current_step_index": 0, "next": "supervisor"}
