@@ -16,7 +16,6 @@
 
 import logging
 
-from app.core.gateway.circuit_breaker import CircuitBreaker, CircuitState
 from app.core.gateway.connection import ConnectionManager
 
 # --- Import Atomic Modules ---
@@ -29,7 +28,6 @@ from app.core.gateway.exceptions import (
     AIRateLimitError,
 )
 from app.core.gateway.mesh import AIClient, NeuralRoutingMesh, get_ai_client
-from app.core.gateway.node import NeuralNode
 from app.core.superhuman_performance_optimizer import get_performance_optimizer
 
 # Re-export key components for backward compatibility
@@ -41,10 +39,7 @@ __all__ = [
     "AIError",
     "AIProviderError",
     "AIRateLimitError",
-    "CircuitBreaker",
-    "CircuitState",
     "ConnectionManager",
-    "NeuralNode",
     "NeuralRoutingMesh",
     "ai_gateway",
     "get_ai_client",
@@ -99,10 +94,10 @@ class AIGatewayFacade:
         return self._client
 
     async def generate_text(self, prompt: str, **kwargs) -> dict[str, str | int | bool]:
-        return await self.client.generate_text(prompt, **kwargs)
+        return await self.client.generate_text(prompt, **kwargs) # type: ignore
 
     async def forge_new_code(self, **kwargs) -> dict[str, str | int | bool]:
-        return await self.client.forge_new_code(**kwargs)
+        return await self.client.forge_new_code(**kwargs) # type: ignore
 
     def __getattr__(self, name: str) -> object:
         return getattr(self.client, name)
