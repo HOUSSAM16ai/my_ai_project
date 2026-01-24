@@ -161,22 +161,34 @@ async def search_content(
             # If we are in Relaxed mode, we should probably clear 'year' from the args passed to SQL
             # to avoid the "Data Inconsistency" issue where Vector says "Match" but SQL says "Wrong Year".
 
-            effective_year = year
-            if strategy["name"] == "Relaxed Semantic":
-                effective_year = None # Trust the Vector completely
+            # Prepare arguments for ContentService
+            search_kwargs = {
+                "q": query_text,
+                "level": level,
+                "subject": subject,
+                "branch": branch,
+                "set_name": set_name,
+                "year": year,
+                "type": type,
+                "lang": lang,
+                "content_ids": content_ids if strategy["use_vectors"] else None,
+                "limit": limit,
+            }
 
-            batch_results = await content_service.search_content(
-                q=query_text,
-                level=level,
-                subject=subject,
-                branch=branch,
-                set_name=set_name,
-                year=effective_year, # Use relaxed year
-                type=type,
-                lang=lang,
-                content_ids=content_ids if strategy["use_vectors"] else None,
-                limit=limit,
-            )
+            # If Relaxed Semantic, we trust the Vector IDs completely and ignore metadata filters
+            # that might contradict the vector results.
+            if strategy["name"] == "Relaxed Semantic" and strategy["use_vectors"]:
+                # Clear metadata filters that often cause false negatives due to misclassification
+                # or DSPy hallucination. We rely on the semantic relevance of the vector.
+                search_kwargs["year"] = None
+                search_kwargs["subject"] = None
+                search_kwargs["branch"] = None
+                search_kwargs["set_name"] = None
+                search_kwargs["level"] = None
+                # We can keep 'type' and 'lang' if we want, or clear them too.
+                # Clearing them is safer for "finding whatever matches the vector".
+
+            batch_results = await content_service.search_content(**search_kwargs)
 
             if batch_results:
                 logger.info(f"🎉 Success! Found {len(batch_results)} results using {strategy['name']}.")

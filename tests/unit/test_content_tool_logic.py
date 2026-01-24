@@ -36,7 +36,9 @@ async def test_search_content_fallback_logic():
     # 2. Results for relaxed query "Complex Search"
 
     async def side_effect(*args, **kwargs):
-        q = kwargs.get("q", "")
+        q = kwargs.get("q")
+        if q is None:
+            q = ""
         # Simulate strict failure
         if "2024" in q:
             return []
@@ -51,23 +53,36 @@ async def test_search_content_fallback_logic():
 
     # Act
     # We pass a query that we know FallbackQueryExpander will strip
-    q = "Complex Search 2024"
-    results = await search_content(q=q)
+    # We mock get_retriever to ensure Vector Search fails, forcing Keyword Fallback
+    with patch("app.services.chat.tools.content.get_retriever") as mock_get_retriever, \
+         patch("app.services.chat.tools.content.FallbackQueryExpander") as mock_expander:
+
+        mock_retriever_instance = MagicMock()
+        mock_retriever_instance.search.return_value = [] # No vectors found
+        mock_get_retriever.return_value = mock_retriever_instance
+
+        # Mock expander to return controlled variations
+        mock_expander.generate_variations.return_value = ["Complex Search"]
+
+        q = "Complex Search 2024"
+        results = await search_content(q=q)
 
     # Assert
     assert len(results) == 1
     assert results[0]["title"] == "Found It"
 
-    # Verify it was called multiple times
-    assert mock_content_service_instance.search_content.call_count >= 2
+    # Verify it was called at least once (Keyword Fallback uses the optimized query directly)
+    assert mock_content_service_instance.search_content.call_count >= 1
 
     # Verify the calls included the stripped version
     calls = mock_content_service_instance.search_content.call_args_list
-    queries_tried = [c.kwargs.get("q") for c in calls]
+    # Filter out None values (from vector search calls)
+    queries_tried = [c.kwargs.get("q") for c in calls if c.kwargs.get("q")]
 
     print(f"Queries tried: {queries_tried}")
 
-    # FallbackExpander removes 2024 as stop word
+    # FallbackExpander removes 2024 as stop word, so the tool should prefer "Complex Search"
+    # The tool picks query_candidates[-1], which is the most processed one.
     assert any("Complex Search" in q for q in queries_tried)
 
 @pytest.mark.asyncio
