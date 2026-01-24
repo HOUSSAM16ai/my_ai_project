@@ -6,92 +6,12 @@ from app.core.logging import get_logger
 from app.core.database import async_session_factory as default_session_factory
 from app.services.content.domain import ContentDetail
 from app.services.content.repository import ContentRepository
+from app.services.content.constants import BRANCH_MAP, SET_MAP
 
 logger = get_logger("content-service")
 
 class ContentService:
     """طبقة خدمة لإدارة المحتوى مع توحيد المدخلات وبناء الاستعلامات."""
-
-    # Dictionary of Canonical English Slug -> List of Variations (Arabic & English)
-    BRANCH_MAP: dict[str, list[str]] = {
-        "experimental_sciences": [
-            "experimental_sciences",
-            "experimental sciences",
-            "experimental",
-            "علوم تجريبية",
-            "تجريبية",
-            "علوم تجريبة",
-            "science",
-            "ex",
-            "scien",
-            "exp",
-        ],
-        "math_tech": [
-            "math_tech",
-            "math tech",
-            "technical math",
-            "تقني رياضي",
-            "تقني",
-            "math technique",
-            "tm",
-            "mt",
-        ],
-        "mathematics": [
-            "mathematics",
-            "mathematics_branch",
-            "math branch",
-            "رياضيات",
-            "math",
-            "m",
-            "رياضي",
-        ],
-        "foreign_languages": [
-            "foreign_languages",
-            "languages",
-            "لغات أجنبية",
-            "لغات",
-            "lang",
-            "fl",
-        ],
-        "literature_philosophy": [
-            "literature_philosophy",
-            "literature",
-            "آداب وفلسفة",
-            "اداب وفلسفة",
-            "اداب",
-            "فلسفة",
-            "lit",
-            "philo",
-            "lp",
-        ],
-    }
-
-    SET_MAP: dict[str, list[str]] = {
-        "subject_1": [
-            "subject 1",
-            "subject1",
-            "s1",
-            "sub1",
-            "subject_1",
-            "الموضوع الأول",
-            "الموضوع الاول",
-            "الموضوع 1",
-            "subject-1",
-            "first subject",
-        ],
-        "subject_2": [
-            "subject 2",
-            "subject2",
-            "s2",
-            "sub2",
-            "subject_2",
-            "الموضوع الثاني",
-            "الموضوع الثانى",
-            "الموضوع 2",
-            "subject-2",
-            "second subject",
-        ],
-    }
 
     def __init__(self, session_factory=None):
         self.session_factory = session_factory or default_session_factory
@@ -136,11 +56,11 @@ class ContentService:
         if val and val.strip() in ["2", "٢"]:
             return "subject_2"
 
-        return self._fuzzy_match(val, self.SET_MAP, cutoff=0.7)
+        return self._fuzzy_match(val, SET_MAP, cutoff=0.7)
 
     def normalize_branch(self, val: str | None) -> str | None:
         """توحيد أسماء الشعب إلى التسميات العربية المعيارية."""
-        return self._fuzzy_match(val, self.BRANCH_MAP, cutoff=0.6)
+        return self._fuzzy_match(val, BRANCH_MAP, cutoff=0.6)
 
     async def search_content(
         self,
