@@ -24,6 +24,25 @@ async def test_analyzer_returns_signal_scores() -> None:
 
 
 @pytest.mark.asyncio
+async def test_analyzer_clamps_and_rounds_scores() -> None:
+    analysis = await SituationAnalyzer.analyze(
+        "very complex urgent critical situation with new innovative approach",
+        {
+            "constraints": ["c1", "c2", "c3", "c4", "c5", "c6", "c7"],
+            "opportunities": ["o1", "o2", "o3", "o4", "o5", "o6"],
+            "threats": ["t1", "t2", "t3", "t4", "t5"],
+        },
+    )
+
+    assert analysis["risk_index"] <= 1.0
+    assert analysis["strategic_value_score"] <= 1.0
+    assert analysis["depth_score"] <= 1.0
+    assert analysis["risk_index"] == round(analysis["risk_index"], 2)
+    assert analysis["strategic_value_score"] == round(analysis["strategic_value_score"], 2)
+    assert analysis["depth_score"] == round(analysis["depth_score"], 2)
+
+
+@pytest.mark.asyncio
 async def test_synthesizer_uses_scores_for_priority_and_impact() -> None:
     analysis = {
         "complexity_level": "medium",
