@@ -66,6 +66,8 @@ async def search_content(
 
                     if dspy_result.get("subject"):
                         metadata_filters["subject"] = dspy_result["subject"]
+                        if subject is None:
+                            subject = dspy_result["subject"]
 
                     logger.info(f"✅ DSPy Result: '{refined_q}' | Metadata: {metadata_filters}")
                 else:
