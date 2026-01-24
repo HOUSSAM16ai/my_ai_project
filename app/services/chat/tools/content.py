@@ -15,6 +15,7 @@ from app.services.content.service import content_service
 from app.services.search_engine import get_retriever
 from app.services.search_engine.query_refiner import get_refined_query
 from app.services.search_engine.fallback_expander import FallbackQueryExpander
+from app.services.search_engine.reranker import get_reranker
 
 logger = get_logger("content-tools")
 
@@ -111,7 +112,16 @@ async def search_content(
                 try:
                     logger.info("🔍 LlamaIndex Active: Executing Vector Search...")
                     retriever = get_retriever(db_url)
-                    nodes = retriever.search(primary_q, limit=limit, filters=strategy["filters"])
+
+                    # Fetch more candidates for Reranking
+                    # We fetch 3x the limit or at least 20 extra to give the reranker enough candidates
+                    retrieval_limit = max(limit * 3, limit + 20)
+                    nodes = retriever.search(primary_q, limit=retrieval_limit, filters=strategy["filters"])
+
+                    if nodes:
+                        logger.info(f"🔍 Reranker Active: Reranking {len(nodes)} candidates...")
+                        reranker = get_reranker()
+                        nodes = reranker.rerank(primary_q, nodes, top_n=limit)
 
                     for node in nodes:
                         metadata = getattr(node, "node", node)
