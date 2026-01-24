@@ -4,6 +4,7 @@
 مسؤول عن تحليل المواقف وفهم السياق بشكل عميق عبر إشارات كمية واضحة.
 """
 
+from dataclasses import dataclass
 from datetime import datetime
 
 from app.core.di import get_logger
@@ -32,6 +33,47 @@ _NARRATIVE_DENSITY_WEIGHT = 0.2
 _VERY_COMPLEX_TOKEN = "very complex"
 _OPPORTUNITY_BONUS_DIVISOR = 5
 _SIGNAL_DIVERSITY_DIVISOR = 3
+
+
+@dataclass(frozen=True)
+class WeightedFactor:
+    """عامل موزون لتجميع القيم ضمن تقييم موحد."""
+
+    name: str
+    weight: float
+
+
+_RISK_FACTORS = (
+    WeightedFactor("complexity", _RISK_COMPLEXITY_WEIGHT),
+    WeightedFactor("urgency", _RISK_URGENCY_WEIGHT),
+    WeightedFactor("novelty", _RISK_NOVELTY_WEIGHT),
+)
+_STRATEGIC_FACTORS = (
+    WeightedFactor("novelty", _STRATEGIC_NOVELTY_WEIGHT),
+    WeightedFactor("opportunity", _STRATEGIC_OPPORTUNITY_WEIGHT),
+    WeightedFactor("complexity", _STRATEGIC_COMPLEXITY_WEIGHT),
+)
+_DEPTH_FACTORS = (
+    WeightedFactor("context_richness", _CONTEXT_RICHNESS_WEIGHT),
+    WeightedFactor("signal_diversity", _SIGNAL_DIVERSITY_WEIGHT),
+    WeightedFactor("narrative_density", _NARRATIVE_DENSITY_WEIGHT),
+)
+
+
+@dataclass(frozen=True)
+class SignalDefinition:
+    """تعريف موحد لإشارة التحليل لتقليل التكرار وتعزيز الاتساق."""
+
+    name: str
+    keywords: tuple[str, ...]
+    divisor: int
+
+
+_SIGNAL_DEFINITIONS = (
+    SignalDefinition("complexity", _COMPLEXITY_KEYWORDS, _COMPLEXITY_SCORE_DIVISOR),
+    SignalDefinition("urgency", _URGENCY_KEYWORDS, _URGENCY_SCORE_DIVISOR),
+    SignalDefinition("novelty", _NOVELTY_KEYWORDS, _NOVELTY_SCORE_DIVISOR),
+)
 
 
 class SituationAnalyzer:
@@ -95,27 +137,16 @@ class SituationAnalyzer:
         Returns:
             dict[str, float]: درجات الإشارات (0.0 - 1.0)
         """
-        complexity = SituationAnalyzer._score_keywords(
-            normalized=normalized,
-            keywords=_COMPLEXITY_KEYWORDS,
-            divisor=_COMPLEXITY_SCORE_DIVISOR,
-        )
-        urgency = SituationAnalyzer._score_keywords(
-            normalized=normalized,
-            keywords=_URGENCY_KEYWORDS,
-            divisor=_URGENCY_SCORE_DIVISOR,
-        )
-        novelty = SituationAnalyzer._score_keywords(
-            normalized=normalized,
-            keywords=_NOVELTY_KEYWORDS,
-            divisor=_NOVELTY_SCORE_DIVISOR,
-        )
+        scores: dict[str, float] = {}
+        for definition in _SIGNAL_DEFINITIONS:
+            score = SituationAnalyzer._score_keywords(
+                normalized=normalized,
+                keywords=definition.keywords,
+                divisor=definition.divisor,
+            )
+            scores[definition.name] = SituationAnalyzer._round_score(score)
 
-        return {
-            "complexity": round(complexity, 2),
-            "urgency": round(urgency, 2),
-            "novelty": round(novelty, 2),
-        }
+        return scores
 
     @staticmethod
     def _aggregate_risk_index(signal_scores: dict[str, float]) -> float:
@@ -128,16 +159,11 @@ class SituationAnalyzer:
         Returns:
             float: مؤشر المخاطرة (0.0 - 1.0)
         """
-        complexity = signal_scores.get("complexity", 0.0)
-        urgency = signal_scores.get("urgency", 0.0)
-        novelty = signal_scores.get("novelty", 0.0)
-
-        risk_index = (
-            (complexity * _RISK_COMPLEXITY_WEIGHT)
-            + (urgency * _RISK_URGENCY_WEIGHT)
-            + (novelty * _RISK_NOVELTY_WEIGHT)
+        risk_index = SituationAnalyzer._apply_weighted_factors(
+            values=signal_scores,
+            factors=_RISK_FACTORS,
         )
-        return round(min(risk_index, 1.0), 2)
+        return SituationAnalyzer._round_score(SituationAnalyzer._clamp_ratio(risk_index))
 
     @staticmethod
     def _estimate_strategic_value(
@@ -156,16 +182,16 @@ class SituationAnalyzer:
         """
         opportunities = SituationAnalyzer._ensure_list(context.get("opportunities"))
         opportunity_bonus = SituationAnalyzer._calculate_opportunity_bonus(opportunities)
-
-        novelty = signal_scores.get("novelty", 0.0)
-        complexity = signal_scores.get("complexity", 0.0)
-
-        strategic_value = (
-            (novelty * _STRATEGIC_NOVELTY_WEIGHT)
-            + (opportunity_bonus * _STRATEGIC_OPPORTUNITY_WEIGHT)
-            + (complexity * _STRATEGIC_COMPLEXITY_WEIGHT)
+        inputs = {
+            "novelty": signal_scores.get("novelty", 0.0),
+            "opportunity": opportunity_bonus,
+            "complexity": signal_scores.get("complexity", 0.0),
+        }
+        strategic_value = SituationAnalyzer._apply_weighted_factors(
+            values=inputs,
+            factors=_STRATEGIC_FACTORS,
         )
-        return round(min(strategic_value, 1.0), 2)
+        return SituationAnalyzer._round_score(SituationAnalyzer._clamp_ratio(strategic_value))
 
     @staticmethod
     def _build_depth_profile(
@@ -184,31 +210,36 @@ class SituationAnalyzer:
         Returns:
             dict[str, float]: ملف عمق التحليل ومكوناته
         """
-        constraints = SituationAnalyzer._ensure_list(context.get("constraints"))
-        opportunities = SituationAnalyzer._ensure_list(context.get("opportunities"))
-        threats = SituationAnalyzer._ensure_list(context.get("threats"))
+        constraint_count, opportunity_count, threat_count = (
+            SituationAnalyzer._count_context_items(context)
+        )
 
-        constraint_count = len(constraints)
-        opportunity_count = len(opportunities)
-        threat_count = len(threats)
-
-        context_richness = min(
-            (constraint_count + opportunity_count + threat_count) / _CONTEXT_RICHNESS_DIVISOR,
-            1.0,
+        context_richness = SituationAnalyzer._normalize_ratio(
+            float(constraint_count + opportunity_count + threat_count),
+            _CONTEXT_RICHNESS_DIVISOR,
         )
         signal_diversity = SituationAnalyzer._calculate_signal_diversity(signal_scores)
-        narrative_density = min(len(situation.split()) / _NARRATIVE_WORD_DIVISOR, 1.0)
+        narrative_density = SituationAnalyzer._normalize_ratio(
+            float(len(situation.split())),
+            _NARRATIVE_WORD_DIVISOR,
+        )
 
-        depth_score = (
-            (context_richness * _CONTEXT_RICHNESS_WEIGHT)
-            + (signal_diversity * _SIGNAL_DIVERSITY_WEIGHT)
-            + (narrative_density * _NARRATIVE_DENSITY_WEIGHT)
+        depth_inputs = {
+            "context_richness": context_richness,
+            "signal_diversity": signal_diversity,
+            "narrative_density": narrative_density,
+        }
+        depth_score = SituationAnalyzer._apply_weighted_factors(
+            values=depth_inputs,
+            factors=_DEPTH_FACTORS,
         )
         return {
-            "context_richness": round(context_richness, 2),
-            "signal_diversity": round(signal_diversity, 2),
-            "narrative_density": round(narrative_density, 2),
-            "depth_score": round(min(depth_score, 1.0), 2),
+            "context_richness": SituationAnalyzer._round_score(context_richness),
+            "signal_diversity": SituationAnalyzer._round_score(signal_diversity),
+            "narrative_density": SituationAnalyzer._round_score(narrative_density),
+            "depth_score": SituationAnalyzer._round_score(
+                SituationAnalyzer._clamp_ratio(depth_score),
+            ),
         }
 
     @staticmethod
@@ -229,29 +260,47 @@ class SituationAnalyzer:
         divisor: int,
     ) -> float:
         """يحول عدد الكلمات المفتاحية إلى درجة معيارية بين صفر وواحد."""
-        if divisor <= 0:
-            return 0.0
         count = SituationAnalyzer._count_keywords(normalized, keywords)
-        return min(count / divisor, 1.0)
+        return SituationAnalyzer._normalize_ratio(float(count), divisor)
 
     @staticmethod
     def _calculate_opportunity_bonus(opportunities: list[object]) -> float:
         """يحسب أثر الفرص المتاحة على القيمة الاستراتيجية."""
-        if _OPPORTUNITY_BONUS_DIVISOR <= 0:
-            return 0.0
-        return min(len(opportunities) / _OPPORTUNITY_BONUS_DIVISOR, 1.0)
+        return SituationAnalyzer._normalize_ratio(
+            float(len(opportunities)),
+            _OPPORTUNITY_BONUS_DIVISOR,
+        )
 
     @staticmethod
     def _calculate_signal_diversity(signal_scores: dict[str, float]) -> float:
         """يحسب تنوع الإشارات لتحويله إلى مقياس موحد."""
-        if _SIGNAL_DIVERSITY_DIVISOR <= 0:
+        total = sum(signal_scores.get(definition.name, 0.0) for definition in _SIGNAL_DEFINITIONS)
+        return SituationAnalyzer._normalize_ratio(total, _SIGNAL_DIVERSITY_DIVISOR)
+
+    @staticmethod
+    def _apply_weighted_factors(
+        values: dict[str, float],
+        factors: tuple[WeightedFactor, ...],
+    ) -> float:
+        """يجمع القيم وفق عوامل موزونة مع تجاهل المدخلات المفقودة."""
+        return sum(values.get(factor.name, 0.0) * factor.weight for factor in factors)
+
+    @staticmethod
+    def _round_score(value: float) -> float:
+        """يعيد القيمة مقربة إلى منزلتين عشريتين لضمان الاتساق."""
+        return round(value, 2)
+
+    @staticmethod
+    def _normalize_ratio(numerator: float, divisor: int) -> float:
+        """يضبط القيم النسبية داخل النطاق [0, 1] مع حماية القسمة."""
+        if divisor <= 0:
             return 0.0
-        total = (
-            signal_scores.get("complexity", 0.0)
-            + signal_scores.get("urgency", 0.0)
-            + signal_scores.get("novelty", 0.0)
-        )
-        return total / _SIGNAL_DIVERSITY_DIVISOR
+        return SituationAnalyzer._clamp_ratio(numerator / divisor)
+
+    @staticmethod
+    def _clamp_ratio(value: float) -> float:
+        """يحصر القيمة ضمن المجال [0, 1] لتوحيد الدرجات."""
+        return min(max(value, 0.0), 1.0)
 
     @staticmethod
     def _determine_complexity_level(normalized: str) -> str:
@@ -277,6 +326,14 @@ class SituationAnalyzer:
     def _ensure_list(value: object) -> list[object]:
         """يعيد قائمة آمنة حتى عند غياب أو عدم صحة البيانات المدخلة."""
         return value if isinstance(value, list) else []
+
+    @staticmethod
+    def _count_context_items(context: dict[str, object]) -> tuple[int, int, int]:
+        """يعيد أعداد القيود والفرص والتهديدات من السياق بشكل منظم."""
+        constraints = SituationAnalyzer._ensure_list(context.get("constraints"))
+        opportunities = SituationAnalyzer._ensure_list(context.get("opportunities"))
+        threats = SituationAnalyzer._ensure_list(context.get("threats"))
+        return len(constraints), len(opportunities), len(threats)
 
     @staticmethod
     def _build_base_analysis(

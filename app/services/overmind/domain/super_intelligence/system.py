@@ -17,6 +17,12 @@ from app.services.overmind.domain.super_intelligence.synthesizer import Decision
 logger = get_logger(__name__)
 
 _SUCCESS_CONFIDENCE_THRESHOLD = 70.0
+_AGENT_SPEC_NAMES = (
+    ("strategist", "strategist"),
+    ("architect", "architect"),
+    ("operator", "operator"),
+    ("auditor", "auditor"),
+)
 
 
 class SuperCollectiveIntelligence:
@@ -91,7 +97,7 @@ class SuperCollectiveIntelligence:
         logger.info("Executing decision: %s", decision.id)
 
         decision.executed = True
-        execution_success = decision.confidence_score > _SUCCESS_CONFIDENCE_THRESHOLD
+        execution_success = self._is_confident_success(decision.confidence_score)
 
         self._update_execution_outcome(decision, execution_success)
         return self._build_execution_result(decision, execution_success)
@@ -111,9 +117,7 @@ class SuperCollectiveIntelligence:
 
     def _calculate_success_rate(self) -> float:
         """يحسب معدل النجاح كنسبة مئوية مع تفادي القسمة على صفر."""
-        if self.total_decisions == 0:
-            return 0.0
-        return (self.successful_decisions / self.total_decisions) * 100
+        return self._safe_ratio(self.successful_decisions, self.total_decisions) * 100
 
     def _record_decision(self, decision: Decision) -> None:
         """يسجل القرار داخلياً ويحدث العدادات."""
@@ -133,10 +137,8 @@ class SuperCollectiveIntelligence:
     def _get_agent_specs(self) -> list[tuple[str, object]]:
         """يعيد قائمة الوكلاء الفعليين مع أسمائهم لتسهيل التكرار المنظم."""
         return [
-            ("strategist", self.council.strategist),
-            ("architect", self.council.architect),
-            ("operator", self.council.operator),
-            ("auditor", self.council.auditor),
+            (label, getattr(self.council, attribute))
+            for label, attribute in _AGENT_SPEC_NAMES
         ]
 
     async def _consult_agent(
@@ -171,7 +173,7 @@ class SuperCollectiveIntelligence:
             self.hub.record_contribution(
                 agent_name=agent,
                 action="consultation",
-                input_data={"situation": situation[:50]},
+                input_data=self._build_consultation_input(situation),
                 output_data=data,
                 success=True,
             )
@@ -196,5 +198,34 @@ class SuperCollectiveIntelligence:
             "decision_id": decision.id,
             "executed": True,
             "success": success,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": self._now_iso(),
         }
+
+    @staticmethod
+    def _safe_ratio(numerator: int, denominator: int) -> float:
+        """يعيد نسبة آمنة مع حماية القسمة على صفر."""
+        if denominator <= 0:
+            return 0.0
+        return numerator / denominator
+
+    @staticmethod
+    def _is_confident_success(confidence_score: float) -> bool:
+        """يتحقق من تجاوز الثقة للحد المعتمد."""
+        return confidence_score > _SUCCESS_CONFIDENCE_THRESHOLD
+
+    @staticmethod
+    def _now_iso() -> str:
+        """يعيد توقيتاً موحداً بصيغة ISO."""
+        return datetime.utcnow().isoformat()
+
+    @staticmethod
+    def _truncate_text(text: str, limit: int) -> str:
+        """يعيد نصاً مختصراً بطول محدد مع الحفاظ على السلوك الآمن."""
+        if limit <= 0:
+            return ""
+        return text[:limit]
+
+    @classmethod
+    def _build_consultation_input(cls, situation: str) -> dict[str, str]:
+        """ينشئ حمولة الاستشارة المختصرة بطريقة موحدة."""
+        return {"situation": cls._truncate_text(situation, 50)}

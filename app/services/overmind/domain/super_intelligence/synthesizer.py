@@ -14,6 +14,15 @@ from app.services.overmind.domain.super_intelligence.models import (
 
 logger = get_logger(__name__)
 
+_PRIORITY_THRESHOLDS: tuple[tuple[float, DecisionPriority], ...] = (
+    (0.8, DecisionPriority.CRITICAL),
+    (0.5, DecisionPriority.HIGH),
+)
+_IMPACT_THRESHOLDS: tuple[tuple[float, DecisionImpact], ...] = (
+    (0.8, DecisionImpact.GENERATIONAL),
+    (0.6, DecisionImpact.LONG_TERM),
+)
+
 
 class DecisionSynthesizer:
     """
@@ -96,11 +105,17 @@ class DecisionSynthesizer:
         Determine decision priority based on urgency.
         """
         urgency = analysis.get("urgency")
-        urgency_score = analysis.get("urgency_score", 0.0)
-        if isinstance(urgency_score, (int, float)) and urgency_score >= 0.8:
-            return DecisionPriority.CRITICAL
-        if isinstance(urgency_score, (int, float)) and urgency_score >= 0.5:
-            return DecisionPriority.HIGH
+        urgency_score = DecisionSynthesizer._get_numeric_score(
+            analysis=analysis,
+            key="urgency_score",
+            default=0.0,
+        )
+        priority = DecisionSynthesizer._select_by_threshold(
+            score=urgency_score,
+            thresholds=_PRIORITY_THRESHOLDS,
+        )
+        if priority is not None:
+            return priority
         if urgency == "high":
             return DecisionPriority.CRITICAL
         return DecisionPriority.MEDIUM
@@ -112,11 +127,17 @@ class DecisionSynthesizer:
         Determine decision impact based on complexity.
         """
         complexity = analysis.get("complexity_level", "medium")
-        complexity_score = analysis.get("complexity_score", 0.0)
-        if isinstance(complexity_score, (int, float)) and complexity_score >= 0.8:
-            return DecisionImpact.GENERATIONAL
-        if isinstance(complexity_score, (int, float)) and complexity_score >= 0.6:
-            return DecisionImpact.LONG_TERM
+        complexity_score = DecisionSynthesizer._get_numeric_score(
+            analysis=analysis,
+            key="complexity_score",
+            default=0.0,
+        )
+        impact = DecisionSynthesizer._select_by_threshold(
+            score=complexity_score,
+            thresholds=_IMPACT_THRESHOLDS,
+        )
+        if impact is not None:
+            return impact
         if complexity == "high":
             return DecisionImpact.LONG_TERM
         if complexity == "low":
@@ -211,15 +232,27 @@ class DecisionSynthesizer:
         """
         تحديد فئة القرار باستخدام مؤشرات المخاطر والقيمة الاستراتيجية.
         """
-        strategic_value = analysis.get("strategic_value_score", 0.0)
-        risk_index = analysis.get("risk_index", 0.0)
-        depth_score = analysis.get("depth_score", 0.0)
+        strategic_value = DecisionSynthesizer._get_numeric_score(
+            analysis=analysis,
+            key="strategic_value_score",
+            default=0.0,
+        )
+        risk_index = DecisionSynthesizer._get_numeric_score(
+            analysis=analysis,
+            key="risk_index",
+            default=0.0,
+        )
+        depth_score = DecisionSynthesizer._get_numeric_score(
+            analysis=analysis,
+            key="depth_score",
+            default=0.0,
+        )
 
-        if isinstance(strategic_value, (int, float)) and strategic_value >= 0.6:
+        if strategic_value >= 0.6:
             return DecisionCategory.STRATEGIC
-        if isinstance(risk_index, (int, float)) and risk_index >= 0.7:
+        if risk_index >= 0.7:
             return DecisionCategory.RISK_MANAGEMENT
-        if isinstance(depth_score, (int, float)) and depth_score >= 0.7:
+        if depth_score >= 0.7:
             return DecisionCategory.ARCHITECTURAL
         return DecisionCategory.TECHNICAL
 
@@ -228,20 +261,69 @@ class DecisionSynthesizer:
         """
         صياغة جزء منطق القرار اعتماداً على المؤشرات الكمية.
         """
-        strategic_value = analysis.get("strategic_value_score")
-        risk_index = analysis.get("risk_index")
-        depth_score = analysis.get("depth_score")
+        strategic_value = DecisionSynthesizer._get_optional_numeric_score(
+            analysis=analysis,
+            key="strategic_value_score",
+        )
+        risk_index = DecisionSynthesizer._get_optional_numeric_score(
+            analysis=analysis,
+            key="risk_index",
+        )
+        depth_score = DecisionSynthesizer._get_optional_numeric_score(
+            analysis=analysis,
+            key="depth_score",
+        )
         confidence = f"متوسط ثقة الوكلاء: {avg_confidence:.1f}%"
 
         parts = [confidence]
-        if isinstance(strategic_value, (int, float)):
+        if strategic_value is not None:
             parts.append(f"القيمة الاستراتيجية: {strategic_value:.2f}")
-        if isinstance(risk_index, (int, float)):
+        if risk_index is not None:
             parts.append(f"مؤشر المخاطرة: {risk_index:.2f}")
-        if isinstance(depth_score, (int, float)):
+        if depth_score is not None:
             parts.append(f"عمق التحليل: {depth_score:.2f}")
 
         return ", ".join(parts)
+
+    @staticmethod
+    def _get_numeric_score(
+        *,
+        analysis: dict[str, object],
+        key: str,
+        default: float,
+    ) -> float:
+        """يعيد قيمة رقمية صالحة من التحليل أو قيمة افتراضية."""
+        value = DecisionSynthesizer._coerce_numeric(analysis.get(key))
+        return value if value is not None else default
+
+    @staticmethod
+    def _get_optional_numeric_score(
+        *,
+        analysis: dict[str, object],
+        key: str,
+    ) -> float | None:
+        """يعيد قيمة رقمية صالحة من التحليل أو None عند غيابها."""
+        return DecisionSynthesizer._coerce_numeric(analysis.get(key))
+
+    @staticmethod
+    def _coerce_numeric(value: object) -> float | None:
+        """يحول القيمة إلى رقم عشري عند الإمكان أو يعيد None."""
+        if isinstance(value, (int, float)):
+            return float(value)
+        return None
+
+    @staticmethod
+    def _select_by_threshold(
+        *,
+        score: float,
+        thresholds: tuple[tuple[float, DecisionPriority], ...]
+        | tuple[tuple[float, DecisionImpact], ...],
+    ) -> DecisionPriority | DecisionImpact | None:
+        """يعيد أول قيمة تطابق العتبة المطلوبة حسب ترتيبها."""
+        for threshold, result in thresholds:
+            if score >= threshold:
+                return result
+        return None
 
     @staticmethod
     def _get_default_risks() -> list[dict[str, str]]:
