@@ -164,6 +164,8 @@ class FallbackQueryExpander:
         "اسئلة", "أسئلة", "امتحان", # Content Types
         "بكالوريا", "البكالوريا", "bac", "الباك", "باك", # Context
         "موضوع", "الموضوع", # Often ambiguous if not precise
+        "تمرين", "التمرين", # "Exercise" is generic
+        "الاول", "الأول", "1", "01", # Metadata (often covered by set_name filter)
         # Branch Names (Often metadata only)
         "علوم", "تجريبية", "رياضيات", "رياضي", "تقني", "تسيير", "اقتصاد", "لغات", "أجنبية", "آداب", "فلسفة",
     }
