@@ -46,6 +46,8 @@ _ALLOWED_TABLES: Final[frozenset[str]] = frozenset(
         "mission_events",
         "prompt_templates",
         "generated_prompts",
+        "knowledge_nodes",
+        "knowledge_edges",
     }
 )
 
@@ -513,6 +515,66 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             ")"
         ),
     },
+    "knowledge_nodes": {
+        "columns": [
+            "id",
+            "label",
+            "name",
+            "content",
+            "embedding",
+            "metadata",
+            "created_at",
+        ],
+        "auto_fix": {},
+        "indexes": {
+            "embedding": 'CREATE INDEX IF NOT EXISTS "ix_knowledge_nodes_embedding" ON "knowledge_nodes" USING hnsw ("embedding" vector_cosine_ops)',
+            "name": 'CREATE INDEX IF NOT EXISTS "ix_knowledge_nodes_name" ON "knowledge_nodes"("name")',
+        },
+        "index_names": {
+            "embedding": "ix_knowledge_nodes_embedding",
+            "name": "ix_knowledge_nodes_name",
+        },
+        "create_table": (
+            'CREATE TABLE IF NOT EXISTS "knowledge_nodes"('
+            '"id" UUID PRIMARY KEY,'
+            '"label" VARCHAR(50),'
+            '"name" VARCHAR(255) NOT NULL,'
+            '"content" TEXT,'
+            '"embedding" vector(384),'
+            "\"metadata\" JSONB DEFAULT '{}',"
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        ),
+    },
+    "knowledge_edges": {
+        "columns": [
+            "id",
+            "source_id",
+            "target_id",
+            "relation",
+            "properties",
+            "created_at",
+        ],
+        "auto_fix": {},
+        "indexes": {
+            "source_id": 'CREATE INDEX IF NOT EXISTS "ix_knowledge_edges_source_id" ON "knowledge_edges"("source_id")',
+            "target_id": 'CREATE INDEX IF NOT EXISTS "ix_knowledge_edges_target_id" ON "knowledge_edges"("target_id")',
+        },
+        "index_names": {
+            "source_id": "ix_knowledge_edges_source_id",
+            "target_id": "ix_knowledge_edges_target_id",
+        },
+        "create_table": (
+            'CREATE TABLE IF NOT EXISTS "knowledge_edges"('
+            '"id" UUID PRIMARY KEY,'
+            '"source_id" UUID NOT NULL REFERENCES "knowledge_nodes"("id") ON DELETE CASCADE,'
+            '"target_id" UUID NOT NULL REFERENCES "knowledge_nodes"("id") ON DELETE CASCADE,'
+            '"relation" VARCHAR(50) NOT NULL,'
+            "\"properties\" JSONB DEFAULT '{}',"
+            '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
+            ")"
+        ),
+    },
 }
 
 
@@ -530,6 +592,17 @@ def _to_sqlite_ddl(sql: str) -> str:
 
     # Replace JSON type with TEXT without touching column names
     sql = re.sub(r"\bJSON\b", "TEXT", sql, flags=re.IGNORECASE)
+    sql = re.sub(r"\bJSONB\b", "TEXT", sql, flags=re.IGNORECASE)
+
+    # Replace vector type with TEXT (SQLite doesn't support vectors)
+    sql = re.sub(r"vector\(\d+\)", "TEXT", sql, flags=re.IGNORECASE)
+
+    # Replace UUID with TEXT
+    sql = re.sub(r"\bUUID\b", "TEXT", sql, flags=re.IGNORECASE)
+
+    # Remove HNSW index creation for SQLite (it doesn't support it)
+    if "USING hnsw" in sql:
+        return ""
 
     # Replace BOOLEAN with INTEGER (or keep BOOLEAN as SQLite accepts it, but 0/1 is safer for defaults)
     # Handling Defaults: DEFAULT TRUE -> DEFAULT 1
