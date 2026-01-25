@@ -17,7 +17,7 @@ async def diagnose():
         return
 
     # Ensure async driver
-    url = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+    url = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://").replace("?sslmode=require", "").replace("&sslmode=require", "")
 
     # SSL Context for asyncpg
     ssl_ctx = ssl.create_default_context()
@@ -85,7 +85,7 @@ async def diagnose():
             print("\n🔍 Checking content_items table for 2024...")
             try:
                 stmt_content = text("""
-                    SELECT id, title, year, subject, branch
+                    SELECT id, title, year, subject, branch, set_name
                     FROM content_items
                     WHERE year = 2024 OR title LIKE '%2024%'
                     LIMIT 5
@@ -97,7 +97,7 @@ async def diagnose():
                 else:
                     print(f"✅ Found {len(rows_content)} content_items for 2024:")
                     for row in rows_content:
-                        print(row)
+                        print(f"   - {row}")
             except Exception as e:
                 print(f"⚠️ Could not query content_items: {e}")
 
