@@ -2,13 +2,14 @@
 
 import re
 
-EXPECTED_SECRET_ISSUES = 2
-
 from app.security.owasp_validator import (
     OWASPCategory,
     OWASPValidator,
+    SecurityIssue,
     SecuritySeverity,
 )
+
+EXPECTED_SECRET_ISSUES = 2
 
 
 def test_check_weak_password_hashing_detects_risky_usage() -> None:
@@ -304,3 +305,66 @@ def test_is_false_positive_secret_detects_env_and_real_literals() -> None:
 
     assert validator._is_false_positive_secret(env_configured, env_match, "settings.py") is True
     assert validator._is_false_positive_secret(literal_secret, literal_match, "service.py") is False
+
+
+def test_generate_report_builds_expected_breakdowns() -> None:
+    validator = OWASPValidator()
+    issues = [
+        SecurityIssue(
+            category=OWASPCategory.A01_BROKEN_ACCESS_CONTROL,
+            severity=SecuritySeverity.CRITICAL,
+            title="Critical issue",
+            description="critical description",
+            file_path="access.py",
+            recommendation="fix access",
+            cwe_id="CWE-269",
+        ),
+        SecurityIssue(
+            category=OWASPCategory.A01_BROKEN_ACCESS_CONTROL,
+            severity=SecuritySeverity.HIGH,
+            title="High issue",
+            description="high description",
+            file_path="access.py",
+        ),
+        SecurityIssue(
+            category=OWASPCategory.A02_CRYPTOGRAPHIC_FAILURES,
+            severity=SecuritySeverity.MEDIUM,
+            title="Medium issue",
+            description="medium description",
+            file_path="crypto.py",
+        ),
+        SecurityIssue(
+            category=OWASPCategory.A09_LOGGING_FAILURES,
+            severity=SecuritySeverity.LOW,
+            title="Low issue",
+            description="low description",
+            file_path="logs.py",
+        ),
+    ]
+
+    report = validator.generate_report(issues)
+
+    assert report["total_issues"] == 4
+    assert report["severity_breakdown"]["critical"] == 1
+    assert report["severity_breakdown"]["high"] == 1
+    assert report["severity_breakdown"]["medium"] == 1
+    assert report["severity_breakdown"]["low"] == 1
+    assert report["category_breakdown"][OWASPCategory.A01_BROKEN_ACCESS_CONTROL.value] == 2
+    assert report["risk_score"] == 37
+    assert report["compliance_status"]["OWASP_Top_10"] is False
+    assert report["compliance_status"]["PCI_DSS"] is False
+    assert report["compliance_status"]["SOC2"] is False
+    assert report["critical_issues"][0]["title"] == "Critical issue"
+
+
+def test_validate_file_reports_read_error(tmp_path) -> None:
+    validator = OWASPValidator()
+    missing_file = tmp_path / "missing.py"
+
+    issues = validator.validate_file(str(missing_file))
+
+    assert len(issues) == 1
+    issue = issues[0]
+    assert issue.title == "File Validation Error"
+    assert issue.severity is SecuritySeverity.INFO
+    assert issue.file_path == str(missing_file)

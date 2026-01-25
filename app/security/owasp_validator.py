@@ -23,7 +23,7 @@ from typing import ClassVar, TypedDict
 
 
 class SecuritySeverity(Enum):
-    """Security issue severity levels"""
+    """مستويات خطورة القضايا الأمنية."""
 
     CRITICAL = "critical"
     HIGH = "high"
@@ -33,7 +33,7 @@ class SecuritySeverity(Enum):
 
 
 class OWASPCategory(Enum):
-    """OWASP Top 10 categories (2021)"""
+    """تصنيفات OWASP Top 10 لعام 2021."""
 
     A01_BROKEN_ACCESS_CONTROL = "A01:2021 - Broken Access Control"
     A02_CRYPTOGRAPHIC_FAILURES = "A02:2021 - Cryptographic Failures"
@@ -49,7 +49,7 @@ class OWASPCategory(Enum):
 
 @dataclass
 class SecurityIssue:
-    """Security issue found during validation"""
+    """قضية أمنية تم اكتشافها أثناء الفحص."""
 
     category: OWASPCategory
     severity: SecuritySeverity
@@ -93,16 +93,16 @@ class SecurityReport(TypedDict):
 
 class OWASPValidator:
     """
-    مدقق أمان OWASP - Enterprise OWASP Security Validator
+    مدقق أمان OWASP بمعايير مؤسسية شاملة.
 
-    Comprehensive security validation covering:
-    - Access control
-    - Authentication
-    - Injection vulnerabilities
-    - Cryptography
-    - Configuration
-    - Dependencies
-    - Logging
+    يغطي الفحص:
+    - التحكم بالوصول
+    - المصادقة
+    - الحقن والثغرات الشائعة
+    - التشفير وإدارة الأسرار
+    - الضبط والإعدادات
+    - التبعيات
+    - التسجيل والمراقبة
     """
 
     _CONTEXT_BEFORE = 100
@@ -167,8 +167,7 @@ class OWASPValidator:
 
     def validate_authentication_code(self, code: str, file_path: str = "") -> list[SecurityIssue]:
         """
-        Validate authentication implementation
-        (A07:2021 - Identification and Authentication Failures)
+        يتحقق من سلامة المصادقة (A07:2021).
         """
         issues: list[SecurityIssue] = []
         issues.extend(self._check_weak_password_hashing(code, file_path))
@@ -177,7 +176,7 @@ class OWASPValidator:
         return issues
 
     def _check_weak_password_hashing(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check for weak password hashing algorithms"""
+        """يتحقق من استخدام خوارزميات تجزئة ضعيفة لكلمات المرور."""
         password_keywords = ["password", "passwd", "pwd", "credential", "auth"]
         has_password_context = any(kw in code.lower() for kw in password_keywords)
 
@@ -206,7 +205,7 @@ class OWASPValidator:
         ]
 
     def _check_plaintext_password_storage(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check for potential plaintext password storage"""
+        """يتحقق من احتمال تخزين كلمات المرور بنص صريح."""
         if (
             re.search("password\\s*=\\s*request", code, re.IGNORECASE)
             and "hash" not in code.lower()
@@ -225,7 +224,7 @@ class OWASPValidator:
         return []
 
     def _check_authentication_rate_limiting(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check for missing rate limiting on authentication"""
+        """يتحقق من غياب تحديد المعدل في مسارات تسجيل الدخول."""
         if "login" in code.lower() and "rate_limit" not in code.lower():
             return [
                 SecurityIssue(
@@ -242,8 +241,7 @@ class OWASPValidator:
 
     def validate_access_control(self, code: str, file_path: str = "") -> list[SecurityIssue]:
         """
-        Validate access control implementation
-        (A01:2021 - Broken Access Control)
+        يتحقق من ضوابط التحكم بالوصول (A01:2021).
         """
         issues: list[SecurityIssue] = []
         issues.extend(self._check_role_escalation(code, file_path))
@@ -252,7 +250,7 @@ class OWASPValidator:
         return issues
 
     def _check_role_escalation(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check for potential role escalation"""
+        """يرصد احتمالات رفع الصلاحيات من مدخلات المستخدم."""
         if re.search("role\\s*=\\s*request\\.(json|form|args)", code):
             return [
                 SecurityIssue(
@@ -268,7 +266,7 @@ class OWASPValidator:
         return []
 
     def _check_admin_escalation(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check for potential admin privilege escalation"""
+        """يرصد احتمالات رفع صلاحيات المدير من مدخلات المستخدم."""
         if re.search("is_admin\\s*=\\s*request\\.(json|form|args)", code):
             return [
                 SecurityIssue(
@@ -284,7 +282,7 @@ class OWASPValidator:
         return []
 
     def _check_missing_auth_checks(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check for missing authorization checks on sensitive endpoints"""
+        """يتحقق من غياب التفويض في المسارات الحساسة."""
         if (
             re.search("@app\\.route.*<int:user_id>", code)
             and "@login_required" not in code
@@ -305,8 +303,7 @@ class OWASPValidator:
 
     def validate_injection_prevention(self, code: str, file_path: str = "") -> list[SecurityIssue]:
         """
-        Validate injection vulnerability prevention
-        (A03:2021 - Injection)
+        يتحقق من ثغرات الحقن (A03:2021).
         """
         issues: list[SecurityIssue] = []
         issues.extend(self._check_sql_injection(code, file_path))
@@ -315,7 +312,7 @@ class OWASPValidator:
         return issues
 
     def _check_sql_injection(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check for SQL injection patterns"""
+        """يرصد مؤشرات حقن SQL في الشيفرة."""
         issues = []
         for pattern in self.sql_injection_patterns:
             if re.search(pattern, code):
@@ -333,7 +330,7 @@ class OWASPValidator:
         return issues
 
     def _check_command_injection(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check for command injection patterns"""
+        """يرصد مؤشرات حقن الأوامر عبر النظام."""
         if re.search("os\\.system\\(|subprocess\\.call\\(.*shell=True", code):
             return [
                 SecurityIssue(
@@ -349,7 +346,7 @@ class OWASPValidator:
         return []
 
     def _check_xss_vulnerabilities(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check for Cross-Site Scripting (XSS) patterns"""
+        """يرصد مؤشرات XSS في التعامل مع HTML."""
         issues = []
         for pattern in self.xss_patterns:
             if re.search(pattern, code):
@@ -368,8 +365,7 @@ class OWASPValidator:
 
     def validate_cryptography(self, code: str, file_path: str = "") -> list[SecurityIssue]:
         """
-        Validate cryptographic implementations
-        (A02:2021 - Cryptographic Failures)
+        يتحقق من سلامة التشفير وإدارة الأسرار (A02:2021).
         """
         issues: list[SecurityIssue] = []
         issues.extend(self._check_weak_crypto_algorithms(code, file_path))
@@ -377,7 +373,7 @@ class OWASPValidator:
         return issues
 
     def _check_weak_crypto_algorithms(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check for weak cryptographic algorithms"""
+        """يرصد الخوارزميات التشفيرية الضعيفة."""
         issues = []
         for pattern in self.insecure_crypto_patterns:
             matches = list(re.finditer(pattern, code))
@@ -399,17 +395,15 @@ class OWASPValidator:
         return issues
 
     def _is_false_positive_crypto(self, code: str, match: re.Match) -> bool:
-        """Check if a crypto match is a false positive"""
-        start = max(0, match.start() - self._CONTEXT_BEFORE)
-        end = min(len(code), match.end() + self._CONTEXT_AFTER)
-        context = code[start:end]
+        """يتحقق مما إذا كانت مطابقة التشفير إنذارًا كاذبًا."""
+        context = self._extract_context(code, match.start(), match.end())
 
         if "usedforsecurity=False" in context or "usedforsecurity = False" in context:
             return True
         return "import hashlib" in context
 
     def _check_hardcoded_secrets(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check for hardcoded secrets"""
+        """يرصد الأسرار الصلبة داخل الشيفرة."""
         issues = []
         for pattern in self.hardcoded_secrets_patterns:
             matches = list(re.finditer(pattern, code, re.IGNORECASE))
@@ -431,23 +425,43 @@ class OWASPValidator:
         return issues
 
     def _is_false_positive_secret(self, code: str, match: re.Match, file_path: str) -> bool:
-        """Check if a secret match is a false positive"""
-        start = max(0, match.start() - self._CONTEXT_BEFORE)
-        end = min(len(code), match.end() + self._CONTEXT_AFTER)
-        context = code[start:end]
+        """يتحقق من استثناءات الأسرار لتقليل الإنذارات الكاذبة."""
+        context = self._extract_context(code, match.start(), match.end())
 
-        if any(env_pat in context for env_pat in self._ENV_VAR_PATTERNS):
+        if self._context_has_env_markers(context):
             return True
-        if any(safe_pat in context for safe_pat in self._SAFE_SECRET_PATTERNS):
+        if self._context_has_safe_secret_markers(context):
             return True
-        if "test_" in file_path.lower():
+        if self._is_test_file(file_path):
             return True
-        return bool(context.strip().startswith("#") or context.strip().startswith("//"))
+        return self._context_is_comment(context)
+
+    def _extract_context(self, code: str, start: int, end: int) -> str:
+        """يعيد مقطع السياق حول المطابقة لتحليل أدق."""
+        context_start = max(0, start - self._CONTEXT_BEFORE)
+        context_end = min(len(code), end + self._CONTEXT_AFTER)
+        return code[context_start:context_end]
+
+    def _context_has_env_markers(self, context: str) -> bool:
+        """يتحقق من مؤشرات الاعتماد على المتغيرات البيئية."""
+        return any(env_pat in context for env_pat in self._ENV_VAR_PATTERNS)
+
+    def _context_has_safe_secret_markers(self, context: str) -> bool:
+        """يتحقق من مؤشرات أسرار تجريبية أو آمنة."""
+        return any(safe_pat in context for safe_pat in self._SAFE_SECRET_PATTERNS)
+
+    def _context_is_comment(self, context: str) -> bool:
+        """يتأكد إن كان السياق تعليقًا فقط."""
+        stripped = context.strip()
+        return bool(stripped.startswith("#") or stripped.startswith("//"))
+
+    def _is_test_file(self, file_path: str) -> bool:
+        """يتحقق مما إذا كان الملف اختبارًا."""
+        return "test_" in file_path.lower()
 
     def validate_session_management(self, code: str, file_path: str = "") -> list[SecurityIssue]:
         """
-        Validate session management
-        (A07:2021 - Identification and Authentication Failures)
+        يتحقق من إدارة الجلسات (A07:2021).
         """
         issues: list[SecurityIssue] = []
         issues.extend(self._check_secure_cookie_flag(code, file_path))
@@ -455,7 +469,7 @@ class OWASPValidator:
         return issues
 
     def _check_secure_cookie_flag(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check if SESSION_COOKIE_SECURE is set"""
+        """يرصد إعدادات Cookie الآمنة."""
         if "SESSION_COOKIE_SECURE = False" in code:
             return [
                 SecurityIssue(
@@ -471,7 +485,7 @@ class OWASPValidator:
         return []
 
     def _check_httponly_cookie_flag(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check if SESSION_COOKIE_HTTPONLY is set"""
+        """يرصد إعدادات Cookie المقيّدة من JavaScript."""
         if "SESSION_COOKIE_HTTPONLY = False" in code:
             return [
                 SecurityIssue(
@@ -488,8 +502,7 @@ class OWASPValidator:
 
     def validate_logging_monitoring(self, code: str, file_path: str = "") -> list[SecurityIssue]:
         """
-        Validate logging and monitoring
-        (A09:2021 - Security Logging and Monitoring Failures)
+        يتحقق من التسجيل والمراقبة (A09:2021).
         """
         issues: list[SecurityIssue] = []
         issues.extend(self._check_missing_auth_logging(code, file_path))
@@ -497,7 +510,7 @@ class OWASPValidator:
         return issues
 
     def _check_missing_auth_logging(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check for missing logging on authentication events"""
+        """يرصد غياب تسجيل أحداث المصادقة."""
         if (
             ("login" in code.lower() or "authenticate" in code.lower())
             and "log" not in code.lower()
@@ -517,7 +530,7 @@ class OWASPValidator:
         return []
 
     def _check_sensitive_logging(self, code: str, file_path: str) -> list[SecurityIssue]:
-        """Check for logging of sensitive data"""
+        """يرصد تسجيل البيانات الحساسة."""
         if re.search("log.*password|log.*token|log.*secret", code, re.IGNORECASE):
             return [
                 SecurityIssue(
@@ -534,7 +547,7 @@ class OWASPValidator:
 
     def validate_file(self, file_path: str) -> list[SecurityIssue]:
         """
-        Validate a single file for OWASP Top 10 issues
+        يفحص ملفًا واحدًا وفق OWASP Top 10.
         """
         try:
             code = self._read_code(file_path)
@@ -551,7 +564,7 @@ class OWASPValidator:
             ]
 
     def generate_report(self, issues: list[SecurityIssue]) -> SecurityReport:
-        """يولد تقرير أمني متكامل باستخدام تراكيب بيانات محددة الأنواع."""
+        """يولد تقريرًا أمنيًا متكاملًا باستخدام تراكيب بيانات محددة الأنواع."""
         severity_counts = self._count_severities(issues)
         category_counts = self._count_categories(issues)
         risk_score = self._calculate_risk_score(severity_counts)
