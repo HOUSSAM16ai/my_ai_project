@@ -143,8 +143,10 @@ class RelaxedVectorStrategy(BaseVectorStrategy):
 
         # 2. Fetch from DB (ignoring strict filters like year/subject/branch)
         # but we might still respect 'type' or 'lang' if critical.
-        # For now, we follow the legacy logic of clearing most filters.
-        return await self._fetch_from_db(content_ids, request, apply_filters=False)
+        # Update: We MUST enforce filters here to prevent "forgery" (returning wrong content).
+        # We allow vector search to be broad (no filters) to handle missing vector metadata,
+        # but the final content MUST match the user's constraints.
+        return await self._fetch_from_db(content_ids, request, apply_filters=True)
 
 
 class KeywordStrategy(SearchStrategy):
