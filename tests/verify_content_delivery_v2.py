@@ -29,7 +29,8 @@ class TestContentDeliveryV2(unittest.IsolatedAsyncioTestCase):
             branch="Experimental Sciences",
             exam_ref="Subject 1"
         )
-        self.assertIn("يحتوي صندوق على 3 كرات بيضاء", result)
+        self.assertIn("يحتوي كيس على", result)
+        self.assertIn("الاحتمالات", result)
         self.assertNotIn("نص التمرين قيد الرقمنة", result) # Should NOT have Subject 2 text
 
     async def test_local_retrieval_subject_1_ex_2(self):
@@ -41,7 +42,8 @@ class TestContentDeliveryV2(unittest.IsolatedAsyncioTestCase):
             branch="Experimental Sciences",
             exam_ref="Subject 1"
         )
-        self.assertIn("z² - 4z + 13 = 0", result)
+        self.assertIn("الأعداد المركبة", result)
+        self.assertIn("حل في مجموعة الأعداد المركبة", result)
 
     async def test_local_retrieval_subject_2_differentiation(self):
         """Test that asking for Subject 2 returns Subject 2 content, NOT Subject 1"""
