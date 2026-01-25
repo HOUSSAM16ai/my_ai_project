@@ -6,7 +6,7 @@ from app.core.logging import get_logger
 from app.core.database import async_session_factory as default_session_factory
 from app.services.content.domain import ContentDetail
 from app.services.content.repository import ContentRepository
-from app.services.content.constants import BRANCH_MAP, SET_MAP
+from app.services.content.constants import BRANCH_MAP, SET_MAP, SUBJECT_MAP
 
 logger = get_logger("content-service")
 
@@ -62,6 +62,10 @@ class ContentService:
         """توحيد أسماء الشعب إلى التسميات العربية المعيارية."""
         return self._fuzzy_match(val, BRANCH_MAP, cutoff=0.6)
 
+    def normalize_subject(self, val: str | None) -> str | None:
+        """توحيد أسماء المواد."""
+        return self._fuzzy_match(val, SUBJECT_MAP, cutoff=0.7)
+
     async def search_content(
         self,
         q: str | None = None,
@@ -79,6 +83,7 @@ class ContentService:
 
         norm_set = self.normalize_set_name(set_name)
         norm_branch = self.normalize_branch(branch)
+        norm_subject = self.normalize_subject(subject)
 
         query_str = (
             "SELECT i.id, i.title, i.type, i.level, i.subject, i.branch, "
@@ -115,9 +120,9 @@ class ContentService:
             query_str += " AND i.level = :level"
             params["level"] = level
 
-        if subject:
+        if norm_subject:
             query_str += " AND i.subject = :subject"
-            params["subject"] = subject
+            params["subject"] = norm_subject
 
         if norm_branch:
             query_str += " AND i.branch = :branch"
