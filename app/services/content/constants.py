@@ -52,6 +52,36 @@ BRANCH_MAP: dict[str, list[str]] = {
     ],
 }
 
+SUBJECT_MAP: dict[str, list[str]] = {
+    "mathematics": [
+        "mathematics",
+        "math",
+        "maths",
+        "رياضيات",
+        "الرياضيات",
+        "جبر",
+        "هندسة",
+        "calculus",
+        "algebra",
+        "geometry",
+    ],
+    "physics": [
+        "physics",
+        "physic",
+        "phy",
+        "فيزياء",
+        "الفيزياء",
+    ],
+    "science": [
+        "science",
+        "sciences",
+        "sci",
+        "علوم",
+        "العلوم",
+        "علوم طبيعية",
+    ],
+}
+
 SET_MAP: dict[str, list[str]] = {
     "subject_1": [
         "subject 1",
