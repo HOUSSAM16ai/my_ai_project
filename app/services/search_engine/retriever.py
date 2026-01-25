@@ -14,7 +14,9 @@ _EMBED_MODEL = None
 def get_embedding_model():
     global _EMBED_MODEL
     if _EMBED_MODEL is None:
-        _EMBED_MODEL = HuggingFaceEmbedding(model_name="intfloat/multilingual-e5-small")
+        # Using BAAI/bge-m3 as requested for "The Ultimate Super Stack"
+        # M3 supports multi-linguality (Arabic/English) and high performance.
+        _EMBED_MODEL = HuggingFaceEmbedding(model_name="BAAI/bge-m3")
     return _EMBED_MODEL
 
 class LlamaIndexRetriever:

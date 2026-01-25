@@ -525,7 +525,10 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             "metadata",
             "created_at",
         ],
-        "auto_fix": {},
+        "auto_fix": {
+            # Fix dimension mismatch: BGE-M3 uses 1024, previous was 384
+            "embedding": 'ALTER TABLE "knowledge_nodes" ALTER COLUMN "embedding" TYPE vector(1024)'
+        },
         "indexes": {
             "embedding": 'CREATE INDEX IF NOT EXISTS "ix_knowledge_nodes_embedding" ON "knowledge_nodes" USING hnsw ("embedding" vector_cosine_ops)',
             "name": 'CREATE INDEX IF NOT EXISTS "ix_knowledge_nodes_name" ON "knowledge_nodes"("name")',
@@ -540,7 +543,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             '"label" VARCHAR(50),'
             '"name" VARCHAR(255) NOT NULL,'
             '"content" TEXT,'
-            '"embedding" vector(384),'
+            '"embedding" vector(1024),'
             "\"metadata\" JSONB DEFAULT '{}',"
             '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
             ")"
