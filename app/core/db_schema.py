@@ -522,20 +522,24 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             "name",
             "content",
             "embedding",
+            "search_vector",
             "metadata",
             "created_at",
         ],
         "auto_fix": {
             # Fix dimension mismatch: BGE-M3 uses 1024, previous was 384
-            "embedding": 'ALTER TABLE "knowledge_nodes" ALTER COLUMN "embedding" TYPE vector(1024)'
+            "embedding": 'ALTER TABLE "knowledge_nodes" ALTER COLUMN "embedding" TYPE vector(1024)',
+            "search_vector": 'ALTER TABLE "knowledge_nodes" ADD COLUMN "search_vector" tsvector GENERATED ALWAYS AS (to_tsvector(\'simple\', "name" || \' \' || COALESCE("content", \'\'))) STORED'
         },
         "indexes": {
             "embedding": 'CREATE INDEX IF NOT EXISTS "ix_knowledge_nodes_embedding" ON "knowledge_nodes" USING hnsw ("embedding" vector_cosine_ops)',
             "name": 'CREATE INDEX IF NOT EXISTS "ix_knowledge_nodes_name" ON "knowledge_nodes"("name")',
+            "search_vector": 'CREATE INDEX IF NOT EXISTS "ix_knowledge_nodes_search_vector" ON "knowledge_nodes" USING GIN ("search_vector")',
         },
         "index_names": {
             "embedding": "ix_knowledge_nodes_embedding",
             "name": "ix_knowledge_nodes_name",
+            "search_vector": "ix_knowledge_nodes_search_vector",
         },
         "create_table": (
             'CREATE TABLE IF NOT EXISTS "knowledge_nodes"('
@@ -544,6 +548,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             '"name" VARCHAR(255) NOT NULL,'
             '"content" TEXT,'
             '"embedding" vector(1024),'
+            '"search_vector" tsvector GENERATED ALWAYS AS (to_tsvector(\'simple\', "name" || \' \' || COALESCE("content", \'\'))) STORED,'
             "\"metadata\" JSONB DEFAULT '{}',"
             '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
             ")"
@@ -606,6 +611,15 @@ def _to_sqlite_ddl(sql: str) -> str:
     # Remove HNSW index creation for SQLite (it doesn't support it)
     if "USING hnsw" in sql:
         return ""
+
+    # Remove GIN index creation for SQLite
+    if "USING GIN" in sql:
+        return ""
+
+    # Remove tsvector/GENERATED ALWAYS logic for SQLite (simplified)
+    # Regex to remove the generated column definition entirely or replace type
+    sql = re.sub(r"tsvector GENERATED ALWAYS AS .*? STORED", "TEXT", sql, flags=re.IGNORECASE)
+    sql = re.sub(r"\btsvector\b", "TEXT", sql, flags=re.IGNORECASE)
 
     # Replace BOOLEAN with INTEGER (or keep BOOLEAN as SQLite accepts it, but 0/1 is safer for defaults)
     # Handling Defaults: DEFAULT TRUE -> DEFAULT 1
