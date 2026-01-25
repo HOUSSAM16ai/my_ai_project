@@ -232,8 +232,6 @@ async def main():
         client.generate_text = generate_with_model_override
 
         embed_model = get_embedding_model()
-        client = SimpleAIClient(api_key=api_key)
-        embed_model = get_embedding_model()
     except Exception as e:
         logger.error(f"Failed to initialize AI components: {e}")
         return
