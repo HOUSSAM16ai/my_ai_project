@@ -23,10 +23,10 @@ _EXERCISE_ORDINALS = {
 }
 
 _EXERCISE_MARKERS_AR = ["التمرين", "تمرين"]
-_SECTION_STOP_MARKERS_AR = ["التمرين", "تمرين", "الموضوع", "وسوم"]
+_SECTION_STOP_MARKERS_AR = ["التمرين", "تمرين", "الموضوع", "وسوم", "الحل", "تصحيح", "اجابة", "إجابة"]
 
 _EXERCISE_MARKERS_EN_PATTERN = re.compile(r"(?:^|\b)(exercise|ex)(?:\b|$)")
-_SECTION_STOP_MARKERS_EN_PATTERN = re.compile(r"(?:^|\b)(exercise|ex|subject)(?:\b|$)")
+_SECTION_STOP_MARKERS_EN_PATTERN = re.compile(r"(?:^|\b)(exercise|ex|subject|solution|correction|answer)(?:\b|$)")
 _EXERCISE_NUMBER_PATTERN = re.compile(
     r"(?:^|\s)(?:exercise|ex|تمرين|التمرين)"
     r"(?:\s+رقم|\s+no\.?|\s+num\.?|\s+number)?\s*[#(]?\s*(\d+)\s*\)?(?:\s|$)"
