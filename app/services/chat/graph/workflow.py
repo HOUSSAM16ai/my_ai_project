@@ -10,6 +10,7 @@ from app.services.chat.graph.nodes.planner import planner_node
 from app.services.chat.graph.nodes.researcher import researcher_node
 from app.services.chat.graph.nodes.writer import writer_node
 from app.services.chat.graph.nodes.supervisor import supervisor_node
+from app.services.chat.graph.nodes.super_reasoner import super_reasoner_node
 from app.core.ai_gateway import AIClient
 from app.services.chat.tools import ToolRegistry
 
@@ -29,12 +30,16 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
     async def call_writer(state):
         return await writer_node(state, ai_client)
 
+    async def call_super_reasoner(state):
+        return await super_reasoner_node(state, ai_client)
+
     async def call_supervisor(state):
         return await supervisor_node(state)
 
     workflow.add_node("planner", call_planner)
     workflow.add_node("researcher", call_researcher)
     workflow.add_node("writer", call_writer)
+    workflow.add_node("super_reasoner", call_super_reasoner)
     workflow.add_node("supervisor", call_supervisor)
 
     # 2. Add Edges
@@ -51,6 +56,7 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
             "planner": "planner",
             "researcher": "researcher",
             "writer": "writer",
+            "super_reasoner": "super_reasoner",
             "end": END
         }
     )
@@ -59,5 +65,6 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
     workflow.add_edge("planner", "supervisor")
     workflow.add_edge("researcher", "supervisor")
     workflow.add_edge("writer", "supervisor")
+    workflow.add_edge("super_reasoner", "supervisor")
 
     return workflow.compile()

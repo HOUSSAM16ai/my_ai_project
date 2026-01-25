@@ -27,6 +27,8 @@ async def supervisor_node(state: AgentState) -> dict:
     # Map steps to nodes
     if next_step == "search":
         return {"next": "researcher"}
+    elif next_step == "reason":
+        return {"next": "super_reasoner"}
     elif next_step == "explain":
         return {"next": "writer"}
     elif next_step == "analyze":
