@@ -1,6 +1,8 @@
 # tests/services/overmind/test_super_brain.py
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from app.core.domain.models import Mission
@@ -167,3 +169,36 @@ async def test_super_brain_self_correction():
     # Check if context carried the feedback
     context_2 = strategist.contexts[1]
     assert context_2.get("feedback_from_previous_attempt") == "Bad Plan"
+
+
+@pytest.mark.asyncio
+async def test_execute_phase_timeout_logs_event():
+    strategist = StubPlanner(plans=[{"steps": ["noop"]}])
+    architect = StubArchitect(design={"tasks": []})
+    operator = StubOperator(result={})
+    auditor = StubAuditor(reviews=[{"approved": True, "feedback": "Ok"}])
+
+    brain = SuperBrain(
+        strategist=strategist, architect=architect, operator=operator, auditor=auditor
+    )
+
+    events: list[tuple[str, dict[str, object]]] = []
+
+    async def log_event(event_type: str, payload: dict[str, object]) -> None:
+        events.append((event_type, payload))
+
+    async def slow_action() -> dict[str, object]:
+        await asyncio.sleep(0.01)
+        return {"status": "slow"}
+
+    with pytest.raises(RuntimeError, match="timeout"):
+        await brain._execute_phase(
+            phase_name="TEST_PHASE",
+            agent_name="Tester",
+            action=slow_action,
+            timeout=0.001,
+            log_func=log_event,
+        )
+
+    assert events[0][0] == "phase_start"
+    assert events[-1][0] == "test_phase_timeout"
