@@ -85,9 +85,15 @@ def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
         elif "ssl" in qs:
             ssl_mode = qs.pop("ssl")
 
-        if ssl_mode is not None:
-            # Update db_url to exclude ssl/sslmode
-            url_obj = url_obj.set(query=qs)
+        # Explicitly handle 'require' logic for Supabase even if passed differently
+        if ssl_mode is not None or "supabase" in str(url_obj.host):
+             # Default to require if likely Supabase and not set, or if set explicitly
+            target_ssl_mode = ssl_mode or "require"
+
+            # Update db_url to exclude ssl/sslmode query params for asyncpg
+            # because we pass SSL context via connect_args
+            if ssl_mode:
+                 url_obj = url_obj.set(query=qs)
 
             # [CRITICAL GUARDRAIL]
             # Must use `render_as_string(hide_password=False)`!
@@ -97,20 +103,19 @@ def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
             db_url = url_obj.render_as_string(hide_password=False)
 
             # Create SSL Context based on mode
-            # 'disable' is default (no ssl arg)
-            if ssl_mode in ("require", "verify-ca", "verify-full"):
+            if target_ssl_mode in ("require", "verify-ca", "verify-full", "true"):
                 import ssl
 
                 # Create a default context that verifies certificates
                 ctx = ssl.create_default_context()
 
-                if ssl_mode == "require":
+                if target_ssl_mode in ("require", "true"):
                     # In 'require', we want SSL but don't strictly verify hostname/cert
                     ctx.check_hostname = False
                     ctx.verify_mode = ssl.CERT_NONE
 
                 engine_args["connect_args"]["ssl"] = ctx
-                logger.info(f"🔒 SSL Enabled (Mode: {ssl_mode})")
+                logger.info(f"🔒 SSL Enabled (Mode: {target_ssl_mode})")
 
         # Production optimization
         is_dev = settings.ENVIRONMENT in ("development", "testing")
