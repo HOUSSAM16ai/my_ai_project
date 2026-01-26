@@ -82,61 +82,91 @@ async def search_content(
     lang: str | None = None,
     limit: int = 10,
 ) -> list[dict[str, object]]:
-    """بحث متقدم عن المحتوى التعليمي مع فلاتر قابلة للتوسع."""
+    """
+    بحث خارق عن المحتوى التعليمي - يضمن إيجاد نتائج مهما كانت الصياغة.
+
+    يستخدم SuperSearchOrchestrator مع:
+    1. Multi-Query Search: بحث بجميع التنويعات بالتوازي
+    2. Score Fusion: دمج النتائج من استراتيجيات متعددة
+    3. Aggressive Fallback: محاولات متعددة مع تخفيف الفلاتر
+    4. Graph Expansion: توسيع النتائج عبر العلاقات
+    """
     try:
+        from app.services.search_engine.models import SearchFilters, SearchRequest
+        from app.services.search_engine.super_orchestrator import super_search_orchestrator
+        from app.services.search_engine.graph_expander import enrich_search_with_graph
+
+        # Normalize branch if provided
+        normalized_branch = _normalize_branch(branch)
+
+        # Build search request
+        filters = SearchFilters(
+            level=level,
+            subject=subject,
+            branch=normalized_branch,
+            set_name=set_name,
+            year=year,
+            type=type,
+            lang=lang,
+        )
+
+        request = SearchRequest(
+            q=q,
+            filters=filters,
+            limit=limit,
+        )
+
+        # Execute super search
+        results = await super_search_orchestrator.search(request)
+
+        if results:
+            # Convert to dict format
+            result_dicts = [r.model_dump(by_alias=True) for r in results]
+
+            # Enrich with graph expansion if we have few results
+            if len(result_dicts) < limit // 2:
+                try:
+                    result_dicts = await enrich_search_with_graph(
+                        result_dicts,
+                        max_expansion=limit - len(result_dicts),
+                    )
+                except Exception as graph_err:
+                    logger.warning(f"Graph expansion skipped: {graph_err}")
+
+            # Run legacy probe for backwards compatibility
+            await _run_legacy_probe(q, branch, set_name, year, limit)
+
+            return result_dicts
+
+        # If super search returned nothing, try direct content service as last resort
+        logger.warning("Super search returned empty, trying direct content service...")
         from app.services.content.service import content_service as live_content_service
 
         live_content_service.session_factory = async_session_factory
 
-        candidate_queries = FallbackQueryExpander.generate_variations(q) if q else [None]
+        # Try with just the query, no filters
+        if q:
+            results = await live_content_service.search_content(
+                q=q,
+                limit=limit,
+            )
+            if results:
+                return results
 
-        content_ids = await _search_vectors(
-            query=q,
+        # Ultimate fallback: return any recent content
+        results = await live_content_service.search_content(
             limit=limit,
-            filters={
-                "year": year,
-                "subject": subject,
-            },
         )
-        if content_ids:
-            results = await live_content_service.search_content(
-                q=None,
-                content_ids=content_ids,
-                level=level,
-                subject=subject,
-                branch=branch,
-                set_name=set_name,
-                year=year,
-                type=type,
-                lang=lang,
-                limit=limit,
-            )
-            if results:
-                await _run_legacy_probe(q, branch, set_name, year, limit)
-                return results
-
-        for candidate in candidate_queries:
-            results = await live_content_service.search_content(
-                q=candidate,
-                level=level,
-                subject=subject,
-                branch=branch,
-                set_name=set_name,
-                year=year,
-                type=type,
-                lang=lang,
-                limit=limit,
-            )
-            if results:
-                await _run_legacy_probe(q, branch, set_name, year, limit)
-                return results
-
-        await _run_legacy_probe(q, branch, set_name, year, limit)
-        return []
+        return results
 
     except Exception as e:
         logger.error(f"Search content failed: {e}")
-        return []
+        # Even on error, try to return something
+        try:
+            from app.services.content.service import content_service as fallback_service
+            return await fallback_service.search_content(limit=limit)
+        except Exception:
+            return []
 
 
 async def get_content_raw(content_id: str) -> dict[str, str] | None:

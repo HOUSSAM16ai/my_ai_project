@@ -140,30 +140,73 @@ class FallbackQueryExpander:
         "الرابع": "الرابع",
     }
 
+    # CRITICAL: These keywords are important for search and should NOT be removed
+    # They help match exercises, topics, and subjects in the database
+    SEARCHABLE_KEYWORDS: ClassVar[set[str]] = {
+        # Exercise-related (MUST KEEP)
+        "تمرين",
+        "التمرين",
+        "تمارين",
+        "التمارين",
+        "مسألة",
+        "المسألة",
+        # Topic/Subject-related (MUST KEEP)
+        "موضوع",
+        "الموضوع",
+        # Branch names that appear in content titles (MUST KEEP)
+        "علوم",
+        "تجريبية",
+        "رياضيات",
+        "رياضي",
+        "احتمال",
+        "احتمالات",
+        "الاحتمالات",
+        "دالة",
+        "دوال",
+        "متتالية",
+        "متتاليات",
+        "هندسة",
+        "تكامل",
+        "مشتقة",
+        # Numbers that identify exercises (MUST KEEP)
+        "الاول",
+        "الأول",
+        "الثاني",
+        "الثالث",
+        "الرابع",
+    }
+
     # Stop words that cause strict keyword search to fail
     # These are words likely to appear in a user query but NOT in the exercise title/text
+    # IMPORTANT: Educational keywords have been REMOVED from here - see SEARCHABLE_KEYWORDS above
     STOP_WORDS: ClassVar[set[str]] = {
+        # Prepositions (generic, not in titles)
         "في",
         "على",
         "من",
         "إلى",
         "عن",
+        # Time/Year words (metadata, not in content)
         "لسنة",
         "سنة",
         "عام",
         "للعام",
+        # Branch/Section metadata words
         "شعبة",
         "الشعبة",
-        "لشعبة",  # Metadata
+        "لشعبة",
         "مادة",
         "المادة",
+        # Conjunctions
         "و",
         "أو",
         "مع",
+        # Question words
         "هل",
         "كيف",
         "ما",
         "ماذا",
+        # Action Verbs (user intent, not content)
         "اريد",
         "أريد",
         "ابحث",
@@ -171,41 +214,37 @@ class FallbackQueryExpander:
         "اعطني",
         "أعطني",
         "هات",
-        "قدم",  # Action Verbs
+        "قدم",
+        # Dialect / Politeness
         "شوف",
         "تشوفلي",
-        "ممكن",  # Dialect / Politeness
+        "ممكن",
+        # Dialect possession/relative
         "نتاع",
         "تاع",
         "لي",
         "اللي",
-        "ديال",  # Dialect possession/relative
+        "ديال",
+        # Dialect verbs
         "جا",
-        "جاء",  # Dialect verbs
+        "جاء",
+        # Relative Time
         "الماضي",
         "المقبل",
-        "القادم",  # Relative Time
+        "القادم",
+        # Generic exam context (not specific enough)
         "اسئلة",
         "أسئلة",
-        "امتحان",  # Content Types
+        "امتحان",
         "بكالوريا",
         "البكالوريا",
         "bac",
         "الباك",
-        "باك",  # Context
-        "موضوع",
-        "الموضوع",  # Often ambiguous if not precise
-        "تمرين",
-        "التمرين",  # "Exercise" is generic
-        "الاول",
-        "الأول",
+        "باك",
+        # Simple numbers (often filter metadata)
         "1",
-        "01",  # Metadata (often covered by set_name filter)
-        # Branch Names (Often metadata only)
-        "علوم",
-        "تجريبية",
-        "رياضيات",
-        "رياضي",
+        "01",
+        # Branch names that are TOO GENERIC for keyword search
         "تقني",
         "تسيير",
         "اقتصاد",
