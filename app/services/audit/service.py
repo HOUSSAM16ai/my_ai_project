@@ -62,9 +62,9 @@ class AuditService:
                 action=action_str,
                 target_type=target_type,
                 target_id=target_id,
-                metadata=metadata, # type: ignore
+                metadata=metadata,  # type: ignore
                 ip=ip,
-                user_agent=user_agent
+                user_agent=user_agent,
             )
         except Exception as e:
             # Fallback for critical audit failures (Diagnosis)

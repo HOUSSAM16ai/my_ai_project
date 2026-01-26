@@ -28,7 +28,6 @@ from .helpers import (
     _upgrade_postgres_protocol,
 )
 
-
 # -----------------------------------------------------------------------------
 # Base Settings (Shared across all services)
 # -----------------------------------------------------------------------------
@@ -200,7 +199,9 @@ class AppSettings(BaseServiceSettings):
         """ضوابط صارمة لأمان بيئات الإنتاج."""
         if self.ENVIRONMENT in ("production", "staging"):
             if self.ALLOWED_HOSTS == ["*"]:
-                raise ValueError("SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production/staging.")
+                raise ValueError(
+                    "SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production/staging."
+                )
             if self.BACKEND_CORS_ORIGINS == ["*"]:
                 raise ValueError(
                     "SECURITY RISK: BACKEND_CORS_ORIGINS cannot be '*' in production/staging."

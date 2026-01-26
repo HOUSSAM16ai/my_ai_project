@@ -1,19 +1,19 @@
 import asyncio
 import os
-from typing import List, Dict, Any, Optional
 
 from app.core.logging import get_logger
+from app.services.search_engine.fallback_expander import FallbackQueryExpander
 from app.services.search_engine.models import SearchRequest, SearchResult
+from app.services.search_engine.query_refiner import get_refined_query
 from app.services.search_engine.strategies import (
+    KeywordStrategy,
+    RelaxedVectorStrategy,
     SearchStrategy,
     StrictVectorStrategy,
-    RelaxedVectorStrategy,
-    KeywordStrategy
 )
-from app.services.search_engine.query_refiner import get_refined_query
-from app.services.search_engine.fallback_expander import FallbackQueryExpander
 
 logger = get_logger("search-orchestrator")
+
 
 class SearchOrchestrator:
     """
@@ -22,14 +22,15 @@ class SearchOrchestrator:
     2. Query Expansion (Fallback)
     3. Strategy Execution (Strict -> Relaxed -> Keyword)
     """
+
     def __init__(self):
-        self.strategies: List[SearchStrategy] = [
+        self.strategies: list[SearchStrategy] = [
             StrictVectorStrategy(),
             RelaxedVectorStrategy(),
-            KeywordStrategy()
+            KeywordStrategy(),
         ]
 
-    async def search(self, request: SearchRequest) -> List[SearchResult]:
+    async def search(self, request: SearchRequest) -> list[SearchResult]:
         original_q = request.q
         refined_q = original_q
 
@@ -50,9 +51,11 @@ class SearchOrchestrator:
                     if dspy_result.get("branch"):
                         request.filters.branch = dspy_result["branch"]
 
-                    logger.info(f"✅ DSPy Result: '{refined_q}' | Filters: {request.filters.model_dump(exclude_none=True)}")
+                    logger.info(
+                        f"✅ DSPy Result: '{refined_q}' | Filters: {request.filters.model_dump(exclude_none=True)}"
+                    )
                 else:
-                     logger.warning("⚠️ DSPy returned unexpected format.")
+                    logger.warning("⚠️ DSPy returned unexpected format.")
 
             except Exception as e:
                 logger.warning(f"⚠️ DSPy refinement failed: {e}")
@@ -74,7 +77,7 @@ class SearchOrchestrator:
                     logger.info(f"🔑 Using Optimized Keyword Query: '{clean_q}'")
                     request.q = clean_q
                 else:
-                    request.q = original_q # Fallback to original if no variations
+                    request.q = original_q  # Fallback to original if no variations
 
             # Execute
             try:
@@ -82,13 +85,13 @@ class SearchOrchestrator:
                 if results:
                     logger.info(f"🎉 Success! Found {len(results)} results using {strategy.name}.")
                     return results
-                else:
-                    logger.info("❌ No results found in this strategy. Retrying...")
+                logger.info("❌ No results found in this strategy. Retrying...")
             except Exception as e:
                 logger.error(f"Strategy {strategy.name} failed: {e}")
                 continue
 
         return []
+
 
 # Singleton
 search_orchestrator = SearchOrchestrator()

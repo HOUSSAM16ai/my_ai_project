@@ -1,6 +1,6 @@
-from typing import List
 from llama_index.core.schema import NodeWithScore
 from sentence_transformers import CrossEncoder
+
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -8,11 +8,13 @@ logger = get_logger(__name__)
 # Singleton instance
 _RERANKER_INSTANCE = None
 
+
 class Reranker:
     """
     محرك إعادة الترتيب (Reranker) لتحسين نتائج البحث الدلالي.
     يستخدم نموذج Cross-Encoder لإعادة تقييم الصلة بين الاستعلام والوثائق المسترجعة.
     """
+
     def __init__(self, model_name: str = "BAAI/bge-reranker-base"):
         self.model_name = model_name
         try:
@@ -52,6 +54,7 @@ class Reranker:
             logger.error(f"Reranking failed: {e}")
             # Fallback: return original order
             return nodes[:top_n]
+
 
 def get_reranker() -> Reranker:
     global _RERANKER_INSTANCE

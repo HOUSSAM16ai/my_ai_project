@@ -1,13 +1,16 @@
-from typing import List, Dict, Any
+from typing import Any
+
 from sqlalchemy import text
+
 from app.core.database import async_session_factory
-from app.services.search_engine.retriever import get_embedding_model
 from app.core.logging import get_logger
 from app.services.search_engine.reranker import get_reranker
+from app.services.search_engine.retriever import get_embedding_model
 
 logger = get_logger("hybrid-search")
 
-async def hybrid_search(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+
+async def hybrid_search(query: str, top_k: int = 5) -> list[dict[str, Any]]:
     """
     Implements a Hybrid Search Strategy:
     1. Dense Retrieval (Vector)
@@ -60,11 +63,9 @@ async def hybrid_search(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         JOIN knowledge_nodes n ON m.id = n.id
         """)
 
-        result = await session.execute(stmt, {
-            "embedding": emb_str,
-            "query": query,
-            "pool_size": pool_size
-        })
+        result = await session.execute(
+            stmt, {"embedding": emb_str, "query": query, "pool_size": pool_size}
+        )
         candidates = [dict(row._mapping) for row in result.fetchall()]
 
     if not candidates:
@@ -72,12 +73,13 @@ async def hybrid_search(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
 
     # 3. Score Fusion (Weighted Sum)
     # Adjust weights: Semantic is usually stronger for "understanding", Keyword for "precision"
-    alpha = 0.7 # Weight for Dense
+    alpha = 0.7  # Weight for Dense
     beta = 0.3  # Weight for Sparse (normalized roughly)
 
     # Normalize sparse scores (simple max-min scaling per query)
     max_sparse = max((c["sparse_score"] for c in candidates), default=1.0)
-    if max_sparse == 0: max_sparse = 1.0
+    if max_sparse == 0:
+        max_sparse = 1.0
 
     fusion_candidates = []
     for c in candidates:

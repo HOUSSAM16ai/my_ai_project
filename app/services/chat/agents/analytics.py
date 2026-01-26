@@ -4,7 +4,7 @@
 يستخدم الذكاء الاصطناعي لتحليل سجلات الدردشة والمهام بدقة متناهية.
 """
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from app.core.ai_gateway import AIClient
 from app.core.logging import get_logger
@@ -42,7 +42,9 @@ class AnalyticsAgent:
 
         # 1. Fetch Comprehensive Data (Chat Logs + Missions)
         try:
-            data = await self.tools.execute("fetch_comprehensive_student_history", {"user_id": user_id})
+            data = await self.tools.execute(
+                "fetch_comprehensive_student_history", {"user_id": user_id}
+            )
         except Exception as e:
             logger.error(f"Error fetching comprehensive history: {e}")
             yield "حدث خطأ أثناء جلب البيانات."
@@ -67,7 +69,7 @@ class AnalyticsAgent:
         ]
 
         # 3. Stream the AI Analysis
-        yield "\n" # Spacing
+        yield "\n"  # Spacing
 
         try:
             async for chunk in self.ai_client.stream_chat(messages):
@@ -80,9 +82,9 @@ class AnalyticsAgent:
                         delta = choices[0].get("delta", {})
                         content = delta.get("content", "")
                 elif hasattr(chunk, "choices"):
-                     # Object format
-                     if chunk.choices:
-                         content = chunk.choices[0].delta.content or ""
+                    # Object format
+                    if chunk.choices:
+                        content = chunk.choices[0].delta.content or ""
 
                 if content:
                     yield content

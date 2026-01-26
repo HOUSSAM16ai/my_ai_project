@@ -6,6 +6,7 @@ from app.services.overmind.code_intelligence.models import ProjectAnalysis
 
 logger = get_logger(__name__)
 
+
 def generate_markdown_report(analysis: ProjectAnalysis, output_path: Path) -> None:
     """
     Generate comprehensive Markdown report for code analysis.

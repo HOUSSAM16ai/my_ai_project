@@ -15,12 +15,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from microservices.user_service.errors import ConflictError, setup_exception_handlers
-from microservices.user_service.logging import get_logger, setup_logging
 from microservices.user_service.database import get_session, init_db
+from microservices.user_service.errors import ConflictError, setup_exception_handlers
 
 # Local Domain
 from microservices.user_service.health import HealthResponse, build_health_payload
+from microservices.user_service.logging import get_logger, setup_logging
 from microservices.user_service.models import User
 from microservices.user_service.settings import UserServiceSettings, get_settings
 

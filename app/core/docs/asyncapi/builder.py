@@ -1,4 +1,3 @@
-from typing import Dict, List, Optional
 from app.core.docs.asyncapi.models import (
     AsyncAPI30,
     Channel,
@@ -7,8 +6,8 @@ from app.core.docs.asyncapi.models import (
     Operation,
     Parameter,
     Reference,
-    Schema
 )
+
 
 class AsyncAPIBuilder:
     def __init__(self, title: str, version: str, description: str = ""):
@@ -21,11 +20,17 @@ class AsyncAPIBuilder:
                 parameters={},
                 channels={},
                 operations={},
-                messages={}
-            )
+                messages={},
+            ),
         )
 
-    def add_channel(self, channel_id: str, address: str, parameters: Optional[Dict[str, Parameter]] = None, description: str = None):
+    def add_channel(
+        self,
+        channel_id: str,
+        address: str,
+        parameters: dict[str, Parameter] | None = None,
+        description: str | None = None,
+    ) -> str:
         """
         Adds a reusable channel definition.
         In AsyncAPI 3.0, channels are the 'address' and can be defined in components or root.
@@ -34,7 +39,7 @@ class AsyncAPIBuilder:
         channel = Channel(
             address=address,
             parameters=parameters,
-            description=description
+            description=description,
         )
         if self.doc.components.channels is None:
             self.doc.components.channels = {}
@@ -47,23 +52,23 @@ class AsyncAPIBuilder:
         operation_id: str,
         action: str,
         channel_ref_id: str,
-        summary: str = None,
-        bindings: Optional[Dict[str, object]] = None
-    ):
+        summary: str | None = None,
+        bindings: dict[str, object] | None = None,
+    ) -> str:
         """
         Adds an operation that references a channel.
         This demonstrates the separation: Operation -> (references) -> Channel.
         """
         if channel_ref_id not in self.doc.components.channels:
-             # If strictly enforcing internal consistency, we might raise error here.
-             # But let's assume valid reference.
-             pass
+            # If strictly enforcing internal consistency, we might raise error here.
+            # But let's assume valid reference.
+            pass
 
         operation = Operation(
             action=action,
             channel=Reference(**{"$ref": f"#/components/channels/{channel_ref_id}"}),
             summary=summary,
-            bindings=bindings
+            bindings=bindings,
         )
 
         if self.doc.operations is None:
@@ -72,7 +77,7 @@ class AsyncAPIBuilder:
         self.doc.operations[operation_id] = operation
         return operation_id
 
-    def resolve_operation_channel(self, operation_id: str) -> Dict[str, object]:
+    def resolve_operation_channel(self, operation_id: str) -> dict[str, object]:
         """
         'Intelligent' helper to resolve the full context of an operation,
         merging the Operation details with the referenced Channel details.
@@ -86,7 +91,7 @@ class AsyncAPIBuilder:
         # Resolve Channel Reference
         ref = op.channel.ref
         if not ref.startswith("#/components/channels/"):
-             raise ValueError(f"Complex resolution for {ref} not implemented in this demo")
+            raise ValueError(f"Complex resolution for {ref} not implemented in this demo")
 
         channel_id = ref.split("/")[-1]
         channel = self.doc.components.channels.get(channel_id)
@@ -104,5 +109,5 @@ class AsyncAPIBuilder:
             "channel_address": channel.address,
             "channel_parameters": channel.parameters,
             "operation_bindings": op.bindings,
-            "channel_bindings": channel.bindings
+            "channel_bindings": channel.bindings,
         }

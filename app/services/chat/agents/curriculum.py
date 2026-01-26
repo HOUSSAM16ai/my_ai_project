@@ -4,8 +4,7 @@
 مسؤول عن تخطيط الرحلة التعليمية، وبناء خرائط طريق (Roadmaps)، واقتراح المحتوى بدقة.
 """
 
-import json
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from app.core.logging import get_logger
 from app.services.chat.tools import ToolRegistry
@@ -42,18 +41,25 @@ class CurriculumAgent:
             return
 
         # توجيه الطلبات بناءً على الكلمات المفتاحية أو نوع النية
-        if "خطة" in str(user_message) or "plan" in str(user_message).lower() or "roadmap" in str(user_message).lower() or "ابدأ" in str(user_message):
-             async for chunk in self._handle_study_plan(user_id, str(user_message)):
-                 yield chunk
+        if (
+            "خطة" in str(user_message)
+            or "plan" in str(user_message).lower()
+            or "roadmap" in str(user_message).lower()
+            or "ابدأ" in str(user_message)
+        ):
+            async for chunk in self._handle_study_plan(user_id, str(user_message)):
+                yield chunk
         elif intent_type == "path_progress":
             yield await self._handle_path_progress(user_id)
         elif intent_type == "difficulty_adjust":
-             yield await self._handle_difficulty_adjustment(user_id, context.get("feedback", "good"))
+            yield await self._handle_difficulty_adjustment(user_id, context.get("feedback", "good"))
         else:
             async for chunk in self._handle_recommendation(user_id):
                 yield chunk
 
-    async def _handle_study_plan(self, user_id: int, request_text: str) -> AsyncGenerator[str, None]:
+    async def _handle_study_plan(
+        self, user_id: int, request_text: str
+    ) -> AsyncGenerator[str, None]:
         """
         إنشاء خطة دراسية منظمة بناءً على المحتوى المتوفر.
         """
@@ -87,13 +93,15 @@ class CurriculumAgent:
                     response_lines.append(f"- 📦 **{pack_name}**")
                     for i, lesson in enumerate(lessons):
                         # رابط للمحتوى (سنستخدم ID لتمكين المستخدم من طلبه لاحقاً)
-                        title = lesson['title']
-                        l_id = lesson['id']
+                        title = lesson["title"]
+                        l_id = lesson["id"]
                         # إضافة زر أو أمر مباشر (Frontend friendly suggestion)
-                        response_lines.append(f"  - {i+1}. {title} `[عرض: {l_id}]`")
+                        response_lines.append(f"  - {i + 1}. {title} `[عرض: {l_id}]`")
             response_lines.append("\n---\n")
 
-        response_lines.append("\n💡 **نصيحة:** يمكنك نسخ كود الدرس (مثلاً `ex:101`) وطلبه مباشرة، أو قل 'ابدأ الدرس الأول'.")
+        response_lines.append(
+            "\n💡 **نصيحة:** يمكنك نسخ كود الدرس (مثلاً `ex:101`) وطلبه مباشرة، أو قل 'ابدأ الدرس الأول'."
+        )
 
         yield "\n".join(response_lines)
 
@@ -122,8 +130,12 @@ class CurriculumAgent:
             logger.error(f"Error fetching progress: {e}")
             return "تعذر جلب بيانات المسار."
 
-        achievements = progress.get('recent_achievements', [])
-        achievements_text = "\n".join([f"- {a}" for a in achievements]) if achievements else "لا توجد إنجازات مسجلة بعد."
+        achievements = progress.get("recent_achievements", [])
+        achievements_text = (
+            "\n".join([f"- {a}" for a in achievements])
+            if achievements
+            else "لا توجد إنجازات مسجلة بعد."
+        )
 
         return (
             f"## 🗺️ خارطة طريقك التعليمية\n"
@@ -135,8 +147,10 @@ class CurriculumAgent:
 
     async def _handle_difficulty_adjustment(self, user_id: int, feedback: str) -> str:
         try:
-             result = await self.tools.execute("adjust_difficulty_level", {"user_id": user_id, "feedback": feedback})
-             return f"✅ {result}"
+            result = await self.tools.execute(
+                "adjust_difficulty_level", {"user_id": user_id, "feedback": feedback}
+            )
+            return f"✅ {result}"
         except Exception as e:
-             logger.error(f"Error adjusting difficulty: {e}")
-             return "حدث خطأ أثناء تعديل الإعدادات."
+            logger.error(f"Error adjusting difficulty: {e}")
+            return "حدث خطأ أثناء تعديل الإعدادات."

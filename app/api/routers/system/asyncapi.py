@@ -10,9 +10,9 @@ from starlette.responses import JSONResponse
 from app.core.docs.asyncapi.builder import AsyncAPIBuilder
 from app.core.docs.asyncapi.consumption import assert_no_mixed_consumption
 from app.core.docs.asyncapi.models import Parameter, Schema
-from app.core.event_bus_impl import get_event_bus
 
 router = APIRouter()
+
 
 @router.get("/asyncapi.json", response_class=JSONResponse, tags=["System"])
 async def get_asyncapi_schema():
@@ -25,21 +25,20 @@ async def get_asyncapi_schema():
     builder = AsyncAPIBuilder(
         title="CogniForge Event System",
         version="1.0.0",
-        description="Event-driven architecture documentation"
+        description="Event-driven architecture documentation",
     )
 
     # 1. Define Reusable Channels
     # Example: User Signup Channel (Reusable)
     region_param = Parameter(
-        description="The region where the event occurred",
-        schema=Schema(type="string")
+        description="The region where the event occurred", schema=Schema(type="string")
     )
 
     builder.add_channel(
         channel_id="userSignupChannel",
         address="user/signup/{region}",
         parameters={"region": region_param},
-        description="Channel for user signup events"
+        description="Channel for user signup events",
     )
 
     # 2. Inspect Runtime EventBus (Simulated Introspection for now)
@@ -53,7 +52,7 @@ async def get_asyncapi_schema():
         action="receive",
         channel_ref_id="userSignupChannel",
         summary="Sends a welcome email on signup",
-        bindings={"amqp": {"queue": {"name": "welcome-email-queue"}}}
+        bindings={"amqp": {"queue": {"name": "welcome-email-queue"}}},
     )
 
     # Operation 2: Audit Log (Kafka Binding)
@@ -62,7 +61,7 @@ async def get_asyncapi_schema():
         action="receive",
         channel_ref_id="userSignupChannel",
         summary="Logs the signup to audit trail",
-        bindings={"kafka": {"groupId": "audit-log-group"}}
+        bindings={"kafka": {"groupId": "audit-log-group"}},
     )
 
     # 3. Serialize

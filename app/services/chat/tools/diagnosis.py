@@ -1,7 +1,9 @@
-from langchain_core.tools import tool
 from typing import Literal
 
+from langchain_core.tools import tool
+
 DiagnosisLevel = Literal["Beginner", "Average", "Advanced"]
+
 
 @tool("diagnose_student_level")
 def diagnose_student_level(last_interaction: str) -> DiagnosisLevel:
@@ -20,10 +22,15 @@ def diagnose_student_level(last_interaction: str) -> DiagnosisLevel:
 
     text = last_interaction.lower()
 
-    if any(word in text for word in ["basic", "simple", "what is", "explain", "help", "i don't understand"]):
+    if any(
+        word in text
+        for word in ["basic", "simple", "what is", "explain", "help", "i don't understand"]
+    ):
         return "Beginner"
 
-    if any(word in text for word in ["optimize", "complex", "proof", "challenge", "hard", "advanced"]):
+    if any(
+        word in text for word in ["optimize", "complex", "proof", "challenge", "hard", "advanced"]
+    ):
         return "Advanced"
 
     return "Average"

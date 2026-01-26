@@ -1,9 +1,11 @@
+from typing import Any
+
 import dspy
-import json
-from typing import Optional, Dict, Any
+
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
+
 
 class StructuredQuerySignature(dspy.Signature):
     """
@@ -14,11 +16,13 @@ class StructuredQuerySignature(dspy.Signature):
     - branch: The study branch (e.g., Experimental Sciences, Math Tech).
     - refined_query: A clean, English translation of the core topic for vector search (e.g., "Probability exercises", "Complex numbers").
     """
+
     user_query: str = dspy.InputField(desc="The raw query from the student.")
     refined_query: str = dspy.OutputField(desc="The optimized search term.")
-    year: Optional[int] = dspy.OutputField(desc="The exam year if mentioned, else None.")
-    subject: Optional[str] = dspy.OutputField(desc="The subject name if mentioned, else None.")
-    branch: Optional[str] = dspy.OutputField(desc="The branch name if mentioned, else None.")
+    year: int | None = dspy.OutputField(desc="The exam year if mentioned, else None.")
+    subject: str | None = dspy.OutputField(desc="The subject name if mentioned, else None.")
+    branch: str | None = dspy.OutputField(desc="The branch name if mentioned, else None.")
+
 
 class StructuredQueryRefiner(dspy.Module):
     def __init__(self):
@@ -28,7 +32,10 @@ class StructuredQueryRefiner(dspy.Module):
     def forward(self, user_query: str):
         return self.prog(user_query=user_query)
 
-def get_refined_query(user_query: str, api_key: str, model_name: str = "mistralai/devstral-2512:free") -> Dict[str, Any]:
+
+def get_refined_query(
+    user_query: str, api_key: str, model_name: str = "mistralai/devstral-2512:free"
+) -> dict[str, Any]:
     """
     Uses DSPy to refine the query and extract metadata.
     Returns a dictionary with 'refined_query', 'year', 'subject', 'branch'.
@@ -38,7 +45,7 @@ def get_refined_query(user_query: str, api_key: str, model_name: str = "mistrala
             model=f"openai/{model_name}",
             api_key=api_key,
             api_base="https://openrouter.ai/api/v1",
-            max_tokens=300
+            max_tokens=300,
         )
 
         with dspy.context(lm=lm):
@@ -49,18 +56,23 @@ def get_refined_query(user_query: str, api_key: str, model_name: str = "mistrala
             return {
                 "refined_query": result.refined_query,
                 "year": _safe_int(result.year),
-                "subject": result.subject if result.subject and result.subject.lower() != "none" else None,
-                "branch": result.branch if result.branch and result.branch.lower() != "none" else None
+                "subject": result.subject
+                if result.subject and result.subject.lower() != "none"
+                else None,
+                "branch": result.branch
+                if result.branch and result.branch.lower() != "none"
+                else None,
             }
 
     except Exception as e:
         logger.warning(f"DSPy refinement failed: {e}")
         return {"refined_query": user_query}
 
-def _safe_int(val: Any) -> Optional[int]:
+
+def _safe_int(val: Any) -> int | None:
     try:
         if val and str(val).lower() != "none":
             return int(str(val))
-    except:
-        pass
+    except (TypeError, ValueError):
+        return None
     return None

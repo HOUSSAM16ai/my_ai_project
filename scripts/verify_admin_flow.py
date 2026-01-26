@@ -26,9 +26,9 @@ from sqlalchemy import select
 
 from app.core.ai_gateway import get_ai_client
 from app.core.database import async_session_factory
+from app.core.domain.models import SQLModel, User
 from app.core.engine_factory import create_unified_async_engine
 from app.main import create_app
-from app.core.domain.models import SQLModel, User
 
 # --- CONSTANTS ---
 TEST_EMAIL = "admin_verify@example.com"

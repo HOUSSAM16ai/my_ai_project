@@ -21,6 +21,7 @@ router = APIRouter(prefix="/system", tags=["System"])
 # دمج موجه AsyncAPI
 router.include_router(asyncapi_router)
 
+
 @router.get(
     "/health",
     summary="فحص صحة النظام (Application Health Check)",

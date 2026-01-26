@@ -3,7 +3,6 @@ Retrieval Service Orchestrator.
 Application Layer.
 Coordinators domain logic, infrastructure, and fallback strategies.
 """
-from typing import Optional
 
 import httpx
 
@@ -15,11 +14,11 @@ logger = get_logger("tool-retrieval-service")
 
 async def search_educational_content(
     query: str,
-    year: Optional[str] = None,
-    subject: Optional[str] = None,
-    branch: Optional[str] = None,
-    exam_ref: Optional[str] = None,
-    exercise_id: Optional[str] = None,
+    year: str | None = None,
+    subject: str | None = None,
+    branch: str | None = None,
+    exam_ref: str | None = None,
+    exercise_id: str | None = None,
 ) -> str:
     """
     يبحث في قاعدة المعرفة التعليمية عن محتوى محدد.
@@ -61,7 +60,9 @@ async def search_educational_content(
 
         if not results:
             logger.info("Memory Agent returned no results. Attempting local fallback.")
-            return local_store.search_local_knowledge_base(semantic_query, year, subject, branch, exam_ref)
+            return local_store.search_local_knowledge_base(
+                semantic_query, year, subject, branch, exam_ref
+            )
 
         # Process and filter results
         contents = []
@@ -79,21 +80,27 @@ async def search_educational_content(
 
             # 1. Check Year
             if year and str(payload.get("year", "")) != str(year):
-                logger.warning(f"Skipping result with mismatched year: {payload.get('year')} != {year}")
+                logger.warning(
+                    f"Skipping result with mismatched year: {payload.get('year')} != {year}"
+                )
                 continue
 
             # 2. Check Subject (Loose string match)
             if subject:
                 item_subject = str(payload.get("subject", "")).lower()
                 if subject.lower() not in item_subject and item_subject not in subject.lower():
-                    logger.warning(f"Skipping result with mismatched subject: {item_subject} != {subject}")
+                    logger.warning(
+                        f"Skipping result with mismatched subject: {item_subject} != {subject}"
+                    )
                     continue
 
             # 3. Check Exam Ref
             if exam_ref:
                 item_ref = str(payload.get("exam_ref", "")).lower()
                 if exam_ref.lower() not in item_ref and item_ref not in exam_ref.lower():
-                    logger.warning(f"Skipping result with mismatched exam_ref: {item_ref} != {exam_ref}")
+                    logger.warning(
+                        f"Skipping result with mismatched exam_ref: {item_ref} != {exam_ref}"
+                    )
                     continue
 
             # Try granular extraction
@@ -108,11 +115,13 @@ async def search_educational_content(
 
             if final_content:
                 # Add Source Header for Clarity
-                source_label = f"--- Source: {payload.get('year', '')} {payload.get('exam_ref', '')} ---"
+                source_label = (
+                    f"--- Source: {payload.get('year', '')} {payload.get('exam_ref', '')} ---"
+                )
                 contents.append(f"{source_label}\n\n{final_content}")
 
         if not contents and is_specific:
-                return "عذراً، لم أتمكن من العثور على التمرين المحدد في السياق المطلوب."
+            return "عذراً، لم أتمكن من العثور على التمرين المحدد في السياق المطلوب."
 
         # Deduplicate contents
         unique_contents = parsing.deduplicate_contents(contents)
@@ -120,8 +129,14 @@ async def search_educational_content(
         return "\n\n".join(unique_contents).strip()
 
     except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-        logger.warning(f"Memory Agent connection error: {e}. Switching to local knowledge base fallback.")
-        return local_store.search_local_knowledge_base(semantic_query, year, subject, branch, exam_ref)
+        logger.warning(
+            f"Memory Agent connection error: {e}. Switching to local knowledge base fallback."
+        )
+        return local_store.search_local_knowledge_base(
+            semantic_query, year, subject, branch, exam_ref
+        )
     except Exception as e:
         logger.error(f"Search failed: {e}", exc_info=True)
-        return local_store.search_local_knowledge_base(semantic_query, year, subject, branch, exam_ref)
+        return local_store.search_local_knowledge_base(
+            semantic_query, year, subject, branch, exam_ref
+        )

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Mapping
+from collections.abc import Mapping
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,6 +11,7 @@ class AuditLogEntry(BaseModel):
     """
     A unified, high-precision schema for an audit log entry before persistence.
     """
+
     actor_user_id: int | None = Field(None, description="The user performing the action")
     action: AuditAction | str = Field(..., description="The action performed")
     target_type: str = Field(..., description="The type of the target entity")

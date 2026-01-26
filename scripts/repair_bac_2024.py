@@ -1,24 +1,28 @@
 import asyncio
 import json
+import os
+import ssl
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
-
-import os
-
-import ssl
 
 # User provided DB URL
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+
 async def repair():
-    print(f"🔧 Starting Repair for BAC 2024 Probability Exercise...")
+    print("🔧 Starting Repair for BAC 2024 Probability Exercise...")
 
     if not DATABASE_URL:
         print("❌ DATABASE_URL environment variable is not set.")
         return
 
     # Ensure async driver
-    url = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://").replace("?sslmode=require", "").replace("&sslmode=require", "")
+    url = (
+        DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+        .replace("?sslmode=require", "")
+        .replace("&sslmode=require", "")
+    )
 
     # SSL Context for asyncpg
     ssl_ctx = ssl.create_default_context()
@@ -31,16 +35,18 @@ async def repair():
         connect_args={
             "statement_cache_size": 0,
             "prepared_statement_cache_size": 0,
-            "ssl": ssl_ctx
-        }
+            "ssl": ssl_ctx,
+        },
     )
 
     try:
         async with engine.connect() as conn:
             # 1. Verify Content ID exists
-            content_id = 'bac-2024-exp-math-s1-ex1'
+            content_id = "bac-2024-exp-math-s1-ex1"
             print(f"🔍 Verifying Content Item: {content_id}")
-            result = await conn.execute(text("SELECT id FROM content_items WHERE id = :id"), {"id": content_id})
+            result = await conn.execute(
+                text("SELECT id FROM content_items WHERE id = :id"), {"id": content_id}
+            )
             if not result.fetchone():
                 print(f"❌ Content Item {content_id} not found! Cannot link.")
                 return
@@ -100,15 +106,21 @@ async def repair():
 
             # Update Title
             new_title = "التمرين الأول (04 نقاط) - بكالوريا 2024 - علوم تجريبية"
-            await conn.execute(text("""
+            await conn.execute(
+                text("""
                 UPDATE content_items
                 SET title = :title
                 WHERE id = :id
-            """), {"title": new_title, "id": content_id})
+            """),
+                {"title": new_title, "id": content_id},
+            )
 
             # Update Search Text (Append Keywords)
             # We verify first if keywords exist to avoid duplicate appends
-            search_row = await conn.execute(text("SELECT plain_text FROM content_search WHERE content_id = :id"), {"id": content_id})
+            search_row = await conn.execute(
+                text("SELECT plain_text FROM content_search WHERE content_id = :id"),
+                {"id": content_id},
+            )
             row = search_row.fetchone()
             if row:
                 current_text = row[0]
@@ -116,11 +128,14 @@ async def repair():
 
                 if "BAC 2024" not in current_text:
                     new_text = current_text + keywords_to_add
-                    await conn.execute(text("""
+                    await conn.execute(
+                        text("""
                         UPDATE content_search
                         SET plain_text = :text
                         WHERE content_id = :id
-                    """), {"text": new_text, "id": content_id})
+                    """),
+                        {"text": new_text, "id": content_id},
+                    )
                     print("   - Added search keywords to content_search.")
                 else:
                     print("   - Search keywords already present.")
@@ -132,6 +147,7 @@ async def repair():
         print(f"❌ Error during repair: {e}")
     finally:
         await engine.dispose()
+
 
 if __name__ == "__main__":
     asyncio.run(repair())

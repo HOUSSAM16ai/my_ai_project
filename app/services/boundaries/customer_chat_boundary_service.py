@@ -7,8 +7,8 @@
 
 from __future__ import annotations
 
-import re
 import logging
+import re
 from collections.abc import AsyncGenerator, Callable
 
 from fastapi import HTTPException
@@ -312,10 +312,26 @@ class CustomerChatBoundaryService:
 
         # 1. Simple substring checks (Safe/Long terms)
         substring_keywords = (
-            "تمرين", "تمارين", "موضوع", "بكالوريا",
-            "الاحتمالات", "الأعداد المركبة",
-            "أفهم", "فهم", "اشرح", "لماذا", "كيف", "من أين",
-            "afham", "sharh", "ashrah", "eshrah", "نتيجة", "الحل", "جواب", "جاءت"
+            "تمرين",
+            "تمارين",
+            "موضوع",
+            "بكالوريا",
+            "الاحتمالات",
+            "الأعداد المركبة",
+            "أفهم",
+            "فهم",
+            "اشرح",
+            "لماذا",
+            "كيف",
+            "من أين",
+            "afham",
+            "sharh",
+            "ashrah",
+            "eshrah",
+            "نتيجة",
+            "الحل",
+            "جواب",
+            "جاءت",
         )
         if any(k in lowered for k in substring_keywords):
             return True

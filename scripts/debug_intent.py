@@ -1,12 +1,12 @@
-
 import asyncio
-import sys
 import os
+import sys
 
 # Ensure app is in path
 sys.path.append(os.getcwd())
 
-from app.services.chat.intent_detector import IntentDetector, ChatIntent
+from app.services.chat.intent_detector import IntentDetector
+
 
 async def main():
     detector = IntentDetector()
@@ -24,6 +24,7 @@ async def main():
     for q in queries:
         result = await detector.detect(q)
         print(f"Query: '{q}' -> Intent: {result.intent} (Confidence: {result.confidence})")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

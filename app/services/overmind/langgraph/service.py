@@ -8,10 +8,10 @@ from app.services.overmind.agents.architect import ArchitectAgent
 from app.services.overmind.agents.auditor import AuditorAgent
 from app.services.overmind.agents.operator import OperatorAgent
 from app.services.overmind.agents.strategist import StrategistAgent
+from app.services.overmind.domain.api_schemas import LangGraphRunData, LangGraphRunRequest
 from app.services.overmind.executor import TaskExecutor
 from app.services.overmind.langgraph.engine import LangGraphOvermindEngine
 from app.services.overmind.langgraph.state_manager import EphemeralMissionStateManager
-from app.services.overmind.domain.api_schemas import LangGraphRunData, LangGraphRunRequest
 
 
 class LangGraphAgentService:

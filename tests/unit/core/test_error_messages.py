@@ -1,5 +1,3 @@
-import os
-
 from app.core import error_messages
 
 

@@ -94,10 +94,10 @@ class AIGatewayFacade:
         return self._client
 
     async def generate_text(self, prompt: str, **kwargs) -> dict[str, str | int | bool]:
-        return await self.client.generate_text(prompt, **kwargs) # type: ignore
+        return await self.client.generate_text(prompt, **kwargs)  # type: ignore
 
     async def forge_new_code(self, **kwargs) -> dict[str, str | int | bool]:
-        return await self.client.forge_new_code(**kwargs) # type: ignore
+        return await self.client.forge_new_code(**kwargs)  # type: ignore
 
     def __getattr__(self, name: str) -> object:
         return getattr(self.client, name)

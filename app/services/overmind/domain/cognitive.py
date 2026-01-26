@@ -540,7 +540,7 @@ class SuperBrain:
             phase_str = self._phase_event_label(phase_name)
             await log_func(f"{phase_str}_completed", {"summary": "Phase completed successfully"})
             return result
-        except asyncio.TimeoutError:
+        except TimeoutError:
             error_msg = f"{agent_name} timeout during {phase_name} (exceeded {timeout}s)"
             logger.error(error_msg)
             phase_str = self._phase_event_label(phase_name)

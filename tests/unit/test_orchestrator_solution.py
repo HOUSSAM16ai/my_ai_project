@@ -1,7 +1,10 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from app.services.chat.agents.orchestrator import OrchestratorAgent
 from app.services.chat.intent_detector import ChatIntent
+
 
 @pytest.mark.asyncio
 async def test_orchestrator_injects_solution_into_prompt():
@@ -19,7 +22,7 @@ async def test_orchestrator_injects_solution_into_prompt():
         # Call 1: search_content -> Returns 1 candidate
         [{"id": "ex1", "title": "Exercise 1", "type": "exercise", "year": 2024}],
         # Call 2: get_content_raw -> Returns content AND solution
-        {"content": "Exercise Text", "solution": "Official Solution Steps"}
+        {"content": "Exercise Text", "solution": "Official Solution Steps"},
     ]
 
     # Mock AI Client Stream Chat
@@ -57,10 +60,15 @@ async def test_orchestrator_injects_solution_into_prompt():
     found_solution_in_prompt = False
 
     for call in calls:
-        messages = call[0][0] # first arg is messages list
+        messages = call[0][0]  # first arg is messages list
         for msg in messages:
-            if "Official Solution" in msg["content"] and "Official Solution Steps" in msg["content"]:
+            if (
+                "Official Solution" in msg["content"]
+                and "Official Solution Steps" in msg["content"]
+            ):
                 found_solution_in_prompt = True
                 break
 
-    assert found_solution_in_prompt, "The Official Solution was not found in the AI prompt messages."
+    assert found_solution_in_prompt, (
+        "The Official Solution was not found in the AI prompt messages."
+    )

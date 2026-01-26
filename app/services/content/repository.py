@@ -1,19 +1,18 @@
-import logging
-from typing import List, Optional, Tuple
-
-from sqlalchemy import text, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sentence_transformers import SentenceTransformer
 import asyncio
+import logging
 
-from app.core.domain.content import ContentItem, ContentSearch, ContentSolution
-from app.services.content.domain import ContentFilter, ContentSummary, ContentDetail
+from sentence_transformers import SentenceTransformer
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.services.content.domain import ContentDetail, ContentFilter, ContentSummary
 
 logger = logging.getLogger(__name__)
 
 # Global cached model (loaded lazily)
 _EMBEDDING_MODEL = None
 _EMBEDDING_MODEL_NAME = "intfloat/multilingual-e5-small"
+
 
 def _get_model():
     global _EMBEDDING_MODEL
@@ -22,18 +21,21 @@ def _get_model():
         _EMBEDDING_MODEL = SentenceTransformer(_EMBEDDING_MODEL_NAME)
     return _EMBEDDING_MODEL
 
+
 class ContentRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def search(self, filters: ContentFilter) -> List[ContentSummary]:
+    async def search(self, filters: ContentFilter) -> list[ContentSummary]:
         """
         Executes a Semantic Hybrid search query against content_items and content_search.
         Uses Vectors (pgvector) + Metadata Filters.
         """
         # Base Query
         # We select items. If search query exists, we calculate distance.
-        select_cols = "i.id, i.title, i.type, i.level, i.subject, i.branch, i.set_name, i.year, i.lang"
+        select_cols = (
+            "i.id, i.title, i.type, i.level, i.subject, i.branch, i.set_name, i.year, i.lang"
+        )
 
         query_str = f"""
             SELECT {select_cols}
@@ -53,7 +55,9 @@ class ContentRepository:
                 loop = asyncio.get_running_loop()
                 # Run embedding in thread pool to avoid blocking async loop
                 model = await loop.run_in_executor(None, _get_model)
-                embedding = await loop.run_in_executor(None, lambda: model.encode(f"query: {query_text}").tolist())
+                embedding = await loop.run_in_executor(
+                    None, lambda: model.encode(f"query: {query_text}").tolist()
+                )
 
                 # Pass vector as string literal with explicit cast to handle asyncpg/sqlalchemy types robustly
                 # This ensures pgvector works even if the driver binding is tricky
@@ -131,21 +135,23 @@ class ContentRepository:
             if row.id in seen:
                 continue
             seen.add(row.id)
-            items.append(ContentSummary(
-                id=row.id,
-                title=row.title,
-                type=row.type,
-                level=row.level,
-                subject=row.subject,
-                branch=row.branch,
-                set_name=row.set_name,
-                year=row.year,
-                lang=row.lang
-            ))
+            items.append(
+                ContentSummary(
+                    id=row.id,
+                    title=row.title,
+                    type=row.type,
+                    level=row.level,
+                    subject=row.subject,
+                    branch=row.branch,
+                    set_name=row.set_name,
+                    year=row.year,
+                    lang=row.lang,
+                )
+            )
 
         return items
 
-    async def get_content_detail(self, content_id: str) -> Optional[ContentDetail]:
+    async def get_content_detail(self, content_id: str) -> ContentDetail | None:
         """
         Retrieves raw markdown content and solution.
         """
@@ -169,10 +175,10 @@ class ContentRepository:
             id=row.id,
             content_md=row.md_content,
             solution_md=row.solution_md,
-            metadata={"title": row.title}
+            metadata={"title": row.title},
         )
 
-    async def get_tree_items(self, level: Optional[str] = None) -> List[object]:
+    async def get_tree_items(self, level: str | None = None) -> list[object]:
         """
         Fetch items for curriculum tree construction.
         """

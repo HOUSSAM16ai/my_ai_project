@@ -9,10 +9,10 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.domain.mission import Mission, MissionStatus, MissionEvent
+from app.core.domain.mission import Mission, MissionEvent, MissionStatus
 from app.core.domain.user import User
 from app.core.logging import get_logger
-from app.security.auth_dependency import get_current_active_user, get_current_admin
+from app.security.auth_dependency import get_current_active_user
 
 logger = get_logger("missions-api")
 
@@ -52,7 +52,7 @@ async def list_missions(
             "full_objective": m.objective,
             "status": m.status,
             "created_at": m.created_at,
-            "updated_at": m.updated_at
+            "updated_at": m.updated_at,
         }
         for m in missions
     ]
@@ -93,11 +93,7 @@ async def get_mission_details(
             "updated_at": mission.updated_at,
         },
         "timeline": [
-            {
-                "type": e.event_type,
-                "data": e.payload_json,
-                "timestamp": e.created_at
-            }
+            {"type": e.event_type, "data": e.payload_json, "timestamp": e.created_at}
             for e in events
-        ]
+        ],
     }

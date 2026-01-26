@@ -23,8 +23,8 @@ except ImportError:
     pd = None
 
 try:
-    from PIL import Image
     import pytesseract
+    from PIL import Image
 except ImportError:
     Image = None
     pytesseract = None
@@ -109,7 +109,7 @@ def read_file_logic(
                         full_text.append(text)
                 content = "\n".join(full_text)
             except Exception as e:
-                return ToolResult(ok=False, error=f"PDF_READ_ERROR: {str(e)}")
+                return ToolResult(ok=False, error=f"PDF_READ_ERROR: {e!s}")
 
         # Word Handling (.docx)
         elif abs_path.lower().endswith(".docx"):
@@ -119,7 +119,7 @@ def read_file_logic(
                 doc = docx.Document(abs_path)
                 content = "\n".join([para.text for para in doc.paragraphs])
             except Exception as e:
-                return ToolResult(ok=False, error=f"DOCX_READ_ERROR: {str(e)}")
+                return ToolResult(ok=False, error=f"DOCX_READ_ERROR: {e!s}")
 
         # Excel Handling (.xlsx)
         elif abs_path.lower().endswith(".xlsx"):
@@ -134,7 +134,7 @@ def read_file_logic(
                     full_text.append(df.to_string())
                 content = "\n\n".join(full_text)
             except Exception as e:
-                return ToolResult(ok=False, error=f"XLSX_READ_ERROR: {str(e)}")
+                return ToolResult(ok=False, error=f"XLSX_READ_ERROR: {e!s}")
 
         # Image Handling (.png, .jpg, .jpeg)
         elif abs_path.lower().endswith((".png", ".jpg", ".jpeg")):
@@ -146,9 +146,9 @@ def read_file_logic(
                 img = Image.open(abs_path)
                 content = pytesseract.image_to_string(img)
                 if not content.strip():
-                     content = "[OCR returned no text. Image might be blank or Tesseract not configured correctly.]"
+                    content = "[OCR returned no text. Image might be blank or Tesseract not configured correctly.]"
             except Exception as e:
-                return ToolResult(ok=False, error=f"IMAGE_OCR_ERROR: {str(e)}")
+                return ToolResult(ok=False, error=f"IMAGE_OCR_ERROR: {e!s}")
 
         else:
             # Normal Text

@@ -7,8 +7,8 @@ from dataclasses import dataclass
 import pytest
 
 from app.services.project_context.application.analyzers.issues import (
-    IssueAnalyzer,
     LONG_METHOD_LINE_THRESHOLD,
+    IssueAnalyzer,
 )
 from app.services.project_context.application.analyzers.stats import CodeStatsAnalyzer
 from app.services.project_context.application.analyzers.structure import StructureAnalyzer
@@ -33,11 +33,7 @@ def build_method_source(spec: MethodSpec) -> str:
     body = [f"    {spec.accumulator} = 0"] + [
         f"    {spec.accumulator} += 1" for _ in range(body_lines - 1)
     ]
-    return (
-        f"def {spec.name}():\n"
-        + "\n".join(body)
-        + f"\n    return {spec.accumulator}\n"
-    )
+    return f"def {spec.name}():\n" + "\n".join(body) + f"\n    return {spec.accumulator}\n"
 
 
 def build_file_source(specs: list[MethodSpec]) -> str:

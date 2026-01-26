@@ -5,15 +5,19 @@
 يستخدم هذا الملف لتعريف الذاكرة المشتركة بين الوكلاء.
 """
 
-from typing import Annotated, TypedDict, Union, List, Dict
-import operator
+from typing import Annotated, NotRequired, TypedDict
+
 from langchain_core.messages import BaseMessage
 
-def add_messages_reducer(left: list[BaseMessage], right: list[BaseMessage] | BaseMessage) -> list[BaseMessage]:
+
+def add_messages_reducer(
+    left: list[BaseMessage], right: list[BaseMessage] | BaseMessage
+) -> list[BaseMessage]:
     """Reducer to append messages to the history."""
     if isinstance(right, list):
-        return left + right
-    return left + [right]
+        return [*left, *right]
+    return [*left, right]
+
 
 class AgentState(TypedDict):
     """
@@ -28,10 +32,12 @@ class AgentState(TypedDict):
         final_response: الإجابة النهائية (اختياري).
         user_context: سياق المستخدم الإضافي.
     """
-    messages: Annotated[List[BaseMessage], add_messages_reducer]
+
+    messages: Annotated[list[BaseMessage], add_messages_reducer]
     next: str
-    plan: List[str]
+    plan: list[str]
     current_step_index: int
-    search_results: List[Dict[str, object]]
-    user_context: Dict[str, object]
+    search_results: list[dict[str, object]]
+    user_context: dict[str, object]
     final_response: str
+    routing_trace: NotRequired[list[dict[str, object]]]

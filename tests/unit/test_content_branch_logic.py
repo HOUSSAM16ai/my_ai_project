@@ -1,6 +1,9 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from app.services.chat.tools.content import search_content, _normalize_branch
+
+import pytest
+
+from app.services.chat.tools.content import _normalize_branch, search_content
+
 
 @pytest.mark.asyncio
 async def test_normalize_branch():
@@ -8,6 +11,7 @@ async def test_normalize_branch():
     assert _normalize_branch("Math Tech") == "تقني رياضي"
     assert _normalize_branch("لغات") == "لغات أجنبية"
     assert _normalize_branch("unknown") == "unknown"
+
 
 @pytest.mark.asyncio
 async def test_search_content_with_branch_generates_correct_query():
@@ -22,16 +26,15 @@ async def test_search_content_with_branch_generates_correct_query():
     mock_session_ctx.__aenter__.return_value = mock_session
     mock_session_ctx.__aexit__.return_value = None
 
-    with patch("app.services.chat.tools.content.async_session_factory", return_value=mock_session_ctx):
+    with patch(
+        "app.services.chat.tools.content.async_session_factory", return_value=mock_session_ctx
+    ):
         await search_content(
-            q="Probability",
-            year=2024,
-            set_name="subject_1",
-            branch="experimental_sciences"
+            q="Probability", year=2024, set_name="subject_1", branch="experimental_sciences"
         )
 
         # Verify query construction
-        args, kwargs = mock_session.execute.call_args
+        args, _ = mock_session.execute.call_args
         query_text = str(args[0])
         params = args[1]
 
@@ -46,6 +49,7 @@ async def test_search_content_with_branch_generates_correct_query():
         # Check SQL Logic
         assert "i.title LIKE :branch_kw" in query_text
 
+
 @pytest.mark.asyncio
 async def test_search_content_without_branch():
     # Mock session
@@ -59,10 +63,12 @@ async def test_search_content_without_branch():
     mock_session_ctx.__aenter__.return_value = mock_session
     mock_session_ctx.__aexit__.return_value = None
 
-    with patch("app.services.chat.tools.content.async_session_factory", return_value=mock_session_ctx):
+    with patch(
+        "app.services.chat.tools.content.async_session_factory", return_value=mock_session_ctx
+    ):
         await search_content(q="Test")
 
-        args, kwargs = mock_session.execute.call_args
+        args, _ = mock_session.execute.call_args
         query_text = str(args[0])
         params = args[1]
 

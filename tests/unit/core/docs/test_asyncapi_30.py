@@ -1,6 +1,6 @@
-import pytest
 from app.core.docs.asyncapi.builder import AsyncAPIBuilder
 from app.core.docs.asyncapi.models import Parameter, Schema
+
 
 def test_asyncapi_30_separation_scenario():
     """
@@ -25,14 +25,14 @@ def test_asyncapi_30_separation_scenario():
 
     region_param = Parameter(
         description="The region where the signup occurred",
-        schema=Schema(type="string", properties={})
+        schema=Schema(type="string", properties={}),
     )
 
     builder.add_channel(
         channel_id="userSignupChannel",
         address="user/signup/{region}",
         parameters={"region": region_param},
-        description="Channel for user signup events"
+        description="Channel for user signup events",
     )
 
     # 2. Define Operation 1: sendWelcomeEmail
@@ -43,7 +43,7 @@ def test_asyncapi_30_separation_scenario():
         action="receive",
         channel_ref_id="userSignupChannel",
         summary="Sends a welcome email on signup",
-        bindings={"amqp": {"queue": {"name": "welcome-email-queue"}}}
+        bindings={"amqp": {"queue": {"name": "welcome-email-queue"}}},
     )
 
     # 3. Define Operation 2: logAuditTrail
@@ -53,7 +53,7 @@ def test_asyncapi_30_separation_scenario():
         action="receive",
         channel_ref_id="userSignupChannel",
         summary="Logs the signup to audit trail",
-        bindings={"kafka": {"groupId": "audit-log-group"}}
+        bindings={"kafka": {"groupId": "audit-log-group"}},
     )
 
     # 4. Verification / Resolution
@@ -97,7 +97,10 @@ def test_asyncapi_30_separation_scenario():
     kafka_binding = context2["operation_bindings"]["kafka"]
     assert kafka_binding.groupId == "audit-log-group"
 
-    print("\n✅ Verification Successful: Both operations share the Channel definition (and its parameters) but maintain distinct operation bindings.")
+    print(
+        "\n✅ Verification Successful: Both operations share the Channel definition (and its parameters) but maintain distinct operation bindings."
+    )
+
 
 if __name__ == "__main__":
     test_asyncapi_30_separation_scenario()

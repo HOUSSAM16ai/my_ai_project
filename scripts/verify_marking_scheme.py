@@ -1,7 +1,6 @@
 import asyncio
 import sys
 from unittest.mock import MagicMock
-from types import ModuleType
 
 # Setup sys.path to ensure we are running from root
 sys.path.append("/app")
@@ -18,6 +17,7 @@ sys.modules["app.services.chat.tools.content"] = MagicMock()
 # Now we can import the service
 from app.services.chat.tools.retrieval.service import search_educational_content
 
+
 async def main():
     print("--- Searching for Exercise 1 (Probability) - Questions Only ---")
     # Note: 'subject_1' matches the 'set: subject_1' in the content file
@@ -26,7 +26,7 @@ async def main():
         year="2024",
         subject="Mathematics",
         branch="Experimental Sciences",
-        exam_ref="Subject 1"
+        exam_ref="Subject 1",
     )
     print("Result Length:", len(result_ex1))
     print("Result Preview (End of text):\n", result_ex1[-200:])
@@ -41,6 +41,7 @@ async def main():
         print("[PASS] Contains exercise content.")
     else:
         print("[FAIL] Missing exercise content.")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

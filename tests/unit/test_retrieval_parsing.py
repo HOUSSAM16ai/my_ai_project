@@ -1,8 +1,9 @@
 import unittest
+
 from app.services.chat.tools.retrieval import parsing
 
-class TestRetrievalParsing(unittest.TestCase):
 
+class TestRetrievalParsing(unittest.TestCase):
     def test_normalize_semantic_text(self):
         # Test Arabic digit normalization
         self.assertEqual(parsing.normalize_semantic_text("٢٠٢٤"), "2024")
@@ -20,13 +21,13 @@ class TestRetrievalParsing(unittest.TestCase):
 
     def test_is_specific_request(self):
         self.assertTrue(parsing.is_specific_request("Show me Exercise 1"))
-        self.assertTrue(parsing.is_specific_request("اريد تمرين الاحتمالات")) # Topic
+        self.assertTrue(parsing.is_specific_request("اريد تمرين الاحتمالات"))  # Topic
         self.assertTrue(parsing.is_specific_request("التمرين 3"))
         self.assertFalse(parsing.is_specific_request("Give me the full exam"))
 
     def test_deduplicate_contents(self):
         c1 = "This is a very long content string that contains more info."
-        c2 = "very long content string" # Substring
+        c2 = "very long content string"  # Substring
         c3 = "Different content"
 
         # c2 should be removed because it's a substring of c1
@@ -51,7 +52,7 @@ Content of Ex 2.
         self.assertIsNotNone(ex1)
         self.assertIn("Content of Ex 1", ex1)
         self.assertNotIn("Content of Ex 2", ex1)
-        self.assertIn("Exam Card", ex1) # Header should be preserved
+        self.assertIn("Exam Card", ex1)  # Header should be preserved
 
         # Extract Ex 2
         ex2 = parsing.extract_specific_exercise(content, "Exercise 2")
@@ -62,6 +63,7 @@ Content of Ex 2.
         # Extract Non-existent
         ex3 = parsing.extract_specific_exercise(content, "Exercise 3")
         self.assertIsNone(ex3)
+
 
 if __name__ == "__main__":
     unittest.main()

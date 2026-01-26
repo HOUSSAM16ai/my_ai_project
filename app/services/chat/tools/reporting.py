@@ -2,13 +2,11 @@
 أدوات التحليل وإعداد التقارير التعليمية.
 """
 
-from typing import cast
-
-from sqlalchemy import desc, func, select
+from sqlalchemy import desc, select
 
 from app.core.database import async_session_factory
-from app.core.domain.chat import CustomerMessage, MessageRole, CustomerConversation
-from app.core.domain.mission import Mission, MissionStatus, Task, TaskStatus
+from app.core.domain.chat import CustomerConversation, CustomerMessage, MessageRole
+from app.core.domain.mission import Mission, MissionStatus
 from app.core.logging import get_logger
 from app.services.overmind.user_knowledge.service import UserKnowledge
 
@@ -34,8 +32,9 @@ async def fetch_comprehensive_student_history(user_id: int) -> dict[str, object]
         "user_id": user_id,
         "chat_history_text": chat_logs,
         "missions_summary": missions_summary,
-        "profile_stats": profile.get("statistics", {})
+        "profile_stats": profile.get("statistics", {}),
     }
+
 
 async def _fetch_raw_chat_logs(session, user_id: int, message_limit: int = 60) -> str:
     """
@@ -111,8 +110,9 @@ async def analyze_learning_curve(user_id: int) -> dict[str, object]:
         "last_achievement": history[-1].objective if history else None,
         "last_active_date": history[-1].updated_at.isoformat() if history else None,
         "consistency_score": "High" if len(history) > 5 else "Growing",
-        "trend": "Active Learner"
+        "trend": "Active Learner",
     }
+
 
 async def _get_detailed_missions_summary(user_id: int) -> dict[str, object]:
     """
@@ -132,20 +132,20 @@ async def _get_detailed_missions_summary(user_id: int) -> dict[str, object]:
     topics = set()
 
     for m in missions:
-        recent.append({
-            "id": m.id,
-            "title": m.objective[:50] + "..." if len(m.objective) > 50 else m.objective,
-            "status": m.status.value,
-            "date": m.created_at.isoformat(),
-        })
+        recent.append(
+            {
+                "id": m.id,
+                "title": m.objective[:50] + "..." if len(m.objective) > 50 else m.objective,
+                "status": m.status.value,
+                "date": m.created_at.isoformat(),
+            }
+        )
         words = m.objective.split()
         if len(words) > 0:
             topics.add(words[0])
 
-    return {
-        "recent_missions": recent,
-        "topics": list(topics)
-    }
+    return {"recent_missions": recent, "topics": list(topics)}
+
 
 def _calculate_completion_rate(stats: dict) -> str:
     total = stats.get("total_missions", 0)
@@ -153,6 +153,7 @@ def _calculate_completion_rate(stats: dict) -> str:
     if total == 0:
         return "N/A"
     return f"{(completed / total * 100):.1f}%"
+
 
 def _generate_smart_recommendations(summary: dict) -> list[str]:
     recent = summary.get("recent_missions", [])

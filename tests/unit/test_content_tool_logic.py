@@ -5,8 +5,9 @@ from unittest.mock import MagicMock
 sys.modules["dspy"] = MagicMock()
 sys.modules["app.services.search_engine.query_refiner"] = MagicMock()
 
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 
 # Now import the module under test
 # We also need to mock content_service import if it triggers DB connections
@@ -22,7 +23,7 @@ sys.modules["app.services.content.service"] = mock_content_service_module
 
 # Now we can import the tool safely
 from app.services.chat.tools.content import search_content
-from app.services.search_engine.fallback_expander import FallbackQueryExpander
+
 
 @pytest.mark.asyncio
 async def test_search_content_fallback_logic():
@@ -54,11 +55,12 @@ async def test_search_content_fallback_logic():
     # Act
     # We pass a query that we know FallbackQueryExpander will strip
     # We mock get_retriever to ensure Vector Search fails, forcing Keyword Fallback
-    with patch("app.services.chat.tools.content.get_retriever") as mock_get_retriever, \
-         patch("app.services.chat.tools.content.FallbackQueryExpander") as mock_expander:
-
+    with (
+        patch("app.services.chat.tools.content.get_retriever") as mock_get_retriever,
+        patch("app.services.chat.tools.content.FallbackQueryExpander") as mock_expander,
+    ):
         mock_retriever_instance = MagicMock()
-        mock_retriever_instance.search.return_value = [] # No vectors found
+        mock_retriever_instance.search.return_value = []  # No vectors found
         mock_get_retriever.return_value = mock_retriever_instance
 
         # Mock expander to return controlled variations
@@ -84,6 +86,7 @@ async def test_search_content_fallback_logic():
     # FallbackExpander removes 2024 as stop word, so the tool should prefer "Complex Search"
     # The tool picks query_candidates[-1], which is the most processed one.
     assert any("Complex Search" in q for q in queries_tried)
+
 
 @pytest.mark.asyncio
 async def test_search_content_early_return():

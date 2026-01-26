@@ -49,12 +49,7 @@ def test_extracts_topic_based_exercise() -> None:
 
 
 def test_returns_none_when_no_specific_request() -> None:
-    content = (
-        "# اختبار بدون تطابق\n"
-        "\n"
-        "## التمرين الأول\n"
-        "نص التمرين الأول\n"
-    )
+    content = "# اختبار بدون تطابق\n\n## التمرين الأول\nنص التمرين الأول\n"
 
     assert _extract_specific_exercise(content, "مقدمة عامة") is None
 

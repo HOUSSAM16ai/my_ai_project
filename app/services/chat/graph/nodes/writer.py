@@ -6,25 +6,30 @@ to handle Student Intent, Context Firewalling, and Adaptive Prompting.
 """
 
 import re
-from enum import Enum, auto
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from enum import Enum, auto
+from typing import Any
 
 from langchain_core.messages import AIMessage
-from app.services.chat.graph.state import AgentState
+
 from app.core.ai_gateway import AIClient
+from app.services.chat.graph.state import AgentState
 
 # --- 1. Domain Models ---
+
 
 class WriterIntent(Enum):
     GENERAL_INQUIRY = auto()
     SOLUTION_REQUEST = auto()
 
+
 @dataclass
 class StudentProfile:
-    level: str # Beginner, Average, Advanced
+    level: str  # Beginner, Average, Advanced
+
 
 # --- 2. Intent Detector (The Genius Firewall) ---
+
 
 class IntentDetector:
     """
@@ -48,13 +53,14 @@ class IntentDetector:
         has_negation = bool(re.search(cls.NEGATION_PATTERN, msg_lower))
 
         # Decision Matrix
-        if has_noun and not has_negation:
-            if is_request or is_question or is_short:
-                return WriterIntent.SOLUTION_REQUEST
+        if has_noun and not has_negation and (is_request or is_question or is_short):
+            return WriterIntent.SOLUTION_REQUEST
 
         return WriterIntent.GENERAL_INQUIRY
 
+
 # --- 3. Context Composer (The Knowledge Weaver) ---
+
 
 class ContextComposer:
     """
@@ -63,7 +69,7 @@ class ContextComposer:
     """
 
     @staticmethod
-    def compose(search_results: List[Dict[str, Any]], intent: WriterIntent) -> str:
+    def compose(search_results: list[dict[str, Any]], intent: WriterIntent) -> str:
         if not search_results:
             return ""
 
@@ -76,13 +82,17 @@ class ContextComposer:
             if intent == WriterIntent.SOLUTION_REQUEST:
                 solution_display = f"### الحل النموذجي (Official Solution):\n{original_solution}"
             else:
-                solution_display = "🔒 [SOLUTION HIDDEN: Student has NOT requested the solution yet.]"
+                solution_display = (
+                    "🔒 [SOLUTION HIDDEN: Student has NOT requested the solution yet.]"
+                )
 
             context_text += f"**Exercise Context:**\n{content}\n\n{solution_display}\n\n---\n"
 
         return context_text
 
+
 # --- 4. Prompt Strategist (The Pedagogical Engine) ---
+
 
 class PromptStrategist:
     """
@@ -95,7 +105,6 @@ class PromptStrategist:
         base_prompt = (
             "أنت 'Overmind'، المعلم الذكي (Smart Tutor) والموجه الأكاديمي الفاخر.\n"
             "مهمتك: مساعدة الطالب باستخدام المحتوى المسترجع (Context) بذكاء وحكمة.\n\n"
-
             "### القواعد الذهبية (The Golden Rules):\n"
             "1. **احترام السياق**: إذا كان الحل مخفياً (HIDDEN)، لا تقم بتسريبه أبداً إلا إذا طلب الطالب ذلك بوضوح.\n"
             "2. **الدقة الأكاديمية**: التزم بالمصطلحات العلمية الدقيقة.\n"
@@ -115,12 +124,19 @@ class PromptStrategist:
         level_guidance = {
             "Beginner": "   - بسّط المفاهيم لأقصى درجة، استخدم تشبيهات من الواقع، وفكك المصطلحات المعقدة.",
             "Average": "   - ركز على توضيح الخطوات الصعبة والربط بين الأفكار.",
-            "Advanced": "   - ناقش طرقاً بديلة، ركز على السرعة، وتحدى الطالب بأسئلة عميقة."
+            "Advanced": "   - ناقش طرقاً بديلة، ركز على السرعة، وتحدى الطالب بأسئلة عميقة.",
         }
 
-        return base_prompt + dual_mode_instructions + level_guidance.get(profile.level, "") + "\n\nحافظ على نبرة فاخرة، مشجعة، واحترافية."
+        return (
+            base_prompt
+            + dual_mode_instructions
+            + level_guidance.get(profile.level, "")
+            + "\n\nحافظ على نبرة فاخرة، مشجعة، واحترافية."
+        )
+
 
 # --- 5. Main Node Orchestrator ---
+
 
 async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
     """
@@ -146,12 +162,11 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
 
     # 5. Execution
     final_text = await ai_client.send_message(
-        system_prompt=system_prompt,
-        user_message=final_user_content
+        system_prompt=system_prompt, user_message=final_user_content
     )
 
     return {
         "messages": [AIMessage(content=final_text)],
         "current_step_index": state["current_step_index"] + 1,
-        "final_response": final_text
+        "final_response": final_text,
     }

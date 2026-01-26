@@ -5,22 +5,21 @@ import os
 import re
 import sys
 from pathlib import Path
-from datetime import datetime
 
 # Add project root to sys.path
 sys.path.append(os.getcwd())
 
 import yaml
+from sentence_transformers import SentenceTransformer
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+
+# Bypass the app.core.database factory to ensure we have full control over the engine creation for this script
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Import the engine and factory from the core database module
 from app.core.settings.base import get_settings
-# Bypass the app.core.database factory to ensure we have full control over the engine creation for this script
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sentence_transformers import SentenceTransformer
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Direct Engine Creation for Script (Bypassing potential factory issues)
@@ -29,16 +28,9 @@ db_url = settings.DATABASE_URL
 connect_args = {}
 
 if "postgresql" in db_url or "asyncpg" in db_url:
-    connect_args = {
-        "statement_cache_size": 0,
-        "prepared_statement_cache_size": 0
-    }
+    connect_args = {"statement_cache_size": 0, "prepared_statement_cache_size": 0}
 
-engine = create_async_engine(
-    db_url,
-    echo=False,
-    connect_args=connect_args
-)
+engine = create_async_engine(db_url, echo=False, connect_args=connect_args)
 
 async_session_factory = async_sessionmaker(
     engine,
@@ -52,6 +44,7 @@ CONTENT_ROOT = Path("content")
 EMBEDDING_MODEL_NAME = "intfloat/multilingual-e5-small"
 embedding_model = None
 
+
 def get_embedding_model():
     global embedding_model
     if embedding_model is None:
@@ -59,8 +52,9 @@ def get_embedding_model():
         embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
     return embedding_model
 
+
 def parse_pack(file_path: Path):
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, encoding="utf-8") as f:
         content = f.read()
 
     parts = content.split("\n\n", 1)
@@ -89,7 +83,7 @@ def parse_pack(file_path: Path):
         raw_content_block = match.group(2).strip()
 
         # Heuristic: First line is title, rest is content
-        lines = raw_content_block.split('\n', 1)
+        lines = raw_content_block.split("\n", 1)
         if not lines:
             continue
 
@@ -99,12 +93,7 @@ def parse_pack(file_path: Path):
         # Reconstruct full markdown for display
         full_md = f"# {title}\n\n{md_content}"
 
-        exercises.append({
-            "id": ex_id,
-            "title": title,
-            "md_content": full_md,
-            "metadata": metadata
-        })
+        exercises.append({"id": ex_id, "title": title, "md_content": full_md, "metadata": metadata})
 
     # Regex to find [sol: ID] blocks
     sol_pattern = re.compile(r"\[sol:\s*([\w-]+)\](.*?)(?=\n\[sol:|\Z)", re.DOTALL)
@@ -123,6 +112,7 @@ def parse_pack(file_path: Path):
 
     return exercises
 
+
 async def ingest_pack(file_path: Path, session: AsyncSession):
     logger.info(f"Processing pack: {file_path}")
     items = parse_pack(file_path)
@@ -139,8 +129,8 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
         metadata = item["metadata"]
         md_content = item["md_content"]
 
-        sha256 = hashlib.sha256(md_content.encode('utf-8')).hexdigest()
-        content_type = metadata.get('type', 'exercise')
+        sha256 = hashlib.sha256(md_content.encode("utf-8")).hexdigest()
+        content_type = metadata.get("type", "exercise")
 
         # Upsert into content_items
         query_items = text("""
@@ -162,20 +152,23 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
                 updated_at = CURRENT_TIMESTAMP
         """)
 
-        await session.execute(query_items, {
-            "id": ex_id,
-            "type": content_type,
-            "title": item["title"],
-            "level": metadata.get("level"),
-            "subject": metadata.get("subject"),
-            "branch": metadata.get("branch"),
-            "set_name": str(metadata.get("set")),
-            "year": metadata.get("year"),
-            "lang": metadata.get("lang"),
-            "md_content": md_content,
-            "source_path": str(file_path),
-            "sha256": sha256
-        })
+        await session.execute(
+            query_items,
+            {
+                "id": ex_id,
+                "type": content_type,
+                "title": item["title"],
+                "level": metadata.get("level"),
+                "subject": metadata.get("subject"),
+                "branch": metadata.get("branch"),
+                "set_name": str(metadata.get("set")),
+                "year": metadata.get("year"),
+                "lang": metadata.get("lang"),
+                "md_content": md_content,
+                "source_path": str(file_path),
+                "sha256": sha256,
+            },
+        )
 
         # Upsert into content_search
         plain_text = md_content  # In a real app, we'd strip markdown syntax
@@ -186,7 +179,10 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
         # Actually e5-small docs say: "Each input text should start with "query: " or "passage: ".
         # For symmetric tasks usually passage: is fine.
         loop = asyncio.get_running_loop()
-        embedding = await loop.run_in_executor(None, lambda: model.encode(f"passage: {plain_text}").tolist())
+        embedding = await loop.run_in_executor(
+            None,
+            lambda model=model, text=plain_text: model.encode(f"passage: {text}").tolist(),
+        )
 
         if is_postgres:
             # Upsert with vector (explicit cast for pgvector)
@@ -202,23 +198,18 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
             # However, pgvector often requires the input to be cast to vector explicitly in the SQL
             # if the driver doesn't support the type natively in bind params.
             # Passing list + ::vector cast works for list->vector conversion.
-            await session.execute(query_search, {
-                "id": ex_id,
-                "plain_text": plain_text,
-                "embedding": embedding
-            })
+            await session.execute(
+                query_search, {"id": ex_id, "plain_text": plain_text, "embedding": embedding}
+            )
         else:
             # Fallback for SQLite (no vector)
-             query_search = text("""
+            query_search = text("""
                 INSERT INTO content_search (content_id, plain_text)
                 VALUES (:id, :plain_text)
                 ON CONFLICT (content_id) DO UPDATE SET
                     plain_text = EXCLUDED.plain_text
             """)
-             await session.execute(query_search, {
-                "id": ex_id,
-                "plain_text": plain_text
-            })
+            await session.execute(query_search, {"id": ex_id, "plain_text": plain_text})
 
         # Upsert into content_solutions if present
         if "solution_md" in item:
@@ -227,7 +218,7 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
             # We will remove it from the query.
 
             # Use sha256 for solution as well
-            sol_sha256 = hashlib.sha256(item["solution_md"].encode('utf-8')).hexdigest()
+            sol_sha256 = hashlib.sha256(item["solution_md"].encode("utf-8")).hexdigest()
 
             query_solution = text("""
                 INSERT INTO content_solutions (content_id, solution_md, sha256)
@@ -236,16 +227,16 @@ async def ingest_pack(file_path: Path, session: AsyncSession):
                     solution_md = EXCLUDED.solution_md,
                     sha256 = EXCLUDED.sha256
             """)
-            await session.execute(query_solution, {
-                "id": ex_id,
-                "solution_md": item["solution_md"],
-                "sha256": sol_sha256
-            })
+            await session.execute(
+                query_solution,
+                {"id": ex_id, "solution_md": item["solution_md"], "sha256": sol_sha256},
+            )
             logger.info(f"Ingested solution for: {ex_id}")
 
         logger.info(f"Ingested item: {ex_id}")
 
     await session.commit()
+
 
 async def main():
     files = list(CONTENT_ROOT.rglob("*.md"))
@@ -269,8 +260,9 @@ async def main():
         await engine.dispose()
         logger.info("Done.")
 
+
 if __name__ == "__main__":
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     asyncio.run(main())

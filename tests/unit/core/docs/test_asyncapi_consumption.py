@@ -11,21 +11,21 @@ def test_asyncapi_detects_mixed_consumption_models():
         channel_id="auditChannel",
         address="audit/{region}",
         parameters={},
-        description="Audit channel"
+        description="Audit channel",
     )
 
     builder.add_operation(
         operation_id="kafkaAudit",
         action="receive",
         channel_ref_id="auditChannel",
-        bindings={"kafka": {"groupId": "audit-group"}}
+        bindings={"kafka": {"groupId": "audit-group"}},
     )
 
     builder.add_operation(
         operation_id="wsAudit",
         action="receive",
         channel_ref_id="auditChannel",
-        bindings={"ws": {"method": "GET"}}
+        bindings={"ws": {"method": "GET"}},
     )
 
     with pytest.raises(ValueError, match="تعارض دلالات الاستهلاك"):
@@ -39,14 +39,14 @@ def test_asyncapi_respects_explicit_consumption_model():
         channel_id="broadcastChannel",
         address="broadcast/{region}",
         parameters={},
-        description="Broadcast channel"
+        description="Broadcast channel",
     )
 
     builder.add_operation(
         operation_id="wsBroadcast",
         action="receive",
         channel_ref_id="broadcastChannel",
-        bindings={"ws": {"method": "GET"}, "x-consumption-model": "broadcast"}
+        bindings={"ws": {"method": "GET"}, "x-consumption-model": "broadcast"},
     )
 
     assert_no_mixed_consumption(builder.doc)
@@ -59,14 +59,14 @@ def test_asyncapi_rejects_explicit_conflict():
         channel_id="conflictChannel",
         address="conflict/{region}",
         parameters={},
-        description="Conflict channel"
+        description="Conflict channel",
     )
 
     builder.add_operation(
         operation_id="kafkaConflict",
         action="receive",
         channel_ref_id="conflictChannel",
-        bindings={"kafka": {"groupId": "conflict-group"}, "x-consumption-model": "broadcast"}
+        bindings={"kafka": {"groupId": "conflict-group"}, "x-consumption-model": "broadcast"},
     )
 
     with pytest.raises(ValueError, match="تعارض بين نموذج الاستهلاك المصرّح"):

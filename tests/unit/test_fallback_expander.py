@@ -1,5 +1,7 @@
 import unittest
+
 from app.services.search_engine.fallback_expander import FallbackQueryExpander
+
 
 class TestFallbackQueryExpander(unittest.TestCase):
     def test_generate_variations_complex(self):
@@ -33,6 +35,7 @@ class TestFallbackQueryExpander(unittest.TestCase):
         variations = FallbackQueryExpander.generate_variations(q)
         # Should produce "احتمال"
         self.assertIn("احتمال", variations)
+
 
 if __name__ == "__main__":
     unittest.main()

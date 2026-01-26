@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Coroutine
-from contextlib import asynccontextmanager
 import importlib.util
 import os
-from pathlib import Path
 import sys
 import warnings
-from typing import TYPE_CHECKING, TypeVar
+from collections.abc import Coroutine
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 os.environ.setdefault("ENVIRONMENT", "testing")
 os.environ.setdefault("LLM_MOCK_MODE", "1")
@@ -28,10 +28,10 @@ import pytest
 if TYPE_CHECKING:
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
-    from httpx import ASGITransport, AsyncClient
+    from httpx import AsyncClient
     from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+
     from app.core.domain.user import User
-    from app.services.auth import AuthService
     from tests.factories.base import MissionFactory, UserFactory
 
 _engine: AsyncEngine | None = None
@@ -71,6 +71,7 @@ def _get_session_factory() -> async_sessionmaker[AsyncSession]:
     if _session_factory is not None:
         return _session_factory
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
     from app.core import database as core_database
 
     engine = _get_engine()
@@ -103,7 +104,6 @@ async def _ensure_schema() -> None:
         return
     from sqlmodel import SQLModel
 
-    from app.core.domain import models as _domain_models
     from app.core.db_schema import validate_and_fix_schema
 
     engine = _get_engine()
@@ -113,10 +113,7 @@ async def _ensure_schema() -> None:
     _schema_initialized = True
 
 
-TResult = TypeVar("TResult")
-
-
-def _run_async(
+def _run_async[TResult](
     loop: asyncio.AbstractEventLoop,
     coroutine: Coroutine[object, object, TResult],
 ) -> TResult:
@@ -176,7 +173,7 @@ def static_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """بناء بنية ملفات ثابتة افتراضية لاختبارات الواجهة."""
     base_dir = tmp_path_factory.mktemp("static")
     (base_dir / "index.html").write_text(
-        "<!DOCTYPE html><html><body><div id=\"root\"></div></body></html>",
+        '<!DOCTYPE html><html><body><div id="root"></div></body></html>',
         encoding="utf-8",
     )
     (base_dir / "css").mkdir()
@@ -205,6 +202,7 @@ def clean_db(event_loop: asyncio.AbstractEventLoop) -> None:
         return
     if not _schema_initialized:
         return
+
     async def _cleanup() -> None:
         from sqlalchemy import inspect
         from sqlmodel import SQLModel

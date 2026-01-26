@@ -1,13 +1,14 @@
 import asyncio
-import os
 import logging
+import os
+
 from app.core.gateway.simple_client import SimpleAIClient
 from app.services.reasoning.workflow import SuperReasoningWorkflow
-from app.core.db_schema import validate_schema_on_startup
 
 # Configure logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("verify-super")
+
 
 async def main():
     print("🧠 Verifying Super Reasoner Integration...")
@@ -29,11 +30,12 @@ async def main():
     try:
         result = await workflow.run(query=query)
         print("\n✅ Result from Super Reasoner:\n")
-        print("="*60)
+        print("=" * 60)
         print(result)
-        print("="*60)
+        print("=" * 60)
     except Exception as e:
         print(f"❌ Verification Failed: {e}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

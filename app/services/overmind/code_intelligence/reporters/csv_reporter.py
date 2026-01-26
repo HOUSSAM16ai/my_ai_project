@@ -6,6 +6,7 @@ from app.services.overmind.code_intelligence.models import ProjectAnalysis
 
 logger = get_logger(__name__)
 
+
 def save_csv_report(analysis: ProjectAnalysis, output_path: Path) -> None:
     """Save report as CSV"""
     with open(output_path, "w", newline="", encoding="utf-8") as f:

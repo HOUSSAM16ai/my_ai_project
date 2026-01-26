@@ -7,8 +7,8 @@ from app.services.chat.agents.admin import AdminAgent
 from app.services.chat.agents.analytics import AnalyticsAgent
 from app.services.chat.agents.curriculum import CurriculumAgent
 from app.services.chat.agents.data_access import DataAccessAgent
-from app.services.chat.agents.refactor import RefactorAgent
 from app.services.chat.agents.education_council import EducationCouncil
+from app.services.chat.agents.refactor import RefactorAgent
 from app.services.chat.context_service import get_context_service
 from app.services.chat.intent_detector import ChatIntent, IntentDetector
 from app.services.chat.tools import ToolRegistry
@@ -151,7 +151,7 @@ class OrchestratorAgent:
             await self.memory_agent.capture_memory(
                 collab_context,
                 label="user_intent",
-                payload={"question": question, "intent": intent.value}
+                payload={"question": question, "intent": intent.value},
             )
         except Exception as e:
             logger.warning(f"Memory capture failed: {e}")
@@ -166,7 +166,9 @@ class OrchestratorAgent:
         else:
             context["intent_type"] = "recommendation"
 
-    async def _handle_content_retrieval(self, question: str, context: dict) -> AsyncGenerator[str, None]:
+    async def _handle_content_retrieval(
+        self, question: str, context: dict
+    ) -> AsyncGenerator[str, None]:
         """
         معالجة استرجاع المحتوى:
         1. استخراج الفلاتر بذكاء (AI Extraction) من النص الطبيعي.
@@ -182,12 +184,12 @@ class OrchestratorAgent:
         candidates = await self.tools.execute("search_content", params)
 
         if not candidates:
-             logger.info("No content found for query, falling back to smart tutor.")
-             # Inject a hint into context so fallback knows we missed a search
-             context["search_miss"] = True
-             async for chunk in self._handle_chat_fallback(question, context):
+            logger.info("No content found for query, falling back to smart tutor.")
+            # Inject a hint into context so fallback knows we missed a search
+            context["search_miss"] = True
+            async for chunk in self._handle_chat_fallback(question, context):
                 yield chunk
-             return
+            return
 
         # Pick the best candidate (Logic: Top 1)
         best_candidate = candidates[0]
@@ -209,10 +211,7 @@ class OrchestratorAgent:
             solution = raw_data.get("solution")
 
             async for chunk in self._generate_explanation(
-                question,
-                raw_data["content"],
-                personalization_context,
-                solution=solution
+                question, raw_data["content"], personalization_context, solution=solution
             ):
                 yield chunk
         else:
@@ -241,12 +240,12 @@ class OrchestratorAgent:
         try:
             # Quick parsing call
             response = await self.ai_client.generate(
-                model="gpt-4o-mini", # Use a fast model if available, or default
+                model="gpt-4o-mini",  # Use a fast model if available, or default
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": question}
+                    {"role": "user", "content": question},
                 ],
-                response_format={"type": "json_object"}
+                response_format={"type": "json_object"},
             )
             content = response.choices[0].message.content
             params = json.loads(content)
@@ -256,7 +255,7 @@ class OrchestratorAgent:
 
             # Fallback for 'q' if empty, use original question
             if not params.get("q") and not params.get("year"):
-                 params["q"] = question
+                params["q"] = question
 
             return params
 
@@ -268,7 +267,8 @@ class OrchestratorAgent:
         """Fallback heuristic parameter extraction."""
         params = {"q": question, "limit": 5}
 
-        if "2024" in question: params["year"] = 2024
+        if "2024" in question:
+            params["year"] = 2024
 
         if any(w in question for w in ["math", "رياضيات", "رياضه"]):
             params["subject"] = "Mathematics"
@@ -278,11 +278,7 @@ class OrchestratorAgent:
         return params
 
     async def _generate_explanation(
-        self,
-        question: str,
-        content: str,
-        personalization_context: str,
-        solution: str | None = None
+        self, question: str, content: str, personalization_context: str, solution: str | None = None
     ) -> AsyncGenerator[str, None]:
         """
         توليد شرح أو تحليل للمحتوى المسترجع.
@@ -311,7 +307,9 @@ class OrchestratorAgent:
         user_message += f"نص التمرين (Exercise):\n{content}\n\n"
 
         if solution:
-            user_message += f"الحل الرسمي (Official Solution - STRICTLY ADHERE TO THIS):\n{solution}\n\n"
+            user_message += (
+                f"الحل الرسمي (Official Solution - STRICTLY ADHERE TO THIS):\n{solution}\n\n"
+            )
         else:
             user_message += "ملاحظة: لا يوجد حل رسمي مسجل. اشرح المفهوم العام فقط.\n\n"
 
@@ -319,7 +317,7 @@ class OrchestratorAgent:
 
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message}
+            {"role": "user", "content": user_message},
         ]
 
         async for chunk in self._stream_ai_chunks(messages):
@@ -332,7 +330,9 @@ class OrchestratorAgent:
             if content:
                 yield content
 
-    async def _handle_chat_fallback(self, question: str, context: dict) -> AsyncGenerator[str, None]:
+    async def _handle_chat_fallback(
+        self, question: str, context: dict
+    ) -> AsyncGenerator[str, None]:
         """معالجة المحادثة العامة."""
         system_context = context.get("system_context", "")
 
@@ -360,17 +360,14 @@ class OrchestratorAgent:
         history_text = ""
         if history_msgs:
             recent = history_msgs[-10:]
-            history_text = "\nSIAQ (History):\n" + "\n".join([f"{m.get('role')}: {m.get('content')}" for m in recent])
+            history_text = "\nSIAQ (History):\n" + "\n".join(
+                [f"{m.get('role')}: {m.get('content')}" for m in recent]
+            )
 
         personalization_block = ""
         if personalization_context:
-            personalization_block = (
-                "\nمرجع الجودة:\n"
-                f"{personalization_context}"
-            )
-        final_prompt = (
-            f"{base_prompt}\n{strict_instruction}{personalization_block}\n{system_context}\n{history_text}"
-        )
+            personalization_block = f"\nمرجع الجودة:\n{personalization_context}"
+        final_prompt = f"{base_prompt}\n{strict_instruction}{personalization_block}\n{system_context}\n{history_text}"
 
         messages = [
             {"role": "system", "content": final_prompt},

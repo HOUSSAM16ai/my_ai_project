@@ -4,15 +4,17 @@
 تجميع العقد والحواف لبناء الرسم البياني (LangGraph).
 """
 
-from langgraph.graph import StateGraph, END
-from app.services.chat.graph.state import AgentState
+from langgraph.graph import END, StateGraph
+
+from app.core.ai_gateway import AIClient
 from app.services.chat.graph.nodes.planner import planner_node
 from app.services.chat.graph.nodes.researcher import researcher_node
-from app.services.chat.graph.nodes.writer import writer_node
-from app.services.chat.graph.nodes.supervisor import supervisor_node
 from app.services.chat.graph.nodes.super_reasoner import super_reasoner_node
-from app.core.ai_gateway import AIClient
+from app.services.chat.graph.nodes.supervisor import supervisor_node
+from app.services.chat.graph.nodes.writer import writer_node
+from app.services.chat.graph.state import AgentState
 from app.services.chat.tools import ToolRegistry
+
 
 def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object:
     """
@@ -57,8 +59,8 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
             "researcher": "researcher",
             "writer": "writer",
             "super_reasoner": "super_reasoner",
-            "end": END
-        }
+            "end": END,
+        },
     )
 
     # Edges back to Supervisor

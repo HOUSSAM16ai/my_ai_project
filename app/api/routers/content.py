@@ -1,30 +1,33 @@
-from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
-from app.core.database import get_db
 from pydantic import BaseModel
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_db
 
 router = APIRouter(prefix="/v1/content", tags=["content"])
+
 
 class ContentItemResponse(BaseModel):
     id: str
     type: str
-    title: Optional[str] = None
-    level: Optional[str] = None
-    subject: Optional[str] = None
-    year: Optional[int] = None
-    lang: Optional[str] = None
+    title: str | None = None
+    level: str | None = None
+    subject: str | None = None
+    year: int | None = None
+    lang: str | None = None
+
 
 class ContentSearchResponse(BaseModel):
-    items: List[ContentItemResponse]
+    items: list[ContentItemResponse]
+
 
 @router.get("/search", response_model=ContentSearchResponse)
 async def search_content(
-    q: Optional[str] = Query(None, description="Search query"),
-    level: Optional[str] = None,
-    subject: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
+    q: str | None = Query(None, description="Search query"),
+    level: str | None = None,
+    subject: str | None = None,
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Search content items.
@@ -52,17 +55,20 @@ async def search_content(
 
     items = []
     for row in rows:
-        items.append(ContentItemResponse(
-            id=row[0],
-            type=row[1],
-            title=row[2],
-            level=row[3],
-            subject=row[4],
-            year=row[5],
-            lang=row[6]
-        ))
+        items.append(
+            ContentItemResponse(
+                id=row[0],
+                type=row[1],
+                title=row[2],
+                level=row[3],
+                subject=row[4],
+                year=row[5],
+                lang=row[6],
+            )
+        )
 
     return ContentSearchResponse(items=items)
+
 
 @router.get("/{id}")
 async def get_content(id: str, db: AsyncSession = Depends(get_db)):
@@ -70,8 +76,10 @@ async def get_content(id: str, db: AsyncSession = Depends(get_db)):
     Get content metadata and raw content.
     """
     result = await db.execute(
-        text("SELECT id, type, title, level, subject, year, lang, md_content FROM content_items WHERE id = :id"),
-        {"id": id}
+        text(
+            "SELECT id, type, title, level, subject, year, lang, md_content FROM content_items WHERE id = :id"
+        ),
+        {"id": id},
     )
     row = result.fetchone()
     if not row:
@@ -85,8 +93,9 @@ async def get_content(id: str, db: AsyncSession = Depends(get_db)):
         "subject": row[4],
         "year": row[5],
         "lang": row[6],
-        "md_content": row[7]
+        "md_content": row[7],
     }
+
 
 @router.get("/{id}/raw")
 async def get_content_raw(id: str, db: AsyncSession = Depends(get_db)):
@@ -94,8 +103,7 @@ async def get_content_raw(id: str, db: AsyncSession = Depends(get_db)):
     Get raw markdown content.
     """
     result = await db.execute(
-        text("SELECT md_content FROM content_items WHERE id = :id"),
-        {"id": id}
+        text("SELECT md_content FROM content_items WHERE id = :id"), {"id": id}
     )
     row = result.fetchone()
     if not row:
@@ -103,14 +111,17 @@ async def get_content_raw(id: str, db: AsyncSession = Depends(get_db)):
 
     return {"content": row[0]}
 
+
 @router.get("/{id}/solution")
 async def get_content_solution(id: str, db: AsyncSession = Depends(get_db)):
     """
     Get official solution.
     """
     result = await db.execute(
-        text("SELECT solution_md, steps_json, final_answer FROM content_solutions WHERE content_id = :id"),
-        {"id": id}
+        text(
+            "SELECT solution_md, steps_json, final_answer FROM content_solutions WHERE content_id = :id"
+        ),
+        {"id": id},
     )
     row = result.fetchone()
 
@@ -119,10 +130,6 @@ async def get_content_solution(id: str, db: AsyncSession = Depends(get_db)):
     # The API should simply return 404 or nulls.
 
     if not row:
-         raise HTTPException(status_code=404, detail="Solution not found")
+        raise HTTPException(status_code=404, detail="Solution not found")
 
-    return {
-        "solution_md": row[0],
-        "steps_json": row[1],
-        "final_answer": row[2]
-    }
+    return {"solution_md": row[0], "steps_json": row[1], "final_answer": row[2]}
