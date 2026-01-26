@@ -2,6 +2,8 @@ import json
 import logging
 from collections.abc import AsyncGenerator
 
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+
 from app.core.ai_gateway import AIClient
 from app.services.chat.agents.admin import AdminAgent
 from app.services.chat.agents.analytics import AnalyticsAgent
@@ -9,7 +11,7 @@ from app.services.chat.agents.curriculum import CurriculumAgent
 from app.services.chat.agents.data_access import DataAccessAgent
 from app.services.chat.agents.education_council import EducationCouncil
 from app.services.chat.agents.refactor import RefactorAgent
-from app.services.chat.context_service import get_context_service
+from app.services.chat.graph.workflow import create_multi_agent_graph
 from app.services.chat.intent_detector import ChatIntent, IntentDetector
 from app.services.chat.tools import ToolRegistry
 from app.services.overmind.agents.memory import MemoryAgent
@@ -60,6 +62,9 @@ class OrchestratorAgent:
         self.curriculum_agent = CurriculumAgent(tools)
         self.memory_agent = MemoryAgent()
         self.education_council = EducationCouncil(tools)
+
+        # SOTA: Initialize the LangGraph Brain
+        self.graph = create_multi_agent_graph(self.ai_client, self.tools)
 
     @property
     def data_agent(self) -> DataAccessAgent:
@@ -330,59 +335,81 @@ class OrchestratorAgent:
             if content:
                 yield content
 
+    def _convert_to_langchain_messages(self, history: list[dict[str, str]]) -> list[BaseMessage]:
+        """Convert dictionary history to LangChain message objects."""
+        messages: list[BaseMessage] = []
+        for msg in history:
+            role = msg.get("role")
+            content = msg.get("content", "")
+            if role == "user":
+                messages.append(HumanMessage(content=content))
+            elif role == "assistant":
+                messages.append(AIMessage(content=content))
+        return messages
+
     async def _handle_chat_fallback(
         self, question: str, context: dict
     ) -> AsyncGenerator[str, None]:
-        """معالجة المحادثة العامة."""
-        system_context = context.get("system_context", "")
+        """
+        UPGRADE: معالجة المحادثة العامة باستخدام LangGraph (SOTA Architecture).
+        بدلاً من الاستدعاء الخطي البسيط، نستخدم الرسم البياني الذكي الذي يدعم:
+        Planner -> Researcher -> Writer -> Reviewer -> Correction Loop.
+        """
+        logger.info("Engaging SOTA LangGraph Brain for complex/general query...")
+
+        # 1. Build Initial State
+        history_msgs = context.get("history_messages", [])
+        langchain_history = self._convert_to_langchain_messages(history_msgs)
+
+        # Append current question
+        langchain_history.append(HumanMessage(content=question))
+
+        initial_state = {
+            "messages": langchain_history,
+            "next": "supervisor",
+            "current_step_index": 0,
+            "plan": [],
+            "search_results": [],
+            # Inject context if needed by nodes
+            "user_context": context,
+        }
+
+        # 2. Execute Graph with Real-Time Streaming
+        # We use astream_events to capture tokens from the 'writer' node's LLM call.
+        # This ensures the user sees the response instantly, like a real "Brain".
+        final_response_buffer = ""
+        has_yielded = False
 
         try:
-            base_prompt = get_context_service().get_customer_system_prompt()
-        except Exception:
-            base_prompt = "أنت مساعد ذكي."
+            async for event in self.graph.astream_events(initial_state, version="v1"):
+                kind = event["event"]
+                name = event.get("name")
 
-        # SMART TUTOR LOGIC
-        # We permit general explanation if no specific exercise is loaded,
-        # but strictly forbid fabricating specific numbers/exercises.
-        strict_instruction = (
-            "\nأنت معلم ذكي ومحترف (Smart Tutor)."
-            "\nالقواعد الصارمة:"
-            "\n1. إذا توفر محتوى تمرين في السياق (SIAQ)، التزم به حرفياً."
-            "\n2. إذا لم يتوفر تمرين، اشرح المفهوم العلمي/الرياضي بشكل عام (General Concept) وشامل."
-            "\n3. ممنوع منعاً باتاً اختراع تمارين أو أرقام من خيالك. قل 'لا يوجد تمرين محدد، لكن الفكرة هي...'."
-            "\n4. اشرح 'لماذا' و 'كيف' دائماً لتبسيط التعقيدات."
-        )
+                # Stream tokens from the Writer's LLM generation
+                # We assume the writer node (or its underlying LLM call) emits 'on_chat_model_stream' events
+                if kind == "on_chat_model_stream" and name == "writer":
+                    content = event["data"]["chunk"].content
+                    if content:
+                        yield content
+                        has_yielded = True
 
-        personalization_context = await self._build_education_brief(context)
+                # Fallback: Capture final output if streaming failed
+                if kind == "on_chain_end" and name == "writer":
+                    output = event["data"]["output"]
+                    if output and "final_response" in output:
+                        final_response_buffer = output["final_response"]
 
-        # History
-        history_msgs = context.get("history_messages", [])
-        history_text = ""
-        if history_msgs:
-            recent = history_msgs[-10:]
-            history_text = "\nSIAQ (History):\n" + "\n".join(
-                [f"{m.get('role')}: {m.get('content')}" for m in recent]
-            )
+        except Exception as e:
+            logger.error(f"Graph execution failed: {e}", exc_info=True)
+            yield "عذراً، حدث خطأ في نظام التفكير العميق. يرجى المحاولة لاحقاً."
+            return
 
-        personalization_block = ""
-        if personalization_context:
-            personalization_block = f"\nمرجع الجودة:\n{personalization_context}"
-        final_prompt = f"{base_prompt}\n{strict_instruction}{personalization_block}\n{system_context}\n{history_text}"
-
-        messages = [
-            {"role": "system", "content": final_prompt},
-            {"role": "user", "content": question},
-        ]
-
-        async for chunk in self._stream_ai_chunks(messages):
-            if hasattr(chunk, "choices"):
-                delta = chunk.choices[0].delta if chunk.choices else None
-                content = delta.content if delta else ""
-            else:
-                content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
-
-            if content:
-                yield content
+        # 3. Yield Result (Fallback if streaming didn't happen)
+        if not has_yielded and final_response_buffer:
+            yield final_response_buffer
+        elif not has_yielded:
+             # Just in case nothing happened
+             yield "لم يتمكن النظام من توليد إجابة."
 
     async def _build_education_brief(self, context: dict[str, object]) -> str:
         """بناء موجز تعليمي."""
