@@ -31,6 +31,9 @@ class AgentState(TypedDict):
         search_results: نتائج البحث الخام من Researcher.
         final_response: الإجابة النهائية (اختياري).
         user_context: سياق المستخدم الإضافي.
+        review_feedback: ملاحظات الناقد (Reviewer) لتحسين الجودة.
+        review_score: تقييم الجودة (0.0 - 10.0).
+        iteration_count: عداد التكرارات لتجنب الحلقات المفرغة.
     """
 
     messages: Annotated[list[BaseMessage], add_messages_reducer]
@@ -41,3 +44,7 @@ class AgentState(TypedDict):
     user_context: dict[str, object]
     final_response: str
     routing_trace: NotRequired[list[dict[str, object]]]
+    # Quality Assurance Fields
+    review_feedback: NotRequired[str]
+    review_score: NotRequired[float]
+    iteration_count: NotRequired[int]

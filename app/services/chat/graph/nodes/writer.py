@@ -157,6 +157,16 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
     context_text = ContextComposer.compose(search_results, intent)
     system_prompt = PromptStrategist.build_prompt(profile)
 
+    # Inject Critique if available (The Self-Correction Loop)
+    review_feedback = state.get("review_feedback")
+    if review_feedback:
+        system_prompt += (
+            f"\n\n### CRITICAL INSTRUCTION (Correction Mode):\n"
+            f"Your previous answer was rejected by the Academic Critic.\n"
+            f"REWRITE IT based on this feedback:\n'{review_feedback}'\n"
+            f"Ensure you address every point and maintain the luxurious tone."
+        )
+
     # 4. Payload Construction
     final_user_content = f"Context:\n{context_text}\n\nStudent Question: {last_user_msg}"
 
