@@ -288,7 +288,11 @@ class EducationCouncil:
             if isinstance(total_missions, int) and total_missions <= 1:
                 level = "مبتدئ"
                 pacing = "بطيء مع خطوات واضحة"
-            if isinstance(completed_missions, int) and isinstance(total_missions, int) and total_missions > 0:
+            if (
+                isinstance(completed_missions, int)
+                and isinstance(total_missions, int)
+                and total_missions > 0
+            ):
                 completion_ratio = completed_missions / total_missions
                 if completion_ratio >= 0.75:
                     level = "متقدم"

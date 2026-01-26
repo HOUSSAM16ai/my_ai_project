@@ -5,12 +5,14 @@ A LangGraph node that orchestrates the "Deep Reasoning" workflow using LlamaInde
 """
 
 from langchain_core.messages import AIMessage
-from app.services.chat.graph.state import AgentState
+
 from app.core.ai_gateway import AIClient
-from app.services.reasoning.workflow import SuperReasoningWorkflow
 from app.core.logging import get_logger
+from app.services.chat.graph.state import AgentState
+from app.services.reasoning.workflow import SuperReasoningWorkflow
 
 logger = get_logger("super-reasoner-node")
+
 
 async def super_reasoner_node(state: AgentState, ai_client: AIClient) -> dict:
     """
@@ -36,7 +38,9 @@ async def super_reasoner_node(state: AgentState, ai_client: AIClient) -> dict:
         response_text = str(result)
     except Exception as e:
         logger.error(f"Super Reasoner crashed: {e}")
-        response_text = "I apologize, but I encountered an internal error while accessing my knowledge graph."
+        response_text = (
+            "I apologize, but I encountered an internal error while accessing my knowledge graph."
+        )
 
     # Return state update
     # We append the result as an AI Message

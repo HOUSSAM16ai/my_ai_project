@@ -1,7 +1,6 @@
 import asyncio
 import sys
 from unittest.mock import MagicMock
-from types import ModuleType
 
 # Setup sys.path to ensure we are running from root
 sys.path.append("/app")
@@ -31,6 +30,7 @@ sys.modules["app.services.chat.tools.content"] = MagicMock()
 # Now we can import the service
 from app.services.chat.tools.retrieval.service import search_educational_content
 
+
 async def main():
     print("--- Searching for Exercise 1 (Probability) ---")
     result_ex1 = await search_educational_content(
@@ -38,7 +38,7 @@ async def main():
         year="2024",
         subject="Mathematics",
         branch="Experimental Sciences",
-        exam_ref="Subject 1"
+        exam_ref="Subject 1",
     )
     print("Result Ex 1 Length:", len(result_ex1))
     print("Result Ex 1 Preview:\n", result_ex1[:200])
@@ -55,7 +55,7 @@ async def main():
         year="2024",
         subject="Mathematics",
         branch="Experimental Sciences",
-        exam_ref="Subject 1"
+        exam_ref="Subject 1",
     )
     print("Result Ex 2 Length:", len(result_ex2))
     print("Result Ex 2 Preview:\n", result_ex2[:200])
@@ -64,12 +64,13 @@ async def main():
     if "التمرين الأول" in result_ex2:
         print("\n[FAIL] Exercise 2 result contains Exercise 1 content!")
     else:
-         print("\n[PASS] Exercise 1 excluded from Exercise 2 result.")
+        print("\n[PASS] Exercise 1 excluded from Exercise 2 result.")
 
     if "وسوم بحث مقترحة" in result_ex2:
         print("[FAIL] Result contains metadata tags section!")
     else:
         print("[PASS] Metadata tags section excluded.")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

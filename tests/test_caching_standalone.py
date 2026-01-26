@@ -44,7 +44,11 @@ class TestCaching(unittest.TestCase):
         if not REDIS_AVAILABLE:
             redis_module = types.ModuleType("redis")
             redis_asyncio_module = types.ModuleType("redis.asyncio")
-            redis_asyncio_module.from_url = lambda *args, **kwargs: None
+
+            def _redis_from_url(*_args, **_kwargs):
+                return None
+
+            redis_asyncio_module.from_url = _redis_from_url
             redis_module.asyncio = redis_asyncio_module
             sys.modules.setdefault("redis", redis_module)
             sys.modules.setdefault("redis.asyncio", redis_asyncio_module)

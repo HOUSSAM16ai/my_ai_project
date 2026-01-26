@@ -173,6 +173,11 @@ class RolePermission(SQLModel, table=True):
     )
 
 
+from app.core.domain.audit import AuditLog as _AuditLog
+
+_ = _AuditLog
+
+
 class RefreshToken(SQLModel, table=True):
     __tablename__ = "refresh_tokens"
 

@@ -43,9 +43,9 @@
 """
 
 from abc import ABC
-from typing import Literal, Union, Annotated
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, ConfigDict, Tag, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PolymorphicBaseModel(BaseModel):
@@ -53,15 +53,12 @@ class PolymorphicBaseModel(BaseModel):
     نموذج أساسي يدعم تعدد الأشكال بشكل صريح وصارم.
     يستخدم ConfigDict لضمان الامتثال للمعايير.
     """
+
     model_config = ConfigDict(
         populate_by_name=True,
         use_enum_values=True,
         # يضمن استخدام التمييز في المخطط الناتج
-        json_schema_extra={
-            "discriminator": {
-                "propertyName": "type"
-            }
-        }
+        json_schema_extra={"discriminator": {"propertyName": "type"}},
     )
 
 
@@ -69,6 +66,7 @@ class Pet(PolymorphicBaseModel, ABC):
     """
     الفئة الأساسية المجردة للحيوانات الأليفة.
     """
+
     name: str = Field(..., description="اسم الحيوان الأليف")
     # يجب تعريف حقل التمييز في الفئة الأساسية أو التأكد من وجوده في المشتقات
     type: str
@@ -78,6 +76,7 @@ class Dog(Pet):
     """
     نموذج الكلب، يمثل أحد الأشكال المتعددة.
     """
+
     type: Literal["dog"] = Field("dog", description="نوع الحيوان: كلب")
     bark: bool = Field(True, description="هل ينبح الكلب؟")
 
@@ -86,22 +85,21 @@ class Cat(Pet):
     """
     نموذج القط، يمثل الشكل الآخر.
     """
+
     type: Literal["cat"] = Field("cat", description="نوع الحيوان: قط")
     meow: bool = Field(True, description="هل يموء القط؟")
 
 
 # تعريف النوع المتعدد الأشكال باستخدام Annotated و Discriminator
 # هذا هو الجزء الجوهري الذي يحل المشكلة لمولدات الكود
-PetUnion = Annotated[
-    Union[Dog, Cat],
-    Field(discriminator="type")
-]
+PetUnion = Annotated[Dog | Cat, Field(discriminator="type")]
 
 
 class PetOwner(BaseModel):
     """
     نموذج المالك الذي يحتوي على قائمة من الحيوانات متعددة الأشكال.
     """
+
     owner_name: str
     pets: list[PetUnion]
 

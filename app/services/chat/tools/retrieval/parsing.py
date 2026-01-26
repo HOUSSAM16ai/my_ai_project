@@ -2,24 +2,23 @@
 Parsing and Text Processing Logic for Retrieval Tool.
 Pure functional core.
 """
+
 import re
-import difflib
-from typing import List, Optional, Dict
 
 from app.services.chat.tools.retrieval.constants import (
-    _TOPIC_MAP,
-    _EXERCISE_ORDINALS,
-    _EXERCISE_MARKERS_AR,
-    _SECTION_STOP_MARKERS_AR,
-    _EXERCISE_MARKERS_EN_PATTERN,
-    _SECTION_STOP_MARKERS_EN_PATTERN,
-    _EXERCISE_NUMBER_PATTERN,
-    _EXAM_CARD_MARKERS,
     _ARABIC_DIGIT_MAP,
     _ARABIC_LETTER_MAP,
-    _SUBJECT_SYNONYMS,
     _BRANCH_SYNONYMS,
+    _EXAM_CARD_MARKERS,
     _EXAM_REF_SYNONYMS,
+    _EXERCISE_MARKERS_AR,
+    _EXERCISE_MARKERS_EN_PATTERN,
+    _EXERCISE_NUMBER_PATTERN,
+    _EXERCISE_ORDINALS,
+    _SECTION_STOP_MARKERS_AR,
+    _SECTION_STOP_MARKERS_EN_PATTERN,
+    _SUBJECT_SYNONYMS,
+    _TOPIC_MAP,
 )
 
 
@@ -58,7 +57,7 @@ def is_specific_request(query: str) -> bool:
     return False
 
 
-def extract_specific_exercise(content: str, query: str) -> Optional[str]:
+def extract_specific_exercise(content: str, query: str) -> str | None:
     """
     يستخرج تمرينًا محددًا من محتوى Markdown مع الحفاظ على رأس الملف (العنوان وبطاقة الامتحان).
     يدعم الاستخراج حسب رقم التمرين أو حسب الموضوع.
@@ -81,7 +80,7 @@ def extract_specific_exercise(content: str, query: str) -> Optional[str]:
     return exercise_text
 
 
-def detect_exercise_number(query_lower: str) -> Optional[int]:
+def detect_exercise_number(query_lower: str) -> int | None:
     """
     يحدد رقم التمرين المطلوب من نص البحث إن وجد.
     """
@@ -101,14 +100,14 @@ def detect_exercise_number(query_lower: str) -> Optional[int]:
     return None
 
 
-def collect_target_topics(query_lower: str, exercise_number: Optional[int]) -> List[str]:
+def collect_target_topics(query_lower: str, exercise_number: int | None) -> list[str]:
     """
     يجمع كلمات الموضوع ذات الصلة عندما لا يوجد رقم تمرين محدد.
     """
     if exercise_number is not None:
         return []
 
-    topics: List[str] = []
+    topics: list[str] = []
     for keywords in _TOPIC_MAP.values():
         normalized_keywords = [normalize_semantic_text(keyword) for keyword in keywords]
         if any(keyword in query_lower for keyword in normalized_keywords):
@@ -116,11 +115,11 @@ def collect_target_topics(query_lower: str, exercise_number: Optional[int]) -> L
     return list(dict.fromkeys(topics))
 
 
-def extract_header_block(lines: List[str]) -> str:
+def extract_header_block(lines: list[str]) -> str:
     """
     يستخرج عنوان الملف وبطاقة الامتحان من القسم العلوي للمستند.
     """
-    header_lines: List[str] = []
+    header_lines: list[str] = []
     capture_card = False
 
     for line in lines:
@@ -134,7 +133,9 @@ def extract_header_block(lines: List[str]) -> str:
             header_lines.append(line)
             continue
 
-        if any(normalize_semantic_text(marker) in stripped_normalized for marker in _EXAM_CARD_MARKERS):
+        if any(
+            normalize_semantic_text(marker) in stripped_normalized for marker in _EXAM_CARD_MARKERS
+        ):
             header_lines.append(line)
             capture_card = True
             continue
@@ -149,14 +150,14 @@ def extract_header_block(lines: List[str]) -> str:
 
 
 def extract_exercise_block(
-    lines: List[str],
-    target_exercise_num: Optional[int],
-    target_topics: List[str],
-) -> Optional[str]:
+    lines: list[str],
+    target_exercise_num: int | None,
+    target_topics: list[str],
+) -> str | None:
     """
     يستخرج كتلة التمرين المطلوبة بالاعتماد على العناوين والأرقام أو الموضوعات.
     """
-    extracted_lines: List[str] = []
+    extracted_lines: list[str] = []
     capture = False
     header_pattern = re.compile(r"^(#{2,3})\s*(.*)")
     number_patterns = build_number_patterns(target_exercise_num)
@@ -189,7 +190,7 @@ def extract_exercise_block(
     return "\n".join(extracted_lines).strip()
 
 
-def build_number_patterns(target_exercise_num: Optional[int]) -> List[str]:
+def build_number_patterns(target_exercise_num: int | None) -> list[str]:
     """
     يبني قائمة أنماط مطابقة لرقم التمرين باللغة العربية والإنجليزية.
     """
@@ -210,9 +211,9 @@ def build_number_patterns(target_exercise_num: Optional[int]) -> List[str]:
 
 def is_exercise_header_match(
     header_text: str,
-    target_exercise_num: Optional[int],
-    number_patterns: List[str],
-    target_topics: List[str],
+    target_exercise_num: int | None,
+    number_patterns: list[str],
+    target_topics: list[str],
 ) -> bool:
     """
     يتحقق مما إذا كان العنوان يمثل التمرين المطلوب حسب الرقم أو الموضوع.
@@ -221,9 +222,8 @@ def is_exercise_header_match(
     if target_exercise_num:
         return any(pattern in header_normalized for pattern in number_patterns)
 
-    if target_topics:
-        if has_exercise_marker(header_normalized):
-            return any(topic in header_normalized for topic in target_topics)
+    if target_topics and has_exercise_marker(header_normalized):
+        return any(topic in header_normalized for topic in target_topics)
 
     return False
 
@@ -238,26 +238,26 @@ def is_new_section_header(header_text: str) -> bool:
 
 def expand_query_semantics(
     query: str,
-    year: Optional[str],
-    subject: Optional[str],
-    branch: Optional[str],
-    exam_ref: Optional[str],
+    year: str | None,
+    subject: str | None,
+    branch: str | None,
+    exam_ref: str | None,
 ) -> str:
     """
     يوسّع الاستعلام بإضافة مرادفات وتهيئة دلالية لزيادة فرص المطابقة.
     """
     normalized_query = normalize_semantic_text(query)
-    terms: List[str] = [normalized_query]
+    terms: list[str] = [normalized_query]
     terms.extend(expand_topic_keywords(normalized_query))
     terms.extend(expand_metadata_keywords(year, subject, branch, exam_ref))
     return " ".join(unique_nonempty_terms(terms))
 
 
-def expand_topic_keywords(query_normalized: str) -> List[str]:
+def expand_topic_keywords(query_normalized: str) -> list[str]:
     """
     يضيف كلمات موضوعية مترادفة عند كشفها في الاستعلام.
     """
-    topics: List[str] = []
+    topics: list[str] = []
     for keywords in _TOPIC_MAP.values():
         normalized_keywords = [normalize_semantic_text(keyword) for keyword in keywords]
         if any(keyword in query_normalized for keyword in normalized_keywords):
@@ -266,15 +266,15 @@ def expand_topic_keywords(query_normalized: str) -> List[str]:
 
 
 def expand_metadata_keywords(
-    year: Optional[str],
-    subject: Optional[str],
-    branch: Optional[str],
-    exam_ref: Optional[str],
-) -> List[str]:
+    year: str | None,
+    subject: str | None,
+    branch: str | None,
+    exam_ref: str | None,
+) -> list[str]:
     """
     يضيف مرادفات البيانات الوصفية لضمان تطابق صيغ متعددة لنفس المعنى.
     """
-    terms: List[str] = []
+    terms: list[str] = []
     for value in (year, subject, branch, exam_ref):
         if value:
             terms.append(normalize_semantic_text(value))
@@ -294,14 +294,14 @@ def expand_metadata_keywords(
     return [normalize_semantic_text(term) for term in terms]
 
 
-def unique_nonempty_terms(terms: List[str]) -> List[str]:
+def unique_nonempty_terms(terms: list[str]) -> list[str]:
     """
     ينقّي قائمة المصطلحات بحذف التكرارات والقيم الفارغة.
     """
     return [term for term in dict.fromkeys(terms) if term]
 
 
-def lookup_semantic_synonyms(mapping: Dict[str, List[str]], key: str) -> List[str]:
+def lookup_semantic_synonyms(mapping: dict[str, list[str]], key: str) -> list[str]:
     """
     يعيد مرادفات مطبّعة وفق مفتاح مطبّع، مع تطبيع مفاتيح القاموس عند الحاجة.
     """
@@ -337,7 +337,7 @@ def get_core_content(content: str) -> str:
     return content
 
 
-def deduplicate_contents(contents: List[str]) -> List[str]:
+def deduplicate_contents(contents: list[str]) -> list[str]:
     """
     Deduplicates content by removing items that are substrings (or fuzzy matches) of longer items.
     Useful when we retrieve both a full document and a chunk of it.
@@ -369,7 +369,7 @@ def deduplicate_contents(contents: List[str]) -> List[str]:
                 tokens_long = set(kept_core.split())
 
                 if not tokens_short:
-                    is_duplicate = True # Empty content considered duplicate
+                    is_duplicate = True  # Empty content considered duplicate
                 else:
                     intersection = tokens_short.intersection(tokens_long)
                     overlap = len(intersection) / len(tokens_short)
@@ -377,7 +377,7 @@ def deduplicate_contents(contents: List[str]) -> List[str]:
                     # Threshold: if > 90% of tokens in the short content are present in the long content
                     if overlap > 0.9:
                         is_duplicate = True
-            except Exception as e:
+            except Exception:
                 # Fallback to difflib if tokenization fails
                 pass
 

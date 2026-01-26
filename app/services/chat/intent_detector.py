@@ -55,7 +55,9 @@ class IntentDetector:
             for pattern, intent, extractor in self._pattern_specs()
         ]
 
-    def _pattern_specs(self) -> list[tuple[str, ChatIntent, Callable[[re.Match[str]], dict[str, str]]]]:
+    def _pattern_specs(
+        self,
+    ) -> list[tuple[str, ChatIntent, Callable[[re.Match[str]], dict[str, str]]]]:
         """يعرف مواصفات النمط بشكل موحد وقابل للتوسع."""
         admin_queries = [
             r"(user|users|مستخدم|مستخدمين|count users|list users|profile|stats|أعضاء)",
@@ -68,10 +70,7 @@ class IntentDetector:
             r"|تشخيص\s*(نقاط|الضعف|أداء|الأداء))"
         )
         return [
-            *[
-                (pattern, ChatIntent.ADMIN_QUERY, self._empty_params)
-                for pattern in admin_queries
-            ],
+            *[(pattern, ChatIntent.ADMIN_QUERY, self._empty_params) for pattern in admin_queries],
             # Flexible Content Retrieval: Catch implicit content requests
             # e.g., "Math 2024", "Probability", "Subject 1", "Lesson about X"
             (
@@ -89,7 +88,11 @@ class IntentDetector:
                 ChatIntent.FILE_READ,
                 self._extract_path,
             ),
-            (r"(ابحث|search|find|where|أين|اين)\s+(عن|for)?\s*(.+)", ChatIntent.CODE_SEARCH, self._extract_query),
+            (
+                r"(ابحث|search|find|where|أين|اين)\s+(عن|for)?\s*(.+)",
+                ChatIntent.CODE_SEARCH,
+                self._extract_query,
+            ),
             (r"(فهرس|index)\s+(المشروع|project)", ChatIntent.PROJECT_INDEX, self._empty_params),
             (r"(حلل|analyze|explain)\s+(.+)", ChatIntent.DEEP_ANALYSIS, self._empty_params),
             (analytics_keywords, ChatIntent.ANALYTICS_REPORT, self._empty_params),
@@ -139,7 +142,6 @@ class IntentDetector:
 
     def _extract_query_optional(self, match: re.Match[str]) -> dict[str, str]:
         """يستخرج عبارة البحث من التطابق إذا وجدت."""
-        groups = match.groups()
         # Fallback to the full match if explicit groups aren't clean
         # But we want to avoid capturing "Give me" as part of the query if possible
 

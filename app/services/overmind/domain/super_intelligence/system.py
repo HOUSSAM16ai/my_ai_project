@@ -4,8 +4,8 @@
 الواجهة الرئيسية (Facade) للنظام.
 """
 
-from datetime import datetime
 import inspect
+from datetime import datetime
 
 from app.core.di import get_logger
 from app.services.overmind.agents import AgentCouncil
@@ -136,10 +136,7 @@ class SuperCollectiveIntelligence:
 
     def _get_agent_specs(self) -> list[tuple[str, object]]:
         """يعيد قائمة الوكلاء الفعليين مع أسمائهم لتسهيل التكرار المنظم."""
-        return [
-            (label, getattr(self.council, attribute))
-            for label, attribute in _AGENT_SPEC_NAMES
-        ]
+        return [(label, getattr(self.council, attribute)) for label, attribute in _AGENT_SPEC_NAMES]
 
     async def _consult_agent(
         self,

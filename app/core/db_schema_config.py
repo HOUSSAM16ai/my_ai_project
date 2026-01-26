@@ -8,9 +8,9 @@ from typing import Final, NotRequired, TypedDict
 
 __all__ = [
     "REQUIRED_SCHEMA",
+    "_ALLOWED_TABLES",
     "SchemaValidationResult",
     "TableSchemaConfig",
-    "_ALLOWED_TABLES",
 ]
 
 
@@ -513,7 +513,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
         ],
         "auto_fix": {
             "embedding": 'ALTER TABLE "knowledge_nodes" ALTER COLUMN "embedding" TYPE vector(1024)',
-            "search_vector": 'ALTER TABLE "knowledge_nodes" ADD COLUMN "search_vector" tsvector GENERATED ALWAYS AS (to_tsvector(\'simple\', "name" || \' \' || COALESCE("content", \'\'))) STORED'
+            "search_vector": 'ALTER TABLE "knowledge_nodes" ADD COLUMN "search_vector" tsvector GENERATED ALWAYS AS (to_tsvector(\'simple\', "name" || \' \' || COALESCE("content", \'\'))) STORED',
         },
         "indexes": {
             "embedding": 'CREATE INDEX IF NOT EXISTS "ix_knowledge_nodes_embedding" ON "knowledge_nodes" USING hnsw ("embedding" vector_cosine_ops)',
@@ -532,7 +532,7 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             '"name" VARCHAR(255) NOT NULL,'
             '"content" TEXT,'
             '"embedding" vector(1024),'
-            '"search_vector" tsvector GENERATED ALWAYS AS (to_tsvector(\'simple\', "name" || \' \' || COALESCE("content", \'\'))) STORED,'
+            "\"search_vector\" tsvector GENERATED ALWAYS AS (to_tsvector('simple', \"name\" || ' ' || COALESCE(\"content\", ''))) STORED,"
             "\"metadata\" JSONB DEFAULT '{}',"
             '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
             ")"

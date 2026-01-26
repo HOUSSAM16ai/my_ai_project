@@ -106,13 +106,11 @@ def _register_routes(app: FastAPI, settings: ObservabilitySettings) -> None:
 
         return build_health_payload(service_name=settings.SERVICE_NAME)
 
-
     @app.get("/", response_model=RootResponse, tags=["System"])
     async def root() -> RootResponse:
         """رسالة الجذر لخدمة المراقبة."""
 
         return RootResponse(message="Observability Service is running")
-
 
     @app.post(
         "/telemetry",
@@ -140,7 +138,6 @@ def _register_routes(app: FastAPI, settings: ObservabilitySettings) -> None:
         service.collect_telemetry(data)
         return TelemetryResponse(status="collected", metric_id=request.metric_id)
 
-
     @app.get(
         "/metrics",
         response_model=MetricsResponse,
@@ -153,7 +150,6 @@ def _register_routes(app: FastAPI, settings: ObservabilitySettings) -> None:
         service = get_aiops_service()
         return MetricsResponse(metrics=service.get_aiops_metrics())
 
-
     @app.get(
         "/health/{service_name}",
         response_model=dict[str, object],
@@ -165,7 +161,6 @@ def _register_routes(app: FastAPI, settings: ObservabilitySettings) -> None:
 
         service = get_aiops_service()
         return service.get_service_health(service_name)
-
 
     @app.post(
         "/forecast",
@@ -189,7 +184,6 @@ def _register_routes(app: FastAPI, settings: ObservabilitySettings) -> None:
             confidence_interval=forecast.confidence_interval,
         )
 
-
     @app.post(
         "/capacity",
         response_model=CapacityPlanResponse,
@@ -208,7 +202,6 @@ def _register_routes(app: FastAPI, settings: ObservabilitySettings) -> None:
             raise BadRequestError("تعذر تحويل خطة السعة")
         return CapacityPlanResponse(plan=CapacityPlanPayload(**serialized))
 
-
     @app.get(
         "/anomalies/{anomaly_id}/root_cause",
         response_model=dict[str, object],
@@ -221,6 +214,7 @@ def _register_routes(app: FastAPI, settings: ObservabilitySettings) -> None:
         service = get_aiops_service()
         causes = service.analyze_root_cause(anomaly_id)
         return {"anomaly_id": anomaly_id, "root_causes": causes}
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

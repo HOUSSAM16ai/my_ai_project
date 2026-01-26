@@ -18,10 +18,10 @@
 """
 
 import logging
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-import os
 from typing import Final
 
 from fastapi import APIRouter, FastAPI
@@ -49,6 +49,10 @@ from app.core.agents.system_principles import (
     validate_architecture_system_principles,
     validate_system_principles,
 )
+from app.core.asyncapi_contracts import (
+    default_asyncapi_contract_path,
+    validate_asyncapi_contract_structure,
+)
 from app.core.config import AppSettings
 from app.core.database import async_session_factory
 from app.core.db_schema import validate_schema_on_startup
@@ -58,10 +62,6 @@ from app.core.openapi_contracts import (
     default_contract_path,
     load_contract_operations,
 )
-from app.core.asyncapi_contracts import (
-    default_asyncapi_contract_path,
-    validate_asyncapi_contract_structure,
-)
 from app.gateway import APIGateway, ServiceRegistry
 from app.gateway.config import DEFAULT_GATEWAY_CONFIG, GatewayConfig
 from app.middleware.fastapi_error_handlers import add_error_handlers
@@ -70,9 +70,9 @@ from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
 from app.middleware.security.security_headers import SecurityHeadersMiddleware
 from app.middleware.static_files_middleware import StaticFilesConfig, setup_static_files_middleware
 from app.services.bootstrap import bootstrap_admin_account
+from app.services.overmind.langgraph.service import LangGraphAgentService
 from app.services.overmind.plan_registry import AgentPlanRegistry
 from app.services.overmind.plan_service import AgentPlanService
-from app.services.overmind.langgraph.service import LangGraphAgentService
 
 logger = logging.getLogger(__name__)
 
@@ -439,14 +439,12 @@ def _validate_contract_alignment(app: FastAPI) -> None:
 
             if report.missing_operations:
                 summary = {
-                    path: sorted(methods)
-                    for path, methods in report.missing_operations.items()
+                    path: sorted(methods) for path, methods in report.missing_operations.items()
                 }
                 logger.warning("⚠️ عمليات العقد غير موجودة في التشغيل: %s", summary)
 
     asyncapi_report = validate_asyncapi_contract_structure(default_asyncapi_contract_path())
     if not asyncapi_report.is_clean():
         raise ValueError(
-            "AsyncAPI contract validation failed: "
-            + "; ".join(asyncapi_report.errors)
+            "AsyncAPI contract validation failed: " + "; ".join(asyncapi_report.errors)
         )

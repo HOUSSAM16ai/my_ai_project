@@ -1,13 +1,13 @@
-from typing import List, Optional, Set
-from sqlalchemy import text
 from llama_index.core.retrievers import BaseRetriever
 from llama_index.core.schema import NodeWithScore, TextNode
+from sqlalchemy import text
+
 from app.core.database import async_session_factory
 from app.core.logging import get_logger
-
 from app.services.search_engine.hybrid import hybrid_search
 
 logger = get_logger("graph-retriever")
+
 
 class KnowledgeGraphRetriever(BaseRetriever):
     """
@@ -20,10 +20,10 @@ class KnowledgeGraphRetriever(BaseRetriever):
         self.top_k = top_k
         super().__init__()
 
-    def _retrieve(self, query_bundle) -> List[NodeWithScore]:
+    def _retrieve(self, query_bundle) -> list[NodeWithScore]:
         raise NotImplementedError("Use aretrieve for this async-native retriever.")
 
-    async def _aretrieve(self, query_bundle) -> List[NodeWithScore]:
+    async def _aretrieve(self, query_bundle) -> list[NodeWithScore]:
         if hasattr(query_bundle, "query_str"):
             query_str = query_bundle.query_str
         else:
@@ -36,7 +36,7 @@ class KnowledgeGraphRetriever(BaseRetriever):
             return []
 
         # 2. Graph Expansion (Fetch Neighbors - 2 Hops)
-        seed_ids = [str(r['id']) for r in results]
+        seed_ids = [str(r["id"]) for r in results]
 
         async with async_session_factory() as session:
             # Recursive CTE for 2-hop traversal
@@ -68,7 +68,9 @@ class KnowledgeGraphRetriever(BaseRetriever):
                 res = await session.execute(stmt, {"seed_ids": seed_ids})
                 # neighbors will contain both 1-hop and 2-hop nodes
                 neighbors = [dict(row._mapping) for row in res.fetchall()]
-                logger.info(f"Graph Expansion: Found {len(neighbors)} neighbors (2-hop) for {len(seed_ids)} seed nodes.")
+                logger.info(
+                    f"Graph Expansion: Found {len(neighbors)} neighbors (2-hop) for {len(seed_ids)} seed nodes."
+                )
             except Exception as e:
                 logger.error(f"Graph expansion failed: {e}")
                 neighbors = []
@@ -79,8 +81,9 @@ class KnowledgeGraphRetriever(BaseRetriever):
 
         # Add primary results (Depth 0)
         for r in results:
-            nid = str(r['id'])
-            if nid in seen_ids: continue
+            nid = str(r["id"])
+            if nid in seen_ids:
+                continue
             seen_ids.add(nid)
 
             node = TextNode(
@@ -91,22 +94,23 @@ class KnowledgeGraphRetriever(BaseRetriever):
                     "label": r["label"],
                     "score": r.get("rerank_score", r.get("hybrid_score", 0.0)),
                     "type": "primary",
-                    "depth": 0
-                }
+                    "depth": 0,
+                },
             )
             score = r.get("rerank_score", r.get("hybrid_score", 0.0))
             final_nodes.append(NodeWithScore(node=node, score=score))
 
         # Add neighbors
         for n in neighbors:
-            nid = str(n['id'])
-            if nid in seen_ids: continue
+            nid = str(n["id"])
+            if nid in seen_ids:
+                continue
             seen_ids.add(nid)
 
             depth = n.get("depth", 1)
             # Decay score by depth
             base_score = 0.5
-            decayed_score = base_score / (depth + 1) # 0.25 for depth 1, 0.16 for depth 2? No wait.
+            decayed_score = base_score / (depth + 1)  # 0.25 for depth 1, 0.16 for depth 2? No wait.
             # depth 1: 0.5/2 = 0.25
             # depth 2: 0.5/3 = 0.16
             # Actually, let's keep it simple: 0.5 for neighbors.
@@ -119,8 +123,8 @@ class KnowledgeGraphRetriever(BaseRetriever):
                     "label": n["label"],
                     "score": decayed_score,
                     "type": "neighbor",
-                    "depth": depth
-                }
+                    "depth": depth,
+                },
             )
             final_nodes.append(NodeWithScore(node=node, score=decayed_score))
 

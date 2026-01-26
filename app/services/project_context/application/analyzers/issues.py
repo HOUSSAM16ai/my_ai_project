@@ -12,7 +12,6 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-
 LONG_METHOD_LINE_THRESHOLD = 50
 
 

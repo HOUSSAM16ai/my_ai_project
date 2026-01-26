@@ -1,9 +1,14 @@
-
 import unittest
-from app.services.chat.graph.nodes.writer import WriterIntent, ContextComposer, PromptStrategist, StudentProfile
+
+from app.services.chat.graph.nodes.writer import (
+    ContextComposer,
+    PromptStrategist,
+    StudentProfile,
+    WriterIntent,
+)
+
 
 class TestSolutionHiding(unittest.TestCase):
-
     def test_hiding_when_general_inquiry(self):
         """Test that solution is HIDDEN when intent is GENERAL_INQUIRY"""
         results = [{"content": "Exercise Content", "solution": "Secret Solution"}]
@@ -39,6 +44,7 @@ class TestSolutionHiding(unittest.TestCase):
 
         self.assertIn("بروتوكول الوضع المزدوج", prompt)
         self.assertIn("Supernatural Explanation", prompt)
+
 
 if __name__ == "__main__":
     unittest.main()

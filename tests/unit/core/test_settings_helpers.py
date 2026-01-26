@@ -1,8 +1,8 @@
 import pytest
 
 import app
-from app.core.settings import helpers
 from app.core.settings import __getattr__ as settings_getattr
+from app.core.settings import helpers
 
 
 def test_upgrade_postgres_protocol_handles_postgres_alias() -> None:
@@ -77,7 +77,7 @@ def test_normalize_csv_or_list_accepts_json_list() -> None:
 
 
 def test_normalize_csv_or_list_accepts_invalid_json_as_csv() -> None:
-    assert helpers._normalize_csv_or_list('["a",') == ["[\"a\""]
+    assert helpers._normalize_csv_or_list('["a",') == ['["a"']
 
 
 def test_ensure_database_url_allows_explicit_value() -> None:

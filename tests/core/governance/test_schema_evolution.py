@@ -1,14 +1,15 @@
 import unittest
+
 from app.core.governance.schema_evolution import (
-    ContractEvolutionChecker,
-    SchemaResolver,
-    ResolutionScope,
     ChangeType,
+    ContractEvolutionChecker,
+    ResolutionScope,
+    SchemaResolver,
 )
 from app.core.types import JSONDict
 
-class TestSchemaEvolution(unittest.TestCase):
 
+class TestSchemaEvolution(unittest.TestCase):
     def test_dynamic_ref_resolution(self):
         """
         اختبار القدرة على حل $dynamicRef بشكل صحيح.
@@ -19,11 +20,7 @@ class TestSchemaEvolution(unittest.TestCase):
             "$id": "https://example.com/base",
             "$dynamicAnchor": "meta",
             "type": "string",  # Default base type
-            "definitions": {
-                "default": {
-                    "$dynamicRef": "#meta"
-                }
-            }
+            "definitions": {"default": {"$dynamicRef": "#meta"}},
         }
 
         # تعريف مخطط موسع يغير المرساة
@@ -31,7 +28,9 @@ class TestSchemaEvolution(unittest.TestCase):
             "$id": "https://example.com/extended",
             "$dynamicAnchor": "meta",
             "type": "integer",  # Extended type overrides to integer
-            "allOf": [base_schema] # In a real resolver we'd merge, but here we construct manually for test logic
+            "allOf": [
+                base_schema
+            ],  # In a real resolver we'd merge, but here we construct manually for test logic
         }
 
         # نحن نختبر Resolver مباشرة
@@ -59,20 +58,17 @@ class TestSchemaEvolution(unittest.TestCase):
         old_schema: JSONDict = {
             "type": "object",
             "required": ["id"],
-            "properties": {
-                "id": {"type": "integer"},
-                "name": {"type": "string"}
-            }
+            "properties": {"id": {"type": "integer"}, "name": {"type": "string"}},
         }
 
         new_schema: JSONDict = {
             "type": "object",
-            "required": ["id", "new_required_field"], # Breaking: New required field
+            "required": ["id", "new_required_field"],  # Breaking: New required field
             "properties": {
-                "id": {"type": "string"}, # Breaking: Type change int -> string
+                "id": {"type": "string"},  # Breaking: Type change int -> string
                 # "name" removed -> Breaking
-                "new_required_field": {"type": "boolean"}
-            }
+                "new_required_field": {"type": "boolean"},
+            },
         }
 
         checker = ContractEvolutionChecker()
@@ -93,18 +89,14 @@ class TestSchemaEvolution(unittest.TestCase):
 
     def test_recursion_handling(self):
         """اختبار عدم الدخول في حلقة لانهائية مع المخططات العودية."""
-        recursive_schema: JSONDict = {
-            "type": "object",
-            "properties": {
-                "self": {"$ref": "#"}
-            }
-        }
+        recursive_schema: JSONDict = {"type": "object", "properties": {"self": {"$ref": "#"}}}
 
         # مقارنة المخطط بنفسه يجب أن لا تسبب StackOverflow
         checker = ContractEvolutionChecker()
         issues = checker.check_evolution(recursive_schema, recursive_schema)
 
         self.assertEqual(len(issues), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

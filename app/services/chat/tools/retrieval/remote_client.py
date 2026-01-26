@@ -2,8 +2,9 @@
 Remote Memory Agent Client.
 Infrastructure Layer.
 """
+
 import os
-from typing import List, Dict, Any
+from typing import Any
 
 import httpx
 
@@ -12,7 +13,7 @@ from app.core.logging import get_logger
 logger = get_logger("tool-retrieval-remote")
 
 
-async def fetch_from_memory_agent(query: str, tags: List[str]) -> List[Dict[str, Any]]:
+async def fetch_from_memory_agent(query: str, tags: list[str]) -> list[dict[str, Any]]:
     """
     Fetches content from the Memory Agent microservice.
     Returns a list of result dictionaries or raises an exception/returns empty on failure.

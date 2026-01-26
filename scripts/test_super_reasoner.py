@@ -1,12 +1,14 @@
 import asyncio
-import os
 import logging
+import os
+
 from app.core.gateway.simple_client import SimpleAIClient
 from app.services.reasoning.workflow import SuperReasoningWorkflow
 
 # Configure logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("verify-strict")
+
 
 async def main():
     print("🧠 Verifying Strict Search & Reasoning...")
@@ -25,19 +27,20 @@ async def main():
     try:
         result = await workflow.run(query=query)
         print("\n✅ Result from Super Reasoner:\n")
-        print("="*60)
+        print("=" * 60)
         print(result)
-        print("="*60)
+        print("=" * 60)
 
         # Simple string check for success
         res_str = str(result)
         if "14/165" in res_str or "56/165" in res_str or "11 كرة" in res_str:
-             print("🎉 SUCCESS: The exercise was found and solved correctly.")
+            print("🎉 SUCCESS: The exercise was found and solved correctly.")
         else:
-             print("⚠️ WARNING: The result might not contain the exact numbers. Check output.")
+            print("⚠️ WARNING: The result might not contain the exact numbers. Check output.")
 
     except Exception as e:
         print(f"❌ Verification Failed: {e}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

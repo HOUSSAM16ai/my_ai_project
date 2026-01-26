@@ -7,6 +7,7 @@ from app.services.overmind.code_intelligence.models import ProjectAnalysis
 
 logger = get_logger(__name__)
 
+
 def save_json_report(analysis: ProjectAnalysis, output_path: Path) -> None:
     """Save report as JSON"""
     data = asdict(analysis)

@@ -6,10 +6,16 @@
 
 import json
 import logging
-from app.services.chat.graph.state import AgentState
+import os
+
+import httpx
+
 from app.core.ai_gateway import AIClient
+from app.services.chat.graph.state import AgentState
 
 logger = logging.getLogger(__name__)
+PLANNING_SERVICE_URL = os.environ.get("PLANNING_SERVICE_URL", "http://localhost:8001/plans")
+
 
 async def planner_node(state: AgentState, ai_client: AIClient) -> dict:
     """
@@ -19,6 +25,21 @@ async def planner_node(state: AgentState, ai_client: AIClient) -> dict:
     last_message = messages[-1].content if messages else ""
 
     logger.info("Planner Node: Analyzing request...")
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                PLANNING_SERVICE_URL,
+                json={"goal": last_message, "context": []},
+                timeout=5.0,
+            )
+        if response.status_code == 200:
+            payload = response.json()
+            plan = payload.get("steps") or ["search", "explain"]
+            return {"plan": plan, "current_step_index": 0, "next": "supervisor"}
+        logger.warning("Planning service returned non-200 response.")
+    except Exception as exc:
+        logger.warning(f"Planning service unavailable, fallback to local logic: {exc}")
 
     # Local Logic (Monolith)
     system_prompt = (
@@ -40,8 +61,7 @@ async def planner_node(state: AgentState, ai_client: AIClient) -> dict:
     )
 
     content = await ai_client.send_message(
-        system_prompt=system_prompt,
-        user_message=f"Request: {last_message}"
+        system_prompt=system_prompt, user_message=f"Request: {last_message}"
     )
 
     try:

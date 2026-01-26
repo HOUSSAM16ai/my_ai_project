@@ -14,6 +14,7 @@ from .html_templates import create_complete_html, create_file_row_html
 
 logger = get_logger(__name__)
 
+
 def _extract_code_smells(file_metrics) -> str:
     """
     استخراج الروائح البنيوية من metrics الملف.

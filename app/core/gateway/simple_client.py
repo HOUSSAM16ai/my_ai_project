@@ -3,11 +3,11 @@ Simple AI Client.
 Replaces the complex NeuralRoutingMesh with a straightforward, robust implementation.
 """
 
+import asyncio
 import hashlib
 import json
 import logging
 import time
-import asyncio
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 
@@ -15,14 +15,16 @@ import httpx
 
 from app.core.ai_config import get_ai_config
 from app.core.cognitive_cache import get_cognitive_engine
-from app.core.gateway.connection import ConnectionManager, BASE_TIMEOUT
+from app.core.gateway.connection import BASE_TIMEOUT, ConnectionManager
 from app.core.types import JSONDict
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class SimpleResponse:
     content: str
+
 
 class SimpleAIClient:
     """
@@ -84,7 +86,10 @@ class SimpleAIClient:
                 return
 
         # 2. Prepare Model List (Primary + Fallbacks)
-        models_to_try = [self.config.primary_model] + self.config.get_fallback_models()
+        models_to_try = [
+            self.config.primary_model,
+            *self.config.get_fallback_models(),
+        ]
 
         # 3. Try each model
         client = ConnectionManager.get_client()
@@ -100,7 +105,7 @@ class SimpleAIClient:
 
                 # Success! Memorize and exit.
                 if last_message.get("role") == "user":
-                     self.cognitive_engine.memorize(prompt, context_hash, full_response_chunks)
+                    self.cognitive_engine.memorize(prompt, context_hash, full_response_chunks)
                 return
 
             except (httpx.ConnectError, httpx.ReadTimeout, httpx.HTTPStatusError, ValueError) as e:
@@ -116,10 +121,7 @@ class SimpleAIClient:
             yield chunk
 
     async def _stream_model(
-        self,
-        client: httpx.AsyncClient,
-        model_id: str,
-        messages: list[JSONDict]
+        self, client: httpx.AsyncClient, model_id: str, messages: list[JSONDict]
     ) -> AsyncGenerator[JSONDict, None]:
         """
         Internal generator to stream from a specific model.
@@ -129,22 +131,16 @@ class SimpleAIClient:
                 "POST",
                 f"{self.base_url}/chat/completions",
                 headers=self.headers,
-                json={
-                    "model": model_id,
-                    "messages": messages,
-                    "stream": True,
-                    "temperature": 0.7
-                },
+                json={"model": model_id, "messages": messages, "stream": True, "temperature": 0.7},
                 timeout=httpx.Timeout(BASE_TIMEOUT, connect=10.0),
             ) as response:
-
                 if response.status_code != 200:
-                     # Consume body to avoid hanging connection
+                    # Consume body to avoid hanging connection
                     await response.aread()
                     raise httpx.HTTPStatusError(
                         f"Status {response.status_code}",
                         request=response.request,
-                        response=response
+                        response=response,
                     )
 
                 async for line in response.aiter_lines():
@@ -159,7 +155,7 @@ class SimpleAIClient:
                             continue
 
         except httpx.StreamError as e:
-             raise httpx.ConnectError(f"Stream error: {e}") from e
+            raise httpx.ConnectError(f"Stream error: {e}") from e
 
     async def _stream_safety_net(self) -> AsyncGenerator[JSONDict, None]:
         """Generates the static safety net response."""
@@ -171,10 +167,10 @@ class SimpleAIClient:
                 "object": "chat.completion.chunk",
                 "created": int(time.time()),
                 "model": "system/safety-net",
-                "choices": [{"index": 0, "delta": {"content": word + " "}, "finish_reason": None}]
+                "choices": [{"index": 0, "delta": {"content": word + " "}, "finish_reason": None}],
             }
-            yield chunk # type: ignore
-            await asyncio.sleep(0.05) # Simulate typing NON-BLOCKING
+            yield chunk  # type: ignore
+            await asyncio.sleep(0.05)  # Simulate typing NON-BLOCKING
 
         # Final chunk
         yield {
@@ -182,13 +178,11 @@ class SimpleAIClient:
             "object": "chat.completion.chunk",
             "created": int(time.time()),
             "model": "system/safety-net",
-            "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]
-        } # type: ignore
+            "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+        }  # type: ignore
 
     def _create_error_chunk(self, message: str) -> JSONDict:
-        return {
-            "error": {"message": message}
-        } # type: ignore
+        return {"error": {"message": message}}  # type: ignore
 
     async def send_message(
         self, system_prompt: str, user_message: str, temperature: float = 0.7
@@ -197,13 +191,13 @@ class SimpleAIClient:
         Simple non-streaming helper.
         """
         messages: list[JSONDict] = [
-            {"role": "system", "content": system_prompt}, # type: ignore
-            {"role": "user", "content": user_message}, # type: ignore
+            {"role": "system", "content": system_prompt},  # type: ignore
+            {"role": "user", "content": user_message},  # type: ignore
         ]
 
         full_content = []
         async for chunk in self.stream_chat(messages):
-            choices = chunk.get("choices", []) # type: ignore
+            choices = chunk.get("choices", [])  # type: ignore
             if choices:
                 delta = choices[0].get("delta", {})
                 content = delta.get("content", "")
@@ -212,7 +206,9 @@ class SimpleAIClient:
 
         return "".join(full_content)
 
-    async def generate_text(self, prompt: str, model: str | None = None, system_prompt: str | None = None, **kwargs) -> SimpleResponse:
+    async def generate_text(
+        self, prompt: str, model: str | None = None, system_prompt: str | None = None, **kwargs
+    ) -> SimpleResponse:
         """
         Legacy compatibility method for tool calling.
         """

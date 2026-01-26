@@ -2,8 +2,8 @@
 Local Knowledge Base Retrieval (Fallback Mechanism).
 Infrastructure Layer.
 """
+
 from pathlib import Path
-from typing import Optional, List
 
 import yaml
 
@@ -19,12 +19,13 @@ SEARCH_DIRECTORIES = [
     Path("content"),  # Recursive search might be needed here
 ]
 
+
 def search_local_knowledge_base(
     query: str,
-    year: Optional[str],
-    subject: Optional[str],
-    branch: Optional[str],
-    exam_ref: Optional[str],
+    year: str | None,
+    subject: str | None,
+    branch: str | None,
+    exam_ref: str | None,
 ) -> str:
     """
     بحث احتياطي في الملفات المحلية في حال تعطل خدمة الذاكرة أو عدم وجود نتائج.
@@ -58,10 +59,13 @@ def search_local_knowledge_base(
                         meta_dict = metadata.get("metadata", {})
 
                         # Handle flat metadata (some files might not have 'metadata' key nested)
-                        if not meta_dict and isinstance(metadata, dict):
-                             # Check if keys like 'year' are at root
-                             if 'year' in metadata or 'subject' in metadata:
-                                 meta_dict = metadata
+                        if (
+                            not meta_dict
+                            and isinstance(metadata, dict)
+                            and ("year" in metadata or "subject" in metadata)
+                        ):
+                            # Check if keys like 'year' are at root
+                            meta_dict = metadata
 
                         # Flexible Matching Logic for Fallback
 
@@ -72,7 +76,10 @@ def search_local_knowledge_base(
                         # 2. Check Subject
                         if subject:
                             file_subject = str(meta_dict.get("subject", "")).lower()
-                            if subject.lower() not in file_subject and file_subject not in subject.lower():
+                            if (
+                                subject.lower() not in file_subject
+                                and file_subject not in subject.lower()
+                            ):
                                 continue
 
                         # 3. Check Branch
@@ -82,19 +89,32 @@ def search_local_knowledge_base(
 
                             if isinstance(file_branch, list):
                                 # Normalize file branches too
-                                file_branches_norm = [str(b).lower().replace("_", " ") for b in file_branch]
-                                if not any(b in branch_query or branch_query in b for b in file_branches_norm):
+                                file_branches_norm = [
+                                    str(b).lower().replace("_", " ") for b in file_branch
+                                ]
+                                if not any(
+                                    b in branch_query or branch_query in b
+                                    for b in file_branches_norm
+                                ):
                                     continue
                             else:
                                 file_branch_norm = str(file_branch).lower().replace("_", " ")
-                                if file_branch_norm not in branch_query and branch_query not in file_branch_norm:
+                                if (
+                                    file_branch_norm not in branch_query
+                                    and branch_query not in file_branch_norm
+                                ):
                                     continue
 
                         # 4. Check Exam Ref
                         # Exam Ref might be 'set' in some files
                         if exam_ref:
-                            file_ref = str(meta_dict.get("exam_ref", "") or meta_dict.get("set", "")).lower()
-                            if exam_ref.lower() not in file_ref and file_ref not in exam_ref.lower():
+                            file_ref = str(
+                                meta_dict.get("exam_ref", "") or meta_dict.get("set", "")
+                            ).lower()
+                            if (
+                                exam_ref.lower() not in file_ref
+                                and file_ref not in exam_ref.lower()
+                            ):
                                 continue
 
                         # 5. Extract Specific Exercise if requested

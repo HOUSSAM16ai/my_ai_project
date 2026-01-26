@@ -1,6 +1,9 @@
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock
+
 from app.services.content.service import ContentService
+
 
 @pytest.mark.asyncio
 async def test_content_service_search_logic():
@@ -26,7 +29,7 @@ async def test_content_service_search_logic():
     await service.search_content(q="Math 2024", limit=5)
 
     assert mock_session.execute.called
-    args, kwargs = mock_session.execute.call_args
+    args, _ = mock_session.execute.call_args
     sql = str(args[0])
     params = args[1]
 
@@ -52,7 +55,7 @@ async def test_content_service_search_logic():
     await service.search_content(branch="experimental_sciences")
 
     assert mock_session.execute.called
-    args, kwargs = mock_session.execute.call_args
+    args, _ = mock_session.execute.call_args
     sql = str(args[0])
     params = args[1]
 

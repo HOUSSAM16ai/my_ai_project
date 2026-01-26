@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-
 @dataclass(frozen=True)
 class AsyncAPIContractReport:
     """يمثل تقرير تحقق مبسط لعقد AsyncAPI."""
@@ -21,11 +20,7 @@ class AsyncAPIContractReport:
 def default_asyncapi_contract_path() -> Path:
     """يبني المسار الافتراضي لعقد AsyncAPI الأساسي."""
     return (
-        Path(__file__).resolve().parents[2]
-        / "docs"
-        / "contracts"
-        / "asyncapi"
-        / "events-api.yaml"
+        Path(__file__).resolve().parents[2] / "docs" / "contracts" / "asyncapi" / "events-api.yaml"
     )
 
 
@@ -54,9 +49,7 @@ def validate_asyncapi_contract_structure(spec_path: Path) -> AsyncAPIContractRep
     if not channels:
         errors.append("Channels section must be a non-empty mapping.")
 
-    channels_missing_ops = [
-        name for name, has_ops in channels.items() if not has_ops
-    ]
+    channels_missing_ops = [name for name, has_ops in channels.items() if not has_ops]
     for channel in channels_missing_ops:
         errors.append(f"Channel {channel} must define publish or subscribe.")
 

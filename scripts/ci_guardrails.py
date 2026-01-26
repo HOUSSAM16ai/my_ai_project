@@ -152,7 +152,10 @@ def run_guardrails(root_dir: Path) -> list[str]:
             if not filename.endswith(".py"):
                 continue
             filepath = Path(root) / filename
-            if any(part in filepath.parts for part in [".venv", "venv", ".git", "__pycache__"]):
+            if any(
+                part in filepath.parts
+                for part in [".venv", "venv", ".git", "__pycache__", "node_modules"]
+            ):
                 continue
             if "migrations" in filepath.parts:
                 continue
@@ -197,11 +200,22 @@ def _match_path(filepath: Path, pattern: str) -> bool:
 
 def _get_exemptions_for_path(filepath: Path) -> list[str]:
     """يعيد قائمة الاستثناءات المطبقة على المسار باستخدام أنماط glob."""
+    if not _is_repo_path(filepath):
+        return []
     matched_exemptions: set[str] = set()
     for pattern, exemptions in LEGACY_EXEMPTIONS.items():
         if _match_path(filepath, pattern):
             matched_exemptions.update(exemptions)
     return sorted(matched_exemptions)
+
+
+def _is_repo_path(filepath: Path) -> bool:
+    """يتحقق مما إذا كان المسار ضمن جذر المستودع."""
+    try:
+        filepath.relative_to(REPO_ROOT)
+    except ValueError:
+        return False
+    return True
 
 
 def _check_forbidden_calls(

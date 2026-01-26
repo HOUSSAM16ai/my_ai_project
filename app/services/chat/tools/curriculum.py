@@ -20,10 +20,9 @@ async def recommend_next_mission(user_id: int, difficulty: str = "medium") -> di
     async with async_session_factory() as session:
         # 1. معرفة آخر ما أنجزه الطالب لتجنب التكرار
         completed_stmt = select(Mission.objective).where(
-            Mission.initiator_id == user_id,
-            Mission.status == MissionStatus.SUCCESS
+            Mission.initiator_id == user_id, Mission.status == MissionStatus.SUCCESS
         )
-        completed_res = await session.execute(completed_stmt)
+        _ = await session.execute(completed_stmt)
         # completed_titles = {row[0] for row in completed_res.all()}
 
         # 2. البحث عن مهام "Pending" أو أفكار جديدة
@@ -41,19 +40,19 @@ async def recommend_next_mission(user_id: int, difficulty: str = "medium") -> di
 
         # محاولة البحث عن محتوى حقيقي في قاعدة البيانات لاقتراحه
         try:
-             # البحث عن موضوع عشوائي أو أول موضوع في المستوى الأول
-             content_query = text("""
+            # البحث عن موضوع عشوائي أو أول موضوع في المستوى الأول
+            content_query = text("""
                 SELECT title, subject, level, id
                 FROM content_items
                 ORDER BY level ASC, id ASC
                 LIMIT 1
              """)
-             content_res = await session.execute(content_query)
-             content_row = content_res.fetchone()
+            content_res = await session.execute(content_query)
+            content_row = content_res.fetchone()
 
-             if content_row:
-                 suggestion_title = content_row.title
-                 suggestion_desc = f"درس في مادة {content_row.subject} - المستوى {content_row.level}"
+            if content_row:
+                suggestion_title = content_row.title
+                suggestion_desc = f"درس في مادة {content_row.subject} - المستوى {content_row.level}"
         except Exception as e:
             logger.warning(f"Could not fetch real content for recommendation: {e}")
 
@@ -73,7 +72,7 @@ async def recommend_next_mission(user_id: int, difficulty: str = "medium") -> di
             "title": suggestion_title,
             "description": suggestion_desc,
             "reason": "بناءً على تحليلك لآخر نشاط لك.",
-            "difficulty": difficulty
+            "difficulty": difficulty,
         }
 
 
@@ -90,14 +89,19 @@ async def get_learning_path_progress(user_id: int) -> dict[str, object]:
     completed = len([m for m in missions if m.status == MissionStatus.SUCCESS])
 
     return {
-        "current_stage": "Active Learner", # يمكن تطويره ليكون ديناميكياً
-        "progress_percentage": int((completed / total * 100)) if total > 0 else 0,
+        "current_stage": "Active Learner",  # يمكن تطويره ليكون ديناميكياً
+        "progress_percentage": int(completed / total * 100) if total > 0 else 0,
         "completed_count": completed,
         "total_missions": total,
-        "recent_achievements": [m.objective for m in missions if m.status == MissionStatus.SUCCESS][:3]
+        "recent_achievements": [m.objective for m in missions if m.status == MissionStatus.SUCCESS][
+            :3
+        ],
     }
 
-async def adjust_difficulty_level(user_id: int, feedback: Literal["too_hard", "too_easy", "good"]) -> str:
+
+async def adjust_difficulty_level(
+    user_id: int, feedback: Literal["too_hard", "too_easy", "good"]
+) -> str:
     """
     تكييف مستوى صعوبة التمارين.
     """

@@ -11,6 +11,7 @@ from .models import FileMetrics, ProjectAnalysis
 
 logger = get_logger(__name__)
 
+
 class StructuralCodeIntelligence:
     """Main Structural Intelligence Analyzer"""
 

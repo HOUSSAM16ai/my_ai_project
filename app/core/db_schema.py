@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from app.core.agents.system_principles import format_architecture_system_principles
 from app.core.database import engine
-from app.core.db_schema_config import REQUIRED_SCHEMA, SchemaValidationResult, _ALLOWED_TABLES
+from app.core.db_schema_config import _ALLOWED_TABLES, REQUIRED_SCHEMA, SchemaValidationResult
 
 logger = logging.getLogger(__name__)
 

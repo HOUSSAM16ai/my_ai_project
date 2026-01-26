@@ -68,7 +68,9 @@ class CompositeResiliencePolicy:
             pipeline = self._wrap_with_policy(pipeline, self.config.timeout.execute, operation_name)
 
         if self.config.bulkhead:
-            pipeline = self._wrap_with_policy(pipeline, self.config.bulkhead.execute, operation_name)
+            pipeline = self._wrap_with_policy(
+                pipeline, self.config.bulkhead.execute, operation_name
+            )
 
         async def wrapped_func() -> T:
             return await pipeline()
@@ -121,9 +123,7 @@ class CompositeResiliencePolicy:
                 return result
             except Exception:
                 breaker.record_failure()
-                logger.warning(
-                    f"{operation_name} failed under circuit breaker '{breaker.name}'"
-                )
+                logger.warning(f"{operation_name} failed under circuit breaker '{breaker.name}'")
                 raise
 
         return wrapped

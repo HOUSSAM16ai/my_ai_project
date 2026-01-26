@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 from app.caching.strategies import LRUPolicy, StrategicMemoryCache
 
 if TYPE_CHECKING:
-    from app.core.ai_gateway import AIClient
+    pass
 
 logger = logging.getLogger(__name__)
 

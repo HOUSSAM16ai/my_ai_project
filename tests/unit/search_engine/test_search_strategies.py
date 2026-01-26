@@ -1,11 +1,13 @@
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 # Global variables to hold imported modules after setup
 strategies_module = None
 orchestrator_module = None
 models_module = None
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_module_environment():
@@ -35,8 +37,8 @@ def setup_module_environment():
     try:
         # Import modules ONCE here
         import app.services.search_engine.models as m
-        import app.services.search_engine.strategies as s
         import app.services.search_engine.orchestrator as o
+        import app.services.search_engine.strategies as s
 
         models_module = m
         strategies_module = s
@@ -47,6 +49,7 @@ def setup_module_environment():
     finally:
         patcher.stop()
 
+
 # --- Mock Data Helpers ---
 def get_mock_node():
     node = MagicMock()
@@ -54,11 +57,19 @@ def get_mock_node():
     node.score = 0.9
     return node
 
+
 MOCK_DB_RESULT = {
-    "id": "c1", "title": "Math Ex", "type": "exercise",
-    "level": "3as", "subject": "math", "branch": "science",
-    "set": "subject_1", "year": 2024, "lang": "ar"
+    "id": "c1",
+    "title": "Math Ex",
+    "type": "exercise",
+    "level": "3as",
+    "subject": "math",
+    "branch": "science",
+    "set": "subject_1",
+    "year": 2024,
+    "lang": "ar",
 }
+
 
 @pytest.fixture
 def mock_retriever():
@@ -66,11 +77,13 @@ def mock_retriever():
     retriever.search.return_value = [get_mock_node()]
     return retriever
 
+
 @pytest.fixture
 def mock_reranker():
     reranker = MagicMock()
     reranker.rerank.return_value = [get_mock_node()]
     return reranker
+
 
 @pytest.fixture
 def mock_content_service():
@@ -78,23 +91,32 @@ def mock_content_service():
     service.search_content.return_value = [MOCK_DB_RESULT]
     return service
 
+
 # --- Strategy Tests ---
+
 
 @pytest.mark.asyncio
 async def test_strict_strategy(mock_retriever, mock_reranker, mock_content_service):
     # Use the globally imported module
-    StrictVectorStrategy = strategies_module.StrictVectorStrategy
-    SearchRequest = models_module.SearchRequest
-    SearchFilters = models_module.SearchFilters
+    strict_vector_strategy = strategies_module.StrictVectorStrategy
+    search_request = models_module.SearchRequest
+    search_filters = models_module.SearchFilters
 
-    with patch("app.services.search_engine.strategies.get_retriever", return_value=mock_retriever), \
-         patch("app.services.search_engine.strategies.get_reranker", return_value=mock_reranker), \
-         patch("app.services.search_engine.strategies.content_service", mock_content_service), \
-         patch.dict("os.environ", {"DATABASE_URL": "postgresql://mock"}):
-
-        strategy = StrictVectorStrategy()
-        filters = SearchFilters(year=2024, subject="math")
-        request = SearchRequest(q="test", filters=filters)
+    with (
+        patch(
+            "app.services.search_engine.strategies.get_retriever",
+            return_value=mock_retriever,
+        ),
+        patch(
+            "app.services.search_engine.strategies.get_reranker",
+            return_value=mock_reranker,
+        ),
+        patch("app.services.search_engine.strategies.content_service", mock_content_service),
+        patch.dict("os.environ", {"DATABASE_URL": "postgresql://mock"}),
+    ):
+        strategy = strict_vector_strategy()
+        filters = search_filters(year=2024, subject="math")
+        request = search_request(q="test", filters=filters)
 
         results = await strategy.execute(request)
 
@@ -103,47 +125,58 @@ async def test_strict_strategy(mock_retriever, mock_reranker, mock_content_servi
         assert results[0].strategy == "Strict Semantic"
 
         mock_retriever.search.assert_called_once()
-        assert mock_retriever.search.call_args.kwargs['filters'] == {'year': 2024, 'subject': 'math'}
+        assert mock_retriever.search.call_args.kwargs["filters"] == {
+            "year": 2024,
+            "subject": "math",
+        }
 
         mock_content_service.search_content.assert_awaited_once()
-        assert mock_content_service.search_content.call_args.kwargs['year'] == 2024
+        assert mock_content_service.search_content.call_args.kwargs["year"] == 2024
+
 
 @pytest.mark.asyncio
 async def test_relaxed_strategy(mock_retriever, mock_reranker, mock_content_service):
-    RelaxedVectorStrategy = strategies_module.RelaxedVectorStrategy
-    SearchRequest = models_module.SearchRequest
-    SearchFilters = models_module.SearchFilters
+    relaxed_vector_strategy = strategies_module.RelaxedVectorStrategy
+    search_request = models_module.SearchRequest
+    search_filters = models_module.SearchFilters
 
-    with patch("app.services.search_engine.strategies.get_retriever", return_value=mock_retriever), \
-         patch("app.services.search_engine.strategies.get_reranker", return_value=mock_reranker), \
-         patch("app.services.search_engine.strategies.content_service", mock_content_service), \
-         patch.dict("os.environ", {"DATABASE_URL": "postgresql://mock"}):
-
-        strategy = RelaxedVectorStrategy()
-        filters = SearchFilters(year=2024, subject="math")
-        request = SearchRequest(q="test", filters=filters)
+    with (
+        patch(
+            "app.services.search_engine.strategies.get_retriever",
+            return_value=mock_retriever,
+        ),
+        patch(
+            "app.services.search_engine.strategies.get_reranker",
+            return_value=mock_reranker,
+        ),
+        patch("app.services.search_engine.strategies.content_service", mock_content_service),
+        patch.dict("os.environ", {"DATABASE_URL": "postgresql://mock"}),
+    ):
+        strategy = relaxed_vector_strategy()
+        filters = search_filters(year=2024, subject="math")
+        request = search_request(q="test", filters=filters)
 
         results = await strategy.execute(request)
 
         assert len(results) == 1
 
         mock_retriever.search.assert_called_once()
-        assert mock_retriever.search.call_args.kwargs['filters'] == {}
+        assert mock_retriever.search.call_args.kwargs["filters"] == {}
 
         db_args = mock_content_service.search_content.call_args.kwargs
-        assert db_args.get('year') is None
+        assert db_args.get("year") is None
+
 
 @pytest.mark.asyncio
 async def test_keyword_strategy(mock_content_service):
-    KeywordStrategy = strategies_module.KeywordStrategy
-    SearchRequest = models_module.SearchRequest
-    SearchFilters = models_module.SearchFilters
+    keyword_strategy = strategies_module.KeywordStrategy
+    search_request = models_module.SearchRequest
+    search_filters = models_module.SearchFilters
 
     with patch("app.services.search_engine.strategies.content_service", mock_content_service):
-
-        strategy = KeywordStrategy()
-        filters = SearchFilters(year=2024)
-        request = SearchRequest(q="test", filters=filters)
+        strategy = keyword_strategy()
+        filters = search_filters(year=2024)
+        request = search_request(q="test", filters=filters)
 
         results = await strategy.execute(request)
 
@@ -151,65 +184,72 @@ async def test_keyword_strategy(mock_content_service):
         assert results[0].strategy == "Keyword Fallback"
 
         db_args = mock_content_service.search_content.call_args.kwargs
-        assert db_args['q'] == "test"
-        assert db_args['year'] == 2024
+        assert db_args["q"] == "test"
+        assert db_args["year"] == 2024
+
 
 # --- Orchestrator Tests ---
 
+
 @pytest.mark.asyncio
 async def test_orchestrator_fallback_logic(mock_retriever, mock_reranker, mock_content_service):
-     SearchOrchestrator = orchestrator_module.SearchOrchestrator
-     SearchRequest = models_module.SearchRequest
-     SearchResult = models_module.SearchResult
-     StrictVectorStrategy = strategies_module.StrictVectorStrategy
-     RelaxedVectorStrategy = strategies_module.RelaxedVectorStrategy
-     KeywordStrategy = strategies_module.KeywordStrategy
+    search_orchestrator = orchestrator_module.SearchOrchestrator
+    search_request = models_module.SearchRequest
+    search_result = models_module.SearchResult
+    strict_vector_strategy = strategies_module.StrictVectorStrategy
+    relaxed_vector_strategy = strategies_module.RelaxedVectorStrategy
+    keyword_strategy = strategies_module.KeywordStrategy
 
-     strict_mock = MagicMock(spec=StrictVectorStrategy)
-     strict_mock.name = "Strict Mock"
-     strict_mock.execute = AsyncMock(return_value=[])
+    strict_mock = MagicMock(spec=strict_vector_strategy)
+    strict_mock.name = "Strict Mock"
+    strict_mock.execute = AsyncMock(return_value=[])
 
-     relaxed_mock = MagicMock(spec=RelaxedVectorStrategy)
-     relaxed_mock.name = "Relaxed Mock"
-     result_obj = SearchResult(**MOCK_DB_RESULT)
-     result_obj.strategy = "Relaxed Mock"
-     relaxed_mock.execute = AsyncMock(return_value=[result_obj])
+    relaxed_mock = MagicMock(spec=relaxed_vector_strategy)
+    relaxed_mock.name = "Relaxed Mock"
+    result_obj = search_result(**MOCK_DB_RESULT)
+    result_obj.strategy = "Relaxed Mock"
+    relaxed_mock.execute = AsyncMock(return_value=[result_obj])
 
-     keyword_mock = MagicMock(spec=KeywordStrategy)
+    keyword_mock = MagicMock(spec=keyword_strategy)
 
-     orchestrator = SearchOrchestrator()
-     orchestrator.strategies = [strict_mock, relaxed_mock, keyword_mock]
+    orchestrator = search_orchestrator()
+    orchestrator.strategies = [strict_mock, relaxed_mock, keyword_mock]
 
-     request = SearchRequest(q="test")
+    request = search_request(q="test")
 
-     with patch("app.services.search_engine.orchestrator.get_refined_query", return_value={"refined_query": "test"}), \
-          patch.dict("os.environ", {"OPENROUTER_API_KEY": "fake"}):
+    with (
+        patch(
+            "app.services.search_engine.orchestrator.get_refined_query",
+            return_value={"refined_query": "test"},
+        ),
+        patch.dict("os.environ", {"OPENROUTER_API_KEY": "fake"}),
+    ):
+        results = await orchestrator.search(request)
 
-         results = await orchestrator.search(request)
+    assert len(results) == 1
+    assert results[0].strategy == "Relaxed Mock"
 
-         assert len(results) == 1
-         assert results[0].strategy == "Relaxed Mock"
 
 @pytest.mark.asyncio
 async def test_orchestrator_dspy_integration():
-    SearchOrchestrator = orchestrator_module.SearchOrchestrator
-    SearchRequest = models_module.SearchRequest
+    search_orchestrator = orchestrator_module.SearchOrchestrator
+    search_request = models_module.SearchRequest
 
-    orchestrator = SearchOrchestrator()
+    orchestrator = search_orchestrator()
     orchestrator.strategies = [AsyncMock()]
     orchestrator.strategies[0].execute.return_value = []
 
-    dspy_response = {
-        "refined_query": "refined test",
-        "year": 2023,
-        "subject": "physics"
-    }
+    dspy_response = {"refined_query": "refined test", "year": 2023, "subject": "physics"}
 
-    request = SearchRequest(q="raw test")
+    request = search_request(q="raw test")
 
-    with patch("app.services.search_engine.orchestrator.get_refined_query", return_value=dspy_response), \
-         patch.dict("os.environ", {"OPENROUTER_API_KEY": "fake"}):
-
+    with (
+        patch(
+            "app.services.search_engine.orchestrator.get_refined_query",
+            return_value=dspy_response,
+        ),
+        patch.dict("os.environ", {"OPENROUTER_API_KEY": "fake"}),
+    ):
         await orchestrator.search(request)
 
         assert request.q == "refined test"

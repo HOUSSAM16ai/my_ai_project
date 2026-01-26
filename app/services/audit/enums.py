@@ -5,6 +5,7 @@ class AuditAction(str, Enum):
     """
     Standardized audit actions to ensure high-precision tracking.
     """
+
     # Auth Actions
     LOGIN = "login"
     LOGOUT = "logout"

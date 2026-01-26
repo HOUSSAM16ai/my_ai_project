@@ -210,8 +210,8 @@ class SituationAnalyzer:
         Returns:
             dict[str, float]: ملف عمق التحليل ومكوناته
         """
-        constraint_count, opportunity_count, threat_count = (
-            SituationAnalyzer._count_context_items(context)
+        constraint_count, opportunity_count, threat_count = SituationAnalyzer._count_context_items(
+            context
         )
 
         context_richness = SituationAnalyzer._normalize_ratio(

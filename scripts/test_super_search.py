@@ -1,16 +1,19 @@
 import asyncio
-import os
-from sqlalchemy import text
-from app.core.database import async_session_factory
-from app.services.search_engine.retriever import get_embedding_model
-from app.core.logging import get_logger
 
 # Mute noisy logs
 import logging
+
+from sqlalchemy import text
+
+from app.core.database import async_session_factory
+from app.core.logging import get_logger
+from app.services.search_engine.retriever import get_embedding_model
+
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 logger = get_logger("super-search")
+
 
 async def search_knowledge_graph(query: str):
     print(f"\n🔎 Query: '{query}'")
@@ -49,20 +52,22 @@ async def search_knowledge_graph(query: str):
             is_solution = label and "Solution" in label
             warning = "⚠️ (Solution Detected)" if is_solution else ""
 
-            print(f"{i+1}. [{label}] {name} {warning}")
+            print(f"{i + 1}. [{label}] {name} {warning}")
             print(f"   Score: {similarity:.4f}")
-            print(f"   Content: {content[:150]}...") # Truncate content
+            print(f"   Content: {content[:150]}...")  # Truncate content
             print("")
+
 
 async def main():
     queries = [
         "تمرين 1 رياضيات 2024 علوم تجريبية الموضوع 1",
         "اريد اسئلة التمرين الاول باك 2024 رياضيات",
-        "Bac 2024 Math Experimental Subject 1 Ex 1 questions"
+        "Bac 2024 Math Experimental Subject 1 Ex 1 questions",
     ]
 
     for q in queries:
         await search_knowledge_graph(q)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

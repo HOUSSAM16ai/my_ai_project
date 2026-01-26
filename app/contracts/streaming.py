@@ -74,7 +74,7 @@ class StreamAck(RobustBaseModel):
     sequence_to: int = Field(..., ge=0, description="نهاية النطاق")
 
     @model_validator(mode="after")
-    def _validate_range(self) -> "StreamAck":
+    def _validate_range(self) -> StreamAck:
         """
         يتحقق من أن نهاية النطاق أكبر أو تساوي بدايته.
         """
@@ -148,7 +148,7 @@ class MessageEnvelope(RobustBaseModel):
     payload: dict[str, object] = Field(..., description="محتوى الرسالة")
 
     @model_validator(mode="after")
-    def _validate_payload_shape(self) -> "MessageEnvelope":
+    def _validate_payload_shape(self) -> MessageEnvelope:
         """
         يضمن مطابقة الحمولة للنوع المُعلن في الرسالة.
         """

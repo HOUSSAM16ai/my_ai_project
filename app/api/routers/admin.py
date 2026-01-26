@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.routers.ws_auth import extract_websocket_auth
 from app.api.schemas.admin import ConversationDetailsResponse, ConversationSummaryResponse
 from app.core.ai_gateway import AIClient, get_ai_client
 from app.core.config import get_settings
@@ -27,7 +28,6 @@ from app.core.di import get_logger
 from app.core.domain.user import User
 from app.deps.auth import CurrentUser, get_current_user, require_roles
 from app.infrastructure.clients.user_client import user_client
-from app.api.routers.ws_auth import extract_websocket_auth
 from app.services.auth.token_decoder import decode_user_id
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 from app.services.chat.contracts import ChatDispatchRequest

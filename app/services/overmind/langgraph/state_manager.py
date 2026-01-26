@@ -26,7 +26,7 @@ class EphemeralMissionStateManager(MissionStateManagerProtocol):
         """
         تحديث حالة المهمة دون تخزين دائم.
         """
-        return None
+        return
 
     async def log_event(
         self, mission_id: int, event_type: MissionEventType, payload: dict[str, object]
@@ -34,13 +34,13 @@ class EphemeralMissionStateManager(MissionStateManagerProtocol):
         """
         تسجيل الحدث بشكل مؤقت دون تخزين دائم.
         """
-        return None
+        return
 
     async def mark_task_running(self, task_id: int) -> None:
         """
         تسجيل حالة المهمة كقيد التشغيل في الذاكرة المؤقتة.
         """
-        return None
+        return
 
     async def mark_task_complete(
         self, task_id: int, result_text: str, meta: dict[str, object] | None = None
@@ -48,13 +48,13 @@ class EphemeralMissionStateManager(MissionStateManagerProtocol):
         """
         تسجيل اكتمال المهمة في الذاكرة المؤقتة.
         """
-        return None
+        return
 
     async def mark_task_failed(self, task_id: int, error_text: str) -> None:
         """
         تسجيل فشل المهمة في الذاكرة المؤقتة.
         """
-        return None
+        return
 
     async def monitor_mission_events(
         self, mission_id: int, poll_interval: float = 1.0

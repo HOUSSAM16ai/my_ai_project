@@ -2,13 +2,13 @@ import difflib
 
 from sqlalchemy import text
 
-from app.core.logging import get_logger
 from app.core.database import async_session_factory as default_session_factory
-from app.services.content.domain import ContentDetail
-from app.services.content.repository import ContentRepository
+from app.core.logging import get_logger
 from app.services.content.constants import BRANCH_MAP, SET_MAP, SUBJECT_MAP
+from app.services.content.repository import ContentRepository
 
 logger = get_logger("content-service")
+
 
 class ContentService:
     """طبقة خدمة لإدارة المحتوى مع توحيد المدخلات وبناء الاستعلامات."""
@@ -100,7 +100,9 @@ class ContentService:
             for index, term in enumerate(terms):
                 title_key = f"tq_{index}"
                 body_key = f"bq_{index}"
-                term_clauses.append(f"(i.title LIKE :{title_key} OR cs.plain_text LIKE :{body_key})")
+                term_clauses.append(
+                    f"(i.title LIKE :{title_key} OR cs.plain_text LIKE :{body_key})"
+                )
                 like_value = f"%{term}%"
                 params[title_key] = like_value
                 params[body_key] = like_value
@@ -204,14 +206,17 @@ class ContentService:
             if pack not in structure[subj]["levels"][lvl]["packs"]:
                 structure[subj]["levels"][lvl]["packs"][pack] = {"type": "pack", "items": []}
 
-            structure[subj]["levels"][lvl]["packs"][pack]["items"].append({
-                "id": row.id,
-                "title": row.title or "Untitled",
-                "type": row.type or "exercise",
-                "year": row.year
-            })
+            structure[subj]["levels"][lvl]["packs"][pack]["items"].append(
+                {
+                    "id": row.id,
+                    "title": row.title or "Untitled",
+                    "type": row.type or "exercise",
+                    "year": row.year,
+                }
+            )
 
         return structure
+
 
 # Singleton Instance
 content_service = ContentService()

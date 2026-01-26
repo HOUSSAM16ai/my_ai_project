@@ -49,7 +49,7 @@ def _get_fallback_plan(goal: str, context: list[str]) -> list[str]:
         "مراجعة المخرجات وتحسين الاستيعاب بناءً على التقدم",
     ]
     if context:
-        base_steps.insert(2, f"دمج السياق الإضافي ({', '.join(context)}) لتعزيز الفهم")
+        base_steps.insert(2, f"تضمين السياق الإضافي ({', '.join(context)}) لتعزيز الفهم")
     return base_steps
 
 
@@ -76,7 +76,7 @@ async def _generate_plan(
         "Reply strictly in the same language as the user's goal (likely Arabic). "
         "Return the response as a valid JSON list of strings only. "
         "No markdown formatting, no explanations, no keys like 'steps'."
-        "Example: [\"Step 1\", \"Step 2\"]"
+        'Example: ["Step 1", "Step 2"]'
     )
 
     user_prompt = f"Goal: {goal}\nContext: {', '.join(context)}"
@@ -89,8 +89,8 @@ async def _generate_plan(
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            temperature=0.3, # تقليل العشوائية للحصول على JSON دقيق
-            response_format={"type": "json_object"}, # محاولة فرض JSON إذا كان النموذج يدعمه
+            temperature=0.3,  # تقليل العشوائية للحصول على JSON دقيق
+            response_format={"type": "json_object"},  # محاولة فرض JSON إذا كان النموذج يدعمه
         )
 
         content = response.choices[0].message.content
@@ -109,9 +109,9 @@ async def _generate_plan(
             # بعض النماذج قد تعيد {"steps": [...]} رغم التعليمات
             steps = next(iter(parsed.values())) if parsed else []
             if not isinstance(steps, list):
-                 steps = [str(parsed)]
+                steps = [str(parsed)]
         else:
-             steps = [str(parsed)]
+            steps = [str(parsed)]
 
         return [str(s) for s in steps]
 

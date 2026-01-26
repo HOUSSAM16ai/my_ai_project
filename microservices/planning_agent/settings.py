@@ -33,9 +33,7 @@ class PlanningAgentSettings(BaseSettings):
     )
 
     # AI Settings
-    OPENROUTER_API_KEY: SecretStr | None = Field(
-        None, description="مفتاح API لخدمة OpenRouter"
-    )
+    OPENROUTER_API_KEY: SecretStr | None = Field(None, description="مفتاح API لخدمة OpenRouter")
     AI_MODEL: str = Field(
         "mistralai/devstral-2512:free",
         description="اسم النموذج المستخدم في التخطيط",

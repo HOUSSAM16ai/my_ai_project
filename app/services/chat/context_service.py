@@ -41,7 +41,7 @@ class ChatContextService:
             include_header=True,
         )
 
-        return fr"""
+        return rf"""
 # CORE IDENTITY
 - **Name:** OVERMIND CLI MINDGATE
 - **Role:** Supreme Architect & Orchestrator - النسق الذكي الأعلى
@@ -94,7 +94,7 @@ class ChatContextService:
             include_header=True,
         )
 
-        return fr"""
+        return rf"""
 # CORE IDENTITY
 - **Name:** OVERMIND CONTROL CORE
 - **Role:** Admin Engineering Orchestrator

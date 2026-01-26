@@ -1,20 +1,20 @@
 import asyncio
 import json
-import logging
-import uuid
 import os
+import uuid
 from pathlib import Path
 
 from sqlalchemy import text
-from app.core.logging import get_logger
-from app.core.gateway.simple_client import SimpleAIClient
-from app.services.search_engine.retriever import get_embedding_model
+
 from app.core.database import async_session_factory
 from app.core.db_schema import validate_schema_on_startup
-from app.core.ai_config import get_ai_config
+from app.core.gateway.simple_client import SimpleAIClient
+from app.core.logging import get_logger
+from app.services.search_engine.retriever import get_embedding_model
 
 # Configure logger
 logger = get_logger("knowledge-ingestion")
+
 
 async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
     logger.info(f"Processing {filepath}...")
@@ -23,33 +23,83 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
     # 1. Extraction (The Machine)
     # Check for forced fallback (Deterministic Mode for Demo Files)
     if "probability" in str(filepath) or "bac" in str(filepath):
-        logger.info("ℹ️ Using Forced Deterministic Extraction for Demo File (ensuring Arabic nodes)...")
+        logger.info(
+            "ℹ️ Using Forced Deterministic Extraction for Demo File (ensuring Arabic nodes)..."
+        )
         graph_data = {
             "nodes": [
-                {"label": "Topic", "name": "Probability", "content": "Mathematical study of random events (الاحتمالات)."},
-                {"label": "Exercise", "name": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية", "content": "تمرين في مادة الرياضيات خاص بالاحتمالات في شعبة العلوم التجريبية بكالوريا 2024 الموضوع الاول التمرين الأول"},
+                {
+                    "label": "Topic",
+                    "name": "Probability",
+                    "content": "Mathematical study of random events (الاحتمالات).",
+                },
+                {
+                    "label": "Exercise",
+                    "name": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية",
+                    "content": "تمرين في مادة الرياضيات خاص بالاحتمالات في شعبة العلوم التجريبية بكالوريا 2024 الموضوع الاول التمرين الأول",
+                },
                 {"label": "Object", "name": "كيس", "content": "كيس يحتوي على 11 كرة"},
-                {"label": "Entity", "name": "كرات بيضاء", "content": "2 كرات بيضاء تحمل الأرقام 1, 3"},
-                {"label": "Entity", "name": "كرات حمراء", "content": "4 كرات حمراء تحمل الأرقام 0, 1, 1, 3"},
-                {"label": "Entity", "name": "كرات خضراء", "content": "5 كرات خضراء تحمل الأرقام 0, 1, 1, 3, 4"},
+                {
+                    "label": "Entity",
+                    "name": "كرات بيضاء",
+                    "content": "2 كرات بيضاء تحمل الأرقام 1, 3",
+                },
+                {
+                    "label": "Entity",
+                    "name": "كرات حمراء",
+                    "content": "4 كرات حمراء تحمل الأرقام 0, 1, 1, 3",
+                },
+                {
+                    "label": "Entity",
+                    "name": "كرات خضراء",
+                    "content": "5 كرات خضراء تحمل الأرقام 0, 1, 1, 3, 4",
+                },
                 {"label": "Event", "name": "الحادثة A", "content": "الكرات المسحوبة من نفس اللون"},
-                {"label": "Event", "name": "الحادثة B", "content": "جداء الأرقام التي تحملها الكرات المسحوبة عدد فردي"},
-                {"label": "Concept", "name": "المتغير العشوائي X", "content": "يرفق بكل سحب عدد الكرات التي تحمل رقماً زوجياً"},
+                {
+                    "label": "Event",
+                    "name": "الحادثة B",
+                    "content": "جداء الأرقام التي تحملها الكرات المسحوبة عدد فردي",
+                },
+                {
+                    "label": "Concept",
+                    "name": "المتغير العشوائي X",
+                    "content": "يرفق بكل سحب عدد الكرات التي تحمل رقماً زوجياً",
+                },
                 {"label": "Solution", "name": "P(A)", "content": "14/165"},
-                {"label": "Solution", "name": "P(B)", "content": "56/165"}
+                {"label": "Solution", "name": "P(B)", "content": "56/165"},
             ],
             "edges": [
-                {"source": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية", "target": "Probability", "relation": "BELONGS_TO"},
-                {"source": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية", "target": "كيس", "relation": "USES"},
+                {
+                    "source": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية",
+                    "target": "Probability",
+                    "relation": "BELONGS_TO",
+                },
+                {
+                    "source": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية",
+                    "target": "كيس",
+                    "relation": "USES",
+                },
                 {"source": "كيس", "target": "كرات بيضاء", "relation": "CONTAINS"},
                 {"source": "كيس", "target": "كرات حمراء", "relation": "CONTAINS"},
                 {"source": "كيس", "target": "كرات خضراء", "relation": "CONTAINS"},
-                {"source": "الحادثة A", "target": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية", "relation": "PART_OF"},
-                {"source": "الحادثة B", "target": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية", "relation": "PART_OF"},
-                {"source": "المتغير العشوائي X", "target": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية", "relation": "DEFINED_IN"},
+                {
+                    "source": "الحادثة A",
+                    "target": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية",
+                    "relation": "PART_OF",
+                },
+                {
+                    "source": "الحادثة B",
+                    "target": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية",
+                    "relation": "PART_OF",
+                },
+                {
+                    "source": "المتغير العشوائي X",
+                    "target": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية",
+                    "relation": "DEFINED_IN",
+                },
                 {"source": "P(A)", "target": "الحادثة A", "relation": "CALCULATES_PROBABILITY_OF"},
-                {"source": "P(B)", "target": "الحادثة B", "relation": "CALCULATES_PROBABILITY_OF"}
-            ]
+                {"source": "P(B)", "target": "الحادثة B", "relation": "CALCULATES_PROBABILITY_OF"},
+            ],
         }
     else:
         system_prompt = (
@@ -62,10 +112,7 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
             "Return ONLY raw JSON. No markdown formatting, no explanations."
         )
 
-        response = await client.generate_text(
-            prompt=content,
-            system_prompt=system_prompt
-        )
+        response = await client.generate_text(prompt=content, system_prompt=system_prompt)
 
         try:
             # Clean response if it has markdown code blocks
@@ -115,14 +162,16 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
             logger.error(f"Failed to generate embedding for {name}: {e}")
             continue
 
-        db_nodes.append({
-            "id": node_id,
-            "label": label,
-            "name": name,
-            "content": desc,
-            "embedding": embedding,
-            "metadata": json.dumps({"source": str(filepath)}),
-        })
+        db_nodes.append(
+            {
+                "id": node_id,
+                "label": label,
+                "name": name,
+                "content": desc,
+                "embedding": embedding,
+                "metadata": json.dumps({"source": str(filepath)}),
+            }
+        )
 
     db_edges = []
 
@@ -136,21 +185,20 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
 
         if source_id and target_id:
             edge_id = str(uuid.uuid4())
-            db_edges.append({
-                "id": edge_id,
-                "source_id": source_id,
-                "target_id": target_id,
-                "relation": edge.get("relation"),
-                "properties": json.dumps(edge.get("properties", {})),
-            })
+            db_edges.append(
+                {
+                    "id": edge_id,
+                    "source_id": source_id,
+                    "target_id": target_id,
+                    "relation": edge.get("relation"),
+                    "properties": json.dumps(edge.get("properties", {})),
+                }
+            )
         else:
             logger.warning(f"Skipping edge {source_name} -> {target_name}: Node not found.")
 
     # 4. Save to DB (Storage)
     async with async_session_factory() as session:
-        # Detect dialect
-        dialect = session.bind.dialect.name
-
         for node in db_nodes:
             stmt = text("""
                 INSERT INTO knowledge_nodes (id, label, name, content, embedding, metadata)
@@ -162,14 +210,17 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
             # This works for both SQLite (TEXT) and Postgres (vector via casting/string input)
             emb = str(node["embedding"])
 
-            await session.execute(stmt, {
-                "id": node["id"],
-                "label": node["label"],
-                "name": node["name"],
-                "content": node["content"],
-                "embedding": emb,
-                "metadata": node["metadata"]
-            })
+            await session.execute(
+                stmt,
+                {
+                    "id": node["id"],
+                    "label": node["label"],
+                    "name": node["name"],
+                    "content": node["content"],
+                    "embedding": emb,
+                    "metadata": node["metadata"],
+                },
+            )
 
         for edge in db_edges:
             stmt = text("""
@@ -177,13 +228,16 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
                 VALUES (:id, :source_id, :target_id, :relation, :properties)
             """)
 
-            await session.execute(stmt, {
-                "id": edge["id"],
-                "source_id": edge["source_id"],
-                "target_id": edge["target_id"],
-                "relation": edge["relation"],
-                "properties": edge["properties"]
-            })
+            await session.execute(
+                stmt,
+                {
+                    "id": edge["id"],
+                    "source_id": edge["source_id"],
+                    "target_id": edge["target_id"],
+                    "relation": edge["relation"],
+                    "properties": edge["properties"],
+                },
+            )
 
         await session.commit()
         logger.info(f"✅ Ingested {len(db_nodes)} nodes and {len(db_edges)} edges from {filepath}.")
@@ -204,7 +258,9 @@ async def main():
     # Configure AI (The Utilities)
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
-        logger.warning("OPENROUTER_API_KEY not found in environment. Using default fallback/config.")
+        logger.warning(
+            "OPENROUTER_API_KEY not found in environment. Using default fallback/config."
+        )
 
     # Force specific model if needed, or rely on SimpleAIClient defaults which reads config
     # The config is frozen, so we set it by overriding environment if needed,
@@ -233,7 +289,9 @@ async def main():
         original_generate = client.generate_text
 
         async def generate_with_model_override(prompt, model=None, system_prompt=None, **kwargs):
-            return await original_generate(prompt, model=desired_model, system_prompt=system_prompt, **kwargs)
+            return await original_generate(
+                prompt, model=desired_model, system_prompt=system_prompt, **kwargs
+            )
 
         client.generate_text = generate_with_model_override
 
@@ -254,6 +312,7 @@ async def main():
         await ingest_file(md_file, client, embed_model)
 
     print("✨ Ingestion Complete.")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

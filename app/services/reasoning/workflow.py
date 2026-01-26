@@ -1,22 +1,17 @@
-from typing import List
-from llama_index.core.workflow import (
-    Workflow,
-    Context,
-    StartEvent,
-    StopEvent,
-    step,
-    Event
-)
 from llama_index.core.schema import NodeWithScore
-from app.services.search_engine.llama_retriever import KnowledgeGraphRetriever
+from llama_index.core.workflow import Context, Event, StartEvent, StopEvent, Workflow, step
+
 from app.core.gateway.simple_client import SimpleAIClient
 from app.core.logging import get_logger
+from app.services.search_engine.llama_retriever import KnowledgeGraphRetriever
 
 logger = get_logger("super-reasoner")
 
+
 class RetrievalEvent(Event):
-    nodes: List[NodeWithScore]
+    nodes: list[NodeWithScore]
     query: str
+
 
 class SuperReasoningWorkflow(Workflow):
     def __init__(self, client: SimpleAIClient, timeout: int = 120, verbose: bool = True):
@@ -53,7 +48,9 @@ class SuperReasoningWorkflow(Workflow):
             # We can return a specific message or let the LLM try without context
             context_str = "No specific knowledge graph nodes found."
         else:
-            context_str = "\n\n".join([f"Node [{n.metadata['label']}] ({n.metadata['name']}): {n.text}" for n in nodes])
+            context_str = "\n\n".join(
+                [f"Node [{n.metadata['label']}] ({n.metadata['name']}): {n.text}" for n in nodes]
+            )
 
         system_prompt = (
             "You are the Overmind Super Reasoner, an advanced AI connected to a dedicated Knowledge Graph.\n"
@@ -72,7 +69,7 @@ class SuperReasoningWorkflow(Workflow):
         try:
             response = await self.client.generate_text(
                 prompt=f"Context from Knowledge Graph:\n{context_str}\n\nUser Question: {query}",
-                system_prompt=system_prompt
+                system_prompt=system_prompt,
             )
             content = response.content
         except Exception as e:

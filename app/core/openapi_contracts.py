@@ -8,6 +8,7 @@ from pathlib import Path
 
 import yaml
 
+
 def _load_spec_text(spec_path: Path) -> tuple[str, str] | None:
     """يحمل نص عقد OpenAPI ويعيد الامتداد والنص إن كان الملف موجوداً."""
 

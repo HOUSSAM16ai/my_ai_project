@@ -1,6 +1,7 @@
 """
 Constants for Educational Content Retrieval Tool.
 """
+
 import re
 
 # Mapping of topics to keywords for granular extraction
@@ -12,7 +13,7 @@ _TOPIC_MAP = {
     "sequences": ["sequences", "المتتاليات", "متتاليات", "sequence"],
     "arithmetic": ["arithmetic", "الحساب", "الموافقات"],
     "differential_equations": ["differential", "المعادلات التفاضلية"],
-    "statistics": ["statistics", "إحصاء", "احصاء"]
+    "statistics": ["statistics", "إحصاء", "احصاء"],
 }
 
 _EXERCISE_ORDINALS = {
@@ -23,10 +24,22 @@ _EXERCISE_ORDINALS = {
 }
 
 _EXERCISE_MARKERS_AR = ["التمرين", "تمرين"]
-_SECTION_STOP_MARKERS_AR = ["التمرين", "تمرين", "الموضوع", "وسوم", "الحل", "حل", "تصحيح", "اجابة", "إجابة"]
+_SECTION_STOP_MARKERS_AR = [
+    "التمرين",
+    "تمرين",
+    "الموضوع",
+    "وسوم",
+    "الحل",
+    "حل",
+    "تصحيح",
+    "اجابة",
+    "إجابة",
+]
 
 _EXERCISE_MARKERS_EN_PATTERN = re.compile(r"(?:^|\b)(exercise|ex)(?:\b|$)")
-_SECTION_STOP_MARKERS_EN_PATTERN = re.compile(r"(?:^|\b)(exercise|ex|subject|solution|correction|answer)(?:\b|$)")
+_SECTION_STOP_MARKERS_EN_PATTERN = re.compile(
+    r"(?:^|\b)(exercise|ex|subject|solution|correction|answer)(?:\b|$)"
+)
 _EXERCISE_NUMBER_PATTERN = re.compile(
     r"(?:^|\s)(?:exercise|ex|تمرين|التمرين)"
     r"(?:\s+رقم|\s+no\.?|\s+num\.?|\s+number)?\s*[#(]?\s*(\d+)\s*\)?(?:\s|$)"

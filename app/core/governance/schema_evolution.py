@@ -19,16 +19,16 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TypedDict, cast
 
-from app.core.types import JSONDict, Result
+from app.core.types import JSONDict
 
 
 class ChangeType(str, Enum):
     """نوع التغيير في العقد."""
+
     BREAKING = "BREAKING"
     NON_BREAKING = "NON_BREAKING"
     INFO = "INFO"
@@ -37,6 +37,7 @@ class ChangeType(str, Enum):
 @dataclass(frozen=True)
 class EvolutionIssue:
     """يمثل مشكلة أو تغييراً تم اكتشافه أثناء فحص التطور."""
+
     path: str
     change_type: ChangeType
     message: str
@@ -45,6 +46,7 @@ class EvolutionIssue:
 
 class SchemaContext(TypedDict):
     """سياق تحليل المخطط، يحتوي على التعريفات والمراجع."""
+
     base_uri: str
     root: JSONDict
     # خريطة المراجع المحلولة مسبقاً (URI -> Schema)
@@ -57,11 +59,12 @@ class ResolutionScope:
     يمثل نطاق الحل الديناميكي في لحظة معينة.
     يحتوي على سلسلة المخططات التي تم الدخول إليها (Dynamic Scope).
     """
+
     scope_stack: list[tuple[str, JSONDict]] = field(default_factory=list)
 
     def push(self, uri: str, schema: JSONDict) -> ResolutionScope:
         """يعيد نطاقاً جديداً مع إضافة المخطط الحالي إلى المكدس."""
-        return ResolutionScope(scope_stack=self.scope_stack + [(uri, schema)])
+        return ResolutionScope(scope_stack=[*self.scope_stack, (uri, schema)])
 
     def find_dynamic_anchor(self, anchor: str) -> JSONDict | None:
         """
@@ -74,6 +77,7 @@ class ResolutionScope:
                 return schema
         return None
 
+
 class SchemaResolver:
     """
     المحلل العبقري للمخططات (Genius Schema Resolver).
@@ -82,11 +86,7 @@ class SchemaResolver:
 
     def __init__(self, root: JSONDict):
         self.root = root
-        self.context: SchemaContext = {
-            "base_uri": "#",
-            "root": root,
-            "refs": {}
-        }
+        self.context: SchemaContext = {"base_uri": "#", "root": root, "refs": {}}
 
     def resolve(self, schema: JSONDict, scope: ResolutionScope) -> JSONDict:
         """
@@ -169,9 +169,7 @@ class ContractEvolutionChecker:
         new_resolver = SchemaResolver(new)
         scope = ResolutionScope()
 
-        return self._compare_schemas(
-            old, new, old_resolver, new_resolver, scope, path="#"
-        )
+        return self._compare_schemas(old, new, old_resolver, new_resolver, scope, path="#")
 
     def _compare_schemas(
         self,
@@ -180,7 +178,7 @@ class ContractEvolutionChecker:
         old_res: SchemaResolver,
         new_res: SchemaResolver,
         scope: ResolutionScope,
-        path: str
+        path: str,
     ) -> list[EvolutionIssue]:
         """
         مقارنة تكرارية للمخططات مع معالجة المراجع.
@@ -197,7 +195,7 @@ class ContractEvolutionChecker:
         visit_key = f"{id(resolved_old)}-{id(resolved_new)}"
 
         if visit_key in self._processing:
-            return [] # تم اكتشاف حلقة، نوقف التكرار هنا
+            return []  # تم اكتشاف حلقة، نوقف التكرار هنا
 
         self._processing.add(visit_key)
 
@@ -213,29 +211,34 @@ class ContractEvolutionChecker:
 
             # السماح بتوسيع النوع (مثل تحويل string إلى [string, null])
             # لكن هنا للتبسيط نعتبر تغيير النوع كسراً ما لم يكن مطابقاً تماماً
-            if old_type != new_type:
-                 # استثناء: إذا كان الجديد يسمح بأكثر (ليس كسراً دائماً ولكن نعتبره خطيراً هنا)
-                 # للتبسيط: عدم تطابق النوع = كسر
-                 if old_type is not None: # إذا كان القديم غير مقيد، فالجديد يقيده = كسر
-                    issues.append(EvolutionIssue(
+            if old_type != new_type and old_type is not None:
+                # استثناء: إذا كان الجديد يسمح بأكثر (ليس كسراً دائماً ولكن نعتبره خطيراً هنا)
+                # للتبسيط: عدم تطابق النوع = كسر
+                issues.append(
+                    EvolutionIssue(
                         path=path,
                         change_type=ChangeType.BREAKING,
                         message=f"Type changed from {old_type} to {new_type}",
-                        severity="ERROR"
-                    ))
-                    return issues
+                        severity="ERROR",
+                    )
+                )
+                return issues
 
             # 4. مقارنة الخصائص (Properties) للكائنات
             if resolved_old.get("type") == "object" or "properties" in resolved_old:
-                issues.extend(self._compare_properties(
-                    resolved_old, resolved_new, old_res, new_res, new_scope, path
-                ))
+                issues.extend(
+                    self._compare_properties(
+                        resolved_old, resolved_new, old_res, new_res, new_scope, path
+                    )
+                )
 
             # 5. مقارنة العناصر (Items) للمصفوفات
             if resolved_old.get("type") == "array" or "items" in resolved_old:
-                issues.extend(self._compare_items(
-                    resolved_old, resolved_new, old_res, new_res, new_scope, path
-                ))
+                issues.extend(
+                    self._compare_items(
+                        resolved_old, resolved_new, old_res, new_res, new_scope, path
+                    )
+                )
 
             return issues
         finally:
@@ -249,7 +252,7 @@ class ContractEvolutionChecker:
         old_res: SchemaResolver,
         new_res: SchemaResolver,
         scope: ResolutionScope,
-        path: str
+        path: str,
     ) -> list[EvolutionIssue]:
         """مقارنة عناصر المصفوفات."""
         issues = []
@@ -258,13 +261,15 @@ class ContractEvolutionChecker:
 
         # إذا كان items غير موجود، فهذا يعني سماحية لأي نوع، وتقييده يعد كسراً
         if old_items is None and new_items is not None:
-             issues.append(EvolutionIssue(
-                path=f"{path}/items",
-                change_type=ChangeType.BREAKING,
-                message="Array items were unrestricted, now restricted",
-                severity="ERROR"
-            ))
-             return issues
+            issues.append(
+                EvolutionIssue(
+                    path=f"{path}/items",
+                    change_type=ChangeType.BREAKING,
+                    message="Array items were unrestricted, now restricted",
+                    severity="ERROR",
+                )
+            )
+            return issues
 
         if old_items is None:
             return issues
@@ -274,7 +279,10 @@ class ContractEvolutionChecker:
             return self._compare_schemas(
                 cast(JSONDict, old_items),
                 cast(JSONDict, new_items),
-                old_res, new_res, scope, f"{path}/items"
+                old_res,
+                new_res,
+                scope,
+                f"{path}/items",
             )
 
         # تجاهل الحالات المعقدة (Tuple validation) للتبسيط حالياً
@@ -287,7 +295,7 @@ class ContractEvolutionChecker:
         old_res: SchemaResolver,
         new_res: SchemaResolver,
         scope: ResolutionScope,
-        path: str
+        path: str,
     ) -> list[EvolutionIssue]:
         issues = []
         old_props = cast(dict[str, JSONDict], old.get("properties", {}))
@@ -300,12 +308,14 @@ class ContractEvolutionChecker:
         # في طلب API: إزالة خاصية = غير كاسر (الخادم لا يطلبها) -> نفترض فحص الاستجابة (الأكثر صرامة)
         for key in old_props:
             if key not in new_props:
-                issues.append(EvolutionIssue(
-                    path=f"{path}/properties/{key}",
-                    change_type=ChangeType.BREAKING,
-                    message=f"Property '{key}' removed",
-                    severity="ERROR"
-                ))
+                issues.append(
+                    EvolutionIssue(
+                        path=f"{path}/properties/{key}",
+                        change_type=ChangeType.BREAKING,
+                        message=f"Property '{key}' removed",
+                        severity="ERROR",
+                    )
+                )
 
         # ب. التحقق من إضافة حقول مطلوبة جديدة
         # إضافة حقل مطلوب = كسر (العميل القديم لا يرسله)
@@ -313,18 +323,27 @@ class ContractEvolutionChecker:
             if key not in old_required:
                 # إذا كان الحقل جديداً تماماً، فهو كسر
                 # إذا كان موجوداً سابقاً وأصبح مطلوباً، فهو كسر أيضاً
-                issues.append(EvolutionIssue(
-                    path=f"{path}/required/{key}",
-                    change_type=ChangeType.BREAKING,
-                    message=f"Property '{key}' became required",
-                    severity="ERROR"
-                ))
+                issues.append(
+                    EvolutionIssue(
+                        path=f"{path}/required/{key}",
+                        change_type=ChangeType.BREAKING,
+                        message=f"Property '{key}' became required",
+                        severity="ERROR",
+                    )
+                )
 
         # ج. مقارنة الخصائص المشتركة بشكل عودي
         for key, old_prop in old_props.items():
             if key in new_props:
-                issues.extend(self._compare_schemas(
-                    old_prop, new_props[key], old_res, new_res, scope, f"{path}/properties/{key}"
-                ))
+                issues.extend(
+                    self._compare_schemas(
+                        old_prop,
+                        new_props[key],
+                        old_res,
+                        new_res,
+                        scope,
+                        f"{path}/properties/{key}",
+                    )
+                )
 
         return issues

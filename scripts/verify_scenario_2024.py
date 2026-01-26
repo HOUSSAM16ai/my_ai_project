@@ -1,6 +1,7 @@
 import asyncio
-import os
+
 from app.services.content.service import content_service
+
 
 async def verify_scenario():
     print("--- 🔍 COMPLEX SCENARIO VERIFICATION 🔍 ---\n")
@@ -17,12 +18,12 @@ async def verify_scenario():
     # However, since the title is "Exercise 1", we might need to rely on body search.
 
     results = await content_service.search_content(
-        q="الاحتمالات", # Search for 'Probabilities' in text
+        q="الاحتمالات",  # Search for 'Probabilities' in text
         year=2024,
         subject="mathematics",
         branch="experimental_sciences",
         set_name="subject_1",
-        limit=5
+        limit=5,
     )
 
     if results:
@@ -34,17 +35,17 @@ async def verify_scenario():
             print(f"   - Set: {res['set']}")
 
             # Fetch content to verify text
-            details = await content_service.get_content_raw(res['id'])
+            details = await content_service.get_content_raw(res["id"])
             if details:
-                text = details.get('content', '')
+                text = details.get("content", "")
                 print(f"   - Content Length: {len(text)} chars")
-                snippet = text[:200].replace('\n', ' ')
+                snippet = text[:200].replace("\n", " ")
                 print(f"   - Snippet: {snippet}...")
 
                 if "حتمال" in text or "probabilit" in text.lower():
-                     print("   - ✅ Keyword 'Probabilities' verified in text.")
+                    print("   - ✅ Keyword 'Probabilities' verified in text.")
                 else:
-                     print("   - ⚠️ Keyword 'Probabilities' NOT found in text.")
+                    print("   - ⚠️ Keyword 'Probabilities' NOT found in text.")
     else:
         print("❌ FAILURE: No items found matching this specific combination.")
 
@@ -56,13 +57,14 @@ async def verify_scenario():
             subject="mathematics",
             branch="experimental_sciences",
             set_name="subject_1",
-            limit=5
+            limit=5,
         )
         if results_loose:
-             print(f"   ⚠️ Found {len(results_loose)} item(s) via metadata ONLY (Text mismatch?).")
-             print(f"   - Title: {results_loose[0]['title']}")
+            print(f"   ⚠️ Found {len(results_loose)} item(s) via metadata ONLY (Text mismatch?).")
+            print(f"   - Title: {results_loose[0]['title']}")
         else:
-             print("   ❌ Still no results. Metadata mismatch suspected.")
+            print("   ❌ Still no results. Metadata mismatch suspected.")
+
 
 if __name__ == "__main__":
     asyncio.run(verify_scenario())

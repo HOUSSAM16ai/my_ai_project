@@ -73,10 +73,9 @@ def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
         # PgBouncer Compatibility (Supabase)
         # We must set these args explicitly in the connect_args dictionary
         # AND ensure they are passed as integers.
-        engine_args["connect_args"].update({
-            "statement_cache_size": 0,
-            "prepared_statement_cache_size": 0
-        })
+        engine_args["connect_args"].update(
+            {"statement_cache_size": 0, "prepared_statement_cache_size": 0}
+        )
 
         # Handle ssl query params and convert them to an SSL context for asyncpg.
         qs = dict(url_obj.query)

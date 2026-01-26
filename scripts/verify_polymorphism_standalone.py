@@ -2,10 +2,14 @@
 Standalone verification script for Polymorphic Discriminator Resolution.
 Bypasses the heavy pytest configuration to ensure quick feedback.
 """
-import sys
+
 import json
+import sys
+
 from pydantic import ValidationError
-from app.core.polymorphism import PetOwner, Dog, Cat
+
+from app.core.polymorphism import Cat, Dog, PetOwner
+
 
 def verify_polymorphic_deserialization():
     print("Testing Polymorphic Deserialization...", end=" ")
@@ -14,8 +18,8 @@ def verify_polymorphic_deserialization():
         "pets": [
             {"type": "dog", "name": "Buddy", "bark": True},
             {"type": "cat", "name": "Whiskers", "meow": True},
-            {"type": "dog", "name": "Rex", "bark": False}
-        ]
+            {"type": "dog", "name": "Rex", "bark": False},
+        ],
     }
 
     owner = PetOwner(**data)
@@ -34,13 +38,14 @@ def verify_polymorphic_deserialization():
     assert owner.pets[2].bark is False
     print("✅ Passed")
 
+
 def verify_invalid_discriminator():
     print("Testing Invalid Discriminator...", end=" ")
     data = {
         "owner_name": "ErrorUser",
         "pets": [
-            {"type": "bird", "name": "Tweety"} # bird is not defined
-        ]
+            {"type": "bird", "name": "Tweety"}  # bird is not defined
+        ],
     }
 
     try:
@@ -51,10 +56,11 @@ def verify_invalid_discriminator():
         # Check that the error mentions the expected types
         error_str = str(e)
         if "dog" in error_str or "cat" in error_str or "Input should be" in error_str:
-             print("✅ Passed")
+            print("✅ Passed")
         else:
-             print(f"❌ Failed (Unexpected error message: {error_str})")
-             sys.exit(1)
+            print(f"❌ Failed (Unexpected error message: {error_str})")
+            sys.exit(1)
+
 
 def verify_json_schema_generation():
     print("Testing JSON Schema Generation...", end=" ")
@@ -80,13 +86,14 @@ def verify_json_schema_generation():
     if "discriminator" in target_schema:
         disc = target_schema["discriminator"]
         if isinstance(disc, dict) and disc.get("propertyName") == "type":
-             print("✅ Passed")
-             return
+            print("✅ Passed")
+            return
 
     # Fallback check: sometimes it's nested differently depending on Pydantic version nuances
     # Let's print the schema if we fail
     print(f"❌ Failed. Schema snippet: {json.dumps(target_schema, indent=2)}")
     sys.exit(1)
+
 
 if __name__ == "__main__":
     print("Starting Standalone Verification for Polymorphism Solution")

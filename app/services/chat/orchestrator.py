@@ -17,14 +17,15 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.ai_gateway import AIClient
-from app.core.patterns.strategy import Strategy, StrategyRegistry
-from app.services.chat.agents.orchestrator import OrchestratorAgent
-from app.services.chat.context import ChatContext
+from app.caching.semantic import SemanticCache
 from app.core.agents.system_principles import (
     format_architecture_system_principles,
     format_system_principles,
 )
+from app.core.ai_gateway import AIClient
+from app.core.patterns.strategy import Strategy, StrategyRegistry
+from app.services.chat.agents.orchestrator import OrchestratorAgent
+from app.services.chat.context import ChatContext
 from app.services.chat.context_service import get_context_service
 from app.services.chat.handlers.strategy_handlers import (
     CodeSearchHandler,
@@ -38,7 +39,6 @@ from app.services.chat.handlers.strategy_handlers import (
 )
 from app.services.chat.intent_detector import ChatIntent, IntentDetector
 from app.services.chat.ports import IntentDetectorPort
-from app.caching.semantic import SemanticCache
 from app.services.chat.tools import ToolRegistry
 from app.services.overmind.identity import OvermindIdentity
 
@@ -186,11 +186,14 @@ class ChatOrchestrator:
             ChatIntent.ANALYTICS_REPORT,
             ChatIntent.LEARNING_SUMMARY,
             ChatIntent.CURRICULUM_PLAN,
-            ChatIntent.CONTENT_RETRIEVAL
+            ChatIntent.CONTENT_RETRIEVAL,
         )
 
         if is_agent_intent:
-            logger.info(f"Delegating intent {intent_result.intent} to OrchestratorAgent", extra={"user_id": user_id})
+            logger.info(
+                f"Delegating intent {intent_result.intent} to OrchestratorAgent",
+                extra={"user_id": user_id},
+            )
 
             # بناء السياق المشترك
             system_context = self._build_overmind_system_context()
@@ -201,7 +204,7 @@ class ChatOrchestrator:
                 "conversation_id": conversation_id,
                 "intent": intent_result.intent,
                 "system_context": system_context,
-                "history_messages": history_messages
+                "history_messages": history_messages,
             }
 
             full_response_buffer = []

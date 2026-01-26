@@ -1,5 +1,5 @@
-import re
 import logging
+import re
 from collections.abc import AsyncGenerator
 
 from app.core.ai_gateway import AIClient
@@ -40,14 +40,13 @@ class AdminAgent:
             if handler != self._handle_unknown_admin_query:
                 result = await handler(question, lowered)
                 yield result
+            # 2. Dynamic Router (LLM Fallback)
+            # If we have AI Client, ask it to route or execute tools
+            elif self.ai_client:
+                async for chunk in self._handle_dynamic_router(question, context):
+                    yield chunk
             else:
-                # 2. Dynamic Router (LLM Fallback)
-                # If we have AI Client, ask it to route or execute tools
-                if self.ai_client:
-                    async for chunk in self._handle_dynamic_router(question, context):
-                        yield chunk
-                else:
-                    yield await self._handle_unknown_admin_query(question, lowered)
+                yield await self._handle_unknown_admin_query(question, lowered)
 
         except Exception as e:
             logger.error(f"AdminAgent failed: {e}", exc_info=True)
@@ -82,7 +81,9 @@ class AdminAgent:
 
         return self._handle_unknown_admin_query
 
-    async def _handle_dynamic_router(self, question: str, context: dict | None) -> AsyncGenerator[str, None]:
+    async def _handle_dynamic_router(
+        self, question: str, context: dict | None
+    ) -> AsyncGenerator[str, None]:
         """استخدام الذكاء الاصطناعي لفهم الطلبات الإدارية المعقدة وتوجيهها للأدوات."""
 
         system_prompt = """
@@ -114,7 +115,7 @@ class AdminAgent:
 
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": question}
+            {"role": "user", "content": question},
         ]
 
         # Use AI to decide
@@ -147,25 +148,61 @@ class AdminAgent:
     # --- Matchers ---
 
     def _is_user_count_query(self, lowered: str) -> bool:
-        return any(x in lowered for x in ["how many users", "count users", "عدد المستخدمين", "كم مستخدم", "عدد الحسابات"])
+        return any(
+            x in lowered
+            for x in [
+                "how many users",
+                "count users",
+                "عدد المستخدمين",
+                "كم مستخدم",
+                "عدد الحسابات",
+            ]
+        )
 
     def _is_user_list_query(self, lowered: str) -> bool:
-        return any(x in lowered for x in ["list users", "all users", "قائمة المستخدمين", "عرض المستخدمين"])
+        return any(
+            x in lowered for x in ["list users", "all users", "قائمة المستخدمين", "عرض المستخدمين"]
+        )
 
     def _is_user_profile_query(self, lowered: str) -> bool:
         return any(x in lowered for x in ["user profile", "تفاصيل المستخدم", "معلومات المستخدم"])
 
     def _is_user_stats_query(self, lowered: str) -> bool:
-        return any(x in lowered for x in ["user stats", "user statistics", "إحصائيات المستخدم", "دردشات المستخدم"])
+        return any(
+            x in lowered
+            for x in ["user stats", "user statistics", "إحصائيات المستخدم", "دردشات المستخدم"]
+        )
 
     def _is_database_query(self, lowered: str) -> bool:
-        return any(x in lowered for x in ["database", "schema", "tables", "قاعدة البيانات", "الجداول", "مخطط"])
+        return any(
+            x in lowered
+            for x in ["database", "schema", "tables", "قاعدة البيانات", "الجداول", "مخطط"]
+        )
 
     def _is_database_map_query(self, lowered: str) -> bool:
-        return any(x in lowered for x in ["database map", "relationships", "foreign keys", "خريطة قاعدة البيانات", "العلاقات"])
+        return any(
+            x in lowered
+            for x in [
+                "database map",
+                "relationships",
+                "foreign keys",
+                "خريطة قاعدة البيانات",
+                "العلاقات",
+            ]
+        )
 
     def _is_project_query(self, lowered: str) -> bool:
-        return any(x in lowered for x in ["project", "structure", "architecture", "المشروع", "بنية المشروع", "هيكل المشروع"])
+        return any(
+            x in lowered
+            for x in [
+                "project",
+                "structure",
+                "architecture",
+                "المشروع",
+                "بنية المشروع",
+                "هيكل المشروع",
+            ]
+        )
 
     def _is_microservices_query(self, lowered: str) -> bool:
         return any(
@@ -190,7 +227,21 @@ class AdminAgent:
         return any(x in lowered for x in ["function", "class", "دالة", "كلاس", "class "])
 
     def _is_code_search_query(self, lowered: str) -> bool:
-        return any(x in lowered for x in ["find", "locate", "search", "where", "file", "line", "أي ملف", "أين", "سطر", "ابحث"])
+        return any(
+            x in lowered
+            for x in [
+                "find",
+                "locate",
+                "search",
+                "where",
+                "file",
+                "line",
+                "أي ملف",
+                "أين",
+                "سطر",
+                "ابحث",
+            ]
+        )
 
     # --- Handlers ---
 
@@ -198,7 +249,9 @@ class AdminAgent:
         return "عذرًا، لم أتمكن من تحديد نوع الطلب الإداري بدقة. يرجى التوضيح (مثال: 'عدد المستخدمين'، 'هيكل المشروع')."
 
     async def _handle_user_count(self, _: str, lowered: str) -> str:
-        gov = await self.data_agent.process({"entity": "user", "operation": "count", "access_method": "service_api"})
+        gov = await self.data_agent.process(
+            {"entity": "user", "operation": "count", "access_method": "service_api"}
+        )
         if not gov.success:
             return f"Governance Error: {gov.message}"
 
@@ -208,7 +261,14 @@ class AdminAgent:
         return f"عدد المستخدمين الحاليين: {count}. ({count} users)"
 
     async def _handle_user_list(self, question: str, lowered: str) -> str:
-        gov = await self.data_agent.process({"entity": "user", "operation": "list", "access_method": "direct_db", "purpose": "admin_analytics"})
+        gov = await self.data_agent.process(
+            {
+                "entity": "user",
+                "operation": "list",
+                "access_method": "direct_db",
+                "purpose": "admin_analytics",
+            }
+        )
         if not gov.success:
             return f"خطأ حوكمة: {gov.message}"
 
@@ -219,8 +279,9 @@ class AdminAgent:
 
         lines = []
         for user in users:
-            updated = user.get("updated_at") or "N/A"
-            lines.append(f"- #{user['id']} | {user['full_name']} | {user['email']} | {user['status']}")
+            lines.append(
+                f"- #{user['id']} | {user['full_name']} | {user['email']} | {user['status']}"
+            )
         return "قائمة المستخدمين:\n" + "\n".join(lines)
 
     async def _handle_user_profile(self, question: str, lowered: str) -> str:
@@ -228,7 +289,14 @@ class AdminAgent:
         if not user_id:
             return "يرجى تزويدي بمعرّف المستخدم (ID)."
 
-        gov = await self.data_agent.process({"entity": "user", "operation": "profile", "access_method": "direct_db", "purpose": "admin_analytics"})
+        gov = await self.data_agent.process(
+            {
+                "entity": "user",
+                "operation": "profile",
+                "access_method": "direct_db",
+                "purpose": "admin_analytics",
+            }
+        )
         if not gov.success:
             return f"خطأ حوكمة: {gov.message}"
 
@@ -252,7 +320,14 @@ class AdminAgent:
         if not user_id:
             return "يرجى تحديد رقم المستخدم."
 
-        gov = await self.data_agent.process({"entity": "user", "operation": "statistics", "access_method": "direct_db", "purpose": "admin_analytics"})
+        gov = await self.data_agent.process(
+            {
+                "entity": "user",
+                "operation": "statistics",
+                "access_method": "direct_db",
+                "purpose": "admin_analytics",
+            }
+        )
         if not gov.success:
             return f"خطأ حوكمة: {gov.message}"
 
@@ -276,7 +351,9 @@ class AdminAgent:
             schema = await self.tools.execute("get_table_schema", {"table_name": table_name})
             if not schema:
                 return f"لا يوجد مخطط لجدول '{table_name}'."
-            cols = "\n".join(f"- {col['name']} ({col['type']})" for col in schema.get("columns", []))
+            cols = "\n".join(
+                f"- {col['name']} ({col['type']})" for col in schema.get("columns", [])
+            )
             return f"مخطط '{table_name}':\n{cols}"
 
         tables = await self.tools.execute("get_database_tables", {})
@@ -320,21 +397,25 @@ class AdminAgent:
 
     async def _handle_route_query(self, question: str, lowered: str) -> str:
         f = self._extract_route_fragment(question)
-        if not f: return "يرجى تحديد جزء من المسار."
+        if not f:
+            return "يرجى تحديد جزء من المسار."
         res = await self.tools.execute("find_route", {"path_fragment": f})
         return self._format_locs(res, f"مسارات '{f}'")
 
     async def _handle_symbol_query(self, question: str, lowered: str) -> str:
         s = self._extract_symbol(question)
-        if not s: return "حدد الرمز."
+        if not s:
+            return "حدد الرمز."
         res = await self.tools.execute("find_symbol", {"symbol": s})
         return self._format_locs(res, f"تعريفات '{s}'")
 
     async def _handle_code_search(self, question: str, lowered: str) -> str:
         q = self._extract_search_query(question)
-        if not q: return "حدد كلمة للبحث."
+        if not q:
+            return "حدد كلمة للبحث."
         gov = await self.refactor_agent.process({})
-        if not gov.success: return f"خطأ حوكمة: {gov.message}"
+        if not gov.success:
+            return f"خطأ حوكمة: {gov.message}"
         res = await self.tools.execute("search_codebase", {"query": q})
         return self._format_locs(res, f"نتائج '{q}'")
 
@@ -343,8 +424,13 @@ class AdminAgent:
         if not path or start is None:
             return "حدد الملف والسطر (file.py:10)."
 
-        snip = await self.tools.execute("read_file_snippet", {"file_path": path, "start_line": start, "end_line": end})
-        lines = "\n".join(f"{snip['start_line']+i}: {l}" for i, l in enumerate(snip["lines"]))
+        snip = await self.tools.execute(
+            "read_file_snippet",
+            {"file_path": path, "start_line": start, "end_line": end},
+        )
+        lines = "\n".join(
+            f"{snip['start_line'] + i}: {line}" for i, line in enumerate(snip["lines"])
+        )
         return f"مقتطف {path}:\n{lines}"
 
     # --- Helpers ---
@@ -362,7 +448,8 @@ class AdminAgent:
         return m.group(1) if m else None
 
     def _extract_route_fragment(self, s: str) -> str | None:
-        if q := self._extract_quoted(s): return q
+        if q := self._extract_quoted(s):
+            return q
         m = re.search(r"/[\w\-_\/]+", s)
         return m.group(0) if m else None
 
@@ -371,7 +458,8 @@ class AdminAgent:
         return m.group(1) if m else None
 
     def _extract_search_query(self, s: str) -> str | None:
-        if q := self._extract_quoted(s): return q
+        if q := self._extract_quoted(s):
+            return q
         tokens = [t for t in re.sub(r"[؟?]", " ", s).split() if len(t) > 2]
         return tokens[-1] if tokens else None
 
@@ -381,13 +469,19 @@ class AdminAgent:
 
     def _extract_file_line(self, s: str) -> tuple[str | None, int | None, int | None]:
         m = re.search(r"([\w\-/\.]+\.py)(?::(\d+)(?:-(\d+))?)?", s)
-        if not m: return None, None, None
+        if not m:
+            return None, None, None
         path = m.group(1)
         start = int(m.group(2)) if m.group(2) else None
         end = int(m.group(3)) if m.group(3) else None
         return path, start, end
 
     def _format_locs(self, results: list[dict], title: str) -> str:
-        if not results: return f"{title}: لا توجد نتائج."
-        lines = [f"- {r['file_path']}" + (f":{r['line_number']}" if r.get('line_number') else "") for r in results[:10]]
+        if not results:
+            return f"{title}: لا توجد نتائج."
+        lines = [
+            f"- {result['file_path']}"
+            + (f":{result['line_number']}" if result.get("line_number") else "")
+            for result in results[:10]
+        ]
         return f"{title}:\n" + "\n".join(lines)

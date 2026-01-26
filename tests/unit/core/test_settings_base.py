@@ -1,6 +1,5 @@
 import pytest
 
-
 pytest.importorskip("pydantic")
 pytest.importorskip("pydantic_settings")
 

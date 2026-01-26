@@ -1,6 +1,9 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from app.services.chat.graph.nodes.planner import planner_node
+
 
 @pytest.mark.asyncio
 async def test_planner_node_integration():
@@ -10,10 +13,7 @@ async def test_planner_node_integration():
     """
 
     # Mock State
-    mock_state = {
-        "messages": [MagicMock(content="أريد تعلم البايثون")],
-        "current_step_index": 0
-    }
+    mock_state = {"messages": [MagicMock(content="أريد تعلم البايثون")], "current_step_index": 0}
 
     # Mock AI Client (not used if microservice works)
     mock_ai_client = AsyncMock()
@@ -24,12 +24,12 @@ async def test_planner_node_integration():
     mock_response.json.return_value = {
         "plan_id": "123",
         "goal": "Test",
-        "steps": ["Step 1", "Step 2"]
+        "steps": ["Step 1", "Step 2"],
     }
 
     # Patch httpx.AsyncClient
-    with patch("httpx.AsyncClient") as MockClient:
-        mock_instance = MockClient.return_value
+    with patch("httpx.AsyncClient") as mock_client:
+        mock_instance = mock_client.return_value
         mock_instance.__aenter__.return_value.post = AsyncMock(return_value=mock_response)
 
         result = await planner_node(mock_state, mock_ai_client)
@@ -45,6 +45,7 @@ async def test_planner_node_integration():
         call_args = mock_instance.__aenter__.return_value.post.call_args
         assert "http://localhost:8001/plans" in call_args[0][0]
 
+
 @pytest.mark.asyncio
 async def test_planner_node_fallback():
     """
@@ -52,19 +53,18 @@ async def test_planner_node_fallback():
     if the microservice fails.
     """
 
-    mock_state = {
-        "messages": [MagicMock(content="Test")],
-        "current_step_index": 0
-    }
+    mock_state = {"messages": [MagicMock(content="Test")], "current_step_index": 0}
 
     mock_ai_client = AsyncMock()
     # Mock send_message returning a JSON string directly
     mock_ai_client.send_message.return_value = '{"steps": ["fallback_step"]}'
 
-    with patch("httpx.AsyncClient") as MockClient:
-        mock_instance = MockClient.return_value
+    with patch("httpx.AsyncClient") as mock_client:
+        mock_instance = mock_client.return_value
         # Simulate Error
-        mock_instance.__aenter__.return_value.post = AsyncMock(side_effect=Exception("Connection Refused"))
+        mock_instance.__aenter__.return_value.post = AsyncMock(
+            side_effect=Exception("Connection Refused")
+        )
 
         result = await planner_node(mock_state, mock_ai_client)
 

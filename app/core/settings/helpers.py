@@ -131,9 +131,7 @@ def _is_valid_email(value: str) -> bool:
         return False
     if "." not in domain or domain.startswith(".") or domain.endswith(".") or ".." in domain:
         return False
-    if len(domain.split(".")[-1]) < 2:
-        return False
-    return True
+    return len(domain.split(".")[-1]) >= 2
 
 
 def _lenient_json_loads(value: str) -> object:
@@ -142,4 +140,3 @@ def _lenient_json_loads(value: str) -> object:
         return json.loads(value)
     except json.JSONDecodeError:
         return value
-

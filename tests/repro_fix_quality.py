@@ -1,14 +1,15 @@
+from unittest.mock import patch
 
 import pytest
-from unittest.mock import patch, mock_open
+
 from app.core.agents.system_principles import (
-    get_system_principles,
-    get_architecture_system_principles,
-    validate_system_principles,
-    format_system_principles,
     SystemPrinciple,
-    _get_all_system_principles,
     _get_all_architecture_principles,
+    _get_all_system_principles,
+    format_system_principles,
+    get_architecture_system_principles,
+    get_system_principles,
+    validate_system_principles,
 )
 
 # Sample YAML content for testing
@@ -23,6 +24,7 @@ architecture_principles:
   - number: 1
     statement: "Arch Principle 1"
 """
+
 
 class TestSystemPrinciplesRefactor:
     """Test suite for the refactored system principles loading mechanism."""
@@ -61,7 +63,7 @@ class TestSystemPrinciplesRefactor:
     def test_format_output(self):
         """Verify the formatting function."""
         # Mocking the return value of get_system_principles to test formatting
-        with patch('app.core.agents.system_principles.get_system_principles') as mock_get:
+        with patch("app.core.agents.system_principles.get_system_principles") as mock_get:
             mock_get.return_value = (
                 SystemPrinciple(1, "Alpha"),
                 SystemPrinciple(2, "Beta"),
@@ -74,7 +76,7 @@ class TestSystemPrinciplesRefactor:
 
     def test_missing_file_handling(self):
         """Verify behavior when config file is missing."""
-        with patch('pathlib.Path.exists') as mock_exists:
+        with patch("pathlib.Path.exists") as mock_exists:
             mock_exists.return_value = False
 
             # Should return empty tuple instead of crashing

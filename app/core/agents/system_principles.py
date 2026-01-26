@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import functools
-import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -46,7 +45,7 @@ def _load_principles_from_yaml(section: str) -> tuple[SystemPrinciple, ...]:
         # This prevents total crash but warns.
         return ()
 
-    with open(_PRINCIPLES_FILE, "r", encoding="utf-8") as f:
+    with open(_PRINCIPLES_FILE, encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     if section not in data:

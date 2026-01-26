@@ -1,105 +1,121 @@
-from typing import Dict, List, Optional, Union
+# ruff: noqa: N815
+
+from typing import Union
+
 from pydantic import BaseModel, Field
 
+
 class ExternalDocumentation(BaseModel):
-    description: Optional[str] = None
+    description: str | None = None
     url: str
+
 
 class Tag(BaseModel):
     name: str
-    description: Optional[str] = None
-    externalDocs: Optional[ExternalDocumentation] = None
+    description: str | None = None
+    externalDocs: ExternalDocumentation | None = None
+
 
 class Reference(BaseModel):
     ref: str = Field(alias="$ref")
 
+
 class Schema(BaseModel):
-    type: Optional[str] = None
-    properties: Optional[Dict[str, Union['Schema', Reference]]] = None
-    required: Optional[List[str]] = None
-    description: Optional[str] = None
+    type: str | None = None
+    properties: dict[str, Union["Schema", Reference]] | None = None
+    required: list[str] | None = None
+    description: str | None = None
+
 
 class Message(BaseModel):
-    messageId: Optional[str] = None
-    headers: Optional[Union[Schema, Reference]] = None
-    payload: Optional[Union[Schema, Reference]] = None
-    correlationId: Optional[Union[Schema, Reference]] = None
-    schemaFormat: Optional[str] = None
-    contentType: Optional[str] = None
-    name: Optional[str] = None
-    title: Optional[str] = None
-    summary: Optional[str] = None
-    description: Optional[str] = None
-    tags: Optional[List[Tag]] = None
-    externalDocs: Optional[ExternalDocumentation] = None
-    bindings: Optional[Dict[str, object]] = None
+    messageId: str | None = None
+    headers: Schema | Reference | None = None
+    payload: Schema | Reference | None = None
+    correlationId: Schema | Reference | None = None
+    schemaFormat: str | None = None
+    contentType: str | None = None
+    name: str | None = None
+    title: str | None = None
+    summary: str | None = None
+    description: str | None = None
+    tags: list[Tag] | None = None
+    externalDocs: ExternalDocumentation | None = None
+    bindings: dict[str, object] | None = None
+
 
 class Parameter(BaseModel):
-    description: Optional[str] = None
-    schema_data: Optional[Union[Schema, Reference]] = Field(default=None, alias="schema")
-    location: Optional[str] = None
+    description: str | None = None
+    schema_data: Schema | Reference | None = Field(default=None, alias="schema")
+    location: str | None = None
+
 
 class ChannelBinding(BaseModel):
     # This acts as a base for protocol specific bindings (e.g. amqp, kafka, http)
     model_config = {"extra": "allow"}
 
+
 class OperationBinding(BaseModel):
     model_config = {"extra": "allow"}
 
+
 class Channel(BaseModel):
-    address: Optional[str] = None
-    messages: Optional[Dict[str, Union[Message, Reference]]] = None
-    title: Optional[str] = None
-    summary: Optional[str] = None
-    description: Optional[str] = None
-    servers: Optional[List[Reference]] = None
-    parameters: Optional[Dict[str, Union[Parameter, Reference]]] = None
-    bindings: Optional[Dict[str, Union[ChannelBinding, Reference, object]]] = None
-    tags: Optional[List[Tag]] = None
-    externalDocs: Optional[ExternalDocumentation] = None
+    address: str | None = None
+    messages: dict[str, Message | Reference] | None = None
+    title: str | None = None
+    summary: str | None = None
+    description: str | None = None
+    servers: list[Reference] | None = None
+    parameters: dict[str, Parameter | Reference] | None = None
+    bindings: dict[str, ChannelBinding | Reference | object] | None = None
+    tags: list[Tag] | None = None
+    externalDocs: ExternalDocumentation | None = None
+
 
 class Operation(BaseModel):
     action: str  # 'send' or 'receive'
     channel: Reference
-    title: Optional[str] = None
-    summary: Optional[str] = None
-    description: Optional[str] = None
-    security: Optional[List[Dict[str, List[str]]]] = None
-    tags: Optional[List[Tag]] = None
-    externalDocs: Optional[ExternalDocumentation] = None
-    bindings: Optional[Dict[str, Union[OperationBinding, Reference, object]]] = None
-    messages: Optional[List[Reference]] = None
-    reply: Optional[object] = None
+    title: str | None = None
+    summary: str | None = None
+    description: str | None = None
+    security: list[dict[str, list[str]]] | None = None
+    tags: list[Tag] | None = None
+    externalDocs: ExternalDocumentation | None = None
+    bindings: dict[str, OperationBinding | Reference | object] | None = None
+    messages: list[Reference] | None = None
+    reply: object | None = None
+
 
 class Components(BaseModel):
-    schemas: Optional[Dict[str, Union[Schema, Reference]]] = None
-    servers: Optional[Dict[str, object]] = None
-    channels: Optional[Dict[str, Union[Channel, Reference]]] = None
-    operations: Optional[Dict[str, Union[Operation, Reference]]] = None
-    messages: Optional[Dict[str, Union[Message, Reference]]] = None
-    parameters: Optional[Dict[str, Union[Parameter, Reference]]] = None
-    correlationIds: Optional[Dict[str, object]] = None
-    operationTraits: Optional[Dict[str, object]] = None
-    messageTraits: Optional[Dict[str, object]] = None
-    serverBindings: Optional[Dict[str, object]] = None
-    channelBindings: Optional[Dict[str, object]] = None
-    operationBindings: Optional[Dict[str, object]] = None
-    messageBindings: Optional[Dict[str, object]] = None
+    schemas: dict[str, Schema | Reference] | None = None
+    servers: dict[str, object] | None = None
+    channels: dict[str, Channel | Reference] | None = None
+    operations: dict[str, Operation | Reference] | None = None
+    messages: dict[str, Message | Reference] | None = None
+    parameters: dict[str, Parameter | Reference] | None = None
+    correlationIds: dict[str, object] | None = None
+    operationTraits: dict[str, object] | None = None
+    messageTraits: dict[str, object] | None = None
+    serverBindings: dict[str, object] | None = None
+    channelBindings: dict[str, object] | None = None
+    operationBindings: dict[str, object] | None = None
+    messageBindings: dict[str, object] | None = None
+
 
 class Info(BaseModel):
     title: str
     version: str
-    description: Optional[str] = None
-    termsOfService: Optional[str] = None
-    contact: Optional[Dict[str, object]] = None
-    license: Optional[Dict[str, object]] = None
+    description: str | None = None
+    termsOfService: str | None = None
+    contact: dict[str, object] | None = None
+    license: dict[str, object] | None = None
+
 
 class AsyncAPI30(BaseModel):
     asyncapi: str = "3.0.0"
-    id: Optional[str] = None
+    id: str | None = None
     info: Info
-    servers: Optional[Dict[str, object]] = None
-    defaultContentType: Optional[str] = None
-    channels: Optional[Dict[str, Union[Channel, Reference]]] = None
-    operations: Optional[Dict[str, Union[Operation, Reference]]] = None
-    components: Optional[Components] = None
+    servers: dict[str, object] | None = None
+    defaultContentType: str | None = None
+    channels: dict[str, Channel | Reference] | None = None
+    operations: dict[str, Operation | Reference] | None = None
+    components: Components | None = None

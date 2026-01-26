@@ -1,7 +1,10 @@
 import re
+from typing import ClassVar
+
 from app.core.logging import get_logger
 
 logger = get_logger("fallback-expander")
+
 
 class FallbackQueryExpander:
     """
@@ -10,7 +13,7 @@ class FallbackQueryExpander:
     """
 
     # Mapping English/French terms to Arabic Baccalaureate keywords
-    TERM_MAPPING = {
+    TERM_MAPPING: ClassVar[dict[str, str]] = {
         # Probability
         "probability": "احتمال",
         "probabilité": "احتمال",
@@ -20,7 +23,6 @@ class FallbackQueryExpander:
         "bag": "كيس",
         "dice": "نرد",
         "random variable": "متغير عشوائي",
-
         # Branches
         "experimental": "تجريبية",
         "sciences": "علوم",
@@ -28,14 +30,12 @@ class FallbackQueryExpander:
         "mathematics": "رياضيات",
         "technique": "تقني",
         "economy": "تسيير",
-
         # Complex Numbers
         "complex": "مركبة",
         "complex numbers": "أعداد مركبة",
         "nombres complexes": "أعداد مركبة",
         "imaginary": "تخيلي",
         "z": "z",
-
         # Functions / Analysis
         "function": "دالة",
         "functions": "دوال",
@@ -49,7 +49,6 @@ class FallbackQueryExpander:
         "limit": "نهاية",
         "limits": "نهايات",
         "curve": "منحنى",
-
         # Sequences
         "sequence": "متتالية",
         "sequences": "متتاليات",
@@ -57,14 +56,12 @@ class FallbackQueryExpander:
         "arithmetic": "حسابية",
         "geometric": "هندسية",
         "recurrence": "تراجع",
-
         # Geometry
         "geometry": "هندسة",
         "space": "فضاء",
         "plane": "مستوي",
         "vector": "شعاع",
         "barycenter": "مرجح",
-
         # General / Exam terms
         "exercise": "تمرين",
         "exercice": "تمرين",
@@ -80,7 +77,7 @@ class FallbackQueryExpander:
 
     # Arabic Stemming/Normalization Map (Plural/Definite -> Singular Indefinite)
     # Target (Value) should be the simplest form that will match via LIKE %term%
-    ARABIC_STEMS = {
+    ARABIC_STEMS: ClassVar[dict[str, str]] = {
         # Probability
         "الاحتمالات": "احتمال",
         "احتمالات": "احتمال",
@@ -93,7 +90,6 @@ class FallbackQueryExpander:
         "الالوان": "لون",
         "الوان": "لون",
         "ألوان": "لون",
-
         # Analysis
         "الدوال": "دالة",
         "دوال": "دالة",
@@ -108,7 +104,6 @@ class FallbackQueryExpander:
         "الأعداد": "عدد",
         "أعداد": "عدد",
         "اعداد": "عدد",
-
         # General
         "الحلول": "حل",
         "حلول": "حل",
@@ -126,8 +121,8 @@ class FallbackQueryExpander:
     }
 
     # Common Student Typos -> Correct Term
-    COMMON_TYPOS = {
-        "تجربة": "تجريبية", # علوم تجربة -> علوم تجريبية
+    COMMON_TYPOS: ClassVar[dict[str, str]] = {
+        "تجربة": "تجريبية",  # علوم تجربة -> علوم تجريبية
         "تجربيه": "تجريبية",
         "تجربية": "تجريبية",
         "تقني": "تقني",
@@ -147,27 +142,77 @@ class FallbackQueryExpander:
 
     # Stop words that cause strict keyword search to fail
     # These are words likely to appear in a user query but NOT in the exercise title/text
-    STOP_WORDS = {
-        "في", "على", "من", "إلى", "عن",
-        "لسنة", "سنة", "عام", "للعام",
-        "شعبة", "الشعبة", "لشعبة", # Metadata
-        "مادة", "المادة",
-        "و", "أو",
+    STOP_WORDS: ClassVar[set[str]] = {
+        "في",
+        "على",
+        "من",
+        "إلى",
+        "عن",
+        "لسنة",
+        "سنة",
+        "عام",
+        "للعام",
+        "شعبة",
+        "الشعبة",
+        "لشعبة",  # Metadata
+        "مادة",
+        "المادة",
+        "و",
+        "أو",
         "مع",
-        "هل", "كيف", "ما", "ماذا",
-        "اريد", "أريد", "ابحث", "أبحث",
-        "اعطني", "أعطني", "هات", "قدم", # Action Verbs
-        "شوف", "تشوفلي", "ممكن", # Dialect / Politeness
-        "نتاع", "تاع", "لي", "اللي", "ديال", # Dialect possession/relative
-        "جا", "جاء", # Dialect verbs
-        "الماضي", "المقبل", "القادم", # Relative Time
-        "اسئلة", "أسئلة", "امتحان", # Content Types
-        "بكالوريا", "البكالوريا", "bac", "الباك", "باك", # Context
-        "موضوع", "الموضوع", # Often ambiguous if not precise
-        "تمرين", "التمرين", # "Exercise" is generic
-        "الاول", "الأول", "1", "01", # Metadata (often covered by set_name filter)
+        "هل",
+        "كيف",
+        "ما",
+        "ماذا",
+        "اريد",
+        "أريد",
+        "ابحث",
+        "أبحث",
+        "اعطني",
+        "أعطني",
+        "هات",
+        "قدم",  # Action Verbs
+        "شوف",
+        "تشوفلي",
+        "ممكن",  # Dialect / Politeness
+        "نتاع",
+        "تاع",
+        "لي",
+        "اللي",
+        "ديال",  # Dialect possession/relative
+        "جا",
+        "جاء",  # Dialect verbs
+        "الماضي",
+        "المقبل",
+        "القادم",  # Relative Time
+        "اسئلة",
+        "أسئلة",
+        "امتحان",  # Content Types
+        "بكالوريا",
+        "البكالوريا",
+        "bac",
+        "الباك",
+        "باك",  # Context
+        "موضوع",
+        "الموضوع",  # Often ambiguous if not precise
+        "تمرين",
+        "التمرين",  # "Exercise" is generic
+        "الاول",
+        "الأول",
+        "1",
+        "01",  # Metadata (often covered by set_name filter)
         # Branch Names (Often metadata only)
-        "علوم", "تجريبية", "رياضيات", "رياضي", "تقني", "تسيير", "اقتصاد", "لغات", "أجنبية", "آداب", "فلسفة",
+        "علوم",
+        "تجريبية",
+        "رياضيات",
+        "رياضي",
+        "تقني",
+        "تسيير",
+        "اقتصاد",
+        "لغات",
+        "أجنبية",
+        "آداب",
+        "فلسفة",
     }
 
     @classmethod
@@ -183,11 +228,11 @@ class FallbackQueryExpander:
         if not q:
             return []
 
-        variations = [q] # Always start with original
+        variations = [q]  # Always start with original
 
         q_lower = q.lower()
         # Clean punctuation to avoid "word?" not matching "word"
-        q_lower = re.sub(r'[،؛؟!.,:;?]', ' ', q_lower)
+        q_lower = re.sub(r"[،؛؟!.,:;?]", " ", q_lower)
         words = q_lower.split()
 
         # Strategy 1: Translate English/French -> Arabic
@@ -199,7 +244,7 @@ class FallbackQueryExpander:
                 translated_words.append(cls.TERM_MAPPING[word])
                 has_translation = True
             elif word.isdigit():
-                 pass
+                pass
             else:
                 translated_words.append(word)
 
@@ -258,7 +303,11 @@ class FallbackQueryExpander:
 
         for word in base_for_stop.split():
             # 1. Check Year (4 digits) -> Stop Word (Metadata)
-            if word.isdigit() and len(word) == 4 and (word.startswith("20") or word.startswith("19")):
+            if (
+                word.isdigit()
+                and len(word) == 4
+                and (word.startswith("20") or word.startswith("19"))
+            ):
                 has_stop_word = True
                 continue
 

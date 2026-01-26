@@ -1,11 +1,11 @@
 import unittest
-import asyncio
+
 # from app.services.chat.intent_detector import IntentDetector, ChatIntent
 # Using strict local import to avoid dependency hell in test environment
 from app.services.chat.tools.retrieval.local_store import search_local_knowledge_base
 
-class TestContentDeliveryV2(unittest.IsolatedAsyncioTestCase):
 
+class TestContentDeliveryV2(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         # Mocking intent detector if needed, but for now we test retrieval directly
         pass
@@ -23,11 +23,11 @@ class TestContentDeliveryV2(unittest.IsolatedAsyncioTestCase):
             year="2024",
             subject="Mathematics",
             branch="Experimental Sciences",
-            exam_ref="Subject 1"
+            exam_ref="Subject 1",
         )
         self.assertIn("يحتوي كيس على", result)
         self.assertIn("الاحتمالات", result)
-        self.assertNotIn("نص التمرين قيد الرقمنة", result) # Should NOT have Subject 2 text
+        self.assertNotIn("نص التمرين قيد الرقمنة", result)  # Should NOT have Subject 2 text
 
     async def test_local_retrieval_subject_1_ex_2(self):
         """Test retrieving Complex Numbers (Ex 2) from Subject 1"""
@@ -36,7 +36,7 @@ class TestContentDeliveryV2(unittest.IsolatedAsyncioTestCase):
             year="2024",
             subject="Mathematics",
             branch="Experimental Sciences",
-            exam_ref="Subject 1"
+            exam_ref="Subject 1",
         )
         self.assertIn("الأعداد المركبة", result)
         self.assertIn("حل في مجموعة الأعداد المركبة", result)
@@ -48,14 +48,14 @@ class TestContentDeliveryV2(unittest.IsolatedAsyncioTestCase):
             year="2024",
             subject="Mathematics",
             branch="Experimental Sciences",
-            exam_ref="Subject 2"
+            exam_ref="Subject 2",
         )
         # Since we don't have Subject 2 file, we expect NOT FOUND or at least NOT Subject 1
         if "لم يتم العثور على محتوى" in result:
-             return
+            return
         self.assertIn("الموضوع الثاني", result)
         self.assertIn("P_R(Q)", result)
-        self.assertNotIn("كرات حمراء", result) # Subject 1 text shouldn't be here
+        self.assertNotIn("كرات حمراء", result)  # Subject 1 text shouldn't be here
 
     async def test_local_retrieval_negative_match(self):
         """Test asking for non-existent subject"""
@@ -64,9 +64,10 @@ class TestContentDeliveryV2(unittest.IsolatedAsyncioTestCase):
             year="2024",
             subject="Mathematics",
             branch="Experimental Sciences",
-            exam_ref="Subject 3" # Doesn't exist
+            exam_ref="Subject 3",  # Doesn't exist
         )
         self.assertIn("لم يتم العثور على محتوى", result)
+
 
 if __name__ == "__main__":
     unittest.main()

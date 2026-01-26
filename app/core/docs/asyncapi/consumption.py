@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
-from typing import Mapping
 
 from pydantic import BaseModel
 
 from app.core.docs.asyncapi.models import AsyncAPI30, Operation
+
 
 class ConsumptionModel(str, Enum):
     """يمثل هذا التعداد نموذج الاستهلاك الدلالي عبر البروتوكولات المختلفة."""
@@ -62,12 +63,11 @@ def detect_consumption_conflicts(asyncapi_doc: AsyncAPI30) -> list[ConsumptionCo
 
         channel_models.setdefault(channel_id, set()).update(operation_models)
 
-    conflicts = [
+    return [
         ConsumptionConflict(channel_id=channel_id, models=frozenset(models))
         for channel_id, models in channel_models.items()
         if len(models) > 1
     ]
-    return conflicts
 
 
 def _derive_consumption_models(
@@ -150,5 +150,5 @@ def _channel_id_from_operation(operation: Operation) -> str | None:
     ref = operation.channel.ref
     prefix = "#/components/channels/"
     if ref.startswith(prefix):
-        return ref[len(prefix):]
+        return ref[len(prefix) :]
     return None

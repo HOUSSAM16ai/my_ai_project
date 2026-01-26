@@ -11,13 +11,13 @@ class TestAIModelsConfiguration:
         """Verify that the primary model is configured and matches the singleton."""
         config = get_ai_config()
         assert ActiveModels.PRIMARY
-        assert ActiveModels.PRIMARY == config.primary_model
+        assert config.primary_model == ActiveModels.PRIMARY
 
     def test_gateway_primary_model_is_configured(self):
         """Verify that the gateway primary model is configured and matches the singleton."""
         config = get_ai_config()
         assert ActiveModels.GATEWAY_PRIMARY
-        assert ActiveModels.GATEWAY_PRIMARY == config.gateway_primary
+        assert config.gateway_primary == ActiveModels.GATEWAY_PRIMARY
 
     def test_ai_config_singleton_reflects_changes(self):
         """Verify that the AIConfig singleton reflects the configuration changes."""
