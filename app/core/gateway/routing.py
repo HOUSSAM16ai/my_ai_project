@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import threading
 from collections import deque
 from datetime import UTC, datetime
@@ -20,7 +21,13 @@ from typing import TypedDict
 
 from app.core.types import Metadata
 
-from .models import LoadBalancerState, ProtocolType, RoutingDecision, RoutingStrategy
+from .models import (
+    LoadBalancerState,
+    ProtocolType,
+    ProviderCandidate,
+    RoutingDecision,
+    RoutingStrategy,
+)
 from .providers.anthropic import AnthropicAdapter
 from .providers.base import ModelProviderAdapter
 from .providers.openai import OpenAIAdapter
@@ -42,20 +49,6 @@ class CircuitBreakerState(TypedDict):
     failures: int
     last_failure: datetime | None
     open: bool
-
-
-class ProviderCandidate(TypedDict):
-    """
-    بنية بيانات المرشح (Provider Candidate).
-
-    تستخدم داخلياً لتمرير بيانات المرشح بين مراحل التقييم.
-    """
-
-    provider: str
-    cost: float
-    latency: float
-    health_score: float
-    score: float  # Added by strategy calculation
 
 
 class RoutingHistoryEntry(TypedDict):
@@ -175,6 +168,7 @@ class IntelligentRouter:
             strategy: استراتيجية التوجيه.
             constraints: قيود إضافية (التكلفة القصوى، الخ).
         """
+        self._validate_routing_request(model_type, estimated_tokens)
         constraints = constraints or {}
         candidates = self._evaluate_candidates(model_type, estimated_tokens, constraints)
 
@@ -191,8 +185,7 @@ class IntelligentRouter:
         self, model_type: str, estimated_tokens: int, constraints: Metadata
     ) -> list[ProviderCandidate]:
         """تقييم وترشيح المزودين المتاحين بناءً على القيود."""
-        max_cost = float(constraints.get("max_cost", float("inf")))
-        max_latency = float(constraints.get("max_latency", float("inf")))
+        max_cost, max_latency = self._normalize_constraints(constraints)
         candidates: list[ProviderCandidate] = []
 
         for provider_name, adapter in self.provider_adapters.items():
@@ -211,6 +204,43 @@ class IntelligentRouter:
             return False
         return True
 
+    def _normalize_constraints(self, constraints: Metadata) -> tuple[float, float]:
+        """
+        تطبيع قيود التوجيه إلى حدود رقمية صريحة.
+
+        يضمن هذا التابع أن قيم القيود قابلة للمقارنة،
+        ويعيد افتراضات افتراضية عند غياب القيم.
+        """
+        def _coerce_constraint(value: object, default: float) -> float:
+            if value is None:
+                return default
+            return float(value)
+
+        try:
+            max_cost = _coerce_constraint(constraints.get("max_cost", float("inf")), float("inf"))
+            max_latency = _coerce_constraint(
+                constraints.get("max_latency", float("inf")),
+                float("inf"),
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Routing constraints must be numeric values.") from exc
+        if math.isnan(max_cost) or math.isnan(max_latency):
+            raise ValueError("Routing constraints must be valid numeric values.")
+        if max_cost < 0 or max_latency < 0:
+            raise ValueError("Routing constraints must be non-negative values.")
+        return max_cost, max_latency
+
+    def _validate_routing_request(self, model_type: str, estimated_tokens: int) -> None:
+        """
+        التحقق من سلامة مدخلات طلب التوجيه.
+
+        يفرض هذا التابع الحد الأدنى من الصحة لضمان وضوح القرار وسلامة الحسابات.
+        """
+        if not model_type or not model_type.strip():
+            raise ValueError("Model type is required for routing.")
+        if estimated_tokens <= 0:
+            raise ValueError("Estimated tokens must be a positive integer.")
+
     def _evaluate_single_provider(
         self,
         provider_name: str,
@@ -220,6 +250,7 @@ class IntelligentRouter:
         max_cost: float,
         max_latency: float,
     ) -> ProviderCandidate | None:
+        """تقييم مزود واحد وإرجاع مرشح صالح إن كان ضمن القيود."""
         try:
             cost = adapter.estimate_cost(model_type, tokens)
             latency = adapter.estimate_latency(model_type, tokens)
@@ -229,16 +260,9 @@ class IntelligentRouter:
 
             with self.lock:
                 stats = self.provider_stats[provider_name]
-            health_score = 1.0 if stats.is_healthy else 0.0
 
-            # Note: 'score' is not calculated here yet
-            return {
-                "provider": provider_name,
-                "cost": cost,
-                "latency": latency,
-                "health_score": health_score,
-                "score": 0.0,
-            }
+            health_score = self._derive_health_score(stats)
+            return self._build_candidate(provider_name, cost, latency, health_score)
         except Exception as e:
             logger.warning(f"Error evaluating provider {provider_name}: {e}")
             return None
@@ -248,18 +272,30 @@ class IntelligentRouter:
     ) -> ProviderCandidate:
         """تطبيق استراتيجية التوجيه واختيار الأفضل."""
         strategy_impl = get_strategy(strategy)
-        # We need to cast candidates to List[Dict[str, object]] for the strategy implementation
-        # or update the strategy interface. Assuming strategy updates dicts in place.
-        # Since strategy_impl is likely expecting generic dicts, we pass them.
-        # The strategy updates 'score' key.
-        candidate_dicts: list[dict[str, float | str]] = []
-        for c in candidates:
-            candidate_dicts.append(c)  # type: ignore
+        strategy_impl.calculate_scores(candidates)
 
-        strategy_impl.calculate_scores(candidate_dicts)  # type: ignore
-
-        # Select best
+        # اختيار المرشح الأعلى درجة
         return max(candidates, key=lambda x: x["score"])
+
+    def _derive_health_score(self, stats: LoadBalancerState) -> float:
+        """تحويل حالة المزود إلى درجة صحية رقمية قابلة للدمج."""
+        return 1.0 if stats.is_healthy else 0.0
+
+    def _build_candidate(
+        self, provider_name: str, cost: float, latency: float, health_score: float
+    ) -> ProviderCandidate:
+        """
+        بناء مرشح التوجيه بشكل موحد ومقروء.
+
+        يتم ضبط الدرجة الابتدائية إلى صفر تمهيداً لحسابها بالاستراتيجية المختارة.
+        """
+        return {
+            "provider": provider_name,
+            "cost": cost,
+            "latency": latency,
+            "health_score": health_score,
+            "score": 0.0,
+        }
 
     def _create_routing_decision(
         self,

@@ -1,28 +1,37 @@
 from abc import ABC, abstractmethod
 
-from app.core.gateway.models import RoutingStrategy
+from app.core.gateway.models import ProviderCandidate, RoutingStrategy
 
 
 class BaseRoutingStrategy(ABC):
+    """واجهة الاستراتيجية الأساسية لحساب درجات المرشحين."""
+
     @abstractmethod
-    def calculate_scores(self, candidates: list[dict[str, object]]) -> None:
-        pass
+    def calculate_scores(self, candidates: list[ProviderCandidate]) -> None:
+        """تحديث درجات المرشحين داخل القائمة المُمررة."""
+        raise NotImplementedError
 
 
 class CostOptimizedStrategy(BaseRoutingStrategy):
-    def calculate_scores(self, candidates: list[dict[str, object]]) -> None:
+    """استراتيجية تُركز على تقليل التكلفة الإجمالية."""
+
+    def calculate_scores(self, candidates: list[ProviderCandidate]) -> None:
         for c in candidates:
             c["score"] = 1.0 / (c["cost"] + 0.001)
 
 
 class LatencyBasedStrategy(BaseRoutingStrategy):
-    def calculate_scores(self, candidates: list[dict[str, object]]) -> None:
+    """استراتيجية تُفضل أقل زمن استجابة."""
+
+    def calculate_scores(self, candidates: list[ProviderCandidate]) -> None:
         for c in candidates:
             c["score"] = 1.0 / (c["latency"] + 0.001)
 
 
 class IntelligentRoutingStrategy(BaseRoutingStrategy):
-    def calculate_scores(self, candidates: list[dict[str, object]]) -> None:
+    """استراتيجية ذكية تُوازن بين التكلفة والسرعة والصحة."""
+
+    def calculate_scores(self, candidates: list[ProviderCandidate]) -> None:
         if not candidates:
             return
 
@@ -47,7 +56,9 @@ class IntelligentRoutingStrategy(BaseRoutingStrategy):
 
 
 class FallbackStrategy(BaseRoutingStrategy):
-    def calculate_scores(self, candidates: list[dict[str, object]]) -> None:
+    """استراتيجية احتياطية عند عدم توفر استراتيجية محددة."""
+
+    def calculate_scores(self, candidates: list[ProviderCandidate]) -> None:
         for c in candidates:
             cost_score = 1.0 / (c["cost"] + 0.001)
             latency_score = 1.0 / (c["latency"] + 0.001)
@@ -62,4 +73,5 @@ STRATEGY_MAP = {
 
 
 def get_strategy(strategy_enum: RoutingStrategy) -> BaseRoutingStrategy:
+    """إرجاع الاستراتيجية المناسبة أو الاستراتيجية الاحتياطية عند الغياب."""
     return STRATEGY_MAP.get(strategy_enum, FallbackStrategy())
