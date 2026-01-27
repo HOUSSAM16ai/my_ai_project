@@ -94,3 +94,53 @@ async def test_generate_cache_key():
     key2 = generate_cache_key(data2)
 
     assert key1 == key2
+
+
+@pytest.mark.asyncio
+async def test_generate_cache_key_unserializable_data():
+    """Verify key generation handles unserializable payloads."""
+    data = {"payload": {"values"}}
+
+    key = generate_cache_key(data)
+
+    assert isinstance(key, str)
+    assert len(key) > 0
+
+
+@pytest.mark.asyncio
+async def test_cache_stats_include_sets():
+    """Verify cache statistics include set counters."""
+    cache = InMemoryCacheProvider()
+    await cache.put("stat_key", "value")
+
+    stats = await cache.get_stats()
+
+    assert stats["sets"] == 1
+    assert stats["hits"] == 0
+    assert stats["misses"] == 0
+
+
+@pytest.mark.asyncio
+async def test_cache_rejects_negative_ttl():
+    """Verify cache rejects negative TTL values."""
+    cache = InMemoryCacheProvider()
+
+    with pytest.raises(ValueError):
+        await cache.put("negative_ttl", "value", ttl=-1)
+
+
+@pytest.mark.asyncio
+async def test_cache_clear_resets_stats():
+    """Verify clearing the cache resets statistics counters."""
+    cache = InMemoryCacheProvider()
+    await cache.put("stat_reset_key", "value")
+    await cache.get("stat_reset_key")
+
+    await cache.clear()
+
+    stats = await cache.get_stats()
+
+    assert stats["hits"] == 0
+    assert stats["misses"] == 0
+    assert stats["evictions"] == 0
+    assert stats["sets"] == 0

@@ -44,7 +44,7 @@ class InMemoryCacheProvider(CacheProviderProtocol):
         self._storage: OrderedDict[str, tuple[object, float]] = OrderedDict()
 
         # Statistics
-        self._stats = {"hits": 0, "misses": 0, "evictions": 0, "sets": 0}
+        self._stats = self._reset_stats()
 
         # Async lock for thread safety in async context
         self._lock = asyncio.Lock()
@@ -78,12 +78,7 @@ class InMemoryCacheProvider(CacheProviderProtocol):
         تخزين عنصر في الذاكرة.
         Stores an item. If cache is full, evicts the least recently used item.
         """
-        if ttl is None:
-            ttl_seconds = self.default_ttl
-        elif isinstance(ttl, timedelta):
-            ttl_seconds = ttl.total_seconds()
-        else:
-            ttl_seconds = ttl
+        ttl_seconds = self._normalize_ttl(ttl)
 
         expire_at = time.time() + ttl_seconds
 
@@ -104,6 +99,22 @@ class InMemoryCacheProvider(CacheProviderProtocol):
             self._stats["sets"] += 1
             return True
 
+    def _normalize_ttl(self, ttl: int | timedelta | None) -> float:
+        """
+        تطبيع قيمة TTL إلى ثوانٍ قابلة للحساب.
+
+        يضمن هذا التابع أن قيمة TTL غير سالبة لتجنب إدخالات غير صالحة.
+        """
+        if ttl is None:
+            ttl_seconds = float(self.default_ttl)
+        elif isinstance(ttl, timedelta):
+            ttl_seconds = ttl.total_seconds()
+        else:
+            ttl_seconds = float(ttl)
+        if ttl_seconds < 0:
+            raise ValueError("TTL must be a non-negative value.")
+        return ttl_seconds
+
     async def delete(self, key: str) -> bool:
         """
         حذف عنصر محدد.
@@ -122,9 +133,7 @@ class InMemoryCacheProvider(CacheProviderProtocol):
         """
         async with self._lock:
             self._storage.clear()
-            # Reset stats? Maybe keep them for historical reasons.
-            # Let's reset them to represent "fresh start".
-            self._stats = dict.fromkeys(self._stats, 0)
+            self._stats = self._reset_stats()
             return True
 
     async def get_stats(self) -> dict[str, object]:
@@ -144,7 +153,16 @@ class InMemoryCacheProvider(CacheProviderProtocol):
                 "hits": self._stats["hits"],
                 "misses": self._stats["misses"],
                 "evictions": self._stats["evictions"],
+                "sets": self._stats["sets"],
             }
+
+    def _reset_stats(self) -> dict[str, int]:
+        """
+        إعادة تعيين عدادات التخزين المؤقت إلى الصفر.
+
+        يحافظ هذا التابع على اتساق شكل الإحصائيات عبر دورة حياة المزود.
+        """
+        return {"hits": 0, "misses": 0, "evictions": 0, "sets": 0}
 
 
 class CacheFactory:
@@ -174,7 +192,7 @@ def generate_cache_key(data: object) -> str:
     """
     try:
         key_data = json.dumps(data, sort_keys=True) if isinstance(data, dict) else str(data)
-    except Exception:
+    except (TypeError, ValueError):
         key_data = str(data)
 
     return hashlib.sha256(key_data.encode()).hexdigest()

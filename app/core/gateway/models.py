@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from typing import TypedDict
 
 from app.core.types import JSONDict, Metadata
 
@@ -155,6 +156,21 @@ class LoadBalancerState:
     avg_latency_ms: float = 0.0
     last_health_check: datetime | None = None
     is_healthy: bool = True
+
+
+class ProviderCandidate(TypedDict):
+    """
+    بيانات المرشح لقرار التوجيه.
+
+    تُستخدم هذه البنية لنقل مؤشرات التكلفة والزمن والصحة والدرجة النهائية
+    بين مكونات التوجيه والاستراتيجيات، مع الحفاظ على وضوح التعاقد.
+    """
+
+    provider: str
+    cost: float
+    latency: float
+    health_score: float
+    score: float
 
 
 @dataclass

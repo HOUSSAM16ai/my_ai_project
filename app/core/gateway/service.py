@@ -169,30 +169,35 @@ class APIGatewayService:
         return await adapter.transform_request(request)
 
     async def _enforce_policies(self, request: Request) -> None:
+        request_context = self._build_request_context(request)
+        allowed, deny_reason = self.policy_engine.evaluate(request_context)
+        if not allowed:
+            raise PermissionError(deny_reason)
+
+    def _build_request_context(self, request: Request) -> dict[str, object]:
+        """
+        بناء سياق الطلب لتطبيق السياسات الأمنية.
+
+        يهدف هذا التابع إلى تجميع حقول التحقق بشكل واضح
+        للحفاظ على وضوح واجهة التقييم داخل محرك السياسات.
+        """
         user_id = getattr(request.state, "user_id", None)
-        request_context = {
+        return {
             "user_id": user_id,
             "endpoint": request.url.path,
             "method": request.method,
             "authenticated": user_id is not None,
         }
 
-        allowed, deny_reason = self.policy_engine.evaluate(request_context)
-        if not allowed:
-            raise PermissionError(deny_reason)
-
     async def _check_cache(self, cache_key: str) -> JSONDict | None:
+        """استرجاع الاستجابة من التخزين المؤقت عند توفرها."""
         cached_response = await self.cache.get(cache_key)
-        if cached_response:
-            if isinstance(cached_response, dict):
-                # نستخدم نسخة لتجنب تعديل الكائن الأصلي في الذاكرة
-                response_copy = cached_response.copy()  # type: ignore
-                response_copy["cache_hit"] = True  # type: ignore
-                return response_copy  # type: ignore
-            return cached_response  # type: ignore
+        if isinstance(cached_response, dict):
+            return self._mark_cache_hit(cached_response)
         return None
 
     def _simulate_upstream_call(self, protocol: ProtocolType, start_time: float) -> JSONDict:
+        """محاكاة استدعاء الخدمة الخلفية لحين تفعيل الربط الحقيقي."""
         # في الإنتاج، هنا يتم استدعاء IntelligentRouter و UpstreamService
         return {
             "status": "success",
@@ -204,8 +209,23 @@ class APIGatewayService:
         }
 
     async def _update_cache_if_needed(self, method: str, key: str, data: JSONDict) -> None:
+        """تحديث التخزين المؤقت للطلبات القابلة للتخزين فقط."""
         if method == "GET":
             await self.cache.put(key, data, ttl=300)
+
+    def _mark_cache_hit(self, cached_response: JSONDict) -> JSONDict:
+        """
+        إضافة إشارة ضربة التخزين المؤقت مع الحفاظ على الكائن الأصلي.
+
+        Args:
+            cached_response: الاستجابة المخزنة.
+
+        Returns:
+            JSONDict: نسخة محدثة مع مؤشر cache_hit.
+        """
+        response_copy = cached_response.copy()
+        response_copy["cache_hit"] = True
+        return response_copy
 
     async def get_gateway_stats(self) -> JSONDict:
         """الحصول على إحصائيات شاملة للبوابة."""
