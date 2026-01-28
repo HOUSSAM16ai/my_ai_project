@@ -28,6 +28,7 @@ from app.core.gateway.exceptions import (
     AIRateLimitError,
 )
 from app.core.gateway.mesh import AIClient, NeuralRoutingMesh, get_ai_client
+from app.core.gateway.simple_client import SimpleResponse
 from app.core.superhuman_performance_optimizer import get_performance_optimizer
 
 # Re-export key components for backward compatibility
@@ -93,10 +94,10 @@ class AIGatewayFacade:
             self._client = get_ai_client()
         return self._client
 
-    async def generate_text(self, prompt: str, **kwargs) -> dict[str, str | int | bool]:
+    async def generate_text(self, prompt: str, **kwargs) -> SimpleResponse:
         return await self.client.generate_text(prompt, **kwargs)  # type: ignore
 
-    async def forge_new_code(self, **kwargs) -> dict[str, str | int | bool]:
+    async def forge_new_code(self, **kwargs) -> SimpleResponse:
         return await self.client.forge_new_code(**kwargs)  # type: ignore
 
     def __getattr__(self, name: str) -> object:

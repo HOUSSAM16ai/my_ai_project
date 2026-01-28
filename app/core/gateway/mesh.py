@@ -9,14 +9,14 @@ from __future__ import annotations
 
 import time
 from collections.abc import AsyncGenerator
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from app.core.ai_config import get_ai_config
 from app.core.gateway.circuit_breaker import CircuitBreaker
 from app.core.gateway.exceptions import AIAllModelsExhaustedError, AIProviderError
 from app.core.gateway.node import NeuralNode
-from app.core.gateway.simple_client import SimpleAIClient
-from app.core.types import JSONDict
+from app.core.gateway.simple_client import SimpleAIClient, SimpleResponse
+from app.core.types import JSON, JSONDict
 
 _ai_config = get_ai_config()
 
@@ -94,29 +94,29 @@ class NeuralRoutingMesh(SimpleAIClient):
 @runtime_checkable
 class AIClient(Protocol):
     """
-    Protocol defining the interface for AI Clients.
+    بروتوكول يحدد واجهة عملاء الذكاء الاصطناعي بشكل صارم.
     """
 
     def stream_chat(self, messages: list[JSONDict]) -> AsyncGenerator[JSONDict, None]:
-        """Stream a chat conversation."""
+        """يبث محادثة دردشة بشكل متسلسل."""
         ...
 
     async def send_message(
         self, system_prompt: str, user_message: str, temperature: float = 0.7
     ) -> str:
-        """Send a single message and get the full response string."""
+        """يرسل رسالة واحدة ويعيد النص الكامل للاستجابة."""
         ...
 
     async def __aiter__(self):
-        """Allow async iteration over the client (legacy pattern)."""
+        """يدعم التكرار غير المتزامن للتوافق مع النمط القديم."""
         ...
 
-    async def generate_text(self, prompt: str, **kwargs) -> Any:
-        """Legacy generation method."""
+    async def generate_text(self, prompt: str, **kwargs: JSON) -> SimpleResponse:
+        """تابع توليد قديم يعيد استجابة موحدة."""
         ...
 
-    async def forge_new_code(self, **kwargs) -> Any:
-        """Legacy code generation method."""
+    async def forge_new_code(self, **kwargs: JSON) -> SimpleResponse:
+        """تابع قديم لصياغة الشيفرة يعيد استجابة موحدة."""
         ...
 
 

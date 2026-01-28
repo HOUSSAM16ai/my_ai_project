@@ -1,22 +1,23 @@
-from typing import Any
-
 from sqlalchemy import text
 
 from app.core.database import async_session_factory
 from app.core.logging import get_logger
+from app.core.types import JSONDict
 from app.services.search_engine.reranker import get_reranker
 from app.services.search_engine.retriever import get_embedding_model
 
 logger = get_logger("hybrid-search")
 
 
-async def hybrid_search(query: str, top_k: int = 5) -> list[dict[str, Any]]:
+async def hybrid_search(query: str, top_k: int = 5) -> list[JSONDict]:
     """
-    Implements a Hybrid Search Strategy:
-    1. Dense Retrieval (Vector)
-    2. Sparse Retrieval (Keyword/BM25 via tsvector)
-    3. Graph Traversal (1-hop expansion) - *Simplified implicitly by vector capturing relations in content*
-    4. Reranking (Cross-Encoder)
+    ينفذ إستراتيجية بحث هجينة تجمع بين الاسترجاع الدلالي واللغوي وإعادة الترتيب.
+
+    الخطوات:
+    1) استرجاع كثيف عبر المتجهات.
+    2) استرجاع متناثر عبر الكلمات المفتاحية (tsvector).
+    3) دمج النتائج ضمن سياق واحد.
+    4) إعادة ترتيب نهائية بمصنّف تقاطعي.
     """
 
     # 1. Generate Query Embedding

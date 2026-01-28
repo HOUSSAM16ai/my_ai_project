@@ -1,20 +1,20 @@
-from typing import Any
-
 import dspy
 
 from app.core.logging import get_logger
+from app.core.types import JSONValue
 
 logger = get_logger(__name__)
 
 
 class StructuredQuerySignature(dspy.Signature):
     """
-    Analyze the educational query to extract specific metadata and a refined search term.
-    Focus on extracting:
-    - year: The exam year (e.g., 2024, 2023).
-    - subject: The academic subject (e.g., Mathematics, Physics).
-    - branch: The study branch (e.g., Experimental Sciences, Math Tech).
-    - refined_query: A clean, English translation of the core topic for vector search (e.g., "Probability exercises", "Complex numbers").
+    يحلل الاستعلام التعليمي لاستخراج البيانات الوصفية وبناء عبارة بحث منقحة.
+
+    يركز على استخراج:
+    - السنة: سنة الامتحان عند ذكرها.
+    - المادة: اسم المادة الدراسية.
+    - الشعبة: الشعبة الأكاديمية.
+    - عبارة البحث المنقحة: ترجمة موجزة للموضوع للاستخدام في البحث الدلالي.
     """
 
     user_query: str = dspy.InputField(desc="The raw query from the student.")
@@ -35,10 +35,11 @@ class StructuredQueryRefiner(dspy.Module):
 
 def get_refined_query(
     user_query: str, api_key: str, model_name: str = "mistralai/devstral-2512:free"
-) -> dict[str, Any]:
+) -> dict[str, str | int | None]:
     """
-    Uses DSPy to refine the query and extract metadata.
-    Returns a dictionary with 'refined_query', 'year', 'subject', 'branch'.
+    يستخدم DSPy لتنقية الاستعلام واستخراج البيانات الوصفية ذات الصلة.
+
+    يعيد قاموساً يحتوي على مفاتيح: refined_query، year، subject، branch.
     """
     try:
         lm = dspy.LM(
@@ -66,10 +67,11 @@ def get_refined_query(
 
     except Exception as e:
         logger.warning(f"DSPy refinement failed: {e}")
-        return {"refined_query": user_query}
+        return {"refined_query": user_query, "year": None, "subject": None, "branch": None}
 
 
-def _safe_int(val: Any) -> int | None:
+def _safe_int(val: JSONValue) -> int | None:
+    """يحاول تحويل القيمة إلى عدد صحيح مع تجاهل القيم غير الصالحة."""
     try:
         if val and str(val).lower() != "none":
             return int(str(val))

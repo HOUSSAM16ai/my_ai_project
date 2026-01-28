@@ -4,19 +4,18 @@ Infrastructure Layer.
 """
 
 import os
-from typing import Any
 
 import httpx
 
 from app.core.logging import get_logger
+from app.core.types import JSONDict
 
 logger = get_logger("tool-retrieval-remote")
 
 
-async def fetch_from_memory_agent(query: str, tags: list[str]) -> list[dict[str, Any]]:
+async def fetch_from_memory_agent(query: str, tags: list[str]) -> list[JSONDict]:
     """
-    Fetches content from the Memory Agent microservice.
-    Returns a list of result dictionaries or raises an exception/returns empty on failure.
+    يجلب المحتوى من خدمة الذاكرة المصغرة مع التحقق من سلامة المخرجات.
     """
     # Default to Memory Agent URL or localhost for dev
     memory_url = os.getenv("MEMORY_AGENT_URL") or "http://memory-agent:8002"
@@ -38,4 +37,4 @@ async def fetch_from_memory_agent(query: str, tags: list[str]) -> list[dict[str,
         if not results or not isinstance(results, list):
             return []
 
-        return results
+        return [result for result in results if isinstance(result, dict)]

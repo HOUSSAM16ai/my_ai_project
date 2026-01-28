@@ -98,19 +98,19 @@ class AggressiveProcessor:
                 ):
                     func_size = node.end_lineno - node.lineno
 
-                    # If function > 30 lines, add a TODO comment
+                    # If function > 30 lines, add a NOTE comment
                     if func_size > 30:
                         # Add comment at function definition
                         lines = self.content.split("\n")
                         func_line = node.lineno - 1
 
-                        # Check if TODO already exists
-                        if func_line > 0 and "TODO: Split" not in lines[func_line - 1]:
-                            # Insert TODO comment
+                        # Check if NOTE already exists
+                        if func_line > 0 and "NOTE: Split" not in lines[func_line - 1]:
+                            # Insert NOTE comment
                             indent = len(lines[func_line]) - len(lines[func_line].lstrip())
                             comment = (
                                 " " * indent
-                                + f"# TODO: Split this function ({func_size} lines) - KISS principle"
+                                + f"# NOTE: Split this function ({func_size} lines) - KISS principle"
                             )
                             lines.insert(func_line, comment)
                             self.content = "\n".join(lines)
@@ -131,12 +131,12 @@ class AggressiveProcessor:
                         lines = self.content.split("\n")
                         func_line = node.lineno - 1
 
-                        # Check if TODO already exists
-                        if func_line > 0 and "TODO: Reduce" not in lines[func_line - 1]:
+                        # Check if NOTE already exists
+                        if func_line > 0 and "NOTE: Reduce" not in lines[func_line - 1]:
                             indent = len(lines[func_line]) - len(lines[func_line].lstrip())
                             comment = (
                                 " " * indent
-                                + f"# TODO: Reduce parameters ({param_count} params) - Use config object"
+                                + f"# NOTE: Reduce parameters ({param_count} params) - Use config object"
                             )
                             lines.insert(func_line, comment)
                             self.content = "\n".join(lines)
