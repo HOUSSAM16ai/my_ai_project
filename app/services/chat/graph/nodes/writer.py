@@ -105,6 +105,19 @@ class ContextComposer:
 
         context_text = ""
         for item in search_results:
+            # 0. Node-Level Firewall (The Gatekeeper)
+            # If the retrieval engine pulled a dedicated "Solution Node", we MUST drop it
+            # entirely if the student hasn't asked for it.
+            node_type = str(item.get("type", "")).lower()
+            if intent != WriterIntent.SOLUTION_REQUEST and node_type in [
+                "solution",
+                "answer",
+                "marking_scheme",
+                "key",
+                "correction",
+            ]:
+                continue
+
             # 1. Base Content Extraction
             content = item.get("content", "")
 
