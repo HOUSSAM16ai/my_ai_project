@@ -37,6 +37,45 @@ class TestSolutionHiding(unittest.TestCase):
         self.assertIn("Secret Solution", context)
         self.assertIn("### الحل النموذجي", context)
 
+    def test_sanitize_solution_blocks_in_content(self):
+        """Test that embedded solution blocks are removed from content."""
+        content = (
+            "[ex: ex_1]\n"
+            "نص التمرين\n"
+            "\n"
+            "[sol: ex_1]\n"
+            "**حل التمرين الأول (04 نقاط):**\n"
+            "تفاصيل الحل\n"
+        )
+        results = [{"content": content}]
+        intent = WriterIntent.GENERAL_INQUIRY
+
+        context = ContextComposer.compose(results, intent)
+
+        self.assertNotIn("حل التمرين الأول", context)
+        self.assertNotIn("تفاصيل الحل", context)
+        self.assertIn("نص التمرين", context)
+
+    def test_extract_embedded_solution_on_request(self):
+        """Test that embedded solutions surface only when explicitly requested."""
+        content = (
+            "[ex: ex_1]\n"
+            "نص التمرين\n"
+            "\n"
+            "[sol: ex_1]\n"
+            "**حل التمرين الأول (04 نقاط):**\n"
+            "تفاصيل الحل\n"
+        )
+        results = [{"content": content}]
+        intent = WriterIntent.SOLUTION_REQUEST
+
+        context = ContextComposer.compose(results, intent)
+
+        self.assertIn("حل التمرين الأول", context)
+        self.assertIn("تفاصيل الحل", context)
+        self.assertIn("نص التمرين", context)
+        self.assertNotIn("🔒 [HIDDEN: Potential Solution", context)
+
     def test_prompt_instructions(self):
         """Test that prompt contains the Dual Mode instructions"""
         profile = StudentProfile(level="Average")
