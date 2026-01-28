@@ -8,7 +8,6 @@ to handle Student Intent, Context Firewalling, and Adaptive Prompting.
 import re
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Any
 
 from langchain_core.messages import AIMessage
 
@@ -22,6 +21,7 @@ class WriterIntent(Enum):
     GENERAL_INQUIRY = auto()
     SOLUTION_REQUEST = auto()
     DIAGNOSIS_REQUEST = auto()
+    QUESTION_ONLY_REQUEST = auto()
 
 
 @dataclass
@@ -44,6 +44,12 @@ class IntentDetector:
     # Updated negation to include "without" variants
     NEGATION_PATTERN = r"(don't|do not|not|no|never|without|sans|لا|ما|لم|لن|ليس|بدون|بلاش|من غير).{0,20}(want|need|give|show|solution|answer|أريد|بدي|تعطيني|عطيني|هات|حل|إجابة)"
     DIAGNOSIS_KEYWORDS = r"(diagnose|quiz|test|exam|assessment|شخصني|ختبرني|إختبار|اختبار|قيم|تقييم|مراجعة)"
+    QUESTION_ONLY_KEYWORDS = (
+        r"(أسئلة\s*فقط|فقط\s*أسئلة|questions\s*only|just\s*questions|"
+        r"بدون\s*إجابة|بدون\s*اجابة|بدون\s*حلول|بدون\s*حل|لا\s*أريد\s*الحل|"
+        r"ما\s*أريد\s*الحل|لا\s*تعطيني\s*الحل|لا\s*أحتاج\s*الحل|"
+        r"without\s*answers|no\s*answers|without\s*solution|no\s*solution)"
+    )
 
     @classmethod
     def analyze(cls, user_message: str) -> WriterIntent:
@@ -53,6 +59,9 @@ class IntentDetector:
         is_diagnosis = bool(re.search(cls.DIAGNOSIS_KEYWORDS, msg_lower))
         if is_diagnosis:
             return WriterIntent.DIAGNOSIS_REQUEST
+        is_questions_only = bool(re.search(cls.QUESTION_ONLY_KEYWORDS, msg_lower))
+        if is_questions_only:
+            return WriterIntent.QUESTION_ONLY_REQUEST
 
         has_noun = bool(re.search(cls.TARGET_NOUNS, msg_lower))
         is_request = bool(re.search(cls.REQUEST_INDICATORS, msg_lower))
@@ -85,6 +94,13 @@ class ContextComposer:
         "answer_key",
         "solution_md",
     }
+    SOLUTION_NODE_TYPES = {
+        "solution",
+        "answer",
+        "marking_scheme",
+        "key",
+        "correction",
+    }
 
     # Aggressive patterns to detect solution blocks embedded in content
     # These look for a solution header/label and match until the next Exercise/Question/Header or End of String.
@@ -105,61 +121,40 @@ class ContextComposer:
     ]
 
     @classmethod
-    def compose(cls, search_results: list[dict[str, Any]], intent: WriterIntent) -> str:
+    def compose(cls, search_results: list[dict[str, object]], intent: WriterIntent) -> str:
         if not search_results:
             return ""
 
+        allow_solution, show_hidden_marker = cls._derive_intent_flags(intent)
         context_text = ""
         for item in search_results:
-            # 0. Node-Level Firewall (The Gatekeeper)
-            # If the retrieval engine pulled a dedicated "Solution Node", we MUST drop it
-            # entirely if the student hasn't asked for it.
             node_type = str(item.get("type", "")).lower()
-            if intent != WriterIntent.SOLUTION_REQUEST and node_type in [
-                "solution",
-                "answer",
-                "marking_scheme",
-                "key",
-                "correction",
-            ]:
+            if not allow_solution and node_type in cls.SOLUTION_NODE_TYPES:
                 continue
 
-            # 1. Base Content Extraction
-            content = item.get("content", "")
+            content = str(item.get("content", ""))
             sanitized_content = cls._sanitize_content(
-                content, show_hidden_marker=intent != WriterIntent.SOLUTION_REQUEST
+                content, show_hidden_marker=show_hidden_marker
             )
 
-            # 2. Field-Level Firewall
-            # If user didn't ask for solution, we STRICTLY exclude known solution fields
-            solution_data = {}
-            if intent == WriterIntent.SOLUTION_REQUEST:
-                # Retrieve all potential solution fields
-                for key in cls.FORBIDDEN_KEYS:
-                    if val := item.get(key):
-                        solution_data[key] = val
-                if not solution_data:
-                    embedded_solutions = cls._extract_solution_blocks(content)
-                    if embedded_solutions:
-                        solution_data["embedded_solution"] = "\n\n".join(embedded_solutions)
-
-            # 3. Assemble Display
-            solution_display = ""
-            if intent == WriterIntent.SOLUTION_REQUEST:
-                # Format available solution data
-                if solution_data:
-                    combined_sols = "\n\n".join([f"**{k.title()}**:\n{v}" for k, v in solution_data.items()])
-                    solution_display = f"### الحل النموذجي (Official Solution):\n{combined_sols}"
-                else:
-                    solution_display = "⚠️ [No official solution record found in database]"
-            else:
-                solution_display = "🔒 [SOLUTION HIDDEN: Student has NOT requested the solution yet.]"
-
-            context_text += (
-                f"**Exercise Context:**\n{sanitized_content}\n\n{solution_display}\n\n---\n"
+            solution_display = cls._compose_solution_display(
+                item=item,
+                content=content,
+                allow_solution=allow_solution,
+                show_solution_banner=show_hidden_marker,
+            )
+            context_text += cls._render_context_entry(
+                sanitized_content=sanitized_content, solution_display=solution_display
             )
 
         return context_text
+
+    @staticmethod
+    def _derive_intent_flags(intent: WriterIntent) -> tuple[bool, bool]:
+        """يشتق أعلام التحكم الرئيسية من نية المستخدم."""
+        allow_solution = intent == WriterIntent.SOLUTION_REQUEST
+        show_hidden_marker = intent == WriterIntent.GENERAL_INQUIRY
+        return allow_solution, show_hidden_marker
 
     @classmethod
     def _sanitize_content(cls, content: str, show_hidden_marker: bool) -> str:
@@ -180,6 +175,42 @@ class ContextComposer:
             sanitized = re.sub(pattern, replacement, sanitized, flags=re.DOTALL)
 
         return sanitized
+
+    @classmethod
+    def _compose_solution_display(
+        cls,
+        item: dict[str, object],
+        content: str,
+        allow_solution: bool,
+        show_solution_banner: bool,
+    ) -> str:
+        """يبني عرض الحل بناءً على نية المستخدم."""
+        if not allow_solution:
+            return (
+                "🔒 [SOLUTION HIDDEN: Student has NOT requested the solution yet.]"
+                if show_solution_banner
+                else ""
+            )
+        solution_data: dict[str, str] = {}
+        for key in cls.FORBIDDEN_KEYS:
+            if val := item.get(key):
+                solution_data[key] = str(val)
+        if not solution_data:
+            embedded_solutions = cls._extract_solution_blocks(content)
+            if embedded_solutions:
+                solution_data["embedded_solution"] = "\n\n".join(embedded_solutions)
+        if solution_data:
+            combined_sols = "\n\n".join(
+                [f"**{k.title()}**:\n{v}" for k, v in solution_data.items()]
+            )
+            return f"### الحل النموذجي (Official Solution):\n{combined_sols}"
+        return "⚠️ [No official solution record found in database]"
+
+    @classmethod
+    def _render_context_entry(cls, sanitized_content: str, solution_display: str) -> str:
+        """يعيد تمثيل نصي موحّد لكل سياق تمرين."""
+        solution_section = f"\n\n{solution_display}" if solution_display else ""
+        return f"**Exercise Context:**\n{sanitized_content}{solution_section}\n\n---\n"
 
     @classmethod
     def _extract_solution_blocks(cls, content: str) -> list[str]:
@@ -224,16 +255,18 @@ class PromptStrategist:
             "   - لا تقدم الحل أبداً في الخطوة الأولى.\n"
         )
 
-        dual_mode_instructions = (
-            "\n### بروتوكول الوضع المزدوج (Dual Mode Protocol):\n"
-            "عندما يطلب الطالب الحل، يجب عليك تقديم الرد في جزأين منفصلين:\n"
-            "1. **الجزء الأول (الصرامة - Official Key):**\n"
-            "   - اعرض الحل النموذجي الرسمي كما هو في السياق.\n"
-            "   - استخدم العنوان: `### الحل النموذجي`.\n"
-            "2. **الجزء الثاني (المرونة - Supernatural Explanation):**\n"
-            "   - اشرح الحل بأسلوب مبسط وعميق.\n"
-            f"   - مستوى الطالب: **{profile.level}**.\n"
-        )
+        dual_mode_instructions = ""
+        if intent == WriterIntent.SOLUTION_REQUEST:
+            dual_mode_instructions = (
+                "\n### بروتوكول الوضع المزدوج (Dual Mode Protocol):\n"
+                "عندما يطلب الطالب الحل، يجب عليك تقديم الرد في جزأين منفصلين:\n"
+                "1. **الجزء الأول (الصرامة - Official Key):**\n"
+                "   - اعرض الحل النموذجي الرسمي كما هو في السياق.\n"
+                "   - استخدم العنوان: `### الحل النموذجي`.\n"
+                "2. **الجزء الثاني (المرونة - Supernatural Explanation):**\n"
+                "   - اشرح الحل بأسلوب مبسط وعميق.\n"
+                f"   - مستوى الطالب: **{profile.level}**.\n"
+            )
 
         diagnosis_instructions = ""
         if intent == WriterIntent.DIAGNOSIS_REQUEST:
@@ -245,6 +278,10 @@ class PromptStrategist:
                 "3. كن مشجعاً وحازماً في نفس الوقت.\n"
             )
 
+        question_only_instructions = ""
+        if intent == WriterIntent.QUESTION_ONLY_REQUEST:
+            question_only_instructions = PromptStrategist._question_only_instructions()
+
         level_guidance = {
             "Beginner": "   - بسّط المفاهيم لأقصى درجة، استخدم تشبيهات من الواقع، وفكك المصطلحات المعقدة.",
             "Average": "   - ركز على توضيح الخطوات الصعبة والربط بين الأفكار.",
@@ -255,8 +292,19 @@ class PromptStrategist:
             base_prompt
             + dual_mode_instructions
             + diagnosis_instructions
+            + question_only_instructions
             + level_guidance.get(profile.level, "")
             + "\n\nحافظ على نبرة فاخرة، مشجعة، واحترافية."
+        )
+
+    @staticmethod
+    def _question_only_instructions() -> str:
+        """يبني توجيهاً صارماً عند طلب المستخدم أسئلة فقط دون إجابات."""
+        return (
+            "\n### بروتوكول الأسئلة فقط (Questions-Only Mode):\n"
+            "1. اعرض الأسئلة أو التمارين فقط دون أي حلول أو تلميحات.\n"
+            "2. امتنع تماماً عن الشرح أو الإجابة، حتى لو ظهر الحل في السياق.\n"
+            "3. اختم بسؤال تشجيعي: 'هل تريد محاولة الحل أولاً أم ترغب بالإجابة لاحقاً؟'.\n"
         )
 
 

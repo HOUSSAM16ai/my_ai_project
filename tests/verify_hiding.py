@@ -2,6 +2,7 @@ import unittest
 
 from app.services.chat.graph.nodes.writer import (
     ContextComposer,
+    IntentDetector,
     PromptStrategist,
     StudentProfile,
     WriterIntent,
@@ -79,10 +80,34 @@ class TestSolutionHiding(unittest.TestCase):
     def test_prompt_instructions(self):
         """Test that prompt contains the Dual Mode instructions"""
         profile = StudentProfile(level="Average")
-        prompt = PromptStrategist.build_prompt(profile)
+        prompt = PromptStrategist.build_prompt(profile, WriterIntent.SOLUTION_REQUEST)
 
         self.assertIn("بروتوكول الوضع المزدوج", prompt)
         self.assertIn("Supernatural Explanation", prompt)
+
+    def test_questions_only_intent(self):
+        """Test that questions-only requests are detected correctly."""
+        intent = IntentDetector.analyze("أريد أسئلة فقط بدون إجابات")
+
+        self.assertEqual(intent, WriterIntent.QUESTION_ONLY_REQUEST)
+
+    def test_questions_only_prompt(self):
+        """Test that prompt contains Questions-Only instructions."""
+        profile = StudentProfile(level="Average")
+        prompt = PromptStrategist.build_prompt(profile, WriterIntent.QUESTION_ONLY_REQUEST)
+
+        self.assertIn("بروتوكول الأسئلة فقط", prompt)
+        self.assertNotIn("بروتوكول الوضع المزدوج", prompt)
+
+    def test_questions_only_context(self):
+        """Test that questions-only mode hides solution markers and content."""
+        results = [{"content": "Exercise Content", "solution": "Secret Solution"}]
+        intent = WriterIntent.QUESTION_ONLY_REQUEST
+
+        context = ContextComposer.compose(results, intent)
+
+        self.assertNotIn("🔒 [SOLUTION HIDDEN", context)
+        self.assertNotIn("Secret Solution", context)
 
 
 if __name__ == "__main__":
