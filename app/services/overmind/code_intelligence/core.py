@@ -1,4 +1,5 @@
 import ast
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -10,6 +11,71 @@ from .analyzers.smells import StructuralSmellDetector
 from .models import FileMetrics, ProjectAnalysis
 
 logger = get_logger(__name__)
+
+
+@dataclass(frozen=True)
+class _LineStats:
+    """يمثل إحصائيات الأسطر الأساسية لملف واحد."""
+
+    code_lines: int
+    comment_lines: int
+    blank_lines: int
+
+
+@dataclass(frozen=True)
+class _ComplexityStats:
+    """يحمل إحصائيات التعقيد والتداخل بشكل موحد."""
+
+    avg_complexity: float
+    max_complexity: int
+    max_func_name: str
+    std_dev: float
+    avg_nesting: float
+
+
+@dataclass(frozen=True)
+class _HotspotWeights:
+    """يمثل أوزان حساب النقاط الساخنة."""
+
+    complexity: float
+    volatility: float
+    smell: float
+
+
+@dataclass(frozen=True)
+class _HotspotConfig:
+    """يمثل الإعدادات الثابتة لحساب النقاط الساخنة."""
+
+    weights: _HotspotWeights
+
+
+@dataclass(frozen=True)
+class _NormalizedRanks:
+    """يحمل القيم المطبعة الخاصة بحساب النقاط الساخنة."""
+
+    complexity: list[float]
+    volatility: list[float]
+    smell: list[float]
+
+
+@dataclass(frozen=True)
+class _ProjectStats:
+    """يمثل إحصائيات المشروع الإجمالية."""
+
+    total_lines: int
+    total_code: int
+    total_functions: int
+    total_classes: int
+    avg_complexity: float
+    max_complexity: int
+
+
+@dataclass(frozen=True)
+class _HotspotBuckets:
+    """يحمل قوائم النقاط الساخنة حسب الأولوية."""
+
+    critical: list[str]
+    high: list[str]
 
 
 class StructuralCodeIntelligence:
@@ -52,7 +118,7 @@ class StructuralCodeIntelligence:
         # Must be in target paths
         return any(target in path_str for target in self.target_paths)
 
-    def _count_lines(self, lines: list[str]) -> tuple[int, int, int]:
+    def _count_lines(self, lines: list[str]) -> _LineStats:
         """
         حساب أنواع الأسطر المختلفة.
         Count different types of lines.
@@ -61,7 +127,7 @@ class StructuralCodeIntelligence:
             lines: قائمة أسطر الملف - List of file lines
 
         Returns:
-            tuple: (code_lines, comment_lines, blank_lines)
+            _LineStats: إحصائيات الأسطر الأساسية
         """
         code_lines = 0
         comment_lines = 0
@@ -76,22 +142,33 @@ class StructuralCodeIntelligence:
             else:
                 code_lines += 1
 
-        return code_lines, comment_lines, blank_lines
+        return _LineStats(
+            code_lines=code_lines,
+            comment_lines=comment_lines,
+            blank_lines=blank_lines,
+        )
 
-    def _calculate_complexity_stats(self, functions: list[dict]) -> tuple[float, int, str, float]:
+    def _calculate_complexity_stats(self, functions: list[dict]) -> _ComplexityStats:
         """
-        حساب إحصائيات التعقيد.
+        حساب إحصائيات التعقيد والتداخل.
 
         Args:
             functions: قائمة معلومات الدوال
 
         Returns:
-            tuple: (avg_complexity, max_complexity, max_func_name, std_dev)
+            _ComplexityStats: ملخص التعقيد والتداخل
         """
         function_complexities = [f["complexity"] for f in functions]
+        nesting_depths = [f["nesting_depth"] for f in functions]
 
         if not function_complexities:
-            return 0.0, 0, "", 0.0
+            return _ComplexityStats(
+                avg_complexity=0.0,
+                max_complexity=0,
+                max_func_name="",
+                std_dev=0.0,
+                avg_nesting=0.0,
+            )
 
         avg_complexity = sum(function_complexities) / len(function_complexities)
         max_complexity = max(function_complexities)
@@ -104,43 +181,40 @@ class StructuralCodeIntelligence:
                 break
 
         # Calculate standard deviation
-        if len(function_complexities) > 1:
-            mean = avg_complexity
-            variance = sum((x - mean) ** 2 for x in function_complexities) / len(
-                function_complexities
-            )
-            std_dev = variance**0.5
-        else:
-            std_dev = 0.0
+        std_dev = self._calculate_standard_deviation(function_complexities, avg_complexity)
+        avg_nesting = sum(nesting_depths) / len(nesting_depths) if nesting_depths else 0.0
 
-        return avg_complexity, max_complexity, max_func_name, std_dev
+        return _ComplexityStats(
+            avg_complexity=avg_complexity,
+            max_complexity=max_complexity,
+            max_func_name=max_func_name,
+            std_dev=std_dev,
+            avg_nesting=avg_nesting,
+        )
 
-    def _calculate_nesting_stats(self, functions: list[dict]) -> float:
+    def _calculate_standard_deviation(self, values: list[float], mean: float) -> float:
         """
-        حساب إحصائيات التداخل.
+        حساب الانحراف المعياري لقائمة قيم.
 
         Args:
-            functions: قائمة معلومات الدوال
+            values: القيم المراد حساب انحرافها المعياري
+            mean: المتوسط الحسابي للقيم
 
         Returns:
-            float: متوسط عمق التداخل
+            float: الانحراف المعياري
         """
-        nesting_depths = [f["nesting_depth"] for f in functions]
-        return sum(nesting_depths) / len(nesting_depths) if nesting_depths else 0.0
+        if len(values) <= 1:
+            return 0.0
+        variance = sum((value - mean) ** 2 for value in values) / len(values)
+        return variance**0.5
 
     def _create_base_metrics(
         self,
         file_path: Path,
         lines: list[str],
-        code_lines: int,
-        comment_lines: int,
-        blank_lines: int,
         analyzer: ComplexityAnalyzer,
-        avg_complexity: float,
-        max_complexity: int,
-        max_func_name: str,
-        std_dev: float,
-        avg_nesting: float,
+        line_stats: _LineStats,
+        complexity_stats: _ComplexityStats,
     ) -> FileMetrics:
         """
         إنشاء كائن FileMetrics الأساسي.
@@ -148,15 +222,9 @@ class StructuralCodeIntelligence:
         Args:
             file_path: مسار الملف
             lines: أسطر الملف
-            code_lines: عدد أسطر الكود
-            comment_lines: عدد أسطر التعليقات
-            blank_lines: عدد الأسطر الفارغة
             analyzer: محلل التعقيد
-            avg_complexity: متوسط التعقيد
-            max_complexity: أقصى تعقيد
-            max_func_name: اسم الدالة الأكثر تعقيداً
-            std_dev: الانحراف المعياري
-            avg_nesting: متوسط التداخل
+            line_stats: إحصائيات الأسطر الأساسية
+            complexity_stats: إحصائيات التعقيد والتداخل
 
         Returns:
             FileMetrics: كائن المقاييس الأساسية
@@ -167,19 +235,19 @@ class StructuralCodeIntelligence:
             file_path=str(file_path),
             relative_path=relative_path,
             total_lines=len(lines),
-            code_lines=code_lines,
-            comment_lines=comment_lines,
-            blank_lines=blank_lines,
+            code_lines=line_stats.code_lines,
+            comment_lines=line_stats.comment_lines,
+            blank_lines=line_stats.blank_lines,
             num_classes=len(analyzer.classes),
             num_functions=len(analyzer.functions),
             num_public_functions=sum(1 for f in analyzer.functions if f["is_public"]),
             file_complexity=analyzer.file_complexity,
-            avg_function_complexity=round(avg_complexity, 2),
-            max_function_complexity=max_complexity,
-            max_function_name=max_func_name,
-            complexity_std_dev=round(std_dev, 2),
+            avg_function_complexity=round(complexity_stats.avg_complexity, 2),
+            max_function_complexity=complexity_stats.max_complexity,
+            max_function_name=complexity_stats.max_func_name,
+            complexity_std_dev=round(complexity_stats.std_dev, 2),
             max_nesting_depth=analyzer.max_nesting,
-            avg_nesting_depth=round(avg_nesting, 2),
+            avg_nesting_depth=round(complexity_stats.avg_nesting, 2),
             num_imports=len(analyzer.imports),
             function_details=analyzer.functions,
         )
@@ -225,13 +293,10 @@ class StructuralCodeIntelligence:
             FileMetrics أو None: مقاييس الملف أو None عند الفشل
         """
         try:
-            # قراءة الملف
-            with open(file_path, encoding="utf-8") as f:
-                content = f.read()
-                lines = content.split("\n")
+            content, lines = self._read_file_content(file_path)
 
             # حساب الأسطر
-            code_lines, comment_lines, blank_lines = self._count_lines(lines)
+            line_stats = self._count_lines(lines)
 
             # تحليل AST
             tree = ast.parse(content)
@@ -239,24 +304,15 @@ class StructuralCodeIntelligence:
             analyzer.visit(tree)
 
             # حساب الإحصائيات
-            avg_complexity, max_complexity, max_func_name, std_dev = (
-                self._calculate_complexity_stats(analyzer.functions)
-            )
-            avg_nesting = self._calculate_nesting_stats(analyzer.functions)
+            complexity_stats = self._calculate_complexity_stats(analyzer.functions)
 
             # إنشاء كائن المقاييس الأساسي
             metrics = self._create_base_metrics(
                 file_path,
                 lines,
-                code_lines,
-                comment_lines,
-                blank_lines,
                 analyzer,
-                avg_complexity,
-                max_complexity,
-                max_func_name,
-                std_dev,
-                avg_nesting,
+                line_stats,
+                complexity_stats,
             )
 
             # إثراء بمقاييس Git
@@ -267,9 +323,23 @@ class StructuralCodeIntelligence:
 
             return metrics
 
-        except Exception:
-            # التعامل مع الأخطاء بصمت
+        except (OSError, UnicodeDecodeError, SyntaxError, ValueError) as exc:
+            logger.warning("تعذر تحليل الملف: %s بسبب %s", file_path, exc)
             return None
+
+    def _read_file_content(self, file_path: Path) -> tuple[str, list[str]]:
+        """
+        قراءة محتوى الملف وتحويله إلى أسطر.
+
+        Args:
+            file_path: مسار الملف
+
+        Returns:
+            tuple[str, list[str]]: المحتوى الكامل وقائمة الأسطر
+        """
+        with open(file_path, encoding="utf-8") as file_handle:
+            content = file_handle.read()
+        return content, content.split("\n")
 
     def calculate_hotspot_scores(self, all_metrics: list[FileMetrics]) -> None:
         """
@@ -290,7 +360,7 @@ class StructuralCodeIntelligence:
         # Calculate scores and assign priorities
         self._calculate_weighted_scores(all_metrics, ranks)
 
-    def _extract_and_normalize_metrics(self, all_metrics: list[FileMetrics]) -> dict:
+    def _extract_and_normalize_metrics(self, all_metrics: list[FileMetrics]) -> _NormalizedRanks:
         """
         استخراج وتطبيع المقاييس | Extract and normalize metrics
 
@@ -298,7 +368,7 @@ class StructuralCodeIntelligence:
             all_metrics: قائمة المقاييس | Metrics list
 
         Returns:
-            معجم القيم المطبعة | Dictionary of normalized values
+            _NormalizedRanks: القيم المطبعة لكل فئة
         """
         # Extract values
         complexities = [m.file_complexity for m in all_metrics]
@@ -306,11 +376,11 @@ class StructuralCodeIntelligence:
         smells = [self._count_smells(m) for m in all_metrics]
 
         # Normalize
-        return {
-            "complexity": self._normalize_values(complexities),
-            "volatility": self._normalize_values(volatilities),
-            "smell": self._normalize_values(smells),
-        }
+        return _NormalizedRanks(
+            complexity=self._normalize_values(complexities),
+            volatility=self._normalize_values(volatilities),
+            smell=self._normalize_values(smells),
+        )
 
     def _count_smells(self, metrics: FileMetrics) -> int:
         """
@@ -343,7 +413,11 @@ class StructuralCodeIntelligence:
         max_val = max(values)
         return [v / max_val for v in values]
 
-    def _calculate_weighted_scores(self, all_metrics: list[FileMetrics], ranks: dict) -> None:
+    def _calculate_weighted_scores(
+        self,
+        all_metrics: list[FileMetrics],
+        ranks: _NormalizedRanks,
+    ) -> None:
         """
         حساب الدرجات الموزونة | Calculate weighted scores
 
@@ -351,23 +425,64 @@ class StructuralCodeIntelligence:
             all_metrics: قائمة المقاييس | Metrics list
             ranks: القيم المطبعة | Normalized ranks
         """
-        # Weight configuration: Complexity + Volatility + Smells
-        w1, w2, w3 = 0.4, 0.4, 0.2
-
+        config = self._hotspot_config()
         for i, metrics in enumerate(all_metrics):
-            # Store individual ranks
-            metrics.complexity_rank = round(ranks["complexity"][i], 4)
-            metrics.volatility_rank = round(ranks["volatility"][i], 4)
-            metrics.smell_rank = round(ranks["smell"][i], 4)
-
-            # Calculate weighted hotspot score
-            score = (
-                w1 * ranks["complexity"][i] + w2 * ranks["volatility"][i] + w3 * ranks["smell"][i]
-            )
+            self._assign_metric_ranks(metrics, ranks, i)
+            score = self._calculate_hotspot_score(ranks, i, config.weights)
             metrics.hotspot_score = round(score, 4)
-
-            # Assign priority tier
             metrics.priority_tier = self._determine_priority_tier(score)
+
+    def _hotspot_config(self) -> _HotspotConfig:
+        """
+        إنشاء إعدادات النقاط الساخنة بطريقة موحدة.
+
+        Returns:
+            _HotspotConfig: إعدادات النقاط الساخنة
+        """
+        return _HotspotConfig(
+            weights=_HotspotWeights(complexity=0.4, volatility=0.4, smell=0.2),
+        )
+
+    def _assign_metric_ranks(
+        self,
+        metrics: FileMetrics,
+        ranks: _NormalizedRanks,
+        index: int,
+    ) -> None:
+        """
+        حفظ الرتب المعيارية لكل ملف.
+
+        Args:
+            metrics: مقاييس الملف | File metrics
+            ranks: القيم المطبعة | Normalized ranks
+            index: موضع الملف في القائمة
+        """
+        metrics.complexity_rank = round(ranks.complexity[index], 4)
+        metrics.volatility_rank = round(ranks.volatility[index], 4)
+        metrics.smell_rank = round(ranks.smell[index], 4)
+
+    def _calculate_hotspot_score(
+        self,
+        ranks: _NormalizedRanks,
+        index: int,
+        weights: _HotspotWeights,
+    ) -> float:
+        """
+        حساب درجة النقطة الساخنة لملف واحد.
+
+        Args:
+            ranks: القيم المطبعة | Normalized ranks
+            index: موضع الملف في القائمة
+            weights: أوزان الحساب
+
+        Returns:
+            float: الدرجة الموزونة
+        """
+        return (
+            weights.complexity * ranks.complexity[index]
+            + weights.volatility * ranks.volatility[index]
+            + weights.smell * ranks.smell[index]
+        )
 
     def _determine_priority_tier(self, score: float) -> str:
         """
@@ -410,7 +525,7 @@ class StructuralCodeIntelligence:
         logger.info("📁 Repository: %s", self.repo_path)
         logger.info("🎯 Target paths: %s", ", ".join(self.target_paths))
 
-    def _collect_file_metrics(self) -> list:
+    def _collect_file_metrics(self) -> list[FileMetrics]:
         """
         جمع مقاييس الملفات | Collect file metrics
 
@@ -420,7 +535,7 @@ class StructuralCodeIntelligence:
         Returns:
             قائمة المقاييس | List of metrics
         """
-        all_metrics = []
+        all_metrics: list[FileMetrics] = []
 
         for target in self.target_paths:
             target_path = self.repo_path / target
@@ -434,7 +549,19 @@ class StructuralCodeIntelligence:
         logger.info("✅ Analyzed %s files", len(all_metrics))
         return all_metrics
 
-    def _analyze_target_path(self, target_path, all_metrics: list) -> None:
+    def _iter_python_files(self, target_path: Path) -> list[Path]:
+        """
+        إرجاع قائمة ملفات بايثون داخل المسار المستهدف.
+
+        Args:
+            target_path: المسار المستهدف
+
+        Returns:
+            list[Path]: قائمة الملفات المكتشفة
+        """
+        return list(target_path.rglob("*.py"))
+
+    def _analyze_target_path(self, target_path: Path, all_metrics: list[FileMetrics]) -> None:
         """
         تحليل مسار مستهدف | Analyze target path
 
@@ -442,15 +569,14 @@ class StructuralCodeIntelligence:
             target_path: المسار المستهدف | Target path
             all_metrics: قائمة المقاييس | Metrics list
         """
-        py_files = list(target_path.rglob("*.py"))
-        for py_file in py_files:
+        for py_file in self._iter_python_files(target_path):
             if self.should_analyze(py_file):
                 metrics = self.analyze_file(py_file)
                 if metrics:
                     all_metrics.append(metrics)
                     logger.info("  ✓ %s", metrics.relative_path)
 
-    def _calculate_and_sort_hotspots(self, all_metrics: list) -> None:
+    def _calculate_and_sort_hotspots(self, all_metrics: list[FileMetrics]) -> None:
         """
         حساب وترتيب النقاط الساخنة | Calculate and sort hotspots
 
@@ -461,7 +587,7 @@ class StructuralCodeIntelligence:
         self.calculate_hotspot_scores(all_metrics)
         all_metrics.sort(key=lambda m: m.hotspot_score, reverse=True)
 
-    def _build_project_analysis(self, all_metrics: list) -> ProjectAnalysis:
+    def _build_project_analysis(self, all_metrics: list[FileMetrics]) -> ProjectAnalysis:
         """
         بناء تحليل المشروع | Build project analysis
 
@@ -480,18 +606,18 @@ class StructuralCodeIntelligence:
         return ProjectAnalysis(
             timestamp=datetime.now().isoformat(),
             total_files=len(all_metrics),
-            total_lines=stats["total_lines"],
-            total_code_lines=stats["total_code"],
-            total_functions=stats["total_functions"],
-            total_classes=stats["total_classes"],
-            avg_file_complexity=stats["avg_complexity"],
-            max_file_complexity=stats["max_complexity"],
-            critical_hotspots=hotspots["critical"],
-            high_hotspots=hotspots["high"],
+            total_lines=stats.total_lines,
+            total_code_lines=stats.total_code,
+            total_functions=stats.total_functions,
+            total_classes=stats.total_classes,
+            avg_file_complexity=stats.avg_complexity,
+            max_file_complexity=stats.max_complexity,
+            critical_hotspots=hotspots.critical,
+            high_hotspots=hotspots.high,
             files=all_metrics,
         )
 
-    def _calculate_project_statistics(self, all_metrics: list) -> dict:
+    def _calculate_project_statistics(self, all_metrics: list[FileMetrics]) -> _ProjectStats:
         """
         حساب إحصائيات المشروع | Calculate project statistics
 
@@ -499,23 +625,33 @@ class StructuralCodeIntelligence:
             all_metrics: قائمة المقاييس | Metrics list
 
         Returns:
-            معجم الإحصائيات | Statistics dictionary
+            _ProjectStats: إحصائيات المشروع
         """
-        return {
-            "total_lines": sum(m.total_lines for m in all_metrics),
-            "total_code": sum(m.code_lines for m in all_metrics),
-            "total_functions": sum(m.num_functions for m in all_metrics),
-            "total_classes": sum(m.num_classes for m in all_metrics),
-            "avg_complexity": round(
-                sum(m.file_complexity for m in all_metrics) / len(all_metrics)
-                if all_metrics
-                else 0,
-                2,
-            ),
-            "max_complexity": max((m.file_complexity for m in all_metrics), default=0),
-        }
+        avg_complexity = self._calculate_average_complexity(all_metrics)
+        return _ProjectStats(
+            total_lines=sum(m.total_lines for m in all_metrics),
+            total_code=sum(m.code_lines for m in all_metrics),
+            total_functions=sum(m.num_functions for m in all_metrics),
+            total_classes=sum(m.num_classes for m in all_metrics),
+            avg_complexity=round(avg_complexity, 2),
+            max_complexity=max((m.file_complexity for m in all_metrics), default=0),
+        )
 
-    def _identify_hotspots(self, all_metrics: list) -> dict:
+    def _calculate_average_complexity(self, all_metrics: list[FileMetrics]) -> float:
+        """
+        حساب متوسط تعقيد الملفات.
+
+        Args:
+            all_metrics: قائمة المقاييس | Metrics list
+
+        Returns:
+            float: متوسط التعقيد
+        """
+        if not all_metrics:
+            return 0.0
+        return sum(m.file_complexity for m in all_metrics) / len(all_metrics)
+
+    def _identify_hotspots(self, all_metrics: list[FileMetrics]) -> _HotspotBuckets:
         """
         تحديد النقاط الساخنة | Identify hotspots
 
@@ -523,9 +659,9 @@ class StructuralCodeIntelligence:
             all_metrics: قائمة المقاييس المرتبة | Sorted metrics list
 
         Returns:
-            معجم النقاط الساخنة | Hotspots dictionary
+            _HotspotBuckets: القوائم المصنفة للنقاط الساخنة
         """
-        return {
-            "critical": [m.relative_path for m in all_metrics[:20]],
-            "high": [m.relative_path for m in all_metrics[20:40]],
-        }
+        return _HotspotBuckets(
+            critical=[m.relative_path for m in all_metrics[:20]],
+            high=[m.relative_path for m in all_metrics[20:40]],
+        )
