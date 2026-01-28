@@ -80,9 +80,14 @@ class ContextComposer:
 
     # Aggressive patterns to detect solution blocks embedded in content
     # These look for a solution header/label and match until the next Exercise/Question/Header or End of String.
+    # Updated to handle Markdown bolding (e.g. **Exercise**) and Arabic terms.
+    # Note: (?s) enables DOTALL mode for the whole regex.
+    # The regex matches a solution header, then greedily consumes text until it hits a Lookahead for another Exercise/Question header OR End of String.
+    # We added \s* to handle spacing and \*{0,2} for markdown bolding.
+    # Added "التمرين" (with Al-) to ensure Arabic headers like "**التمرين الثاني**" are detected as stop markers.
     SOLUTION_PATTERNS = [
-        r"(?i)\n(#{1,3}\s*(Solution|Answer|Correction|Marking Scheme|Key|الحل|الإجابة|الجواب|تصحيح|مفتاح))[\s\S]+?(?=\n(#{1,3}|Exercise|Question|السؤال|تمرين)|$)",
-        r"(?i)\n(Solution|Answer|الحل|الجواب):\s*[\s\S]+?(?=\n(#{1,3}|Exercise|Question|السؤال|تمرين)|$)",
+        r"(?i)\n(#{1,3}\s*(Solution|Answer|Correction|Marking Scheme|Key|الحل|الإجابة|الجواب|تصحيح|مفتاح))[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
+        r"(?i)\n(Solution|Answer|الحل|الجواب):\s*[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
     ]
 
     @classmethod
