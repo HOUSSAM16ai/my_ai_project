@@ -18,32 +18,21 @@
 """
 
 import logging
-import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
 from typing import Final
 
 from fastapi import APIRouter, FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
 
-# استيراد الموجهات بشكل صريح
-from app.api.routers import (
-    admin,
-    agents,
-    content,
-    crud,
-    customer_chat,
-    data_mesh,
-    missions,
-    observability,
-    overmind,
-    security,
-    system,
-    ums,
+from app.core.app_blueprint import (
+    KernelConfig,
+    KernelSpec,
+    MiddlewareSpec,
+    RouterSpec,
+    StaticFilesSpec,
+    build_kernel_config,
+    build_kernel_spec,
+    is_dev_environment,
 )
 from app.core.agents.system_principles import (
     validate_architecture_system_principles,
@@ -56,158 +45,19 @@ from app.core.asyncapi_contracts import (
 from app.core.config import AppSettings
 from app.core.database import async_session_factory
 from app.core.db_schema import validate_schema_on_startup
-from app.core.event_bus_impl import get_event_bus
 from app.core.openapi_contracts import (
     compare_contract_to_runtime,
     default_contract_path,
     load_contract_operations,
 )
-from app.gateway import APIGateway, ServiceRegistry
-from app.gateway.config import DEFAULT_GATEWAY_CONFIG, GatewayConfig
+from app.core.kernel_state import apply_app_state, build_app_state
 from app.middleware.fastapi_error_handlers import add_error_handlers
-from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
-from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
-from app.middleware.security.security_headers import SecurityHeadersMiddleware
 from app.middleware.static_files_middleware import StaticFilesConfig, setup_static_files_middleware
 from app.services.bootstrap import bootstrap_admin_account
-from app.services.overmind.langgraph.service import LangGraphAgentService
-from app.services.overmind.plan_registry import AgentPlanRegistry
-from app.services.overmind.plan_service import AgentPlanService
 
 logger = logging.getLogger(__name__)
 
 __all__ = ["RealityKernel"]
-
-# ==============================================================================
-# SICP: Data Abstraction (تجريد البيانات)
-# ==============================================================================
-
-# تعريف نوع MiddlewareSpec: (الفئة، المعاملات)
-# يدعم أي middleware متوافق مع BaseHTTPMiddleware أو ASGIApp
-type MiddlewareSpec = tuple[type[BaseHTTPMiddleware] | type, dict[str, object]]
-
-# تعريف نوع RouterSpec: (الموجه، البادئة)
-type RouterSpec = tuple[APIRouter, str]
-
-# إعدادات CORS الأساسية لتبسيط القراءة وإعادة الاستخدام
-BASE_CORS_OPTIONS: dict[str, object] = {
-    "allow_credentials": True,
-    "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
-    "allow_headers": [
-        "Authorization",
-        "Content-Type",
-        "Accept",
-        "Origin",
-        "X-Requested-With",
-        "X-CSRF-Token",
-    ],
-    "expose_headers": ["Content-Length", "Content-Range"],
-}
-
-
-@dataclass(frozen=True, slots=True)
-class GatewayComponents:
-    """حاوية مكونات البوابة لضمان تجميع منظم وقابل للاختبار."""
-
-    registry: ServiceRegistry
-    gateway: APIGateway
-
-
-# ==============================================================================
-# SICP: Functional Core (الجوهر الوظيفي)
-# ==============================================================================
-
-
-def _get_middleware_stack(settings: AppSettings) -> list[MiddlewareSpec]:
-    """
-    تكوين قائمة البرمجيات الوسيطة كبيانات وصفية (Declarative Data).
-
-    بدلاً من استدعاء الدوال بشكل إجرائي، نُعرف "ماذا نريد" كقائمة بيانات.
-
-    Args:
-        settings: إعدادات التطبيق.
-
-    Returns:
-        list[MiddlewareSpec]: قائمة المواصفات.
-    """
-    # تجهيز إعدادات CORS
-    cors_options = _build_cors_options(settings.BACKEND_CORS_ORIGINS)
-
-    # تجهيز المكدس (الترتيب مهم: من الخارج إلى الداخل)
-    stack: list[MiddlewareSpec] = [
-        # 1. المضيف الموثوق (Trusted Host)
-        (TrustedHostMiddleware, {"allowed_hosts": settings.ALLOWED_HOSTS}),
-        # 2. CORS
-        (CORSMiddleware, cors_options),
-        # 3. ترويسات الأمان (Security Headers)
-        (SecurityHeadersMiddleware, {}),
-        # 4. تنظيف الترويسات (Clean Headers)
-        (RemoveBlockingHeadersMiddleware, {}),
-        # 5. ضغط البيانات (GZip)
-        (GZipMiddleware, {"minimum_size": 1000}),
-    ]
-
-    # إضافة تحديد المعدل فقط في غير بيئة الاختبار
-    if settings.ENVIRONMENT != "testing":
-        stack.insert(3, (RateLimitMiddleware, {}))
-
-    return stack
-
-
-def _build_cors_options(origins: list[str]) -> dict[str, object]:
-    """
-    بناء خيارات CORS بشكل واضح ومتسق.
-
-    Args:
-        origins: قائمة الأصول المسموح بها.
-
-    Returns:
-        dict[str, object]: قاموس خيارات CORS الجاهز للاستخدام.
-    """
-    allow_origins = origins or ["*"]
-    options = dict(BASE_CORS_OPTIONS)
-    options["allow_origins"] = allow_origins
-    return options
-
-
-def _get_router_registry(gateway_router: APIRouter | None = None) -> list[RouterSpec]:
-    """
-    سجل الموجهات (Router Registry) كبيانات.
-
-    Args:
-        gateway_router: موجه البوابة (اختياري)
-
-    Returns:
-        list[RouterSpec]: قائمة (الموجه، البادئة).
-    """
-    routers = _base_router_registry()
-
-    # إضافة موجه البوابة إذا كان متاحاً
-    if gateway_router:
-        routers.append((gateway_router, ""))
-
-    return routers
-
-
-def _base_router_registry() -> list[RouterSpec]:
-    """يبني سجل الموجهات الأساسية للتطبيق بدون موجه البوابة."""
-
-    return [
-        (system.root_router, ""),  # Root Level (e.g., /health)
-        (system.router, ""),  # /system prefix is inside the router
-        (admin.router, ""),
-        (ums.router, ""),
-        (security.router, "/api/security"),
-        (data_mesh.router, "/api/v1/data-mesh"),
-        (observability.router, "/api/observability"),
-        (crud.router, "/api/v1"),
-        (customer_chat.router, ""),
-        (agents.router, ""),
-        (overmind.router, ""),
-        (missions.router, ""),
-        (content.router, ""),
-    ]
-
 
 def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
     """
@@ -234,68 +84,17 @@ def _get_gateway_router(app: FastAPI) -> APIRouter | None:
     return gateway.router if gateway else None
 
 
-def _initialize_app_state(app: FastAPI) -> None:
-    """يهيئ حالة التطبيق الأساسية بشكل صريح وقابل للتوسعة."""
-
-    app.state.agent_plan_registry = AgentPlanRegistry()
-    app.state.agent_plan_service = AgentPlanService()
-    app.state.langgraph_service = LangGraphAgentService()
-    app.state.event_bus = get_event_bus()
-
-    gateway_components = _build_gateway_components()
-    app.state.service_registry = gateway_components.registry
-    app.state.api_gateway = gateway_components.gateway
-
-
-def _build_gateway_components(
-    config: GatewayConfig = DEFAULT_GATEWAY_CONFIG,
-) -> GatewayComponents:
-    """يبني مكونات بوابة API في حاوية واحدة لضمان الاتساق."""
-
-    registry = ServiceRegistry(services=config.services)
-    gateway = APIGateway(config=config, registry=registry)
-    return GatewayComponents(registry=registry, gateway=gateway)
-
-
-def _is_dev_environment(settings_dict: dict[str, object]) -> bool:
-    """يتحقق من أن البيئة تطويرية لتفعيل وثائق الـ API فقط حين الحاجة."""
-
-    return settings_dict.get("ENVIRONMENT") == "development"
-
-
-def _configure_static_files(app: FastAPI, *, enable_static_files: bool) -> None:
+def _configure_static_files(app: FastAPI, spec: StaticFilesSpec) -> None:
     """يضبط خدمة الملفات الثابتة بشكل صريح مع احترام وضع API-only."""
 
-    if enable_static_files:
+    if spec.enabled:
         static_config = StaticFilesConfig(
             enabled=True,
-            serve_spa=True,
+            serve_spa=spec.serve_spa,
         )
         setup_static_files_middleware(app, static_config)
     else:
         logger.info("🚀 Running in API-only mode (no static files)")
-
-
-def _normalize_settings(
-    settings: AppSettings | dict[str, object],
-) -> tuple[AppSettings, dict[str, object]]:
-    """
-    يطبع إعدادات التطبيق على شكل كائن وقاموس بطريقة موحدة.
-
-    Args:
-        settings: إعدادات التطبيق بصيغة كائن أو قاموس.
-
-    Returns:
-        tuple[AppSettings, dict[str, object]]: الكائن الكامل وقاموس القيم.
-    """
-    if isinstance(settings, dict):
-        if "DATABASE_URL" not in settings and os.getenv("PYTEST_CURRENT_TEST"):
-            settings = {**settings, "DATABASE_URL": "sqlite+aiosqlite:///:memory:"}
-        settings_obj = AppSettings(**settings)
-        settings_dict = settings_obj.model_dump()
-        return settings_obj, settings_dict
-
-    return settings, settings.model_dump()
 
 
 # ==============================================================================
@@ -327,9 +126,12 @@ class RealityKernel:
         """
         validate_system_principles()
         validate_architecture_system_principles()
-        self.settings_obj, self.settings_dict = _normalize_settings(settings)
-
-        self.enable_static_files = enable_static_files
+        self.kernel_config: KernelConfig = build_kernel_config(
+            settings,
+            enable_static_files=enable_static_files,
+        )
+        self.settings_obj = self.kernel_config.settings_obj
+        self.settings_dict = self.kernel_config.settings_dict
 
         # بناء التطبيق فور الإنشاء
         self.app: Final[FastAPI] = self._construct_app()
@@ -352,20 +154,21 @@ class RealityKernel:
         app = self._create_base_app_instance()
 
         # 2. Data Acquisition (Pure)
-        middleware_stack = _get_middleware_stack(self.settings_obj)
-
-        router_registry = _get_router_registry(_get_gateway_router(app))
+        kernel_spec: KernelSpec = build_kernel_spec(
+            self.kernel_config,
+            gateway_router=_get_gateway_router(app),
+        )
 
         # 3. Transformations - API Core (100% API-First)
-        app = _apply_middleware(app, middleware_stack)
+        app = _apply_middleware(app, kernel_spec.middleware_stack)
         add_error_handlers(app)  # Legacy helper
-        app = _mount_routers(app, router_registry)
+        app = _mount_routers(app, kernel_spec.router_registry)
         _validate_contract_alignment(app)
 
         # 4. Static Files (Optional - Frontend Support)
         # Principle: API-First - يمكن تشغيل API بدون frontend
         # يتم الإعداد أخيراً لضمان عدم تداخل المسارات مع API
-        _configure_static_files(app, enable_static_files=self.enable_static_files)
+        _configure_static_files(app, kernel_spec.static_files_spec)
 
         return app
 
@@ -377,12 +180,12 @@ class RealityKernel:
         @asynccontextmanager
         async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             """Lifecycle Manager Closure."""
-            _initialize_app_state(app)
+            apply_app_state(app, build_app_state())
 
             async for _ in self._handle_lifespan_events():
                 yield
 
-        is_dev = _is_dev_environment(self.settings_dict)
+        is_dev = is_dev_environment(self.settings_dict)
 
         return FastAPI(
             title=self.settings_dict.get("PROJECT_NAME", "CogniForge"),

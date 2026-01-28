@@ -2,6 +2,7 @@ import pytest
 
 from app.services.system.service_catalog_service import (
     APISpec,
+    DefaultServiceCatalogPolicy,
     HealthStatus,
     ServiceCatalogService,
     ServiceLifecycle,
@@ -33,6 +34,7 @@ def test_register_get_service(catalog):
         owner_team="Team A",
         repository_url="http://git",
         documentation_url="http://doc",
+        api_spec_url="http://api",
         tech_stack=["Python"],
     )
 
@@ -86,6 +88,7 @@ def test_health_update(catalog):
         owner_team="Team A",
         repository_url="http://git",
         documentation_url="http://doc",
+        api_spec_url="http://api",
     )
     catalog.register_service(service)
 
@@ -105,6 +108,7 @@ def test_dependency_graph(catalog):
         owner_team="",
         repository_url="",
         documentation_url="",
+        api_spec_url="http://api",
         dependencies=["s2"],
     )
     s2 = ServiceMetadata(
@@ -139,6 +143,7 @@ def test_metrics_summary(catalog):
         owner_team="",
         repository_url="",
         documentation_url="",
+        api_spec_url="http://api",
     )
     catalog.register_service(s1)
     catalog.update_service_health("s1", HealthStatus.HEALTHY, {})
@@ -152,3 +157,35 @@ def test_singleton():
     c1 = get_service_catalog()
     c2 = get_service_catalog()
     assert c1 is c2
+
+
+def test_default_policy_rejects_missing_api_spec():
+    policy = DefaultServiceCatalogPolicy()
+    service = ServiceMetadata(
+        service_id="svc-x",
+        name="Test",
+        description="",
+        service_type=ServiceType.MICROSERVICE,
+        lifecycle=ServiceLifecycle.PRODUCTION,
+        owner_team="",
+        repository_url="",
+        documentation_url="",
+    )
+    with pytest.raises(ValueError):
+        policy.validate_service(service)
+
+
+def test_default_policy_rejects_library_service():
+    policy = DefaultServiceCatalogPolicy()
+    service = ServiceMetadata(
+        service_id="svc-lib",
+        name="Lib",
+        description="",
+        service_type=ServiceType.LIBRARY,
+        lifecycle=ServiceLifecycle.PRODUCTION,
+        owner_team="",
+        repository_url="",
+        documentation_url="",
+    )
+    with pytest.raises(ValueError):
+        policy.validate_service(service)
