@@ -21,6 +21,7 @@ from app.services.chat.graph.state import AgentState
 class WriterIntent(Enum):
     GENERAL_INQUIRY = auto()
     SOLUTION_REQUEST = auto()
+    DIAGNOSIS_REQUEST = auto()
 
 
 @dataclass
@@ -40,11 +41,18 @@ class IntentDetector:
     # Regex patterns for high-precision detection
     REQUEST_INDICATORS = r"(أريد|بدي|ابغى|عطيني|اعطني|هات|وريني|show|give|want|provide|display|please|plz|من فضلك|لو سمحت)"
     TARGET_NOUNS = r"(حل|إجابة|اجابة|جواب|صحح|تصحيح|solution|answer|result|correction)"
-    NEGATION_PATTERN = r"(don't|do not|not|no|never|لا|ما|لم|لن|ليس).{0,20}(want|need|give|show|أريد|بدي|تعطيني|عطيني|هات)"
+    # Updated negation to include "without" variants
+    NEGATION_PATTERN = r"(don't|do not|not|no|never|without|sans|لا|ما|لم|لن|ليس|بدون|بلاش|من غير).{0,20}(want|need|give|show|solution|answer|أريد|بدي|تعطيني|عطيني|هات|حل|إجابة)"
+    DIAGNOSIS_KEYWORDS = r"(diagnose|quiz|test|exam|assessment|شخصني|ختبرني|إختبار|اختبار|قيم|تقييم|مراجعة)"
 
     @classmethod
     def analyze(cls, user_message: str) -> WriterIntent:
         msg_lower = user_message.lower()
+
+        # Check for Diagnosis first
+        is_diagnosis = bool(re.search(cls.DIAGNOSIS_KEYWORDS, msg_lower))
+        if is_diagnosis:
+            return WriterIntent.DIAGNOSIS_REQUEST
 
         has_noun = bool(re.search(cls.TARGET_NOUNS, msg_lower))
         is_request = bool(re.search(cls.REQUEST_INDICATORS, msg_lower))
@@ -155,7 +163,7 @@ class PromptStrategist:
     """
 
     @staticmethod
-    def build_prompt(profile: StudentProfile) -> str:
+    def build_prompt(profile: StudentProfile, intent: WriterIntent) -> str:
         base_prompt = (
             "أنت 'Overmind'، المعلم الذكي (Smart Tutor) والموجه الأكاديمي الفاخر.\n"
             "مهمتك: مساعدة الطالب باستخدام المحتوى المسترجع (Context) بذكاء وحكمة.\n\n"
@@ -184,6 +192,16 @@ class PromptStrategist:
             f"   - مستوى الطالب: **{profile.level}**.\n"
         )
 
+        diagnosis_instructions = ""
+        if intent == WriterIntent.DIAGNOSIS_REQUEST:
+            diagnosis_instructions = (
+                "\n### بروتوكول التشخيص (Diagnosis Mode):\n"
+                "أنت الآن الممتحن (The Examiner). مهمتك ليست الشرح بل الاختبار.\n"
+                "1. قدم السؤال/التمرين بوضوح دون أي تلميحات للإجابة.\n"
+                "2. اطلب من الطالب محاولة الحل أولاً.\n"
+                "3. كن مشجعاً وحازماً في نفس الوقت.\n"
+            )
+
         level_guidance = {
             "Beginner": "   - بسّط المفاهيم لأقصى درجة، استخدم تشبيهات من الواقع، وفكك المصطلحات المعقدة.",
             "Average": "   - ركز على توضيح الخطوات الصعبة والربط بين الأفكار.",
@@ -193,6 +211,7 @@ class PromptStrategist:
         return (
             base_prompt
             + dual_mode_instructions
+            + diagnosis_instructions
             + level_guidance.get(profile.level, "")
             + "\n\nحافظ على نبرة فاخرة، مشجعة، واحترافية."
         )
@@ -218,7 +237,7 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
 
     # 3. Composition
     context_text = ContextComposer.compose(search_results, intent)
-    system_prompt = PromptStrategist.build_prompt(profile)
+    system_prompt = PromptStrategist.build_prompt(profile, intent)
 
     # Inject Critique if available (The Self-Correction Loop)
     review_feedback = state.get("review_feedback")

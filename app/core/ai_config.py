@@ -68,6 +68,7 @@ class AvailableModels:
     QWEN_QWEN3_CODER_FREE = "qwen/qwen3-coder:free"
     DEVSTRAL_2512 = "mistralai/devstral-2512:free"
     GLM_4_5_AIR_FREE = "z-ai/glm-4.5-air:free"
+    DEEPSEEK_R1_CHIMERA_FREE = "tngtech/deepseek-r1t2-chimera:free"
 
 
 class ActiveModels:
@@ -89,9 +90,9 @@ class ActiveModels:
     ╚═══════════════════════════════════════════════════════════════════════════════════╝
     """
 
-    PRIMARY = AvailableModels.GLM_4_5_AIR_FREE
+    PRIMARY = AvailableModels.DEEPSEEK_R1_CHIMERA_FREE
     LOW_COST = "deepseek/deepseek-v3.2-exp"
-    GATEWAY_PRIMARY = AvailableModels.GLM_4_5_AIR_FREE
+    GATEWAY_PRIMARY = AvailableModels.DEEPSEEK_R1_CHIMERA_FREE
     GATEWAY_FALLBACK_1 = AvailableModels.GEMINI_2_FLASH_EXP_FREE
     GATEWAY_FALLBACK_2 = AvailableModels.QWEN_QWEN3_CODER_FREE
     GATEWAY_FALLBACK_3 = AvailableModels.KAT_CODER_PRO_FREE
