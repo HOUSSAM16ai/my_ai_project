@@ -88,6 +88,12 @@ class ContextComposer:
     SOLUTION_PATTERNS = [
         r"(?i)\n(#{1,3}\s*(Solution|Answer|Correction|Marking Scheme|Key|الحل|الإجابة|الجواب|تصحيح|مفتاح))[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
         r"(?i)\n(Solution|Answer|الحل|الجواب):\s*[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
+        r"(?is)\n\[(sol|solution):[^\]]+\][\s\S]+?(?=\n\s*\[(ex|exercise):|$)",
+        r"(?i)\n\s*\*{0,2}حل\s+التمرين[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
+    ]
+    SOLUTION_CAPTURE_PATTERNS = [
+        r"(?is)\n\[(sol|solution):[^\]]+\][\s\S]+?(?=\n\s*\[(ex|exercise):|$)",
+        r"(?is)\n\s*\*{0,2}حل\s+التمرين[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
     ]
 
     @classmethod
@@ -99,6 +105,9 @@ class ContextComposer:
         for item in search_results:
             # 1. Base Content Extraction
             content = item.get("content", "")
+            sanitized_content = cls._sanitize_content(
+                content, show_hidden_marker=intent != WriterIntent.SOLUTION_REQUEST
+            )
 
             # 2. Field-Level Firewall
             # If user didn't ask for solution, we STRICTLY exclude known solution fields
@@ -108,9 +117,10 @@ class ContextComposer:
                 for key in cls.FORBIDDEN_KEYS:
                     if val := item.get(key):
                         solution_data[key] = val
-            else:
-                # Sanitization Mode: Scrub content
-                content = cls._sanitize_content(content)
+                if not solution_data:
+                    embedded_solutions = cls._extract_solution_blocks(content)
+                    if embedded_solutions:
+                        solution_data["embedded_solution"] = "\n\n".join(embedded_solutions)
 
             # 3. Assemble Display
             solution_display = ""
@@ -124,17 +134,23 @@ class ContextComposer:
             else:
                 solution_display = "🔒 [SOLUTION HIDDEN: Student has NOT requested the solution yet.]"
 
-            context_text += f"**Exercise Context:**\n{content}\n\n{solution_display}\n\n---\n"
+            context_text += (
+                f"**Exercise Context:**\n{sanitized_content}\n\n{solution_display}\n\n---\n"
+            )
 
         return context_text
 
     @classmethod
-    def _sanitize_content(cls, content: str) -> str:
+    def _sanitize_content(cls, content: str, show_hidden_marker: bool) -> str:
         """
-        Removes embedded solution blocks from the content string using Regex.
+        إزالة مقاطع الحلول المضمّنة داخل المحتوى باستخدام التعبيرات النمطية.
         """
         sanitized = content
-        replacement = "\n\n🔒 [HIDDEN: Potential Solution Segment Redacted from Content]\n"
+        replacement = (
+            "\n\n🔒 [HIDDEN: Potential Solution Segment Redacted from Content]\n"
+            if show_hidden_marker
+            else "\n\n"
+        )
 
         for pattern in cls.SOLUTION_PATTERNS:
             # DOTALL matches newlines, allowing us to catch multi-line solution blocks if we refined regex
@@ -143,6 +159,20 @@ class ContextComposer:
             sanitized = re.sub(pattern, replacement, sanitized, flags=re.DOTALL)
 
         return sanitized
+
+    @classmethod
+    def _extract_solution_blocks(cls, content: str) -> list[str]:
+        """
+        استخراج كتل الحلول المضمّنة داخل المحتوى عندما لا تتوفر حقول حل صريحة.
+        """
+        extracted: list[str] = []
+        for pattern in cls.SOLUTION_CAPTURE_PATTERNS:
+            for match in re.finditer(pattern, content, flags=re.DOTALL):
+                block = match.group(0).strip()
+                if block and block not in extracted:
+                    extracted.append(block)
+
+        return extracted
 
 
 # --- 4. Prompt Strategist (The Pedagogical Engine) ---
