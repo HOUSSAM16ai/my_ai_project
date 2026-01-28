@@ -1,11 +1,12 @@
 """اختبارات نماذج الاستجابة لخدمة المراقبة عبر HTTP."""
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from fastapi.testclient import TestClient
 
 from microservices.observability_service import main as observability_main
-from microservices.observability_service.models import MetricType
+from microservices.observability_service.models import CapacityPlan, MetricType
 
 
 @dataclass(frozen=True)
@@ -13,18 +14,6 @@ class _ForecastStub:
     forecast_id: str
     predicted_load: float
     confidence_interval: tuple[float, float]
-
-
-@dataclass(frozen=True)
-class _CapacityPlanStub:
-    plan_id: str
-    service_name: str
-    current_capacity: float
-    recommended_capacity: float
-    forecast_horizon_hours: int
-    expected_peak_load: float
-    confidence: float
-    created_at: str
 
 
 class _AIOpsServiceStub:
@@ -48,8 +37,8 @@ class _AIOpsServiceStub:
 
     def generate_capacity_plan(
         self, service_name: str, forecast_horizon_hours: int
-    ) -> _CapacityPlanStub:
-        return _CapacityPlanStub(
+    ) -> CapacityPlan:
+        return CapacityPlan(
             plan_id="plan-1",
             service_name=service_name,
             current_capacity=1.0,
@@ -57,25 +46,8 @@ class _AIOpsServiceStub:
             forecast_horizon_hours=forecast_horizon_hours,
             expected_peak_load=1.5,
             confidence=0.9,
-            created_at="2024-01-01T00:00:00Z",
+            created_at=datetime(2024, 1, 1, tzinfo=UTC),
         )
-
-    @staticmethod
-    def _serialize_capacity_plan(
-        plan: _CapacityPlanStub | None,
-    ) -> dict[str, float | int | str] | None:
-        if plan is None:
-            return None
-        return {
-            "plan_id": plan.plan_id,
-            "service_name": plan.service_name,
-            "current_capacity": plan.current_capacity,
-            "recommended_capacity": plan.recommended_capacity,
-            "forecast_horizon_hours": plan.forecast_horizon_hours,
-            "expected_peak_load": plan.expected_peak_load,
-            "confidence": plan.confidence,
-            "created_at": plan.created_at,
-        }
 
 
 def _client_with_stubbed_service() -> TestClient:
@@ -139,6 +111,7 @@ def test_forecast_endpoint() -> None:
 
 def test_capacity_endpoint() -> None:
     client = _client_with_stubbed_service()
+    created_at = datetime(2024, 1, 1, tzinfo=UTC).isoformat()
 
     payload = {"service_name": "service-a", "forecast_horizon_hours": 24}
 
@@ -154,6 +127,6 @@ def test_capacity_endpoint() -> None:
             "forecast_horizon_hours": 24,
             "expected_peak_load": 1.5,
             "confidence": 0.9,
-            "created_at": "2024-01-01T00:00:00Z",
+            "created_at": created_at,
         }
     }

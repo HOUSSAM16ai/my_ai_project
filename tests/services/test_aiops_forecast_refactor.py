@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-import statistics
 from datetime import UTC, datetime, timedelta
 
+from app.services.observability.aiops.logic import (
+    build_confidence_interval,
+    calculate_trend,
+    predict_load,
+)
 from app.services.observability.aiops.models import MetricType, TelemetryData
 from app.services.observability.aiops.service import AIOpsService
 
@@ -42,14 +46,14 @@ def test_forecast_load_builds_confidence_interval_and_persists() -> None:
 
     assert forecast is not None
 
-    trend = service._calculate_trend(values[-168:])
-    expected_predicted = values[-1] + (trend * 2)
-    expected_stdev = statistics.stdev(values[-168:])
+    trend = calculate_trend(values[-168:])
+    expected_predicted = predict_load(values[-1], trend, 2)
+    expected_lower, expected_upper = build_confidence_interval(values[-168:], expected_predicted)
 
     lower, upper = forecast.confidence_interval
     assert forecast.predicted_load == expected_predicted
-    assert lower == expected_predicted - 2 * expected_stdev
-    assert upper == expected_predicted + 2 * expected_stdev
+    assert lower == expected_lower
+    assert upper == expected_upper
 
     stored_forecasts = service.forecast_repo.get("svc")
     assert stored_forecasts and stored_forecasts[-1] is forecast

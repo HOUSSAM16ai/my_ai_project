@@ -16,6 +16,7 @@ from microservices.observability_service.errors import (
     setup_exception_handlers,
 )
 from microservices.observability_service.health import HealthResponse, build_health_payload
+from microservices.observability_service.logic import serialize_capacity_plan
 from microservices.observability_service.logging import get_logger, setup_logging
 from microservices.observability_service.models import MetricType, TelemetryData
 from microservices.observability_service.service import get_aiops_service
@@ -197,7 +198,7 @@ def _register_routes(app: FastAPI, settings: ObservabilitySettings) -> None:
         plan = service.generate_capacity_plan(request.service_name, request.forecast_horizon_hours)
         if not plan:
             raise BadRequestError("تعذر توليد خطة السعة")
-        serialized = service._serialize_capacity_plan(plan)
+        serialized = serialize_capacity_plan(plan)
         if serialized is None:
             raise BadRequestError("تعذر تحويل خطة السعة")
         return CapacityPlanResponse(plan=CapacityPlanPayload(**serialized))

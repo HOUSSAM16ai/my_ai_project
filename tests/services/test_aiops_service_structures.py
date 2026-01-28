@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from app.services.observability.aiops.logic import HealingPlan, determine_healing_plan
 from app.services.observability.aiops.models import (
     AnomalyDetection,
     AnomalySeverity,
@@ -9,7 +10,7 @@ from app.services.observability.aiops.models import (
     CapacityPlan,
     HealingAction,
 )
-from app.services.observability.aiops.service import AIOpsService, HealingPlan
+from app.services.observability.aiops.service import AIOpsService
 
 
 def _build_anomaly(metric_value: float, expected_value: float = 0.1) -> AnomalyDetection:
@@ -27,9 +28,7 @@ def _build_anomaly(metric_value: float, expected_value: float = 0.1) -> AnomalyD
 
 
 def test_healing_plan_structure_is_type_safe() -> None:
-    service = AIOpsService()
-
-    plan = service._determine_healing_action(_build_anomaly(metric_value=2.5))
+    plan = determine_healing_plan(_build_anomaly(metric_value=2.5))
 
     assert isinstance(plan, HealingPlan)
     assert plan.action is HealingAction.SCALE_UP
