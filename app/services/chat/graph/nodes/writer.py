@@ -68,27 +68,76 @@ class ContextComposer:
     applying the 'Context Firewall' to hide solutions when not requested.
     """
 
-    @staticmethod
-    def compose(search_results: list[dict[str, Any]], intent: WriterIntent) -> str:
+    FORBIDDEN_KEYS = {
+        "solution",
+        "answer",
+        "marking_scheme",
+        "correction",
+        "key",
+        "answer_key",
+        "solution_md",
+    }
+
+    # Aggressive patterns to detect solution blocks embedded in content
+    # These look for a solution header/label and match until the next Exercise/Question/Header or End of String.
+    SOLUTION_PATTERNS = [
+        r"(?i)\n(#{1,3}\s*(Solution|Answer|Correction|Marking Scheme|Key|الحل|الإجابة|الجواب|تصحيح|مفتاح))[\s\S]+?(?=\n(#{1,3}|Exercise|Question|السؤال|تمرين)|$)",
+        r"(?i)\n(Solution|Answer|الحل|الجواب):\s*[\s\S]+?(?=\n(#{1,3}|Exercise|Question|السؤال|تمرين)|$)",
+    ]
+
+    @classmethod
+    def compose(cls, search_results: list[dict[str, Any]], intent: WriterIntent) -> str:
         if not search_results:
             return ""
 
         context_text = ""
         for item in search_results:
+            # 1. Base Content Extraction
             content = item.get("content", "")
-            original_solution = item.get("solution", "")
 
-            # Smart Solution Hiding
+            # 2. Field-Level Firewall
+            # If user didn't ask for solution, we STRICTLY exclude known solution fields
+            solution_data = {}
             if intent == WriterIntent.SOLUTION_REQUEST:
-                solution_display = f"### الحل النموذجي (Official Solution):\n{original_solution}"
+                # Retrieve all potential solution fields
+                for key in cls.FORBIDDEN_KEYS:
+                    if val := item.get(key):
+                        solution_data[key] = val
             else:
-                solution_display = (
-                    "🔒 [SOLUTION HIDDEN: Student has NOT requested the solution yet.]"
-                )
+                # Sanitization Mode: Scrub content
+                content = cls._sanitize_content(content)
+
+            # 3. Assemble Display
+            solution_display = ""
+            if intent == WriterIntent.SOLUTION_REQUEST:
+                # Format available solution data
+                if solution_data:
+                    combined_sols = "\n\n".join([f"**{k.title()}**:\n{v}" for k, v in solution_data.items()])
+                    solution_display = f"### الحل النموذجي (Official Solution):\n{combined_sols}"
+                else:
+                    solution_display = "⚠️ [No official solution record found in database]"
+            else:
+                solution_display = "🔒 [SOLUTION HIDDEN: Student has NOT requested the solution yet.]"
 
             context_text += f"**Exercise Context:**\n{content}\n\n{solution_display}\n\n---\n"
 
         return context_text
+
+    @classmethod
+    def _sanitize_content(cls, content: str) -> str:
+        """
+        Removes embedded solution blocks from the content string using Regex.
+        """
+        sanitized = content
+        replacement = "\n\n🔒 [HIDDEN: Potential Solution Segment Redacted from Content]\n"
+
+        for pattern in cls.SOLUTION_PATTERNS:
+            # DOTALL matches newlines, allowing us to catch multi-line solution blocks if we refined regex
+            # For now, we target specific headers to end of string or next block
+            # Note: The simple regex provided above matches to end of string '$' which is aggressive but safe for 'leak' prevention
+            sanitized = re.sub(pattern, replacement, sanitized, flags=re.DOTALL)
+
+        return sanitized
 
 
 # --- 4. Prompt Strategist (The Pedagogical Engine) ---
@@ -108,8 +157,11 @@ class PromptStrategist:
             "### القواعد الذهبية (The Golden Rules):\n"
             "1. **احترام السياق (Context Firewall)**: إذا كان الحل مخفياً (HIDDEN)، **يُمنع منعاً باتاً** توليد الحل أو الإجابة أو المفتاح.\n"
             "   - **مسموح فقط**: عرض نص السؤال/التمرين وتوجيه الطالب للتفكير.\n"
-            "   - **ممنوع**: شرح الخطوات النهائية أو إعطاء النتيجة قبل محاولة الطالب.\n"
+            "   - **تحذير**: حتى لو رأيت الحل في النص (عن طريق الخطأ)، تجاهله تماماً ولا تذكره.\n"
             "2. **الدقة الأكاديمية**: التزم بالمصطلحات العلمية الدقيقة.\n"
+            "3. **التحديد (Granularity)**: إذا طلب الطالب جزءاً محدداً (مثل 'السؤال الأول' أو 'Question 1'):\n"
+            "   - **استخرج فقط** الجزء المطلوب من السياق.\n"
+            "   - لا تعرض التمرين بالكامل إذا لم يُطلب منك ذلك.\n"
         )
 
         dual_mode_instructions = (
