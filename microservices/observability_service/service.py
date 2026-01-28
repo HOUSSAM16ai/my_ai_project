@@ -1,18 +1,26 @@
 from __future__ import annotations
 
 import logging
-import statistics
 import threading
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from .logic import (
+    build_baseline,
+    build_capacity_plan,
+    build_confidence_interval,
+    calculate_trend,
+    compose_forecast_record,
+    derive_root_causes,
+    determine_healing_plan,
+    detect_anomaly,
+    predict_load,
+    serialize_capacity_plan,
+)
 from .models import (
     AnomalyDetection,
-    AnomalySeverity,
-    AnomalyType,
     CapacityPlan,
-    HealingAction,
     HealingDecision,
     JsonValue,
     LoadForecast,
@@ -92,20 +100,7 @@ class AIOpsService:
         key = f"{data.service_name}:{data.metric_type.value}"
 
         if len(values) >= 10:
-            self.baseline_metrics[key] = {
-                "mean": statistics.mean(values),
-                "median": statistics.median(values),
-                "stdev": statistics.stdev(values) if len(values) > 1 else 0,
-                "p95": self._percentile(values, 95),
-                "p99": self._percentile(values, 99),
-            }
-
-    @staticmethod
-    def _percentile(values: list[float], percentile: int) -> float:
-        """حساب النسبة المئوية المطلوبة لقائمة قيم."""
-        sorted_values = sorted(values)
-        index = int(len(sorted_values) * percentile / 100)
-        return sorted_values[min(index, len(sorted_values) - 1)]
+            self.baseline_metrics[key] = build_baseline(values)
 
     # ==================================================================================
     # ANOMALY DETECTION
@@ -119,77 +114,10 @@ class AIOpsService:
         if not baseline:
             return
 
-        if data.metric_type in [MetricType.LATENCY, MetricType.REQUEST_RATE]:
-            anomaly = self._detect_zscore_anomaly(data, baseline)
-            if anomaly:
-                self._record_anomaly(anomaly)
-                self._trigger_healing(anomaly)
-
-        elif data.metric_type == MetricType.ERROR_RATE:
-            threshold = self.anomaly_thresholds[MetricType.ERROR_RATE]["threshold"]
-            if data.value > threshold:
-                anomaly = AnomalyDetection(
-                    anomaly_id=str(uuid.uuid4()),
-                    service_name=data.service_name,
-                    anomaly_type=AnomalyType.ERROR_RATE_INCREASE,
-                    severity=AnomalySeverity.HIGH,
-                    detected_at=datetime.now(UTC),
-                    metric_value=data.value,
-                    expected_value=threshold,
-                    confidence=0.95,
-                    description=f"Error rate {data.value:.2%} exceeds threshold {threshold:.2%}",
-                )
-                self._record_anomaly(anomaly)
-                self._trigger_healing(anomaly)
-
-    def _detect_zscore_anomaly(
-        self, data: TelemetryData, baseline: dict[str, float]
-    ) -> AnomalyDetection | None:
-        """كشف الشذوذ باستخدام Z-score مع توثيق عربي مبسط."""
-        mean = baseline["mean"]
-        stdev = baseline["stdev"]
-
-        if stdev == 0:
-            return None
-
-        # Calculate Z-score
-        zscore = abs((data.value - mean) / stdev)
-        threshold = self.anomaly_thresholds.get(data.metric_type, {}).get("zscore", 3.0)
-
-        # Check if anomaly detected
-        if zscore > threshold:
-            return self._create_zscore_anomaly(data, mean, zscore)
-
-        return None
-
-    def _create_zscore_anomaly(
-        self, data: TelemetryData, mean: float, zscore: float
-    ) -> AnomalyDetection:
-        """إنشاء سجل كشف الشذوذ بطريقة واضحة للقراءة."""
-        severity = self._determine_anomaly_severity(zscore)
-        anomaly_type = self._determine_anomaly_type(data.metric_type)
-
-        return AnomalyDetection(
-            anomaly_id=str(uuid.uuid4()),
-            service_name=data.service_name,
-            anomaly_type=anomaly_type,
-            severity=severity,
-            detected_at=datetime.now(UTC),
-            metric_value=data.value,
-            expected_value=mean,
-            confidence=min(0.95, zscore / 10),
-            description=f"{data.metric_type.value} anomaly: {data.value:.2f} (z-score: {zscore:.2f})",
-        )
-
-    def _determine_anomaly_severity(self, zscore: float) -> AnomalySeverity:
-        """تحديد شدة الشذوذ بناءً على قيمة Z-score لتوجيه القرارات."""
-        return AnomalySeverity.CRITICAL if zscore > 5 else AnomalySeverity.HIGH
-
-    def _determine_anomaly_type(self, metric_type: MetricType) -> AnomalyType:
-        """تحديد نوع الشذوذ حسب نوع المقياس لتبسيط التفسير."""
-        if metric_type == MetricType.LATENCY:
-            return AnomalyType.LATENCY_SPIKE
-        return AnomalyType.TRAFFIC_ANOMALY
+        anomaly = detect_anomaly(data, baseline, self.anomaly_thresholds)
+        if anomaly:
+            self._record_anomaly(anomaly)
+            self._trigger_healing(anomaly)
 
     def _record_anomaly(self, anomaly: AnomalyDetection) -> None:
         """تسجيل الشذوذ المكتشف وتحديث التخزين المؤقت بأمان."""
@@ -205,7 +133,7 @@ class AIOpsService:
 
     def _trigger_healing(self, anomaly: AnomalyDetection) -> None:
         """تشغيل إجراءات المعالجة الذاتية بالاعتماد على خطة واضحة."""
-        plan = self._determine_healing_action(anomaly)
+        plan = determine_healing_plan(anomaly)
 
         if not plan:
             return
@@ -223,34 +151,6 @@ class AIOpsService:
             self.healing_repo.add(decision)
 
         self._execute_healing(decision)
-
-    def _determine_healing_action(self, anomaly: AnomalyDetection) -> HealingPlan | None:
-        """اختيار خطة المعالجة الذاتية المناسبة بناءً على نوع الشذوذ."""
-        if anomaly.anomaly_type == AnomalyType.LATENCY_SPIKE:
-            return HealingPlan(
-                action=HealingAction.SCALE_UP,
-                reason="High latency detected, scaling up to handle load",
-                parameters={"scale_factor": 1.5, "max_instances": 10},
-            )
-
-        if anomaly.anomaly_type == AnomalyType.ERROR_RATE_INCREASE:
-            return HealingPlan(
-                action=HealingAction.ENABLE_CIRCUIT_BREAKER,
-                reason="High error rate, enabling circuit breaker",
-                parameters={"threshold": 0.5, "timeout_seconds": 30},
-            )
-
-        if (
-            anomaly.anomaly_type == AnomalyType.TRAFFIC_ANOMALY
-            and anomaly.metric_value > anomaly.expected_value
-        ):
-            return HealingPlan(
-                action=HealingAction.SCALE_UP,
-                reason="Traffic spike detected, scaling up",
-                parameters={"scale_factor": 2.0, "max_instances": 20},
-            )
-
-        return None
 
     def _execute_healing(self, decision: HealingDecision) -> None:
         """تنفيذ إجراء المعالجة الذاتية مع تحديث أثر القرار."""
@@ -284,13 +184,16 @@ class AIOpsService:
         if not self._has_minimum_history(values):
             return None
 
-        trend = self._calculate_trend(values)
+        trend = calculate_trend(values)
         forecast_timestamp = datetime.now(UTC) + timedelta(hours=hours_ahead)
-        predicted_load = self._predict_load(values[-1], trend, hours_ahead)
-        confidence_interval = self._build_confidence_interval(values, predicted_load)
+        predicted_load = predict_load(values[-1], trend, hours_ahead)
+        confidence_interval = build_confidence_interval(values, predicted_load)
 
-        forecast = self._compose_forecast_record(
-            service_name, forecast_timestamp, predicted_load, confidence_interval
+        forecast = compose_forecast_record(
+            service_name=service_name,
+            forecast_timestamp=forecast_timestamp,
+            predicted_load=predicted_load,
+            confidence_interval=confidence_interval,
         )
         self._store_forecast(service_name, forecast)
 
@@ -306,57 +209,10 @@ class AIOpsService:
         """التحقق من توفر حد أدنى من التاريخ لضمان توقع موثوق."""
         return len(values) >= 100
 
-    @staticmethod
-    def _predict_load(last_value: float, trend: float, hours_ahead: int) -> float:
-        """حساب الحمل المتوقع بناءً على القيمة الأخيرة والاتجاه الزمني."""
-        return last_value + (trend * hours_ahead)
-
-    @staticmethod
-    def _build_confidence_interval(
-        values: list[float], predicted_load: float
-    ) -> tuple[float, float]:
-        """تكوين مجال الثقة المحيط بالتوقع بطريقة قابلة للتتبع."""
-        stdev = statistics.stdev(values) if len(values) > 1 else 0.0
-        return predicted_load - 2 * stdev, predicted_load + 2 * stdev
-
-    @staticmethod
-    def _compose_forecast_record(
-        service_name: str,
-        forecast_timestamp: datetime,
-        predicted_load: float,
-        confidence_interval: tuple[float, float],
-    ) -> LoadForecast:
-        """إنشاء سجل التوقع مع قيم محددة وواضحة."""
-        return LoadForecast(
-            forecast_id=str(uuid.uuid4()),
-            service_name=service_name,
-            forecast_timestamp=forecast_timestamp,
-            predicted_load=predicted_load,
-            confidence_interval=confidence_interval,
-            model_accuracy=0.85,
-            generated_at=datetime.now(UTC),
-        )
-
     def _store_forecast(self, service_name: str, forecast: LoadForecast) -> None:
         """حفظ التوقع داخل المخزن مع حماية تزامنية."""
         with self.lock:
             self.forecast_repo.add(service_name, forecast)
-
-    @staticmethod
-    def _calculate_trend(values: list[float]) -> float:
-        """حساب الاتجاه العام للقيم باستخدام انحدار خطي مبسط."""
-        n = len(values)
-        if n < 2:
-            return 0.0
-
-        x = list(range(n))
-        x_mean = sum(x) / n
-        y_mean = sum(values) / n
-
-        numerator = sum((x[i] - x_mean) * (values[i] - y_mean) for i in range(n))
-        denominator = sum((x[i] - x_mean) ** 2 for i in range(n))
-
-        return numerator / denominator if denominator != 0 else 0.0
 
     # ==================================================================================
     # CAPACITY PLANNING
@@ -373,17 +229,12 @@ class AIOpsService:
 
         current_capacity = 100.0
         safety_factor = 1.3
-        recommended_capacity = forecast.predicted_load * safety_factor
-
-        plan = CapacityPlan(
-            plan_id=str(uuid.uuid4()),
+        plan = build_capacity_plan(
             service_name=service_name,
+            forecast=forecast,
             current_capacity=current_capacity,
-            recommended_capacity=recommended_capacity,
-            forecast_horizon_hours=forecast_horizon_hours,
-            expected_peak_load=forecast.predicted_load,
-            confidence=forecast.model_accuracy,
-            created_at=datetime.now(UTC),
+            safety_factor=safety_factor,
+            horizon_hours=forecast_horizon_hours,
         )
 
         with self.lock:
@@ -401,22 +252,8 @@ class AIOpsService:
         if not anomaly:
             return []
 
-        root_causes = []
         service_metrics = self._get_service_metrics(anomaly.service_name, minutes=30)
-
-        if any(m.metric_type == MetricType.CPU_USAGE and m.value > 80 for m in service_metrics):
-            root_causes.append("High CPU usage detected")
-
-        if any(m.metric_type == MetricType.MEMORY_USAGE and m.value > 90 for m in service_metrics):
-            root_causes.append("Memory exhaustion detected")
-
-        if anomaly.anomaly_type == AnomalyType.LATENCY_SPIKE:
-            error_metrics = [m for m in service_metrics if m.metric_type == MetricType.ERROR_RATE]
-            if error_metrics and error_metrics[-1].value > 0.1:
-                root_causes.append("Correlated with increased error rate")
-
-        if not root_causes:
-            root_causes.append("Root cause analysis inconclusive")
+        root_causes = derive_root_causes(anomaly, service_metrics)
 
         with self.lock:
             anomaly.root_causes = root_causes
@@ -491,37 +328,11 @@ class AIOpsService:
                 else None
             ),
             "capacity_plan": (
-                self._serialize_capacity_plan(self.capacity_repo.get(service_name))
+                serialize_capacity_plan(self.capacity_repo.get(service_name))
                 if self.capacity_repo.get(service_name)
                 else None
             ),
         }
-
-    @staticmethod
-    def _serialize_capacity_plan(plan: CapacityPlan | None) -> dict[str, JsonValue] | None:
-        """تحويل خطة السعة إلى حمولة صديقة للواجهات البرمجية."""
-        if plan is None:
-            return None
-
-        return {
-            "plan_id": plan.plan_id,
-            "service_name": plan.service_name,
-            "current_capacity": plan.current_capacity,
-            "recommended_capacity": plan.recommended_capacity,
-            "forecast_horizon_hours": plan.forecast_horizon_hours,
-            "expected_peak_load": plan.expected_peak_load,
-            "confidence": plan.confidence,
-            "created_at": plan.created_at.isoformat(),
-        }
-
-
-@dataclass(frozen=True)
-class HealingPlan:
-    """خطة معالجة ذاتية مهيكلة بدون استخدام أنواع عامة."""
-
-    action: HealingAction
-    reason: str
-    parameters: dict[str, float | int]
 
 
 # Singleton Instance
