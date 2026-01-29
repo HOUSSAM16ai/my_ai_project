@@ -1,10 +1,9 @@
-from typing import List
-from ..models import FileMetrics, NormalizedRanks, HotspotConfig, HotspotWeights, HotspotBuckets
+from app.services.overmind.code_intelligence.models import FileMetrics, NormalizedRanks, HotspotConfig, HotspotWeights, HotspotBuckets
 
 class HotspotAnalyzer:
     """Analyzer for identifying code hotspots based on complexity, volatility, and smells."""
 
-    def calculate_and_sort_hotspots(self, all_metrics: List[FileMetrics]) -> None:
+    def calculate_and_sort_hotspots(self, all_metrics: list[FileMetrics]) -> None:
         """
         Calculate hotspot scores and sort metrics by score.
 
@@ -14,7 +13,7 @@ class HotspotAnalyzer:
         self.calculate_hotspot_scores(all_metrics)
         all_metrics.sort(key=lambda m: m.hotspot_score, reverse=True)
 
-    def calculate_hotspot_scores(self, all_metrics: List[FileMetrics]) -> None:
+    def calculate_hotspot_scores(self, all_metrics: list[FileMetrics]) -> None:
         """
         Calculate hotspot scores with normalization.
 
@@ -30,7 +29,7 @@ class HotspotAnalyzer:
         # Calculate scores and assign priorities
         self._calculate_weighted_scores(all_metrics, ranks)
 
-    def identify_hotspots(self, all_metrics: List[FileMetrics]) -> HotspotBuckets:
+    def identify_hotspots(self, all_metrics: list[FileMetrics]) -> HotspotBuckets:
         """
         Identify critical and high priority hotspots.
 
@@ -45,7 +44,7 @@ class HotspotAnalyzer:
             high=[m.relative_path for m in all_metrics[20:40]],
         )
 
-    def _extract_and_normalize_metrics(self, all_metrics: List[FileMetrics]) -> NormalizedRanks:
+    def _extract_and_normalize_metrics(self, all_metrics: list[FileMetrics]) -> NormalizedRanks:
         """
         Extract and normalize metrics.
 
@@ -83,7 +82,7 @@ class HotspotAnalyzer:
             + (1 if metrics.has_cross_layer_imports else 0)
         )
 
-    def _normalize_values(self, values: List[float]) -> List[float]:
+    def _normalize_values(self, values: list[float]) -> list[float]:
         """
         Normalize values to 0-1 range.
 
@@ -100,7 +99,7 @@ class HotspotAnalyzer:
 
     def _calculate_weighted_scores(
         self,
-        all_metrics: List[FileMetrics],
+        all_metrics: list[FileMetrics],
         ranks: NormalizedRanks,
     ) -> None:
         """

@@ -16,8 +16,8 @@ from microservices.observability_service.errors import (
     setup_exception_handlers,
 )
 from microservices.observability_service.health import HealthResponse, build_health_payload
-from microservices.observability_service.logic import serialize_capacity_plan
 from microservices.observability_service.logging import get_logger, setup_logging
+from microservices.observability_service.logic import serialize_capacity_plan
 from microservices.observability_service.models import MetricType, TelemetryData
 from microservices.observability_service.service import get_aiops_service
 from microservices.observability_service.settings import ObservabilitySettings, get_settings

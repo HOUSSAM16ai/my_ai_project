@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from unittest.mock import MagicMock
 
@@ -110,15 +111,17 @@ sys.modules["app.services.search_engine.llama_retriever"] = MagicMock()
 
 # --- END MOCKS ---
 
-import asyncio
 from app.core.di import Container
 # Re-import interfaces now that models are mocked
-from app.core.interfaces import IIntentDetector, IContextComposer, IPromptStrategist, IReasoningStrategy
-
+from app.core.interfaces import (
+    IContextComposer,
+    IIntentDetector,
+    IPromptStrategist,
+    IReasoningStrategy,
+)
+from app.services.chat.graph.domain import WriterIntent
 # We need to re-import writer node AFTER mocking
 from app.services.chat.graph.nodes.writer import writer_node
-from app.services.chat.graph.domain import WriterIntent
-from app.services.chat.graph.state import AgentState
 from app.services.reasoning.workflow import SuperReasoningWorkflow
 
 # Mock AIMessage since we mocked the module

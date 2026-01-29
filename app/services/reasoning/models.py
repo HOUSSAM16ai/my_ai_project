@@ -1,5 +1,5 @@
-from typing import List, Optional
 from pydantic import BaseModel, Field
+
 
 class EvaluationResult(BaseModel):
     """
@@ -14,16 +14,16 @@ class ReasoningNode(BaseModel):
     Represents a single step or thought in the reasoning tree.
     """
     id: str = Field(..., description="Unique ID of the node")
-    parent_id: Optional[str] = Field(None, description="ID of the parent node")
+    parent_id: str | None = Field(None, description="ID of the parent node")
     content: str = Field(..., description="The thought, hypothesis, or partial solution")
     step_type: str = Field(..., description="Type: 'decomposition', 'hypothesis', 'solution', 'critique'")
 
     # R-MCTS Attributes
     visits: int = Field(0, description="Number of times this node has been visited")
     value: float = Field(0.0, description="Accumulated value/score")
-    evaluation: Optional[EvaluationResult] = Field(None, description="Self-reflection result")
+    evaluation: EvaluationResult | None = Field(None, description="Self-reflection result")
 
-    children: List["ReasoningNode"] = Field(default_factory=list)
+    children: list["ReasoningNode"] = Field(default_factory=list)
 
 class SearchTree(BaseModel):
     """

@@ -3,18 +3,17 @@ from datetime import datetime
 from pathlib import Path
 
 from app.core.logging import get_logger
-
-from .analyzers.complexity import ComplexityAnalyzer
-from .analyzers.git import GitAnalyzer
-from .analyzers.hotspot import HotspotAnalyzer
-from .analyzers.smells import StructuralSmellDetector
-from .analyzers.statistics import StatisticsAnalyzer
-from .models import (
+from app.services.overmind.code_intelligence.analyzers.complexity import ComplexityAnalyzer
+from app.services.overmind.code_intelligence.analyzers.git import GitAnalyzer
+from app.services.overmind.code_intelligence.analyzers.hotspot import HotspotAnalyzer
+from app.services.overmind.code_intelligence.analyzers.smells import StructuralSmellDetector
+from app.services.overmind.code_intelligence.analyzers.statistics import StatisticsAnalyzer
+from app.services.overmind.code_intelligence.models import (
+    ComplexityStats,
     FileMetrics,
+    LineStats,
     ProjectAnalysis,
     ProjectStats,
-    LineStats,
-    ComplexityStats,
 )
 
 logger = get_logger(__name__)
