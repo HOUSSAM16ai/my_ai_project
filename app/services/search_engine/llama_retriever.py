@@ -4,12 +4,13 @@ from sqlalchemy import text
 
 from app.core.database import async_session_factory
 from app.core.logging import get_logger
+from app.core.interfaces import IKnowledgeRetriever
 from app.services.search_engine.hybrid import hybrid_search
 
 logger = get_logger("graph-retriever")
 
 
-class KnowledgeGraphRetriever(BaseRetriever):
+class KnowledgeGraphRetriever(BaseRetriever, IKnowledgeRetriever):
     """
     Retriever that uses the custom Hybrid Search (Vector + Sparse + Rerank)
     implementation to fetch nodes from Supabase, AND expands the context

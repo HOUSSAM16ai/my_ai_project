@@ -2,11 +2,12 @@ import uuid
 from typing import List
 from app.core.gateway.simple_client import SimpleAIClient
 from app.core.logging import get_logger
+from app.core.interfaces import IReasoningStrategy
 from app.services.reasoning.models import ReasoningNode, EvaluationResult, SearchTree
 
 logger = get_logger("reasoning-strategy")
 
-class RMCTSStrategy:
+class RMCTSStrategy(IReasoningStrategy):
     """
     Implements a simplified Recursive Monte Carlo Tree Search (R-MCTS)
     adapted for Inference-Time Reasoning.
