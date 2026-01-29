@@ -4,11 +4,14 @@
 تستخدم أدوات البحث لاسترجاع المحتوى التعليمي.
 """
 
+import contextlib
 import logging
+import re
 
 from app.services.chat.graph.search import build_graph_search_plan
 from app.services.chat.graph.state import AgentState
 from app.services.chat.tools import ToolRegistry
+from app.services.content.constants import BRANCH_MAP, SUBJECT_MAP
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +19,9 @@ logger = logging.getLogger(__name__)
 async def researcher_node(state: AgentState, tools: ToolRegistry) -> dict:
     """
     عقدة البحث: تنفذ أدوات البحث بناءً على سياق الرسائل.
-    
+
     يستخدم استخراج سياق ديناميكي للسنة والمادة والشعبة.
     """
-    import re
-    from app.services.content.constants import BRANCH_MAP, SUBJECT_MAP
-
     search_plan = build_graph_search_plan(state)
 
     full_content: list[dict[str, object]] = []
@@ -37,10 +37,8 @@ async def researcher_node(state: AgentState, tools: ToolRegistry) -> dict:
             # Convert Arabic numerals if needed
             arabic_to_western = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
             year_western = year_str.translate(arabic_to_western)
-            try:
+            with contextlib.suppress(ValueError):
                 params["year"] = int(year_western)
-            except ValueError:
-                pass
 
         # Dynamic subject extraction
         query_lower = query.lower()

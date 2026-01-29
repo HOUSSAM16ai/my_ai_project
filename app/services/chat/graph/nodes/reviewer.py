@@ -7,9 +7,6 @@
 
 import json
 from dataclasses import dataclass
-from typing import Optional
-
-from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.core.ai_gateway import AIClient
 from app.core.logging import get_logger

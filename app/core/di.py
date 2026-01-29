@@ -8,15 +8,16 @@ It combines the new 'Container' for SOLID refactoring with re-exports of
 existing core services.
 """
 
-from typing import Type, TypeVar, Dict, Any, Callable, Annotated
+from typing import Annotated, Any, Callable, ClassVar, TypeVar
+
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # --- Legacy / Core Re-exports ---
-from app.core.logging import get_logger
 from app.core.config import get_settings
 from app.core.database import get_db
-from app.core.database import get_db as get_session # Alias for backward compatibility
+from app.core.database import get_db as get_session  # Alias for backward compatibility
+from app.core.logging import get_logger
 
 # --- Facade Functions for Legacy Routers ---
 
@@ -27,8 +28,8 @@ def get_system_service():
 async def get_health_check_service(
     db: Annotated[AsyncSession, Depends(get_db)]
 ):
-    from app.infrastructure.repositories.database_repository import SQLAlchemyDatabaseRepository
     from app.application.services import DefaultHealthCheckService
+    from app.infrastructure.repositories.database_repository import SQLAlchemyDatabaseRepository
 
     repo = SQLAlchemyDatabaseRepository(db)
     return DefaultHealthCheckService(repo)
@@ -42,11 +43,11 @@ class Container:
     """
     A simple Dependency Injection Container to enforce DIP (Dependency Inversion Principle).
     """
-    _factories: Dict[Type, Callable[[], Any]] = {}
-    _singletons: Dict[Type, Any] = {}
+    _factories: ClassVar[dict[type, Callable[[], Any]]] = {}
+    _singletons: ClassVar[dict[type, Any]] = {}
 
     @classmethod
-    def register(cls, interface: Type[T], factory: Callable[[], T]):
+    def register(cls, interface: type[T], factory: Callable[[], T]):
         """
         Register a factory function for a given interface.
         Whenever resolve is called, this factory is executed (Transient).
@@ -54,14 +55,14 @@ class Container:
         cls._factories[interface] = factory
 
     @classmethod
-    def register_singleton(cls, interface: Type[T], instance: T):
+    def register_singleton(cls, interface: type[T], instance: T):
         """
         Register a specific instance as a Singleton.
         """
         cls._singletons[interface] = instance
 
     @classmethod
-    def register_singleton_factory(cls, interface: Type[T], factory: Callable[[], T]):
+    def register_singleton_factory(cls, interface: type[T], factory: Callable[[], T]):
         """
         Register a factory that is called once, then cached (Lazy Singleton).
         """
@@ -73,7 +74,7 @@ class Container:
         cls._factories[interface] = lazy_wrapper
 
     @classmethod
-    def resolve(cls, interface: Type[T]) -> T:
+    def resolve(cls, interface: type[T]) -> T:
         """
         Resolve the dependency for the given interface.
         """

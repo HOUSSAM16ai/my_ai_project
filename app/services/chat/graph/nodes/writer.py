@@ -8,17 +8,13 @@ to handle Student Intent, Context Firewalling, and Adaptive Prompting.
 from langchain_core.messages import AIMessage
 
 from app.core.ai_gateway import AIClient
-from app.services.chat.graph.state import AgentState
-from app.services.chat.graph.domain import WriterIntent, StudentProfile
-
-# DI & Interfaces
 from app.core.di import Container
-from app.core.interfaces import IIntentDetector, IContextComposer, IPromptStrategist
-
-# Implementations (imported to ensure registration or availability)
-from app.services.chat.graph.components.intent_detector import RegexIntentDetector
+from app.core.interfaces import IContextComposer, IIntentDetector, IPromptStrategist
 from app.services.chat.graph.components.context_composer import FirewallContextComposer
+from app.services.chat.graph.components.intent_detector import RegexIntentDetector
 from app.services.chat.graph.components.prompt_strategist import StandardPromptStrategist
+from app.services.chat.graph.domain import StudentProfile
+from app.services.chat.graph.state import AgentState
 
 # Bootstrap Dependencies (This typically belongs in a bootstrap.py, placed here for self-containment in this refactor)
 Container.register_singleton(IIntentDetector, RegexIntentDetector())
