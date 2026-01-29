@@ -18,17 +18,45 @@ const IS_CLOUD_ENV = isBrowser && (IS_CODESPACES ||
     window.location.hostname.includes('repl.it'));
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? '';
+const WS_ORIGIN = process.env.NEXT_PUBLIC_WS_URL ?? '';
 const apiUrl = (path) => `${API_ORIGIN}${path}`;
+const isDevEnvironment = process.env.NODE_ENV === 'development';
+const logWebSocketEvent = (...args) => {
+    if (isDevEnvironment) {
+        console.info(...args);
+    }
+};
+const resolveWebSocketProtocol = (protocol) => {
+    if (protocol === 'https:') return 'wss:';
+    if (protocol === 'http:') return 'ws:';
+    if (protocol === 'wss:' || protocol === 'ws:') return protocol;
+    return 'ws:';
+};
+const buildWebSocketUrl = (baseUrl, endpoint, token) => {
+    const wsUrl = new URL(endpoint, baseUrl);
+    wsUrl.searchParams.set('token', token);
+    return wsUrl.toString();
+};
+const buildWebSocketUrlSafe = (baseUrl, endpoint, token) => {
+    try {
+        return buildWebSocketUrl(baseUrl, endpoint, token);
+    } catch (error) {
+        logWebSocketEvent('Invalid WebSocket URL parts', error);
+        return '';
+    }
+};
 
 const getWsBase = () => {
     if (!isBrowser) return '';
-    if (API_ORIGIN) {
+    const configuredOrigin = WS_ORIGIN || API_ORIGIN;
+    if (configuredOrigin) {
         try {
-            const parsed = new URL(API_ORIGIN);
-            const wsProtocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+            const parsed = new URL(configuredOrigin);
+            const wsProtocol = resolveWebSocketProtocol(parsed.protocol);
             return `${wsProtocol}//${parsed.host}`;
         } catch (error) {
-            console.error('Invalid NEXT_PUBLIC_API_URL for WebSocket base:', error);
+            logWebSocketEvent('Invalid WebSocket base configuration:', error);
+            return '';
         }
     }
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -105,10 +133,17 @@ const useChat = (endpoint, token, onConversationUpdate) => {
     const socketRef = useRef(null);
     const reconnectTimeoutRef = useRef(null);
     const mountedRef = useRef(true);
+    const lastConnectionIssueRef = useRef(null);
 
     const addMessage = useCallback((msg) => {
         setMessages(prev => [...prev, msg]);
     }, []);
+
+    const notifyConnectionIssue = useCallback((message) => {
+        if (lastConnectionIssueRef.current === message) return;
+        lastConnectionIssueRef.current = message;
+        addMessage({ id: generateId(), role: 'assistant', content: message, isError: true });
+    }, [addMessage]);
 
     const handleMessage = useCallback((data) => {
         const { type, payload } = data;
@@ -164,9 +199,20 @@ const useChat = (endpoint, token, onConversationUpdate) => {
         if (!token || !endpoint || !mountedRef.current) return;
         if (socketRef.current && (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === WebSocket.CONNECTING)) return;
 
-        setStatus('connecting');
         const wsBase = getWsBase();
-        const wsUrl = `${wsBase}${endpoint}?token=${encodeURIComponent(token)}`;
+        if (!wsBase) {
+            setStatus('error');
+            notifyConnectionIssue('تعذر تحديد عنوان WebSocket. تحقق من إعدادات الاتصال.');
+            return;
+        }
+
+        setStatus('connecting');
+        const wsUrl = buildWebSocketUrlSafe(wsBase, endpoint, token);
+        if (!wsUrl) {
+            setStatus('error');
+            notifyConnectionIssue('تعذر بناء رابط WebSocket. تحقق من إعدادات الاتصال.');
+            return;
+        }
 
         try {
             const socket = new WebSocket(wsUrl);
@@ -174,7 +220,8 @@ const useChat = (endpoint, token, onConversationUpdate) => {
 
             socket.onopen = () => {
                 if (mountedRef.current) setStatus('connected');
-                console.log('WebSocket connected');
+                lastConnectionIssueRef.current = null;
+                logWebSocketEvent('WebSocket connected');
             };
 
             socket.onmessage = (event) => {
@@ -183,12 +230,12 @@ const useChat = (endpoint, token, onConversationUpdate) => {
                     const parsed = JSON.parse(event.data);
                     handleMessage(parsed);
                 } catch (e) {
-                    console.error('WS Parse Error', e);
+                    logWebSocketEvent('WebSocket parse warning', e);
                 }
             };
 
             socket.onclose = (e) => {
-                console.log('WebSocket closed', e.code, e.reason);
+                logWebSocketEvent('WebSocket closed', e.code, e.reason);
                 if (mountedRef.current) {
                     setStatus('disconnected');
                     if (e.code !== 1000 && e.code !== 4403 && e.code !== 4401) {
@@ -199,15 +246,17 @@ const useChat = (endpoint, token, onConversationUpdate) => {
             };
 
             socket.onerror = (e) => {
-                console.error('WebSocket Error', e);
+                logWebSocketEvent('WebSocket error', e);
                 if (mountedRef.current) setStatus('error');
+                notifyConnectionIssue('تعذر الاتصال بالخادم. سيتم إعادة المحاولة تلقائيًا.');
             };
 
         } catch (err) {
-            console.error("Socket creation failed", err);
+            logWebSocketEvent("WebSocket creation failed", err);
             setStatus('error');
+            notifyConnectionIssue('تعذر إنشاء اتصال WebSocket. تحقق من إعدادات الشبكة.');
         }
-    }, [token, endpoint, handleMessage]);
+    }, [token, endpoint, handleMessage, notifyConnectionIssue]);
 
     useEffect(() => {
         mountedRef.current = true;
