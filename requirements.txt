@@ -81,3 +81,6 @@ llama-index-readers-file
 llama-index-vector-stores-supabase
 llama-index-embeddings-huggingface
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
+PyYAML
+passlib
+argon2-cffi
