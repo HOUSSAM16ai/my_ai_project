@@ -15,7 +15,6 @@ from sqlalchemy import text
 from app.core.database import async_session_factory
 from app.core.logging import get_logger
 from app.services.content.constants import BRANCH_MAP
-from app.services.search_engine.fallback_expander import FallbackQueryExpander
 from app.services.search_engine.retriever import get_retriever
 
 logger = get_logger("content-tools")
