@@ -109,18 +109,21 @@ class SuperSearchOrchestrator:
         for word in words:
             word_clean = word.strip()
             # Keep if it's a searchable keyword
-            if word_clean in FallbackQueryExpander.SEARCHABLE_KEYWORDS or (word_clean.isdigit() and len(word_clean) == 4) or word_clean in {
-                "٢٠٢٤",
-                "٢٠٢٣",
-                "٢٠٢٢",
-            }:
+            if (
+                word_clean in FallbackQueryExpander.SEARCHABLE_KEYWORDS
+                or (word_clean.isdigit() and len(word_clean) == 4)
+                or word_clean
+                in {
+                    "٢٠٢٤",
+                    "٢٠٢٣",
+                    "٢٠٢٢",
+                }
+            ):
                 important_words.append(word_clean)
 
         return " ".join(important_words)
 
-    async def _try_dspy_refinement(
-        self, query: str, filters: SearchFilters
-    ) -> SearchFilters:
+    async def _try_dspy_refinement(self, query: str, filters: SearchFilters) -> SearchFilters:
         """
         يحاول تحسين الفلاتر باستخدام DSPy.
         """
@@ -237,9 +240,7 @@ class SuperSearchOrchestrator:
 
         return []
 
-    async def _last_resort_search(
-        self, original_q: str, limit: int
-    ) -> list[SearchResult]:
+    async def _last_resort_search(self, original_q: str, limit: int) -> list[SearchResult]:
         """
         آخر محاولة: البحث بكلمة واحدة فقط.
         """
@@ -263,10 +264,7 @@ class SuperSearchOrchestrator:
                 limit=limit,
             )
 
-            return [
-                SearchResult(**r, strategy="Last Resort")
-                for r in results
-            ]
+            return [SearchResult(**r, strategy="Last Resort") for r in results]
         except Exception as e:
             logger.error(f"Last resort search failed: {e}")
             return []

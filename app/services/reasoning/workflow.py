@@ -69,7 +69,10 @@ class SuperReasoningWorkflow(Workflow):
             context_str = "No specific knowledge graph nodes found."
         else:
             context_str = "\n\n".join(
-                [f"Node [{n.metadata.get('label','Data')}] ({n.metadata.get('name','Unknown')}): {n.text}" for n in nodes]
+                [
+                    f"Node [{n.metadata.get('label', 'Data')}] ({n.metadata.get('name', 'Unknown')}): {n.text}"
+                    for n in nodes
+                ]
             )
 
         logger.info("Starting R-MCTS Reasoning Phase...")
@@ -78,10 +81,12 @@ class SuperReasoningWorkflow(Workflow):
         best_thought_node = await self.strategy.execute(
             root_content=f"Analyze query: {query}",
             context=context_str,
-            depth=2 # Configurable depth
+            depth=2,  # Configurable depth
         )
 
-        logger.info(f"R-MCTS Selected Path: {best_thought_node.content} (Score: {best_thought_node.value})")
+        logger.info(
+            f"R-MCTS Selected Path: {best_thought_node.content} (Score: {best_thought_node.value})"
+        )
 
         # 2. Final Synthesis
         system_prompt = (

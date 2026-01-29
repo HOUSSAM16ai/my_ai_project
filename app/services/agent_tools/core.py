@@ -21,6 +21,7 @@ from .utils import _generate_trace_id, _lower
 # Canonicalization
 # ======================================================================================
 
+
 def canonicalize_tool_name(raw_name: str, description: str = "") -> tuple[str, list[str]]:
     """
     Canonicalize tool name using the new modular strategy-based system.
@@ -75,6 +76,7 @@ def list_tools(include_aliases: bool = False) -> list[dict[str, object]]:
 # ======================================================================================
 # Tool Decorator
 # ======================================================================================
+
 
 def tool(
     name: str,

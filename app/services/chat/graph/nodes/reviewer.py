@@ -50,9 +50,7 @@ class ReviewerNode:
 """
 
     @staticmethod
-    async def review(
-        response_text: str, question: str, ai_client: AIClient
-    ) -> ReviewResult:
+    async def review(response_text: str, question: str, ai_client: AIClient) -> ReviewResult:
         if not response_text:
             return ReviewResult(0.0, "No response generated.", False)
 

@@ -41,12 +41,7 @@ class TestSolutionHiding(unittest.TestCase):
     def test_sanitize_solution_blocks_in_content(self):
         """Test that embedded solution blocks are removed from content."""
         content = (
-            "[ex: ex_1]\n"
-            "نص التمرين\n"
-            "\n"
-            "[sol: ex_1]\n"
-            "**حل التمرين الأول (04 نقاط):**\n"
-            "تفاصيل الحل\n"
+            "[ex: ex_1]\nنص التمرين\n\n[sol: ex_1]\n**حل التمرين الأول (04 نقاط):**\nتفاصيل الحل\n"
         )
         results = [{"content": content}]
         intent = WriterIntent.GENERAL_INQUIRY
@@ -60,12 +55,7 @@ class TestSolutionHiding(unittest.TestCase):
     def test_extract_embedded_solution_on_request(self):
         """Test that embedded solutions surface only when explicitly requested."""
         content = (
-            "[ex: ex_1]\n"
-            "نص التمرين\n"
-            "\n"
-            "[sol: ex_1]\n"
-            "**حل التمرين الأول (04 نقاط):**\n"
-            "تفاصيل الحل\n"
+            "[ex: ex_1]\nنص التمرين\n\n[sol: ex_1]\n**حل التمرين الأول (04 نقاط):**\nتفاصيل الحل\n"
         )
         results = [{"content": content}]
         intent = WriterIntent.SOLUTION_REQUEST

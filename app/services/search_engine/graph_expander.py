@@ -48,11 +48,11 @@ async def expand_with_neighbors(
                     e.weight
                 FROM knowledge_edges e
                 JOIN knowledge_nodes n ON (
-                    (e.source_id IN ({', '.join(placeholders)}) AND e.target_id = n.id)
+                    (e.source_id IN ({", ".join(placeholders)}) AND e.target_id = n.id)
                     OR
-                    (e.target_id IN ({', '.join(placeholders)}) AND e.source_id = n.id)
+                    (e.target_id IN ({", ".join(placeholders)}) AND e.source_id = n.id)
                 )
-                WHERE n.id NOT IN ({', '.join(placeholders)})
+                WHERE n.id NOT IN ({", ".join(placeholders)})
                 ORDER BY e.weight DESC NULLS LAST
                 LIMIT :limit
             """)
@@ -62,14 +62,16 @@ async def expand_with_neighbors(
 
             neighbors = []
             for row in rows:
-                neighbors.append({
-                    "id": row[0],
-                    "name": row[1],
-                    "label": row[2],
-                    "content": row[3],
-                    "relationship": row[4],
-                    "weight": row[5],
-                })
+                neighbors.append(
+                    {
+                        "id": row[0],
+                        "name": row[1],
+                        "label": row[2],
+                        "content": row[3],
+                        "relationship": row[4],
+                        "weight": row[5],
+                    }
+                )
 
             logger.info(f"Found {len(neighbors)} neighbors for {len(node_ids)} nodes")
             return neighbors
@@ -105,7 +107,7 @@ async def find_related_content(
             # Find nodes that have these content_ids in their metadata
             node_query = text(f"""
                 SELECT id FROM knowledge_nodes
-                WHERE metadata->>'content_id' IN ({', '.join(placeholders)})
+                WHERE metadata->>'content_id' IN ({", ".join(placeholders)})
             """)
 
             result = await session.execute(node_query, params)

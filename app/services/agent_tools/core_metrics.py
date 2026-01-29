@@ -30,7 +30,9 @@ def _build_result_metadata(info: ToolExecutionInfo, stats: dict) -> dict[str, ob
         "elapsed_ms": round(info.elapsed_ms, 2),
         "invocations": stats["invocations"],
         "errors": stats["errors"],
-        "avg_ms": round(stats["total_ms"] / stats["invocations"], 2) if stats["invocations"] else 0.0,
+        "avg_ms": round(stats["total_ms"] / stats["invocations"], 2)
+        if stats["invocations"]
+        else 0.0,
         "version": __version__,
         "category": info.category,
         "capabilities": info.capabilities,

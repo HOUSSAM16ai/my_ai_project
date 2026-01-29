@@ -31,11 +31,11 @@ async def researcher_node(state: AgentState, tools: ToolRegistry) -> dict:
         params = {"q": query, "limit": 5}
 
         # Dynamic year extraction (supports both Arabic and Western numerals)
-        year_match = re.search(r'(20[1-2][0-9]|١٩|٢٠[١٢][٠-٩])', query)
+        year_match = re.search(r"(20[1-2][0-9]|١٩|٢٠[١٢][٠-٩])", query)
         if year_match:
             year_str = year_match.group(1)
             # Convert Arabic numerals if needed
-            arabic_to_western = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
+            arabic_to_western = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
             year_western = year_str.translate(arabic_to_western)
             with contextlib.suppress(ValueError):
                 params["year"] = int(year_western)

@@ -7,6 +7,7 @@ from app.services.reasoning.models import EvaluationResult, ReasoningNode
 
 logger = get_logger("reasoning-strategy")
 
+
 class RMCTSStrategy(IReasoningStrategy):
     """
     Implements a simplified Recursive Monte Carlo Tree Search (R-MCTS)
@@ -34,25 +35,26 @@ class RMCTSStrategy(IReasoningStrategy):
         )
 
         response = await self.ai_client.generate_text(
-            prompt=prompt,
-            system_prompt="You are a Strategic Reasoning Engine. Think diversely."
+            prompt=prompt, system_prompt="You are a Strategic Reasoning Engine. Think diversely."
         )
 
         # Simple parsing logic
-        lines = response.content.split('\n')
+        lines = response.content.split("\n")
         candidates = []
         for line in lines:
-            if line.strip() and (line[0].isdigit() or line.startswith('-')):
+            if line.strip() and (line[0].isdigit() or line.startswith("-")):
                 clean_content = line.lstrip("1234567890.- ").strip()
                 if clean_content:
-                    candidates.append(ReasoningNode(
-                        id=str(uuid.uuid4()),
-                        parent_id=parent.id,
-                        content=clean_content,
-                        step_type="hypothesis"
-                    ))
+                    candidates.append(
+                        ReasoningNode(
+                            id=str(uuid.uuid4()),
+                            parent_id=parent.id,
+                            content=clean_content,
+                            step_type="hypothesis",
+                        )
+                    )
 
-        return candidates[:3] # Limit to top 3
+        return candidates[:3]  # Limit to top 3
 
     async def evaluate(self, node: ReasoningNode, context: str) -> EvaluationResult:
         """
@@ -69,8 +71,7 @@ class RMCTSStrategy(IReasoningStrategy):
         )
 
         response = await self.ai_client.generate_text(
-            prompt=prompt,
-            system_prompt="You are a Critical Reviewer. Be strict."
+            prompt=prompt, system_prompt="You are a Critical Reviewer. Be strict."
         )
 
         text = response.content.lower()
@@ -80,7 +81,7 @@ class RMCTSStrategy(IReasoningStrategy):
         is_valid = True
 
         try:
-            for line in text.split('\n'):
+            for line in text.split("\n"):
                 if "score:" in line:
                     score = float(line.split(":")[1].strip())
                 if "valid:" in line:
@@ -95,16 +96,13 @@ class RMCTSStrategy(IReasoningStrategy):
         Executes the search strategy.
         """
         root = ReasoningNode(
-            id=str(uuid.uuid4()),
-            content=root_content,
-            step_type="root",
-            value=1.0
+            id=str(uuid.uuid4()), content=root_content, step_type="root", value=1.0
         )
 
         current_layer = [root]
 
         for i in range(depth):
-            logger.info(f"R-MCTS Depth {i+1}: Expanding {len(current_layer)} nodes")
+            logger.info(f"R-MCTS Depth {i + 1}: Expanding {len(current_layer)} nodes")
             next_layer = []
 
             # Expansion Phase
@@ -131,5 +129,5 @@ class RMCTSStrategy(IReasoningStrategy):
 
         # Return the best leaf node
         if not current_layer:
-            return root # Fallback
+            return root  # Fallback
         return current_layer[0]

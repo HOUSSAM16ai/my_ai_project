@@ -7,10 +7,12 @@ from unittest.mock import MagicMock
 # Mock external heavy dependencies
 mock_llama = MagicMock()
 
+
 # Create a dummy Workflow class to avoid MagicMock inheritance issues
 class MockWorkflow:
     def __init__(self, *args, **kwargs):
         pass
+
 
 # We need to set Workflow on the mock module
 mock_llama_workflow = MagicMock()
@@ -25,7 +27,7 @@ mock_llama_workflow.step = lambda x: x
 sys.modules["llama_index"] = mock_llama
 sys.modules["llama_index.core"] = mock_llama
 sys.modules["llama_index.core.schema"] = mock_llama
-sys.modules["llama_index.core.workflow"] = mock_llama_workflow # Use specific mock
+sys.modules["llama_index.core.workflow"] = mock_llama_workflow  # Use specific mock
 sys.modules["llama_index.core.retrievers"] = mock_llama
 sys.modules["llama_index.core.vector_stores"] = mock_llama
 sys.modules["llama_index.embeddings"] = mock_llama
@@ -74,7 +76,7 @@ mock_settings_obj.SERVICE_NAME = "test-service"
 mock_settings_module.get_settings.return_value = mock_settings_obj
 
 sys.modules["app.core.settings.base"] = mock_settings_module
-sys.modules["app.core.config"] = mock_settings_module # Alias it
+sys.modules["app.core.config"] = mock_settings_module  # Alias it
 
 # Mock httpx
 sys.modules["httpx"] = MagicMock()
@@ -129,6 +131,7 @@ from app.services.reasoning.workflow import SuperReasoningWorkflow
 # Mock AIMessage since we mocked the module
 AIMessage = MagicMock()
 
+
 async def verify_writer_di():
     print("Verifying WriterNode DI...")
 
@@ -156,7 +159,7 @@ async def verify_writer_di():
         "current_step_index": 0,
         "search_results": [],
         "diagnosis": "Average",
-        "review_feedback": None
+        "review_feedback": None,
     }
 
     mock_client = MagicMock()
@@ -177,6 +180,7 @@ async def verify_writer_di():
     mock_strategist.build_prompt.assert_called_once()
     print("WriterNode DI Verified!")
 
+
 def verify_workflow_di():
     print("Verifying Workflow DI...")
     mock_client = MagicMock()
@@ -184,9 +188,7 @@ def verify_workflow_di():
     mock_strategy = MagicMock(spec=IReasoningStrategy)
 
     wf = SuperReasoningWorkflow(
-        client=mock_client,
-        retriever=mock_retriever,
-        strategy=mock_strategy
+        client=mock_client, retriever=mock_retriever, strategy=mock_strategy
     )
 
     print(f"wf.retriever: {wf.retriever}")
@@ -196,9 +198,11 @@ def verify_workflow_di():
     assert wf.strategy == mock_strategy
     print("Workflow DI Verified!")
 
+
 async def main():
     await verify_writer_di()
     verify_workflow_di()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

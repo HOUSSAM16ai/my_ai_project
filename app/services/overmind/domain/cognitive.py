@@ -150,19 +150,13 @@ class SuperBrain:
                 return None  # إعادة المحاولة
 
         # المرحلة 2: التصميم | Design phase
-        await self.design_phase.execute(
-            state, collab_context, self.runner, session, safe_log
-        )
+        await self.design_phase.execute(state, collab_context, self.runner, session, safe_log)
 
         # المرحلة 3: التنفيذ | Execution phase
-        await self.execution_phase.execute(
-            state, collab_context, self.runner, session, safe_log
-        )
+        await self.execution_phase.execute(state, collab_context, self.runner, session, safe_log)
 
         # المرحلة 4: المراجعة | Review phase
-        await self.reflection_phase.execute(
-            state, collab_context, self.runner, session, safe_log
-        )
+        await self.reflection_phase.execute(state, collab_context, self.runner, session, safe_log)
 
         # التحقق من النجاح | Check success
         if state.critique and state.critique.approved:
