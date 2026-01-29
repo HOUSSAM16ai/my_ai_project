@@ -70,7 +70,6 @@ class CustomerChatPersistence:
         conversation_id: int,
         role: MessageRole,
         content: str,
-        policy_flags: dict[str, str] | None = None,
     ) -> CustomerMessage:
         """
         حفظ رسالة جديدة ضمن محادثة العميل.
@@ -79,7 +78,6 @@ class CustomerChatPersistence:
             conversation_id=conversation_id,
             role=role,
             content=content,
-            policy_flags=policy_flags,
         )
         self.db.add(message)
         await self.db.commit()

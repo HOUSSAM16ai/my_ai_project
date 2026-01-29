@@ -166,10 +166,12 @@ const useChat = (endpoint, token, onConversationUpdate) => {
 
         setStatus('connecting');
         const wsBase = getWsBase();
-        const wsUrl = `${wsBase}${endpoint}?token=${encodeURIComponent(token)}`;
+        // Remove token from query parameters for security and production compatibility
+        const wsUrl = `${wsBase}${endpoint}`;
 
         try {
-            const socket = new WebSocket(wsUrl);
+            // Send token via Sec-WebSocket-Protocol header as expected by backend in production
+            const socket = new WebSocket(wsUrl, ['jwt', token]);
             socketRef.current = socket;
 
             socket.onopen = () => {

@@ -83,9 +83,10 @@ class CustomerChatBoundaryService:
         policy_flags: dict[str, str] | None = None,
     ) -> None:
         """
-        حفظ رسالة المحادثة مع أعلام السياسة.
+        حفظ رسالة المحادثة مع أعلام السياسة (تم تعطيل التخزين للأعلام مؤقتاً).
         """
-        await self.persistence.save_message(conversation_id, role, content, policy_flags)
+        # Note: policy_flags argument kept for interface compatibility but not stored
+        await self.persistence.save_message(conversation_id, role, content)
 
     async def get_chat_history(self, conversation_id: int, limit: int = 20) -> list[dict[str, str]]:
         """
@@ -383,7 +384,6 @@ class CustomerChatBoundaryService:
                     "role": msg.role.value,
                     "content": msg.content[:50000] if msg.content else "",
                     "created_at": msg.created_at.isoformat() if msg.created_at else "",
-                    "policy_flags": msg.policy_flags,
                 }
                 for msg in messages
             ],
@@ -422,7 +422,6 @@ class CustomerChatBoundaryService:
                     "role": msg.role.value,
                     "content": msg.content[:50000] if msg.content else "",
                     "created_at": msg.created_at.isoformat() if msg.created_at else "",
-                    "policy_flags": msg.policy_flags,
                 }
                 for msg in messages
             ],
