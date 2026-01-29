@@ -1,5 +1,6 @@
 from app.services.overmind.code_intelligence.analyzers.statistics import StatisticsAnalyzer
 
+
 class TestStatisticsAnalyzer:
 
     def setup_method(self):

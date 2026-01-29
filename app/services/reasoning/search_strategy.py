@@ -1,9 +1,9 @@
 import uuid
-from typing import List
+
 from app.core.gateway.simple_client import SimpleAIClient
-from app.core.logging import get_logger
 from app.core.interfaces import IReasoningStrategy
-from app.services.reasoning.models import ReasoningNode, EvaluationResult, SearchTree
+from app.core.logging import get_logger
+from app.services.reasoning.models import EvaluationResult, ReasoningNode
 
 logger = get_logger("reasoning-strategy")
 
@@ -22,7 +22,7 @@ class RMCTSStrategy(IReasoningStrategy):
     def __init__(self, ai_client: SimpleAIClient):
         self.ai_client = ai_client
 
-    async def expand(self, parent: ReasoningNode, context: str) -> List[ReasoningNode]:
+    async def expand(self, parent: ReasoningNode, context: str) -> list[ReasoningNode]:
         """
         Generates N possible next steps/thoughts based on the parent.
         """
@@ -78,7 +78,6 @@ class RMCTSStrategy(IReasoningStrategy):
         # Naive parsing (Robust implementation would use Structured Output / JSON)
         score = 0.5
         is_valid = True
-        reason = "Parsed from text"
 
         try:
             for line in text.split('\n'):

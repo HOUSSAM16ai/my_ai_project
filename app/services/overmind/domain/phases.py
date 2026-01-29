@@ -5,8 +5,8 @@ Implements the Strategy Pattern for each cognitive phase.
 Each phase encapsulates the specific logic for a step in the Council of Wisdom loop.
 """
 
-from abc import ABC, abstractmethod
 import logging
+from abc import ABC, abstractmethod
 
 from app.core.protocols import (
     AgentArchitect,

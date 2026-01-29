@@ -1,10 +1,12 @@
-from typing import List, Dict, Any
-from ..models import LineStats, ComplexityStats
+from typing import Any
+
+from app.services.overmind.code_intelligence.models import ComplexityStats, LineStats
+
 
 class StatisticsAnalyzer:
     """Analyzer for code statistics."""
 
-    def count_lines(self, lines: List[str]) -> LineStats:
+    def count_lines(self, lines: list[str]) -> LineStats:
         """
         Count different types of lines.
 
@@ -33,7 +35,7 @@ class StatisticsAnalyzer:
             blank_lines=blank_lines,
         )
 
-    def calculate_complexity_stats(self, functions: List[Dict[str, Any]]) -> ComplexityStats:
+    def calculate_complexity_stats(self, functions: list[dict[str, Any]]) -> ComplexityStats:
         """
         Calculate complexity and nesting statistics.
 
@@ -77,7 +79,7 @@ class StatisticsAnalyzer:
             avg_nesting=avg_nesting,
         )
 
-    def calculate_standard_deviation(self, values: List[float], mean: float) -> float:
+    def calculate_standard_deviation(self, values: list[float], mean: float) -> float:
         """
         Calculate standard deviation of a list of values.
 

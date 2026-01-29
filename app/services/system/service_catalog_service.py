@@ -9,8 +9,8 @@ from enum import Enum
 from typing import Protocol
 
 __all__ = [
-    "AllowAllCatalogPolicy",
     "APISpec",
+    "AllowAllCatalogPolicy",
     "DefaultServiceCatalogPolicy",
     "HealthStatus",
     "ServiceCatalogPolicy",
@@ -139,9 +139,11 @@ class DefaultServiceCatalogPolicy:
             raise ValueError("Service ID must be non-empty.")
         if service.service_type == ServiceType.LIBRARY:
             raise ValueError("Shared libraries are forbidden in microservice architecture.")
-        if service.service_type in {ServiceType.MICROSERVICE, ServiceType.API}:
-            if not service.api_spec_url:
-                raise ValueError("API spec URL is required for API-first services.")
+
+        # Combine nested if
+        if service.service_type in {ServiceType.MICROSERVICE, ServiceType.API} and not service.api_spec_url:
+            raise ValueError("API spec URL is required for API-first services.")
+
         if service.service_id in service.dependencies:
             raise ValueError("Service cannot depend on itself.")
         if len(set(service.dependencies)) != len(service.dependencies):
@@ -176,7 +178,7 @@ class ServiceCatalogService:
     - جرد التقنيات ومراقبة الصحة.
     """
 
-    def __init__(self, policy: "ServiceCatalogPolicy | None" = None) -> None:
+    def __init__(self, policy: ServiceCatalogPolicy | None = None) -> None:
         self.services: dict[str, ServiceMetadata] = {}
         self.api_specs: dict[str, list[APISpec]] = defaultdict(list)
         self.templates: dict[str, ServiceTemplate] = {}
@@ -268,7 +270,7 @@ RUN pip install -r requirements.txt""",
                 health.metrics = metrics
                 health.last_checked = datetime.now(UTC)
 
-    def _resolve_policy(self, policy: "ServiceCatalogPolicy | None") -> "ServiceCatalogPolicy":
+    def _resolve_policy(self, policy: ServiceCatalogPolicy | None) -> ServiceCatalogPolicy:
         """حل سياسة الدليل بشكل صريح مع قيمة افتراضية."""
         return policy or DefaultServiceCatalogPolicy()
 
