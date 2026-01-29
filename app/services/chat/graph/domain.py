@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 
+
 class WriterIntent(Enum):
     GENERAL_INQUIRY = auto()
     SOLUTION_REQUEST = auto()

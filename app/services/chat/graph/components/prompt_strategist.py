@@ -1,5 +1,6 @@
 from app.core.interfaces import IPromptStrategist
-from app.services.chat.graph.domain import WriterIntent, StudentProfile
+from app.services.chat.graph.domain import StudentProfile, WriterIntent
+
 
 class StandardPromptStrategist(IPromptStrategist):
     """

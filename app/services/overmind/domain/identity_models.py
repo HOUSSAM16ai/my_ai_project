@@ -1,4 +1,3 @@
-from typing import Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -39,8 +38,8 @@ class OvermindInfo(BaseModel):
 
 class Philosophy(BaseModel):
     heritage: str
-    principles: List[str]
-    values: List[str]
+    principles: list[str]
+    values: list[str]
 
 
 class AgentPrinciple(BaseModel):
@@ -51,14 +50,14 @@ class AgentPrinciple(BaseModel):
 class AgentInfo(BaseModel):
     name: str
     role: str
-    capabilities: List[str]
+    capabilities: list[str]
 
 
 class Capabilities(BaseModel):
-    knowledge: List[str]
-    actions: List[str]
-    intelligence: List[str]
-    super_tools: List[str]
+    knowledge: list[str]
+    actions: list[str]
+    intelligence: list[str]
+    super_tools: list[str]
 
 
 class Milestone(BaseModel):
@@ -67,7 +66,7 @@ class Milestone(BaseModel):
 
 
 class History(BaseModel):
-    milestones: List[Milestone]
+    milestones: list[Milestone]
 
 
 class IdentitySchema(BaseModel):
@@ -75,9 +74,9 @@ class IdentitySchema(BaseModel):
     project: Project
     overmind: OvermindInfo
     philosophy: Philosophy
-    agent_principles: List[AgentPrinciple] = Field(default_factory=list)
-    system_principles: List[AgentPrinciple] = Field(default_factory=list)
-    architecture_system_principles: List[AgentPrinciple] = Field(default_factory=list)
-    agents: Dict[str, AgentInfo]
+    agent_principles: list[AgentPrinciple] = Field(default_factory=list)
+    system_principles: list[AgentPrinciple] = Field(default_factory=list)
+    architecture_system_principles: list[AgentPrinciple] = Field(default_factory=list)
+    agents: dict[str, AgentInfo]
     capabilities: Capabilities
     history: History

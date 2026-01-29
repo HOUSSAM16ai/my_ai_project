@@ -13,10 +13,9 @@ from .core_execution import _execute_tool_with_error_handling
 from .core_metrics import _enrich_result_metadata, _record_invocation
 from .core_models import ToolExecutionContext, ToolExecutionInfo
 from .core_registration import _register_tool_metadata
-from .definitions import AUTOFILL, __version__
+from .definitions import __version__
 from .globals import _ALIAS_INDEX, _CAPABILITIES, _REGISTRY_LOCK, _TOOL_REGISTRY
 from .utils import _generate_trace_id, _lower
-
 
 # ======================================================================================
 # Canonicalization

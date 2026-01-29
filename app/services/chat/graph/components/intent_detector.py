@@ -1,6 +1,8 @@
 import re
+
 from app.core.interfaces import IIntentDetector
 from app.services.chat.graph.domain import WriterIntent
+
 
 class RegexIntentDetector(IIntentDetector):
     """

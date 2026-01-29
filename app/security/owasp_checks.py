@@ -22,12 +22,12 @@ CHECK_PIPELINE: list[CheckFunction] = [
 ]
 
 __all__ = [
+    "CHECK_PIPELINE",
+    "CheckFunction",
     "check_access_control_issues",
     "check_authentication_issues",
     "check_cryptography_issues",
     "check_injection_issues",
     "check_logging_issues",
     "check_session_issues",
-    "CHECK_PIPELINE",
-    "CheckFunction",
 ]

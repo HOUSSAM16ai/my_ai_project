@@ -1,7 +1,7 @@
 """نماذج تنفيذ الأدوات وسياقاتها."""
 
-from dataclasses import dataclass
 from collections.abc import Callable
+from dataclasses import dataclass
 
 
 @dataclass

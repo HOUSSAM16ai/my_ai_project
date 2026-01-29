@@ -18,8 +18,14 @@ Similar to tools used by:
 
 import re
 
-from app.security import owasp_checks_access, owasp_checks_auth, owasp_checks_crypto
-from app.security import owasp_checks_injection, owasp_checks_logging, owasp_checks_session
+from app.security import (
+    owasp_checks_access,
+    owasp_checks_auth,
+    owasp_checks_crypto,
+    owasp_checks_injection,
+    owasp_checks_logging,
+    owasp_checks_session,
+)
 from app.security.owasp_checks import (
     CHECK_PIPELINE,
     check_access_control_issues,

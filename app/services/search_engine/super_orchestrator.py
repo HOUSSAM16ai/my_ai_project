@@ -109,10 +109,7 @@ class SuperSearchOrchestrator:
         for word in words:
             word_clean = word.strip()
             # Keep if it's a searchable keyword
-            if word_clean in FallbackQueryExpander.SEARCHABLE_KEYWORDS:
-                important_words.append(word_clean)
-            # Keep if it looks like a year (2024, 2023, etc.) or Arabic numbers
-            elif (word_clean.isdigit() and len(word_clean) == 4) or word_clean in {
+            if word_clean in FallbackQueryExpander.SEARCHABLE_KEYWORDS or (word_clean.isdigit() and len(word_clean) == 4) or word_clean in {
                 "٢٠٢٤",
                 "٢٠٢٣",
                 "٢٠٢٢",

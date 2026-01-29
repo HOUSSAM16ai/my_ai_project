@@ -112,6 +112,7 @@ sys.modules["app.services.search_engine.llama_retriever"] = MagicMock()
 # --- END MOCKS ---
 
 from app.core.di import Container
+
 # Re-import interfaces now that models are mocked
 from app.core.interfaces import (
     IContextComposer,
@@ -120,6 +121,7 @@ from app.core.interfaces import (
     IReasoningStrategy,
 )
 from app.services.chat.graph.domain import WriterIntent
+
 # We need to re-import writer node AFTER mocking
 from app.services.chat.graph.nodes.writer import writer_node
 from app.services.reasoning.workflow import SuperReasoningWorkflow

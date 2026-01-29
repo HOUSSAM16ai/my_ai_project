@@ -1,6 +1,9 @@
 import re
+from typing import ClassVar
+
 from app.core.interfaces import IContextComposer
 from app.services.chat.graph.domain import WriterIntent
+
 
 class FirewallContextComposer(IContextComposer):
     """
@@ -8,7 +11,7 @@ class FirewallContextComposer(IContextComposer):
     applying the 'Context Firewall' to hide solutions when not requested.
     """
 
-    FORBIDDEN_KEYS = {
+    FORBIDDEN_KEYS: ClassVar[set[str]] = {
         "solution",
         "answer",
         "marking_scheme",
@@ -17,7 +20,7 @@ class FirewallContextComposer(IContextComposer):
         "answer_key",
         "solution_md",
     }
-    SOLUTION_NODE_TYPES = {
+    SOLUTION_NODE_TYPES: ClassVar[set[str]] = {
         "solution",
         "answer",
         "marking_scheme",
@@ -26,13 +29,13 @@ class FirewallContextComposer(IContextComposer):
     }
 
     # Aggressive patterns to detect solution blocks embedded in content
-    SOLUTION_PATTERNS = [
+    SOLUTION_PATTERNS: ClassVar[list[str]] = [
         r"(?i)\n(#{1,3}\s*(Solution|Answer|Correction|Marking Scheme|Key|الحل|الإجابة|الجواب|تصحيح|مفتاح))[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
         r"(?i)\n(Solution|Answer|الحل|الجواب):\s*[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
         r"(?is)\n\[(sol|solution):[^\]]+\][\s\S]+?(?=\n\s*\[(ex|exercise):|$)",
         r"(?i)\n\s*\*{0,2}حل\s+التمرين[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
     ]
-    SOLUTION_CAPTURE_PATTERNS = [
+    SOLUTION_CAPTURE_PATTERNS: ClassVar[list[str]] = [
         r"(?is)\n\[(sol|solution):[^\]]+\][\s\S]+?(?=\n\s*\[(ex|exercise):|$)",
         r"(?is)\n\s*\*{0,2}حل\s+التمرين[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
     ]
