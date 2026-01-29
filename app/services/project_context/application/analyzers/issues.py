@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ast
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -73,6 +74,14 @@ class DeepNestingSmell:
     max_indent_level: int
 
 
+type IssuesReportValue = (
+    list[SyntaxIssue]
+    | list[str]
+    | list[StyleIssue]
+    | int
+)
+
+
 @dataclass
 class IssuesReport:
     """تقرير شامل بالمشاكل المكتشفة."""
@@ -86,7 +95,7 @@ class IssuesReport:
     total_files_scanned: int = 0
     total_issues_found: int = 0
 
-    def __getitem__(self, key: str):
+    def __getitem__(self, key: str) -> IssuesReportValue:
         """يدعم الوصول المعجمي للحقول لضمان توافق التقارير مع واجهات الاستخدام المتنوعة."""
 
         mapping = {
@@ -104,6 +113,15 @@ class IssuesReport:
         return mapping[key]
 
 
+type CodeSmellsReportValue = (
+    list[LongMethodSmell]
+    | list[str]
+    | list[DeepNestingSmell]
+    | list[MagicNumberSmell]
+    | int
+)
+
+
 @dataclass
 class CodeSmellsReport:
     """تقرير روائح الكود المتولدة أثناء التحليل."""
@@ -116,7 +134,7 @@ class CodeSmellsReport:
     duplicate_logic: list[str] = field(default_factory=list)
     total_smells: int = 0
 
-    def __getitem__(self, key: str):
+    def __getitem__(self, key: str) -> CodeSmellsReportValue:
         """يتيح قراءة الحقول عبر المفاتيح لتسهيل التكامل مع أدوات التقارير."""
 
         mapping = {
@@ -173,17 +191,26 @@ class IssueAnalyzer:
             "multiple_statements": r";\s*\w",
         }
 
-    def _iterate_python_files(self, app_dir: Path):
-        """التكرار عبر ملفات Python في مجلد التطبيق."""
-        for py_file in app_dir.rglob("*.py"):
-            if "__pycache__" not in str(py_file):
+    def _iterate_python_files(self, app_dir: Path) -> Iterator[Path]:
+        """التكرار المنظم عبر ملفات Python في مجلد التطبيق مع استثناء التخزين المؤقت."""
+        for py_file in sorted(app_dir.rglob("*.py")):
+            if "__pycache__" not in py_file.parts:
                 yield py_file
+
+    def _safe_read_text(self, py_file: Path) -> str | None:
+        """يقرأ محتوى الملف بأمان ويعيد None عند تعذر القراءة."""
+        try:
+            return py_file.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            return None
 
     def _scan_file_for_issues(
         self, py_file: Path, issues: IssuesReport, patterns: dict[str, str]
     ) -> None:
         """فحص ملف بحثًا عن المشاكل المحتملة."""
-        content = py_file.read_text(encoding="utf-8")
+        content = self._safe_read_text(py_file)
+        if content is None:
+            return
         self._check_style_issues(py_file, content, issues, patterns)
         self._check_syntax_errors(py_file, content, issues)
 
@@ -234,7 +261,9 @@ class IssueAnalyzer:
 
     def _analyze_file_smells(self, py_file: Path, smells: CodeSmellsReport) -> None:
         """تحليل ملف واحد للكشف عن روائح الكود."""
-        content = py_file.read_text(encoding="utf-8")
+        content = self._safe_read_text(py_file)
+        if content is None:
+            return
         lines = content.splitlines()
         rel_path = str(py_file.relative_to(self.project_root))
 
