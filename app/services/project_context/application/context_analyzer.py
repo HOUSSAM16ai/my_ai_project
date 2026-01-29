@@ -13,13 +13,18 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
 from app.services.project_context.application.analyzers.architecture import ArchitectureAnalyzer
 from app.services.project_context.application.analyzers.components import ComponentAnalyzer
 from app.services.project_context.application.analyzers.deep_analysis import DeepFileAnalyzer
-from app.services.project_context.application.analyzers.issues import IssueAnalyzer
+from app.services.project_context.application.analyzers.issues import (
+    CodeSmellsReport,
+    IssueAnalyzer,
+    IssuesReport,
+)
 from app.services.project_context.application.analyzers.search import SearchAnalyzer
 from app.services.project_context.application.analyzers.stats import CodeStatsAnalyzer
 from app.services.project_context.application.analyzers.structure import StructureAnalyzer
@@ -34,6 +39,19 @@ logger = logging.getLogger(__name__)
 
 # Project root detection
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent.parent
+
+
+@dataclass(frozen=True)
+class ProjectContextData:
+    """حاوية بيانات موحدة لسياق المشروع لتقليل الاعتماد على القواميس العامة."""
+
+    stats: CodeStatistics
+    structure: ProjectStructure
+    models: list[str]
+    services: list[str]
+    routes: list[str]
+    issues: list[str]
+    strengths: list[str]
 
 
 class ProjectContextService:
@@ -84,8 +102,8 @@ class ProjectContextService:
                     if line.startswith("class ") and ("(SQLModel" in line or "(Base)" in line):
                         class_name = line.split("class ")[1].split("(")[0].strip()
                         models.append(class_name)
-            except Exception as e:
-                logger.warning(f"Could not parse models.py: {e}")
+            except (OSError, UnicodeDecodeError) as exc:
+                logger.warning(f"Could not parse models.py: {exc}")
 
         return models
 
@@ -180,45 +198,28 @@ class ProjectContextService:
         elapsed = (datetime.now() - self._cache_timestamp).seconds
         return elapsed < self._cache_ttl_seconds
 
-    def _gather_project_data(self) -> dict[str, object]:
+    def _gather_project_data(self) -> ProjectContextData:
         """جمع جميع بيانات المشروع."""
-        return {
-            "stats": self.get_code_statistics(),
-            "structure": self.get_project_structure(),
-            "models": self.get_models_info(),
-            "services": self.get_services_info(),
-            "routes": self.get_api_routes_info(),
-            "issues": self.get_recent_issues(),
-            "strengths": self.get_strengths(),
-        }
+        return ProjectContextData(
+            stats=self.get_code_statistics(),
+            structure=self.get_project_structure(),
+            models=self.get_models_info(),
+            services=self.get_services_info(),
+            routes=self.get_api_routes_info(),
+            issues=self.get_recent_issues(),
+            strengths=self.get_strengths(),
+        )
 
-    def _build_context_sections(self, data: dict[str, object]) -> list[str]:
+    def _build_context_sections(self, data: ProjectContextData) -> list[str]:
         """بناء أقسام السياق من البيانات المجمعة."""
         sections = ["# 📊 REAL-TIME PROJECT ANALYSIS", ""]
 
-        # Casting needed because data is dict[str, object]
-        stats = data["stats"]
-        structure = data["structure"]
-        models = data["models"]
-        services = data["services"]
-        routes = data["routes"]
-        issues = data["issues"]
-        strengths = data["strengths"]
-
-        if isinstance(stats, CodeStatistics):
-            sections.extend(self._build_statistics_section(stats))
-        if isinstance(structure, ProjectStructure):
-            sections.extend(self._build_structure_section(structure))
-
-        # Ensure lists are strictly strings
-        m_list = models if isinstance(models, list) else []
-        s_list = services if isinstance(services, list) else []
-        r_list = routes if isinstance(routes, list) else []
-        i_list = issues if isinstance(issues, list) else []
-        str_list = strengths if isinstance(strengths, list) else []
-
-        sections.extend(self._build_components_section(m_list, s_list, r_list))  # type: ignore
-        sections.extend(self._build_analysis_section(i_list, str_list))  # type: ignore
+        sections.extend(self._build_statistics_section(data.stats))
+        sections.extend(self._build_structure_section(data.structure))
+        sections.extend(
+            self._build_components_section(data.models, data.services, data.routes)
+        )
+        sections.extend(self._build_analysis_section(data.issues, data.strengths))
         sections.append(f"## ⏰ Analysis Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
         return sections
@@ -272,7 +273,7 @@ class ProjectContextService:
         self._cached_context = None
         self._cache_timestamp = None
 
-    def deep_search_issues(self, search_pattern: str | None = None) -> dict[str, object]:
+    def deep_search_issues(self, search_pattern: str | None = None) -> IssuesReport:
         """البحث العميق عن المشاكل."""
         return self.issue_analyzer.deep_search_issues()
 
@@ -280,7 +281,7 @@ class ProjectContextService:
         """البحث الذكي في الكود."""
         return self.search_analyzer.search(query, max_results)
 
-    def detect_code_smells(self) -> dict[str, object]:
+    def detect_code_smells(self) -> CodeSmellsReport:
         """الكشف عن روائح الكود (Code Smells)."""
         return self.issue_analyzer.detect_code_smells()
 

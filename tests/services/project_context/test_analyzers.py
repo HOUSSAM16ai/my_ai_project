@@ -8,7 +8,9 @@ import pytest
 
 from app.services.project_context.application.analyzers.issues import (
     LONG_METHOD_LINE_THRESHOLD,
+    CodeSmellsReport,
     IssueAnalyzer,
+    IssuesReport,
 )
 from app.services.project_context.application.analyzers.stats import CodeStatsAnalyzer
 from app.services.project_context.application.analyzers.structure import StructureAnalyzer
@@ -68,6 +70,9 @@ def project_root(tmp_path):
 
 def test_code_stats_analyzer(project_root):
     """يتحقق من حساب الإحصاءات الأساسية لملفات المشروع."""
+    unreadable_file = project_root / "app" / "broken.py"
+    unreadable_file.write_bytes(b"\xff\xfe\xfa")
+
     analyzer = CodeStatsAnalyzer(project_root)
     stats = analyzer.analyze()
 
@@ -76,9 +81,11 @@ def test_code_stats_analyzer(project_root):
     # بالتالي ملفات التطبيق تشمل main.py و service.py و __init__.py.
     # ملفات الاختبارات تشمل test_main.py.
 
-    assert stats.python_files >= 2
+    assert stats.python_files == 4
     assert stats.test_files == 1
-    assert stats.app_lines > 0
+    assert stats.app_lines == 3
+    assert stats.test_lines == 2
+    assert stats.total_lines == 5
 
 
 def test_structure_analyzer(project_root):
@@ -109,6 +116,35 @@ def test_issue_analyzer(project_root):
     found_print = any(issue.issue_type == "print_statement" for issue in issues.style_issues)
 
     assert found_print
+
+
+def test_reports_support_key_access():
+    """يتحقق من دعم التقارير للوصول المعجمي وإرجاع الأخطاء الصحيحة."""
+    issues_report = IssuesReport(total_files_scanned=3, total_issues_found=2)
+    smells_report = CodeSmellsReport(total_smells=1)
+
+    assert issues_report["total_files_scanned"] == 3
+    assert issues_report["total_issues_found"] == 2
+    assert smells_report["total_smells"] == 1
+
+    with pytest.raises(KeyError):
+        _ = issues_report["missing_key"]
+
+    with pytest.raises(KeyError):
+        _ = smells_report["missing_key"]
+
+
+def test_issue_analyzer_skips_unreadable_files(project_root):
+    """يتأكد من تجاوز الملفات غير المقروءة دون تعطيل التحليل."""
+    unreadable_file = project_root / "app" / "broken.py"
+    unreadable_file.write_bytes(b"\xff\xfe\xfa")
+
+    analyzer = IssueAnalyzer(project_root)
+    issues = analyzer.deep_search_issues()
+    smells = analyzer.detect_code_smells()
+
+    assert issues.total_files_scanned == 4
+    assert smells.total_smells == 0
 
 
 def test_issue_analyzer_detects_long_method_at_file_end(project_root):

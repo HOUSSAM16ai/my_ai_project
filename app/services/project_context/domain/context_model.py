@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import ast
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -18,7 +19,7 @@ class AnalysisContext:
 
     file_path: Path
     content: str = ""
-    parsed_tree: dict[str, str | int | bool] = field(default_factory=dict)
+    parsed_tree: ast.AST | None = None
     complexity_metrics: AnalysisMap = field(default_factory=dict)
     analysis_result: AnalysisMap = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)

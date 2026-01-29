@@ -1,32 +1,41 @@
 """
-Search Analyzer
-===============
-Intelligent code search.
+محلل البحث الذكي في الشفرة.
+
+يوفر آلية بحث دقيقة داخل ملفات التطبيق مع ترتيب نتائج ثابت وتقييم
+مستوى التطابق بصورة واضحة.
 """
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
 
+@dataclass(frozen=True)
+class QueryInfo:
+    """وصف منظّم لاستعلام البحث ومكوناته المحللة."""
+
+    query_lower: str
+    query_words: set[str]
+
+
 @dataclass
 class SearchAnalyzer:
-    """Analyzer for code search."""
+    """محلل مسؤول عن تنفيذ عمليات البحث داخل الشفرة."""
 
     project_root: Path
 
-    def search(self, query: str, max_results: int = 20) -> list[dict]:
+    def search(self, query: str, max_results: int = 20) -> list[dict[str, object]]:
         """
-        بحث ذكي في الكود.
-        Intelligent code search.
+        تنفيذ بحث ذكي في الشفرة مع نتائج محددة العدد.
 
         Args:
-            query: استعلام البحث | Search query
-            max_results: الحد الأقصى للنتائج | Maximum results
+            query: استعلام البحث المطلوب.
+            max_results: الحد الأقصى للنتائج.
 
         Returns:
-            list[dict]: نتائج البحث المرتبة | Sorted search results
+            list[dict[str, object]]: نتائج البحث مرتبة حسب الملاءمة.
         """
-        results = []
+        results: list[dict[str, object]] = []
         app_dir = self.project_root / "app"
 
         if not app_dir.exists():
@@ -41,80 +50,56 @@ class SearchAnalyzer:
 
         return self._sort_and_limit_results(results, max_results)
 
-    def _prepare_query(self, query: str) -> dict:
-        """
-        تحضير معلومات البحث.
-        Prepare search query information.
-
-        Args:
-            query: استعلام البحث | Search query
-
-        Returns:
-            dict: معلومات البحث المحضرة | Prepared query information
-        """
+    def _prepare_query(self, query: str) -> QueryInfo:
+        """تحضير استعلام البحث وتحليله إلى كلمات مرجعية."""
         query_lower = query.lower()
-        return {
-            "query_lower": query_lower,
-            "query_words": set(query_lower.split()),
-        }
+        return QueryInfo(query_lower=query_lower, query_words=set(query_lower.split()))
 
-    def _iterate_python_files(self, app_dir: Path):
-        """
-        التكرار عبر ملفات Python.
-        Iterate through Python files.
-
-        Args:
-            app_dir: مسار دليل التطبيق | Application directory path
-
-        Yields:
-            Path: مسار ملف Python | Python file path
-        """
-        for py_file in app_dir.rglob("*.py"):
-            if "__pycache__" not in str(py_file):
+    def _iterate_python_files(self, app_dir: Path) -> Iterator[Path]:
+        """التكرار المنظم عبر ملفات Python مع استثناء التخزين المؤقت."""
+        for py_file in sorted(app_dir.rglob("*.py")):
+            if "__pycache__" not in py_file.parts:
                 yield py_file
 
     def _search_in_file(
-        self, py_file: Path, query_info: dict, results: list[dict], max_results: int
+        self,
+        py_file: Path,
+        query_info: QueryInfo,
+        results: list[dict[str, object]],
+        max_results: int,
     ) -> None:
-        """
-        البحث في ملف واحد.
-        Search in a single file.
+        """البحث في ملف واحد مع احترام سقف النتائج الوسيط."""
+        content = self._safe_read_text(py_file)
+        if content is None:
+            return
 
-        Args:
-            py_file: مسار الملف | File path
-            query_info: معلومات البحث | Query information
-            results: قائمة النتائج للتحديث | Results list to update
-            max_results: الحد الأقصى للنتائج | Maximum results
-        """
+        lines = content.splitlines()
+        rel_path = str(py_file.relative_to(self.project_root))
+
+        for line_num, line in enumerate(lines):
+            self._check_line_match(line, line_num, rel_path, query_info, results)
+            if len(results) >= max_results * 2:
+                break
+
+    def _safe_read_text(self, py_file: Path) -> str | None:
+        """قراءة محتوى الملف بأمان مع تجاوز الملفات غير المقروءة."""
         try:
-            content = py_file.read_text(encoding="utf-8")
-            lines = content.splitlines()
-            rel_path = str(py_file.relative_to(self.project_root))
-
-            for i, line in enumerate(lines):
-                self._check_line_match(line, i, rel_path, query_info, results)
-                if len(results) >= max_results * 2:
-                    break
-        except Exception:
-            pass
+            return py_file.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            return None
 
     def _check_line_match(
-        self, line: str, line_num: int, file_path: str, query_info: dict, results: list[dict]
+        self,
+        line: str,
+        line_num: int,
+        file_path: str,
+        query_info: QueryInfo,
+        results: list[dict[str, object]],
     ) -> None:
-        """
-        التحقق من تطابق السطر مع الاستعلام.
-        Check if line matches query.
-
-        Args:
-            line: السطر للفحص | Line to check
-            line_num: رقم السطر | Line number
-            file_path: مسار الملف | File path
-            query_info: معلومات البحث | Query information
-            results: قائمة النتائج | Results list
-        """
+        """التحقق من تطابق السطر مع الاستعلام وتسجيل النتيجة عند اللزوم."""
         line_lower = line.lower()
-        query_lower = query_info["query_lower"]
-        query_words = query_info["query_words"]
+        query_lower = query_info.query_lower
+        query_words = query_info.query_words
 
         if query_lower in line_lower:
             results.append(
@@ -126,7 +111,9 @@ class SearchAnalyzer:
                     "relevance": 1.0,
                 }
             )
-        elif query_words:
+            return
+
+        if query_words:
             overlap = self._calculate_word_overlap(line_lower, query_words)
             if overlap > 0.5:
                 results.append(
@@ -139,32 +126,16 @@ class SearchAnalyzer:
                     }
                 )
 
-    def _calculate_word_overlap(self, line_lower: str, query_words: set) -> float:
-        """
-        حساب تداخل الكلمات.
-        Calculate word overlap.
-
-        Args:
-            line_lower: السطر بأحرف صغيرة | Line in lowercase
-            query_words: كلمات الاستعلام | Query words
-
-        Returns:
-            float: نسبة التداخل | Overlap ratio
-        """
+    def _calculate_word_overlap(self, line_lower: str, query_words: set[str]) -> float:
+        """حساب نسبة تداخل كلمات السطر مع كلمات الاستعلام."""
+        if not query_words:
+            return 0.0
         line_words = set(line_lower.split())
         return len(query_words & line_words) / len(query_words)
 
-    def _sort_and_limit_results(self, results: list[dict], max_results: int) -> list[dict]:
-        """
-        ترتيب وتحديد النتائج.
-        Sort and limit results.
-
-        Args:
-            results: قائمة النتائج | Results list
-            max_results: الحد الأقصى للنتائج | Maximum results
-
-        Returns:
-            list[dict]: النتائج المرتبة والمحدودة | Sorted and limited results
-        """
-        results.sort(key=lambda x: x["relevance"], reverse=True)
+    def _sort_and_limit_results(
+        self, results: list[dict[str, object]], max_results: int
+    ) -> list[dict[str, object]]:
+        """ترتيب النتائج وتحديد العدد النهائي حسب الملاءمة."""
+        results.sort(key=lambda result: float(result["relevance"]), reverse=True)
         return results[:max_results]
