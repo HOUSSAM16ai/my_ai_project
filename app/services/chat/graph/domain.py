@@ -1,14 +1,3 @@
-from dataclasses import dataclass
-from enum import Enum, auto
+from app.core.domain.chat import StudentProfile, WriterIntent
 
-
-class WriterIntent(Enum):
-    GENERAL_INQUIRY = auto()
-    SOLUTION_REQUEST = auto()
-    DIAGNOSIS_REQUEST = auto()
-    QUESTION_ONLY_REQUEST = auto()
-
-
-@dataclass
-class StudentProfile:
-    level: str  # Beginner, Average, Advanced
+__all__ = ["StudentProfile", "WriterIntent"]

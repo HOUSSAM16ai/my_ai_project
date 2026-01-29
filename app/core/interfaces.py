@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from llama_index.core.schema import NodeWithScore
 
-from app.services.chat.graph.domain import StudentProfile, WriterIntent
+from app.core.domain.chat import StudentProfile, WriterIntent
 from app.services.reasoning.models import EvaluationResult, ReasoningNode
 
 
