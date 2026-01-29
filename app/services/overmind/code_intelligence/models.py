@@ -1,6 +1,71 @@
 from dataclasses import dataclass, field
 
 
+@dataclass(frozen=True)
+class LineStats:
+    """Basic line statistics for a single file."""
+
+    code_lines: int
+    comment_lines: int
+    blank_lines: int
+
+
+@dataclass(frozen=True)
+class ComplexityStats:
+    """Unified complexity and nesting statistics."""
+
+    avg_complexity: float
+    max_complexity: int
+    max_func_name: str
+    std_dev: float
+    avg_nesting: float
+
+
+@dataclass(frozen=True)
+class HotspotWeights:
+    """Weights for hotspot calculation."""
+
+    complexity: float
+    volatility: float
+    smell: float
+
+
+@dataclass(frozen=True)
+class HotspotConfig:
+    """Configuration for hotspot calculation."""
+
+    weights: HotspotWeights
+
+
+@dataclass(frozen=True)
+class NormalizedRanks:
+    """Normalized values for hotspot calculation."""
+
+    complexity: list[float]
+    volatility: list[float]
+    smell: list[float]
+
+
+@dataclass(frozen=True)
+class ProjectStats:
+    """Overall project statistics."""
+
+    total_lines: int
+    total_code: int
+    total_functions: int
+    total_classes: int
+    avg_complexity: float
+    max_complexity: int
+
+
+@dataclass(frozen=True)
+class HotspotBuckets:
+    """Lists of hotspots by priority."""
+
+    critical: list[str]
+    high: list[str]
+
+
 @dataclass
 class FileMetrics:
     """Comprehensive metrics for a single file"""
