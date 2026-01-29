@@ -31,6 +31,14 @@ const getWsBase = () => {
             console.error('Invalid NEXT_PUBLIC_API_URL for WebSocket base:', error);
         }
     }
+
+    // Smart fallback for local development (Next.js default port 3000)
+    // Proxies often fail for WebSockets, so we connect directly to backend default port 8000
+    if (window.location.port === '3000') {
+         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+         return `${protocol}://${window.location.hostname}:8000`;
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const host = window.location.host;
     return `${protocol}://${host}`;
@@ -201,7 +209,11 @@ const useChat = (endpoint, token, onConversationUpdate) => {
             };
 
             socket.onerror = (e) => {
-                console.error('WebSocket Error', e);
+                console.error('WebSocket Error details:', e);
+                // Try to infer common connection issues
+                if (e.type === 'error' && !e.message) {
+                    console.warn('Empty WebSocket error often indicates a connection refusal or blocked port. Check backend status and CORS.');
+                }
                 if (mountedRef.current) setStatus('error');
             };
 
