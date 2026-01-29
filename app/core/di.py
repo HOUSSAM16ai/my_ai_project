@@ -91,3 +91,14 @@ class Container:
         """Clear the container (useful for testing)."""
         cls._factories.clear()
         cls._singletons.clear()
+
+# Explicitly export legacy items to satisfy linter regarding "unused import" if they are part of API
+__all__ = [
+    "Container",
+    "get_db",
+    "get_health_check_service",
+    "get_logger",
+    "get_session",
+    "get_settings",
+    "get_system_service",
+]
