@@ -33,6 +33,13 @@ const getWsBase = () => {
     }
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const host = window.location.host;
+
+    // Smart WebSocket Fallback: If running on localhost:3000, connect to backend on 8000
+    // to bypass Next.js proxy limitations for WebSockets.
+    if (host.includes('localhost:3000') || host.includes('127.0.0.1:3000')) {
+        return `${protocol}://${host.replace('3000', '8000')}`;
+    }
+
     return `${protocol}://${host}`;
 };
 
@@ -166,10 +173,11 @@ const useChat = (endpoint, token, onConversationUpdate) => {
 
         setStatus('connecting');
         const wsBase = getWsBase();
-        const wsUrl = `${wsBase}${endpoint}?token=${encodeURIComponent(token)}`;
+        const wsUrl = `${wsBase}${endpoint}`;
 
         try {
-            const socket = new WebSocket(wsUrl);
+            const protocols = ['jwt', token];
+            const socket = new WebSocket(wsUrl, protocols);
             socketRef.current = socket;
 
             socket.onopen = () => {
