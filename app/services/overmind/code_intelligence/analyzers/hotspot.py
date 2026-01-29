@@ -1,4 +1,11 @@
-from app.services.overmind.code_intelligence.models import FileMetrics, NormalizedRanks, HotspotConfig, HotspotWeights, HotspotBuckets
+from app.services.overmind.code_intelligence.models import (
+    FileMetrics,
+    HotspotBuckets,
+    HotspotConfig,
+    HotspotWeights,
+    NormalizedRanks,
+)
+
 
 class HotspotAnalyzer:
     """Analyzer for identifying code hotspots based on complexity, volatility, and smells."""
