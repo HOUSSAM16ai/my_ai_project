@@ -237,3 +237,25 @@ class SuperBrain:
         await safe_log(
             CognitiveEvent.PHASE_ERROR, {"phase": state.current_phase, "error": str(error)}
         )
+
+    async def _execute_phase(
+        self,
+        *,
+        phase_name: str | CognitivePhase,
+        agent_name: str,
+        action: Callable[[], Awaitable[dict[str, object]]],
+        timeout: float,
+        log_func: Callable[[str, dict[str, object]], Awaitable[None]],
+    ) -> dict[str, object]:
+        """
+        تنفيذ مرحلة واحدة مع تسجيل الأحداث وإدارة المهلة الزمنية.
+
+        يوفر هذا الغلاف واجهة بسيطة متوافقة مع الاختبارات القديمة.
+        """
+        return await self.runner._execute_phase_core(
+            phase_name=phase_name,
+            agent_name=agent_name,
+            action=action,
+            timeout=timeout,
+            log_func=log_func,
+        )
