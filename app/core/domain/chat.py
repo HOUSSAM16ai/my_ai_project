@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, DateTime, String, Text, func
+from sqlalchemy import Column, DateTime, Text, func
 from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -36,14 +36,14 @@ class MessageRole(str, Enum):
 class AdminConversation(SQLModel, table=True):
     __tablename__ = "admin_conversations"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", index=True)
     title: str = Field(max_length=255)
     created_at: datetime = Field(
         default_factory=utc_now,
         sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True), onupdate=func.now()),
     )
@@ -61,7 +61,7 @@ class AdminConversation(SQLModel, table=True):
 class AdminMessage(SQLModel, table=True):
     __tablename__ = "admin_messages"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     conversation_id: int = Field(foreign_key="admin_conversations.id", index=True)
     role: MessageRole
     content: str = Field(sa_column=Column(Text))
@@ -78,14 +78,14 @@ class AdminMessage(SQLModel, table=True):
 class CustomerConversation(SQLModel, table=True):
     __tablename__ = "customer_conversations"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", index=True)
     title: str = Field(max_length=255)
     created_at: datetime = Field(
         default_factory=utc_now,
         sa_column=Column(DateTime(timezone=True), server_default=func.now()),
     )
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True), onupdate=func.now()),
     )
@@ -103,7 +103,7 @@ class CustomerConversation(SQLModel, table=True):
 class CustomerMessage(SQLModel, table=True):
     __tablename__ = "customer_messages"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     conversation_id: int = Field(foreign_key="customer_conversations.id", index=True)
     role: MessageRole
     content: str = Field(sa_column=Column(Text))
