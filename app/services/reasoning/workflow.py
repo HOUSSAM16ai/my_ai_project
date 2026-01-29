@@ -5,6 +5,7 @@ from app.core.gateway.simple_client import SimpleAIClient
 from app.core.logging import get_logger
 from app.services.search_engine.llama_retriever import KnowledgeGraphRetriever
 from app.services.reasoning.search_strategy import RMCTSStrategy
+from app.core.interfaces import IKnowledgeRetriever, IReasoningStrategy
 
 logger = get_logger("super-reasoner")
 
@@ -15,12 +16,27 @@ class RetrievalEvent(Event):
 
 
 class SuperReasoningWorkflow(Workflow):
-    def __init__(self, client: SimpleAIClient, timeout: int = 300, verbose: bool = True):
+    def __init__(
+        self,
+        client: SimpleAIClient,
+        timeout: int = 300,
+        verbose: bool = True,
+        retriever: IKnowledgeRetriever | None = None,
+        strategy: IReasoningStrategy | None = None,
+    ):
         # Increased timeout for R-MCTS
         super().__init__(timeout=timeout, verbose=verbose)
         self.client = client
-        self.retriever = KnowledgeGraphRetriever(top_k=5)
-        self.strategy = RMCTSStrategy(client)
+
+        if retriever:
+            self.retriever = retriever
+        else:
+            self.retriever = KnowledgeGraphRetriever(top_k=5)
+
+        if strategy:
+            self.strategy = strategy
+        else:
+            self.strategy = RMCTSStrategy(client)
 
     @step
     async def retrieve(self, ctx: Context, ev: StartEvent) -> RetrievalEvent:

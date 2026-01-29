@@ -1,91 +1,92 @@
 """
-حقن التبعيات (Dependency Injection) - العمود الفقري للنظام.
----------------------------------------------------------
-يتبع هذا الملف نمط "Composition Root" لتجميع مكونات النظام.
-يعتمد على دوال المصنع (Factory Functions) بدلاً من الفئات لتقليل التعقيد.
+Dependency Injection Container and Facade.
+------------------------------------------
+This module acts as the central registry for dependencies (DIP) and provides
+facade functions for legacy/core components to maintain backward compatibility.
 
-المعايير:
-- Explicit Dependencies: التبعيات واضحة في التوقيع.
-- Interface Segregation: الاعتماد على البروتوكولات وليس التطبيقات.
-- MIT 6.0001: التجريد الهيكلي.
+It combines the new 'Container' for SOLID refactoring with re-exports of
+existing core services.
 """
 
-from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Final
-
+from typing import Type, TypeVar, Dict, Any, Callable, Annotated
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import AppSettings
-from app.core.config import get_settings as _get_settings_config
-from app.core.database import async_session_factory
-from app.core.logging import get_logger as _get_logger
+# --- Legacy / Core Re-exports ---
+from app.core.logging import get_logger
+from app.core.config import get_settings
+from app.core.database import get_db
+from app.core.database import get_db as get_session # Alias for backward compatibility
 
-if TYPE_CHECKING:
-    from app.core.protocols import HealthCheckService, SystemService
+# --- Facade Functions for Legacy Routers ---
 
-# Singleton Instances
-_SETTINGS_SINGLETON: Final[AppSettings] = _get_settings_config()
+def get_system_service():
+    from app.services.system.system_service import system_service
+    return system_service
 
-__all__ = [
-    "get_db",
-    "get_di_db",
-    "get_di_settings",
-    "get_health_check_service",
-    "get_logger",
-    "get_session",
-    "get_settings",
-    "get_system_service",
-]
-
-
-def get_di_settings() -> AppSettings:
-    """
-    استرجاع إعدادات التطبيق (Singleton).
-    """
-    return _SETTINGS_SINGLETON
-
-
-get_settings = get_di_settings
-
-
-async def get_di_db() -> AsyncGenerator[AsyncSession, None]:
-    """
-    موفر جلسة قاعدة البيانات المتوافقة مع حقن التبعيات.
-    يدير دورة حياة الجلسة (Open -> Yield -> Close).
-    """
-    async with async_session_factory() as session:
-        yield session
-
-
-get_session = get_di_db
-get_db = get_di_db
-get_logger = _get_logger
-
-# ==============================================================================
-# Application Service Dependencies (Clean Architecture)
-# ==============================================================================
-
-
-async def get_health_check_service() -> AsyncGenerator["HealthCheckService", None]:
-    """
-    الحصول على خدمة فحص الصحة.
-    تستخدم Lazy Import لتجنب الدورات (Circular Imports).
-    """
+async def get_health_check_service(
+    db: Annotated[AsyncSession, Depends(get_db)]
+):
+    from app.infrastructure.repositories.database_repository import SQLAlchemyDatabaseRepository
     from app.application.services import DefaultHealthCheckService
-    from app.infrastructure.repositories import SQLAlchemyDatabaseRepository
 
-    async with async_session_factory() as session:
-        db_repo = SQLAlchemyDatabaseRepository(session)
-        yield DefaultHealthCheckService(db_repo)
+    repo = SQLAlchemyDatabaseRepository(db)
+    return DefaultHealthCheckService(repo)
 
 
-async def get_system_service() -> AsyncGenerator["SystemService", None]:
+# --- New DI Container (SOLID) ---
+
+T = TypeVar("T")
+
+class Container:
     """
-    الحصول على خدمة النظام.
+    A simple Dependency Injection Container to enforce DIP (Dependency Inversion Principle).
     """
-    from app.application.services import DefaultSystemService
-    from app.infrastructure.repositories import SQLAlchemyDatabaseRepository
+    _factories: Dict[Type, Callable[[], Any]] = {}
+    _singletons: Dict[Type, Any] = {}
 
-    async with async_session_factory() as session:
-        db_repo = SQLAlchemyDatabaseRepository(session)
-        yield DefaultSystemService(db_repo)
+    @classmethod
+    def register(cls, interface: Type[T], factory: Callable[[], T]):
+        """
+        Register a factory function for a given interface.
+        Whenever resolve is called, this factory is executed (Transient).
+        """
+        cls._factories[interface] = factory
+
+    @classmethod
+    def register_singleton(cls, interface: Type[T], instance: T):
+        """
+        Register a specific instance as a Singleton.
+        """
+        cls._singletons[interface] = instance
+
+    @classmethod
+    def register_singleton_factory(cls, interface: Type[T], factory: Callable[[], T]):
+        """
+        Register a factory that is called once, then cached (Lazy Singleton).
+        """
+        def lazy_wrapper():
+            if interface not in cls._singletons:
+                cls._singletons[interface] = factory()
+            return cls._singletons[interface]
+
+        cls._factories[interface] = lazy_wrapper
+
+    @classmethod
+    def resolve(cls, interface: Type[T]) -> T:
+        """
+        Resolve the dependency for the given interface.
+        """
+        if interface in cls._singletons:
+            return cls._singletons[interface]
+
+        if interface in cls._factories:
+            return cls._factories[interface]()
+
+        raise ValueError(f"No registration found for {interface.__name__}")
+
+    @classmethod
+    def clear(cls):
+        """Clear the container (useful for testing)."""
+        cls._factories.clear()
+        cls._singletons.clear()
