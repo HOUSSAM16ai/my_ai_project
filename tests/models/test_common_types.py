@@ -1,8 +1,7 @@
 from datetime import UTC, datetime
 
-from app.core.domain.common import CaseInsensitiveEnum, FlexibleEnum, utc_now
+from app.core.domain.common import FlexibleEnum, utc_now
 from app.core.domain.models import JSONText, MessageRole
-
 
 # =============================================================================
 # UTC NOW HELPER TESTS

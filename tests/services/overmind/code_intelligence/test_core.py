@@ -1,5 +1,5 @@
-from unittest.mock import MagicMock, patch
 import sys
+from unittest.mock import MagicMock, patch
 
 # Mock pythonjsonlogger
 mock_jsonlogger = MagicMock()

@@ -102,7 +102,7 @@ class OvermindIdentity:
             # Fallback or error, for now let's assume it exists or raise
             raise FileNotFoundError(f"Identity data not found at {base_path}")
 
-        with open(base_path, "r", encoding="utf-8") as f:
+        with open(base_path, encoding="utf-8") as f:
             data = json.load(f)
 
         # Create the schema (this validates the JSON part)

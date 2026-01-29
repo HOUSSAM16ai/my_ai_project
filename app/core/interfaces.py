@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import List, Any
+
 from llama_index.core.schema import NodeWithScore
 
-from app.services.chat.graph.domain import WriterIntent, StudentProfile
-from app.services.reasoning.models import ReasoningNode, EvaluationResult
+from app.services.chat.graph.domain import StudentProfile, WriterIntent
+from app.services.reasoning.models import EvaluationResult, ReasoningNode
+
 
 class IReasoningStrategy(ABC):
     @abstractmethod
@@ -11,7 +12,7 @@ class IReasoningStrategy(ABC):
         pass
 
     @abstractmethod
-    async def expand(self, parent: ReasoningNode, context: str) -> List[ReasoningNode]:
+    async def expand(self, parent: ReasoningNode, context: str) -> list[ReasoningNode]:
         pass
 
     @abstractmethod
@@ -35,5 +36,5 @@ class IPromptStrategist(ABC):
 
 class IKnowledgeRetriever(ABC):
     @abstractmethod
-    async def aretrieve(self, query: str) -> List[NodeWithScore]:
+    async def aretrieve(self, query: str) -> list[NodeWithScore]:
         pass

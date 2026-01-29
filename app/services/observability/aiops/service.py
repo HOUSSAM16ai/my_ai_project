@@ -13,8 +13,8 @@ from .logic import (
     calculate_trend,
     compose_forecast_record,
     derive_root_causes,
-    determine_healing_plan,
     detect_anomaly,
+    determine_healing_plan,
     predict_load,
     serialize_capacity_plan,
 )

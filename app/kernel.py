@@ -24,6 +24,10 @@ from typing import Final
 
 from fastapi import APIRouter, FastAPI
 
+from app.core.agents.system_principles import (
+    validate_architecture_system_principles,
+    validate_system_principles,
+)
 from app.core.app_blueprint import (
     KernelConfig,
     KernelSpec,
@@ -34,10 +38,6 @@ from app.core.app_blueprint import (
     build_kernel_spec,
     is_dev_environment,
 )
-from app.core.agents.system_principles import (
-    validate_architecture_system_principles,
-    validate_system_principles,
-)
 from app.core.asyncapi_contracts import (
     default_asyncapi_contract_path,
     validate_asyncapi_contract_structure,
@@ -45,12 +45,12 @@ from app.core.asyncapi_contracts import (
 from app.core.config import AppSettings
 from app.core.database import async_session_factory
 from app.core.db_schema import validate_schema_on_startup
+from app.core.kernel_state import apply_app_state, build_app_state
 from app.core.openapi_contracts import (
     compare_contract_to_runtime,
     default_contract_path,
     load_contract_operations,
 )
-from app.core.kernel_state import apply_app_state, build_app_state
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.static_files_middleware import StaticFilesConfig, setup_static_files_middleware
 from app.services.bootstrap import bootstrap_admin_account

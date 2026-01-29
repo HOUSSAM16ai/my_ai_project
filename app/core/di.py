@@ -8,7 +8,8 @@ It combines the new 'Container' for SOLID refactoring with re-exports of
 existing core services.
 """
 
-from typing import Annotated, Any, Callable, ClassVar, TypeVar
+from collections.abc import Callable
+from typing import Annotated, Any, ClassVar, TypeVar
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
