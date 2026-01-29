@@ -155,7 +155,9 @@ class StructuralCodeIntelligence:
             analyzer.visit(tree)
 
             # Calculate complexity stats
-            complexity_stats = self.statistics_analyzer.calculate_complexity_stats(analyzer.functions)
+            complexity_stats = self.statistics_analyzer.calculate_complexity_stats(
+                analyzer.functions
+            )
 
             # Create base metrics
             metrics = self._create_base_metrics(

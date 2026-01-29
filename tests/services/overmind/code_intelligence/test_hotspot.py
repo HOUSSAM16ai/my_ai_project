@@ -3,7 +3,6 @@ from app.services.overmind.code_intelligence.models import FileMetrics
 
 
 class TestHotspotAnalyzer:
-
     def setup_method(self):
         self.analyzer = HotspotAnalyzer()
 
@@ -13,11 +12,11 @@ class TestHotspotAnalyzer:
             relative_path=path,
             file_complexity=complexity,
             commits_last_12months=commits,
-            is_god_class=god_class
+            is_god_class=god_class,
         )
 
     def test_calculate_hotspot_scores(self):
-        m1 = self.create_metrics("file1.py", 100, 50, True) # High everything
+        m1 = self.create_metrics("file1.py", 100, 50, True)  # High everything
         m2 = self.create_metrics("file2.py", 10, 5, False)  # Low everything
 
         metrics_list = [m1, m2]
@@ -41,7 +40,7 @@ class TestHotspotAnalyzer:
     def test_identify_hotspots(self):
         metrics = []
         for i in range(25):
-            metrics.append(self.create_metrics(f"file_{i}.py", 100-i, 100-i, False))
+            metrics.append(self.create_metrics(f"file_{i}.py", 100 - i, 100 - i, False))
 
         hotspots = self.analyzer.identify_hotspots(metrics)
 

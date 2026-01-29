@@ -141,7 +141,10 @@ class DefaultServiceCatalogPolicy:
             raise ValueError("Shared libraries are forbidden in microservice architecture.")
 
         # Combine nested if
-        if service.service_type in {ServiceType.MICROSERVICE, ServiceType.API} and not service.api_spec_url:
+        if (
+            service.service_type in {ServiceType.MICROSERVICE, ServiceType.API}
+            and not service.api_spec_url
+        ):
             raise ValueError("API spec URL is required for API-first services.")
 
         if service.service_id in service.dependencies:

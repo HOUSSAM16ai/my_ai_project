@@ -23,6 +23,7 @@ Container.register_singleton(IPromptStrategist, StandardPromptStrategist())
 
 # --- Main Node Orchestrator ---
 
+
 async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
     """
     The Orchestrator Function.

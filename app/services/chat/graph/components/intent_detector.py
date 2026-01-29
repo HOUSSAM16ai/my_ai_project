@@ -15,7 +15,9 @@ class RegexIntentDetector(IIntentDetector):
     TARGET_NOUNS = r"(حل|إجابة|اجابة|جواب|صحح|تصحيح|solution|answer|result|correction)"
     # Updated negation to include "without" variants
     NEGATION_PATTERN = r"(don't|do not|not|no|never|without|sans|لا|ما|لم|لن|ليس|بدون|بلاش|من غير).{0,20}(want|need|give|show|solution|answer|أريد|بدي|تعطيني|عطيني|هات|حل|إجابة)"
-    DIAGNOSIS_KEYWORDS = r"(diagnose|quiz|test|exam|assessment|شخصني|ختبرني|إختبار|اختبار|قيم|تقييم|مراجعة)"
+    DIAGNOSIS_KEYWORDS = (
+        r"(diagnose|quiz|test|exam|assessment|شخصني|ختبرني|إختبار|اختبار|قيم|تقييم|مراجعة)"
+    )
     QUESTION_ONLY_KEYWORDS = (
         r"(أسئلة\s*فقط|فقط\s*أسئلة|questions\s*only|just\s*questions|"
         r"بدون\s*إجابة|بدون\s*اجابة|بدون\s*حلول|بدون\s*حل|لا\s*أريد\s*الحل|"

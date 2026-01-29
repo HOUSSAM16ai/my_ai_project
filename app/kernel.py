@@ -59,6 +59,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["RealityKernel"]
 
+
 def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
     """
     Combinator: تطبيق قائمة الميدل وير على التطبيق.

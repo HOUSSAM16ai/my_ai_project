@@ -22,13 +22,14 @@ from app.core.logging import get_logger
 
 # --- Facade Functions for Legacy Routers ---
 
+
 def get_system_service():
     from app.services.system.system_service import system_service
+
     return system_service
 
-async def get_health_check_service(
-    db: Annotated[AsyncSession, Depends(get_db)]
-):
+
+async def get_health_check_service(db: Annotated[AsyncSession, Depends(get_db)]):
     from app.application.services import DefaultHealthCheckService
     from app.infrastructure.repositories.database_repository import SQLAlchemyDatabaseRepository
 
@@ -40,10 +41,12 @@ async def get_health_check_service(
 
 T = TypeVar("T")
 
+
 class Container:
     """
     A simple Dependency Injection Container to enforce DIP (Dependency Inversion Principle).
     """
+
     _factories: ClassVar[dict[type, Callable[[], Any]]] = {}
     _singletons: ClassVar[dict[type, Any]] = {}
 
@@ -67,6 +70,7 @@ class Container:
         """
         Register a factory that is called once, then cached (Lazy Singleton).
         """
+
         def lazy_wrapper():
             if interface not in cls._singletons:
                 cls._singletons[interface] = factory()
@@ -92,6 +96,7 @@ class Container:
         """Clear the container (useful for testing)."""
         cls._factories.clear()
         cls._singletons.clear()
+
 
 # Explicitly export legacy items to satisfy linter regarding "unused import" if they are part of API
 __all__ = [

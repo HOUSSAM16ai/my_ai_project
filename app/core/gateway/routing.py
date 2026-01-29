@@ -211,6 +211,7 @@ class IntelligentRouter:
         يضمن هذا التابع أن قيم القيود قابلة للمقارنة،
         ويعيد افتراضات افتراضية عند غياب القيم.
         """
+
         def _coerce_constraint(value: object, default: float) -> float:
             if value is None:
                 return default

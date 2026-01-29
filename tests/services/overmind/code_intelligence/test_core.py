@@ -18,13 +18,15 @@ from app.services.overmind.code_intelligence.core import StructuralCodeIntellige
 
 
 class TestStructuralCodeIntelligence:
-
     @pytest.fixture
     def analyzer(self, tmp_path):
         # Patch dependencies that require external environment (Git)
-        with patch('app.services.overmind.code_intelligence.core.GitAnalyzer') as mock_git, \
-             patch('app.services.overmind.code_intelligence.core.StructuralSmellDetector') as mock_smell:
-
+        with (
+            patch("app.services.overmind.code_intelligence.core.GitAnalyzer") as mock_git,
+            patch(
+                "app.services.overmind.code_intelligence.core.StructuralSmellDetector"
+            ) as mock_smell,
+        ):
             mock_git_instance = mock_git.return_value
             mock_git_instance.analyze_file_history.return_value = {
                 "total_commits": 10,
@@ -32,14 +34,14 @@ class TestStructuralCodeIntelligence:
                 "commits_last_12months": 8,
                 "num_authors": 2,
                 "bugfix_commits": 1,
-                "branches_modified": 1
+                "branches_modified": 1,
             }
 
             mock_smell_instance = mock_smell.return_value
             mock_smell_instance.detect_smells.return_value = {
                 "is_god_class": False,
                 "has_layer_mixing": False,
-                "has_cross_layer_imports": False
+                "has_cross_layer_imports": False,
             }
 
             # Initialize with temp path and target "."
@@ -66,7 +68,7 @@ class TestStructuralCodeIntelligence:
         assert metrics.total_lines == 3
         assert metrics.num_functions == 1
         assert metrics.total_commits == 10  # From mock
-        assert metrics.is_god_class is False # From mock
+        assert metrics.is_god_class is False  # From mock
 
     def test_analyze_project(self, analyzer, tmp_path):
         f1 = tmp_path / "f1.py"

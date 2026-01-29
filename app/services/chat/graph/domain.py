@@ -8,6 +8,7 @@ class WriterIntent(Enum):
     DIAGNOSIS_REQUEST = auto()
     QUESTION_ONLY_REQUEST = auto()
 
+
 @dataclass
 class StudentProfile:
     level: str  # Beginner, Average, Advanced

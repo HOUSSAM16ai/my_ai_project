@@ -110,12 +110,10 @@ class OvermindIdentity:
 
         # Inject dynamic principles
         schema.agent_principles = [
-            AgentPrinciple(number=p.number, statement=p.statement)
-            for p in get_agent_principles()
+            AgentPrinciple(number=p.number, statement=p.statement) for p in get_agent_principles()
         ]
         schema.system_principles = [
-            AgentPrinciple(number=p.number, statement=p.statement)
-            for p in get_system_principles()
+            AgentPrinciple(number=p.number, statement=p.statement) for p in get_system_principles()
         ]
         schema.architecture_system_principles = [
             AgentPrinciple(number=p.number, statement=p.statement)

@@ -92,5 +92,9 @@ def _register_tool_metadata(
 ) -> None:
     """تسجيل الأداة وأسمائها البديلة بعد التحقق من التميز."""
     _validate_tool_names(name, aliases)
-    _register_main_tool(name, description, parameters, category, aliases, allow_disable, capabilities)
-    _register_tool_aliases(name, description, parameters, category, aliases, allow_disable, capabilities)
+    _register_main_tool(
+        name, description, parameters, category, aliases, allow_disable, capabilities
+    )
+    _register_tool_aliases(
+        name, description, parameters, category, aliases, allow_disable, capabilities
+    )

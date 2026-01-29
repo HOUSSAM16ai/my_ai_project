@@ -2,19 +2,11 @@ from app.services.overmind.code_intelligence.analyzers.statistics import Statist
 
 
 class TestStatisticsAnalyzer:
-
     def setup_method(self):
         self.analyzer = StatisticsAnalyzer()
 
     def test_count_lines(self):
-        lines = [
-            "import os",
-            "",
-            "# comment",
-            "  # indented comment",
-            "def main():",
-            "    pass"
-        ]
+        lines = ["import os", "", "# comment", "  # indented comment", "def main():", "    pass"]
         stats = self.analyzer.count_lines(lines)
         assert stats.code_lines == 3
         assert stats.comment_lines == 2
