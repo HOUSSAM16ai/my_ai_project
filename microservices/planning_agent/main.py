@@ -65,11 +65,7 @@ async def _generate_plan(
         logger.warning("مفتاح API غير موجود، استخدام الخطة الاحتياطية")
         return _get_fallback_plan(goal, context)
 
-    initial_state = {
-        "goal": goal,
-        "context": context,
-        "iterations": 0
-    }
+    initial_state = {"goal": goal, "context": context, "iterations": 0}
 
     try:
         logger.info("Executing Planning Graph", extra={"goal": goal})
@@ -107,7 +103,7 @@ def _build_router() -> APIRouter:
     async def create_plan(
         payload: PlanRequest,
         session: AsyncSession = Depends(get_session),
-        settings: PlanningAgentSettings = Depends(get_settings)
+        settings: PlanningAgentSettings = Depends(get_settings),
     ) -> PlanResponse:
         """ينشئ خطة تعليمية جديدة بناءً على الهدف والسياق ويحفظها."""
 
@@ -154,7 +150,7 @@ async def lifespan(app: FastAPI):
                 model=settings.AI_MODEL,
                 api_key=settings.OPENROUTER_API_KEY.get_secret_value(),
                 api_base=settings.AI_BASE_URL,
-                max_tokens=2000
+                max_tokens=2000,
             )
             dspy.settings.configure(lm=lm)
             logger.info("DSPy Configured successfully")

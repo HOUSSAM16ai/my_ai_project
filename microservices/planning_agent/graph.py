@@ -15,8 +15,10 @@ from microservices.planning_agent.retrieval import rerank_context
 
 logger = logging.getLogger("planning-agent")
 
+
 class PlanningState(TypedDict):
     """تعريف الحالة للرسم البياني للتخطيط."""
+
     goal: str
     context: list[str]
     plan: list[str]
@@ -24,12 +26,14 @@ class PlanningState(TypedDict):
     feedback: str
     iterations: int
 
+
 def retrieve_node(state: PlanningState) -> dict:
     """يحسن السياق باستخدام LlamaIndex/Reranking."""
     logger.info("جاري استرجاع/إعادة ترتيب السياق...")
     # إعادة الترتيب فقط إذا لم يتم ذلك أو لضمان الجودة
     refined_ctx = rerank_context(state["goal"], state.get("context", []))
     return {"context": refined_ctx}
+
 
 def generate_node(state: PlanningState) -> dict:
     """يولد خطة باستخدام DSPy."""
@@ -51,12 +55,17 @@ def generate_node(state: PlanningState) -> dict:
             steps = raw_steps
         elif isinstance(raw_steps, str):
             try:
-                clean = raw_steps.replace("```json", "").replace("```", "").replace("python", "").strip()
+                clean = (
+                    raw_steps.replace("```json", "")
+                    .replace("```", "")
+                    .replace("python", "")
+                    .strip()
+                )
                 steps = ast.literal_eval(clean)
                 if not isinstance(steps, list):
-                    steps = [line.strip() for line in clean.split('\n') if line.strip()]
+                    steps = [line.strip() for line in clean.split("\n") if line.strip()]
             except Exception:
-                steps = [line.strip() for line in raw_steps.split('\n') if line.strip()]
+                steps = [line.strip() for line in raw_steps.split("\n") if line.strip()]
         else:
             steps = [str(raw_steps)]
 
@@ -65,6 +74,7 @@ def generate_node(state: PlanningState) -> dict:
         steps = ["خطأ في توليد الخطة", "يرجى المحاولة مرة أخرى"]
 
     return {"plan": steps, "iterations": state.get("iterations", 0) + 1}
+
 
 def critique_node(state: PlanningState) -> dict:
     """ينقد الخطة باستخدام DSPy."""
@@ -76,7 +86,7 @@ def critique_node(state: PlanningState) -> dict:
 
         # تحليل الدرجة
         try:
-            raw_score = str(pred.score).split('/')[0].lower().replace("score:", "").strip()
+            raw_score = str(pred.score).split("/")[0].lower().replace("score:", "").strip()
             score = float(raw_score)
         except Exception:
             score = 5.0  # درجة افتراضية
@@ -90,12 +100,14 @@ def critique_node(state: PlanningState) -> dict:
     logger.info(f"الدرجة: {score}, الملاحظات: {feedback}")
     return {"score": score, "feedback": feedback}
 
+
 def should_continue(state: PlanningState):
     """يقرر ما إذا كان يجب التحسين أو الإنهاء."""
     # إذا كانت الدرجة جيدة (>= 7.0) أو وصلنا للحد الأقصى (3)، توقف.
     if state.get("score", 0) >= 7.0 or state.get("iterations", 0) >= 3:
         return END
     return "generate"
+
 
 # بناء الرسم البياني
 workflow = StateGraph(PlanningState)
@@ -109,13 +121,6 @@ workflow.set_entry_point("retrieve")
 workflow.add_edge("retrieve", "generate")
 workflow.add_edge("generate", "critique")
 
-workflow.add_conditional_edges(
-    "critique",
-    should_continue,
-    {
-        END: END,
-        "generate": "generate"
-    }
-)
+workflow.add_conditional_edges("critique", should_continue, {END: END, "generate": "generate"})
 
 graph = workflow.compile()

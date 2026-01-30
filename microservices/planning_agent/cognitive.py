@@ -15,6 +15,7 @@ class GeneratePlan(dspy.Signature):
     context = dspy.InputField(desc="معلومات خلفية ذات صلة أو سياق مسترجع")
     plan_steps = dspy.OutputField(desc="قائمة مفصلة بالخطوات القابلة للتنفيذ (كقائمة من النصوص)")
 
+
 class CritiquePlan(dspy.Signature):
     """يقيم الخطة التعليمية من حيث الوضوح، القابلية للتنفيذ، والاكتمال.
     يعيد درجة من 10 وملاحظات بناءة."""
@@ -24,6 +25,7 @@ class CritiquePlan(dspy.Signature):
     score = dspy.OutputField(desc="درجة عشرية بين 0.0 و 10.0")
     feedback = dspy.OutputField(desc="نصيحة محددة حول كيفية تحسين الخطة")
 
+
 class PlanGenerator(dspy.Module):
     def __init__(self):
         super().__init__()
@@ -32,6 +34,7 @@ class PlanGenerator(dspy.Module):
     def forward(self, goal: str, context: list[str]):
         context_str = "\n".join(context) if context else "لا يوجد سياق إضافي."
         return self.generate(goal=goal, context=context_str)
+
 
 class PlanCritic(dspy.Module):
     def __init__(self):
