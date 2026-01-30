@@ -46,7 +46,7 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
     profile = StudentProfile(level=student_level)
 
     # 3. Composition
-    context_text = context_composer.compose(search_results, intent)
+    context_text = context_composer.compose(search_results, intent, last_user_msg)
     system_prompt = prompt_strategist.build_prompt(profile, intent)
 
     # Inject Critique if available (The Self-Correction Loop)

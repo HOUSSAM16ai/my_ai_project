@@ -1,5 +1,3 @@
-from typing import Any
-
 import dspy
 
 from app.core.logging import get_logger
@@ -9,12 +7,13 @@ logger = get_logger(__name__)
 
 class StructuredQuerySignature(dspy.Signature):
     """
-    Analyze the educational query to extract specific metadata and a refined search term.
-    Focus on extracting:
-    - year: The exam year (e.g., 2024, 2023).
-    - subject: The academic subject (e.g., Mathematics, Physics).
-    - branch: The study branch (e.g., Experimental Sciences, Math Tech).
-    - refined_query: A clean, English translation of the core topic for vector search (e.g., "Probability exercises", "Complex numbers").
+    تحليل الاستعلام التعليمي لاستخراج البيانات الوصفية وصياغة طلب بحث أدق.
+
+    يركز هذا التوقيع على:
+    - السنة: سنة الامتحان إن وُجدت.
+    - المادة: اسم المادة الدراسية.
+    - الشعبة: الفرع الدراسي.
+    - الاستعلام المنقح: صياغة واضحة للموضوع الرئيس للبحث الدلالي.
     """
 
     user_query: str = dspy.InputField(desc="The raw query from the student.")
@@ -25,6 +24,10 @@ class StructuredQuerySignature(dspy.Signature):
 
 
 class StructuredQueryRefiner(dspy.Module):
+    """
+    وحدة DSPy لإعادة صياغة الاستعلام التعليمي بشكل منظم.
+    """
+
     def __init__(self):
         super().__init__()
         self.prog = dspy.ChainOfThought(StructuredQuerySignature)
@@ -35,10 +38,12 @@ class StructuredQueryRefiner(dspy.Module):
 
 def get_refined_query(
     user_query: str, api_key: str, model_name: str = "mistralai/devstral-2512:free"
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """
-    Uses DSPy to refine the query and extract metadata.
-    Returns a dictionary with 'refined_query', 'year', 'subject', 'branch'.
+    إعادة صياغة الاستعلام عبر DSPy مع استخراج بيانات وصفية مساعدة.
+
+    يعيد هذا التابع قاموساً يحتوي على:
+    'refined_query', 'year', 'subject', 'branch'.
     """
     try:
         lm = dspy.LM(
@@ -69,7 +74,7 @@ def get_refined_query(
         return {"refined_query": user_query}
 
 
-def _safe_int(val: Any) -> int | None:
+def _safe_int(val: object) -> int | None:
     try:
         if val and str(val).lower() != "none":
             return int(str(val))

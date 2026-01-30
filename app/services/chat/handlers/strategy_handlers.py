@@ -265,7 +265,10 @@ class MissionComplexHandler(IntentHandler):
             if event.event_type == MissionEventType.STATUS_CHANGE:
                 brain_evt = payload.get("brain_event")
                 if brain_evt:
-                    return f"🔹 *{brain_evt}*: {payload.get('data', '')}\n"
+                    return _format_brain_event(str(brain_evt), payload.get("data", {}))
+                status_note = payload.get("note")
+                if status_note:
+                    return f"🔄 **تحديث حالة:** {status_note}\n"
                 return f"🔄 **تحديث حالة:** {payload.get('old_status')} -> {payload.get('new_status')}\n"
 
             if event.event_type == MissionEventType.MISSION_COMPLETED:
@@ -277,6 +280,64 @@ class MissionComplexHandler(IntentHandler):
             return f"ℹ️ {event.event_type.value}: {payload}\n"
         except Exception:
             return "ℹ️ حدث جديد...\n"
+
+
+def _format_brain_event(event_name: str, data: dict[str, object] | object) -> str:
+    """
+    تنسيق أحداث الدماغ الخارق بصورة ملهمة للطالب أثناء التنفيذ.
+    """
+    if not isinstance(data, dict):
+        data = {}
+    normalized = event_name.lower()
+    phase = str(data.get("phase", "")).upper()
+    agent = str(data.get("agent", "")).strip() or "رئيس الوكلاء"
+
+    phase_labels = {
+        "PLANNING": "بناء الخطة",
+        "REVIEW_PLAN": "تدقيق الخطة",
+        "DESIGN": "تصميم الحل",
+        "EXECUTION": "تنفيذ المهام",
+        "REFLECTION": "مراجعة النتائج",
+        "RE-PLANNING": "إعادة التخطيط الذكي",
+    }
+
+    if normalized == "loop_start":
+        iteration = data.get("iteration", "؟")
+        chief_agent = str(data.get("chief_agent") or agent)
+        graph_mode = str(data.get("graph_mode") or "cognitive_graph")
+        return (
+            f"🧠 **جاري تفعيل الرسم البياني المعرفي** ({graph_mode}) — **{chief_agent}** يوزّع المهام بخوارزميات عبقرية"
+            f" (الدورة #{iteration}).\n"
+        )
+
+    if normalized == "phase_start":
+        phase_label = phase_labels.get(phase, phase or "مرحلة غير معروفة")
+        unit = data.get("unit_of_work", {})
+        unit_id = ""
+        if isinstance(unit, dict):
+            unit_id = str(unit.get("unit_id") or "")
+        unit_suffix = f" | وحدة العمل: `{unit_id}`" if unit_id else ""
+        return (
+            f"✨ **جاري {phase_label}** داخل شبكة التنسيق العامة بواسطة **{agent}**"
+            f"{unit_suffix}...\n"
+        )
+
+    if normalized == "plan_rejected":
+        return "🧩 **جاري إعادة ضبط الخطة** بعد مراجعة صارمة لضمان أفضل مسار.\n"
+
+    if normalized == "plan_approved":
+        return "✅ **تم اعتماد الخطة العبقرية** والانطلاق نحو التنفيذ المتقدم.\n"
+
+    if normalized.endswith("_completed"):
+        return "🏁 **اكتملت مرحلة أساسية بنجاح** — التقدم جارٍ بشكل خارق.\n"
+
+    if normalized.endswith("_timeout"):
+        return "⏳ **تأخر غير متوقع** — جاري إعادة المزامنة لضمان الجودة.\n"
+
+    if normalized in {"mission_success", "mission_critique_failed", "phase_error"}:
+        return f"🔔 **تحديث معرفي:** {event_name}.\n"
+
+    return f"🔹 **{event_name}**: {data}\n"
 
 
 class HelpHandler(IntentHandler):

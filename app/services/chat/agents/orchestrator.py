@@ -10,6 +10,12 @@ from app.services.chat.agents.data_access import DataAccessAgent
 from app.services.chat.agents.education_council import EducationCouncil
 from app.services.chat.agents.refactor import RefactorAgent
 from app.services.chat.context_service import get_context_service
+from app.services.chat.graph.components.context_composer import (
+    _extract_requested_index,
+    _extract_section_by_index,
+)
+from app.services.chat.graph.components.intent_detector import RegexIntentDetector
+from app.services.chat.graph.domain import WriterIntent
 from app.services.chat.intent_detector import ChatIntent, IntentDetector
 from app.services.chat.tools import ToolRegistry
 from app.services.overmind.agents.memory import MemoryAgent
@@ -199,21 +205,35 @@ class OrchestratorAgent:
         yield f"✅ **تم العثور على:** {title} ({content_id})\n\n"
 
         # Step 2: Fetch Raw Content
-        raw_data = await self.tools.execute("get_content_raw", {"content_id": content_id})
+        writer_intent = RegexIntentDetector().analyze(question)
+        include_solution = writer_intent == WriterIntent.SOLUTION_REQUEST
+        raw_data = await self.tools.execute(
+            "get_content_raw",
+            {"content_id": content_id, "include_solution": include_solution},
+        )
 
         if raw_data and raw_data.get("content"):
+            content_text = raw_data["content"]
+            requested_index = _extract_requested_index(question)
+            if requested_index is not None:
+                extracted = _extract_section_by_index(content_text, requested_index)
+                if extracted:
+                    content_text = extracted
             yield "---\n\n"
-            yield raw_data["content"]
+            yield content_text
             yield "\n\n---\n\n"
 
-            # Step 3: AI Explanation with Official Solution
-            personalization_context = await self._build_education_brief(context)
-            solution = raw_data.get("solution")
+            if include_solution:
+                # Step 3: AI Explanation with Official Solution
+                personalization_context = await self._build_education_brief(context)
+                solution = raw_data.get("solution")
 
-            async for chunk in self._generate_explanation(
-                question, raw_data["content"], personalization_context, solution=solution
-            ):
-                yield chunk
+                async for chunk in self._generate_explanation(
+                    question, content_text, personalization_context, solution=solution
+                ):
+                    yield chunk
+            else:
+                yield "هل ترغب أن أقدّم الحل أو تفضّل المحاولة أولاً؟"
         else:
             yield "عذراً، تعذر تحميل نص المحتوى."
 

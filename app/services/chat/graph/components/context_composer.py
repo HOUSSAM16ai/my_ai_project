@@ -40,7 +40,12 @@ class FirewallContextComposer(IContextComposer):
         r"(?is)\n\s*\*{0,2}حل\s+التمرين[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
     ]
 
-    def compose(self, search_results: list[dict[str, object]], intent: WriterIntent) -> str:
+    def compose(
+        self,
+        search_results: list[dict[str, object]],
+        intent: WriterIntent,
+        user_message: str,
+    ) -> str:
         if not search_results:
             return ""
 
@@ -52,6 +57,7 @@ class FirewallContextComposer(IContextComposer):
                 continue
 
             content = str(item.get("content", ""))
+            content = self._extract_requested_segment(content, user_message)
             sanitized_content = self._sanitize_content(
                 content, show_hidden_marker=show_hidden_marker
             )
@@ -136,3 +142,117 @@ class FirewallContextComposer(IContextComposer):
                     extracted.append(block)
 
         return extracted
+
+    def _extract_requested_segment(self, content: str, user_message: str) -> str:
+        """
+        يقتطع جزءاً محدداً من التمرين عند طلب سؤال بعينه.
+        """
+        requested_index = _extract_requested_index(user_message)
+        if requested_index is None:
+            return content
+
+        extracted = _extract_section_by_index(content, requested_index)
+        return extracted or content
+
+
+def _extract_requested_index(user_message: str) -> int | None:
+    """
+    استخراج رقم السؤال المطلوب من رسالة المستخدم إن وُجد.
+    """
+    pattern = re.compile(
+        r"(السؤال|التمرين|question|exercise)\s*(?:رقم\s*)?"
+        r"(\d+|[٠-٩]+|الأول|أول|اول|الثاني|ثاني|الثالث|ثالث|الرابع|رابع|الخامس|خامس|"
+        r"السادس|سادس|السابع|سابع|الثامن|ثامن|التاسع|تاسع|العاشر|عاشر|"
+        r"first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)",
+        re.IGNORECASE,
+    )
+    match = pattern.search(user_message)
+    if not match:
+        return None
+    return _normalize_index_token(match.group(2))
+
+
+def _extract_section_by_index(content: str, index: int) -> str | None:
+    """
+    استخراج مقطع محدد من المحتوى اعتماداً على رقم السؤال.
+    """
+    heading_pattern = re.compile(
+        r"(?im)^(?:#{1,6}\s*)?(السؤال|التمرين|question|exercise)\s*(?:رقم\s*)?"
+        r"(\d+|[٠-٩]+|الأول|أول|اول|الثاني|ثاني|الثالث|ثالث|الرابع|رابع|الخامس|خامس|"
+        r"السادس|سادس|السابع|سابع|الثامن|ثامن|التاسع|تاسع|العاشر|عاشر|"
+        r"first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\b"
+    )
+
+    matches = list(heading_pattern.finditer(content))
+    if not matches:
+        return None
+
+    sections: list[tuple[int, int, int]] = []
+    for idx, match in enumerate(matches, start=1):
+        start = match.start()
+        end = matches[idx].start() if idx < len(matches) else len(content)
+        token_value = _normalize_index_token(match.group(2)) or idx
+        sections.append((token_value, start, end))
+
+    for token_value, start, end in sections:
+        if token_value == index:
+            return content[start:end].strip()
+
+    if index <= len(sections):
+        _, start, end = sections[index - 1]
+        return content[start:end].strip()
+    return None
+
+
+def _normalize_index_token(token: str | None) -> int | None:
+    """
+    تحويل تمثيل الرقم (عربي/إنجليزي) إلى قيمة عددية.
+    """
+    if not token:
+        return None
+    normalized = token.strip().lower()
+
+    arabic_digits = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
+    numeric_candidate = normalized.translate(arabic_digits)
+    if numeric_candidate.isdigit():
+        return int(numeric_candidate)
+
+    arabic_ordinals = {
+        "الأول": 1,
+        "اول": 1,
+        "أول": 1,
+        "الثاني": 2,
+        "ثاني": 2,
+        "الثالث": 3,
+        "ثالث": 3,
+        "الرابع": 4,
+        "رابع": 4,
+        "الخامس": 5,
+        "خامس": 5,
+        "السادس": 6,
+        "سادس": 6,
+        "السابع": 7,
+        "سابع": 7,
+        "الثامن": 8,
+        "ثامن": 8,
+        "التاسع": 9,
+        "تاسع": 9,
+        "العاشر": 10,
+        "عاشر": 10,
+    }
+    if normalized in arabic_ordinals:
+        return arabic_ordinals[normalized]
+
+    english_ordinals = {
+        "first": 1,
+        "second": 2,
+        "third": 3,
+        "fourth": 4,
+        "fifth": 5,
+        "sixth": 6,
+        "seventh": 7,
+        "eighth": 8,
+        "ninth": 9,
+        "tenth": 10,
+    }
+    return english_ordinals.get(normalized)

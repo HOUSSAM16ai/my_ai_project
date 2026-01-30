@@ -5,6 +5,7 @@ Graph Expander - توسيع البحث عبر الرسم البياني.
 """
 
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_factory
 from app.core.logging import get_logger
@@ -18,12 +19,12 @@ async def expand_with_neighbors(
     limit_per_node: int = 3,
 ) -> list[dict[str, object]]:
     """
-    يوسع نتائج البحث بإضافة العقد المجاورة (1-hop neighbors).
+    يوسع نتائج البحث عبر الرسم البياني باستخدام قفزات متعددة.
 
     Args:
         node_ids: معرّفات العقد الأولية
-        hop_count: عدد القفزات (1 = المجاورة المباشرة)
-        limit_per_node: عدد المجاورين لكل عقدة
+        hop_count: عدد القفزات المعرفية (1 = مجاور مباشر)
+        limit_per_node: حد المجاورين لكل عقدة
 
     Returns:
         list: قائمة العقد المجاورة مع معلومات العلاقة
@@ -31,54 +32,97 @@ async def expand_with_neighbors(
     if not node_ids:
         return []
 
+    if hop_count < 1:
+        return []
+
     try:
         async with async_session_factory() as session:
-            # Build placeholders for IN clause
-            placeholders = [f":id_{i}" for i in range(len(node_ids))]
-            params = {f"id_{i}": nid for i, nid in enumerate(node_ids)}
-            params["limit"] = limit_per_node * len(node_ids)
+            visited = set(node_ids)
+            frontier = list(node_ids)
+            neighbors: list[dict[str, object]] = []
 
-            query = text(f"""
-                SELECT DISTINCT
-                    n.id,
-                    n.name,
-                    n.label,
-                    n.content,
-                    e.relationship_type,
-                    e.weight
-                FROM knowledge_edges e
-                JOIN knowledge_nodes n ON (
-                    (e.source_id IN ({", ".join(placeholders)}) AND e.target_id = n.id)
-                    OR
-                    (e.target_id IN ({", ".join(placeholders)}) AND e.source_id = n.id)
+            for hop in range(1, hop_count + 1):
+                hop_neighbors = await _fetch_neighbors(
+                    session=session,
+                    node_ids=frontier,
+                    limit_per_node=limit_per_node,
                 )
-                WHERE n.id NOT IN ({", ".join(placeholders)})
-                ORDER BY e.weight DESC NULLS LAST
-                LIMIT :limit
-            """)
+                if not hop_neighbors:
+                    break
 
-            result = await session.execute(query, params)
-            rows = result.fetchall()
+                new_frontier: list[str] = []
+                for item in hop_neighbors:
+                    node_id = str(item.get("id", ""))
+                    if not node_id or node_id in visited:
+                        continue
+                    visited.add(node_id)
+                    item["hop"] = hop
+                    neighbors.append(item)
+                    new_frontier.append(node_id)
 
-            neighbors = []
-            for row in rows:
-                neighbors.append(
-                    {
-                        "id": row[0],
-                        "name": row[1],
-                        "label": row[2],
-                        "content": row[3],
-                        "relationship": row[4],
-                        "weight": row[5],
-                    }
-                )
+                frontier = new_frontier
+                if not frontier:
+                    break
 
-            logger.info(f"Found {len(neighbors)} neighbors for {len(node_ids)} nodes")
+            logger.info(
+                "Graph expansion produced %s neighbors across %s hops.",
+                len(neighbors),
+                hop_count,
+            )
             return neighbors
 
     except Exception as e:
         logger.warning(f"Graph expansion failed: {e}")
         return []
+
+
+async def _fetch_neighbors(
+    *, session: AsyncSession, node_ids: list[str], limit_per_node: int
+) -> list[dict[str, object]]:
+    """
+    يجلب الجيران المباشرين لعقد محددة ضمن حدود مضبوطة.
+    """
+    if not node_ids:
+        return []
+
+    placeholders = [f":id_{i}" for i in range(len(node_ids))]
+    params = {f"id_{i}": nid for i, nid in enumerate(node_ids)}
+    params["limit"] = limit_per_node * len(node_ids)
+
+    query = text(f"""
+        SELECT DISTINCT
+            n.id,
+            n.name,
+            n.label,
+            n.content,
+            e.relationship_type,
+            e.weight
+        FROM knowledge_edges e
+        JOIN knowledge_nodes n ON (
+            (e.source_id IN ({", ".join(placeholders)}) AND e.target_id = n.id)
+            OR
+            (e.target_id IN ({", ".join(placeholders)}) AND e.source_id = n.id)
+        )
+        WHERE n.id NOT IN ({", ".join(placeholders)})
+        ORDER BY e.weight DESC NULLS LAST
+        LIMIT :limit
+    """)
+
+    result = await session.execute(query, params)
+    rows = result.fetchall()
+    neighbors: list[dict[str, object]] = []
+    for row in rows:
+        neighbors.append(
+            {
+                "id": row[0],
+                "name": row[1],
+                "label": row[2],
+                "content": row[3],
+                "relationship": row[4],
+                "weight": row[5],
+            }
+        )
+    return neighbors
 
 
 async def find_related_content(

@@ -62,6 +62,12 @@ class AuditorAgent(AgentReflector):
                 "تم اكتشاف حلقة استدلال مفرغة. الخطة المقترحة تكررت عدة مرات دون تقدم."
             )
 
+    def compute_plan_hash(self, plan: dict[str, object]) -> str:
+        """
+        توليد بصمة ثابتة لخطة محددة بغرض تتبع التكرار.
+        """
+        return self._compute_hash(plan)
+
     def _compute_hash(self, data: dict[str, object]) -> str:
         """حساب بصمة ثابتة للبيانات."""
         try:

@@ -28,7 +28,12 @@ class IIntentDetector(ABC):
 
 class IContextComposer(ABC):
     @abstractmethod
-    def compose(self, search_results: list[dict[str, object]], intent: WriterIntent) -> str:
+    def compose(
+        self,
+        search_results: list[dict[str, object]],
+        intent: WriterIntent,
+        user_message: str,
+    ) -> str:
         pass
 
 
