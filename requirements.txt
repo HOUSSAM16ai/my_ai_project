@@ -13,9 +13,9 @@ alembic==1.13.1
 asyncpg==0.29.0
 aiosqlite==0.17.0
 psycopg2-binary==2.9.9
-pydantic==2.7.4
+pydantic>=2.8.0,<3.0.0
 pydantic-settings==2.3.0
-pydantic_core==2.18.4
+# pydantic_core==2.18.4  # Let pydantic manage this
 PyJWT==2.8.0
 passlib==1.7.4
 bcrypt==3.2.0
