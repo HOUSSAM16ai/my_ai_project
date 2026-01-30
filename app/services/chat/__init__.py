@@ -1,3 +1,7 @@
+# Re-export legacy/telemetry if needed, or deprecate
+from functools import lru_cache
+from typing import TYPE_CHECKING
+
 from app.services.chat.context import ChatContext
 from app.services.chat.handlers.strategy_handlers import (
     CodeSearchHandler,
@@ -11,10 +15,6 @@ from app.services.chat.handlers.strategy_handlers import (
 )
 from app.services.chat.intent_detector import ChatIntent, IntentDetector, IntentResult
 from app.services.chat.security import ErrorSanitizer, PathValidator
-
-# Re-export legacy/telemetry if needed, or deprecate
-from functools import lru_cache
-from typing import TYPE_CHECKING
 from app.services.chat.telemetry import ChatTelemetry
 
 if TYPE_CHECKING:
