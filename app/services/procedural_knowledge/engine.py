@@ -90,9 +90,7 @@ class ConflictOfInterestRule:
         for tender in tenders:
             # 1. Who issued the tender?
             officials = [
-                target
-                for target, r_type in adj[tender.id]
-                if r_type == RelationType.ISSUED_BY
+                target for target, r_type in adj[tender.id] if r_type == RelationType.ISSUED_BY
             ]
 
             # 2. Who participated in the tender?
@@ -100,10 +98,7 @@ class ConflictOfInterestRule:
             # So we look for relations where target_id == tender.id
             suppliers = []
             for rel in relations:
-                if (
-                    rel.target_id == tender.id
-                    and rel.type == RelationType.PARTICIPATED_IN
-                ):
+                if rel.target_id == tender.id and rel.type == RelationType.PARTICIPATED_IN:
                     suppliers.append(rel.source_id)
 
             # 3. Check for relations between Officials and Suppliers

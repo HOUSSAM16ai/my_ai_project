@@ -77,7 +77,7 @@ Valid Relation Types: owns, participated_in, won, issued_by, located_at, related
             # 1. Extract Graph Structure using LLM
             extraction_response = await ai_client.send_message(
                 system_prompt=ProceduralAuditorNode.SYSTEM_PROMPT,
-                user_message=f"Analyze this context and extract the fraud detection graph:\n\n{last_message}"
+                user_message=f"Analyze this context and extract the fraud detection graph:\n\n{last_message}",
             )
 
             # Clean JSON
@@ -107,7 +107,11 @@ Valid Relation Types: owns, participated_in, won, issued_by, located_at, related
             fails = len([r for r in audit_results if r.status == AuditStatus.FAIL])
             warnings = len([r for r in audit_results if r.status == AuditStatus.WARNING])
             risk_score = (fails * 20.0) + (warnings * 5.0)
-            overall_status = AuditStatus.FAIL if fails > 0 else (AuditStatus.WARNING if warnings > 0 else AuditStatus.PASS)
+            overall_status = (
+                AuditStatus.FAIL
+                if fails > 0
+                else (AuditStatus.WARNING if warnings > 0 else AuditStatus.PASS)
+            )
 
             report = ComplianceReport(
                 audit_id=str(uuid.uuid4()),
@@ -115,8 +119,10 @@ Valid Relation Types: owns, participated_in, won, issued_by, located_at, related
                 overall_status=overall_status,
                 risk_score=min(risk_score, 100.0),
                 findings=audit_results,
-                recommendations=["Verify entity documents" if fails > 0 else "No immediate action required"],
-                timestamp=datetime.now().timestamp()
+                recommendations=[
+                    "Verify entity documents" if fails > 0 else "No immediate action required"
+                ],
+                timestamp=datetime.now().timestamp(),
             )
 
             # Format Output for Chat
@@ -125,7 +131,7 @@ Valid Relation Types: owns, participated_in, won, issued_by, located_at, related
             output_text += f"**Risk Score:** {risk_score}/100\n\n"
 
             if not audit_results:
-                 output_text += "ℹ️ No relevant entities found for audit.\n"
+                output_text += "ℹ️ No relevant entities found for audit.\n"
             elif fails == 0 and warnings == 0:
                 output_text += "✅ No procedural violations detected.\n"
             else:
@@ -141,14 +147,16 @@ Valid Relation Types: owns, participated_in, won, issued_by, located_at, related
                 "messages": [AIMessage(content=output_text, name="procedural_auditor")],
                 # We will add audit_report to state definition in next step
                 "user_context": {"last_audit_report": report.model_dump()},
-                "review_score": None, # Reset review
-                "review_feedback": None
+                "review_score": None,  # Reset review
+                "review_feedback": None,
             }
 
         except Exception as e:
             logger.error(f"Audit failed: {e}", exc_info=True)
             return {
-                 "messages": [AIMessage(content=f"⚠️ Audit Process Failed: {e}", name="procedural_auditor")]
+                "messages": [
+                    AIMessage(content=f"⚠️ Audit Process Failed: {e}", name="procedural_auditor")
+                ]
             }
 
 
