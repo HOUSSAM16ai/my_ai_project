@@ -132,7 +132,10 @@ class CognitivePhaseRunner:
             )
             await log_func(
                 f"{phase_str}_completed",
-                {"summary": "Phase completed successfully", "unit_of_work": completed_unit.model_dump()},
+                {
+                    "summary": "Phase completed successfully",
+                    "unit_of_work": completed_unit.model_dump(),
+                },
             )
             return result
         except TimeoutError:
@@ -168,7 +171,9 @@ class CognitivePhaseRunner:
         بناء وحدة عمل تمثل الوكيل كوحدة تنفيذية مستقلة.
         """
         phase_value = (
-            phase_name if isinstance(phase_name, CognitivePhase) else CognitivePhase(str(phase_name))
+            phase_name
+            if isinstance(phase_name, CognitivePhase)
+            else CognitivePhase(str(phase_name))
         )
         unit_id = f"{agent_name}-{phase_value.value}"
         return AgentUnitOfWork(

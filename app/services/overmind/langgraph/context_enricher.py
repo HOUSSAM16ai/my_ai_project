@@ -33,9 +33,7 @@ class ContextEnricher:
     def __init__(self, *, max_snippets: int = 4) -> None:
         self.max_snippets = max_snippets
 
-    async def enrich(
-        self, objective: str, context: dict[str, object]
-    ) -> ContextEnrichmentResult:
+    async def enrich(self, objective: str, context: dict[str, object]) -> ContextEnrichmentResult:
         """
         تنفيذ خط إثراء السياق وإرجاع النتيجة المجمعة.
         """

@@ -74,12 +74,7 @@ class DeepNestingSmell:
     max_indent_level: int
 
 
-type IssuesReportValue = (
-    list[SyntaxIssue]
-    | list[str]
-    | list[StyleIssue]
-    | int
-)
+type IssuesReportValue = list[SyntaxIssue] | list[str] | list[StyleIssue] | int
 
 
 @dataclass
@@ -114,11 +109,7 @@ class IssuesReport:
 
 
 type CodeSmellsReportValue = (
-    list[LongMethodSmell]
-    | list[str]
-    | list[DeepNestingSmell]
-    | list[MagicNumberSmell]
-    | int
+    list[LongMethodSmell] | list[str] | list[DeepNestingSmell] | list[MagicNumberSmell] | int
 )
 
 
