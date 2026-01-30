@@ -4,22 +4,22 @@
 يحدد آلة الحالة لتوليد الخطط، نقدها، وتحسينها.
 """
 
-import logging
 import ast
-from typing import TypedDict, List, Annotated
-import operator
+import logging
+from typing import TypedDict
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
+
+from microservices.planning_agent.cognitive import PlanCritic, PlanGenerator
 from microservices.planning_agent.retrieval import rerank_context
-from microservices.planning_agent.cognitive import PlanGenerator, PlanCritic
 
 logger = logging.getLogger("planning-agent")
 
 class PlanningState(TypedDict):
     """تعريف الحالة للرسم البياني للتخطيط."""
     goal: str
-    context: List[str]
-    plan: List[str]
+    context: list[str]
+    plan: list[str]
     score: float
     feedback: str
     iterations: int
@@ -55,7 +55,7 @@ def generate_node(state: PlanningState) -> dict:
                 steps = ast.literal_eval(clean)
                 if not isinstance(steps, list):
                     steps = [line.strip() for line in clean.split('\n') if line.strip()]
-            except:
+            except Exception:
                 steps = [line.strip() for line in raw_steps.split('\n') if line.strip()]
         else:
             steps = [str(raw_steps)]
@@ -78,8 +78,8 @@ def critique_node(state: PlanningState) -> dict:
         try:
             raw_score = str(pred.score).split('/')[0].lower().replace("score:", "").strip()
             score = float(raw_score)
-        except:
-            score = 5.0 # درجة افتراضية
+        except Exception:
+            score = 5.0  # درجة افتراضية
 
         feedback = str(pred.feedback)
     except Exception as e:
