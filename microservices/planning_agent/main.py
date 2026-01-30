@@ -6,23 +6,22 @@
 """
 
 import asyncio
-import json
 from contextlib import asynccontextmanager
 from uuid import UUID
 
+import dspy
 from fastapi import APIRouter, Depends, FastAPI
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
-import dspy
 
 from microservices.planning_agent.database import get_session, init_db
 from microservices.planning_agent.errors import setup_exception_handlers
+from microservices.planning_agent.graph import graph
 from microservices.planning_agent.health import HealthResponse, build_health_payload
 from microservices.planning_agent.logging import get_logger, setup_logging
 from microservices.planning_agent.models import Plan
 from microservices.planning_agent.settings import PlanningAgentSettings, get_settings
-from microservices.planning_agent.graph import graph
 
 logger = get_logger("planning-agent")
 
