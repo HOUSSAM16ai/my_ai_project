@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from app.core.logging import get_logger
 from app.services.search_engine.query_refiner import get_refined_query
+from app.services.search_engine.reranker import get_reranker
 from app.services.search_engine.retriever import get_retriever
 
 logger = get_logger(__name__)
@@ -88,6 +89,7 @@ class ContextEnricher:
             logger.warning("فشل استرجاع مقتطفات LlamaIndex: %s", exc)
             return []
 
+        nodes = self._rerank_nodes(query, nodes)
         snippets: list[dict[str, object]] = []
         for node in nodes:
             text, metadata = _extract_node_payload(node)
@@ -95,6 +97,21 @@ class ContextEnricher:
                 continue
             snippets.append({"text": text, "metadata": metadata})
         return snippets
+
+    def _rerank_nodes(self, query: str, nodes: list[object]) -> list[object]:
+        """
+        إعادة ترتيب نتائج LlamaIndex عبر Reranker إن توفر.
+        """
+        if not nodes:
+            return []
+
+        try:
+            reranker = get_reranker()
+            reranked = reranker.rerank(query, nodes, top_n=self.max_snippets)
+            return list(reranked)
+        except Exception as exc:
+            logger.warning("فشل إعادة الترتيب عبر Reranker: %s", exc)
+            return nodes[: self.max_snippets]
 
 
 def _extract_metadata_filters(
