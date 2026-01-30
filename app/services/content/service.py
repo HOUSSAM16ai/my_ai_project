@@ -172,7 +172,12 @@ class ContentService:
             for row in rows
         ]
 
-    async def get_content_raw(self, content_id: str) -> dict[str, str] | None:
+    async def get_content_raw(
+        self, content_id: str, *, include_solution: bool = True
+    ) -> dict[str, str] | None:
+        """
+        جلب النص الخام (Markdown) لعنصر المحتوى مع التحكم في إرفاق الحل.
+        """
         async with self.session_factory() as session:
             repo = ContentRepository(session)
             detail = await repo.get_content_detail(content_id)
@@ -181,7 +186,7 @@ class ContentService:
             return None
 
         data = {"content": detail.content_md}
-        if detail.solution_md:
+        if include_solution and detail.solution_md:
             data["solution"] = detail.solution_md
 
         return data

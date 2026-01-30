@@ -169,12 +169,16 @@ async def search_content(
             return []
 
 
-async def get_content_raw(content_id: str) -> dict[str, str] | None:
-    """جلب النص الخام (Markdown) لتمرين أو درس معين، مع الحل إذا توفر."""
+async def get_content_raw(
+    content_id: str, *, include_solution: bool = True
+) -> dict[str, str] | None:
+    """جلب النص الخام (Markdown) لتمرين أو درس معين مع خيار الحل."""
     try:
         from app.services.content.service import content_service as live_content_service
 
-        return await live_content_service.get_content_raw(content_id)
+        return await live_content_service.get_content_raw(
+            content_id, include_solution=include_solution
+        )
     except Exception as e:
         logger.error(f"Get content raw failed: {e}")
         return None
@@ -184,7 +188,7 @@ async def get_solution_raw(content_id: str) -> dict[str, object] | None:
     """جلب الحل الرسمي (Official Solution) لتمرين."""
     from app.services.content.service import content_service as live_content_service
 
-    data = await live_content_service.get_content_raw(content_id)
+    data = await live_content_service.get_content_raw(content_id, include_solution=True)
     if data and "solution" in data:
         return {
             "solution_md": data["solution"],

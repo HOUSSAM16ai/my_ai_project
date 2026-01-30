@@ -17,6 +17,23 @@ class EventLogger(Protocol):
     async def __call__(self, event_type: str, payload: dict[str, object]) -> None: ...
 
 
+class AgentUnitOfWork(BaseModel):
+    """
+    تمثيل الوكيل كوحدة عمل مستقلة يمكن قياسها وتتبّعها.
+
+    يُستخدم هذا النموذج لتوحيد مخرجات الوكلاء وإبراز
+    أن كل وكيل يعمل كوحدة عمل قابلة للمراقبة والقياس.
+    """
+
+    unit_id: str = Field(..., description="معرف وحدة العمل")
+    agent: str = Field(..., description="اسم الوكيل المسؤول")
+    phase: CognitivePhase = Field(..., description="المرحلة المعرفية المرتبطة")
+    summary: str = Field(..., description="ملخص موجز لمهام الوحدة")
+    input_keys: list[str] = Field(default_factory=list, description="مفاتيح المدخلات")
+    output_keys: list[str] = Field(default_factory=list, description="مفاتيح المخرجات")
+    status: str = Field(default="running", description="حالة التنفيذ")
+
+
 class CognitiveCritique(BaseModel):
     """
     Model representing the result of a review/critique.

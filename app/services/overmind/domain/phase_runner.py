@@ -14,7 +14,7 @@ from app.core.protocols import AgentMemory
 from app.services.overmind.domain.context import InMemoryCollaborationContext
 from app.services.overmind.domain.council_session import CouncilSession
 from app.services.overmind.domain.enums import CognitiveEvent, CognitivePhase
-from app.services.overmind.domain.primitives import EventLogger
+from app.services.overmind.domain.primitives import AgentUnitOfWork, EventLogger
 
 logger = logging.getLogger(__name__)
 
@@ -116,17 +116,39 @@ class CognitivePhaseRunner:
         """
         Core execution logic with timeout and logging.
         """
-        await log_func(CognitiveEvent.PHASE_START, {"phase": phase_name, "agent": agent_name})
+        unit = self._build_unit_of_work(phase_name=phase_name, agent_name=agent_name)
+        await log_func(
+            CognitiveEvent.PHASE_START,
+            {"phase": phase_name, "agent": agent_name, "unit_of_work": unit.model_dump()},
+        )
         try:
             result = await asyncio.wait_for(action(), timeout=timeout)
             phase_str = self._phase_event_label(phase_name)
-            await log_func(f"{phase_str}_completed", {"summary": "Phase completed successfully"})
+            completed_unit = unit.model_copy(
+                update={
+                    "status": "completed",
+                    "summary": "تم إنجاز وحدة العمل بنجاح",
+                }
+            )
+            await log_func(
+                f"{phase_str}_completed",
+                {"summary": "Phase completed successfully", "unit_of_work": completed_unit.model_dump()},
+            )
             return result
         except TimeoutError:
             error_msg = f"{agent_name} timeout during {phase_name} (exceeded {timeout}s)"
             logger.error(error_msg)
             phase_str = self._phase_event_label(phase_name)
-            await log_func(f"{phase_str}_timeout", {"error": error_msg})
+            failed_unit = unit.model_copy(
+                update={
+                    "status": "timeout",
+                    "summary": "تجاوزت وحدة العمل المهلة المحددة",
+                }
+            )
+            await log_func(
+                f"{phase_str}_timeout",
+                {"error": error_msg, "unit_of_work": failed_unit.model_dump()},
+            )
             raise RuntimeError(error_msg) from None
 
     @staticmethod
@@ -137,6 +159,24 @@ class CognitivePhaseRunner:
     @staticmethod
     def _phase_event_label(phase_name: str | CognitivePhase) -> str:
         return str(phase_name).lower()
+
+    @staticmethod
+    def _build_unit_of_work(
+        *, phase_name: str | CognitivePhase, agent_name: str
+    ) -> AgentUnitOfWork:
+        """
+        بناء وحدة عمل تمثل الوكيل كوحدة تنفيذية مستقلة.
+        """
+        phase_value = (
+            phase_name if isinstance(phase_name, CognitivePhase) else CognitivePhase(str(phase_name))
+        )
+        unit_id = f"{agent_name}-{phase_value.value}"
+        return AgentUnitOfWork(
+            unit_id=unit_id,
+            agent=agent_name,
+            phase=phase_value,
+            summary="جاري تنفيذ وحدة العمل وفق خطة المرحلة",
+        )
 
     @staticmethod
     def _record_session_action(

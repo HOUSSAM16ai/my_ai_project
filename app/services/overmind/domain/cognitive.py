@@ -107,7 +107,14 @@ class SuperBrain:
 
         while state.iteration_count < state.max_iterations:
             state.iteration_count += 1
-            await safe_log(CognitiveEvent.LOOP_START, {"iteration": state.iteration_count})
+            await safe_log(
+                CognitiveEvent.LOOP_START,
+                {
+                    "iteration": state.iteration_count,
+                    "chief_agent": "رئيس الوكلاء",
+                    "graph_mode": "cognitive_graph",
+                },
+            )
 
             try:
                 # محاولة تنفيذ دورة معرفية كاملة

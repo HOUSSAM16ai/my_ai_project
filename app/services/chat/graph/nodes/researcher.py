@@ -8,6 +8,8 @@ import contextlib
 import logging
 import re
 
+from app.services.chat.graph.components.intent_detector import RegexIntentDetector
+from app.services.chat.graph.domain import WriterIntent
 from app.services.chat.graph.search import build_graph_search_plan
 from app.services.chat.graph.state import AgentState
 from app.services.chat.tools import ToolRegistry
@@ -26,6 +28,11 @@ async def researcher_node(state: AgentState, tools: ToolRegistry) -> dict:
 
     full_content: list[dict[str, object]] = []
     results: list[dict[str, object]] = []
+
+    last_message = str(state.get("messages", [])[-1].content) if state.get("messages") else ""
+    intent_detector = RegexIntentDetector()
+    writer_intent = intent_detector.analyze(last_message)
+    include_solution = writer_intent == WriterIntent.SOLUTION_REQUEST
 
     for query in search_plan.queries:
         params = {"q": query, "limit": 5}
@@ -67,7 +74,10 @@ async def researcher_node(state: AgentState, tools: ToolRegistry) -> dict:
     if results:
         # Fetch raw content for top results
         for result in results[:2]:  # Get top 2 results
-            raw = await tools.execute("get_content_raw", {"content_id": result["id"]})
+            raw = await tools.execute(
+                "get_content_raw",
+                {"content_id": result["id"], "include_solution": include_solution},
+            )
             if raw:
                 full_content.append(raw)
 

@@ -67,7 +67,8 @@ class IntentDetector:
         ]
         analytics_keywords = (
             r"(مستواي|أدائي|نقاط ضعفي|نقاط الضعف|تقييم|level|performance|weakness|report"
-            r"|تشخيص\s*(نقاط|الضعف|أداء|الأداء))"
+            r"|تشخيص\s*(نقاط|الضعف|أداء|الأداء|مستواي)|تقييم\s*مستواي|اختبرني|"
+            r"تشخيص\s*مستواي)"
         )
         return [
             *[(pattern, ChatIntent.ADMIN_QUERY, self._empty_params) for pattern in admin_queries],
@@ -162,6 +163,8 @@ class IntentDetector:
 
     def _is_complex_mission(self, question: str) -> bool:
         """يتحقق مما إذا كان السؤال يشير إلى مهمة معقدة."""
+        if self._matches_analytics_intent(question):
+            return False
         indicators = [
             "قم ب",
             "نفذ",
@@ -173,3 +176,11 @@ class IntentDetector:
             "develop",
         ]
         return any(indicator in question.lower() for indicator in indicators)
+
+    def _matches_analytics_intent(self, question: str) -> bool:
+        """يتحقق من مؤشرات التشخيص والتحليل لتجنب تفعيل مهام معقدة."""
+        analytics_pattern = (
+            r"(مستواي|أدائي|نقاط ضعفي|نقاط الضعف|تقييم|level|performance|weakness|report"
+            r"|تشخيص|اختبرني|assessment|quiz|test)"
+        )
+        return bool(re.search(analytics_pattern, question, re.IGNORECASE))
