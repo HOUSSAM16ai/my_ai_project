@@ -1,19 +1,5 @@
-import sys
-from unittest.mock import MagicMock, patch
-
-# Mock pythonjsonlogger
-mock_jsonlogger = MagicMock()
-sys.modules["pythonjsonlogger"] = mock_jsonlogger
-sys.modules["pythonjsonlogger.jsonlogger"] = mock_jsonlogger
-
-# Mock pydantic
-mock_pydantic = MagicMock()
-sys.modules["pydantic"] = mock_pydantic
-sys.modules["pydantic_settings"] = MagicMock()
-
 import pytest
-
-# We need to make sure pydantic is mocked BEFORE importing core
+from unittest.mock import patch, MagicMock
 from app.services.overmind.code_intelligence.core import StructuralCodeIntelligence
 
 
