@@ -6,14 +6,25 @@ from pydantic import BaseModel, Field
 
 class NodeType(str, Enum):
     """
-    تصنيف أنواع العقد في الرسم البياني المعرفي.
+    تصنيف أنواع العقد في الرسم البياني المعرفي (Procedural & Fraud Detection).
     """
 
-    ENTITY = "entity"  # كيان مادي (مثال: صندوق، كرة)
-    EVENT = "event"  # حدث (مثال: سحب كرة)
-    CONCEPT = "concept"  # مفهوم رياضي (مثال: الاحتمال)
-    RULE = "rule"  # قاعدة منطقية (مثال: قانون المجموع)
-    VALUE = "value"  # قيمة عددية
+    # Generic Math/Logic Types
+    ENTITY = "entity"
+    EVENT = "event"
+    CONCEPT = "concept"
+    RULE = "rule"
+    VALUE = "value"
+
+    # Procurement & Fraud Types (The Agent as a Unit of Work)
+    SUPPLIER = "supplier"  # مورد
+    TENDER = "tender"  # مناقصة
+    CONTRACT = "contract"  # عقد
+    INVOICE = "invoice"  # فاتورة
+    OFFICIAL = "official"  # مسؤول حكومي
+    COMPANY = "company"  # شركة
+    ADDRESS = "address"  # عنوان فعلي
+    BANK_ACCOUNT = "bank_account"  # حساب بنكي
 
 
 class RelationType(str, Enum):
@@ -21,17 +32,27 @@ class RelationType(str, Enum):
     تصنيف أنواع العلاقات بين العقد.
     """
 
-    CONTAINS = "contains"  # يحتوي (الصندوق يحتوي كرات)
-    REQUIRES = "requires"  # يتطلب (الحدث يتطلب قانون)
-    DEFINES = "defines"  # يعرف (القاعدة تعرف القيمة)
-    CALCULATED_BY = "calculated_by"  # يحسب بواسطة
-    VERIFIES = "verifies"  # يؤكد صحة
+    # Generic
+    CONTAINS = "contains"
+    REQUIRES = "requires"
+    DEFINES = "defines"
+    CALCULATED_BY = "calculated_by"
+    VERIFIES = "verifies"
+
+    # Procurement & Fraud Relations
+    OWNS = "owns"  # يملك (شركة -> حساب)
+    PARTICIPATED_IN = "participated_in"  # شارك في (مورد -> مناقصة)
+    WON = "won"  # فاز بـ (مورد -> مناقصة)
+    ISSUED_BY = "issued_by"  # صدرت عن (مناقصة -> هيئة)
+    LOCATED_AT = "located_at"  # يقع في (شركة -> عنوان)
+    RELATED_TO = "related_to"  # قرابة/علاقة (مسؤول -> مورد)
+    TRANSFERRED_TO = "transferred_to"  # تحويل مالي (حساب -> حساب)
+    SIGNED_BY = "signed_by"  # وقع بواسطة (عقد -> مسؤول)
 
 
 class KnowledgeNode(BaseModel):
     """
     يمثل عقدة معرفية واحدة في الرسم البياني.
-    تحتوي هذه العقدة على البيانات الأساسية والخصائص الديناميكية.
     """
 
     id: str = Field(..., description="المعرف الفريد للعقدة")
@@ -68,23 +89,36 @@ class AuditStatus(str, Enum):
 
 class AuditResult(BaseModel):
     """
-    نتيجة عملية التدقيق أو الفحص المنطقي.
-    يستخدم هذا النموذج لتقديم تقرير نهائي عن صحة الإجراءات.
+    نتيجة عملية التدقيق لقاعدة واحدة.
     """
 
     rule_id: str = Field(..., description="معرف القاعدة التي تم فحصها")
     status: AuditStatus = Field(..., description="حالة النتيجة")
     message: str = Field(..., description="رسالة توضيحية باللغة العربية")
     evidence: list[str] = Field(
-        default_factory=list, description="الأدلة أو العقد التي سببت النتيجة"
+        default_factory=list, description="الأدلة أو معرفات العقد التي سببت النتيجة"
     )
     timestamp: float | None = Field(None, description="وقت التنفيذ")
+
+
+class ComplianceReport(BaseModel):
+    """
+    عقد الامتثال والتقرير النهائي (The Compliance Contract).
+    يمثل وثيقة رسمية تصدر عن الوكيل "المدقق".
+    """
+
+    audit_id: str = Field(..., description="معرف فريد لعملية التدقيق")
+    target_entity: str = Field(..., description="الكيان أو العملية المستهدفة بالتدقيق")
+    overall_status: AuditStatus = Field(..., description="الحالة العامة للامتثال")
+    risk_score: float = Field(..., description="درجة المخاطرة من 0.0 (آمن) إلى 100.0 (خطر)")
+    findings: list[AuditResult] = Field(..., description="قائمة النتائج التفصيلية")
+    recommendations: list[str] = Field(default_factory=list, description="توصيات الوكيل")
+    timestamp: float = Field(..., description="وقت إصدار التقرير")
 
 
 class LogicRuleProtocol(Protocol):
     """
     بروتوكول للقواعد المنطقية التي تقوم بفحص الرسم البياني.
-    يجب على كل قاعدة أن تنفذ هذا التوقيع.
     """
 
     def __call__(self, nodes: list[KnowledgeNode], relations: list[Relation]) -> AuditResult: ...

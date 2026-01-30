@@ -50,3 +50,4 @@ class AgentState(TypedDict):
     review_score: NotRequired[float]
     iteration_count: NotRequired[int]
     supervisor_instruction: NotRequired[str]
+    last_compliance_report: NotRequired[dict[str, object]]

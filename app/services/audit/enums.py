@@ -22,6 +22,11 @@ class AuditAction(str, Enum):
     UPDATE_POLICY = "update_policy"
     SYSTEM_CONFIG_CHANGE = "system_config_change"
 
+    # Procedural AI & Fraud Detection
+    PROCEDURAL_AUDIT = "procedural_audit"
+    FRAUD_ALERT = "fraud_alert"
+    COMPLIANCE_CHECK = "compliance_check"
+
     # Generic
     ACCESS = "access"
     MODIFY = "modify"
