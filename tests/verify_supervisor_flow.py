@@ -37,6 +37,7 @@ sys.modules["app.services.search_engine.llama_retriever"] = MagicMock()
 sys.modules["app.services.overmind.factory"] = MagicMock()
 # ----------------------------------
 
+
 # Mock AI Logic
 async def handle_send_message(system_prompt, user_message):
     logger.info(f"AI Client invoked. Prompt snippet: {system_prompt[:30]}...")
@@ -69,7 +70,10 @@ async def handle_send_message(system_prompt, user_message):
         return '{"next": "writer", "reason": "Have info, write draft"}'
 
     # 2. Plan Created -> Researcher (Only if not already found info)
-    if "Current Plan: ['search', 'write']" in user_message and "Current Step Index: 0" in user_message:
+    if (
+        "Current Plan: ['search', 'write']" in user_message
+        and "Current Step Index: 0" in user_message
+    ):
         logger.info("  -> [Sim] Decision: RESEARCHER")
         return '{"next": "researcher", "reason": "Execute search step"}'
 
@@ -78,18 +82,23 @@ async def handle_send_message(system_prompt, user_message):
         logger.info("  -> [Sim] Decision: PLANNER")
         return '{"next": "planner", "reason": "New request"}'
 
-
     logger.warning("  -> [Sim] Fallback Decision: FINISH")
     return '{"next": "FINISH", "reason": "Fallback"}'
+
 
 # Mock Nodes
 async def mock_planner(state, ai_client):
     logger.info(">>> Node: PLANNER")
     return {"plan": ["search", "write"], "messages": [AIMessage(content="Plan created")]}
 
+
 async def mock_researcher(state, tools):
     logger.info(">>> Node: RESEARCHER")
-    return {"search_results": [{"content": "Info found"}], "messages": [AIMessage(content="Found some info")]}
+    return {
+        "search_results": [{"content": "Info found"}],
+        "messages": [AIMessage(content="Found some info")],
+    }
+
 
 async def mock_writer(state, ai_client):
     logger.info(">>> Node: WRITER")
@@ -97,15 +106,20 @@ async def mock_writer(state, ai_client):
     msg = "Draft response (v2)" if score == 5.0 else "Draft response"
     return {"final_response": msg, "messages": [AIMessage(content=msg)]}
 
+
 async def mock_reviewer(state, ai_client):
     logger.info(">>> Node: REVIEWER")
     last_response = state.get("final_response", "")
     score = 9.0 if "v2" in last_response else 5.0
     logger.info(f"    Score: {score}")
-    return {"review_score": score, "review_feedback": "Check accuracy", "messages": [AIMessage(content=f"Review: {score}")]}
+    return {
+        "review_score": score,
+        "review_feedback": "Check accuracy",
+        "messages": [AIMessage(content=f"Review: {score}")],
+    }
+
 
 async def run_verification():
-
     # Import locally to apply mocks
     try:
         import app.services.chat.graph.workflow as workflow_module
@@ -114,11 +128,12 @@ async def run_verification():
         raise
 
     # Patch attributes on the imported module
-    with patch.object(workflow_module, "planner_node", side_effect=mock_planner), \
-         patch.object(workflow_module, "researcher_node", side_effect=mock_researcher), \
-         patch.object(workflow_module, "writer_node", side_effect=mock_writer), \
-         patch.object(workflow_module, "reviewer_node", side_effect=mock_reviewer):
-
+    with (
+        patch.object(workflow_module, "planner_node", side_effect=mock_planner),
+        patch.object(workflow_module, "researcher_node", side_effect=mock_researcher),
+        patch.object(workflow_module, "writer_node", side_effect=mock_writer),
+        patch.object(workflow_module, "reviewer_node", side_effect=mock_reviewer),
+    ):
         # Setup AI Client Mock
         ai_client = MagicMock()
         ai_client.send_message = AsyncMock(side_effect=handle_send_message)
@@ -132,14 +147,15 @@ async def run_verification():
             async for output in graph.astream(inputs, {"recursion_limit": 20}):
                 for node, state in output.items():
                     if "supervisor" in node:
-                        routing_trace = state.get('routing_trace')
-                        reason = routing_trace[0].get('reason') if routing_trace else "Unknown"
+                        routing_trace = state.get("routing_trace")
+                        reason = routing_trace[0].get("reason") if routing_trace else "Unknown"
                         logger.info(f"SUPERVISOR: Next -> {state.get('next')} ({reason})")
                     else:
                         logger.info(f"--- Node '{node}' Finished ---")
         except Exception as e:
             logger.error(f"Execution failed: {e}")
             raise
+
 
 if __name__ == "__main__":
     asyncio.run(run_verification())

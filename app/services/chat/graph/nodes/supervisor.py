@@ -83,8 +83,7 @@ Based on the above, what is the next step?
 
         try:
             response = await ai_client.send_message(
-                system_prompt=SupervisorNode.SYSTEM_PROMPT,
-                user_message=context_str
+                system_prompt=SupervisorNode.SYSTEM_PROMPT, user_message=context_str
             )
 
             # Clean JSON
@@ -100,7 +99,7 @@ Based on the above, what is the next step?
             return {
                 "next": next_node,
                 "supervisor_instruction": instruction,
-                "routing_trace": [{"node": next_node, "reason": reason}]
+                "routing_trace": [{"node": next_node, "reason": reason}],
             }
 
         except Exception as e:
