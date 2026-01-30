@@ -58,14 +58,22 @@ def verify_fraud_detection():
     graph.add_relation(Relation(source_id="tend_1", target_id="off_1", type=RelationType.ISSUED_BY))
 
     # 2. Supplier participated in Tender
-    graph.add_relation(Relation(source_id="supp_1", target_id="tend_1", type=RelationType.PARTICIPATED_IN))
+    graph.add_relation(
+        Relation(source_id="supp_1", target_id="tend_1", type=RelationType.PARTICIPATED_IN)
+    )
 
     # 3. Conflict: Official related to Supplier (Hidden connection)
-    graph.add_relation(Relation(source_id="off_1", target_id="supp_1", type=RelationType.RELATED_TO))
+    graph.add_relation(
+        Relation(source_id="off_1", target_id="supp_1", type=RelationType.RELATED_TO)
+    )
 
     # 4. Suspicious Location: Both suppliers at same address
-    graph.add_relation(Relation(source_id="supp_1", target_id="addr_1", type=RelationType.LOCATED_AT))
-    graph.add_relation(Relation(source_id="supp_2", target_id="addr_1", type=RelationType.LOCATED_AT))
+    graph.add_relation(
+        Relation(source_id="supp_1", target_id="addr_1", type=RelationType.LOCATED_AT)
+    )
+    graph.add_relation(
+        Relation(source_id="supp_2", target_id="addr_1", type=RelationType.LOCATED_AT)
+    )
 
     # 2. Initialize Auditor
     auditor = GraphAuditor(graph)
@@ -110,6 +118,7 @@ def verify_fraud_detection():
     else:
         print("\n💥 Verification Failed.")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     verify_fraud_detection()
