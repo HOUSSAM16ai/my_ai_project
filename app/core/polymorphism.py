@@ -42,7 +42,6 @@
 مع الاستفادة من ميزات التحقق القوية.
 """
 
-from abc import ABC
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator

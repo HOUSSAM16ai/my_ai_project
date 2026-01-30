@@ -17,8 +17,6 @@ from app.services.chat.graph.state import AgentState
 from app.services.procedural_knowledge.domain import (
     AuditStatus,
     ComplianceReport,
-    NodeType,
-    RelationType,
 )
 from app.services.procedural_knowledge.engine import (
     ConflictOfInterestRule,
@@ -122,7 +120,7 @@ Valid Relation Types: owns, participated_in, won, issued_by, located_at, related
             )
 
             # Format Output for Chat
-            output_text = f"**Procedural Audit Report**\n\n"
+            output_text = "**Procedural Audit Report**\n\n"
             output_text += f"**Status:** {overall_status.value.upper()}\n"
             output_text += f"**Risk Score:** {risk_score}/100\n\n"
 
