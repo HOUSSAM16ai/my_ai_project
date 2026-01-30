@@ -1,39 +1,54 @@
-import dspy
+from types import ModuleType
 
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-class StructuredQuerySignature(dspy.Signature):
+def _load_dspy() -> ModuleType:
     """
-    تحليل الاستعلام التعليمي لاستخراج البيانات الوصفية وصياغة طلب بحث أدق.
-
-    يركز هذا التوقيع على:
-    - السنة: سنة الامتحان إن وُجدت.
-    - المادة: اسم المادة الدراسية.
-    - الشعبة: الفرع الدراسي.
-    - الاستعلام المنقح: صياغة واضحة للموضوع الرئيس للبحث الدلالي.
+    تحميل مكتبة DSPy عند الحاجة لتجنب كلفة الاستيراد المبكر.
     """
+    import dspy
 
-    user_query: str = dspy.InputField(desc="The raw query from the student.")
-    refined_query: str = dspy.OutputField(desc="The optimized search term.")
-    year: int | None = dspy.OutputField(desc="The exam year if mentioned, else None.")
-    subject: str | None = dspy.OutputField(desc="The subject name if mentioned, else None.")
-    branch: str | None = dspy.OutputField(desc="The branch name if mentioned, else None.")
+    return dspy
 
 
-class StructuredQueryRefiner(dspy.Module):
+def _build_refiner(dspy: ModuleType) -> object:
     """
-    وحدة DSPy لإعادة صياغة الاستعلام التعليمي بشكل منظم.
+    إنشاء وحدة DSPy لإعادة صياغة الاستعلام بشكل منظم.
     """
 
-    def __init__(self):
-        super().__init__()
-        self.prog = dspy.ChainOfThought(StructuredQuerySignature)
+    class StructuredQuerySignature(dspy.Signature):
+        """
+        تحليل الاستعلام التعليمي لاستخراج البيانات الوصفية وصياغة طلب بحث أدق.
 
-    def forward(self, user_query: str):
-        return self.prog(user_query=user_query)
+        يركز هذا التوقيع على:
+        - السنة: سنة الامتحان إن وُجدت.
+        - المادة: اسم المادة الدراسية.
+        - الشعبة: الفرع الدراسي.
+        - الاستعلام المنقح: صياغة واضحة للموضوع الرئيس للبحث الدلالي.
+        """
+
+        user_query: str = dspy.InputField(desc="The raw query from the student.")
+        refined_query: str = dspy.OutputField(desc="The optimized search term.")
+        year: int | None = dspy.OutputField(desc="The exam year if mentioned, else None.")
+        subject: str | None = dspy.OutputField(desc="The subject name if mentioned, else None.")
+        branch: str | None = dspy.OutputField(desc="The branch name if mentioned, else None.")
+
+    class StructuredQueryRefiner(dspy.Module):
+        """
+        وحدة DSPy لإعادة صياغة الاستعلام التعليمي بشكل منظم.
+        """
+
+        def __init__(self):
+            super().__init__()
+            self.prog = dspy.ChainOfThought(StructuredQuerySignature)
+
+        def forward(self, user_query: str):
+            return self.prog(user_query=user_query)
+
+    return StructuredQueryRefiner()
 
 
 def get_refined_query(
@@ -46,6 +61,7 @@ def get_refined_query(
     'refined_query', 'year', 'subject', 'branch'.
     """
     try:
+        dspy = _load_dspy()
         lm = dspy.LM(
             model=f"openai/{model_name}",
             api_key=api_key,
@@ -54,7 +70,7 @@ def get_refined_query(
         )
 
         with dspy.context(lm=lm):
-            refiner = StructuredQueryRefiner()
+            refiner = _build_refiner(dspy)
             result = refiner(user_query=user_query)
 
             # Extract and clean

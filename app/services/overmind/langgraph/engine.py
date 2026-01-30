@@ -36,6 +36,76 @@ class LangGraphState(TypedDict):
     max_iterations: int
     plan_hashes: list[str]
     loop_detected: bool
+    next_step: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class SupervisorDecision:
+    """
+    قرار المشرف لتوجيه تدفق العمل بين الوكلاء.
+    """
+
+    next_step: str
+    reason: str
+
+
+class SupervisorOrchestrator:
+    """
+    مشرف توزيع المهام وفق نمط Supervisor-Worker.
+
+    يحافظ على حواجز التجريد عبر فصل منطق التوجيه عن العقد التنفيذية،
+    ويُبقي قرار الانتقال بين الوكلاء نقياً دون آثار جانبية.
+    """
+
+    def __init__(self, loop_policy: LoopPolicy) -> None:
+        self.loop_policy = loop_policy
+
+    def decide(self, state: LangGraphState) -> SupervisorDecision:
+        """
+        تحديد العقدة التالية بناءً على حالة التنفيذ الحالية.
+        """
+        if state.get("loop_detected"):
+            if state.get("audit") is None:
+                return SupervisorDecision(
+                    next_step="auditor", reason="تم اكتشاف حلقة ويجب إنهاء التدقيق."
+                )
+            return SupervisorDecision(
+                next_step="end", reason="تم اكتشاف حلقة وتم إنهاء المراجعة."
+            )
+
+        shared_memory = state.get("shared_memory", {})
+        if not shared_memory.get("context_enriched"):
+            return SupervisorDecision(
+                next_step="contextualizer", reason="السياق لم يتم إثراؤه بعد."
+            )
+
+        if state.get("plan") is None:
+            return SupervisorDecision(next_step="strategist", reason="الخطة غير متوفرة.")
+
+        if state.get("design") is None:
+            return SupervisorDecision(next_step="architect", reason="التصميم غير مكتمل.")
+
+        if state.get("execution") is None:
+            return SupervisorDecision(next_step="operator", reason="التنفيذ غير مكتمل.")
+
+        if state.get("audit") is None:
+            return SupervisorDecision(next_step="auditor", reason="المراجعة لم تتم بعد.")
+
+        max_iterations = state.get("max_iterations", self.loop_policy.max_iterations)
+        effective_policy = LoopPolicy(
+            max_iterations=max_iterations,
+            approval_score=self.loop_policy.approval_score,
+        )
+        if should_continue_loop(
+            audit=state.get("audit"),
+            iteration=state.get("iteration", 0),
+            policy=effective_policy,
+        ):
+            return SupervisorDecision(
+                next_step="loop_controller", reason="المراجعة تطلب تحسينات."
+            )
+
+        return SupervisorDecision(next_step="end", reason="تم اعتماد المخرجات النهائية.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,6 +141,7 @@ class LangGraphOvermindEngine:
         self.auditor = auditor
         self.loop_policy = loop_policy or LoopPolicy()
         self.context_enricher = ContextEnricher()
+        self.supervisor = SupervisorOrchestrator(self.loop_policy)
         self._compiled_graph = self._build_graph()
 
     async def run(
@@ -114,6 +185,7 @@ class LangGraphOvermindEngine:
             "max_iterations": self._resolve_max_iterations(context),
             "plan_hashes": [],
             "loop_detected": False,
+            "next_step": None,
         }
 
         final_state = await self._compiled_graph.ainvoke(initial_state)
@@ -124,6 +196,7 @@ class LangGraphOvermindEngine:
         بناء مخطط LangGraph مركّب للوكلاء.
         """
         graph: StateGraph[LangGraphState] = StateGraph(LangGraphState)
+        graph.add_node("supervisor", self._supervisor_node)
         graph.add_node("contextualizer", self._contextualizer_node)
         graph.add_node("strategist", self._strategist_node)
         graph.add_node("architect", self._architect_node)
@@ -131,17 +204,26 @@ class LangGraphOvermindEngine:
         graph.add_node("auditor", self._auditor_node)
         graph.add_node("loop_controller", self._loop_controller_node)
 
-        graph.set_entry_point("contextualizer")
-        graph.add_edge("contextualizer", "strategist")
-        graph.add_edge("strategist", "architect")
-        graph.add_edge("architect", "operator")
-        graph.add_edge("operator", "auditor")
+        graph.set_entry_point("supervisor")
         graph.add_conditional_edges(
-            "auditor",
-            self._route_after_audit,
-            {"loop": "loop_controller", "end": END},
+            "supervisor",
+            self._route_from_supervisor,
+            {
+                "contextualizer": "contextualizer",
+                "strategist": "strategist",
+                "architect": "architect",
+                "operator": "operator",
+                "auditor": "auditor",
+                "loop_controller": "loop_controller",
+                "end": END,
+            },
         )
-        graph.add_edge("loop_controller", "strategist")
+        graph.add_edge("contextualizer", "supervisor")
+        graph.add_edge("strategist", "supervisor")
+        graph.add_edge("architect", "supervisor")
+        graph.add_edge("operator", "supervisor")
+        graph.add_edge("auditor", "supervisor")
+        graph.add_edge("loop_controller", "supervisor")
 
         return graph.compile()
 
@@ -164,27 +246,21 @@ class LangGraphOvermindEngine:
             max_iterations = self.loop_policy.max_iterations
         return max(1, min(max_iterations, 5))
 
-    def _route_after_audit(self, state: LangGraphState) -> str:
+    def _route_from_supervisor(self, state: LangGraphState) -> str:
         """
-        توجيه التدفق بعد التدقيق وفق سياسة الحلقات.
+        توجيه التدفق اعتماداً على قرار المشرف.
         """
-        if state.get("loop_detected"):
-            return "end"
-
-        max_iterations = state.get("max_iterations", self.loop_policy.max_iterations)
-        if state.get("iteration", 0) >= max_iterations:
-            return "end"
-
-        effective_policy = LoopPolicy(
-            max_iterations=max_iterations,
-            approval_score=self.loop_policy.approval_score,
-        )
-        continue_loop = should_continue_loop(
-            audit=state.get("audit"),
-            iteration=state.get("iteration", 0),
-            policy=effective_policy,
-        )
-        return "loop" if continue_loop else "end"
+        next_step = state.get("next_step")
+        if next_step in {
+            "contextualizer",
+            "strategist",
+            "architect",
+            "operator",
+            "auditor",
+            "loop_controller",
+        }:
+            return next_step
+        return "end"
 
     def _append_timeline(
         self, state: LangGraphState, agent: str, payload: dict[str, object]
@@ -204,6 +280,7 @@ class LangGraphOvermindEngine:
             "refined_objective": enrichment.refined_objective,
             "metadata_filters": enrichment.metadata,
             "knowledge_snippets": enrichment.snippets,
+            "context_enriched": True,
         }
         return {
             "shared_memory": shared_memory,
@@ -313,6 +390,20 @@ class LangGraphOvermindEngine:
             "timeline": self._append_timeline(state, "auditor", {"status": "audited"}),
         }
 
+    async def _supervisor_node(self, state: LangGraphState) -> dict[str, object]:
+        """
+        عقدة المشرف لتوزيع المهام وفق نمط Supervisor-Worker.
+        """
+        decision = self.supervisor.decide(state)
+        return {
+            "next_step": decision.next_step,
+            "timeline": self._append_timeline(
+                state,
+                "supervisor",
+                {"status": "routed", "next_step": decision.next_step, "reason": decision.reason},
+            ),
+        }
+
     async def _loop_controller_node(self, state: LangGraphState) -> dict[str, object]:
         """
         عقدة ضبط الحلقة لإعادة التخطيط استناداً إلى ملاحظات التدقيق.
@@ -329,6 +420,11 @@ class LangGraphOvermindEngine:
         }
         return {
             "iteration": next_iteration,
+            "plan": None,
+            "design": None,
+            "execution": None,
+            "audit": None,
+            "loop_detected": False,
             "shared_memory": shared_memory,
             "timeline": self._append_timeline(
                 state,

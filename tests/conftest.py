@@ -49,6 +49,11 @@ def _db_dependencies_available() -> bool:
     )
 
 
+def _should_skip_db_fixtures() -> bool:
+    """يتحقق من تعطيل تجهيز قاعدة البيانات للاختبارات المعزولة."""
+    return os.environ.get("SKIP_DB_FIXTURES") == "1"
+
+
 def _get_engine() -> AsyncEngine:
     """يبني محرك SQLite داخل الذاكرة عند الحاجة فقط للاختبارات."""
     global _engine
@@ -186,6 +191,8 @@ def static_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
 @pytest.fixture(autouse=True)
 def init_db(event_loop: asyncio.AbstractEventLoop) -> None:
     """تهيئة قاعدة البيانات قبل كل اختبار."""
+    if _should_skip_db_fixtures():
+        return
     if not _db_dependencies_available():
         return
     _run_async(event_loop, _ensure_schema())
@@ -198,6 +205,8 @@ def init_db(event_loop: asyncio.AbstractEventLoop) -> None:
 def clean_db(event_loop: asyncio.AbstractEventLoop) -> None:
     """تنظيف الجداول بعد كل اختبار لضمان العزل."""
     yield
+    if _should_skip_db_fixtures():
+        return
     if not _db_dependencies_available():
         return
     if not _schema_initialized:
