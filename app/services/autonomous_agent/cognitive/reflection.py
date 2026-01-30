@@ -24,15 +24,14 @@ class ReflectorModule(dspy.Module):
     """
     DSPy Module for self-reflection and quality control.
     """
+
     def __init__(self):
         super().__init__()
         self.prog = dspy.ChainOfThought(ReflectorSignature)
 
     def forward(self, goal: str, execution_history: str, final_outcome: str):
         return self.prog(
-            goal=goal,
-            execution_history=execution_history,
-            final_outcome=final_outcome
+            goal=goal, execution_history=execution_history, final_outcome=final_outcome
         )
 
 
@@ -45,11 +44,7 @@ def reflect_on_work(goal: str, history: list, outcome: str) -> tuple[float, str,
 
     try:
         reflector = ReflectorModule()
-        pred = reflector(
-            goal=goal,
-            execution_history=history_str,
-            final_outcome=outcome
-        )
+        pred = reflector(goal=goal, execution_history=history_str, final_outcome=outcome)
 
         # Normalize verdict
         verdict = pred.verdict.upper().strip()

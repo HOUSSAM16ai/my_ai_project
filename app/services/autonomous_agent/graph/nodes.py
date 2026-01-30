@@ -30,12 +30,7 @@ async def planner_node(state: AutonomousAgentState) -> dict[str, Any]:
     # Generate plan using DSPy
     steps = generate_plan(goal, context)
 
-    return {
-        "plan": steps,
-        "current_step_index": 0,
-        "status": AgentStatus.EXECUTING,
-        "results": {}
-    }
+    return {"plan": steps, "current_step_index": 0, "status": AgentStatus.EXECUTING, "results": {}}
 
 
 async def executor_node(state: AutonomousAgentState) -> dict[str, Any]:
@@ -67,12 +62,9 @@ async def executor_node(state: AutonomousAgentState) -> dict[str, Any]:
     # To keep it simple, we just store result in 'results'.
 
     new_results = state.get("results", {}).copy()
-    new_results[f"step_{idx+1}"] = output
+    new_results[f"step_{idx + 1}"] = output
 
-    return {
-        "current_step_index": idx + 1,
-        "results": new_results
-    }
+    return {"current_step_index": idx + 1, "results": new_results}
 
 
 async def reflector_node(state: AutonomousAgentState) -> dict[str, Any]:
@@ -85,11 +77,7 @@ async def reflector_node(state: AutonomousAgentState) -> dict[str, Any]:
     full_outcome = str(state.get("results", {}))
     execution_history = state["plan"]
 
-    score, critique, verdict = reflect_on_work(
-        state["goal"],
-        execution_history,
-        full_outcome
-    )
+    score, critique, verdict = reflect_on_work(state["goal"], execution_history, full_outcome)
 
     logger.info(f"Reflection Verdict: {verdict} (Score: {score})")
 
@@ -102,8 +90,8 @@ async def reflector_node(state: AutonomousAgentState) -> dict[str, Any]:
             status=AgentStatus.COMPLETED if verdict == "APPROVED" else AgentStatus.FAILED,
             outcome=f"Completed with score {score}. Summary: {full_outcome}",
             artifacts={"critique": critique},
-            quality_score=score
-        )
+            quality_score=score,
+        ),
     }
 
     # Handle retry logic logic is in the graph edges, but we set state here.

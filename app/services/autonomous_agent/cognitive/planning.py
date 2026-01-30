@@ -16,13 +16,16 @@ class PlannerSignature(dspy.Signature):
     context: str = dspy.InputField(desc="Relevant background information or constraints.")
 
     rationale: str = dspy.OutputField(desc="The reasoning behind the chosen strategy.")
-    steps: list[str] = dspy.OutputField(desc="A list of clear, actionable steps to execute the plan.")
+    steps: list[str] = dspy.OutputField(
+        desc="A list of clear, actionable steps to execute the plan."
+    )
 
 
 class PlannerModule(dspy.Module):
     """
     DSPy Module for strategic planning.
     """
+
     def __init__(self):
         super().__init__()
         self.prog = dspy.ChainOfThought(PlannerSignature)
@@ -56,13 +59,7 @@ def generate_plan(goal: str, context: dict) -> list[PlanStep]:
         for i, step_desc in enumerate(pred.steps):
             # rudimentary parsing: check if tool is implied (e.g., "[Search] ...")
             # For now, we keep it simple.
-            plan_steps.append(
-                PlanStep(
-                    id=i + 1,
-                    description=step_desc,
-                    status="pending"
-                )
-            )
+            plan_steps.append(PlanStep(id=i + 1, description=step_desc, status="pending"))
 
         logger.info(f"Generated plan with {len(plan_steps)} steps.")
         return plan_steps

@@ -14,16 +14,17 @@ async def run_verification():
     print("Starting Autonomous Agent Verification...")
 
     # We patch the functions where they are IMPORTED in nodes.py
-    with patch("app.services.autonomous_agent.graph.nodes.generate_plan") as mock_plan, \
-         patch("app.services.autonomous_agent.graph.nodes.decide_action") as mock_decide, \
-         patch("app.services.autonomous_agent.graph.nodes.reflect_on_work") as mock_reflect:
-
+    with (
+        patch("app.services.autonomous_agent.graph.nodes.generate_plan") as mock_plan,
+        patch("app.services.autonomous_agent.graph.nodes.decide_action") as mock_decide,
+        patch("app.services.autonomous_agent.graph.nodes.reflect_on_work") as mock_reflect,
+    ):
         # Scenario: Success after 1 retry
         # 1. Plan: Returns 2 steps
         # On retry, it returns the same plan (simplified for test)
         mock_plan.return_value = [
             PlanStep(id=1, description="Research foundation", status="pending"),
-            PlanStep(id=2, description="Pour concrete", status="pending")
+            PlanStep(id=2, description="Pour concrete", status="pending"),
         ]
 
         # 2. Decide: Always returns a dummy tool
@@ -34,7 +35,7 @@ async def run_verification():
         # Second call: APPROVED (Score 9.5)
         mock_reflect.side_effect = [
             (5.0, "Foundation too weak.", "REJECTED"),
-            (9.5, "Structure is solid.", "APPROVED")
+            (9.5, "Structure is solid.", "APPROVED"),
         ]
 
         # Build the graph
@@ -49,7 +50,7 @@ async def run_verification():
             "current_step_index": 0,
             "results": {},
             "retry_count": 0,
-            "status": AgentStatus.PENDING
+            "status": AgentStatus.PENDING,
         }
 
         print("Invoking Graph...")
@@ -78,10 +79,13 @@ async def run_verification():
 
         # 3. Should have results for steps
         if "step_2" not in result["results"]:
-             print("FAILURE: Missing execution results.")
-             sys.exit(1)
+            print("FAILURE: Missing execution results.")
+            sys.exit(1)
 
-        print("VERIFICATION SUCCESSFUL: The Agent planned, executed, failed reflection, retried, and succeeded.")
+        print(
+            "VERIFICATION SUCCESSFUL: The Agent planned, executed, failed reflection, retried, and succeeded."
+        )
+
 
 if __name__ == "__main__":
     asyncio.run(run_verification())

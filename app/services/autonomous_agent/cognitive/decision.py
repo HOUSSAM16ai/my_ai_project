@@ -24,15 +24,14 @@ class ActionRefinerModule(dspy.Module):
     """
     DSPy Module for operational decision making.
     """
+
     def __init__(self):
         super().__init__()
         self.prog = dspy.ChainOfThought(ActionRefinerSignature)
 
     def forward(self, goal: str, step_description: str, available_tools: str):
         return self.prog(
-            goal=goal,
-            step_description=step_description,
-            available_tools=available_tools
+            goal=goal, step_description=step_description, available_tools=available_tools
         )
 
 
@@ -43,11 +42,7 @@ def decide_action(goal: str, step: str, tools_desc: str) -> tuple[str, str]:
     """
     try:
         refiner = ActionRefinerModule()
-        pred = refiner(
-            goal=goal,
-            step_description=step,
-            available_tools=tools_desc
-        )
+        pred = refiner(goal=goal, step_description=step, available_tools=tools_desc)
         return pred.tool_name, pred.tool_args
     except Exception as e:
         logger.error(f"Action refinement failed: {e}")

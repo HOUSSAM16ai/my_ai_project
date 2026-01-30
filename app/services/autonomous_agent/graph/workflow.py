@@ -36,12 +36,7 @@ def create_autonomous_agent_graph():
         return "reflect"
 
     workflow.add_conditional_edges(
-        "executor",
-        check_execution_status,
-        {
-            "continue": "executor",
-            "reflect": "reflector"
-        }
+        "executor", check_execution_status, {"continue": "executor", "reflect": "reflector"}
     )
 
     # Conditional Edge: Reflector -> (End | Planner)
@@ -62,13 +57,7 @@ def create_autonomous_agent_graph():
         return "fail"
 
     workflow.add_conditional_edges(
-        "reflector",
-        check_reflection_status,
-        {
-            "success": END,
-            "retry": "planner",
-            "fail": END
-        }
+        "reflector", check_reflection_status, {"success": END, "retry": "planner", "fail": END}
     )
 
     return workflow.compile()
