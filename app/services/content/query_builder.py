@@ -54,7 +54,7 @@ class ContentSearchQuery:
         return self
 
     def set_limit(self, limit: int) -> "ContentSearchQuery":
-        self.limit_clause = f"LIMIT :limit"
+        self.limit_clause = "LIMIT :limit"
         self.params["limit"] = limit
         return self
 
