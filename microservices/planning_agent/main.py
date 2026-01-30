@@ -5,15 +5,16 @@
 مع الالتزام بالنواة الوظيفية وقشرة تنفيذية واضحة.
 """
 
+import asyncio
 import json
 from contextlib import asynccontextmanager
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, FastAPI
-from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
+import dspy
 
 from microservices.planning_agent.database import get_session, init_db
 from microservices.planning_agent.errors import setup_exception_handlers
@@ -21,6 +22,7 @@ from microservices.planning_agent.health import HealthResponse, build_health_pay
 from microservices.planning_agent.logging import get_logger, setup_logging
 from microservices.planning_agent.models import Plan
 from microservices.planning_agent.settings import PlanningAgentSettings, get_settings
+from microservices.planning_agent.graph import graph
 
 logger = get_logger("planning-agent")
 
@@ -57,76 +59,42 @@ async def _generate_plan(
     goal: str, context: list[str], settings: PlanningAgentSettings
 ) -> list[str]:
     """
-    يولد خطة باستخدام نموذج ذكاء اصطناعي (أو احتياطية).
+    يولد خطة باستخدام الرسم البياني الذكي (LangGraph + DSPy).
     """
 
     if not settings.OPENROUTER_API_KEY:
         logger.warning("مفتاح API غير موجود، استخدام الخطة الاحتياطية")
         return _get_fallback_plan(goal, context)
 
-    client = AsyncOpenAI(
-        api_key=settings.OPENROUTER_API_KEY.get_secret_value(),
-        base_url=settings.AI_BASE_URL,
-    )
-
-    # هندسة الأوامر المتقدمة (Prompt Engineering)
-    system_prompt = (
-        "You are a World-Class Educational Strategist. "
-        "Your mission is to create a structured, step-by-step learning plan. "
-        "Reply strictly in the same language as the user's goal (likely Arabic). "
-        "Return the response as a valid JSON list of strings only. "
-        "No markdown formatting, no explanations, no keys like 'steps'."
-        'Example: ["Step 1", "Step 2"]'
-    )
-
-    user_prompt = f"Goal: {goal}\nContext: {', '.join(context)}"
+    initial_state = {
+        "goal": goal,
+        "context": context,
+        "iterations": 0
+    }
 
     try:
-        logger.info("Sending request to AI model", extra={"model": settings.AI_MODEL})
-        response = await client.chat.completions.create(
-            model=settings.AI_MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.3,  # تقليل العشوائية للحصول على JSON دقيق
-            response_format={"type": "json_object"},  # محاولة فرض JSON إذا كان النموذج يدعمه
-        )
+        logger.info("Executing Planning Graph", extra={"goal": goal})
+        # Run synchronous graph in a thread to prevent blocking the event loop
+        result = await asyncio.to_thread(graph.invoke, initial_state)
 
-        content = response.choices[0].message.content
-        if not content:
-            raise ValueError("Empty response from AI")
+        if result and "plan" in result and result["plan"]:
+            return result["plan"]
 
-        # تنظيف المخرجات لضمان JSON صالح
-        cleaned_content = content.replace("```json", "").replace("```", "").strip()
-
-        # محاولة التعامل مع كائن JSON بدلاً من قائمة مباشرة
-        parsed = json.loads(cleaned_content)
-
-        if isinstance(parsed, list):
-            steps = parsed
-        elif isinstance(parsed, dict):
-            # بعض النماذج قد تعيد {"steps": [...]} رغم التعليمات
-            steps = next(iter(parsed.values())) if parsed else []
-            if not isinstance(steps, list):
-                steps = [str(parsed)]
-        else:
-            steps = [str(parsed)]
-
-        return [str(s) for s in steps]
+        logger.warning("Graph returned no plan")
+        return _get_fallback_plan(goal, context)
 
     except Exception as e:
-        logger.error("AI Generation Failed", extra={"error": str(e)})
+        logger.error("Graph Execution Failed", extra={"error": str(e)})
         return _get_fallback_plan(goal, context)
 
 
-def _build_router(settings: PlanningAgentSettings) -> APIRouter:
-    """ينشئ موجهات الوكيل باستخدام إعدادات واضحة."""
+def _build_router() -> APIRouter:
+    """ينشئ موجهات الوكيل."""
 
     router = APIRouter()
 
     @router.get("/health", response_model=HealthResponse, tags=["System"])
-    def health_check() -> HealthResponse:
+    def health_check(settings: PlanningAgentSettings = Depends(get_settings)) -> HealthResponse:
         """يفحص جاهزية الوكيل بشكل مستقل."""
 
         return build_health_payload(settings)
@@ -138,7 +106,9 @@ def _build_router(settings: PlanningAgentSettings) -> APIRouter:
         summary="إنشاء خطة جديدة",
     )
     async def create_plan(
-        payload: PlanRequest, session: AsyncSession = Depends(get_session)
+        payload: PlanRequest,
+        session: AsyncSession = Depends(get_session),
+        settings: PlanningAgentSettings = Depends(get_settings)
     ) -> PlanResponse:
         """ينشئ خطة تعليمية جديدة بناءً على الهدف والسياق ويحفظها."""
 
@@ -175,7 +145,25 @@ def _build_router(settings: PlanningAgentSettings) -> APIRouter:
 async def lifespan(app: FastAPI):
     """يدير دورة حياة وكيل التخطيط."""
 
-    setup_logging(get_settings().SERVICE_NAME)
+    settings = get_settings()
+    setup_logging(settings.SERVICE_NAME)
+
+    # Configure DSPy
+    if settings.OPENROUTER_API_KEY:
+        try:
+            lm = dspy.OpenAI(
+                model=settings.AI_MODEL,
+                api_key=settings.OPENROUTER_API_KEY.get_secret_value(),
+                api_base=settings.AI_BASE_URL,
+                max_tokens=2000
+            )
+            dspy.settings.configure(lm=lm)
+            logger.info("DSPy Configured successfully")
+        except Exception as e:
+            logger.error(f"Failed to configure DSPy: {e}")
+    else:
+        logger.warning("No API Key configured for DSPy")
+
     logger.info("Planning Agent Started")
     await init_db()
     yield
@@ -190,11 +178,11 @@ def create_app(settings: PlanningAgentSettings | None = None) -> FastAPI:
     app = FastAPI(
         title="Planning Agent",
         version=effective_settings.SERVICE_VERSION,
-        description="وكيل مستقل لتوليد الخطط التعليمية",
+        description="وكيل مستقل لتوليد الخطط التعليمية (Smart Micro-service)",
         lifespan=lifespan,
     )
     setup_exception_handlers(app)
-    app.include_router(_build_router(effective_settings))
+    app.include_router(_build_router())
 
     return app
 
