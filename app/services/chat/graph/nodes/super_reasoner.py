@@ -48,4 +48,5 @@ async def super_reasoner_node(state: AgentState, ai_client: AIClient) -> dict:
         "messages": [AIMessage(content=response_text)],
         # Increment step index assuming this fulfills one plan step (e.g., 'reason')
         "current_step_index": state.get("current_step_index", 0) + 1,
+        "final_response": response_text,
     }

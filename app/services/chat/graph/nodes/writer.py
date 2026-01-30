@@ -37,7 +37,13 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
 
     # 1. Extraction
     messages = state["messages"]
-    last_user_msg = messages[-1].content
+    # Find last user message
+    last_user_msg = "Unknown question"
+    for msg in reversed(messages):
+        if msg.type == "human":
+            last_user_msg = msg.content
+            break
+
     search_results = state.get("search_results", [])
     student_level = state.get("diagnosis", "Average")
 

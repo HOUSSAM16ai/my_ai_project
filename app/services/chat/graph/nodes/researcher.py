@@ -29,7 +29,14 @@ async def researcher_node(state: AgentState, tools: ToolRegistry) -> dict:
     full_content: list[dict[str, object]] = []
     results: list[dict[str, object]] = []
 
-    last_message = str(state.get("messages", [])[-1].content) if state.get("messages") else ""
+    # Find last user message
+    last_message = ""
+    messages = state.get("messages", [])
+    for msg in reversed(messages):
+        if msg.type == "human":
+            last_message = msg.content
+            break
+
     intent_detector = RegexIntentDetector()
     writer_intent = intent_detector.analyze(last_message)
     include_solution = writer_intent == WriterIntent.SOLUTION_REQUEST
