@@ -301,9 +301,7 @@ class LangGraphOvermindEngine:
                     "feedback": "تم إيقاف الدورة بسبب اكتشاف حلقة تكرارية مفرغة.",
                     "score": 0.0,
                 },
-                "timeline": self._append_timeline(
-                    state, "auditor", {"status": "loop_stopped"}
-                ),
+                "timeline": self._append_timeline(state, "auditor", {"status": "loop_stopped"}),
             }
         context = self._build_context(state)
         execution = state.get("execution") or {}

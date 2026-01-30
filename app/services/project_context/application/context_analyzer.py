@@ -216,9 +216,7 @@ class ProjectContextService:
 
         sections.extend(self._build_statistics_section(data.stats))
         sections.extend(self._build_structure_section(data.structure))
-        sections.extend(
-            self._build_components_section(data.models, data.services, data.routes)
-        )
+        sections.extend(self._build_components_section(data.models, data.services, data.routes))
         sections.extend(self._build_analysis_section(data.issues, data.strengths))
         sections.append(f"## ⏰ Analysis Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
