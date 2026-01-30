@@ -1,5 +1,4 @@
 import dspy
-from typing import Literal
 
 from app.core.logging import get_logger
 
@@ -54,10 +53,7 @@ def reflect_on_work(goal: str, history: list, outcome: str) -> tuple[float, str,
 
         # Normalize verdict
         verdict = pred.verdict.upper().strip()
-        if "APPROVED" in verdict:
-            verdict = "APPROVED"
-        else:
-            verdict = "REJECTED"
+        verdict = "APPROVED" if "APPROVED" in verdict else "REJECTED"
 
         # Parse score
         try:

@@ -6,8 +6,9 @@ from unittest.mock import MagicMock, patch
 sys.modules["dspy"] = MagicMock()
 
 # Now import the app modules
-from app.services.autonomous_agent.graph.workflow import create_autonomous_agent_graph
 from app.services.autonomous_agent.domain.models import AgentStatus, PlanStep
+from app.services.autonomous_agent.graph.workflow import create_autonomous_agent_graph
+
 
 async def run_verification():
     print("Starting Autonomous Agent Verification...")

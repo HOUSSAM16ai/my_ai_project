@@ -1,5 +1,4 @@
 import dspy
-from typing import List
 
 from app.core.logging import get_logger
 from app.services.autonomous_agent.domain.models import PlanStep
@@ -17,7 +16,7 @@ class PlannerSignature(dspy.Signature):
     context: str = dspy.InputField(desc="Relevant background information or constraints.")
 
     rationale: str = dspy.OutputField(desc="The reasoning behind the chosen strategy.")
-    steps: List[str] = dspy.OutputField(desc="A list of clear, actionable steps to execute the plan.")
+    steps: list[str] = dspy.OutputField(desc="A list of clear, actionable steps to execute the plan.")
 
 
 class PlannerModule(dspy.Module):
@@ -32,7 +31,7 @@ class PlannerModule(dspy.Module):
         return self.prog(goal=goal, context=context)
 
 
-def generate_plan(goal: str, context: dict) -> List[PlanStep]:
+def generate_plan(goal: str, context: dict) -> list[PlanStep]:
     """
     Generates a structured plan using the DSPy cognitive engine.
     """

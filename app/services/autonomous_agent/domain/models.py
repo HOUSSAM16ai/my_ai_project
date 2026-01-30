@@ -5,7 +5,7 @@ Defines the "Unit of Work" contract and the internal State Machine structure.
 """
 
 from enum import StrEnum
-from typing import Annotated, NotRequired, TypedDict, Any
+from typing import Annotated, Any, NotRequired, TypedDict
 
 from langchain_core.messages import BaseMessage
 from pydantic import BaseModel, Field

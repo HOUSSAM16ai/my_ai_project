@@ -7,10 +7,14 @@ Implements the operational logic for Planning, Executing, and Reflecting.
 from typing import Any
 
 from app.core.logging import get_logger
-from app.services.autonomous_agent.cognitive.planning import generate_plan
 from app.services.autonomous_agent.cognitive.decision import decide_action
+from app.services.autonomous_agent.cognitive.planning import generate_plan
 from app.services.autonomous_agent.cognitive.reflection import reflect_on_work
-from app.services.autonomous_agent.domain.models import AutonomousAgentState, PlanStep, AgentStatus, WorkResult
+from app.services.autonomous_agent.domain.models import (
+    AgentStatus,
+    AutonomousAgentState,
+    WorkResult,
+)
 
 logger = get_logger(__name__)
 

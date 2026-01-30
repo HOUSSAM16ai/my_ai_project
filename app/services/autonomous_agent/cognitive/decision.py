@@ -1,5 +1,4 @@
 import dspy
-from typing import Any
 
 from app.core.logging import get_logger
 
