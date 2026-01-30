@@ -1,9 +1,12 @@
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
 from llama_index.core.schema import NodeWithScore
 
-from app.services.chat.graph.domain import StudentProfile, WriterIntent
 from app.services.reasoning.models import EvaluationResult, ReasoningNode
+
+if TYPE_CHECKING:
+    from app.services.chat.graph.domain import StudentProfile, WriterIntent
 
 
 class IReasoningStrategy(ABC):
@@ -22,7 +25,7 @@ class IReasoningStrategy(ABC):
 
 class IIntentDetector(ABC):
     @abstractmethod
-    def analyze(self, user_message: str) -> WriterIntent:
+    def analyze(self, user_message: str) -> "WriterIntent":
         pass
 
 
@@ -31,7 +34,7 @@ class IContextComposer(ABC):
     def compose(
         self,
         search_results: list[dict[str, object]],
-        intent: WriterIntent,
+        intent: "WriterIntent",
         user_message: str,
     ) -> str:
         pass
@@ -39,7 +42,7 @@ class IContextComposer(ABC):
 
 class IPromptStrategist(ABC):
     @abstractmethod
-    def build_prompt(self, profile: StudentProfile, intent: WriterIntent) -> str:
+    def build_prompt(self, profile: "StudentProfile", intent: "WriterIntent") -> str:
         pass
 
 

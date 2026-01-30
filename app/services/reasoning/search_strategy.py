@@ -131,3 +131,89 @@ class RMCTSStrategy(IReasoningStrategy):
         if not current_layer:
             return root  # Fallback
         return current_layer[0]
+
+
+class MathReasoningStrategy(RMCTSStrategy):
+    """
+    Overmind Education Strategy (Specialized for Math/Probability).
+    Enforces a structured 4-Step Pedagogical Process:
+    1. Modeling: Define Sample Space, Events, Variables.
+    2. Strategy Selection: Choose the Theorem (Bayes, Total Prob, etc.).
+    3. Calculation: Perform steps with checks.
+    4. Pedagogical Reflection: Explain 'Why'.
+    """
+
+    async def expand(self, parent: ReasoningNode, context: str) -> list[ReasoningNode]:
+        """
+        Specialized expansion for Math problems.
+        """
+        # We determine the 'phase' based on the parent's content or depth implicitly
+        # But here we ask the LLM to generate the NEXT logical mathematical step.
+        prompt = (
+            f"Context: {context}\n"
+            f"Current Progress: {parent.content}\n\n"
+            "Task: You are a Math Professor. Propose 3 distinct ways to proceed with this probability problem.\n"
+            "Options should cover:\n"
+            "1. Formal Modeling (Defining Events/Variables)\n"
+            "2. Visual Approach (Tree Diagram/Table)\n"
+            "3. Formula Application (Direct calculation)\n"
+            "Format: 1. [Method 1]\n2. [Method 2]\n3. [Method 3]"
+        )
+
+        response = await self.ai_client.generate_text(
+            prompt=prompt, system_prompt="You are an expert Math Tutor. Be precise and pedagogical."
+        )
+
+        # Reuse parsing logic
+        lines = response.content.split("\n")
+        candidates = []
+        for line in lines:
+            if line.strip() and (line[0].isdigit() or line.startswith("-")):
+                clean_content = line.lstrip("1234567890.- ").strip()
+                if clean_content:
+                    candidates.append(
+                        ReasoningNode(
+                            id=str(uuid.uuid4()),
+                            parent_id=parent.id,
+                            content=clean_content,
+                            step_type="math_step",
+                        )
+                    )
+
+        return candidates[:3]
+
+    async def evaluate(self, node: ReasoningNode, context: str) -> EvaluationResult:
+        """
+        Math-specific evaluation: Checks for Correctness and Educational Value.
+        """
+        prompt = (
+            f"Context: {context}\n"
+            f"Proposed Step: {node.content}\n\n"
+            "Task: Evaluate this mathematical step.\n"
+            "Criteria:\n"
+            "1. Mathematical Correctness (Is the formula/logic right?)\n"
+            "2. Pedagogical Clarity (Is it easy to understand for a student?)\n"
+            "Output format:\n"
+            "Score: [0.0-1.0]\n"
+            "Valid: [True/False]\n"
+            "Reason: [Critique]"
+        )
+
+        response = await self.ai_client.generate_text(
+            prompt=prompt, system_prompt="You are a Strict Exam Grader."
+        )
+
+        text = response.content.lower()
+        score = 0.5
+        is_valid = True
+
+        try:
+            for line in text.split("\n"):
+                if "score:" in line:
+                    score = float(line.split(":")[1].strip())
+                if "valid:" in line:
+                    is_valid = "true" in line
+        except Exception:
+            pass
+
+        return EvaluationResult(score=score, is_valid=is_valid, reasoning=text)
