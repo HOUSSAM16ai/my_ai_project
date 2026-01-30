@@ -8,6 +8,7 @@ from langgraph.graph import END, StateGraph
 
 from app.core.ai_gateway import AIClient
 from app.services.chat.graph.nodes.planner import planner_node
+from app.services.chat.graph.nodes.procedural_auditor import procedural_auditor_node
 from app.services.chat.graph.nodes.researcher import researcher_node
 from app.services.chat.graph.nodes.reviewer import reviewer_node
 from app.services.chat.graph.nodes.super_reasoner import super_reasoner_node
@@ -39,6 +40,9 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
     async def call_reviewer(state):
         return await reviewer_node(state, ai_client)
 
+    async def call_procedural_auditor(state):
+        return await procedural_auditor_node(state, ai_client)
+
     async def call_supervisor(state):
         # Now passing ai_client to supervisor
         return await supervisor_node(state, ai_client)
@@ -47,6 +51,7 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
     workflow.add_node("researcher", call_researcher)
     workflow.add_node("writer", call_writer)
     workflow.add_node("super_reasoner", call_super_reasoner)
+    workflow.add_node("procedural_auditor", call_procedural_auditor)
     workflow.add_node("reviewer", call_reviewer)
     workflow.add_node("supervisor", call_supervisor)
 
@@ -63,6 +68,7 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
             "researcher": "researcher",
             "writer": "writer",
             "super_reasoner": "super_reasoner",
+            "procedural_auditor": "procedural_auditor",
             "reviewer": "reviewer",
             "FINISH": END,
         },
@@ -72,6 +78,7 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
     workflow.add_edge("planner", "supervisor")
     workflow.add_edge("researcher", "supervisor")
     workflow.add_edge("super_reasoner", "supervisor")
+    workflow.add_edge("procedural_auditor", "supervisor")
     workflow.add_edge("writer", "supervisor")
     workflow.add_edge("reviewer", "supervisor")
 

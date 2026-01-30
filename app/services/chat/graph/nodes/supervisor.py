@@ -28,12 +28,14 @@ Your goal is to manage the workflow to provide the best possible answer to the s
 1. **Planner**: Decomposes complex requests into a step-by-step plan.
 2. **Researcher**: Searches for information, exercises, or facts.
 3. **SuperReasoner**: Solves complex logical/mathematical problems deeply.
-4. **Writer**: Drafts the final response based on gathered information.
-5. **Reviewer**: Critiques the Writer's draft for accuracy and quality.
+4. **ProceduralAuditor**: Specialized agent for fraud detection, conflict of interest, and compliance verification (Knowledge Graph).
+5. **Writer**: Drafts the final response based on gathered information.
+6. **Reviewer**: Critiques the Writer's draft for accuracy and quality.
 
 **Workflow Guidelines:**
 - **New Request**: If there is no plan, call **Planner**.
-- **Execution**: If a plan exists, execute the next logical step (**Researcher** for data, **SuperReasoner** for logic).
+- **Execution**: If a plan exists, execute the next logical step (**Researcher** for data, **SuperReasoner** for logic, **ProceduralAuditor** for fraud/compliance).
+- **Fraud/Audit**: If the user asks to check for fraud, verify relationships, or audit a process, call **ProceduralAuditor**.
 - **Drafting**: Once sufficient information is gathered, call **Writer**.
 - **Quality Control**: ALWAYS send the Writer's draft to **Reviewer** before finishing.
 - **Correction**: If **Reviewer** gives a low score (< 8.0) or rejects the draft, you MUST send it back to **Writer** (to fix) or **Researcher** (if data was missing), with instructions.
@@ -52,7 +54,7 @@ You must return a JSON object ONLY:
     "reason": "<why_you_chose_this>"
 }
 
-Valid `next` values: `planner`, `researcher`, `super_reasoner`, `writer`, `reviewer`, `FINISH`.
+Valid `next` values: `planner`, `researcher`, `super_reasoner`, `procedural_auditor`, `writer`, `reviewer`, `FINISH`.
 """
 
     @staticmethod
