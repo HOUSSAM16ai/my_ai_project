@@ -69,9 +69,7 @@ class SupervisorOrchestrator:
                 return SupervisorDecision(
                     next_step="auditor", reason="تم اكتشاف حلقة ويجب إنهاء التدقيق."
                 )
-            return SupervisorDecision(
-                next_step="end", reason="تم اكتشاف حلقة وتم إنهاء المراجعة."
-            )
+            return SupervisorDecision(next_step="end", reason="تم اكتشاف حلقة وتم إنهاء المراجعة.")
 
         shared_memory = state.get("shared_memory", {})
         if not shared_memory.get("context_enriched"):
@@ -101,9 +99,7 @@ class SupervisorOrchestrator:
             iteration=state.get("iteration", 0),
             policy=effective_policy,
         ):
-            return SupervisorDecision(
-                next_step="loop_controller", reason="المراجعة تطلب تحسينات."
-            )
+            return SupervisorDecision(next_step="loop_controller", reason="المراجعة تطلب تحسينات.")
 
         return SupervisorDecision(next_step="end", reason="تم اعتماد المخرجات النهائية.")
 

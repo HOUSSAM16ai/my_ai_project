@@ -65,9 +65,7 @@ def test_build_procurement_graph_creates_nodes_and_edges() -> None:
     assert isinstance(result, GraphBuildResult)
     assert len(result.nodes) == 3
     assert len(result.edges) == 3
-    assert result.node_index[("vendor", "vendor-x")] in {
-        node.node_id for node in result.nodes
-    }
+    assert result.node_index[("vendor", "vendor-x")] in {node.node_id for node in result.nodes}
 
 
 def test_detect_triangular_fraud_signals_flags_overlap() -> None:
@@ -117,7 +115,9 @@ def test_build_procurement_graph_uses_stable_ids() -> None:
     ]
     relations: list[ProcurementRelation] = []
 
-    result = build_procurement_graph(entities=entities, relations=relations, namespace=uuid.NAMESPACE_DNS)
+    result = build_procurement_graph(
+        entities=entities, relations=relations, namespace=uuid.NAMESPACE_DNS
+    )
     second = build_procurement_graph(
         entities=entities, relations=relations, namespace=uuid.NAMESPACE_DNS
     )

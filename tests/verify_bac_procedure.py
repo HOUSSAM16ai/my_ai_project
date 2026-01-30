@@ -43,21 +43,29 @@ def main():
         if res.status != AuditStatus.PASS:
             final_status = "FAIL"
 
-        report_data.append({
-            "rule_id": res.rule_id,
-            "status": res.status.value,
-            "message": res.message,
-            "evidence": res.evidence,
-            "execution_time_ms": round(res.timestamp * 1000, 3) if res.timestamp else 0
-        })
+        report_data.append(
+            {
+                "rule_id": res.rule_id,
+                "status": res.status.value,
+                "message": res.message,
+                "evidence": res.evidence,
+                "execution_time_ms": round(res.timestamp * 1000, 3) if res.timestamp else 0,
+            }
+        )
 
     # Output JSON Report
     print("\n📊 FINAL AUDIT REPORT (JSON):")
-    print(json.dumps({
-        "audit_id": "AUDIT-BAC-2024-001",
-        "overall_status": final_status,
-        "details": report_data
-    }, indent=2, ensure_ascii=False))
+    print(
+        json.dumps(
+            {
+                "audit_id": "AUDIT-BAC-2024-001",
+                "overall_status": final_status,
+                "details": report_data,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
 
     print("\n----------------------------------------------------------------")
     if final_status == "PASS":
@@ -67,6 +75,7 @@ def main():
         print("❌ FAILURE: Logic Inconsistencies Detected.")
         sys.exit(1)
     print("----------------------------------------------------------------")
+
 
 if __name__ == "__main__":
     main()
