@@ -5,26 +5,27 @@ This script constructs a mock Knowledge Graph representing a fraud scenario
 and verifies that the Procedural Engine detects the issues.
 """
 
-import sys
 import os
+import sys
 
 # Ensure app is in path
 sys.path.append(os.getcwd())
 
 from app.services.procedural_knowledge.domain import (
-    NodeType,
-    RelationType,
+    AuditStatus,
     KnowledgeNode,
-    Relation,
+    NodeType,
     ProceduralGraph,
-    AuditStatus
+    Relation,
+    RelationType,
 )
 from app.services.procedural_knowledge.engine import (
-    GraphAuditor,
     ConflictOfInterestRule,
+    CycleDetectionRule,
+    GraphAuditor,
     SuspiciousLocationRule,
-    CycleDetectionRule
 )
+
 
 def verify_fraud_detection():
     print("🚀 Starting Procedural AI Verification...")
