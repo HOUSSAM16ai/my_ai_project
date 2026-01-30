@@ -38,7 +38,9 @@ class GraphAuditor:
             list[AuditResult]: قائمة بنتائج التدقيق لكل قاعدة.
         """
         results: list[AuditResult] = []
-        logger.info(f"بدء عملية التدقيق على {len(self.graph.nodes)} عقدة و {len(self.graph.relations)} علاقة.")
+        logger.info(
+            f"بدء عملية التدقيق على {len(self.graph.nodes)} عقدة و {len(self.graph.relations)} علاقة."
+        )
 
         for rule in self.rules:
             start_time = time.time()
@@ -63,13 +65,15 @@ class GraphAuditor:
                         status=AuditStatus.FAIL,
                         message=f"حدث خطأ غير متوقع أثناء الفحص: {e!s}",
                         evidence=[],
-                        timestamp=time.time() - start_time
+                        timestamp=time.time() - start_time,
                     )
                 )
 
         return results
 
-    def get_neighbors(self, node_id: str, relation_type: RelationType | None = None) -> list[KnowledgeNode]:
+    def get_neighbors(
+        self, node_id: str, relation_type: RelationType | None = None
+    ) -> list[KnowledgeNode]:
         """
         استرجاع العقد المجاورة (المتصلة بعلاقة موجهة) لعقدة معينة.
         """

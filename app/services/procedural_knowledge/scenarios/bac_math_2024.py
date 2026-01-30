@@ -14,7 +14,10 @@ from app.services.procedural_knowledge.domain import (
 # 1. تعريف قواعد التدقيق الإجرائي (Procedural Rules)
 # -------------------------------------------------------------------------
 
-def verify_inventory_consistency(nodes: list[KnowledgeNode], relations: list[Relation]) -> AuditResult:
+
+def verify_inventory_consistency(
+    nodes: list[KnowledgeNode], relations: list[Relation]
+) -> AuditResult:
     """
     قاعدة: التحقق من تطابق المخزون (الكرات) مع المجموع الكلي المصرح به.
     Metaphor: Fraud Detection - Inventory Audit.
@@ -24,7 +27,7 @@ def verify_inventory_consistency(nodes: list[KnowledgeNode], relations: list[Rel
         return AuditResult(
             rule_id="inventory_check",
             status=AuditStatus.FAIL,
-            message="لم يتم العثور على الصندوق (Urn) في الرسم البياني."
+            message="لم يتم العثور على الصندوق (Urn) في الرسم البياني.",
         )
 
     # استخراج البيانات
@@ -39,14 +42,14 @@ def verify_inventory_consistency(nodes: list[KnowledgeNode], relations: list[Rel
             rule_id="inventory_check",
             status=AuditStatus.PASS,
             message=f"تطابق تام في المخزون: {red} أحمر + {green} أخضر = {declared_total} كلي.",
-            evidence=[urn_node.id]
+            evidence=[urn_node.id],
         )
 
     return AuditResult(
         rule_id="inventory_check",
         status=AuditStatus.FAIL,
         message=f"تزوير في الأعداد! المصرح به: {declared_total}، المحسوب فعلياً: {calculated_total}.",
-        evidence=[urn_node.id]
+        evidence=[urn_node.id],
     )
 
 
@@ -63,14 +66,14 @@ def verify_probability_logic(nodes: list[KnowledgeNode], relations: list[Relatio
         return AuditResult(
             rule_id="logic_integrity_check",
             status=AuditStatus.WARNING,
-            message="بيانات غير كافية للتحقق من المنطق."
+            message="بيانات غير كافية للتحقق من المنطق.",
         )
 
     # 2. استخراج المعاملات
-    n = urn_node.attributes.get("total_count", 0) # 8
-    r = urn_node.attributes.get("red_count", 0)   # 5
-    g = urn_node.attributes.get("green_count", 0) # 3
-    k = event_node.attributes.get("draw_count", 0) # 3
+    n = urn_node.attributes.get("total_count", 0)  # 8
+    r = urn_node.attributes.get("red_count", 0)  # 5
+    g = urn_node.attributes.get("green_count", 0)  # 3
+    k = event_node.attributes.get("draw_count", 0)  # 3
 
     declared_prob = event_node.attributes.get("declared_probability", 0.0)
 
@@ -98,19 +101,21 @@ def verify_probability_logic(nodes: list[KnowledgeNode], relations: list[Relatio
             rule_id="logic_integrity_check",
             status=AuditStatus.PASS,
             message=f"المنطق سليم: الاحتمال المحسوب يطابق القيمة المصرح بها. {evidence_msg}",
-            evidence=[event_node.id, urn_node.id]
+            evidence=[event_node.id, urn_node.id],
         )
 
     return AuditResult(
         rule_id="logic_integrity_check",
         status=AuditStatus.FAIL,
         message=f"خطأ منطقي/احتيال! القيمة المصرح بها {declared_prob} لا تطابق الحساب {calculated_prob:.4f}.",
-        evidence=[event_node.id]
+        evidence=[event_node.id],
     )
+
 
 # -------------------------------------------------------------------------
 # 2. بناء السيناريو (Data Factory)
 # -------------------------------------------------------------------------
+
 
 def load_bac_2024_scenario() -> tuple[ProceduralGraph, list]:
     """
@@ -128,9 +133,9 @@ def load_bac_2024_scenario() -> tuple[ProceduralGraph, list]:
         attributes={
             "red_count": 5,
             "green_count": 3,
-            "total_count": 8, # 5 + 3
-            "description": "كيس يحتوي 8 كرات: 5 حمراء و 3 خضراء"
-        }
+            "total_count": 8,  # 5 + 3
+            "description": "كيس يحتوي 8 كرات: 5 حمراء و 3 خضراء",
+        },
     )
     graph.add_node(urn)
 
@@ -140,15 +145,15 @@ def load_bac_2024_scenario() -> tuple[ProceduralGraph, list]:
         type=NodeType.EVENT,
         label="سحب عشوائي",
         attributes={
-            "type": "simultaneous", # في آن واحد
-            "count": 3
-        }
+            "type": "simultaneous",  # في آن واحد
+            "count": 3,
+        },
     )
     graph.add_node(exp)
 
     # 3. الحادثة A (Event A)
     # الحساب: C(5,3)=10, C(3,3)=1. Omega = C(8,3)=56. Total=11/56.
-    prob_val = (10 + 1) / 56 # ~0.1964
+    prob_val = (10 + 1) / 56  # ~0.1964
 
     event_a = KnowledgeNode(
         id="event_A",
@@ -157,26 +162,30 @@ def load_bac_2024_scenario() -> tuple[ProceduralGraph, list]:
         attributes={
             "description": "الحصول على 3 كرات من نفس اللون",
             "draw_count": 3,
-            "declared_probability": prob_val
-        }
+            "declared_probability": prob_val,
+        },
     )
     graph.add_node(event_a)
 
     # --- العلاقات (Relations) ---
 
-    graph.add_relation(Relation(
-        source_id="urn_1",
-        target_id="experiment_draw",
-        type=RelationType.REQUIRES,
-        metadata={"role": "subject"}
-    ))
+    graph.add_relation(
+        Relation(
+            source_id="urn_1",
+            target_id="experiment_draw",
+            type=RelationType.REQUIRES,
+            metadata={"role": "subject"},
+        )
+    )
 
-    graph.add_relation(Relation(
-        source_id="experiment_draw",
-        target_id="event_A",
-        type=RelationType.DEFINES,
-        metadata={"role": "outcome"}
-    ))
+    graph.add_relation(
+        Relation(
+            source_id="experiment_draw",
+            target_id="event_A",
+            type=RelationType.DEFINES,
+            metadata={"role": "outcome"},
+        )
+    )
 
     # --- القواعد (Rules) ---
     rules = [verify_inventory_consistency, verify_probability_logic]
