@@ -6,7 +6,9 @@ class ContentSearchQuery:
             "SELECT i.id, i.title, i.type, i.level, i.subject, i.branch, "
             "i.set_name, i.year, i.lang "
         )
-        self.from_clause = "FROM content_items i LEFT JOIN content_search cs ON i.id = cs.content_id"
+        self.from_clause = (
+            "FROM content_items i LEFT JOIN content_search cs ON i.id = cs.content_id"
+        )
         self.where_clauses: list[str] = ["1=1"]
         self.order_clause = "ORDER BY i.year DESC NULLS LAST, i.id ASC"
         self.limit_clause = ""
@@ -20,9 +22,7 @@ class ContentSearchQuery:
         for index, term in enumerate(terms):
             title_key = f"tq_{index}"
             body_key = f"bq_{index}"
-            term_clauses.append(
-                f"(i.title LIKE :{title_key} OR cs.plain_text LIKE :{body_key})"
-            )
+            term_clauses.append(f"(i.title LIKE :{title_key} OR cs.plain_text LIKE :{body_key})")
             like_value = f"%{term}%"
             self.params[title_key] = like_value
             self.params[body_key] = like_value
