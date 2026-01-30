@@ -13,9 +13,9 @@ alembic==1.13.1
 asyncpg==0.29.0
 aiosqlite==0.17.0
 psycopg2-binary==2.9.9
-pydantic==2.7.4
+pydantic>=2.8.0
 pydantic-settings==2.3.0
-pydantic_core==2.18.4
+# pydantic_core is usually managed by pydantic, removing explicit pin to allow upgrade
 PyJWT==2.8.0
 passlib==1.7.4
 bcrypt==3.2.0
@@ -74,9 +74,10 @@ pyyaml==6.0.1
 huggingface-hub>=0.23.0
 sentence-transformers
 dspy-ai
-openai
-llama-index
-llama-index-core
+openai>=1.0.0
+# Pin llama-index to prevent backtracking and ensure stability
+llama-index==0.12.51
+llama-index-core==0.12.51
 llama-index-readers-file
 llama-index-vector-stores-supabase
 llama-index-embeddings-huggingface

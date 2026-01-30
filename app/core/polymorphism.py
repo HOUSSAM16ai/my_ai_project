@@ -62,9 +62,10 @@ class PolymorphicBaseModel(BaseModel):
     )
 
 
-class Pet(PolymorphicBaseModel, ABC):
+class Pet(PolymorphicBaseModel):
     """
-    الفئة الأساسية المجردة للحيوانات الأليفة.
+    الفئة الأساسية للحيوانات الأليفة.
+    Note: removed ABC to avoid metaclass conflict with Pydantic's BaseModel.
     """
 
     name: str = Field(..., description="اسم الحيوان الأليف")
