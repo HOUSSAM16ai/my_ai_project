@@ -40,7 +40,8 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
         return await reviewer_node(state, ai_client)
 
     async def call_supervisor(state):
-        return await supervisor_node(state)
+        # Now passing ai_client to supervisor
+        return await supervisor_node(state, ai_client)
 
     workflow.add_node("planner", call_planner)
     workflow.add_node("researcher", call_researcher)
@@ -53,6 +54,7 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
     workflow.set_entry_point("supervisor")
 
     # Conditional Edges from Supervisor
+    # The Supervisor LLM decides exactly which node to go to next.
     workflow.add_conditional_edges(
         "supervisor",
         lambda x: x["next"],
@@ -61,32 +63,16 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
             "researcher": "researcher",
             "writer": "writer",
             "super_reasoner": "super_reasoner",
-            "end": END,
+            "reviewer": "reviewer",
+            "FINISH": END,
         },
     )
 
-    # Routing Logic for Reviewer (Self-Correction Loop)
-    def route_reviewer(state):
-        # If score is high (>8.0) OR we've looped twice -> Move on (Supervisor)
-        if state.get("review_score", 0) >= 8.0 or state.get("iteration_count", 0) >= 2:
-            return "supervisor"
-        # Otherwise, force correction (Loop back to Writer)
-        return "writer"
-
-    workflow.add_conditional_edges(
-        "reviewer",
-        route_reviewer,
-        {
-            "supervisor": "supervisor",
-            "writer": "writer",
-        },
-    )
-
-    # Direct Edges
+    # Direct Edges: All workers report back to Supervisor
     workflow.add_edge("planner", "supervisor")
     workflow.add_edge("researcher", "supervisor")
-    # Writer & Reasoner now go to Reviewer first, not Supervisor
-    workflow.add_edge("writer", "reviewer")
-    workflow.add_edge("super_reasoner", "reviewer")
+    workflow.add_edge("super_reasoner", "supervisor")
+    workflow.add_edge("writer", "supervisor")
+    workflow.add_edge("reviewer", "supervisor")
 
     return workflow.compile()

@@ -34,6 +34,7 @@ class AgentState(TypedDict):
         review_feedback: ملاحظات الناقد (Reviewer) لتحسين الجودة.
         review_score: تقييم الجودة (0.0 - 10.0).
         iteration_count: عداد التكرارات لتجنب الحلقات المفرغة.
+        supervisor_instruction: تعليمات خاصة من المشرف للوكيل التالي.
     """
 
     messages: Annotated[list[BaseMessage], add_messages_reducer]
@@ -48,3 +49,4 @@ class AgentState(TypedDict):
     review_feedback: NotRequired[str]
     review_score: NotRequired[float]
     iteration_count: NotRequired[int]
+    supervisor_instruction: NotRequired[str]
