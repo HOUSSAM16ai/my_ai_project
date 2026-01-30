@@ -1,5 +1,4 @@
 import math
-from typing import Any
 
 from app.services.procedural_knowledge.domain import (
     AuditResult,
@@ -42,13 +41,13 @@ def verify_inventory_consistency(nodes: list[KnowledgeNode], relations: list[Rel
             message=f"تطابق تام في المخزون: {red} أحمر + {green} أخضر = {declared_total} كلي.",
             evidence=[urn_node.id]
         )
-    else:
-        return AuditResult(
-            rule_id="inventory_check",
-            status=AuditStatus.FAIL,
-            message=f"تزوير في الأعداد! المصرح به: {declared_total}، المحسوب فعلياً: {calculated_total}.",
-            evidence=[urn_node.id]
-        )
+
+    return AuditResult(
+        rule_id="inventory_check",
+        status=AuditStatus.FAIL,
+        message=f"تزوير في الأعداد! المصرح به: {declared_total}، المحسوب فعلياً: {calculated_total}.",
+        evidence=[urn_node.id]
+    )
 
 
 def verify_probability_logic(nodes: list[KnowledgeNode], relations: list[Relation]) -> AuditResult:
@@ -101,13 +100,13 @@ def verify_probability_logic(nodes: list[KnowledgeNode], relations: list[Relatio
             message=f"المنطق سليم: الاحتمال المحسوب يطابق القيمة المصرح بها. {evidence_msg}",
             evidence=[event_node.id, urn_node.id]
         )
-    else:
-        return AuditResult(
-            rule_id="logic_integrity_check",
-            status=AuditStatus.FAIL,
-            message=f"خطأ منطقي/احتيال! القيمة المصرح بها {declared_prob} لا تطابق الحساب {calculated_prob:.4f}.",
-            evidence=[event_node.id]
-        )
+
+    return AuditResult(
+        rule_id="logic_integrity_check",
+        status=AuditStatus.FAIL,
+        message=f"خطأ منطقي/احتيال! القيمة المصرح بها {declared_prob} لا تطابق الحساب {calculated_prob:.4f}.",
+        evidence=[event_node.id]
+    )
 
 # -------------------------------------------------------------------------
 # 2. بناء السيناريو (Data Factory)

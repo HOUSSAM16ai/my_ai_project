@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Callable, Protocol
+from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
 

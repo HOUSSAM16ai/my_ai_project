@@ -1,14 +1,15 @@
 import json
+import os
 import sys
 from datetime import datetime
 
 # Adjust path to ensure app modules can be imported
-import os
 sys.path.append(os.getcwd())
 
+from app.services.procedural_knowledge.domain import AuditStatus
 from app.services.procedural_knowledge.engine import GraphAuditor
 from app.services.procedural_knowledge.scenarios.bac_math_2024 import load_bac_2024_scenario
-from app.services.procedural_knowledge.domain import AuditStatus
+
 
 def main():
     print("----------------------------------------------------------------")
