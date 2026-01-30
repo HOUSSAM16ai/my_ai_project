@@ -61,7 +61,7 @@ class GraphAuditor:
                     AuditResult(
                         rule_id="unknown_error",
                         status=AuditStatus.FAIL,
-                        message=f"حدث خطأ غير متوقع أثناء الفحص: {str(e)}",
+                        message=f"حدث خطأ غير متوقع أثناء الفحص: {e!s}",
                         evidence=[],
                         timestamp=time.time() - start_time
                     )
@@ -75,11 +75,10 @@ class GraphAuditor:
         """
         neighbors: list[KnowledgeNode] = []
         for rel in self.graph.relations:
-            if rel.source_id == node_id:
-                if relation_type is None or rel.type == relation_type:
-                    target_node = self.graph.get_node(rel.target_id)
-                    if target_node:
-                        neighbors.append(target_node)
+            if rel.source_id == node_id and (relation_type is None or rel.type == relation_type):
+                target_node = self.graph.get_node(rel.target_id)
+                if target_node:
+                    neighbors.append(target_node)
         return neighbors
 
     def find_nodes_by_type(self, type_val: str) -> list[KnowledgeNode]:
