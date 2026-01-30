@@ -1,11 +1,14 @@
-import difflib
-
 from sqlalchemy import text
 
 from app.core.database import async_session_factory as default_session_factory
 from app.core.logging import get_logger
-from app.services.content.constants import BRANCH_MAP, SET_MAP, SUBJECT_MAP
+from app.services.content.query_builder import ContentSearchQuery
 from app.services.content.repository import ContentRepository
+from app.services.content.utils import (
+    normalize_branch,
+    normalize_set_name,
+    normalize_subject,
+)
 
 logger = get_logger("content-service")
 
@@ -15,56 +18,6 @@ class ContentService:
 
     def __init__(self, session_factory=None):
         self.session_factory = session_factory or default_session_factory
-
-    @staticmethod
-    def _fuzzy_match(
-        val: str | None,
-        mapping: dict[str, list[str]],
-        cutoff: float = 0.6,
-    ) -> str | None:
-        """يطبق مطابقة تقريبية لإرجاع القيمة المعيارية إن أمكن."""
-        if not val:
-            return None
-
-        val_lower = val.lower().strip()
-
-        for key, variations in mapping.items():
-            if val_lower in variations:
-                return key
-
-        reverse_map: dict[str, str] = {}
-        all_variations: list[str] = []
-        for key, variations in mapping.items():
-            for variation in variations:
-                reverse_map[variation] = key
-                all_variations.append(variation)
-
-        matches = difflib.get_close_matches(val_lower, all_variations, n=1, cutoff=cutoff)
-        if matches:
-            return reverse_map[matches[0]]
-
-        for variation in all_variations:
-            if len(variation) > 3 and variation in val_lower:
-                return reverse_map[variation]
-
-        return val
-
-    def normalize_set_name(self, val: str | None) -> str | None:
-        """توحيد اسم المجموعة إلى الصيغة القياسية."""
-        if val and val.strip() in ["1", "١"]:
-            return "subject_1"
-        if val and val.strip() in ["2", "٢"]:
-            return "subject_2"
-
-        return self._fuzzy_match(val, SET_MAP, cutoff=0.7)
-
-    def normalize_branch(self, val: str | None) -> str | None:
-        """توحيد أسماء الشعب إلى التسميات العربية المعيارية."""
-        return self._fuzzy_match(val, BRANCH_MAP, cutoff=0.6)
-
-    def normalize_subject(self, val: str | None) -> str | None:
-        """توحيد أسماء المواد."""
-        return self._fuzzy_match(val, SUBJECT_MAP, cutoff=0.7)
 
     async def search_content(
         self,
@@ -81,73 +34,23 @@ class ContentService:
     ) -> list[dict[str, object]]:
         """يبني استعلام بحث هجين مع فلاتر وصفية متوافقة مع الاختبارات."""
 
-        norm_set = self.normalize_set_name(set_name)
-        norm_branch = self.normalize_branch(branch)
-        norm_subject = self.normalize_subject(subject)
+        norm_set = normalize_set_name(set_name)
+        norm_branch = normalize_branch(branch)
+        norm_subject = normalize_subject(subject)
 
-        query_str = (
-            "SELECT i.id, i.title, i.type, i.level, i.subject, i.branch, "
-            "i.set_name, i.year, i.lang "
-            "FROM content_items i "
-            "LEFT JOIN content_search cs ON i.id = cs.content_id "
-            "WHERE 1=1"
-        )
-        params: dict[str, object] = {}
+        builder = ContentSearchQuery()
+        builder.add_text_search(q)
+        builder.add_id_filter(content_ids)
+        builder.add_filter("i.level", level)
+        builder.add_filter("i.subject", norm_subject)
+        builder.add_filter("i.branch", norm_branch)
+        builder.add_filter("i.set_name", norm_set)
+        builder.add_filter("i.year", year)
+        builder.add_filter("i.type", type)
+        builder.add_filter("i.lang", lang)
+        builder.set_limit(limit)
 
-        if q:
-            terms = [term for term in q.split() if term.strip()]
-            term_clauses: list[str] = []
-            for index, term in enumerate(terms):
-                title_key = f"tq_{index}"
-                body_key = f"bq_{index}"
-                term_clauses.append(
-                    f"(i.title LIKE :{title_key} OR cs.plain_text LIKE :{body_key})"
-                )
-                like_value = f"%{term}%"
-                params[title_key] = like_value
-                params[body_key] = like_value
-            if term_clauses:
-                query_str += " AND " + " AND ".join(term_clauses)
-
-        if content_ids:
-            # If we have explicit IDs from vector search, filter by them
-            placeholders: list[str] = []
-            for index, content_id in enumerate(content_ids):
-                key = f"cid_{index}"
-                placeholders.append(f":{key}")
-                params[key] = content_id
-            query_str += f" AND i.id IN ({', '.join(placeholders)})"
-
-        if level:
-            query_str += " AND i.level = :level"
-            params["level"] = level
-
-        if norm_subject:
-            query_str += " AND i.subject = :subject"
-            params["subject"] = norm_subject
-
-        if norm_branch:
-            query_str += " AND i.branch = :branch"
-            params["branch"] = norm_branch
-
-        if norm_set:
-            query_str += " AND i.set_name = :set_name"
-            params["set_name"] = norm_set
-
-        if year is not None:
-            query_str += " AND i.year = :year"
-            params["year"] = year
-
-        if type:
-            query_str += " AND i.type = :type"
-            params["type"] = type
-
-        if lang:
-            query_str += " AND i.lang = :lang"
-            params["lang"] = lang
-
-        query_str += " ORDER BY i.year DESC NULLS LAST, i.id ASC LIMIT :limit"
-        params["limit"] = limit
+        query_str, params = builder.build()
 
         logger.info(f"Executing Search SQL: {query_str}")
         logger.info(f"Search Params: {params}")
