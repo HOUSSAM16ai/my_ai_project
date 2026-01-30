@@ -145,22 +145,46 @@ class FirewallContextComposer(IContextComposer):
 
     def _extract_requested_segment(self, content: str, user_message: str) -> str:
         """
-        يقتطع جزءاً محدداً من التمرين عند طلب سؤال بعينه.
+        يقتطع جزءاً محدداً من التمرين عند طلب سؤال أو جزء بعينه.
         """
-        requested_index = _extract_requested_index(user_message)
-        if requested_index is None:
-            return content
+        # 1. Try extracting by Question Number
+        q_idx = _extract_requested_index(user_message, ["Question", "Exercise", "السؤال", "التمرين"])
 
-        extracted = _extract_section_by_index(content, requested_index)
-        return extracted or content
+        # 2. Try extracting by Part Number
+        p_idx = _extract_requested_index(user_message, ["Part", "الجزء"])
+
+        current_content = content
+
+        # Apply Question Filter
+        if q_idx is not None:
+             extracted_q = _extract_section_by_index(
+                 current_content,
+                 q_idx,
+                 ["Question", "Exercise", "السؤال", "التمرين"]
+             )
+             if extracted_q:
+                 current_content = extracted_q
+
+        # Apply Part Filter (on the result of Question Filter)
+        if p_idx is not None:
+             extracted_p = _extract_section_by_index(
+                 current_content,
+                 p_idx,
+                 ["Part", "الجزء", "partie"]
+             )
+             if extracted_p:
+                 current_content = extracted_p
+
+        return current_content
 
 
-def _extract_requested_index(user_message: str) -> int | None:
+def _extract_requested_index(user_message: str, keywords: list[str]) -> int | None:
     """
-    استخراج رقم السؤال المطلوب من رسالة المستخدم إن وُجد.
+    استخراج رقم السؤال أو الجزء المطلوب من رسالة المستخدم.
     """
+    keywords_pattern = "|".join([re.escape(k) for k in keywords])
     pattern = re.compile(
-        r"(السؤال|التمرين|question|exercise)\s*(?:رقم\s*)?"
+        rf"({keywords_pattern})\s*(?:رقم|number)?\s*"
         r"(\d+|[٠-٩]+|الأول|أول|اول|الثاني|ثاني|الثالث|ثالث|الرابع|رابع|الخامس|خامس|"
         r"السادس|سادس|السابع|سابع|الثامن|ثامن|التاسع|تاسع|العاشر|عاشر|"
         r"first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)",
@@ -172,35 +196,111 @@ def _extract_requested_index(user_message: str) -> int | None:
     return _normalize_index_token(match.group(2))
 
 
-def _extract_section_by_index(content: str, index: int) -> str | None:
+def _extract_section_by_index(content: str, index: int, headers: list[str]) -> str | None:
     """
-    استخراج مقطع محدد من المحتوى اعتماداً على رقم السؤال.
+    استخراج مقطع محدد من المحتوى اعتماداً على العناوين.
     """
-    heading_pattern = re.compile(
-        r"(?im)^(?:#{1,6}\s*)?(السؤال|التمرين|question|exercise)\s*(?:رقم\s*)?"
+    headers_pattern = "|".join([re.escape(h) for h in headers])
+
+    # REGEX to find the start of the section
+    heading_regex = (
+        r"(?im)^\s*(?:#{1,6}\s*)?(" + headers_pattern + r")\s*(?:رقم|number)?\s*"
         r"(\d+|[٠-٩]+|الأول|أول|اول|الثاني|ثاني|الثالث|ثالث|الرابع|رابع|الخامس|خامس|"
         r"السادس|سادس|السابع|سابع|الثامن|ثامن|التاسع|تاسع|العاشر|عاشر|"
         r"first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\b"
     )
 
-    matches = list(heading_pattern.finditer(content))
+    matches = list(re.finditer(heading_regex, content))
     if not matches:
         return None
 
     sections: list[tuple[int, int, int]] = []
-    for idx, match in enumerate(matches, start=1):
+    for idx, match in enumerate(matches):
         start = match.start()
-        end = matches[idx].start() if idx < len(matches) else len(content)
-        token_value = _normalize_index_token(match.group(2)) or idx
+        next_match_start = matches[idx + 1].start() if idx + 1 < len(matches) else len(content)
+        end = next_match_start
+
+        token_str = match.group(2)
+        token_value = _normalize_index_token(token_str)
+        if token_value is None:
+            token_value = idx + 1
+
         sections.append((token_value, start, end))
 
+    # Pattern for ANY significant header to stop at
+    # SIMPLIFIED: Any line starting with a header word.
+    stop_pattern = r"(?im)^\s*(?:#{1,6}\s*)?(?:Question|Exercise|Part|Section|السؤال|التمرين|الجزء|partie)\b"
+
+    def clean_segment(segment: str, header_match: re.Match) -> str:
+        """Helper to truncate segment at the next header."""
+        header_end = header_match.end()
+        # Search rest of segment for a stop token
+        rest = segment[header_end:]
+        stop_match = re.search(stop_pattern, rest)
+        if stop_match:
+            # Found another header, cut here
+            real_end = header_end + stop_match.start()
+            return segment[:real_end].strip()
+        return segment.strip()
+
+    # Find the requested section
+    target_section = None
+    target_start = 0
+
+    # Try to find explicit match by value
     for token_value, start, end in sections:
         if token_value == index:
-            return content[start:end].strip()
+            target_section = content[start:end]
+            target_start = start
+            break
 
-    if index <= len(sections):
+    # Fallback
+    if target_section is None and 0 < index <= len(sections):
         _, start, end = sections[index - 1]
-        return content[start:end].strip()
+        target_section = content[start:end]
+        target_start = start
+
+    if target_section:
+        # Match the header again to determine where the body text starts
+        header_match = re.match(heading_regex, target_section)
+
+        if header_match:
+            is_question_extraction = "Question" in headers or "السؤال" in headers
+            is_part_extraction = "Part" in headers or "الجزء" in headers
+
+            # 1. Clean using Stop Tokens (truncate at next header)
+            cleaned = clean_segment(target_section, header_match)
+
+            # 2. Logic Check:
+            # If we extracted "Question 1", but it was cut short because "Part 1" appeared...
+            # We want to INCLUDE "Part 1" inside "Question 1".
+            # `clean_segment` stops at ANY header (including Part).
+
+            if is_question_extraction:
+                 # If we are extracting Question, we should NOT stop at Part.
+                 # We should only stop at Question/Exercise.
+                 # Re-run logic with a specific stop pattern for Questions.
+
+                 question_stop_pattern = r"(?im)^\s*(?:#{1,6}\s*)?(?:Question|Exercise|السؤال|التمرين)\b"
+
+                 header_end = header_match.end()
+                 rest = target_section[header_end:]
+                 stop_match = re.search(question_stop_pattern, rest)
+
+                 if stop_match:
+                     real_end = header_end + stop_match.start()
+                     return target_section[:real_end].strip()
+                 return target_section.strip()
+
+            elif is_part_extraction:
+                # If extracting Part, we should stop at Part OR Question
+                # `clean_segment` does this correctly.
+                return cleaned.strip()
+
+            return cleaned.strip()
+
+        return target_section.strip()
+
     return None
 
 
@@ -212,47 +312,30 @@ def _normalize_index_token(token: str | None) -> int | None:
         return None
     normalized = token.strip().lower()
 
+    # 1. Arabic/Western Digits
     arabic_digits = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
     numeric_candidate = normalized.translate(arabic_digits)
     if numeric_candidate.isdigit():
         return int(numeric_candidate)
 
+    # 2. Textual Ordinals
     arabic_ordinals = {
-        "الأول": 1,
-        "اول": 1,
-        "أول": 1,
-        "الثاني": 2,
-        "ثاني": 2,
-        "الثالث": 3,
-        "ثالث": 3,
-        "الرابع": 4,
-        "رابع": 4,
-        "الخامس": 5,
-        "خامس": 5,
-        "السادس": 6,
-        "سادس": 6,
-        "السابع": 7,
-        "سابع": 7,
-        "الثامن": 8,
-        "ثامن": 8,
-        "التاسع": 9,
-        "تاسع": 9,
-        "العاشر": 10,
-        "عاشر": 10,
+        "الأول": 1, "اول": 1, "أول": 1,
+        "الثاني": 2, "ثاني": 2,
+        "الثالث": 3, "ثالث": 3,
+        "الرابع": 4, "رابع": 4,
+        "الخامس": 5, "خامس": 5,
+        "السادس": 6, "سادس": 6,
+        "السابع": 7, "سابع": 7,
+        "الثامن": 8, "ثامن": 8,
+        "التاسع": 9, "تاسع": 9,
+        "العاشر": 10, "عاشر": 10,
     }
     if normalized in arabic_ordinals:
         return arabic_ordinals[normalized]
 
     english_ordinals = {
-        "first": 1,
-        "second": 2,
-        "third": 3,
-        "fourth": 4,
-        "fifth": 5,
-        "sixth": 6,
-        "seventh": 7,
-        "eighth": 8,
-        "ninth": 9,
-        "tenth": 10,
+        "first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5,
+        "sixth": 6, "seventh": 7, "eighth": 8, "ninth": 9, "tenth": 10,
     }
     return english_ordinals.get(normalized)

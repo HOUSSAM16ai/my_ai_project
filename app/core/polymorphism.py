@@ -42,7 +42,6 @@
 مع الاستفادة من ميزات التحقق القوية.
 """
 
-from abc import ABC
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -62,9 +61,10 @@ class PolymorphicBaseModel(BaseModel):
     )
 
 
-class Pet(PolymorphicBaseModel, ABC):
+class Pet(PolymorphicBaseModel):
     """
-    الفئة الأساسية المجردة للحيوانات الأليفة.
+    الفئة الأساسية للحيوانات الأليفة.
+    تم إزالة ABC لتجنب تضارب Metaclass مع Pydantic BaseModel.
     """
 
     name: str = Field(..., description="اسم الحيوان الأليف")

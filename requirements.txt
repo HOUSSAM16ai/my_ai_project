@@ -75,8 +75,8 @@ huggingface-hub>=0.23.0
 sentence-transformers
 dspy-ai
 openai
-llama-index
-llama-index-core
+# Pin llama-index to prevent infinite resolution backtracking in CI
+llama-index==0.12.51
 llama-index-readers-file
 llama-index-vector-stores-supabase
 llama-index-embeddings-huggingface
