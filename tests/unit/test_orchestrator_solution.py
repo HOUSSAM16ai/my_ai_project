@@ -45,12 +45,15 @@ async def test_orchestrator_injects_solution_into_prompt():
 
     # 2. Execute
     # We iterate over the generator to trigger execution
-    async for _ in agent.run("Show me probability exercise", context):
+    # We use a query that implies a solution request so RegexIntentDetector sets include_solution=True
+    async for _ in agent.run("Show me probability exercise solution", context):
         pass
 
     # 3. Verify
     # Check that tools.execute was called correctly
-    mock_tools.execute.assert_any_call("get_content_raw", {"content_id": "ex1"})
+    mock_tools.execute.assert_any_call(
+        "get_content_raw", {"content_id": "ex1", "include_solution": True}
+    )
 
     # Check AI Client calls to find the explanation generation
     # stream_chat is called twice: once (potentially) for fallback/other? No, strictly flow here.
