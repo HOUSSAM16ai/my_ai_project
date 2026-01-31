@@ -26,6 +26,24 @@ from microservices.planning_agent.settings import PlanningAgentSettings, get_set
 logger = get_logger("planning-agent")
 
 
+# --- Unified Agent Protocol ---
+
+class AgentRequest(BaseModel):
+    caller_id: str
+    target_service: str
+    action: str
+    payload: dict
+    security_token: str | None = None
+
+class AgentResponse(BaseModel):
+    status: str
+    data: dict | None = None
+    error: str | None = None
+    metrics: dict = {}
+
+# ------------------------------
+
+
 class PlanRequest(BaseModel):
     """حمولة طلب إنشاء خطة تعليمية قابلة للتفسير."""
 
@@ -132,6 +150,32 @@ def _build_router() -> APIRouter:
         plans = result.scalars().all()
 
         return [PlanResponse(plan_id=p.id, goal=p.goal, steps=p.steps) for p in plans]
+
+    @router.post("/execute", response_model=AgentResponse, tags=["Agent"])
+    async def execute(
+        request: AgentRequest,
+        session: AsyncSession = Depends(get_session),
+        settings: PlanningAgentSettings = Depends(get_settings),
+    ) -> AgentResponse:
+        """Unified Agent Execution Endpoint."""
+        try:
+            if request.action in ["generate_plan", "plan"]:
+                goal = request.payload.get("goal", "")
+                context = request.payload.get("context", [])
+
+                # Use internal logic
+                steps = await _generate_plan(goal, context, settings)
+
+                # Optional: Persist
+                plan = Plan(goal=goal, steps=steps)
+                session.add(plan)
+                await session.commit()
+
+                return AgentResponse(status="success", data={"steps": steps})
+
+            return AgentResponse(status="error", error=f"Action {request.action} not supported")
+        except Exception as e:
+            return AgentResponse(status="error", error=str(e))
 
     return router
 

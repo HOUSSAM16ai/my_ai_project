@@ -32,6 +32,7 @@ class KagentMesh:
     ):
         """
         تسجيل خدمة في الشبكة.
+        accepts FastAPI app or BaseAgentAdapter.
         """
         profile = ServiceProfile(
             name=name,
@@ -53,38 +54,23 @@ class KagentMesh:
             )
 
         # 2. Service Discovery
-        implementation = self._registry.get_implementation(request.target_service)
-        if not implementation:
+        adapter = self._registry.get_implementation(request.target_service)
+        if not adapter:
             return AgentResponse(
                 status="error", error=f"Service '{request.target_service}' not found.", metrics={}
             )
 
-        # 3. Action Resolution
-        # We assume the implementation has a method matching the action name
-        # or a generic 'execute' method.
-        # Strategy: Look for specific method, else fallback to 'execute'
-        method = getattr(implementation, request.action, None)
-        if not method:
-            # Try generic execute
-            method = getattr(implementation, "execute", None)
-
-        if not method:
-            return AgentResponse(
-                status="error",
-                error=f"Action '{request.action}' not found on service '{request.target_service}'.",
-                metrics={},
-            )
-
-        # 4. Execution with Telemetry
+        # 3. Execution (Unified)
         try:
-            # If the method accepts generic kwargs, pass payload directly
-            # Or pass it as a single 'payload' arg.
-            # We'll adopt a convention: method(**payload)
-            result, metrics = await PerformanceMonitor.trace_execution(
-                request.target_service, request.action, method, **request.payload
-            )
+            # We delegate the raw execution to the adapter.
+            # Telemetry can be wrapped here.
 
-            return AgentResponse(status="success", data=result, metrics=metrics)
+            # Using a lambda to fit the trace_execution signature if needed,
+            # or just calling directly for simplicity as per "Super Simplification".
+
+            response = await adapter.execute(request)
+            return response
 
         except Exception as e:
+            logger.error(f"Kagent Execution Error: {e}")
             return AgentResponse(status="error", error=str(e), metrics={})
