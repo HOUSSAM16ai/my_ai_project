@@ -3,7 +3,7 @@ import logging
 import os
 
 from app.core.gateway.simple_client import SimpleAIClient
-from app.services.reasoning.workflow import SuperReasoningWorkflow
+from microservices.reasoning_agent.src.workflow import SuperReasoningWorkflow
 
 # Configure logger
 logging.basicConfig(level=logging.INFO)

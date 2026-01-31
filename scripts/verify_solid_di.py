@@ -106,10 +106,10 @@ sys.modules["app.core.domain.mission"] = MagicMock()
 sys.modules["app.core.domain.chat"] = MagicMock()
 
 # Mock models that use pydantic heavily and cause typing issues with mocks
-sys.modules["app.services.reasoning.models"] = MagicMock()
+sys.modules["microservices.reasoning_agent.src.models"] = MagicMock()
 
 # Mock retriever module to avoid metaclass conflict between Mock and ABC
-sys.modules["app.services.search_engine.llama_retriever"] = MagicMock()
+sys.modules["microservices.research_agent.src.search_engine.llama_retriever"] = MagicMock()
 
 # --- END MOCKS ---
 
@@ -126,7 +126,7 @@ from app.services.chat.graph.domain import WriterIntent
 
 # We need to re-import writer node AFTER mocking
 from app.services.chat.graph.nodes.writer import writer_node
-from app.services.reasoning.workflow import SuperReasoningWorkflow
+from microservices.reasoning_agent.src.workflow import SuperReasoningWorkflow
 
 # Mock AIMessage since we mocked the module
 AIMessage = MagicMock()

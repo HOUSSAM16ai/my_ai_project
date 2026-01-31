@@ -2,10 +2,10 @@ import asyncio
 import os
 
 from app.core.logging import get_logger
-from app.services.search_engine.fallback_expander import FallbackQueryExpander
-from app.services.search_engine.models import SearchRequest, SearchResult
-from app.services.search_engine.query_refiner import get_refined_query
-from app.services.search_engine.strategies import (
+from microservices.research_agent.src.search_engine.fallback_expander import FallbackQueryExpander
+from microservices.research_agent.src.search_engine.models import SearchRequest, SearchResult
+from microservices.research_agent.src.search_engine.query_refiner import get_refined_query
+from microservices.research_agent.src.search_engine.strategies import (
     KeywordStrategy,
     RelaxedVectorStrategy,
     SearchStrategy,

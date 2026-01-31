@@ -36,9 +36,9 @@ def setup_module_environment():
 
     try:
         # Import modules ONCE here
-        import app.services.search_engine.models as m
-        import app.services.search_engine.orchestrator as o
-        import app.services.search_engine.strategies as s
+        import microservices.research_agent.src.search_engine.models as m
+        import microservices.research_agent.src.search_engine.orchestrator as o
+        import microservices.research_agent.src.search_engine.strategies as s
 
         models_module = m
         strategies_module = s
@@ -104,14 +104,14 @@ async def test_strict_strategy(mock_retriever, mock_reranker, mock_content_servi
 
     with (
         patch(
-            "app.services.search_engine.strategies.get_retriever",
+            "microservices.research_agent.src.search_engine.strategies.get_retriever",
             return_value=mock_retriever,
         ),
         patch(
-            "app.services.search_engine.strategies.get_reranker",
+            "microservices.research_agent.src.search_engine.strategies.get_reranker",
             return_value=mock_reranker,
         ),
-        patch("app.services.search_engine.strategies.content_service", mock_content_service),
+        patch("microservices.research_agent.src.search_engine.strategies.content_service", mock_content_service),
         patch.dict("os.environ", {"DATABASE_URL": "postgresql://mock"}),
     ):
         strategy = strict_vector_strategy()
@@ -142,14 +142,14 @@ async def test_relaxed_strategy(mock_retriever, mock_reranker, mock_content_serv
 
     with (
         patch(
-            "app.services.search_engine.strategies.get_retriever",
+            "microservices.research_agent.src.search_engine.strategies.get_retriever",
             return_value=mock_retriever,
         ),
         patch(
-            "app.services.search_engine.strategies.get_reranker",
+            "microservices.research_agent.src.search_engine.strategies.get_reranker",
             return_value=mock_reranker,
         ),
-        patch("app.services.search_engine.strategies.content_service", mock_content_service),
+        patch("microservices.research_agent.src.search_engine.strategies.content_service", mock_content_service),
         patch.dict("os.environ", {"DATABASE_URL": "postgresql://mock"}),
     ):
         strategy = relaxed_vector_strategy()
@@ -173,7 +173,7 @@ async def test_keyword_strategy(mock_content_service):
     search_request = models_module.SearchRequest
     search_filters = models_module.SearchFilters
 
-    with patch("app.services.search_engine.strategies.content_service", mock_content_service):
+    with patch("microservices.research_agent.src.search_engine.strategies.content_service", mock_content_service):
         strategy = keyword_strategy()
         filters = search_filters(year=2024)
         request = search_request(q="test", filters=filters)
@@ -219,7 +219,7 @@ async def test_orchestrator_fallback_logic(mock_retriever, mock_reranker, mock_c
 
     with (
         patch(
-            "app.services.search_engine.orchestrator.get_refined_query",
+            "microservices.research_agent.src.search_engine.orchestrator.get_refined_query",
             return_value={"refined_query": "test"},
         ),
         patch.dict("os.environ", {"OPENROUTER_API_KEY": "fake"}),
@@ -245,7 +245,7 @@ async def test_orchestrator_dspy_integration():
 
     with (
         patch(
-            "app.services.search_engine.orchestrator.get_refined_query",
+            "microservices.research_agent.src.search_engine.orchestrator.get_refined_query",
             return_value=dspy_response,
         ),
         patch.dict("os.environ", {"OPENROUTER_API_KEY": "fake"}),

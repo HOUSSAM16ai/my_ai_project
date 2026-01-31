@@ -14,8 +14,8 @@ from sqlalchemy import text
 
 from app.core.database import async_session_factory
 from app.core.logging import get_logger
-from app.services.content.constants import BRANCH_MAP
-from app.services.search_engine.retriever import get_retriever
+from microservices.research_agent.src.content.constants import BRANCH_MAP
+from microservices.research_agent.src.search_engine.retriever import get_retriever
 
 logger = get_logger("content-tools")
 
@@ -62,7 +62,7 @@ async def get_curriculum_structure(
 ) -> dict[str, object]:
     """جلب شجرة المنهج الدراسي بالكامل أو لمستوى محدد."""
     try:
-        from app.services.content.service import content_service as live_content_service
+        from microservices.research_agent.src.content.service import content_service as live_content_service
 
         return await live_content_service.get_curriculum_structure(level)
     except Exception as e:
@@ -91,9 +91,9 @@ async def search_content(
     4. Graph Expansion: توسيع النتائج عبر العلاقات
     """
     try:
-        from app.services.search_engine.graph_expander import enrich_search_with_graph
-        from app.services.search_engine.models import SearchFilters, SearchRequest
-        from app.services.search_engine.super_orchestrator import super_search_orchestrator
+        from microservices.research_agent.src.search_engine.graph_expander import enrich_search_with_graph
+        from microservices.research_agent.src.search_engine.models import SearchFilters, SearchRequest
+        from microservices.research_agent.src.search_engine.super_orchestrator import super_search_orchestrator
 
         result_payload: list[dict[str, object]] = []
 
@@ -136,7 +136,7 @@ async def search_content(
         else:
             # If super search returned nothing, try direct content service as last resort
             logger.warning("Super search returned empty, trying direct content service...")
-            from app.services.content.service import content_service as live_content_service
+            from microservices.research_agent.src.content.service import content_service as live_content_service
 
             live_content_service.session_factory = async_session_factory
 
@@ -160,7 +160,7 @@ async def search_content(
         logger.error(f"Search content failed: {e}")
         # Even on error, try to return something
         try:
-            from app.services.content.service import content_service as fallback_service
+            from microservices.research_agent.src.content.service import content_service as fallback_service
 
             result_payload = await fallback_service.search_content(limit=limit)
             await _run_legacy_probe(q, branch, set_name, year, limit)
@@ -174,7 +174,7 @@ async def get_content_raw(
 ) -> dict[str, str] | None:
     """جلب النص الخام (Markdown) لتمرين أو درس معين مع خيار الحل."""
     try:
-        from app.services.content.service import content_service as live_content_service
+        from microservices.research_agent.src.content.service import content_service as live_content_service
 
         return await live_content_service.get_content_raw(
             content_id, include_solution=include_solution
@@ -186,7 +186,7 @@ async def get_content_raw(
 
 async def get_solution_raw(content_id: str) -> dict[str, object] | None:
     """جلب الحل الرسمي (Official Solution) لتمرين."""
-    from app.services.content.service import content_service as live_content_service
+    from microservices.research_agent.src.content.service import content_service as live_content_service
 
     data = await live_content_service.get_content_raw(content_id, include_solution=True)
     if data and "solution" in data:

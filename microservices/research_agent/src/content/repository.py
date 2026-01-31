@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.content.domain import ContentDetail, ContentFilter, ContentSummary
+from microservices.research_agent.src.content.domain import ContentDetail, ContentFilter, ContentSummary
 
 logger = logging.getLogger(__name__)
 

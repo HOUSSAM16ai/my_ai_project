@@ -1,6 +1,6 @@
 import asyncio
 
-from app.services.content.service import content_service
+from microservices.research_agent.src.content.service import content_service
 
 
 async def verify_scenario():

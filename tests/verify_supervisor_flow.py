@@ -29,9 +29,9 @@ sys.modules["app.core.database"].get_db = MagicMock()
 
 # Mock retrieval specifically to avoid loading heavy machinery
 mock_retriever = MagicMock()
-sys.modules["app.services.search_engine.retriever"] = mock_retriever
+sys.modules["microservices.research_agent.src.search_engine.retriever"] = mock_retriever
 # Mock the specific llama_retriever to avoid metaclass conflicts
-sys.modules["app.services.search_engine.llama_retriever"] = MagicMock()
+sys.modules["microservices.research_agent.src.search_engine.llama_retriever"] = MagicMock()
 
 # Mock Overmind Factory
 sys.modules["app.services.overmind.factory"] = MagicMock()

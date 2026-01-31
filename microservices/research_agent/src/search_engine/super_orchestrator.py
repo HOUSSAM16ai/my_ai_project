@@ -15,10 +15,10 @@ import os
 from collections import defaultdict
 
 from app.core.logging import get_logger
-from app.services.search_engine.fallback_expander import FallbackQueryExpander
-from app.services.search_engine.models import SearchFilters, SearchRequest, SearchResult
-from app.services.search_engine.query_refiner import get_refined_query
-from app.services.search_engine.strategies import (
+from microservices.research_agent.src.search_engine.fallback_expander import FallbackQueryExpander
+from microservices.research_agent.src.search_engine.models import SearchFilters, SearchRequest, SearchResult
+from microservices.research_agent.src.search_engine.query_refiner import get_refined_query
+from microservices.research_agent.src.search_engine.strategies import (
     KeywordStrategy,
     RelaxedVectorStrategy,
     SearchStrategy,
@@ -244,7 +244,7 @@ class SuperSearchOrchestrator:
         """
         آخر محاولة: البحث بكلمة واحدة فقط.
         """
-        from app.services.content.service import content_service
+        from microservices.research_agent.src.content.service import content_service
 
         # Extract just the most important keyword
         keywords = self._extract_keywords(original_q)

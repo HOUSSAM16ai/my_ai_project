@@ -1,4 +1,4 @@
-from app.services.content.service import content_service
+from microservices.research_agent.src.content.service import content_service
 
 
 def test_normalize_set_name_subject_1():

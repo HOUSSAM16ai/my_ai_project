@@ -24,7 +24,7 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
     بناء الرسم البياني للوكلاء المتعددين.
     """
     # Defer import to prevent circular dependency / eager loading issues
-    from app.services.reasoning.service import ReasoningService
+    from microservices.reasoning_agent.src.service import ReasoningService
 
     # Initialize Kagent Mesh and Register Services
     kagent = get_kagent_mesh()

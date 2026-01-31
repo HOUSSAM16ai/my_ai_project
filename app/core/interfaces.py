@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from llama_index.core.schema import NodeWithScore
 
-from app.services.reasoning.models import EvaluationResult, ReasoningNode
+from microservices.reasoning_agent.src.models import EvaluationResult, ReasoningNode
 
 if TYPE_CHECKING:
     from app.services.chat.graph.domain import StudentProfile, WriterIntent

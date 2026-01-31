@@ -8,9 +8,9 @@ Allows the Reasoning Engine to be exposed as a service on the Mesh.
 from app.core.ai_gateway import AIClient
 from app.core.interfaces import IKnowledgeRetriever
 from app.core.logging import get_logger
-from app.services.reasoning.search_strategy import MathReasoningStrategy, RMCTSStrategy
-from app.services.reasoning.workflow import SuperReasoningWorkflow
-from app.services.search_engine.llama_retriever import KnowledgeGraphRetriever
+from microservices.reasoning_agent.src.search_strategy import MathReasoningStrategy, RMCTSStrategy
+from microservices.reasoning_agent.src.workflow import SuperReasoningWorkflow
+from microservices.research_agent.src.search_engine.llama_retriever import KnowledgeGraphRetriever
 
 logger = get_logger("reasoning-service")
 

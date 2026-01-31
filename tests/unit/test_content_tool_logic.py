@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 # Mock dspy BEFORE importing app modules to avoid slow imports/network calls
 sys.modules["dspy"] = MagicMock()
-sys.modules["app.services.search_engine.query_refiner"] = MagicMock()
+sys.modules["microservices.research_agent.src.search_engine.query_refiner"] = MagicMock()
 
 from unittest.mock import AsyncMock, patch
 
@@ -11,15 +11,15 @@ import pytest
 
 # Now import the module under test
 # We also need to mock content_service import if it triggers DB connections
-# content.py imports content_service from app.services.content.service
-# app.services.content.service creates a ContentService() instance
+# content.py imports content_service from microservices.research_agent.src.content.service
+# microservices.research_agent.src.content.service creates a ContentService() instance
 # which imports database stuff.
 
 # Let's mock the content_service module entirely to be safe
 mock_content_service_module = MagicMock()
 mock_content_service_instance = AsyncMock()
 mock_content_service_module.content_service = mock_content_service_instance
-sys.modules["app.services.content.service"] = mock_content_service_module
+sys.modules["microservices.research_agent.src.content.service"] = mock_content_service_module
 
 # Now we can import the tool safely
 from app.services.chat.tools.content import search_content

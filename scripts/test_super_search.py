@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 from app.core.database import async_session_factory
 from app.core.logging import get_logger
-from app.services.search_engine.retriever import get_embedding_model
+from microservices.research_agent.src.search_engine.retriever import get_embedding_model
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)

@@ -2,10 +2,10 @@ import os
 from abc import ABC, abstractmethod
 
 from app.core.logging import get_logger
-from app.services.content.service import content_service
-from app.services.search_engine.models import SearchRequest, SearchResult
-from app.services.search_engine.reranker import get_reranker
-from app.services.search_engine.retriever import get_retriever
+from microservices.research_agent.src.content.service import content_service
+from microservices.research_agent.src.search_engine.models import SearchRequest, SearchResult
+from microservices.research_agent.src.search_engine.reranker import get_reranker
+from microservices.research_agent.src.search_engine.retriever import get_retriever
 
 logger = get_logger("search-strategies")
 

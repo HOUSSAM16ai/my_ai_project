@@ -14,8 +14,8 @@ sys.modules["llama_index.embeddings.openai"] = MagicMock()
 sys.path.append(os.getcwd())
 
 from app.core.gateway.simple_client import SimpleAIClient
-from app.services.reasoning.search_strategy import MathReasoningStrategy
-from app.services.reasoning.workflow import SuperReasoningWorkflow
+from microservices.reasoning_agent.src.search_strategy import MathReasoningStrategy
+from microservices.reasoning_agent.src.workflow import SuperReasoningWorkflow
 
 
 class MockAIClient(SimpleAIClient):

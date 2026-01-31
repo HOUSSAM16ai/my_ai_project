@@ -2,9 +2,9 @@ from sqlalchemy import text
 
 from app.core.database import async_session_factory as default_session_factory
 from app.core.logging import get_logger
-from app.services.content.query_builder import ContentSearchQuery
-from app.services.content.repository import ContentRepository
-from app.services.content.utils import (
+from microservices.research_agent.src.content.query_builder import ContentSearchQuery
+from microservices.research_agent.src.content.repository import ContentRepository
+from microservices.research_agent.src.content.utils import (
     normalize_branch,
     normalize_set_name,
     normalize_subject,

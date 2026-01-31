@@ -24,7 +24,7 @@ sys.path.append(os.getcwd())
 
 from app.core.ai_gateway import AIClient
 from app.services.kagent import AgentRequest, KagentMesh
-from app.services.reasoning.service import ReasoningService
+from microservices.reasoning_agent.src.service import ReasoningService
 
 
 class MockGeniusAI(AIClient):
