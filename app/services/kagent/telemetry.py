@@ -7,7 +7,6 @@ Captures execution latency and status metrics.
 
 import time
 from collections.abc import Callable, Coroutine
-from functools import wraps
 from typing import Any
 
 from app.core.logging import get_logger
@@ -23,7 +22,11 @@ class PerformanceMonitor:
 
     @staticmethod
     async def trace_execution(
-        service_name: str, action: str, func: Callable[..., Coroutine[Any, Any, Any]], *args, **kwargs
+        service_name: str,
+        action: str,
+        func: Callable[..., Coroutine[Any, Any, Any]],
+        *args,
+        **kwargs,
     ) -> tuple[Any, dict[str, float]]:
         """
         تنفيذ دالة مع تتبع الزمن (Tracing).
@@ -31,7 +34,6 @@ class PerformanceMonitor:
         start_time = time.perf_counter()
         try:
             result = await func(*args, **kwargs)
-            status = "success"
         except Exception as e:
             logger.error(f"Execution failed in {service_name}.{action}: {e}")
             raise e

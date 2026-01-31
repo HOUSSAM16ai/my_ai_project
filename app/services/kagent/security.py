@@ -5,6 +5,8 @@ Simulates mTLS and Access Control Lists (ACL) for inter-agent communication.
 Ensures only authorized nodes can invoke sensitive services.
 """
 
+from typing import ClassVar
+
 from app.core.logging import get_logger
 
 logger = get_logger("kagent-security")
@@ -17,11 +19,15 @@ class SecurityMesh:
     """
 
     # قائمة افتراضية بالرموز الموثوقة (لأغراض المحاكاة)
-    TRUSTED_TOKENS = {"supervisor-sys-key", "test-runner-key", "internal-mesh-key"}
+    TRUSTED_TOKENS: ClassVar[set[str]] = {
+        "supervisor-sys-key",
+        "test-runner-key",
+        "internal-mesh-key",
+    }
 
     # قائمة التحكم بالوصول (ACL)
     # Caller -> Allowed Services
-    ACL = {
+    ACL: ClassVar[dict[str, list[str]]] = {
         "supervisor": ["reasoning_engine", "researcher", "writer", "auditor"],
         "super_reasoner": ["search_engine", "reasoning_engine"],
         "test_runner": ["*"],

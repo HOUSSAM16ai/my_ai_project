@@ -10,6 +10,8 @@ import os
 import sys
 from unittest.mock import MagicMock
 
+from llama_index.core.schema import NodeWithScore, TextNode
+
 # Mock heavy dependencies BEFORE importing app
 sys.modules["llama_index.vector_stores.supabase"] = MagicMock()
 sys.modules["llama_index.vector_stores.supabase"].SupabaseVectorStore = MagicMock()
@@ -23,7 +25,6 @@ sys.path.append(os.getcwd())
 from app.core.ai_gateway import AIClient
 from app.services.kagent import AgentRequest, KagentMesh
 from app.services.reasoning.service import ReasoningService
-from llama_index.core.schema import NodeWithScore, TextNode
 
 
 class MockGeniusAI(AIClient):
@@ -37,6 +38,7 @@ class MockGeniusAI(AIClient):
     async def generate_text(self, prompt: str, system_prompt: str = "") -> object:
         class Response:
             pass
+
         res = Response()
 
         # If the mock retriever works, the prompt will contain the context
@@ -78,9 +80,10 @@ class MockGeniusAI(AIClient):
             )
         else:
             # Fallback for simple prompts
-             res.content = "General reasoning step..."
+            res.content = "General reasoning step..."
 
         return res
+
 
 async def verify_kagent_bac():
     print("🚀 Initializing Kagent Mesh for Baccalaureate Test...")
@@ -92,8 +95,15 @@ async def verify_kagent_bac():
     # 2. Create a Mock Retriever to inject into the Service
     # This keeps the Service code clean while allowing the test to run without DB
     mock_retriever = MagicMock()
+
     async def async_retrieve(query):
-        return [NodeWithScore(node=TextNode(text="Probabilities in Algerian Baccalaureate usually involve Urns."), score=0.9)]
+        return [
+            NodeWithScore(
+                node=TextNode(text="Probabilities in Algerian Baccalaureate usually involve Urns."),
+                score=0.9,
+            )
+        ]
+
     mock_retriever.aretrieve.side_effect = async_retrieve
 
     # 3. Register Reasoning Service with injected dependencies
@@ -117,9 +127,8 @@ async def verify_kagent_bac():
         target_service="reasoning_engine",
         action="solve_deeply",
         payload={"query": problem_text},
-        security_token="internal-mesh-key" # Allowed via ACL
+        security_token="internal-mesh-key",  # Allowed via ACL
     )
-
 
     print(f"📨 Sending Request to Mesh: {problem_text[:50]}...")
 
@@ -138,6 +147,7 @@ async def verify_kagent_bac():
             print("\n⚠️  WARNING: Math result mismatch.")
     else:
         print(f"\n❌ Kagent Execution Failed: {response.error}")
+
 
 if __name__ == "__main__":
     asyncio.run(verify_kagent_bac())

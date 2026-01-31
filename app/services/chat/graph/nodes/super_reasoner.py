@@ -33,7 +33,7 @@ async def super_reasoner_node(state: AgentState, kagent: KagentMesh) -> dict:
         target_service="reasoning_engine",
         action="solve_deeply",
         payload={"query": last_message},
-        security_token="supervisor-sys-key"  # Simulating authorized token
+        security_token="supervisor-sys-key",  # Simulating authorized token
     )
 
     # Execute via Mesh
@@ -45,7 +45,9 @@ async def super_reasoner_node(state: AgentState, kagent: KagentMesh) -> dict:
         logger.info(f"Reasoning completed in {metrics.get('duration_ms', 0):.2f}ms")
     else:
         logger.error(f"Kagent execution failed: {response.error}")
-        response_text = "I apologize, but I encountered an internal error while accessing my reasoning engine."
+        response_text = (
+            "I apologize, but I encountered an internal error while accessing my reasoning engine."
+        )
 
     # Return state update
     return {

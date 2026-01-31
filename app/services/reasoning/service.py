@@ -30,26 +30,27 @@ class ReasoningService:
         Action: solve_deeply.
         تنفيذ سير العمل الكامل (Expansion -> Evaluation -> Selection).
         """
-        logger.info(f"Reasoning Service received query: {query[:50]}... (Strategy: {strategy_type})")
+        logger.info(
+            f"Reasoning Service received query: {query[:50]}... (Strategy: {strategy_type})"
+        )
 
         # 1. Strategy Selection
         if strategy_type == "math":
             strategy = MathReasoningStrategy(self.ai_client)
         elif strategy_type == "general":
             strategy = RMCTSStrategy(self.ai_client)
-        else:
+        elif any(
+            k in query.lower()
+            for k in ["urn", "probabilit", "math", "calculate", "solve", "equation"]
+        ):
             # Auto-detection
-            if any(k in query.lower() for k in ["urn", "probabilit", "math", "calculate", "solve", "equation"]):
-                strategy = MathReasoningStrategy(self.ai_client)
-            else:
-                strategy = RMCTSStrategy(self.ai_client)
+            strategy = MathReasoningStrategy(self.ai_client)
+        else:
+            strategy = RMCTSStrategy(self.ai_client)
 
         # 2. Workflow Instantiation
         workflow = SuperReasoningWorkflow(
-            client=self.ai_client,
-            timeout=120,
-            strategy=strategy,
-            retriever=self.retriever
+            client=self.ai_client, timeout=120, strategy=strategy, retriever=self.retriever
         )
 
         # 3. Execution

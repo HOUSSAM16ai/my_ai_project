@@ -21,7 +21,9 @@ class ServiceProfile(BaseModel):
     name: str = Field(..., description="اسم الخدمة الفريد (e.g., 'reasoning_engine')")
     version: str = Field("1.0.0", description="إصدار الخدمة")
     description: str = Field("", description="وصف موجز لوظيفة الخدمة")
-    capabilities: list[str] = Field(default_factory=list, description="قائمة القدرات أو الأوامر المدعومة")
+    capabilities: list[str] = Field(
+        default_factory=list, description="قائمة القدرات أو الأوامر المدعومة"
+    )
     auth_required: bool = Field(True, description="هل تتطلب الخدمة تحقق أمني؟")
 
 
@@ -47,4 +49,6 @@ class AgentResponse(BaseModel):
     status: str = Field(..., description="حالة التنفيذ ('success', 'error')")
     data: dict[str, Any] | Any = Field(None, description="مخرجات التنفيذ")
     error: str | None = Field(None, description="رسالة الخطأ إن وجدت")
-    metrics: dict[str, Any] = Field(default_factory=dict, description="قياسات الأداء (Time, Tokens)")
+    metrics: dict[str, Any] = Field(
+        default_factory=dict, description="قياسات الأداء (Time, Tokens)"
+    )

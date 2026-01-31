@@ -27,14 +27,16 @@ class KagentMesh:
         self._security = SecurityMesh()
         logger.info("🚀 Kagent Mesh Initialized.")
 
-    def register_service(self, name: str, implementation: Any, capabilities: list[str] = None):
+    def register_service(
+        self, name: str, implementation: Any, capabilities: list[str] | None = None
+    ):
         """
         تسجيل خدمة في الشبكة.
         """
         profile = ServiceProfile(
             name=name,
             capabilities=capabilities or [],
-            description=f"Auto-registered service {name}"
+            description=f"Auto-registered service {name}",
         )
         self._registry.register(profile, implementation)
 
@@ -43,20 +45,18 @@ class KagentMesh:
         تنفيذ إجراء عبر الشبكة.
         """
         # 1. Security Check
-        if not self._security.verify_access(request.caller_id, request.target_service, request.security_token):
+        if not self._security.verify_access(
+            request.caller_id, request.target_service, request.security_token
+        ):
             return AgentResponse(
-                status="error",
-                error="Security verification failed. Access Denied.",
-                metrics={}
+                status="error", error="Security verification failed. Access Denied.", metrics={}
             )
 
         # 2. Service Discovery
         implementation = self._registry.get_implementation(request.target_service)
         if not implementation:
             return AgentResponse(
-                status="error",
-                error=f"Service '{request.target_service}' not found.",
-                metrics={}
+                status="error", error=f"Service '{request.target_service}' not found.", metrics={}
             )
 
         # 3. Action Resolution
@@ -69,10 +69,10 @@ class KagentMesh:
             method = getattr(implementation, "execute", None)
 
         if not method:
-             return AgentResponse(
+            return AgentResponse(
                 status="error",
                 error=f"Action '{request.action}' not found on service '{request.target_service}'.",
-                metrics={}
+                metrics={},
             )
 
         # 4. Execution with Telemetry
@@ -81,21 +81,10 @@ class KagentMesh:
             # Or pass it as a single 'payload' arg.
             # We'll adopt a convention: method(**payload)
             result, metrics = await PerformanceMonitor.trace_execution(
-                request.target_service,
-                request.action,
-                method,
-                **request.payload
+                request.target_service, request.action, method, **request.payload
             )
 
-            return AgentResponse(
-                status="success",
-                data=result,
-                metrics=metrics
-            )
+            return AgentResponse(status="success", data=result, metrics=metrics)
 
         except Exception as e:
-            return AgentResponse(
-                status="error",
-                error=str(e),
-                metrics={}
-            )
+            return AgentResponse(status="error", error=str(e), metrics={})

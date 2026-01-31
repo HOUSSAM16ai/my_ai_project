@@ -103,11 +103,11 @@ __all__ = [
     "Container",
     "get_db",
     "get_health_check_service",
+    "get_kagent_mesh",
     "get_logger",
     "get_session",
     "get_settings",
     "get_system_service",
-    "get_kagent_mesh",
 ]
 
 
@@ -124,6 +124,6 @@ def _create_kagent_mesh():
     return KagentMesh()
 
 
-from app.services.kagent.interface import KagentMesh  # noqa: E402
+from app.services.kagent.interface import KagentMesh
 
 Container.register_singleton_factory(KagentMesh, _create_kagent_mesh)
