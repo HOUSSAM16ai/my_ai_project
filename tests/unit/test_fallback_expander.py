@@ -1,6 +1,6 @@
 import unittest
 
-from app.services.search_engine.fallback_expander import FallbackQueryExpander
+from microservices.research_agent.src.search_engine.fallback_expander import FallbackQueryExpander
 
 
 class TestFallbackQueryExpander(unittest.TestCase):

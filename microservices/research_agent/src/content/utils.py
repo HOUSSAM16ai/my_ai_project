@@ -1,6 +1,6 @@
 import difflib
 
-from app.services.content.constants import BRANCH_MAP, SET_MAP, SUBJECT_MAP
+from microservices.research_agent.src.content.constants import BRANCH_MAP, SET_MAP, SUBJECT_MAP
 
 
 def fuzzy_match(

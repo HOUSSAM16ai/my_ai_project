@@ -5,9 +5,9 @@ import os
 from dataclasses import dataclass
 
 from app.core.logging import get_logger
-from app.services.search_engine.query_refiner import get_refined_query
-from app.services.search_engine.reranker import get_reranker
-from app.services.search_engine.retriever import get_retriever
+from microservices.research_agent.src.search_engine.query_refiner import get_refined_query
+from microservices.research_agent.src.search_engine.reranker import get_reranker
+from microservices.research_agent.src.search_engine.retriever import get_retriever
 
 logger = get_logger(__name__)
 

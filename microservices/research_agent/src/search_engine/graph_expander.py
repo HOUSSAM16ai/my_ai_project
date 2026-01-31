@@ -203,7 +203,7 @@ async def enrich_search_with_graph(
         return initial_results
 
     # Fetch full content for related items
-    from app.services.content.service import content_service
+    from microservices.research_agent.src.content.service import content_service
 
     try:
         related_content = await content_service.search_content(

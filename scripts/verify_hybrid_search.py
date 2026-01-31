@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from app.services.search_engine.hybrid import hybrid_search
+from microservices.research_agent.src.search_engine.hybrid import hybrid_search
 
 # Mute noisy logs
 logging.getLogger("httpx").setLevel(logging.WARNING)

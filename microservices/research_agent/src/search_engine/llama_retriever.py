@@ -5,7 +5,7 @@ from sqlalchemy import text
 from app.core.database import async_session_factory
 from app.core.interfaces import IKnowledgeRetriever
 from app.core.logging import get_logger
-from app.services.search_engine.hybrid import hybrid_search
+from microservices.research_agent.src.search_engine.hybrid import hybrid_search
 
 logger = get_logger("graph-retriever")
 

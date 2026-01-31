@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.services.content.service import ContentService
+from microservices.research_agent.src.content.service import ContentService
 
 
 @pytest.mark.asyncio

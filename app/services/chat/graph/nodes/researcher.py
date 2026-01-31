@@ -13,7 +13,7 @@ from app.services.chat.graph.domain import WriterIntent
 from app.services.chat.graph.search import build_graph_search_plan
 from app.services.chat.graph.state import AgentState
 from app.services.chat.tools import ToolRegistry
-from app.services.content.constants import BRANCH_MAP, SUBJECT_MAP
+from microservices.research_agent.src.content.constants import BRANCH_MAP, SUBJECT_MAP
 
 logger = logging.getLogger(__name__)
 

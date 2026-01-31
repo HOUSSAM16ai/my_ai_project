@@ -3,7 +3,7 @@ import uuid
 from app.core.gateway.simple_client import SimpleAIClient
 from app.core.interfaces import IReasoningStrategy
 from app.core.logging import get_logger
-from app.services.reasoning.models import EvaluationResult, ReasoningNode
+from microservices.reasoning_agent.src.models import EvaluationResult, ReasoningNode
 
 logger = get_logger("reasoning-strategy")
 

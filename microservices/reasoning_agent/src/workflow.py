@@ -4,8 +4,8 @@ from llama_index.core.workflow import Context, Event, StartEvent, StopEvent, Wor
 from app.core.gateway.simple_client import SimpleAIClient
 from app.core.interfaces import IKnowledgeRetriever, IReasoningStrategy
 from app.core.logging import get_logger
-from app.services.reasoning.search_strategy import RMCTSStrategy
-from app.services.search_engine.llama_retriever import KnowledgeGraphRetriever
+from microservices.reasoning_agent.src.search_strategy import RMCTSStrategy
+from microservices.research_agent.src.search_engine.llama_retriever import KnowledgeGraphRetriever
 
 logger = get_logger("super-reasoner")
 
