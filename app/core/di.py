@@ -107,4 +107,23 @@ __all__ = [
     "get_session",
     "get_settings",
     "get_system_service",
+    "get_kagent_mesh",
 ]
+
+
+def get_kagent_mesh():
+    from app.services.kagent.interface import KagentMesh
+
+    return Container.resolve(KagentMesh)
+
+
+# Bootstrap Kagent as a Lazy Singleton
+def _create_kagent_mesh():
+    from app.services.kagent.interface import KagentMesh
+
+    return KagentMesh()
+
+
+from app.services.kagent.interface import KagentMesh  # noqa: E402
+
+Container.register_singleton_factory(KagentMesh, _create_kagent_mesh)

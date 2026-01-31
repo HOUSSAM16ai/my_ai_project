@@ -2,47 +2,23 @@
 Super Reasoner Node.
 --------------------
 A LangGraph node that orchestrates the "Deep Reasoning" workflow using LlamaIndex and the Knowledge Graph.
+NOW INTEGRATED WITH KAGENT MESH.
 """
 
 from langchain_core.messages import AIMessage
 
-from app.core.ai_gateway import AIClient
 from app.core.logging import get_logger
 from app.services.chat.graph.state import AgentState
-from app.services.reasoning.search_strategy import MathReasoningStrategy, RMCTSStrategy
-from app.services.reasoning.workflow import SuperReasoningWorkflow
+from app.services.kagent import AgentRequest, KagentMesh
 
 logger = get_logger("super-reasoner-node")
 
 
-def _detect_math_intent(query: str) -> bool:
+async def super_reasoner_node(state: AgentState, kagent: KagentMesh) -> dict:
     """
-    Simple heuristic to detect if the query requires the Math Reasoning Strategy.
+    Super Reasoner Node: Executes the deep reasoning workflow via Kagent Mesh.
     """
-    keywords = [
-        "probability",
-        "chance",
-        "odds",
-        "calculate",
-        "solve",
-        "equation",
-        "theorem",
-        "integral",
-        "derivative",
-        "matrix",
-        "urn",
-        "dice",
-        "coin",
-    ]
-    query_lower = query.lower()
-    return any(k in query_lower for k in keywords)
-
-
-async def super_reasoner_node(state: AgentState, ai_client: AIClient) -> dict:
-    """
-    Super Reasoner Node: Executes the deep reasoning workflow.
-    """
-    logger.info("🧠 Super Reasoner Activated.")
+    logger.info("🧠 Super Reasoner Activated via Kagent Mesh.")
 
     messages = state.get("messages", [])
     if not messages:
@@ -51,27 +27,25 @@ async def super_reasoner_node(state: AgentState, ai_client: AIClient) -> dict:
 
     last_message = messages[-1].content
 
-    # Select Strategy based on content
-    if _detect_math_intent(last_message):
-        logger.info("Math/Probability context detected. Engaging MathReasoningStrategy.")
-        strategy = MathReasoningStrategy(ai_client)
+    # Prepare Kagent Request
+    request = AgentRequest(
+        caller_id="super_reasoner",
+        target_service="reasoning_engine",
+        action="solve_deeply",
+        payload={"query": last_message},
+        security_token="supervisor-sys-key"  # Simulating authorized token
+    )
+
+    # Execute via Mesh
+    response = await kagent.execute_action(request)
+
+    if response.status == "success":
+        response_text = str(response.data)
+        metrics = response.metrics
+        logger.info(f"Reasoning completed in {metrics.get('duration_ms', 0):.2f}ms")
     else:
-        logger.info("General context detected. Engaging RMCTSStrategy.")
-        strategy = RMCTSStrategy(ai_client)
-
-    # Instantiate workflow with selected strategy
-    workflow = SuperReasoningWorkflow(client=ai_client, timeout=120, strategy=strategy)
-
-    # Run workflow
-    try:
-        logger.info(f"Running workflow for query: {last_message[:50]}...")
-        result = await workflow.run(query=last_message)
-        response_text = str(result)
-    except Exception as e:
-        logger.error(f"Super Reasoner crashed: {e}")
-        response_text = (
-            "I apologize, but I encountered an internal error while accessing my knowledge graph."
-        )
+        logger.error(f"Kagent execution failed: {response.error}")
+        response_text = "I apologize, but I encountered an internal error while accessing my reasoning engine."
 
     # Return state update
     return {
