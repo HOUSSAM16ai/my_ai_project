@@ -17,13 +17,15 @@ from app.services.chat.graph.nodes.supervisor import supervisor_node
 from app.services.chat.graph.nodes.writer import writer_node
 from app.services.chat.graph.state import AgentState
 from app.services.chat.tools import ToolRegistry
-from app.services.reasoning.service import ReasoningService
 
 
 def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object:
     """
     بناء الرسم البياني للوكلاء المتعددين.
     """
+    # Defer import to prevent circular dependency / eager loading issues
+    from app.services.reasoning.service import ReasoningService
+
     # Initialize Kagent Mesh and Register Services
     kagent = get_kagent_mesh()
     reasoning_service = ReasoningService(ai_client)
