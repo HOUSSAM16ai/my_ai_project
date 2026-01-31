@@ -7,7 +7,10 @@ Allows agents to register their capabilities and look up others.
 
 from typing import Any
 
+from fastapi import FastAPI
+
 from app.core.logging import get_logger
+from app.services.kagent.adapters import BaseAgentAdapter, LocalAgentAdapter
 from app.services.kagent.domain import ServiceProfile
 
 logger = get_logger("kagent-registry")
@@ -20,23 +23,38 @@ class ServiceRegistry:
     """
 
     def __init__(self):
-        self._services: dict[str, Any] = {}
+        self._services: dict[str, BaseAgentAdapter] = {}
         self._profiles: dict[str, ServiceProfile] = {}
 
     def register(self, profile: ServiceProfile, implementation: Any) -> None:
         """
         تسجيل خدمة جديدة في الشبكة.
+
+        Note: Automatically wraps FastAPI apps in LocalAgentAdapter.
         """
         if profile.name in self._services:
             logger.warning(f"Service '{profile.name}' is being overwritten in registry.")
 
-        self._services[profile.name] = implementation
+        adapter: BaseAgentAdapter
+
+        if isinstance(implementation, FastAPI):
+            adapter = LocalAgentAdapter(implementation)
+        elif isinstance(implementation, BaseAgentAdapter):
+            adapter = implementation
+        else:
+            # Fallback for legacy objects: Wrap in a Dummy Adapter or raise error?
+            # For "Unification", we enforce the pattern.
+            raise ValueError(
+                f"Service '{profile.name}' implementation must be a FastAPI app or BaseAgentAdapter. Got {type(implementation)}"
+            )
+
+        self._services[profile.name] = adapter
         self._profiles[profile.name] = profile
         logger.info(f"✅ Registered Service: {profile.name} (v{profile.version})")
 
-    def get_implementation(self, service_name: str) -> Any | None:
+    def get_implementation(self, service_name: str) -> BaseAgentAdapter | None:
         """
-        استرجاع تنفيذ الخدمة (Instance) بواسطة الاسم.
+        استرجاع محول الخدمة (Adapter) بواسطة الاسم.
         """
         return self._services.get(service_name)
 

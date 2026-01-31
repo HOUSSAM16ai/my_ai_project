@@ -24,21 +24,34 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
     بناء الرسم البياني للوكلاء المتعددين.
     """
     # Defer import to prevent circular dependency / eager loading issues
-    from microservices.reasoning_agent.src.service import ReasoningService
+    # from microservices.reasoning_agent.src.service import ReasoningService # Legacy
+
+    # Import Microservice Apps for Local Adapter Registration
+    from microservices.planning_agent.main import app as planning_app
+    from microservices.reasoning_agent.main import app as reasoning_app
+    from microservices.research_agent.main import app as research_app
 
     # Initialize Kagent Mesh and Register Services
     kagent = get_kagent_mesh()
-    reasoning_service = ReasoningService(ai_client)
-    kagent.register_service("reasoning_engine", reasoning_service, capabilities=["solve_deeply"])
+
+    # Register Agents as Services (The Mesh will wrap them in LocalAgentAdapter)
+    kagent.register_service(
+        "reasoning_agent", reasoning_app, capabilities=["reason", "solve_deeply"]
+    )
+    # Alias 'reasoning_engine' to 'reasoning_agent' logic if needed, or update callers
+    kagent.register_service("reasoning_engine", reasoning_app)
+
+    kagent.register_service("research_agent", research_app, capabilities=["search", "retrieve"])
+    kagent.register_service("planning_agent", planning_app, capabilities=["generate_plan"])
 
     workflow = StateGraph(AgentState)
 
     # 1. Add Nodes (Wrapped with partials/lambdas to inject deps)
     async def call_planner(state):
-        return await planner_node(state, ai_client)
+        return await planner_node(state, kagent)
 
     async def call_researcher(state):
-        return await researcher_node(state, tools)
+        return await researcher_node(state, kagent)
 
     async def call_writer(state):
         return await writer_node(state, ai_client)

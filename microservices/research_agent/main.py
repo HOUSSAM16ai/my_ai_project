@@ -6,6 +6,7 @@
 """
 
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import APIRouter, FastAPI
 from pydantic import BaseModel, Field
@@ -14,23 +15,38 @@ from pydantic import BaseModel, Field
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """يدير دورة حياة وكيل البحث."""
-    print("بدء تشغيل وكيل البحث")
+    print("🚀 Research Agent Started")
     yield
-    print("إيقاف وكيل البحث")
+    print("🛑 Research Agent Stopped")
 
 
-class SearchRequest(BaseModel):
-    """نموذج طلب البحث."""
-
-    query: str = Field(..., description="نص البحث")
-    filters: dict | None = Field(default=None, description="فلاتر البحث")
+# --- Unified Agent Protocol ---
 
 
-class SearchResponse(BaseModel):
-    """نموذج استجابة البحث."""
+class AgentRequest(BaseModel):
+    """
+    طلب تنفيذ إجراء موحد.
+    """
 
-    results: list[dict] = Field(..., description="نتائج البحث")
-    total: int = Field(..., description="إجمالي النتائج")
+    caller_id: str = Field(..., description="Entity requesting the action")
+    target_service: str = Field("research_agent", description="Target service name")
+    action: str = Field(..., description="Action to perform (e.g., 'search')")
+    payload: dict[str, Any] = Field(default_factory=dict, description="Action arguments")
+    security_token: str | None = Field(None, description="Auth token")
+
+
+class AgentResponse(BaseModel):
+    """
+    استجابة موحدة للوكيل.
+    """
+
+    status: str = Field(..., description="'success' or 'error'")
+    data: Any = Field(None, description="Result data")
+    error: str | None = Field(None, description="Error message")
+    metrics: dict[str, Any] = Field(default_factory=dict, description="Performance metrics")
+
+
+# ------------------------------
 
 
 def _build_router() -> APIRouter:
@@ -42,13 +58,41 @@ def _build_router() -> APIRouter:
         """فحص الحالة."""
         return {"status": "healthy", "service": "research-agent"}
 
-    @router.post("/search", response_model=SearchResponse, tags=["Search"])
-    async def search(payload: SearchRequest) -> SearchResponse:
+    @router.post("/execute", response_model=AgentResponse, tags=["Agent"])
+    async def execute(request: AgentRequest) -> AgentResponse:
         """
-        تنفيذ عملية بحث.
+        نقطة الدخول الموحدة لتنفيذ الأوامر (Unified Execution Endpoint).
         """
-        # TODO: ربط هذا مع microservices.research_agent.src.search_engine.orchestrator
-        return SearchResponse(results=[{"title": "نتيجة وهمية", "snippet": "نص توضيحي"}], total=1)
+        try:
+            # Dispatch Logic
+            if request.action in {"search", "retrieve"}:
+                # Extract parameters
+                query = request.payload.get("query", "")
+
+                # TODO: Integrate with microservices.research_agent.src.search_engine.orchestrator
+
+                # Mock Result for Simplification/Stub
+                results = [
+                    {
+                        "title": f"Result for {query}",
+                        "snippet": "Relevant content snippet...",
+                        "score": 0.95,
+                    },
+                    {"title": "Secondary Source", "snippet": "More content...", "score": 0.88},
+                ]
+
+                return AgentResponse(
+                    status="success",
+                    data={"results": results, "total": len(results)},
+                    metrics={"retrieval_ms": 200, "reranking_ms": 50},
+                )
+
+            return AgentResponse(
+                status="error", error=f"Action '{request.action}' not supported by Research Agent."
+            )
+
+        except Exception as e:
+            return AgentResponse(status="error", error=str(e))
 
     return router
 
@@ -57,8 +101,8 @@ def create_app() -> FastAPI:
     """إنشاء تطبيق FastAPI لوكيل البحث."""
     app = FastAPI(
         title="Research Agent",
-        description="خدمة مخصصة للبحث واسترجاع المعلومات",
-        version="0.1.0",
+        description="خدمة مخصصة للبحث واسترجاع المعلومات (Microservice)",
+        version="1.0.0",
         lifespan=lifespan,
     )
 

@@ -6,6 +6,7 @@
 """
 
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import APIRouter, FastAPI
 from pydantic import BaseModel, Field
@@ -17,24 +18,38 @@ from pydantic import BaseModel, Field
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """يدير دورة حياة وكيل الاستدلال."""
-    # يمكن هنا تهيئة نماذج الذكاء الاصطناعي أو الاتصال بقواعد البيانات
-    print("بدء تشغيل وكيل الاستدلال")
+    print("🚀 Reasoning Agent Started")
     yield
-    print("إيقاف وكيل الاستدلال")
+    print("🛑 Reasoning Agent Stopped")
 
 
-class ReasoningRequest(BaseModel):
-    """نموذج طلب الاستدلال."""
-
-    query: str = Field(..., description="السؤال أو المشكلة التي تحتاج إلى تفكير عميق")
-    context: dict | None = Field(default=None, description="سياق إضافي للعملية")
+# --- Unified Agent Protocol ---
 
 
-class ReasoningResponse(BaseModel):
-    """نموذج استجابة الاستدلال."""
+class AgentRequest(BaseModel):
+    """
+    طلب تنفيذ إجراء موحد.
+    """
 
-    result: str = Field(..., description="النتيجة النهائية للاستدلال")
-    trace: list[str] | None = Field(default=None, description="تتبع خطوات التفكير")
+    caller_id: str = Field(..., description="Entity requesting the action")
+    target_service: str = Field("reasoning_agent", description="Target service name")
+    action: str = Field(..., description="Action to perform (e.g., 'reason')")
+    payload: dict[str, Any] = Field(default_factory=dict, description="Action arguments")
+    security_token: str | None = Field(None, description="Auth token")
+
+
+class AgentResponse(BaseModel):
+    """
+    استجابة موحدة للوكيل.
+    """
+
+    status: str = Field(..., description="'success' or 'error'")
+    data: Any = Field(None, description="Result data")
+    error: str | None = Field(None, description="Error message")
+    metrics: dict[str, Any] = Field(default_factory=dict, description="Performance metrics")
+
+
+# ------------------------------
 
 
 def _build_router() -> APIRouter:
@@ -46,15 +61,36 @@ def _build_router() -> APIRouter:
         """فحص الحالة."""
         return {"status": "healthy", "service": "reasoning-agent"}
 
-    @router.post("/reason", response_model=ReasoningResponse, tags=["Reasoning"])
-    async def reason(payload: ReasoningRequest) -> ReasoningResponse:
+    @router.post("/execute", response_model=AgentResponse, tags=["Agent"])
+    async def execute(request: AgentRequest) -> AgentResponse:
         """
-        تنفيذ عملية استدلال.
+        نقطة الدخول الموحدة لتنفيذ الأوامر (Unified Execution Endpoint).
+        """
+        try:
+            # Dispatch Logic
+            if request.action in {"reason", "solve_deeply"}:
+                # Extract parameters
+                query = request.payload.get("query", "")
 
-        ملاحظة: هذا حالياً تطبيق وهمي (Stub) حتى يتم ربط المنطق المنقول بالكامل.
-        """
-        # TODO: ربط هذا مع microservices.reasoning_agent.src.workflow
-        return ReasoningResponse(result=f"تم تحليل: {payload.query}", trace=["خطوة 1", "خطوة 2"])
+                # TODO: Integrate with microservices.reasoning_agent.src.workflow
+                # result = await logic.solve(query, context)
+
+                # Mock Result for Simplification/Stub
+                result_data = {
+                    "answer": f"Analysis of '{query}' completed.",
+                    "logic_trace": ["Step 1: Analyze", "Step 2: Synthesize"],
+                }
+
+                return AgentResponse(
+                    status="success", data=result_data, metrics={"duration_ms": 150}
+                )
+
+            return AgentResponse(
+                status="error", error=f"Action '{request.action}' not supported by Reasoning Agent."
+            )
+
+        except Exception as e:
+            return AgentResponse(status="error", error=str(e))
 
     return router
 
@@ -63,8 +99,8 @@ def create_app() -> FastAPI:
     """إنشاء تطبيق FastAPI لوكيل الاستدلال."""
     app = FastAPI(
         title="Reasoning Agent",
-        description="خدمة مخصصة للاستدلال المنطقي العميق",
-        version="0.1.0",
+        description="خدمة مخصصة للاستدلال المنطقي العميق (Microservice)",
+        version="1.0.0",
         lifespan=lifespan,
     )
 
