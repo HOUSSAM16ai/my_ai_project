@@ -18,12 +18,31 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # أوامر Git المسموحة
-ALLOWED_GIT_COMMANDS = frozenset({
-    "status", "log", "diff", "branch", "show", "blame",
-    "fetch", "pull", "push", "commit", "add", "reset",
-    "checkout", "merge", "rebase", "stash", "tag",
-    "remote", "init", "clone", "config",
-})
+ALLOWED_GIT_COMMANDS = frozenset(
+    {
+        "status",
+        "log",
+        "diff",
+        "branch",
+        "show",
+        "blame",
+        "fetch",
+        "pull",
+        "push",
+        "commit",
+        "add",
+        "reset",
+        "checkout",
+        "merge",
+        "rebase",
+        "stash",
+        "tag",
+        "remote",
+        "init",
+        "clone",
+        "config",
+    }
+)
 
 
 async def execute_git(
@@ -45,7 +64,7 @@ async def execute_git(
         dict: {success, stdout, stderr, return_code, error}
     """
     subcommand = subcommand.strip().lower()
-    
+
     logger.info(f"Git: Executing 'git {subcommand} {args}'")
 
     # 1. التحقق من صحة الأمر
@@ -87,13 +106,12 @@ async def execute_git(
 
     # 5. تنفيذ الأمر
     try:
-        result = await asyncio.wait_for(
+        return await asyncio.wait_for(
             _run_git_command(command, work_dir),
             timeout=timeout,
         )
-        return result
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning(f"Git: Command timed out after {timeout}s")
         return {
             "success": False,
@@ -124,6 +142,7 @@ async def _run_git_command(command: str, cwd: Path) -> dict[str, object]:
         process = subprocess.run(
             command,
             shell=True,
+            check=False,
             cwd=str(cwd),
             capture_output=True,
             text=True,

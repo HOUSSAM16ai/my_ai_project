@@ -66,6 +66,7 @@ class IntentDetector:
         elif use_registry:
             # استخدام الأنماط من السجل (OCP)
             from app.services.chat.intent_registry import IntentPatternRegistry
+
             self._patterns = IntentPatternRegistry.get_all()
         else:
             # السلوك القديم - بناء الأنماط داخلياً

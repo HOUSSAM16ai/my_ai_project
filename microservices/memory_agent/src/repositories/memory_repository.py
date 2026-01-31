@@ -140,11 +140,7 @@ class MemoryRepository:
         Returns:
             Memory | None: عنصر الذاكرة أو None.
         """
-        statement = (
-            select(Memory)
-            .options(selectinload(Memory.tags))
-            .where(Memory.id == memory_id)
-        )
+        statement = select(Memory).options(selectinload(Memory.tags)).where(Memory.id == memory_id)
         result = await self._session.execute(statement)
         return result.scalar_one_or_none()
 

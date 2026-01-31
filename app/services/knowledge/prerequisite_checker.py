@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ReadinessReport:
     """تقرير الجاهزية."""
-    
+
     concept_id: str
     concept_name: str
     is_ready: bool
@@ -31,13 +31,13 @@ class PrerequisiteChecker:
     """
     يتحقق من جاهزية الطالب لتعلم مفهوم جديد.
     """
-    
+
     MINIMUM_MASTERY = 0.5  # الحد الأدنى للإتقان
-    GOOD_MASTERY = 0.7     # الإتقان الجيد
-    
+    GOOD_MASTERY = 0.7  # الإتقان الجيد
+
     def __init__(self, concept_graph: ConceptGraph | None = None) -> None:
         self.graph = concept_graph or get_concept_graph()
-    
+
     def check_readiness(
         self,
         profile: StudentProfile,
@@ -62,43 +62,39 @@ class PrerequisiteChecker:
                     weak_prerequisites=[],
                     recommendation="هذا المفهوم غير موجود في قاعدة البيانات.",
                 )
-        
+
         concept = self.graph.concepts[concept_id]
         prerequisites = self.graph.get_prerequisites(concept_id)
-        
+
         missing = []
         weak = []
         total_score = 0.0
-        
+
         for prereq in prerequisites:
             if prereq.concept_id in profile.topic_mastery:
                 mastery = profile.topic_mastery[prereq.concept_id].mastery_score
                 total_score += mastery
-                
+
                 if mastery < self.MINIMUM_MASTERY:
                     weak.append(prereq.name_ar)
             else:
                 missing.append(prereq.name_ar)
                 total_score += 0  # لم يُدرس بعد
-        
+
         # حساب الجاهزية
-        if prerequisites:
-            readiness_score = total_score / len(prerequisites)
-        else:
-            readiness_score = 1.0  # لا توجد متطلبات
-        
+        readiness_score = (
+            total_score / len(prerequisites) if prerequisites else 1.0
+        )  # لا توجد متطلبات
+
         is_ready = len(missing) == 0 and readiness_score >= self.MINIMUM_MASTERY
-        
+
         # بناء التوصية
-        recommendation = self._build_recommendation(
-            concept.name_ar, missing, weak, readiness_score
-        )
-        
+        recommendation = self._build_recommendation(concept.name_ar, missing, weak, readiness_score)
+
         logger.info(
-            f"Readiness check for {concept_id}: "
-            f"ready={is_ready}, score={readiness_score:.0%}"
+            f"Readiness check for {concept_id}: ready={is_ready}, score={readiness_score:.0%}"
         )
-        
+
         return ReadinessReport(
             concept_id=concept_id,
             concept_name=concept.name_ar,
@@ -108,7 +104,7 @@ class PrerequisiteChecker:
             weak_prerequisites=weak,
             recommendation=recommendation,
         )
-    
+
     def _build_recommendation(
         self,
         concept_name: str,
@@ -117,23 +113,23 @@ class PrerequisiteChecker:
         score: float,
     ) -> str:
         """يبني توصية للطالب."""
-        
+
         if not missing and not weak:
             return f"🚀 أنت جاهز لتعلم {concept_name}! ابدأ الآن."
-        
+
         if missing:
             topics = "، ".join(missing[:3])
             return f"📚 قبل البدء بـ {concept_name}، تحتاج دراسة: {topics}"
-        
+
         if weak:
             topics = "، ".join(weak[:3])
             return f"📖 يُفضل مراجعة {topics} قبل البدء بـ {concept_name}"
-        
+
         if score < 0.5:
             return f"⚠️ تحتاج تعزيز الأساسيات قبل {concept_name}"
-        
+
         return f"✅ يمكنك البدء بـ {concept_name} مع بعض المراجعة"
-    
+
     def get_learning_order(
         self,
         profile: StudentProfile,
@@ -144,7 +140,7 @@ class PrerequisiteChecker:
         """
         # جمع كل المتطلبات
         all_concepts = set(target_concepts)
-        
+
         for concept_id in target_concepts:
             # إضافة المتطلبات المفقودة
             report = self.check_readiness(profile, concept_id)
@@ -152,11 +148,11 @@ class PrerequisiteChecker:
                 concept = self.graph.find_concept_by_topic(prereq_name)
                 if concept:
                     all_concepts.add(concept.concept_id)
-        
+
         # ترتيب طوبولوجي
         ordered = []
         remaining = list(all_concepts)
-        
+
         while remaining:
             # البحث عن مفهوم بدون متطلبات متبقية
             for concept_id in remaining:
@@ -168,7 +164,7 @@ class PrerequisiteChecker:
             else:
                 # حلقة دائرية - نضيف الأول
                 ordered.append(remaining.pop(0))
-        
+
         return ordered
 
 

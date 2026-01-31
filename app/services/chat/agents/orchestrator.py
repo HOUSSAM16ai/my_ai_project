@@ -206,17 +206,22 @@ class OrchestratorAgent:
 
         # Step 2: Determine if user wants solution
         writer_intent = RegexIntentDetector().analyze(question)
-        
+
         # Logic: Only include solution if EXPLICITLY requested, NOT by default
         include_solution = writer_intent == WriterIntent.SOLUTION_REQUEST
         exclude_solution = writer_intent == WriterIntent.QUESTION_ONLY_REQUEST
-        
+
         # Log for debugging
-        logger.info(f"Writer intent: {writer_intent}, include_solution: {include_solution}, exclude_solution: {exclude_solution}")
-        
+        logger.info(
+            f"Writer intent: {writer_intent}, include_solution: {include_solution}, exclude_solution: {exclude_solution}"
+        )
+
         raw_data = await self.tools.execute(
             "get_content_raw",
-            {"content_id": content_id, "include_solution": include_solution and not exclude_solution},
+            {
+                "content_id": content_id,
+                "include_solution": include_solution and not exclude_solution,
+            },
         )
 
         if raw_data and raw_data.get("content"):

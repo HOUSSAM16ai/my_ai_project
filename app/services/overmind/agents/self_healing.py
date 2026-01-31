@@ -17,7 +17,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, TypeVar
+from typing import Any, ClassVar, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -34,7 +34,7 @@ T = TypeVar("T")
 
 class FailureType(str, Enum):
     """أنواع الفشل."""
-    
+
     TIMEOUT = "timeout"
     VALIDATION = "validation"
     API_ERROR = "api_error"
@@ -46,7 +46,7 @@ class FailureType(str, Enum):
 
 class FailurePattern(BaseModel):
     """نمط فشل معروف."""
-    
+
     pattern_id: str = Field(..., description="معرف النمط")
     failure_type: FailureType
     error_signature: str = Field(..., description="توقيع الخطأ")
@@ -58,7 +58,7 @@ class FailurePattern(BaseModel):
 
 class HealingAction(BaseModel):
     """إجراء إصلاحي."""
-    
+
     action_type: str
     parameters: dict[str, Any] = Field(default_factory=dict)
     description: str = ""
@@ -69,7 +69,7 @@ class HealingAction(BaseModel):
 @dataclass
 class FailureAnalysis:
     """تحليل الفشل."""
-    
+
     failure_type: FailureType
     error_message: str
     root_cause: str
@@ -80,7 +80,7 @@ class FailureAnalysis:
 class SelfHealingAgent:
     """
     وكيل يتعلم من أخطائه باستخدام LangGraph و Kagent.
-    
+
     الاستراتيجية:
     1. يحلل الخطأ ويحدد نوعه
     2. يبحث عن أنماط مشابهة في الذاكرة
@@ -88,9 +88,9 @@ class SelfHealingAgent:
     4. ينفذ مع تعديل المعاملات
     5. يسجل النتيجة لتحسين المستقبل
     """
-    
+
     # استراتيجيات التعافي الافتراضية
-    DEFAULT_STRATEGIES = {
+    DEFAULT_STRATEGIES: ClassVar = {
         FailureType.TIMEOUT: [
             HealingAction(
                 action_type="increase_timeout",
@@ -156,7 +156,7 @@ class SelfHealingAgent:
             ),
         ],
     }
-    
+
     def __init__(self) -> None:
         self.failure_patterns: dict[str, FailurePattern] = {}
         self.recovery_history: list[dict[str, Any]] = []
@@ -166,12 +166,12 @@ class SelfHealingAgent:
         """يحلل الخطأ ويحدد نوعه والأسباب المحتملة."""
         error_msg = str(error)
         error_type = type(error).__name__
-        
+
         failure_type = self._classify_failure(error_msg, error_type)
         root_cause = self._identify_root_cause(error_msg, failure_type)
         actions = self._suggest_healing_actions(failure_type, error_msg)
         confidence = self._calculate_confidence(failure_type, error_msg)
-        
+
         analysis = FailureAnalysis(
             failure_type=failure_type,
             error_message=error_msg,
@@ -179,38 +179,38 @@ class SelfHealingAgent:
             suggested_actions=actions,
             confidence=confidence,
         )
-        
+
         logger.info(
             f"Failure analyzed: type={failure_type.value}, "
             f"confidence={confidence:.0%}, actions={len(actions)}"
         )
-        
+
         return analysis
-    
+
     def _classify_failure(self, error_msg: str, error_type: str) -> FailureType:
         """يصنف نوع الفشل."""
         msg_lower = error_msg.lower()
-        
+
         if "agent" in msg_lower and ("failed" in msg_lower or "died" in msg_lower):
             return FailureType.AGENT_ERROR
-        
+
         if "timeout" in msg_lower or "timed out" in msg_lower:
             return FailureType.TIMEOUT
-        
+
         if "validation" in msg_lower or "invalid" in msg_lower or "pydantic" in error_type.lower():
             return FailureType.VALIDATION
-        
+
         if any(x in msg_lower for x in ["api", "rate limit", "quota", "openai", "connection"]):
             return FailureType.API_ERROR
-        
+
         if any(x in msg_lower for x in ["memory", "resource", "disk", "cpu"]):
             return FailureType.RESOURCE_ERROR
-        
+
         if any(x in msg_lower for x in ["key", "index", "type", "attribute"]):
             return FailureType.LOGIC_ERROR
-        
+
         return FailureType.UNKNOWN
-    
+
     def _identify_root_cause(self, error_msg: str, failure_type: FailureType) -> str:
         """يحدد السبب الجذري."""
         causes = {
@@ -223,26 +223,28 @@ class SelfHealingAgent:
             FailureType.UNKNOWN: "سبب غير محدد",
         }
         return causes.get(failure_type, causes[FailureType.UNKNOWN])
-    
+
     def _suggest_healing_actions(
         self,
         failure_type: FailureType,
         error_msg: str,
     ) -> list[HealingAction]:
         """يقترح إجراءات الإصلاح."""
-        
+
         # البحث عن أنماط سابقة ناجحة
         pattern = self._find_similar_pattern(error_msg)
         if pattern and pattern.success_rate > 0.7:
-            return [HealingAction(
-                action_type="use_learned_strategy",
-                parameters={"strategy": pattern.recovery_strategy},
-                description=f"استخدام استراتيجية ناجحة سابقاً ({pattern.success_rate:.0%})",
-            )]
-        
+            return [
+                HealingAction(
+                    action_type="use_learned_strategy",
+                    parameters={"strategy": pattern.recovery_strategy},
+                    description=f"استخدام استراتيجية ناجحة سابقاً ({pattern.success_rate:.0%})",
+                )
+            ]
+
         # استخدام الاستراتيجيات الافتراضية
         return self.DEFAULT_STRATEGIES.get(failure_type, [])
-    
+
     def _find_similar_pattern(self, error_msg: str) -> FailurePattern | None:
         """يبحث عن نمط فشل مشابه."""
         error_sig = self._generate_error_signature(error_msg)
@@ -250,15 +252,15 @@ class SelfHealingAgent:
             if pattern.error_signature == error_sig:
                 return pattern
         return None
-    
+
     def _generate_error_signature(self, error_msg: str) -> str:
         """يولّد توقيع فريد للخطأ."""
         import re
-        signature = re.sub(r'\d+', 'N', error_msg)
+
+        signature = re.sub(r"\d+", "N", error_msg)
         signature = re.sub(r"'.*?'", "'X'", signature)
-        signature = signature[:100]
-        return signature
-    
+        return signature[:100]
+
     def _calculate_confidence(self, failure_type: FailureType, error_msg: str) -> float:
         """يحسب مستوى الثقة في التحليل."""
         base_confidence = {
@@ -274,7 +276,7 @@ class SelfHealingAgent:
         if self._find_similar_pattern(error_msg):
             confidence = min(1.0, confidence + 0.1)
         return confidence
-    
+
     async def execute_with_healing(
         self,
         func: Callable[..., T],
@@ -287,28 +289,28 @@ class SelfHealingAgent:
         """
         last_error: Exception | None = None
         current_kwargs = kwargs.copy()
-        
+
         for attempt in range(max_attempts):
             try:
                 logger.info(f"Attempt {attempt + 1}/{max_attempts}")
-                
+
                 if hasattr(func, "__await__"):
                     result = await func(*args, **current_kwargs)
                 else:
                     result = func(*args, **current_kwargs)
-                
+
                 self._record_success(last_error, current_kwargs)
                 return result
-                
+
             except Exception as e:
                 last_error = e
                 logger.warning(f"Attempt {attempt + 1} failed: {e}")
-                
+
                 analysis = self.analyze_failure(e)
-                
+
                 if analysis.suggested_actions and attempt < max_attempts - 1:
                     action = analysis.suggested_actions[0]
-                    
+
                     # تنفيذ الإجراء عبر Kagent أو دمج التقنيات
                     try:
                         current_kwargs = await self._apply_advanced_healing(
@@ -319,10 +321,10 @@ class SelfHealingAgent:
                         logger.error(f"Healing failed: {healing_err}")
                         # محاولة متابعة بسيطة إذا فشل الإصلاح المتقدم
                         pass
-        
+
         self._record_failure(last_error)
         raise last_error  # type: ignore
-    
+
     async def _apply_advanced_healing(
         self,
         action: HealingAction,
@@ -330,9 +332,9 @@ class SelfHealingAgent:
         error_context: str,
     ) -> dict[str, Any]:
         """يطبق إصلاح متقدم باستخدام تقنيات المشروع."""
-        
+
         new_kwargs = kwargs.copy()
-        
+
         # 1. استخدام DSPy للتحسين
         if action.action_type == "dspy_refine" and self.mcp:
             prompt = kwargs.get("prompt", "") or kwargs.get("query", "")
@@ -343,7 +345,7 @@ class SelfHealingAgent:
                     new_kwargs[key] = refined.get("refined_query")
                     logger.info("Refined prompt using DSPy")
                     return new_kwargs
-        
+
         # 2. استخدام Kagent للإصلاح
         if action.kagent_capability and self.mcp:
             result = await self.mcp.execute_action(
@@ -355,49 +357,49 @@ class SelfHealingAgent:
                 # دمج النتيجة المصححة
                 try:
                     import json
+
                     fixed_params = result["result"]
                     if isinstance(fixed_params, str):
                         fixed_params = json.loads(fixed_params)
                     new_kwargs.update(fixed_params)
                     logger.info("Fixed parameters using Kagent")
                     return new_kwargs
-                except:
+                except Exception:
                     pass
-        
+
         # 3. استخدام الاستراتيجيات المحلية (Fallback)
         return self._apply_local_healing(action, new_kwargs)
-    
+
     def _apply_local_healing(
         self,
         action: HealingAction,
         kwargs: dict[str, Any],
     ) -> dict[str, Any]:
         """يطبق الإجراء محلياً (بدون خدمات خارجية)."""
-        
+
         if action.action_type == "increase_timeout":
             if "timeout" in kwargs:
                 kwargs["timeout"] *= action.parameters.get("multiplier", 2.0)
-        
+
         elif action.action_type == "relax_validation":
             kwargs["strict"] = False
-        
+
         elif action.action_type == "switch_model":
             kwargs["model"] = action.parameters.get("fallback_model")
-        
-        elif action.action_type == "simplify_prompt":
-            if "max_tokens" in action.parameters:
-                kwargs["max_tokens"] = action.parameters["max_tokens"]
-        
+
+        elif action.action_type == "simplify_prompt" and "max_tokens" in action.parameters:
+            kwargs["max_tokens"] = action.parameters["max_tokens"]
+
         kwargs.update(action.parameters)
         return kwargs
-    
+
     def _record_success(self, error: Exception | None, kwargs: dict[str, Any]) -> None:
         """يسجل النجاح للتعلم."""
         if error is None:
             return
-        
+
         error_sig = self._generate_error_signature(str(error))
-        
+
         if error_sig in self.failure_patterns:
             pattern = self.failure_patterns[error_sig]
             pattern.success_rate = (pattern.success_rate * pattern.occurrence_count + 1) / (
@@ -414,13 +416,13 @@ class SelfHealingAgent:
                 recovery_strategy=str(kwargs),
                 success_rate=1.0,
             )
-        
+
         logger.info(f"Recorded successful recovery for pattern: {error_sig[:50]}")
-    
+
     def get_healing_stats(self) -> dict[str, Any]:
         """
         إحصائيات الإصلاح الذاتي (للوحة تحكم الأدمن).
-        
+
         Returns:
             dict: {
                 "total_patterns": int,
@@ -437,21 +439,18 @@ class SelfHealingAgent:
                 "success_rate": 0.0,
                 "top_patterns": [],
             }
-        
+
         # حساب معدل النجاح العام (Weighted Average)
         weighted_success = sum(
-            p.success_rate * p.occurrence_count 
-            for p in self.failure_patterns.values()
+            p.success_rate * p.occurrence_count for p in self.failure_patterns.values()
         )
         overall_rate = weighted_success / total_attempts if total_attempts > 0 else 0.0
-        
+
         # أهم الأنماط (الأكثر تكراراً)
         sorted_patterns = sorted(
-            self.failure_patterns.values(),
-            key=lambda p: p.occurrence_count,
-            reverse=True
+            self.failure_patterns.values(), key=lambda p: p.occurrence_count, reverse=True
         )
-        
+
         return {
             "total_patterns": len(self.failure_patterns),
             "total_failures": total_attempts,
@@ -461,7 +460,7 @@ class SelfHealingAgent:
                     "type": p.failure_type,
                     "count": p.occurrence_count,
                     "success": f"{p.success_rate:.0%}",
-                    "strategy": p.recovery_strategy[:50] + "..." if p.recovery_strategy else "None"
+                    "strategy": p.recovery_strategy[:50] + "..." if p.recovery_strategy else "None",
                 }
                 for p in sorted_patterns[:5]
             ],
@@ -471,9 +470,9 @@ class SelfHealingAgent:
         """يسجل الفشل للتعلم."""
         if error is None:
             return
-        
+
         error_sig = self._generate_error_signature(str(error))
-        
+
         if error_sig in self.failure_patterns:
             pattern = self.failure_patterns[error_sig]
             pattern.success_rate = (pattern.success_rate * pattern.occurrence_count) / (
@@ -490,7 +489,7 @@ class SelfHealingAgent:
                 last_occurrence=datetime.now(),
                 success_rate=0.0,
             )
-        
+
         logger.warning(f"Recorded failure for pattern: {error_sig[:50]}")
 
 

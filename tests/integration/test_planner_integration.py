@@ -19,9 +19,7 @@ async def test_planner_node_integration():
     # Mock Kagent Mesh
     mock_kagent = AsyncMock()
     mock_kagent.execute_action.return_value = AgentResponse(
-        status="success",
-        data={"steps": ["Step 1", "Step 2"]},
-        metrics={}
+        status="success", data={"steps": ["Step 1", "Step 2"]}, metrics={}
     )
 
     result = await planner_node(mock_state, mock_kagent)
@@ -50,8 +48,7 @@ async def test_planner_node_fallback():
     # Mock Kagent Failure
     mock_kagent = AsyncMock()
     mock_kagent.execute_action.return_value = AgentResponse(
-        status="error",
-        error="Service Unavailable"
+        status="error", error="Service Unavailable"
     )
 
     result = await planner_node(mock_state, mock_kagent)

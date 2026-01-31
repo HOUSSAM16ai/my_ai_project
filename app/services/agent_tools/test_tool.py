@@ -62,13 +62,12 @@ async def run_tests(
     command += " --tb=short"
 
     try:
-        result = await asyncio.wait_for(
+        return await asyncio.wait_for(
             _run_pytest(command, work_dir),
             timeout=timeout,
         )
-        return result
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning(f"Tests: Timed out after {timeout}s")
         return {
             "success": False,
@@ -103,6 +102,7 @@ async def _run_pytest(command: str, cwd: Path) -> dict[str, object]:
         process = subprocess.run(
             command,
             shell=True,
+            check=False,
             cwd=str(cwd),
             capture_output=True,
             text=True,
@@ -119,6 +119,7 @@ async def _run_pytest(command: str, cwd: Path) -> dict[str, object]:
         try:
             # البحث عن نمط مثل "5 passed, 2 failed"
             import re
+
             match = re.search(r"(\d+) passed", stdout)
             if match:
                 passed = int(match.group(1))

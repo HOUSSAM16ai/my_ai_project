@@ -41,9 +41,7 @@ class TestMCPTool:
 
         params = {
             "type": "object",
-            "properties": {
-                "query": {"type": "string", "description": "نص البحث"}
-            },
+            "properties": {"query": {"type": "string", "description": "نص البحث"}},
             "required": ["query"],
         }
 
@@ -112,7 +110,7 @@ class TestMCPTool:
                 "name": "search",
                 "description": "بحث في الكود",
                 "parameters": params,
-            }
+            },
         }
 
 
@@ -131,6 +129,7 @@ class TestMCPToolRegistry:
     def registry(self, project_root):
         """إنشاء registry للاختبارات."""
         from app.services.mcp.tools import MCPToolRegistry
+
         return MCPToolRegistry(project_root)
 
     def test_register_tool(self, registry):
@@ -188,6 +187,7 @@ class TestMCPToolRegistry:
 
         async def h1():
             return {}
+
         async def h2():
             return {}
 
@@ -207,12 +207,14 @@ class TestMCPToolRegistry:
         async def handler():
             return {}
 
-        registry.register_tool(MCPTool(
-            name="test",
-            description="اختبار",
-            handler=handler,
-            parameters={"type": "object", "properties": {"q": {"type": "string"}}},
-        ))
+        registry.register_tool(
+            MCPTool(
+                name="test",
+                description="اختبار",
+                handler=handler,
+                parameters={"type": "object", "properties": {"q": {"type": "string"}}},
+            )
+        )
 
         schema = registry.get_openai_schema()
 
@@ -299,8 +301,7 @@ class TestService:
                 await registry.register_all_tools()
 
             result = await registry.execute_tool(
-                "analyze_file",
-                {"file_path": "app/services/test.py"}
+                "analyze_file", {"file_path": "app/services/test.py"}
             )
 
         assert result["success"] is True

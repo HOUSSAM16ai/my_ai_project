@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from app.core.settings.base import BaseServiceSettings
 from microservices.user_service.settings import UserServiceSettings
 
@@ -12,7 +14,7 @@ def test_base_service_settings_defaults(monkeypatch):
     class TestSettings(BaseServiceSettings):
         SERVICE_NAME: str = "test-service"
         DATABASE_URL: str = "sqlite:///test.db"
-        model_config = { "env_file": None }
+        model_config: ClassVar = {"env_file": None}
 
     settings = TestSettings()
     assert settings.ENVIRONMENT == "development"

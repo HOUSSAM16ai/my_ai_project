@@ -16,18 +16,18 @@ from typing import Any, Protocol, runtime_checkable
 class IProjectKnowledge(Protocol):
     """
     واجهة للحصول على معرفة المشروع.
-    
+
     تتيح استبدال التنفيذ الحقيقي بـ mocks للاختبارات.
     """
-    
+
     async def get_complete_knowledge(self) -> dict[str, Any]:
         """الحصول على المعرفة الكاملة عن المشروع."""
         ...
-    
+
     async def get_database_info(self) -> dict[str, Any]:
         """الحصول على معلومات قاعدة البيانات."""
         ...
-    
+
     def get_environment_info(self) -> dict[str, Any]:
         """الحصول على معلومات البيئة."""
         ...
@@ -37,15 +37,15 @@ class IProjectKnowledge(Protocol):
 class IResourceFetcher(Protocol):
     """
     واجهة لجلب محتوى مورد معين (Strategy Pattern).
-    
+
     كل مورد له fetcher خاص به يطبق هذه الواجهة.
     """
-    
+
     @property
     def uri(self) -> str:
         """معرف المورد الذي يتعامل معه هذا الـ fetcher."""
         ...
-    
+
     async def fetch(self, project_root: Path) -> dict[str, Any]:
         """جلب محتوى المورد."""
         ...
@@ -56,7 +56,7 @@ class IToolExecutor(Protocol):
     """
     واجهة لتنفيذ أداة MCP.
     """
-    
+
     async def execute(self, arguments: dict[str, Any]) -> dict[str, Any]:
         """تنفيذ الأداة بالمعاملات المحددة."""
         ...
@@ -67,7 +67,7 @@ class IIntegrationService(Protocol):
     """
     واجهة عامة للتكاملات الخارجية.
     """
-    
+
     def get_status(self) -> dict[str, Any]:
         """الحصول على حالة التكامل."""
         ...
@@ -78,37 +78,40 @@ class IIntegrationService(Protocol):
 
 class StructureFetcher:
     """جلب بنية المشروع."""
-    
+
     uri = "project://structure"
-    
+
     async def fetch(self, project_root: Path) -> dict[str, Any]:
         from app.services.overmind.knowledge_structure import build_project_structure
+
         return build_project_structure(project_root)
 
 
 class MicroservicesFetcher:
     """جلب معلومات الخدمات المصغرة."""
-    
+
     uri = "project://microservices"
-    
+
     async def fetch(self, project_root: Path) -> dict[str, Any]:
         from app.services.overmind.knowledge_structure import build_microservices_summary
+
         return build_microservices_summary(project_root)
 
 
 class DatabaseFetcher:
     """جلب معلومات قاعدة البيانات."""
-    
+
     uri = "project://database"
-    
+
     def __init__(self, knowledge: IProjectKnowledge | None = None):
         self._knowledge = knowledge
-    
+
     async def fetch(self, project_root: Path) -> dict[str, Any]:
         try:
             if self._knowledge:
                 return await self._knowledge.get_database_info()
             from app.services.overmind.knowledge import ProjectKnowledge
+
             pk = ProjectKnowledge()
             return await pk.get_database_info()
         except Exception as e:
@@ -117,17 +120,18 @@ class DatabaseFetcher:
 
 class EnvironmentFetcher:
     """جلب معلومات البيئة."""
-    
+
     uri = "project://environment"
-    
+
     def __init__(self, knowledge: IProjectKnowledge | None = None):
         self._knowledge = knowledge
-    
+
     async def fetch(self, project_root: Path) -> dict[str, Any]:
         try:
             if self._knowledge:
                 return self._knowledge.get_environment_info()
             from app.services.overmind.knowledge import ProjectKnowledge
+
             pk = ProjectKnowledge()
             return pk.get_environment_info()
         except Exception as e:
@@ -136,9 +140,9 @@ class EnvironmentFetcher:
 
 class TechnologiesFetcher:
     """جلب معلومات التقنيات المستخدمة."""
-    
+
     uri = "project://technologies"
-    
+
     async def fetch(self, project_root: Path) -> dict[str, Any]:
         return {
             "ai_frameworks": [
@@ -234,18 +238,18 @@ class TechnologiesFetcher:
 
 class StatsFetcher:
     """جلب إحصائيات سريعة عن المشروع."""
-    
+
     uri = "project://stats"
-    
+
     async def fetch(self, project_root: Path) -> dict[str, Any]:
         from app.services.overmind.knowledge_structure import (
-            build_project_structure,
             build_microservices_summary,
+            build_project_structure,
         )
-        
+
         structure = build_project_structure(project_root)
         microservices = build_microservices_summary(project_root)
-        
+
         return {
             "summary": {
                 "total_python_files": structure["python_files"],
@@ -264,12 +268,13 @@ class StatsFetcher:
 
 class LearningFetcher:
     """جلب معلومات خدمات التعلم."""
-    
+
     uri = "genius://learning"
-    
+
     async def fetch(self, project_root: Path) -> dict[str, Any]:
         try:
             from app.services.mcp.integrations import MCPIntegrations
+
             integrations = MCPIntegrations(project_root)
             return integrations.get_learning_status()
         except Exception as e:
@@ -278,12 +283,13 @@ class LearningFetcher:
 
 class KnowledgeFetcher:
     """جلب معلومات الرسم البياني للمفاهيم."""
-    
+
     uri = "genius://knowledge"
-    
+
     async def fetch(self, project_root: Path) -> dict[str, Any]:
         try:
             from app.services.mcp.integrations import MCPIntegrations
+
             integrations = MCPIntegrations(project_root)
             return integrations.get_knowledge_status()
         except Exception as e:
@@ -292,12 +298,13 @@ class KnowledgeFetcher:
 
 class AnalyticsFetcher:
     """جلب معلومات خدمات التحليل."""
-    
+
     uri = "genius://analytics"
-    
+
     async def fetch(self, project_root: Path) -> dict[str, Any]:
         try:
             from app.services.mcp.integrations import MCPIntegrations
+
             integrations = MCPIntegrations(project_root)
             return integrations.get_analytics_status()
         except Exception as e:
@@ -306,12 +313,13 @@ class AnalyticsFetcher:
 
 class VisionFetcher:
     """جلب معلومات خدمات الرؤية."""
-    
+
     uri = "genius://vision"
-    
+
     async def fetch(self, project_root: Path) -> dict[str, Any]:
         try:
             from app.services.mcp.integrations import MCPIntegrations
+
             integrations = MCPIntegrations(project_root)
             return integrations.get_vision_status()
         except Exception as e:
@@ -320,12 +328,13 @@ class VisionFetcher:
 
 class CollaborationFetcher:
     """جلب معلومات خدمات التعاون."""
-    
+
     uri = "genius://collaboration"
-    
+
     async def fetch(self, project_root: Path) -> dict[str, Any]:
         try:
             from app.services.mcp.integrations import MCPIntegrations
+
             integrations = MCPIntegrations(project_root)
             return integrations.get_collaboration_status()
         except Exception as e:
@@ -351,4 +360,3 @@ def get_default_fetchers() -> list[IResourceFetcher]:
         VisionFetcher(),
         CollaborationFetcher(),
     ]
-

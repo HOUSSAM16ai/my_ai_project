@@ -13,8 +13,8 @@
 """
 
 from app.services.vision.diagram_analyzer import (
-    DiagramAnalyzer,
     DiagramAnalysis,
+    DiagramAnalyzer,
     DiagramType,
     get_diagram_analyzer,
 )
@@ -29,16 +29,16 @@ from app.services.vision.multimodal_processor import (
 )
 
 __all__ = [
-    # MultiModal Processor
-    "MultiModalProcessor",
-    "ImageAnalysis",
-    "get_multimodal_processor",
-    # Equation Detector
-    "EquationDetector",
-    "get_equation_detector",
+    "DiagramAnalysis",
     # Diagram Analyzer
     "DiagramAnalyzer",
-    "DiagramAnalysis",
     "DiagramType",
+    # Equation Detector
+    "EquationDetector",
+    "ImageAnalysis",
+    # MultiModal Processor
+    "MultiModalProcessor",
     "get_diagram_analyzer",
+    "get_equation_detector",
+    "get_multimodal_processor",
 ]

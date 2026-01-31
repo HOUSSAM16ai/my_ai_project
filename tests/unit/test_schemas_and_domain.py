@@ -1,4 +1,5 @@
 """Unit tests for Pydantic schemas and domain utilities."""
+
 import enum
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
@@ -67,7 +68,9 @@ class TestFlexibleEnum:
 
     def test_result_enum(self):
         fe = FlexibleEnum(self.SampleEnum)
-        assert fe.process_result_value(self.SampleEnum.ACTIVE, MagicMock()) == self.SampleEnum.ACTIVE
+        assert (
+            fe.process_result_value(self.SampleEnum.ACTIVE, MagicMock()) == self.SampleEnum.ACTIVE
+        )
 
     def test_result_string_match(self):
         fe = FlexibleEnum(self.SampleEnum)
@@ -157,25 +160,19 @@ class TestUserModel:
 class TestRefreshToken:
     def test_is_active_valid(self):
         token = RefreshToken(
-            hashed_token="hash",
-            user_id=1,
-            expires_at=datetime(2099, 1, 1, tzinfo=UTC)
+            hashed_token="hash", user_id=1, expires_at=datetime(2099, 1, 1, tzinfo=UTC)
         )
         assert token.is_active() is True
 
     def test_is_active_expired(self):
         token = RefreshToken(
-            hashed_token="hash",
-            user_id=1,
-            expires_at=datetime(2000, 1, 1, tzinfo=UTC)
+            hashed_token="hash", user_id=1, expires_at=datetime(2000, 1, 1, tzinfo=UTC)
         )
         assert token.is_active() is False
 
     def test_revoke(self):
         token = RefreshToken(
-            hashed_token="hash",
-            user_id=1,
-            expires_at=datetime(2099, 1, 1, tzinfo=UTC)
+            hashed_token="hash", user_id=1, expires_at=datetime(2099, 1, 1, tzinfo=UTC)
         )
         token.revoke(replaced_by="new_id")
         assert token.revoked_at is not None
@@ -185,17 +182,13 @@ class TestRefreshToken:
 class TestPasswordResetToken:
     def test_is_active_valid(self):
         token = PasswordResetToken(
-            hashed_token="hash",
-            user_id=1,
-            expires_at=datetime(2099, 1, 1, tzinfo=UTC)
+            hashed_token="hash", user_id=1, expires_at=datetime(2099, 1, 1, tzinfo=UTC)
         )
         assert token.is_active() is True
 
     def test_mark_redeemed(self):
         token = PasswordResetToken(
-            hashed_token="hash",
-            user_id=1,
-            expires_at=datetime(2099, 1, 1, tzinfo=UTC)
+            hashed_token="hash", user_id=1, expires_at=datetime(2099, 1, 1, tzinfo=UTC)
         )
         token.mark_redeemed()
         assert token.redeemed_at is not None

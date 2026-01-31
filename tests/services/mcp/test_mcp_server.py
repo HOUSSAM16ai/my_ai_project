@@ -50,9 +50,10 @@ class TestMCPServer:
         """اختبار التهيئة."""
         from app.services.mcp.server import MCPServer
 
-        with patch("app.services.mcp.server.MCPToolRegistry") as mock_registry, \
-             patch("app.services.mcp.server.MCPResourceProvider") as mock_provider:
-
+        with (
+            patch("app.services.mcp.server.MCPToolRegistry") as mock_registry,
+            patch("app.services.mcp.server.MCPResourceProvider") as mock_provider,
+        ):
             mock_registry.return_value.register_all_tools = AsyncMock()
             mock_registry.return_value.tools = {"tool1": None}
             mock_provider.return_value.initialize = AsyncMock()
@@ -69,9 +70,10 @@ class TestMCPServer:
         """التهيئة مرة واحدة فقط."""
         from app.services.mcp.server import MCPServer
 
-        with patch("app.services.mcp.server.MCPToolRegistry") as mock_registry, \
-             patch("app.services.mcp.server.MCPResourceProvider") as mock_provider:
-
+        with (
+            patch("app.services.mcp.server.MCPToolRegistry") as mock_registry,
+            patch("app.services.mcp.server.MCPResourceProvider") as mock_provider,
+        ):
             mock_registry.return_value.register_all_tools = AsyncMock()
             mock_registry.return_value.tools = {}
             mock_provider.return_value.initialize = AsyncMock()
@@ -89,9 +91,10 @@ class TestMCPServer:
         """اختبار استدعاء أداة."""
         from app.services.mcp.server import MCPServer
 
-        with patch("app.services.mcp.server.MCPToolRegistry") as mock_registry, \
-             patch("app.services.mcp.server.MCPResourceProvider") as mock_provider:
-
+        with (
+            patch("app.services.mcp.server.MCPToolRegistry") as mock_registry,
+            patch("app.services.mcp.server.MCPResourceProvider") as mock_provider,
+        ):
             mock_registry.return_value.register_all_tools = AsyncMock()
             mock_registry.return_value.tools = {}
             mock_registry.return_value.execute_tool = AsyncMock(
@@ -110,16 +113,15 @@ class TestMCPServer:
         """اختبار الحصول على مورد."""
         from app.services.mcp.server import MCPServer
 
-        with patch("app.services.mcp.server.MCPToolRegistry") as mock_registry, \
-             patch("app.services.mcp.server.MCPResourceProvider") as mock_provider:
-
+        with (
+            patch("app.services.mcp.server.MCPToolRegistry") as mock_registry,
+            patch("app.services.mcp.server.MCPResourceProvider") as mock_provider,
+        ):
             mock_registry.return_value.register_all_tools = AsyncMock()
             mock_registry.return_value.tools = {}
             mock_provider.return_value.initialize = AsyncMock()
             mock_provider.return_value.resources = {}
-            mock_provider.return_value.get_resource = AsyncMock(
-                return_value={"structure": "data"}
-            )
+            mock_provider.return_value.get_resource = AsyncMock(return_value={"structure": "data"})
 
             server = MCPServer(project_root)
             result = await server.get_resource("project://structure")
@@ -130,9 +132,10 @@ class TestMCPServer:
         """اختبار الحصول على إحصائيات المشروع."""
         from app.services.mcp.server import MCPServer
 
-        with patch("app.services.mcp.server.MCPToolRegistry") as mock_registry, \
-             patch("app.services.mcp.server.MCPResourceProvider") as mock_provider:
-
+        with (
+            patch("app.services.mcp.server.MCPToolRegistry") as mock_registry,
+            patch("app.services.mcp.server.MCPResourceProvider") as mock_provider,
+        ):
             mock_registry.return_value.register_all_tools = AsyncMock()
             mock_registry.return_value.tools = {}
             mock_registry.return_value.execute_tool = AsyncMock(
@@ -144,17 +147,16 @@ class TestMCPServer:
             server = MCPServer(project_root)
             await server.get_project_metrics()
 
-            mock_registry.return_value.execute_tool.assert_called_with(
-                "get_project_metrics", {}
-            )
+            mock_registry.return_value.execute_tool.assert_called_with("get_project_metrics", {})
 
     async def test_analyze_file(self, project_root):
         """اختبار تحليل ملف."""
         from app.services.mcp.server import MCPServer
 
-        with patch("app.services.mcp.server.MCPToolRegistry") as mock_registry, \
-             patch("app.services.mcp.server.MCPResourceProvider") as mock_provider:
-
+        with (
+            patch("app.services.mcp.server.MCPToolRegistry") as mock_registry,
+            patch("app.services.mcp.server.MCPResourceProvider") as mock_provider,
+        ):
             mock_registry.return_value.register_all_tools = AsyncMock()
             mock_registry.return_value.tools = {}
             mock_registry.return_value.execute_tool = AsyncMock(
@@ -174,9 +176,10 @@ class TestMCPServer:
         """اختبار البحث في الكود."""
         from app.services.mcp.server import MCPServer
 
-        with patch("app.services.mcp.server.MCPToolRegistry") as mock_registry, \
-             patch("app.services.mcp.server.MCPResourceProvider") as mock_provider:
-
+        with (
+            patch("app.services.mcp.server.MCPToolRegistry") as mock_registry,
+            patch("app.services.mcp.server.MCPResourceProvider") as mock_provider,
+        ):
             mock_registry.return_value.register_all_tools = AsyncMock()
             mock_registry.return_value.tools = {}
             mock_registry.return_value.execute_tool = AsyncMock(
@@ -196,9 +199,10 @@ class TestMCPServer:
         """اختبار قائمة الأدوات."""
         from app.services.mcp.server import MCPServer
 
-        with patch("app.services.mcp.server.MCPToolRegistry") as mock_registry, \
-             patch("app.services.mcp.server.MCPResourceProvider"):
-
+        with (
+            patch("app.services.mcp.server.MCPToolRegistry") as mock_registry,
+            patch("app.services.mcp.server.MCPResourceProvider"),
+        ):
             mock_registry.return_value.list_tools = MagicMock(
                 return_value=[{"name": "tool1", "description": "Test"}]
             )
@@ -213,9 +217,10 @@ class TestMCPServer:
         """اختبار قائمة الموارد."""
         from app.services.mcp.server import MCPServer
 
-        with patch("app.services.mcp.server.MCPToolRegistry"), \
-             patch("app.services.mcp.server.MCPResourceProvider") as mock_provider:
-
+        with (
+            patch("app.services.mcp.server.MCPToolRegistry"),
+            patch("app.services.mcp.server.MCPResourceProvider") as mock_provider,
+        ):
             mock_provider.return_value.list_resources = MagicMock(
                 return_value=[{"uri": "project://test", "name": "Test"}]
             )
@@ -230,9 +235,10 @@ class TestMCPServer:
         """اختبار إيقاف الخادم."""
         from app.services.mcp.server import MCPServer
 
-        with patch("app.services.mcp.server.MCPToolRegistry") as mock_registry, \
-             patch("app.services.mcp.server.MCPResourceProvider") as mock_provider:
-
+        with (
+            patch("app.services.mcp.server.MCPToolRegistry") as mock_registry,
+            patch("app.services.mcp.server.MCPResourceProvider") as mock_provider,
+        ):
             mock_registry.return_value.register_all_tools = AsyncMock()
             mock_registry.return_value.tools = {}
             mock_provider.return_value.initialize = AsyncMock()
@@ -251,9 +257,10 @@ class TestMCPServer:
         """اختبار الحصول على مخطط الأدوات للـ LLM."""
         from app.services.mcp.server import MCPServer
 
-        with patch("app.services.mcp.server.MCPToolRegistry") as mock_registry, \
-             patch("app.services.mcp.server.MCPResourceProvider") as mock_provider:
-
+        with (
+            patch("app.services.mcp.server.MCPToolRegistry") as mock_registry,
+            patch("app.services.mcp.server.MCPResourceProvider") as mock_provider,
+        ):
             mock_registry.return_value.register_all_tools = AsyncMock()
             mock_registry.return_value.tools = {}
             mock_registry.return_value.get_openai_schema = MagicMock(

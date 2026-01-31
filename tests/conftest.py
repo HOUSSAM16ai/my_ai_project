@@ -111,8 +111,9 @@ async def _ensure_schema() -> None:
     from sqlmodel import SQLModel
 
     from app.core.db_schema import validate_and_fix_schema
+
     # Explicitly import models to ensure registration
-    from app.core.domain import user, mission, audit, chat  # noqa: F401
+    from app.core.domain import audit, chat, mission, user  # noqa: F401
 
     engine = _get_engine()
     async with engine.begin() as connection:

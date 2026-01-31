@@ -1,4 +1,3 @@
-
 import asyncio
 import os
 import sys
@@ -8,14 +7,17 @@ from pathlib import Path
 sys.path.append(str(Path.cwd()))
 
 # إعداد المتغيرات البيئية
-os.environ["DATABASE_URL"] = "postgresql://postgres.aocnuqhxrhxgbfcgbxfy:199720242025%40HOUSSAMbenmerah@aws-1-eu-west-3.pooler.supabase.com:6543/postgres?sslmode=require"
-os.environ["OPENAI_API_KEY"] = "sk-placeholder" # سأعتمد على البيئة الموجودة أو Mock إذا لزم الأمر
+os.environ["DATABASE_URL"] = (
+    "postgresql://postgres.aocnuqhxrhxgbfcgbxfy:199720242025%40HOUSSAMbenmerah@aws-1-eu-west-3.pooler.supabase.com:6543/postgres?sslmode=require"
+)
+os.environ["OPENAI_API_KEY"] = "sk-placeholder"  # سأعتمد على البيئة الموجودة أو Mock إذا لزم الأمر
 
 from app.core.logging import get_logger
 from app.services.mcp.integrations import MCPIntegrations
 from app.services.overmind.agents.self_healing import get_self_healing_agent
 
 logger = get_logger("verify_genius_system")
+
 
 async def main():
     logger.info("🚀 بدء التحقق من نظام Genius الكامل...")
@@ -75,7 +77,9 @@ async def main():
         if analysis.suggested_actions:
             logger.info(f"   - الإجراء المقترح: {analysis.suggested_actions[0].description}")
             if analysis.suggested_actions[0].kagent_capability:
-                logger.info(f"   - ⭐ قدرة Kagent المطلوبة: {analysis.suggested_actions[0].kagent_capability}")
+                logger.info(
+                    f"   - ⭐ قدرة Kagent المطلوبة: {analysis.suggested_actions[0].kagent_capability}"
+                )
         else:
             logger.info("   - لم يتم اقتراح إجراءات (وهذا طبيعي لأول مرة)")
 
@@ -88,6 +92,7 @@ async def main():
         logger.error(f"   - خطأ: {pred.get('error')}")
 
     logger.info("✅ تم إنهاء التحقق بنجاح!")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

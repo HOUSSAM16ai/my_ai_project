@@ -1,4 +1,5 @@
 """Unit tests for content tool logic - aligned with refactored super_search_orchestrator."""
+
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -18,7 +19,9 @@ sys.modules["microservices.research_agent.src.content.service"] = mock_content_s
 mock_super_orchestrator_module = MagicMock()
 mock_orchestrator_instance = AsyncMock()
 mock_super_orchestrator_module.super_search_orchestrator = mock_orchestrator_instance
-sys.modules["microservices.research_agent.src.search_engine.super_orchestrator"] = mock_super_orchestrator_module
+sys.modules["microservices.research_agent.src.search_engine.super_orchestrator"] = (
+    mock_super_orchestrator_module
+)
 
 # Mock graph expander
 mock_graph_expander = MagicMock()
@@ -97,7 +100,7 @@ async def test_get_content_raw():
     """Test raw content retrieval."""
     mock_content_service_instance.get_content_raw.return_value = {
         "content": "# Exercise",
-        "solution": "# Solution"
+        "solution": "# Solution",
     }
 
     result = await content_module.get_content_raw("ex-123", include_solution=True)
@@ -111,7 +114,7 @@ async def test_get_solution_raw():
     """Test solution retrieval."""
     mock_content_service_instance.get_content_raw.return_value = {
         "content": "# Exercise",
-        "solution": "# Official Solution"
+        "solution": "# Official Solution",
     }
 
     result = await content_module.get_solution_raw("ex-123")

@@ -11,8 +11,7 @@
 """
 
 from collections.abc import Callable
-from dataclasses import dataclass
-from enum import Enum
+from typing import ClassVar
 
 from app.services.chat.intent_detector import ChatIntent, IntentPattern
 
@@ -24,8 +23,8 @@ class IntentPatternRegistry:
     يسمح بتسجيل أنماط جديدة دون تعديل فئة IntentDetector.
     """
 
-    _patterns: list[IntentPattern] = []
-    _default_patterns_loaded: bool = False
+    _patterns: ClassVar[list[IntentPattern]] = []
+    _default_patterns_loaded: ClassVar[bool] = False
 
     @classmethod
     def register(

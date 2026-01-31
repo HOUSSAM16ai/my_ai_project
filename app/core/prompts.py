@@ -81,7 +81,7 @@ def _get_system_principles_prompt() -> str:
 async def _get_dynamic_metrics() -> str:
     """
     استرجاع إحصائيات المشروع الدقيقة باستخدام MCP Server.
-    
+
     يوفر معلومات شاملة عن:
     - عدد ملفات البايثون في كل مجلد
     - عدد الدوال والكلاسات
@@ -89,24 +89,24 @@ async def _get_dynamic_metrics() -> str:
     """
     try:
         from app.services.mcp import MCPServer
-        
+
         mcp = MCPServer()
         await mcp.initialize()
-        
+
         # الحصول على الإحصائيات الدقيقة
         metrics = await mcp.get_project_metrics()
-        
+
         # بناء النص
         by_dir_text = ""
         by_dir = metrics.get("by_directory", {})
         for dir_name, stats in by_dir.items():
             by_dir_text += f"  - {dir_name}/: {stats.get('python_files', 0)} ملف\n"
-        
+
         return f"""
 ## 📊 إحصائيات المشروع الدقيقة (من MCP Server)
-- **إجمالي ملفات البايثون**: {metrics.get('total_python_files', 'N/A')}
-{by_dir_text}- **إجمالي الدوال**: {metrics.get('total_functions', 'N/A')}
-- **إجمالي الكلاسات**: {metrics.get('total_classes', 'N/A')}
+- **إجمالي ملفات البايثون**: {metrics.get("total_python_files", "N/A")}
+{by_dir_text}- **إجمالي الدوال**: {metrics.get("total_functions", "N/A")}
+- **إجمالي الكلاسات**: {metrics.get("total_classes", "N/A")}
 
 ## 🔧 التقنيات المتقدمة النشطة
 - **LangGraph**: محرك الوكلاء المتعددين ✅
@@ -121,14 +121,14 @@ async def _get_dynamic_metrics() -> str:
         # Fallback للنظام القديم
         try:
             from app.services.agent_tools.domain.metrics import get_project_metrics_handler
-            
+
             metrics = await get_project_metrics_handler()
             live_stats = metrics.get("live_stats", {})
-            
+
             return f"""
 ## 🔬 PROJECT METRICS
-- **Python Files**: {live_stats.get('python_files', 'N/A')}
-- **Total Files**: {live_stats.get('total_files', 'N/A')}
+- **Python Files**: {live_stats.get("python_files", "N/A")}
+- **Total Files**: {live_stats.get("total_files", "N/A")}
 """
         except Exception:
             return ""

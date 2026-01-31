@@ -15,30 +15,57 @@
 import asyncio
 import logging
 import os
-import shlex
 import subprocess
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 # قائمة الأوامر المحظورة للأمان
-BLOCKED_COMMANDS = frozenset({
-    "rm -rf /",
-    "rm -rf /*",
-    "format",
-    "del /f /s /q",
-    "shutdown",
-    "reboot",
-    ":(){:|:&};:",  # fork bomb
-})
+BLOCKED_COMMANDS = frozenset(
+    {
+        "rm -rf /",
+        "rm -rf /*",
+        "format",
+        "del /f /s /q",
+        "shutdown",
+        "reboot",
+        ":(){:|:&};:",  # fork bomb
+    }
+)
 
 # قائمة الأوامر المسموحة بالكامل
-ALLOWED_COMMANDS = frozenset({
-    "ls", "dir", "pwd", "cd", "cat", "head", "tail", "grep",
-    "find", "wc", "echo", "python", "pip", "pytest", "npm",
-    "node", "git", "curl", "wget", "mkdir", "touch", "cp",
-    "mv", "chmod", "chown", "type", "more", "less",
-})
+ALLOWED_COMMANDS = frozenset(
+    {
+        "ls",
+        "dir",
+        "pwd",
+        "cd",
+        "cat",
+        "head",
+        "tail",
+        "grep",
+        "find",
+        "wc",
+        "echo",
+        "python",
+        "pip",
+        "pytest",
+        "npm",
+        "node",
+        "git",
+        "curl",
+        "wget",
+        "mkdir",
+        "touch",
+        "cp",
+        "mv",
+        "chmod",
+        "chown",
+        "type",
+        "more",
+        "less",
+    }
+)
 
 
 async def execute_shell(
@@ -87,13 +114,12 @@ async def execute_shell(
 
     # 3. تنفيذ الأمر
     try:
-        result = await asyncio.wait_for(
+        return await asyncio.wait_for(
             _run_command(command, work_dir),
             timeout=timeout,
         )
-        return result
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning(f"Shell: Command timed out after {timeout}s: {command}")
         return {
             "success": False,
@@ -133,6 +159,7 @@ async def _run_command(command: str, cwd: Path) -> dict[str, object]:
         process = subprocess.run(
             command,
             shell=True,
+            check=False,
             cwd=str(cwd),
             capture_output=True,
             text=True,
@@ -142,7 +169,7 @@ async def _run_command(command: str, cwd: Path) -> dict[str, object]:
         return {
             "success": process.returncode == 0,
             "stdout": process.stdout[:10000],  # حد 10KB
-            "stderr": process.stderr[:5000],   # حد 5KB
+            "stderr": process.stderr[:5000],  # حد 5KB
             "return_code": process.returncode,
             "error": None if process.returncode == 0 else process.stderr[:500],
         }
