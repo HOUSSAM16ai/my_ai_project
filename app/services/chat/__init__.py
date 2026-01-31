@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from app.services.chat.context import ChatContext
 from app.services.chat.handlers.strategy_handlers import (
     CodeSearchHandler,
@@ -12,11 +14,9 @@ from app.services.chat.handlers.strategy_handlers import (
 from app.services.chat.intent_detector import ChatIntent, IntentDetector, IntentResult
 from app.services.chat.orchestrator import ChatOrchestrator
 from app.services.chat.security import ErrorSanitizer, PathValidator
+from app.services.chat.telemetry import ChatTelemetry
 
 # Re-export legacy/telemetry if needed, or deprecate
-from functools import lru_cache
-
-from app.services.chat.telemetry import ChatTelemetry
 
 
 @lru_cache

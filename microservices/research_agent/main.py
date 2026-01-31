@@ -6,8 +6,10 @@
 """
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, APIRouter
+
+from fastapi import APIRouter, FastAPI
 from pydantic import BaseModel, Field
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,12 +21,14 @@ async def lifespan(app: FastAPI):
 
 class SearchRequest(BaseModel):
     """نموذج طلب البحث."""
+
     query: str = Field(..., description="نص البحث")
     filters: dict | None = Field(default=None, description="فلاتر البحث")
 
 
 class SearchResponse(BaseModel):
     """نموذج استجابة البحث."""
+
     results: list[dict] = Field(..., description="نتائج البحث")
     total: int = Field(..., description="إجمالي النتائج")
 
@@ -44,10 +48,7 @@ def _build_router() -> APIRouter:
         تنفيذ عملية بحث.
         """
         # TODO: ربط هذا مع microservices.research_agent.src.search_engine.orchestrator
-        return SearchResponse(
-            results=[{"title": "نتيجة وهمية", "snippet": "نص توضيحي"}],
-            total=1
-        )
+        return SearchResponse(results=[{"title": "نتيجة وهمية", "snippet": "نص توضيحي"}], total=1)
 
     return router
 
@@ -63,5 +64,6 @@ def create_app() -> FastAPI:
 
     app.include_router(_build_router())
     return app
+
 
 app = create_app()
