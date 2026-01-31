@@ -12,19 +12,6 @@ def mock_repo_path(tmp_path):
     (d / "main.py").write_text("print('hello')")
     return d
 
-
-from unittest.mock import MagicMock, patch
-from pathlib import Path
-import pytest
-from app.services.overmind.code_intelligence.core import StructuralCodeIntelligence
-
-@pytest.fixture
-def mock_repo_path(tmp_path):
-    d = tmp_path / "repo"
-    d.mkdir()
-    (d / "main.py").write_text("print('hello')")
-    return d
-
 def test_analyze_project_structure(mock_repo_path):
     # Setup
     target_paths = ["."]
@@ -32,7 +19,7 @@ def test_analyze_project_structure(mock_repo_path):
     print(f"DEBUG: files in repo={[f.name for f in mock_repo_path.iterdir()]}")
     service = StructuralCodeIntelligence(repo_path=mock_repo_path, target_paths=target_paths)
     service.exclude_patterns = [] # Disable exclusions as tmp_path likely contains 'test_'
-    
+
     # Mock GitAnalyzer to avoid real git commands
     with patch.object(service, 'git_analyzer') as mock_git:
         mock_git.analyze_file_history.return_value = {
@@ -43,7 +30,7 @@ def test_analyze_project_structure(mock_repo_path):
             "bugfix_commits": 0,
             "branches_modified": ["main"]
         }
-        
+
         # Act
         result = service.analyze_project()
 

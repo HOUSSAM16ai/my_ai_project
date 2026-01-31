@@ -1,16 +1,18 @@
 import json
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, mock_open
+
 from app.services.vision.multimodal_processor import (
+    ImageAnalysis,
     MultiModalProcessor,
     get_multimodal_processor,
-    ImageAnalysis
 )
+
 
 @pytest.fixture
 def mock_ai_client():
-    client = AsyncMock()
-    return client
+    return AsyncMock()
 
 @pytest.fixture
 def processor(mock_ai_client):
@@ -27,7 +29,7 @@ async def test_analyze_image_success(processor, mock_ai_client):
     # Mock file existence and read
     with patch("pathlib.Path.exists", return_value=True), \
          patch("builtins.open", mock_open(read_data=b"fake_image_data")):
-        
+
         # Mock AI response
         expected_json = {
             "text_content": "Solve x+1=2",
@@ -65,7 +67,7 @@ async def test_analyze_image_file_not_found(processor):
 async def test_analyze_image_ai_error(processor, mock_ai_client):
     with patch("pathlib.Path.exists", return_value=True), \
          patch("builtins.open", mock_open(read_data=b"data")):
-        
+
         mock_ai_client.generate.side_effect = Exception("AI Error")
         result = await processor.analyze_image("test.jpg")
         assert result.confidence == 0.0
@@ -75,7 +77,7 @@ async def test_extract_exercise_from_image(processor, mock_ai_client):
     # Reuse success logic
     with patch("pathlib.Path.exists", return_value=True), \
          patch("builtins.open", mock_open(read_data=b"data")):
-        
+
         mock_response = MagicMock()
         mock_response.choices[0].message.content = json.dumps({
             "text_content": "Content",
@@ -88,7 +90,7 @@ async def test_extract_exercise_from_image(processor, mock_ai_client):
         mock_ai_client.generate.return_value = mock_response
 
         data = await processor.extract_exercise_from_image("test.jpg")
-        
+
         assert data["success"] is True
         assert data["text"] == "Content"
         assert "E=mc2" in data["formatted"]

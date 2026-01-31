@@ -1,8 +1,8 @@
-import pytest
 from app.services.vision.equation_detector import (
     EquationDetector,
     get_equation_detector,
 )
+
 
 def test_singleton_instance():
     det1 = get_equation_detector()

@@ -22,7 +22,7 @@ sys.modules["microservices.research_agent.src.search_engine.super_orchestrator"]
 
 # Mock graph expander
 mock_graph_expander = MagicMock()
-mock_graph_expander.enrich_search_with_graph = AsyncMock(side_effect=lambda x, **kw: x)
+mock_graph_expander.enrich_search_with_graph = AsyncMock(side_effect=lambda x, **_kw: x)
 sys.modules["microservices.research_agent.src.search_engine.graph_expander"] = mock_graph_expander
 
 # Mock search models
@@ -64,7 +64,7 @@ async def test_search_content_fallback_to_direct_service():
     mock_content_service_instance.search_content.return_value = [{"id": "fallback"}]
 
     with patch.object(content_module, "async_session_factory", MagicMock()):
-        results = await content_module.search_content(q="Fallback Query")
+        await content_module.search_content(q="Fallback Query")
 
     # Should have tried content_service after empty super search
     assert mock_content_service_instance.search_content.called

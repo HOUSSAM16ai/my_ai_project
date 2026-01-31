@@ -1,9 +1,9 @@
-import pytest
 from app.services.vision.diagram_analyzer import (
     DiagramAnalyzer,
     DiagramType,
     get_diagram_analyzer,
 )
+
 
 def test_singleton_instance():
     analyzer1 = get_diagram_analyzer()
