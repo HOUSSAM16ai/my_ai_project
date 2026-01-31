@@ -45,8 +45,31 @@ class IntentResult:
 class IntentDetector:
     """يكشف نية المستخدم من نص السؤال باستخدام قواعد نمطية بسيطة."""
 
-    def __init__(self) -> None:
-        self._patterns = self._build_patterns()
+    def __init__(
+        self,
+        patterns: list[IntentPattern] | None = None,
+        use_registry: bool = True,
+    ) -> None:
+        """
+        تهيئة كاشف النوايا.
+
+        Args:
+            patterns: أنماط مخصصة (اختياري) - إذا لم تُحدد يُستخدم السجل.
+            use_registry: استخدام الأنماط من السجل (افتراضي: True).
+
+        SOLID: Open/Closed Principle - يمكن توسيع الأنماط عبر Registry
+        دون تعديل هذه الفئة.
+        """
+        if patterns is not None:
+            # استخدام الأنماط المحقونة مباشرة (للاختبار)
+            self._patterns = patterns
+        elif use_registry:
+            # استخدام الأنماط من السجل (OCP)
+            from app.services.chat.intent_registry import IntentPatternRegistry
+            self._patterns = IntentPatternRegistry.get_all()
+        else:
+            # السلوك القديم - بناء الأنماط داخلياً
+            self._patterns = self._build_patterns()
 
     def _build_patterns(self) -> list[IntentPattern]:
         """يبني قواعد النمط كنصوص قابلة للتمديد وفق مبدأ البيانات ككود."""

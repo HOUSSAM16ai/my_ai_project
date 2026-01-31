@@ -3,57 +3,36 @@
 
 يدير هذا الوكيل تخزين واسترجاع السياق محلياً مع الالتزام
 بمبدأ العزل وعدم مشاركة قاعدة بيانات مركزية.
+
+المبادئ المطبقة:
+- SOLID: Single Responsibility Principle (طبقات منفصلة)
+- SOLID: Dependency Inversion Principle (حقن التبعيات)
+- Clean Architecture: فصل الطبقات
 """
 
 from contextlib import asynccontextmanager
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, FastAPI, Query
-from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from sqlmodel import col, select
 
 from microservices.memory_agent.database import get_session, init_db
 from microservices.memory_agent.errors import setup_exception_handlers
 from microservices.memory_agent.health import HealthResponse, build_health_payload
 from microservices.memory_agent.logging import get_logger, setup_logging
-from microservices.memory_agent.models import Memory, Tag
 from microservices.memory_agent.settings import MemoryAgentSettings, get_settings
 
+# استيراد الطبقات الجديدة (SOLID Refactoring)
+from microservices.memory_agent.src.repositories.memory_repository import (
+    MemoryRepository,
+)
+from microservices.memory_agent.src.schemas.memory_schemas import (
+    MemoryCreateRequest,
+    MemoryResponse,
+    MemorySearchRequest,
+)
+from microservices.memory_agent.src.services.memory_service import MemoryService
+
 logger = get_logger("memory-agent")
-
-
-class MemoryCreateRequest(BaseModel):
-    """حمولة إنشاء عنصر ذاكرة جديد."""
-
-    content: str = Field(..., description="نص الذاكرة المراد حفظها")
-    tags: list[str] = Field(default_factory=list, description="وسوم مساعدة")
-
-
-class MemoryResponse(BaseModel):
-    """استجابة بيانات الذاكرة."""
-
-    entry_id: UUID
-    content: str
-    tags: list[str]
-
-
-class MemorySearchFilters(BaseModel):
-    """مرشحات البحث بالوسوم."""
-
-    tags: list[str] = Field(default_factory=list, description="وسوم التصفية المطلوبة")
-
-
-class MemorySearchRequest(BaseModel):
-    """حمولة البحث عن الذاكرة عبر POST."""
-
-    query: str = Field(default="", description="نص البحث")
-    filters: MemorySearchFilters = Field(
-        default_factory=MemorySearchFilters,
-        description="مرشحات البحث الدلالي",
-    )
-    limit: int = Field(default=10, ge=1, le=50, description="عدد النتائج المطلوب")
 
 
 def _build_router(settings: MemoryAgentSettings) -> APIRouter:
@@ -77,30 +56,10 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
         payload: MemoryCreateRequest, session: AsyncSession = Depends(get_session)
     ) -> MemoryResponse:
         """ينشئ عنصر ذاكرة جديد ويعيده."""
-
-        logger.info("إنشاء ذاكرة", extra={"tags": payload.tags})
-        # Resolve tags
-        db_tags = []
-        for tag_name in payload.tags:
-            statement = select(Tag).where(Tag.name == tag_name)
-            result = await session.execute(statement)
-            tag = result.scalar_one_or_none()
-            if not tag:
-                tag = Tag(name=tag_name)
-                session.add(tag)
-            db_tags.append(tag)
-
-        entry = Memory(content=payload.content, tags=db_tags)
-        session.add(entry)
-        await session.commit()
-        await session.refresh(entry)
-
-        # Eager load tags for response
-        # Since we just created it and added tags, they are in session, but refresh might not load relation
-        # We construct response from payload/entry
-        tag_names = [tag.name for tag in db_tags]
-
-        return MemoryResponse(entry_id=entry.id, content=entry.content, tags=tag_names)
+        # استخدام طبقة Service (SOLID: SRP + DIP)
+        repository = MemoryRepository(session)
+        service = MemoryService(repository)
+        return await service.create_memory(payload)
 
     @router.get(
         "/memories/search",
@@ -117,33 +76,10 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
         يبحث عن عناصر ذاكرة مطابقة للاستعلام.
         يتم البحث في المحتوى والوسوم باستخدام قاعدة البيانات.
         """
-
-        normalized = query.strip().lower()
-        logger.info("بحث بالاستعلام", extra={"query": normalized, "limit": limit})
-
-        statement = select(Memory).options(selectinload(Memory.tags))
-
-        if normalized:
-            # Join with tags to search there too
-            # We want memories where content matches OR any tag name matches
-            statement = (
-                statement.distinct()
-                .outerjoin(Memory.tags)
-                .where(
-                    (col(Memory.content).ilike(f"%{normalized}%"))
-                    | (col(Tag.name).ilike(f"%{normalized}%"))
-                )
-            )
-
-        statement = statement.limit(limit)
-
-        result = await session.execute(statement)
-        memories = result.scalars().all()
-
-        return [
-            MemoryResponse(entry_id=m.id, content=m.content, tags=[t.name for t in m.tags])
-            for m in memories
-        ]
+        # استخدام طبقة Service (SOLID: SRP + DIP)
+        repository = MemoryRepository(session)
+        service = MemoryService(repository)
+        return await service.search_memories(query, limit)
 
     @router.post(
         "/memories/search",
@@ -157,37 +93,10 @@ def _build_router(settings: MemoryAgentSettings) -> APIRouter:
         """
         يبحث عن عناصر ذاكرة مع دعم مرشحات الوسوم عبر POST.
         """
-
-        normalized = payload.query.strip().lower()
-        tags = [tag.strip() for tag in payload.filters.tags if tag.strip()]
-        logger.info(
-            "بحث عبر حمولة",
-            extra={"query": normalized, "tags": tags, "limit": payload.limit},
-        )
-
-        statement = select(Memory).options(selectinload(Memory.tags))
-
-        if normalized or tags:
-            statement = statement.distinct().outerjoin(Memory.tags)
-
-        if normalized:
-            statement = statement.where(
-                (col(Memory.content).ilike(f"%{normalized}%"))
-                | (col(Tag.name).ilike(f"%{normalized}%"))
-            )
-
-        if tags:
-            statement = statement.where(col(Tag.name).in_(tags))
-
-        statement = statement.limit(payload.limit)
-
-        result = await session.execute(statement)
-        memories = result.scalars().all()
-
-        return [
-            MemoryResponse(entry_id=m.id, content=m.content, tags=[t.name for t in m.tags])
-            for m in memories
-        ]
+        # استخدام طبقة Service (SOLID: SRP + DIP)
+        repository = MemoryRepository(session)
+        service = MemoryService(repository)
+        return await service.search_memories_with_filters(payload)
 
     return router
 

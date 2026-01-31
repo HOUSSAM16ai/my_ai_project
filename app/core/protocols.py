@@ -258,16 +258,27 @@ class AgentMemory(Protocol):
 
 
 @runtime_checkable
-class MissionStateManagerProtocol(Protocol):
+class MissionReaderProtocol(Protocol):
     """
-    بروتوكول مدير حالة المهمة (Mission State Manager Protocol).
+    بروتوكول قراءة المهمة (Mission Reader Protocol).
 
-    يحدد العمليات اللازمة لإدارة حالة المهمة دون الاعتماد على التطبيق المباشر.
+    واجهة ISP لعمليات القراءة فقط.
+    SOLID: Interface Segregation Principle
     """
 
     async def get_mission(self, mission_id: int) -> Mission | None:
         """استرجاع المهمة بواسطة المعرف."""
         ...
+
+
+@runtime_checkable
+class MissionWriterProtocol(Protocol):
+    """
+    بروتوكول كتابة المهمة (Mission Writer Protocol).
+
+    واجهة ISP لعمليات تحديث المهمة.
+    SOLID: Interface Segregation Principle
+    """
 
     async def update_mission_status(
         self, mission_id: int, status: MissionStatus, note: str | None = None
@@ -280,6 +291,16 @@ class MissionStateManagerProtocol(Protocol):
     ) -> None:
         """تسجيل حدث للمهمة."""
         ...
+
+
+@runtime_checkable
+class TaskStateProtocol(Protocol):
+    """
+    بروتوكول حالة المهام الفرعية (Task State Protocol).
+
+    واجهة ISP لإدارة حالة المهام الفرعية.
+    SOLID: Interface Segregation Principle
+    """
 
     async def mark_task_running(self, task_id: int) -> None:
         """تحديث حالة المهمة إلى قيد التشغيل."""
@@ -295,11 +316,43 @@ class MissionStateManagerProtocol(Protocol):
         """تحديث حالة المهمة إلى فاشلة."""
         ...
 
+
+@runtime_checkable
+class MissionMonitorProtocol(Protocol):
+    """
+    بروتوكول مراقبة المهمة (Mission Monitor Protocol).
+
+    واجهة ISP لعمليات المراقبة.
+    SOLID: Interface Segregation Principle
+    """
+
     async def monitor_mission_events(
         self, mission_id: int, poll_interval: float = 1.0
     ) -> AsyncGenerator[MissionEvent, None]:
         """مراقبة أحداث المهمة."""
         ...
+
+
+@runtime_checkable
+class MissionStateManagerProtocol(
+    MissionReaderProtocol,
+    MissionWriterProtocol,
+    TaskStateProtocol,
+    MissionMonitorProtocol,
+    Protocol,
+):
+    """
+    بروتوكول مدير حالة المهمة الكامل (Full Mission State Manager Protocol).
+
+    يجمع جميع واجهات إدارة المهمة للخدمات التي تحتاج الوصول الكامل.
+    يحدد العمليات اللازمة لإدارة حالة المهمة دون الاعتماد على التطبيق المباشر.
+
+    SOLID: Interface Segregation Principle - يمكن للمكونات استخدام
+    الواجهات الأصغر (MissionReaderProtocol, TaskStateProtocol, إلخ)
+    بدلاً من هذه الواجهة الكاملة.
+    """
+
+    ...
 
 
 @runtime_checkable
