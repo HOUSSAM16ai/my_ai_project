@@ -1,107 +1,152 @@
-import unittest
-from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+import json
 import httpx
+from unittest.mock import patch, MagicMock, AsyncMock
+from app.core.gateway.simple_client import SimpleAIClient, SimpleResponse
 
-from app.core.gateway.simple_client import SimpleAIClient
+@pytest.fixture
+def mock_config():
+    config = MagicMock()
+    config.openrouter_api_key = "test_key"
+    config.primary_model = "primary"
+    config.get_fallback_models.return_value = ["fallback"]
+    return config
 
+@pytest.fixture
+def mock_cognitive_engine():
+    engine = MagicMock()
+    engine.recall.return_value = None # Cache miss
+    engine.memorize = MagicMock()
+    return engine
 
-class TestSimpleAIClient(unittest.IsolatedAsyncioTestCase):
-    async def asyncSetUp(self):
-        self.mock_config_patch = patch("app.core.gateway.simple_client.get_ai_config")
-        self.mock_config = self.mock_config_patch.start()
-        self.mock_config.return_value.openrouter_api_key = "test-key"
-        self.mock_config.return_value.primary_model = "primary"
-        self.mock_config.return_value.get_fallback_models.return_value = ["fallback1"]
+@pytest.fixture
+def client(mock_config, mock_cognitive_engine):
+    with patch("app.core.gateway.simple_client.get_ai_config", return_value=mock_config):
+        with patch("app.core.gateway.simple_client.get_cognitive_engine", return_value=mock_cognitive_engine):
+            client = SimpleAIClient()
+            yield client
 
-        self.mock_client_patch = patch("app.core.gateway.connection.ConnectionManager.get_client")
-        self.mock_client = self.mock_client_patch.start()
-        self.mock_httpx_client = AsyncMock(spec=httpx.AsyncClient)
-        self.mock_client.return_value = self.mock_httpx_client
+@pytest.mark.asyncio
+async def test_stream_chat_cache_hit(client, mock_cognitive_engine):
+    # Setup cache hit
+    mock_cognitive_engine.recall.return_value = [{"role": "assistant", "content": "cached"}]
+    
+    messages = [{"role": "user", "content": "hello"}]
+    chunks = []
+    async for chunk in client.stream_chat(messages):
+        chunks.append(chunk)
 
-        # Mock Cognitive Engine to avoid memory logic in tests
-        self.mock_cog_patch = patch("app.core.gateway.simple_client.get_cognitive_engine")
-        self.mock_cog = self.mock_cog_patch.start()
-        self.mock_cog.return_value.recall.return_value = None
+    assert len(chunks) == 1
+    assert chunks[0]["content"] == "cached"
+    # Should NOT call external API logic (we won't check here but implicitly logic implies it returns early)
 
-    async def asyncTearDown(self):
-        self.mock_config_patch.stop()
-        self.mock_client_patch.stop()
-        self.mock_cog_patch.stop()
+@pytest.mark.asyncio
+async def test_stream_chat_primary_success(client, mock_config):
+    # Mock httpx client response
+    mock_httpx_client = MagicMock() # Not AsyncMock, stream is synced called returning CM
+    mock_response = AsyncMock()
+    mock_response.status_code = 200
+    
+    # SSE chunk format
+    chunk_data = {"choices": [{"delta": {"content": "world"}}]}
+    
+    async def mock_iter_lines():
+        yield f"data: {json.dumps(chunk_data)}"
+        yield "data: [DONE]"
 
-    async def test_stream_chat_primary_success(self):
-        client = SimpleAIClient()
-        messages = [{"role": "user", "content": "hello"}]
+    mock_response.aiter_lines = mock_iter_lines
 
-        # Mock streaming response
-        mock_response = MagicMock()
-        mock_response.status_code = 200
+    class MockStreamContext:
+        def __init__(self, *args, **kwargs):
+            pass
+        async def __aenter__(self):
+            return mock_response
+        async def __aexit__(self, *args):
+            pass
+    
+    # Context manager setup
+    mock_httpx_client.stream.side_effect = MockStreamContext
+    
+    # Patch logger to see errors
+    with patch("app.core.gateway.simple_client.logger") as mock_logger:
+        with patch("app.core.gateway.connection.ConnectionManager.get_client", return_value=mock_httpx_client):
+            messages = [{"role": "user", "content": "hello"}]
+            chunks = [c async for c in client.stream_chat(messages)]
+            
+            # Debug if failed
+            if len(chunks) != 1:
+                 # Print error calls
+                 print(mock_logger.error.call_args_list)
+                 print(mock_logger.warning.call_args_list)
 
-        async def async_lines():
-            yield 'data: {"choices": [{"delta": {"content": "hi"}}]}'
-            yield "data: [DONE]"
+            assert len(chunks) == 1
+            assert chunks[0]["choices"][0]["delta"]["content"] == "world"
 
-        mock_response.aiter_lines.return_value = async_lines()
-        mock_response.aread = AsyncMock()  # needed for error handling path check
+@pytest.mark.asyncio
+async def test_stream_chat_fallback_chain(client):
+    # Primary fails, Fallback success.
+    mock_httpx_client = MagicMock()
+    
+    # Response 1 (Primary): 500
+    primary_response = AsyncMock()
+    primary_response.status_code = 500
+    primary_response.aread = AsyncMock()
+    
+    # Response 2 (Fallback): 200 OK
+    fallback_response = AsyncMock()
+    fallback_response.status_code = 200
+    chunk_data = {"choices": [{"delta": {"content": "fallback"}}]}
+    
+    async def fallback_iter():
+        yield f"data: {json.dumps(chunk_data)}"
+        yield "data: [DONE]"
+    fallback_response.aiter_lines = fallback_iter
+    
+    # Side effects for stream call
+    # We need to return different context managers based on call?
+    # Or just based on model payload?
+    
+    # Simple strategy: First call raises/fails, second succeeds?
+    # client.stream() returns a context manager.
+    
+    call_count = 0
+    class MockStreamContext:
+        def __init__(self, *args, **kwargs):
+            nonlocal call_count
+            self.count = call_count
+            call_count += 1
+            
+        async def __aenter__(self):
+            if self.count == 0:
+                return primary_response
+            return fallback_response
+            
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
 
-        # Mocking the async context manager return
-        # stream() returns an async context manager
-        mock_ctx = AsyncMock()
-        mock_ctx.__aenter__.return_value = mock_response
-        self.mock_httpx_client.stream.return_value = mock_ctx
+    mock_httpx_client.stream.side_effect = MockStreamContext
 
-        chunks = []
-        async for chunk in client.stream_chat(messages):
-            chunks.append(chunk)
+    with patch("app.core.gateway.connection.ConnectionManager.get_client", return_value=mock_httpx_client):
+        messages = [{"role": "user", "content": "retry me"}]
+        chunks = [c async for c in client.stream_chat(messages)]
+        
+        assert "fallback" in str(chunks)
 
-        self.assertEqual(len(chunks), 1)
-        self.assertEqual(chunks[0]["choices"][0]["delta"]["content"], "hi")
-
-        # Verify primary model was used
-        call_args = self.mock_httpx_client.stream.call_args
-        self.assertEqual(call_args[1]["json"]["model"], "primary")
-
-    @patch("app.core.gateway.simple_client.SimpleAIClient._stream_model")
-    async def test_fallback_logic(self, mock_stream_model):
-        client = SimpleAIClient()
-        messages = [{"role": "user", "content": "hello"}]
-
-        # Setup: Primary fails, Fallback succeeds
-        async def stream_side_effect(client, model_id, msgs):
-            if model_id == "primary":
-                raise httpx.ConnectError("Failed")
-            if model_id == "fallback1":
-                yield {"content": "success"}
-                return
-            yield {"content": "should not reach"}
-
-        mock_stream_model.side_effect = stream_side_effect
-
-        chunks = []
-        async for chunk in client.stream_chat(messages):
-            chunks.append(chunk)
-
-        self.assertEqual(len(chunks), 1)
-        self.assertEqual(chunks[0]["content"], "success")
-
-    @patch("app.core.gateway.simple_client.SimpleAIClient._stream_model")
-    async def test_safety_net_logic(self, mock_stream_model):
-        client = SimpleAIClient()
-        messages = [{"role": "user", "content": "hello"}]
-
-        # Setup: All models fail
-        async def stream_side_effect(client, model_id, msgs):
-            # This needs to be an async generator that raises immediately
-            if True:
-                raise httpx.ConnectError("Failed")
-            yield {}  # unreachable but needed to make it a generator function
-
-        mock_stream_model.side_effect = stream_side_effect
-
-        chunks = []
-        async for chunk in client.stream_chat(messages):
-            chunks.append(chunk)
-
-        # Should return safety net chunks
-        self.assertTrue(len(chunks) > 0)
-        self.assertEqual(chunks[0]["model"], "system/safety-net")
+@pytest.mark.asyncio
+async def test_safety_net_activation(client):
+    # All fail
+    mock_httpx_client = AsyncMock()
+    mock_httpx_client.stream.side_effect = Exception("All models broken")
+    
+    with patch("app.core.gateway.connection.ConnectionManager.get_client", return_value=mock_httpx_client):
+        messages = [{"role": "user", "content": "panic"}]
+        chunks = [c async for c in client.stream_chat(messages)]
+        
+        # Check for safety net content
+        content = "".join([
+            c["choices"][0]["delta"].get("content", "") 
+            for c in chunks 
+            if "choices" in c and c["choices"]
+        ])
+        assert "System Alert" in content

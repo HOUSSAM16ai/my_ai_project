@@ -16,6 +16,7 @@ os.environ.setdefault("ENVIRONMENT", "testing")
 os.environ.setdefault("LLM_MOCK_MODE", "1")
 os.environ.setdefault("LOG_LEVEL", "DEBUG")
 os.environ.setdefault("PROJECT_NAME", "CogniForgeTest")
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
 project_root = Path(__file__).resolve().parents[1]
 if str(project_root) not in sys.path:
@@ -110,6 +111,8 @@ async def _ensure_schema() -> None:
     from sqlmodel import SQLModel
 
     from app.core.db_schema import validate_and_fix_schema
+    # Explicitly import models to ensure registration
+    from app.core.domain import user, mission, audit, chat  # noqa: F401
 
     engine = _get_engine()
     async with engine.begin() as connection:

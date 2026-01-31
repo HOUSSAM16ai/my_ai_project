@@ -77,7 +77,7 @@ class DiagramAnalyzer:
         if any(x in description for x in ['فن', 'venn', 'تقاطع', 'اتحاد']):
             return DiagramType.VENN_DIAGRAM
         
-        if any(x in description for x in ['مثلث', 'مربع', 'دائرة', 'هندسي']):
+        if any(x in description for x in ['مثلث', 'مربع', 'دائرة', 'هندسي', 'triangle', 'square', 'circle', 'geometric', 'shape']):
             return DiagramType.GEOMETRIC_SHAPE
         
         if any(x in description for x in ['مركب', 'complex', 'تخيلي', 'imaginary']):

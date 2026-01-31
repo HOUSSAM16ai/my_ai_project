@@ -9,7 +9,7 @@ from app.services.system.system_service import (
     FEATURE_VECTOR_SCHEMA_VERSION,
     SystemService,
     _sanitize_duration,
-    _TimingAccumulator,
+    TimingAccumulator,
 )
 
 

@@ -12,6 +12,7 @@ def test_base_service_settings_defaults(monkeypatch):
     class TestSettings(BaseServiceSettings):
         SERVICE_NAME: str = "test-service"
         DATABASE_URL: str = "sqlite:///test.db"
+        model_config = { "env_file": None }
 
     settings = TestSettings()
     assert settings.ENVIRONMENT == "development"

@@ -1,4 +1,4 @@
-from app.api.routers.security import UserResponse
+from app.api.schemas.security import UserResponse
 
 
 def test_user_response_strictness():

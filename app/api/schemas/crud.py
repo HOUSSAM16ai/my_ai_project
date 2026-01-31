@@ -1,9 +1,9 @@
-from pydantic import Field
-
+from pydantic import Field, ConfigDict
 from app.core.schemas import RobustBaseModel
 
 
 class GenericResourceResponse(RobustBaseModel):
+    model_config = ConfigDict(extra="allow")
     """
     نموذج استجابة عام للموارد.
     يسمح بأي حقول إضافية لتمثيل الموارد المرنة.
