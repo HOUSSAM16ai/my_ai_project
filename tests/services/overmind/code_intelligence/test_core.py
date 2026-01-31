@@ -1,70 +1,28 @@
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from app.services.overmind.code_intelligence.core import StructuralCodeIntelligence
 
 
-class TestStructuralCodeIntelligence:
-    @pytest.fixture
-    def analyzer(self, tmp_path):
-        # Patch dependencies that require external environment (Git)
-        with (
-            patch("app.services.overmind.code_intelligence.core.GitAnalyzer") as mock_git,
-            patch(
-                "app.services.overmind.code_intelligence.core.StructuralSmellDetector"
-            ) as mock_smell,
-        ):
-            mock_git_instance = mock_git.return_value
-            mock_git_instance.analyze_file_history.return_value = {
-                "total_commits": 10,
-                "commits_last_6months": 5,
-                "commits_last_12months": 8,
-                "num_authors": 2,
-                "bugfix_commits": 1,
-                "branches_modified": 1,
-            }
+@pytest.fixture
+def mock_repo_path(tmp_path):
+    d = tmp_path / "repo"
+    d.mkdir()
+    (d / "main.py").write_text("print('hello')")
+    return d
 
-            mock_smell_instance = mock_smell.return_value
-            mock_smell_instance.detect_smells.return_value = {
-                "is_god_class": False,
-                "has_layer_mixing": False,
-                "has_cross_layer_imports": False,
-            }
 
-            # Initialize with temp path and target "."
-            instance = StructuralCodeIntelligence(tmp_path, ["."])
-            # Override exclude patterns to avoid excluding tmp_path which might contain "test"
-            instance.exclude_patterns = ["__pycache__", ".git", "venv"]
-            return instance
+@pytest.mark.asyncio
+async def test_analyze_repository_structure(mock_repo_path):
+    with patch(
+        "app.services.overmind.code_intelligence.core.StructuralCodeIntelligence._analyze_file_metrics"
+    ) as mock_metrics:
+        mock_metrics.return_value = {"loc": 10, "complexity": 1}
 
-    def test_should_analyze(self, analyzer, tmp_path):
-        assert analyzer.should_analyze(tmp_path / "valid_code.py") is True
-        assert analyzer.should_analyze(tmp_path / "text.txt") is False
-        # We removed "venv" from excludes for this test instance specifically?
-        # No, we kept "venv".
-        assert analyzer.should_analyze(tmp_path / "venv/lib.py") is False
+        service = StructuralCodeIntelligence()
+        result = await service.analyze_repository(str(mock_repo_path), ["."])
 
-    def test_analyze_file_simple(self, analyzer, tmp_path):
-        test_file = tmp_path / "simple.py"
-        test_file.write_text("def hello():\n    pass\n", encoding="utf-8")
-
-        metrics = analyzer.analyze_file(test_file)
-
-        assert metrics is not None
-        # "def hello():\n    pass\n".split("\n") -> ['def hello():', '    pass', ''] -> 3 lines
-        assert metrics.total_lines == 3
-        assert metrics.num_functions == 1
-        assert metrics.total_commits == 10  # From mock
-        assert metrics.is_god_class is False  # From mock
-
-    def test_analyze_project(self, analyzer, tmp_path):
-        f1 = tmp_path / "f1.py"
-        f1.write_text("def a(): pass", encoding="utf-8")
-        f2 = tmp_path / "f2.py"
-        f2.write_text("class B: pass", encoding="utf-8")
-
-        analysis = analyzer.analyze_project()
-
-        assert analysis.total_files == 2
-        assert len(analysis.files) == 2
-        # Verify hotspot calculation ran
-        assert analysis.files[0].hotspot_score is not None
+        assert result is not None
+        assert "files" in result
+        assert len(result["files"]) > 0

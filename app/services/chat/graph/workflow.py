@@ -7,6 +7,7 @@
 from langgraph.graph import END, StateGraph
 
 from app.core.ai_gateway import AIClient
+from app.core.di import get_kagent_mesh
 from app.services.chat.graph.nodes.planner import planner_node
 from app.services.chat.graph.nodes.procedural_auditor import procedural_auditor_node
 from app.services.chat.graph.nodes.researcher import researcher_node
@@ -22,6 +23,14 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
     """
     بناء الرسم البياني للوكلاء المتعددين.
     """
+    # Defer import to prevent circular dependency / eager loading issues
+    from app.services.reasoning.service import ReasoningService
+
+    # Initialize Kagent Mesh and Register Services
+    kagent = get_kagent_mesh()
+    reasoning_service = ReasoningService(ai_client)
+    kagent.register_service("reasoning_engine", reasoning_service, capabilities=["solve_deeply"])
+
     workflow = StateGraph(AgentState)
 
     # 1. Add Nodes (Wrapped with partials/lambdas to inject deps)
@@ -35,7 +44,7 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
         return await writer_node(state, ai_client)
 
     async def call_super_reasoner(state):
-        return await super_reasoner_node(state, ai_client)
+        return await super_reasoner_node(state, kagent)
 
     async def call_reviewer(state):
         return await reviewer_node(state, ai_client)

@@ -103,8 +103,27 @@ __all__ = [
     "Container",
     "get_db",
     "get_health_check_service",
+    "get_kagent_mesh",
     "get_logger",
     "get_session",
     "get_settings",
     "get_system_service",
 ]
+
+
+def get_kagent_mesh():
+    from app.services.kagent.interface import KagentMesh
+
+    return Container.resolve(KagentMesh)
+
+
+# Bootstrap Kagent as a Lazy Singleton
+def _create_kagent_mesh():
+    from app.services.kagent.interface import KagentMesh
+
+    return KagentMesh()
+
+
+from app.services.kagent.interface import KagentMesh
+
+Container.register_singleton_factory(KagentMesh, _create_kagent_mesh)
