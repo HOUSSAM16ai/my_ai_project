@@ -126,6 +126,43 @@ class MCPResourceProvider:
             description="ملخص سريع لإحصائيات المشروع",
         )
         
+        # ============== Genius Services Resources ==============
+        
+        # مورد: خدمات التعلم التكيفي
+        self.resources["genius://learning"] = MCPResource(
+            uri="genius://learning",
+            name="التعلم التكيفي",
+            description="ملف الطالب، تكييف الصعوبة، تتبع الإتقان",
+        )
+        
+        # مورد: الرسم البياني المعرفي
+        self.resources["genius://knowledge"] = MCPResource(
+            uri="genius://knowledge",
+            name="الرسم البياني للمفاهيم",
+            description="المفاهيم التعليمية، المتطلبات السابقة، مسارات التعلم",
+        )
+        
+        # مورد: التحليل التنبؤي
+        self.resources["genius://analytics"] = MCPResource(
+            uri="genius://analytics",
+            name="التحليل التنبؤي",
+            description="التنبؤ بنقاط الضعف، كشف أنماط الأخطاء",
+        )
+        
+        # مورد: خدمات الرؤية
+        self.resources["genius://vision"] = MCPResource(
+            uri="genius://vision",
+            name="معالجة الوسائط المتعددة",
+            description="تحليل الصور، كشف المعادلات، فهم الرسوم البيانية",
+        )
+        
+        # مورد: التعلم التعاوني
+        self.resources["genius://collaboration"] = MCPResource(
+            uri="genius://collaboration",
+            name="التعلم التعاوني",
+            description="جلسات دراسة جماعية، مساحات عمل مشتركة",
+        )
+        
         logger.info(f"✅ تم تهيئة {len(self.resources)} مورد MCP")
     
     async def get_resource(self, uri: str) -> dict[str, Any]:

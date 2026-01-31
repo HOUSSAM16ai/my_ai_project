@@ -204,12 +204,19 @@ class OrchestratorAgent:
 
         yield f"✅ **تم العثور على:** {title} ({content_id})\n\n"
 
-        # Step 2: Fetch Raw Content
+        # Step 2: Determine if user wants solution
         writer_intent = RegexIntentDetector().analyze(question)
+        
+        # Logic: Only include solution if EXPLICITLY requested, NOT by default
         include_solution = writer_intent == WriterIntent.SOLUTION_REQUEST
+        exclude_solution = writer_intent == WriterIntent.QUESTION_ONLY_REQUEST
+        
+        # Log for debugging
+        logger.info(f"Writer intent: {writer_intent}, include_solution: {include_solution}, exclude_solution: {exclude_solution}")
+        
         raw_data = await self.tools.execute(
             "get_content_raw",
-            {"content_id": content_id, "include_solution": include_solution},
+            {"content_id": content_id, "include_solution": include_solution and not exclude_solution},
         )
 
         if raw_data and raw_data.get("content"):
@@ -223,7 +230,7 @@ class OrchestratorAgent:
             yield content_text
             yield "\n\n---\n\n"
 
-            if include_solution:
+            if include_solution and not exclude_solution:
                 # Step 3: AI Explanation with Official Solution
                 personalization_context = await self._build_education_brief(context)
                 solution = raw_data.get("solution")
@@ -245,16 +252,24 @@ class OrchestratorAgent:
         system_prompt = (
             "You are a search query parser for an educational database. "
             "Extract parameters from the user's request into a JSON object. "
-            "Fields: q (keywords), year (int), subject (Mathematics, Physics), branch (experimental_sciences, math_tech, etc), set_name, level, type (exercise, lesson). "
-            "\nRules:"
-            "\n1. 'Subject 1' -> set_name: 'subject_1', 'Subject 2' -> set_name: 'subject_2'."
-            "\n2. 'Experimental Sciences' (علوم تجريبية) -> branch: 'experimental_sciences'."
-            "\n3. 'Math Tech' (تقني رياضي) -> branch: 'math_tech'."
-            "\n4. 'Mathematics' or 'Math' -> subject: 'Mathematics'."
-            "\n5. 'Baccalaureate' or 'Bac' -> level: 'baccalaureate'."
-            "\n6. If a field is not present, omit it."
-            "\n\nExample 1: 'Math exercises 2024 probability' -> {'q': 'probability', 'year': 2024, 'subject': 'Mathematics'}"
-            "\nExample 2: 'Subject 1 Bac 2024 Experimental Probability' -> {'q': 'Probability', 'year': 2024, 'set_name': 'subject_1', 'branch': 'experimental_sciences', 'level': 'baccalaureate'}"
+            "Fields: q (keywords - EXTRACT THE TOPIC), year (int), subject (Mathematics, Physics), "
+            "branch (experimental_sciences, math_tech, etc), set_name, level, type (exercise, lesson). "
+            "\n\nIMPORTANT RULES:"
+            "\n1. 'q' MUST contain the actual TOPIC/SUBJECT being searched, NOT the full question!"
+            "\n2. Topics examples:"
+            "\n   - 'probability' (احتمالات), 'complex numbers' (أعداد مركبة), 'sequences' (متتاليات)"
+            "\n   - 'functions' (دوال), 'derivatives' (مشتقات), 'integrals' (تكامل)"
+            "\n   - 'limits' (نهايات), 'continuity' (استمرارية), 'geometry' (هندسة)"
+            "\n3. 'Subject 1' -> set_name: 'subject_1', 'Subject 2' -> set_name: 'subject_2'."
+            "\n4. 'Experimental Sciences' (علوم تجريبية) -> branch: 'experimental_sciences'."
+            "\n5. If a field is not present, omit it."
+            "\n\nEXAMPLES:"
+            "\n- 'تمرين أعداد مركبة' -> {'q': 'complex numbers'}"
+            "\n- 'احتمالات بكالوريا 2024' -> {'q': 'probability', 'year': 2024, 'level': 'baccalaureate'}"
+            "\n- 'متتاليات علوم تجريبية' -> {'q': 'sequences', 'branch': 'experimental_sciences'}"
+            "\n- 'دوال أسية' -> {'q': 'exponential functions'}"
+            "\n- 'نهايات ودوال' -> {'q': 'limits functions'}"
+            "\n- 'سحب كرة' -> {'q': 'probability'} (this is about drawing balls = probability)"
         )
 
         try:
@@ -273,10 +288,11 @@ class OrchestratorAgent:
             # Ensure limit default
             params["limit"] = 5
 
-            # Fallback for 'q' if empty, use original question
+            # Fallback for 'q' if empty, use heuristic extraction
             if not params.get("q") and not params.get("year"):
-                params["q"] = question
+                params = self._heuristic_extract_search_params(question)
 
+            logger.info(f"AI extracted params: {params}")
             return params
 
         except Exception as e:
@@ -284,17 +300,73 @@ class OrchestratorAgent:
             return self._heuristic_extract_search_params(question)
 
     def _heuristic_extract_search_params(self, question: str) -> dict:
-        """Fallback heuristic parameter extraction."""
-        params = {"q": question, "limit": 5}
+        """Fallback heuristic parameter extraction with topic detection."""
+        params = {"limit": 5}
+        q_lower = question.lower()
 
+        # Topic detection (more specific)
+        topic_map = {
+            # Arabic topics
+            "أعداد مركبة": "complex numbers",
+            "اعداد مركبة": "complex numbers",
+            "مركب": "complex numbers",
+            "احتمال": "probability",
+            "احتمالات": "probability",
+            "سحب": "probability",  # سحب كرة = drawing = probability
+            "كرة": "probability",
+            "كرات": "probability",
+            "متتالي": "sequences",
+            "متتاليات": "sequences",
+            "دوال": "functions",
+            "دالة": "functions",
+            "نهاي": "limits",
+            "نهايات": "limits",
+            "تكامل": "integrals",
+            "مشتق": "derivatives",
+            "استمرار": "continuity",
+            "هندس": "geometry",
+            "أسية": "exponential",
+            "لوغاريتم": "logarithm",
+            # English topics
+            "complex": "complex numbers",
+            "probability": "probability",
+            "sequence": "sequences",
+            "function": "functions",
+            "limit": "limits",
+            "integral": "integrals",
+            "derivative": "derivatives",
+            "continuity": "continuity",
+            "geometry": "geometry",
+        }
+
+        # Find the most specific topic
+        for keyword, topic in topic_map.items():
+            if keyword in q_lower:
+                params["q"] = topic
+                break
+
+        # If no topic found, use cleaned question
+        if "q" not in params:
+            # Remove common request words, keep content words
+            stop_words = {"أريد", "أعطني", "اعطني", "هات", "التمرين", "تمرين", "بدون", "حل", "فقط"}
+            words = [w for w in question.split() if w not in stop_words and len(w) > 2]
+            params["q"] = " ".join(words[:3]) if words else question
+
+        # Year extraction
         if "2024" in question:
             params["year"] = 2024
+        elif "2023" in question:
+            params["year"] = 2023
+        elif "2022" in question:
+            params["year"] = 2022
 
-        if any(w in question for w in ["math", "رياضيات", "رياضه"]):
+        # Subject extraction
+        if any(w in q_lower for w in ["math", "رياضيات", "رياضه"]):
             params["subject"] = "Mathematics"
-        elif any(w in question for w in ["physics", "فيزياء"]):
+        elif any(w in q_lower for w in ["physics", "فيزياء"]):
             params["subject"] = "Physics"
 
+        logger.info(f"Heuristic extracted params: {params}")
         return params
 
     async def _generate_explanation(

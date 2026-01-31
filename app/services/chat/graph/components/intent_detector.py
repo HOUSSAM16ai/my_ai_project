@@ -20,10 +20,16 @@ class RegexIntentDetector(IIntentDetector):
         r"قيم|تقييم|مراجعة|تشخيصي|تقييم مستواي|تشخيص مستواي)"
     )
     QUESTION_ONLY_KEYWORDS = (
-        r"(أسئلة\s*فقط|فقط\s*أسئلة|questions\s*only|just\s*questions|"
+        # Arabic patterns
+        r"(أسئلة\s*فقط|فقط\s*أسئلة|فقط\s*التمرين|التمرين\s*فقط|نص\s*التمرين\s*فقط|"
         r"بدون\s*إجابة|بدون\s*اجابة|بدون\s*حلول|بدون\s*حل|لا\s*أريد\s*الحل|"
         r"ما\s*أريد\s*الحل|لا\s*تعطيني\s*الحل|لا\s*أحتاج\s*الحل|"
-        r"without\s*answers|no\s*answers|without\s*solution|no\s*solution)"
+        r"أعطني\s*التمرين\s*بدون|أعطني\s*الأسئلة\s*بدون|اعطني\s*فقط|"
+        r"اعطني\s*التمرين\s*فقط|اعطني\s*الاسئلة\s*فقط|"
+        # English patterns
+        r"without\s*answers|no\s*answers|without\s*solution|no\s*solution|"
+        r"questions\s*only|just\s*questions|just\s*the\s*exercise|exercise\s*only|"
+        r"give\s*me\s*only\s*the\s*exercise|don't\s*show\s*solution)"
     )
 
     def analyze(self, user_message: str) -> WriterIntent:

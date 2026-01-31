@@ -179,6 +179,50 @@ class TechnologiesFetcher:
                     "description": "بروتوكول السياق الموحد للأدوات والموارد",
                 },
             ],
+            "genius_services": [
+                {
+                    "name": "Socratic Tutor",
+                    "status": "✅ نشط",
+                    "location": "app/services/chat/agents/socratic_tutor.py",
+                    "description": "المعلم السقراطي - يرشد بالأسئلة بدلاً من الإجابات",
+                },
+                {
+                    "name": "Adaptive Learning",
+                    "status": "✅ نشط",
+                    "location": "app/services/learning/",
+                    "description": "التعلم التكيفي - يتكيف مع مستوى الطالب",
+                },
+                {
+                    "name": "Self-Healing Agent",
+                    "status": "✅ نشط",
+                    "location": "app/services/overmind/agents/self_healing.py",
+                    "description": "الوكيل ذاتي الإصلاح - يتعلم من أخطائه",
+                },
+                {
+                    "name": "Knowledge Graph",
+                    "status": "✅ نشط",
+                    "location": "app/services/knowledge/",
+                    "description": "الرسم البياني للمفاهيم - يربط المفاهيم التعليمية",
+                },
+                {
+                    "name": "Predictive Analytics",
+                    "status": "✅ نشط",
+                    "location": "app/services/analytics/",
+                    "description": "التحليل التنبؤي - يتنبأ بنقاط الضعف",
+                },
+                {
+                    "name": "Multi-Modal Vision",
+                    "status": "✅ نشط",
+                    "location": "app/services/vision/",
+                    "description": "معالجة الوسائط المتعددة - يفهم الصور والرسوم",
+                },
+                {
+                    "name": "Collaborative Learning",
+                    "status": "✅ نشط",
+                    "location": "app/services/collaboration/",
+                    "description": "التعلم التعاوني - جلسات دراسة جماعية",
+                },
+            ],
             "backend": [
                 {"name": "FastAPI", "purpose": "إطار العمل الرئيسي"},
                 {"name": "SQLAlchemy", "purpose": "ORM غير متزامن"},
@@ -215,6 +259,79 @@ class StatsFetcher:
         }
 
 
+# ============== Genius Services Fetchers ==============
+
+
+class LearningFetcher:
+    """جلب معلومات خدمات التعلم."""
+    
+    uri = "genius://learning"
+    
+    async def fetch(self, project_root: Path) -> dict[str, Any]:
+        try:
+            from app.services.mcp.integrations import MCPIntegrations
+            integrations = MCPIntegrations(project_root)
+            return integrations.get_learning_status()
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
+
+class KnowledgeFetcher:
+    """جلب معلومات الرسم البياني للمفاهيم."""
+    
+    uri = "genius://knowledge"
+    
+    async def fetch(self, project_root: Path) -> dict[str, Any]:
+        try:
+            from app.services.mcp.integrations import MCPIntegrations
+            integrations = MCPIntegrations(project_root)
+            return integrations.get_knowledge_status()
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
+
+class AnalyticsFetcher:
+    """جلب معلومات خدمات التحليل."""
+    
+    uri = "genius://analytics"
+    
+    async def fetch(self, project_root: Path) -> dict[str, Any]:
+        try:
+            from app.services.mcp.integrations import MCPIntegrations
+            integrations = MCPIntegrations(project_root)
+            return integrations.get_analytics_status()
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
+
+class VisionFetcher:
+    """جلب معلومات خدمات الرؤية."""
+    
+    uri = "genius://vision"
+    
+    async def fetch(self, project_root: Path) -> dict[str, Any]:
+        try:
+            from app.services.mcp.integrations import MCPIntegrations
+            integrations = MCPIntegrations(project_root)
+            return integrations.get_vision_status()
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
+
+class CollaborationFetcher:
+    """جلب معلومات خدمات التعاون."""
+    
+    uri = "genius://collaboration"
+    
+    async def fetch(self, project_root: Path) -> dict[str, Any]:
+        try:
+            from app.services.mcp.integrations import MCPIntegrations
+            integrations = MCPIntegrations(project_root)
+            return integrations.get_collaboration_status()
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
+
 # ============== Registry للـ Fetchers ==============
 
 
@@ -227,4 +344,11 @@ def get_default_fetchers() -> list[IResourceFetcher]:
         EnvironmentFetcher(),
         TechnologiesFetcher(),
         StatsFetcher(),
+        # Genius Services
+        LearningFetcher(),
+        KnowledgeFetcher(),
+        AnalyticsFetcher(),
+        VisionFetcher(),
+        CollaborationFetcher(),
     ]
+
