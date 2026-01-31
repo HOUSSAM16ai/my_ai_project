@@ -5,16 +5,14 @@
 Refactored for Unified Architecture.
 """
 
+import contextlib
 import logging
 import re
-import contextlib
 
-from app.services.chat.graph.components.intent_detector import RegexIntentDetector
-from app.services.chat.graph.domain import WriterIntent
 from app.services.chat.graph.search import build_graph_search_plan
 from app.services.chat.graph.state import AgentState
-from app.services.kagent.interface import KagentMesh
 from app.services.kagent.domain import AgentRequest
+from app.services.kagent.interface import KagentMesh
 from microservices.research_agent.src.content.constants import BRANCH_MAP, SUBJECT_MAP
 
 logger = logging.getLogger(__name__)
@@ -45,10 +43,8 @@ async def researcher_node(state: AgentState, kagent: KagentMesh) -> dict:
     if year_match:
         year_str = year_match.group(1)
         arabic_to_western = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
-        try:
+        with contextlib.suppress(ValueError):
             params["year"] = int(year_str.translate(arabic_to_western))
-        except ValueError:
-            pass
 
     query_lower = query.lower()
     for subject_key, variants in SUBJECT_MAP.items():
@@ -85,9 +81,9 @@ async def researcher_node(state: AgentState, kagent: KagentMesh) -> dict:
             "search_results": results,
             "current_step_index": state.get("current_step_index", 0) + 1,
         }
-    else:
-        logger.error(f"Research Agent failed: {response.error}")
-        return {
-            "search_results": [],
-            "error": response.error
-        }
+
+    logger.error(f"Research Agent failed: {response.error}")
+    return {
+        "search_results": [],
+        "error": response.error
+    }

@@ -64,10 +64,9 @@ def _build_router() -> APIRouter:
         """
         try:
             # Dispatch Logic
-            if request.action == "reason" or request.action == "solve_deeply":
+            if request.action in {"reason", "solve_deeply"}:
                 # Extract parameters
                 query = request.payload.get("query", "")
-                context = request.payload.get("context", {})
 
                 # TODO: Integrate with microservices.reasoning_agent.src.workflow
                 # result = await logic.solve(query, context)
@@ -84,11 +83,10 @@ def _build_router() -> APIRouter:
                     metrics={"duration_ms": 150}
                 )
 
-            else:
-                return AgentResponse(
-                    status="error",
-                    error=f"Action '{request.action}' not supported by Reasoning Agent."
-                )
+            return AgentResponse(
+                status="error",
+                error=f"Action '{request.action}' not supported by Reasoning Agent."
+            )
 
         except Exception as e:
             return AgentResponse(status="error", error=str(e))

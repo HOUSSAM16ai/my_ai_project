@@ -11,7 +11,6 @@ from app.core.logging import get_logger
 from app.services.kagent.domain import AgentRequest, AgentResponse, ServiceProfile
 from app.services.kagent.registry import ServiceRegistry
 from app.services.kagent.security import SecurityMesh
-from app.services.kagent.telemetry import PerformanceMonitor
 
 logger = get_logger("kagent-mesh")
 
@@ -68,8 +67,7 @@ class KagentMesh:
             # Using a lambda to fit the trace_execution signature if needed,
             # or just calling directly for simplicity as per "Super Simplification".
 
-            response = await adapter.execute(request)
-            return response
+            return await adapter.execute(request)
 
         except Exception as e:
             logger.error(f"Kagent Execution Error: {e}")

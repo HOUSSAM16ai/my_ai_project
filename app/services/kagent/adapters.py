@@ -8,13 +8,12 @@ Pattern: Adapter / Facade.
 """
 
 import abc
-from typing import Any
 
 from fastapi import FastAPI
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
-from app.services.kagent.domain import AgentRequest, AgentResponse
 from app.core.logging import get_logger
+from app.services.kagent.domain import AgentRequest, AgentResponse
 
 logger = get_logger("kagent-adapters")
 
@@ -51,11 +50,11 @@ class LocalAgentAdapter(BaseAgentAdapter):
 
                 if response.status_code == 200:
                     return AgentResponse(**response.json())
-                else:
-                    return AgentResponse(
-                        status="error",
-                        error=f"Local Service Error ({response.status_code}): {response.text}"
-                    )
+
+                return AgentResponse(
+                    status="error",
+                    error=f"Local Service Error ({response.status_code}): {response.text}"
+                )
         except Exception as e:
             logger.error(f"Local Adapter Execution Failed: {e}")
             return AgentResponse(status="error", error=str(e))
@@ -82,11 +81,11 @@ class RemoteAgentAdapter(BaseAgentAdapter):
 
                 if response.status_code == 200:
                     return AgentResponse(**response.json())
-                else:
-                    return AgentResponse(
-                        status="error",
-                        error=f"Remote Service Error ({response.status_code}): {response.text}"
-                    )
+
+                return AgentResponse(
+                    status="error",
+                    error=f"Remote Service Error ({response.status_code}): {response.text}"
+                )
         except Exception as e:
             logger.error(f"Remote Adapter Execution Failed: {e}")
             return AgentResponse(status="error", error=str(e))

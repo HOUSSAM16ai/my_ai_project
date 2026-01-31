@@ -8,8 +8,8 @@ Refactored for Unified Architecture.
 import logging
 
 from app.services.chat.graph.state import AgentState
-from app.services.kagent.interface import KagentMesh
 from app.services.kagent.domain import AgentRequest
+from app.services.kagent.interface import KagentMesh
 
 logger = logging.getLogger(__name__)
 

@@ -61,10 +61,9 @@ def _build_router() -> APIRouter:
         """
         try:
             # Dispatch Logic
-            if request.action == "search" or request.action == "retrieve":
+            if request.action in {"search", "retrieve"}:
                 # Extract parameters
                 query = request.payload.get("query", "")
-                filters = request.payload.get("filters", {})
 
                 # TODO: Integrate with microservices.research_agent.src.search_engine.orchestrator
 
@@ -80,11 +79,10 @@ def _build_router() -> APIRouter:
                     metrics={"retrieval_ms": 200, "reranking_ms": 50}
                 )
 
-            else:
-                return AgentResponse(
-                    status="error",
-                    error=f"Action '{request.action}' not supported by Research Agent."
-                )
+            return AgentResponse(
+                status="error",
+                error=f"Action '{request.action}' not supported by Research Agent."
+            )
 
         except Exception as e:
             return AgentResponse(status="error", error=str(e))
