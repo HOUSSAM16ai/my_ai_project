@@ -25,10 +25,12 @@ async def lifespan(app: FastAPI):
 
 # --- Unified Agent Protocol ---
 
+
 class AgentRequest(BaseModel):
     """
     طلب تنفيذ إجراء موحد.
     """
+
     caller_id: str = Field(..., description="Entity requesting the action")
     target_service: str = Field("reasoning_agent", description="Target service name")
     action: str = Field(..., description="Action to perform (e.g., 'reason')")
@@ -40,10 +42,12 @@ class AgentResponse(BaseModel):
     """
     استجابة موحدة للوكيل.
     """
+
     status: str = Field(..., description="'success' or 'error'")
     data: Any = Field(None, description="Result data")
     error: str | None = Field(None, description="Error message")
     metrics: dict[str, Any] = Field(default_factory=dict, description="Performance metrics")
+
 
 # ------------------------------
 
@@ -74,18 +78,15 @@ def _build_router() -> APIRouter:
                 # Mock Result for Simplification/Stub
                 result_data = {
                     "answer": f"Analysis of '{query}' completed.",
-                    "logic_trace": ["Step 1: Analyze", "Step 2: Synthesize"]
+                    "logic_trace": ["Step 1: Analyze", "Step 2: Synthesize"],
                 }
 
                 return AgentResponse(
-                    status="success",
-                    data=result_data,
-                    metrics={"duration_ms": 150}
+                    status="success", data=result_data, metrics={"duration_ms": 150}
                 )
 
             return AgentResponse(
-                status="error",
-                error=f"Action '{request.action}' not supported by Reasoning Agent."
+                status="error", error=f"Action '{request.action}' not supported by Reasoning Agent."
             )
 
         except Exception as e:

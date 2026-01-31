@@ -53,7 +53,7 @@ class LocalAgentAdapter(BaseAgentAdapter):
 
                 return AgentResponse(
                     status="error",
-                    error=f"Local Service Error ({response.status_code}): {response.text}"
+                    error=f"Local Service Error ({response.status_code}): {response.text}",
                 )
         except Exception as e:
             logger.error(f"Local Adapter Execution Failed: {e}")
@@ -84,7 +84,7 @@ class RemoteAgentAdapter(BaseAgentAdapter):
 
                 return AgentResponse(
                     status="error",
-                    error=f"Remote Service Error ({response.status_code}): {response.text}"
+                    error=f"Remote Service Error ({response.status_code}): {response.text}",
                 )
         except Exception as e:
             logger.error(f"Remote Adapter Execution Failed: {e}")

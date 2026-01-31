@@ -44,7 +44,9 @@ class ServiceRegistry:
         else:
             # Fallback for legacy objects: Wrap in a Dummy Adapter or raise error?
             # For "Unification", we enforce the pattern.
-            raise ValueError(f"Service '{profile.name}' implementation must be a FastAPI app or BaseAgentAdapter. Got {type(implementation)}")
+            raise ValueError(
+                f"Service '{profile.name}' implementation must be a FastAPI app or BaseAgentAdapter. Got {type(implementation)}"
+            )
 
         self._services[profile.name] = adapter
         self._profiles[profile.name] = profile

@@ -28,6 +28,7 @@ logger = get_logger("planning-agent")
 
 # --- Unified Agent Protocol ---
 
+
 class AgentRequest(BaseModel):
     caller_id: str
     target_service: str
@@ -35,11 +36,13 @@ class AgentRequest(BaseModel):
     payload: dict
     security_token: str | None = None
 
+
 class AgentResponse(BaseModel):
     status: str
     data: dict | None = None
     error: str | None = None
     metrics: dict = {}
+
 
 # ------------------------------
 

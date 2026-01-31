@@ -27,7 +27,7 @@ async def planner_node(state: AgentState, kagent: KagentMesh) -> dict:
         caller_id="planner_node",
         target_service="planning_agent",
         action="generate_plan",
-        payload={"goal": last_message, "context": []}
+        payload={"goal": last_message, "context": []},
     )
 
     response = await kagent.execute_action(request)
@@ -45,8 +45,4 @@ async def planner_node(state: AgentState, kagent: KagentMesh) -> dict:
     else:
         logger.error(f"Planning Agent failed: {response.error}. Using fallback.")
 
-    return {
-        "plan": plan,
-        "current_step_index": 0,
-        "next": "supervisor"
-    }
+    return {"plan": plan, "current_step_index": 0, "next": "supervisor"}

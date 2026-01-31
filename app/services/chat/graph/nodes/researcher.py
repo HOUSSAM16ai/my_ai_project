@@ -64,7 +64,7 @@ async def researcher_node(state: AgentState, kagent: KagentMesh) -> dict:
         caller_id="researcher_node",
         target_service="research_agent",
         action="search",
-        payload=params
+        payload=params,
     )
 
     response = await kagent.execute_action(request)
@@ -73,9 +73,9 @@ async def researcher_node(state: AgentState, kagent: KagentMesh) -> dict:
         # Normalize data structure if needed
         data = response.data
         if isinstance(data, dict):
-             results = data.get("results", [])
+            results = data.get("results", [])
         elif isinstance(data, list):
-             results = data
+            results = data
 
         return {
             "search_results": results,
@@ -83,7 +83,4 @@ async def researcher_node(state: AgentState, kagent: KagentMesh) -> dict:
         }
 
     logger.error(f"Research Agent failed: {response.error}")
-    return {
-        "search_results": [],
-        "error": response.error
-    }
+    return {"search_results": [], "error": response.error}

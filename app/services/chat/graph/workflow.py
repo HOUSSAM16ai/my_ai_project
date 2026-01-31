@@ -35,7 +35,9 @@ def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object
     kagent = get_kagent_mesh()
 
     # Register Agents as Services (The Mesh will wrap them in LocalAgentAdapter)
-    kagent.register_service("reasoning_agent", reasoning_app, capabilities=["reason", "solve_deeply"])
+    kagent.register_service(
+        "reasoning_agent", reasoning_app, capabilities=["reason", "solve_deeply"]
+    )
     # Alias 'reasoning_engine' to 'reasoning_agent' logic if needed, or update callers
     kagent.register_service("reasoning_engine", reasoning_app)
 

@@ -22,10 +22,12 @@ async def lifespan(app: FastAPI):
 
 # --- Unified Agent Protocol ---
 
+
 class AgentRequest(BaseModel):
     """
     طلب تنفيذ إجراء موحد.
     """
+
     caller_id: str = Field(..., description="Entity requesting the action")
     target_service: str = Field("research_agent", description="Target service name")
     action: str = Field(..., description="Action to perform (e.g., 'search')")
@@ -37,10 +39,12 @@ class AgentResponse(BaseModel):
     """
     استجابة موحدة للوكيل.
     """
+
     status: str = Field(..., description="'success' or 'error'")
     data: Any = Field(None, description="Result data")
     error: str | None = Field(None, description="Error message")
     metrics: dict[str, Any] = Field(default_factory=dict, description="Performance metrics")
+
 
 # ------------------------------
 
@@ -69,19 +73,22 @@ def _build_router() -> APIRouter:
 
                 # Mock Result for Simplification/Stub
                 results = [
-                    {"title": f"Result for {query}", "snippet": "Relevant content snippet...", "score": 0.95},
-                    {"title": "Secondary Source", "snippet": "More content...", "score": 0.88}
+                    {
+                        "title": f"Result for {query}",
+                        "snippet": "Relevant content snippet...",
+                        "score": 0.95,
+                    },
+                    {"title": "Secondary Source", "snippet": "More content...", "score": 0.88},
                 ]
 
                 return AgentResponse(
                     status="success",
                     data={"results": results, "total": len(results)},
-                    metrics={"retrieval_ms": 200, "reranking_ms": 50}
+                    metrics={"retrieval_ms": 200, "reranking_ms": 50},
                 )
 
             return AgentResponse(
-                status="error",
-                error=f"Action '{request.action}' not supported by Research Agent."
+                status="error", error=f"Action '{request.action}' not supported by Research Agent."
             )
 
         except Exception as e:
