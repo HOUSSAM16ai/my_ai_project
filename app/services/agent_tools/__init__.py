@@ -87,6 +87,18 @@ get_tool_registry().register(_metrics_tool)
 get_tool_registry().register(_file_count_tool)
 get_tool_registry().register(_context_tool)
 
+# Register shell tool
+from .shell_tool import execute_shell, register_shell_tool
+register_shell_tool(_TOOL_REGISTRY)
+
+# Register git tools
+from .git_tool import register_git_tools
+register_git_tools(_TOOL_REGISTRY)
+
+# Register test tools
+from .test_tool import register_test_tools
+register_test_tools(_TOOL_REGISTRY)
+
 
 def get_registry() -> None:
     """

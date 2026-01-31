@@ -66,10 +66,20 @@ class MCPResourceProvider:
     - project://technologies - التقنيات المستخدمة
     """
     
-    def __init__(self, project_root: Path) -> None:
+    def __init__(
+        self, 
+        project_root: Path,
+        fetchers: list[Any] | None = None,
+    ) -> None:
         self.project_root = project_root
         self.resources: dict[str, MCPResource] = {}
         self._cache: dict[str, dict[str, Any]] = {}
+        
+        # تسجيل fetchers (OCP: يمكن إضافة fetchers جديدة بدون تعديل الكود)
+        from app.services.mcp.protocols import get_default_fetchers
+        self._fetchers: dict[str, Any] = {}
+        for fetcher in (fetchers or get_default_fetchers()):
+            self._fetchers[fetcher.uri] = fetcher
     
     async def initialize(self) -> None:
         """تهيئة الموارد."""
@@ -138,7 +148,7 @@ class MCPResourceProvider:
         if uri in self._cache:
             return self._cache[uri]
         
-        # جلب البيانات
+        # جلب البيانات باستخدام fetcher
         content = await self._fetch_resource_content(uri)
         
         # تخزين في الـ cache
@@ -147,93 +157,11 @@ class MCPResourceProvider:
         return content
     
     async def _fetch_resource_content(self, uri: str) -> dict[str, Any]:
-        """جلب محتوى المورد."""
+        """جلب محتوى المورد باستخدام Fetcher المناسب (OCP)."""
         
-        if uri == "project://structure":
-            return build_project_structure(self.project_root)
-        
-        elif uri == "project://microservices":
-            return build_microservices_summary(self.project_root)
-        
-        elif uri == "project://database":
-            try:
-                from app.services.overmind.knowledge import ProjectKnowledge
-                pk = ProjectKnowledge()
-                return await pk.get_database_info()
-            except Exception as e:
-                return {"error": str(e), "message": "تعذر الاتصال بقاعدة البيانات"}
-        
-        elif uri == "project://environment":
-            try:
-                from app.services.overmind.knowledge import ProjectKnowledge
-                pk = ProjectKnowledge()
-                return pk.get_environment_info()
-            except Exception as e:
-                return {"error": str(e)}
-        
-        elif uri == "project://technologies":
-            return {
-                "ai_frameworks": [
-                    {
-                        "name": "LangGraph",
-                        "status": "✅ نشط",
-                        "location": "app/services/overmind/langgraph/",
-                        "description": "محرك الوكلاء المتعددين باستخدام الرسوم البيانية",
-                    },
-                    {
-                        "name": "LlamaIndex",
-                        "status": "✅ نشط",
-                        "location": "microservices/research_agent/src/search_engine/",
-                        "description": "البحث الدلالي واسترجاع المعلومات",
-                    },
-                    {
-                        "name": "DSPy",
-                        "status": "✅ نشط",
-                        "location": "microservices/planning_agent/",
-                        "description": "البرمجة التصريحية للـ LLMs",
-                    },
-                    {
-                        "name": "Reranker",
-                        "status": "✅ نشط",
-                        "location": "microservices/research_agent/src/search_engine/reranker.py",
-                        "description": "إعادة ترتيب نتائج البحث بنموذج BAAI/bge-reranker",
-                    },
-                    {
-                        "name": "Kagent",
-                        "status": "✅ نشط",
-                        "location": "app/services/kagent/",
-                        "description": "شبكة الوكلاء للتوجيه والتنفيذ",
-                    },
-                    {
-                        "name": "MCP Server",
-                        "status": "✅ نشط",
-                        "location": "app/services/mcp/",
-                        "description": "بروتوكول السياق الموحد للأدوات والموارد",
-                    },
-                ],
-                "backend": [
-                    {"name": "FastAPI", "purpose": "إطار العمل الرئيسي"},
-                    {"name": "SQLAlchemy", "purpose": "ORM غير متزامن"},
-                    {"name": "Pydantic v2", "purpose": "التحقق من البيانات"},
-                    {"name": "PostgreSQL", "purpose": "قاعدة البيانات"},
-                ],
-            }
-        
-        elif uri == "project://stats":
-            structure = build_project_structure(self.project_root)
-            microservices = build_microservices_summary(self.project_root)
-            
-            return {
-                "summary": {
-                    "total_python_files": structure["python_files"],
-                    "total_functions": structure["total_functions"],
-                    "total_classes": structure["total_classes"],
-                    "total_lines": structure["total_lines"],
-                    "total_microservices": microservices["total_services"],
-                },
-                "by_directory": structure.get("by_directory", {}),
-                "microservices": microservices.get("services_names", []),
-            }
+        fetcher = self._fetchers.get(uri)
+        if fetcher:
+            return await fetcher.fetch(self.project_root)
         
         return {"error": f"المورد '{uri}' غير معروف"}
     
@@ -245,3 +173,14 @@ class MCPResourceProvider:
         """مسح الـ cache."""
         self._cache.clear()
         logger.debug("🗑️ تم مسح cache الموارد")
+    
+    def register_fetcher(self, fetcher: Any) -> None:
+        """
+        تسجيل fetcher جديد (OCP: التوسع بدون تعديل).
+        
+        Args:
+            fetcher: fetcher يطبق IResourceFetcher
+        """
+        self._fetchers[fetcher.uri] = fetcher
+        logger.debug(f"📦 تم تسجيل fetcher: {fetcher.uri}")
+

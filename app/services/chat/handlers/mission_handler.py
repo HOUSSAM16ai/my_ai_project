@@ -91,8 +91,20 @@ def _get_status_emoji(status: str) -> str:
 async def _poll_mission_status(context: ChatContext, mission_id: int) -> AsyncGenerator[str, None]:
     """Poll mission status until completion or timeout."""
     poll_count = 0
-    max_polls = 15
+    max_polls = 150  # 150 محاولة × 2 ثانية = 5 دقائق
     poll_interval = 2
+    last_status = ""
+    start_time = time.time()
+
+    # رسائل المراحل المختلفة
+    phase_messages = {
+        "planning": "🎯 **المرحلة 1/4**: جاري التخطيط...",
+        "design": "📐 **المرحلة 2/4**: جاري التصميم...",
+        "execution": "⚙️ **المرحلة 3/4**: جاري التنفيذ...",
+        "reflection": "🔍 **المرحلة 4/4**: جاري المراجعة...",
+        "running": "🔄 **جاري المعالجة**...",
+        "pending": "⏳ **في الانتظار**...",
+    }
 
     try:
         while poll_count < max_polls:
@@ -110,21 +122,35 @@ async def _poll_mission_status(context: ChatContext, mission_id: int) -> AsyncGe
             status = status_result.get("status", "unknown")
             tasks = status_result.get("tasks", {})
             is_terminal = status_result.get("is_terminal", False)
+            
+            # حساب الوقت المنقضي
+            elapsed = int(time.time() - start_time)
+            elapsed_str = f"{elapsed}s" if elapsed < 60 else f"{elapsed // 60}m {elapsed % 60}s"
+
+            # إظهار رسالة المرحلة إذا تغيرت الحالة
+            if status != last_status:
+                phase_msg = phase_messages.get(status.lower(), f"📊 **الحالة**: {status}")
+                yield f"\n{phase_msg} ⏱️ ({elapsed_str})\n"
+                last_status = status
 
             task_info = _format_task_info(tasks)
             status_emoji = _get_status_emoji(status)
 
-            yield f"{status_emoji} الحالة: **{status}**{task_info}\n"
+            # إظهار التقدم كل 10 polls (20 ثانية)
+            if poll_count % 10 == 0:
+                yield f"  └─ {status_emoji} {status}{task_info} ⏱️ ({elapsed_str})\n"
 
             if is_terminal:
-                yield f"\n🏁 **انتهت المهمة بحالة: {status}**\n"
+                final_elapsed = int(time.time() - start_time)
+                yield f"\n🏁 **انتهت المهمة بحالة: {status}** ⏱️ ({final_elapsed}s)\n"
                 break
 
     except asyncio.CancelledError:
         yield "\n⚠️ تم إلغاء المتابعة.\n"
 
     if poll_count >= max_polls:
-        yield "\nℹ️ المهمة تعمل في الخلفية. يمكنك متابعة حالتها من لوحة التحكم.\n"
+        elapsed = int(time.time() - start_time)
+        yield f"\nℹ️ المهمة تعمل في الخلفية (قضت {elapsed}s حتى الآن). يمكنك متابعة حالتها من لوحة التحكم.\n"
 
 
 async def handle_deep_analysis(
