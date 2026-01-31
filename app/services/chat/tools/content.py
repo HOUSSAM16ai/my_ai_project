@@ -15,7 +15,6 @@ from sqlalchemy import text
 from app.core.database import async_session_factory
 from app.core.logging import get_logger
 from microservices.research_agent.src.content.constants import BRANCH_MAP
-from microservices.research_agent.src.search_engine.retriever import get_retriever
 
 logger = get_logger("content-tools")
 
@@ -286,6 +285,8 @@ async def _search_vectors(
         return []
 
     try:
+        from microservices.research_agent.src.search_engine.retriever import get_retriever
+
         retriever = get_retriever(db_url)
         nodes = retriever.search(query, limit=limit, filters=filters)
     except Exception as e:
