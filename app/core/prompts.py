@@ -79,29 +79,59 @@ def _get_system_principles_prompt() -> str:
 
 
 async def _get_dynamic_metrics() -> str:
-    """Retrieves project metrics asynchronously."""
+    """
+    استرجاع إحصائيات المشروع الدقيقة باستخدام MCP Server.
+    
+    يوفر معلومات شاملة عن:
+    - عدد ملفات البايثون في كل مجلد
+    - عدد الدوال والكلاسات
+    - التقنيات المستخدمة
+    """
     try:
-        from app.services.agent_tools.domain.metrics import get_project_metrics_handler
-
-        metrics = await get_project_metrics_handler()
-
-        live_stats = metrics.get("live_stats", {})
-        py_files = live_stats.get("python_files", "N/A")
-        total_files = live_stats.get("total_files", "N/A")
-
-        # Parse logic or summary from content if needed, but for now just show stats
-        # The content of PROJECT_METRICS.md might be large, we might want to truncate or summarize
-        # For this prompt, let's keep it concise.
-
+        from app.services.mcp import MCPServer
+        
+        mcp = MCPServer()
+        await mcp.initialize()
+        
+        # الحصول على الإحصائيات الدقيقة
+        metrics = await mcp.get_project_metrics()
+        
+        # بناء النص
+        by_dir_text = ""
+        by_dir = metrics.get("by_directory", {})
+        for dir_name, stats in by_dir.items():
+            by_dir_text += f"  - {dir_name}/: {stats.get('python_files', 0)} ملف\n"
+        
         return f"""
-## 🔬 PROJECT METRICS
-- **Python Files**: {py_files}
-- **Total Files**: {total_files}
-- **Source**: {metrics.get("source")}
+## 📊 إحصائيات المشروع الدقيقة (من MCP Server)
+- **إجمالي ملفات البايثون**: {metrics.get('total_python_files', 'N/A')}
+{by_dir_text}- **إجمالي الدوال**: {metrics.get('total_functions', 'N/A')}
+- **إجمالي الكلاسات**: {metrics.get('total_classes', 'N/A')}
+
+## 🔧 التقنيات المتقدمة النشطة
+- **LangGraph**: محرك الوكلاء المتعددين ✅
+- **LlamaIndex**: البحث الدلالي ✅
+- **DSPy**: تحسين الاستعلامات ✅
+- **Reranker**: إعادة الترتيب ✅
+- **Kagent**: شبكة الوكلاء ✅
+- **MCP Server**: البروتوكول الموحد ✅
 """
     except Exception as e:
         logger.debug(f"Metrics unavailable: {e}")
-        return ""
+        # Fallback للنظام القديم
+        try:
+            from app.services.agent_tools.domain.metrics import get_project_metrics_handler
+            
+            metrics = await get_project_metrics_handler()
+            live_stats = metrics.get("live_stats", {})
+            
+            return f"""
+## 🔬 PROJECT METRICS
+- **Python Files**: {live_stats.get('python_files', 'N/A')}
+- **Total Files**: {live_stats.get('total_files', 'N/A')}
+"""
+        except Exception:
+            return ""
 
 
 def _get_agent_tools_status() -> str:
