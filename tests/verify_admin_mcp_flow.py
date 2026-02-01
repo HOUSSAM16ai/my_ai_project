@@ -51,6 +51,7 @@ class TestFullStackFlow(unittest.IsolatedAsyncioTestCase):
         # stream_chat should return an async iterator
         # Use new JSON format
         import json
+
         complex_reasoning_json = json.dumps({"tool": "COMPLEX_REASONING", "reason": "test"})
         ai_client.stream_chat.return_value = self._mock_stream(complex_reasoning_json)
 

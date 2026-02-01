@@ -30,7 +30,7 @@ def _ensure_dependencies():
     # Assuming Container.resolve might raise or return None.
     try:
         if not Container.resolve(IIntentDetector):
-             Container.register_singleton(IIntentDetector, RegexIntentDetector())
+            Container.register_singleton(IIntentDetector, RegexIntentDetector())
     except Exception:
         Container.register_singleton(IIntentDetector, RegexIntentDetector())
 
