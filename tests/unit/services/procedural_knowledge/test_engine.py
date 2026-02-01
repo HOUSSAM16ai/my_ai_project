@@ -10,6 +10,7 @@ from app.services.procedural_knowledge.engine import GraphAuditor, GraphBuilder
 
 # --- GraphBuilder Tests ---
 
+
 def test_graph_builder_valid_structure():
     """Test building a graph from valid dictionary structure."""
     data = {
@@ -17,9 +18,7 @@ def test_graph_builder_valid_structure():
             {"id": "n1", "type": "entity", "label": "Node 1"},
             {"id": "n2", "type": "entity", "label": "Node 2"},
         ],
-        "relations": [
-            {"source_id": "n1", "target_id": "n2", "type": "contains"}
-        ],
+        "relations": [{"source_id": "n1", "target_id": "n2", "type": "contains"}],
     }
     graph = GraphBuilder.from_structure(data)
 
@@ -34,8 +33,12 @@ def test_graph_builder_invalid_node_ignored():
     data = {
         "nodes": [
             {"id": "n1", "type": "entity", "label": "Valid Node"},
-            {"id": "n2", "type": "invalid_type", "label": "Invalid Node"},  # Assuming enum validation
-             # Missing 'type' or 'id' would raise ValidationError from Pydantic
+            {
+                "id": "n2",
+                "type": "invalid_type",
+                "label": "Invalid Node",
+            },  # Assuming enum validation
+            # Missing 'type' or 'id' would raise ValidationError from Pydantic
             {"id": "n3"},
         ],
         "relations": [],
@@ -55,7 +58,7 @@ def test_graph_builder_invalid_relation_ignored():
     data = {
         "nodes": [{"id": "n1", "type": "entity", "label": "Node 1"}],
         "relations": [
-            {"source_id": "n1", "target_id": "n2"}, # Missing type
+            {"source_id": "n1", "target_id": "n2"},  # Missing type
         ],
     }
     graph = GraphBuilder.from_structure(data)
@@ -63,6 +66,7 @@ def test_graph_builder_invalid_relation_ignored():
 
 
 # --- GraphAuditor Tests ---
+
 
 def test_auditor_register_rule():
     """Test registering rules."""
@@ -84,10 +88,7 @@ def test_auditor_run_audit_success():
     # Create a mock rule that returns a Pass result
     mock_rule = MagicMock()
     expected_result = AuditResult(
-        rule_id="test_rule",
-        status=AuditStatus.PASS,
-        message="Test passed",
-        evidence=[]
+        rule_id="test_rule", status=AuditStatus.PASS, message="Test passed", evidence=[]
     )
     mock_rule.return_value = expected_result
 
@@ -106,10 +107,7 @@ def test_auditor_run_audit_failure_logging():
 
     mock_rule = MagicMock()
     failure_result = AuditResult(
-        rule_id="test_fail",
-        status=AuditStatus.FAIL,
-        message="Test failed",
-        evidence=["ev1"]
+        rule_id="test_fail", status=AuditStatus.FAIL, message="Test failed", evidence=["ev1"]
     )
     mock_rule.return_value = failure_result
     auditor.register_rule(mock_rule)

@@ -15,7 +15,7 @@ def test_knowledge_node_hash():
     # Test usability in set
     s = {node1, node3}
     assert len(s) == 2
-    s.add(node2) # Should be duplicate if hashing works on ID
+    s.add(node2)  # Should be duplicate if hashing works on ID
     assert len(s) == 2
 
 
