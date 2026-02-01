@@ -1,3 +1,4 @@
+import json
 import logging
 from collections.abc import AsyncGenerator
 
@@ -112,34 +113,24 @@ class AdminAgent:
         system_prompt = """
         أنت وكيل إداري ذكي (Admin Agent). مهمتك هي مساعدة مسؤول النظام في فهم حالة النظام.
 
-        لديك الأدوات التالية (Tools) التي يمكنك استدعاؤها أو الاستدلال بنتائجها:
-        1. LIST_USERS: عرض قائمة المستخدمين.
-        2. COUNT_USERS: معرفة عدد المستخدمين.
-        3. DB_SCHEMA: عرض مخطط جداول قاعدة البيانات.
-        4. PROJECT_INFO: معلومات عن هيكل المشروع والملفات.
-        5. MICROSERVICES_INFO: معلومات عن الخدمات المصغرة.
-        6. CODE_SEARCH: البحث في الكود المصدري.
-        7. DEEP_RESEARCH: بحث عميق في المعرفة والمستندات (استخدمه للأسئلة الأكاديمية أو البحثية المعقدة).
-        8. COMPLEX_REASONING: تفكير منطقي معقد وحل مشكلات (استخدمه للتحليل العميق أو التخطيط).
+        يجب عليك تحليل طلب المستخدم وتحديد الأداة المناسبة للتنفيذ.
+        الرد يجب أن يكون **فقط** بصيغة JSON وبدون أي نص إضافي، كالتالي:
 
-        إذا كان السؤال غامضًا، حاول ربطه بأقرب أداة.
-        إذا كان السؤال عن "الخدمات المصغرة" (microservices) استخدم MICROSERVICES_INFO.
-        إذا كان السؤال عن "البنية" أو "هيكل المشروع"، استخدم PROJECT_INFO.
-        إذا كان السؤال عن "أسماء المستخدمين" أو "الأعضاء"، استخدم LIST_USERS.
-        إذا كان السؤال يتطلب بحثاً في مراجع أو تحليل موضوع معقد: استخدم DEEP_RESEARCH.
-        إذا كان السؤال يتطلب خطة عمل أو تحليل منطقي متعدد الخطوات: استخدم COMPLEX_REASONING.
+        {
+            "tool": "TOOL_NAME",
+            "reason": "Why you chose this tool"
+        }
 
-        يجب أن يكون ردك النهائي هو الإجابة الدقيقة بناءً على الأداة المناسبة.
-        إذا كنت بحاجة لتنفيذ أداة، قم بذكر اسم الأداة بوضوح في سياق تفكيرك، وسأقوم أنا بتنفيذها لك (محاكاة).
+        الأدوات المتاحة (Tools):
+        - "LIST_USERS": عرض قائمة المستخدمين (users list, show users).
+        - "COUNT_USERS": معرفة عدد المستخدمين (how many users).
+        - "PROJECT_INFO": معلومات عن هيكل المشروع والملفات (structure, architecture).
+        - "MICROSERVICES_INFO": معلومات عن الخدمات المصغرة (microservices).
+        - "DEEP_RESEARCH": بحث عميق في المعرفة والمستندات (للمواضيع الأكاديمية أو البحثية).
+        - "COMPLEX_REASONING": تفكير منطقي معقد وحل مشكلات (للتحليل أو التخطيط).
+        - "GENERAL_ANSWER": للإجابة العامة التي لا تتطلب أدوات.
 
-        للحفاظ على البساطة في هذه المرحلة، إذا طابق السؤال إحدى الحالات التالية، أجب بنمط محدد:
-        - إذا طلب قائمة مستخدمين: قل "EXECUTE_TOOL: list_users"
-        - إذا طلب عدد مستخدمين: قل "EXECUTE_TOOL: get_user_count"
-        - إذا طلب معلومات المشروع: قل "EXECUTE_TOOL: get_project_overview"
-        - إذا طلب معلومات الخدمات المصغرة: قل "EXECUTE_TOOL: get_microservices_overview"
-        - إذا تطلب بحثاً عميقاً: قل "EXECUTE_TOOL: deep_research"
-        - إذا تطلب تفكيراً معقداً: قل "EXECUTE_TOOL: complex_reasoning"
-        - غير ذلك: أجب كخبير نظام بناءً على معرفتك العامة بالسياق المرفق.
+        تحذير: لا تضف أي نص خارج كائن JSON.
         """
 
         messages = [
@@ -148,7 +139,7 @@ class AdminAgent:
         ]
 
         full_response = ""
-        # Note: We assume ai_client is available
+        # Accumulate response
         if self.ai_client:
             async for chunk in self.ai_client.stream_chat(messages):
                 content = ""
@@ -159,52 +150,68 @@ class AdminAgent:
                     content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
                 full_response += content
 
-        # Check for command
-        # We recursively call run but we need to match the handler manually to avoid infinite loop
-        # or just invoke the handler directly.
+        # Clean JSON (remove markdown blocks if present)
+        clean_json = full_response.replace("```json", "").replace("```", "").strip()
 
-        if "EXECUTE_TOOL: list_users" in full_response:
-            # Find UserListHandler
-            h = next((x for x in self.handlers if isinstance(x, UserListHandler)), None)
-            if h:
-                yield await h.handle(question, question.lower())
+        try:
+            decision = json.loads(clean_json)
+            tool_name = decision.get("tool", "GENERAL_ANSWER")
+            reason = decision.get("reason", "")
+            logger.info(f"Admin Dynamic Router: {tool_name} ({reason})")
+
+            if tool_name == "LIST_USERS":
+                h = next((x for x in self.handlers if isinstance(x, UserListHandler)), None)
+                if h:
+                    yield await h.handle(question, question.lower())
+                else:
+                    yield "خطأ: تعذر الوصول لخدمة المستخدمين."
+
+            elif tool_name == "COUNT_USERS":
+                h = next((x for x in self.handlers if isinstance(x, UserCountHandler)), None)
+                if h:
+                    yield await h.handle(question, question.lower())
+
+            elif tool_name == "PROJECT_INFO":
+                h = next((x for x in self.handlers if isinstance(x, ProjectInfoHandler)), None)
+                if h:
+                    yield await h.handle(question, question.lower())
+
+            elif tool_name == "MICROSERVICES_INFO":
+                h = next((x for x in self.handlers if isinstance(x, MicroservicesHandler)), None)
+                if h:
+                    yield await h.handle(question, question.lower())
+
+            elif tool_name == "DEEP_RESEARCH":
+                if self.mcp:
+                    yield "جاري تنفيذ البحث العميق عبر MCP..."
+                    result = await self.mcp.semantic_search(query=question, top_k=5)
+                    if result.get("success"):
+                        yield "\n\n### نتائج البحث العميق:\n"
+                        for node in result.get("results", []):
+                            yield f"- {node.text[:300]}...\n"
+                    else:
+                        yield f"حدث خطأ في البحث: {result.get('error')}"
+                else:
+                    yield "عذراً، خدمة البحث العميق (MCP) غير متاحة حالياً."
+
+            elif tool_name == "COMPLEX_REASONING":
+                if self.mcp:
+                    yield "جاري تنفيذ التفكير المعقد عبر MCP (LangGraph)..."
+                    result = await self.mcp.run_langgraph_workflow(goal=question)
+                    if result.get("success"):
+                        yield f"\n\n### النتيجة النهائية:\n{result.get('final_answer')}"
+                    else:
+                        yield f"حدث خطأ في المعالجة: {result.get('error')}"
+                else:
+                    yield "عذراً، خدمة التفكير المعقد (MCP) غير متاحة حالياً."
+
             else:
-                yield "Error: Handler not found."
+                # Fallback to General Answer (which ideally would be the reasoning in the JSON, but here we might need to re-ask or just return the reason)
+                # Since the model only outputted JSON, we don't have a conversational answer.
+                # We should probably ask it to answer now.
+                yield f"التحليل: {reason}\n(لم يتم تحديد أداة خاصة لهذا الطلب، يرجى التوضيح)."
 
-        elif "EXECUTE_TOOL: get_user_count" in full_response:
-            h = next((x for x in self.handlers if isinstance(x, UserCountHandler)), None)
-            if h:
-                yield await h.handle(question, question.lower())
-
-        elif "EXECUTE_TOOL: get_project_overview" in full_response:
-            h = next((x for x in self.handlers if isinstance(x, ProjectInfoHandler)), None)
-            if h:
-                yield await h.handle(question, question.lower())
-
-        elif "EXECUTE_TOOL: get_microservices_overview" in full_response:
-            h = next((x for x in self.handlers if isinstance(x, MicroservicesHandler)), None)
-            if h:
-                yield await h.handle(question, question.lower())
-
-        elif "EXECUTE_TOOL: deep_research" in full_response and self.mcp:
-            yield "جاري تنفيذ البحث العميق عبر MCP..."
-            # Use MCP for semantic search
-            result = await self.mcp.semantic_search(query=question, top_k=5)
-            if result.get("success"):
-                yield "\n\nنتائج البحث العميق:\n"
-                for node in result.get("results", []):
-                    yield f"- {node.text[:200]}...\n"
-            else:
-                yield f"حدث خطأ في البحث: {result.get('error')}"
-
-        elif "EXECUTE_TOOL: complex_reasoning" in full_response and self.mcp:
-            yield "جاري تنفيذ التفكير المعقد عبر MCP (LangGraph)..."
-            # Use MCP to run LangGraph workflow
-            result = await self.mcp.run_langgraph_workflow(goal=question)
-            if result.get("success"):
-                yield f"\n\nالنتيجة النهائية:\n{result.get('final_answer')}"
-            else:
-                yield f"حدث خطأ في المعالجة: {result.get('error')}"
-
-        else:
+        except json.JSONDecodeError:
+            logger.warning(f"Failed to parse JSON from Admin Router: {full_response}")
+            # Fallback: Just yield the raw text if it wasn't JSON
             yield full_response

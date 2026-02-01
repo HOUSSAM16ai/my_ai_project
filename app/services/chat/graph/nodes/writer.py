@@ -16,10 +16,36 @@ from app.services.chat.graph.components.prompt_strategist import StandardPromptS
 from app.services.chat.graph.domain import StudentProfile
 from app.services.chat.graph.state import AgentState
 
-# Bootstrap Dependencies (This typically belongs in a bootstrap.py, placed here for self-containment in this refactor)
-Container.register_singleton(IIntentDetector, RegexIntentDetector())
-Container.register_singleton(IContextComposer, FirewallContextComposer())
-Container.register_singleton(IPromptStrategist, StandardPromptStrategist())
+
+def _ensure_dependencies():
+    """
+    Ensure dependencies are registered in the Container.
+    Uses a 'Look Before You Leap' or 'Ask for Forgiveness' approach depending on Container implementation.
+    Here we just re-register or register if missing.
+    """
+    # Note: In a real app, this should be done in a main.py or bootstrap.
+    # We do it here to keep the node self-contained but avoid import-side-effects.
+
+    # We attempt to resolve. If it fails (or returns None), we register.
+    # Assuming Container.resolve might raise or return None.
+    try:
+        if not Container.resolve(IIntentDetector):
+            Container.register_singleton(IIntentDetector, RegexIntentDetector())
+    except Exception:
+        Container.register_singleton(IIntentDetector, RegexIntentDetector())
+
+    try:
+        if not Container.resolve(IContextComposer):
+            Container.register_singleton(IContextComposer, FirewallContextComposer())
+    except Exception:
+        Container.register_singleton(IContextComposer, FirewallContextComposer())
+
+    try:
+        if not Container.resolve(IPromptStrategist):
+            Container.register_singleton(IPromptStrategist, StandardPromptStrategist())
+    except Exception:
+        Container.register_singleton(IPromptStrategist, StandardPromptStrategist())
+
 
 # --- Main Node Orchestrator ---
 
@@ -30,24 +56,38 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
     Flow: Input -> Detect Intent -> Compose Context -> Build Prompt -> Generate.
     Refactored to use Dependency Injection (SOLID).
     """
-    # 0. Resolve Dependencies
+    # 0. Bootstrap (if needed)
+    _ensure_dependencies()
+
+    # 1. Resolve Dependencies
     intent_detector = Container.resolve(IIntentDetector)
     context_composer = Container.resolve(IContextComposer)
     prompt_strategist = Container.resolve(IPromptStrategist)
 
-    # 1. Extraction
+    # 2. Extraction
     messages = state["messages"]
     last_user_msg = messages[-1].content
     search_results = state.get("search_results", [])
     student_level = state.get("diagnosis", "Average")
 
-    # 2. Analysis
+    # Check for Supervisor instructions
+    supervisor_instruction = state.get("supervisor_instruction", "")
+
+    # 3. Analysis
     intent = intent_detector.analyze(last_user_msg)
     profile = StudentProfile(level=student_level)
 
-    # 3. Composition
+    # 4. Composition
     context_text = context_composer.compose(search_results, intent, last_user_msg)
     system_prompt = prompt_strategist.build_prompt(profile, intent)
+
+    # Inject Supervisor Instructions (Dynamic Orchestration)
+    if supervisor_instruction:
+        system_prompt += (
+            f"\n\n### SUPERVISOR INSTRUCTION:\n"
+            f"{supervisor_instruction}\n"
+            f"(You MUST strictly follow this specific instruction from your Supervisor)."
+        )
 
     # Inject Critique if available (The Self-Correction Loop)
     review_feedback = state.get("review_feedback")
@@ -59,10 +99,10 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
             f"Ensure you address every point and maintain the luxurious tone."
         )
 
-    # 4. Payload Construction
+    # 5. Payload Construction
     final_user_content = f"Context:\n{context_text}\n\nStudent Question: {last_user_msg}"
 
-    # 5. Execution
+    # 6. Execution
     final_text = await ai_client.send_message(
         system_prompt=system_prompt, user_message=final_user_content
     )
