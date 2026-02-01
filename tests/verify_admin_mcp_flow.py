@@ -1,7 +1,6 @@
-import asyncio
-import unittest
-from unittest.mock import MagicMock, AsyncMock, patch
 import sys
+import unittest
+from unittest.mock import AsyncMock, MagicMock, patch
 
 # Mock heavy dependencies
 sys.modules["app.services.overmind.langgraph"] = MagicMock()
@@ -21,12 +20,12 @@ sys.modules["app.services.chat.agents.admin_handlers.users"] = MagicMock()
 sys.modules["langgraph.graph"] = MagicMock()
 sys.modules["langgraph.prebuilt"] = MagicMock()
 
+sys.modules["app.services.chat.graph.search"] = MagicMock()
+
 from app.services.chat.agents.admin import AdminAgent
+from app.services.chat.graph.nodes.researcher import researcher_node
 from app.services.chat.tools import ToolRegistry
 
-sys.modules["app.services.chat.graph.search"] = MagicMock()
-from app.services.chat.graph.nodes.researcher import researcher_node
-from app.services.chat.graph.state import AgentState
 
 class TestFullStackFlow(unittest.IsolatedAsyncioTestCase):
     async def test_admin_flow_uses_mcp(self):
@@ -35,7 +34,7 @@ class TestFullStackFlow(unittest.IsolatedAsyncioTestCase):
         """
         # Setup
         tools = ToolRegistry()
-        ai_client = MagicMock() # Changed from AsyncMock to MagicMock
+        ai_client = MagicMock()  # Changed from AsyncMock to MagicMock
 
         # Mock AI Client to return specific triggers
         # stream_chat should return an async iterator
@@ -47,7 +46,10 @@ class TestFullStackFlow(unittest.IsolatedAsyncioTestCase):
 
         # Mock MCP
         agent.mcp = AsyncMock()
-        agent.mcp.run_langgraph_workflow.return_value = {"success": True, "final_answer": "Reasoned Answer"}
+        agent.mcp.run_langgraph_workflow.return_value = {
+            "success": True,
+            "final_answer": "Reasoned Answer",
+        }
         agent.mcp.semantic_search.return_value = {"success": True, "results": []}
 
         # Test Complex Reasoning
@@ -66,7 +68,7 @@ class TestFullStackFlow(unittest.IsolatedAsyncioTestCase):
         agent.mcp.reset_mock()
 
         print("\n--- Testing Admin Deep Research ---")
-        async for resp in agent.run("Find academic papers about Y"):
+        async for _resp in agent.run("Find academic papers about Y"):
             pass
 
         # Verify call
@@ -85,7 +87,7 @@ class TestFullStackFlow(unittest.IsolatedAsyncioTestCase):
         print("\n--- Testing Student Researcher Flow ---")
         with patch("app.services.chat.graph.nodes.researcher.build_graph_search_plan") as mock_plan:
             mock_plan.return_value.queries = ["Search for X"]
-            result = await researcher_node(state, kagent_mesh)
+            await researcher_node(state, kagent_mesh)
 
         kagent_mesh.execute_action.assert_called_once()
         args = kagent_mesh.execute_action.call_args[0][0]
@@ -99,6 +101,7 @@ class TestFullStackFlow(unittest.IsolatedAsyncioTestCase):
         chunk.choices = [MagicMock()]
         chunk.choices[0].delta.content = content
         yield chunk
+
 
 if __name__ == "__main__":
     unittest.main()
