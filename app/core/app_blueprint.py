@@ -15,20 +15,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api.routers import (
-    admin,
-    agents,
-    content,
-    crud,
-    customer_chat,
-    data_mesh,
-    missions,
-    observability,
-    overmind,
-    security,
-    system,
-    ums,
-)
+from app.api.routers.registry import RouterSpec, base_router_registry
 from app.core.config import AppSettings
 from app.middleware.remove_blocking_headers import RemoveBlockingHeadersMiddleware
 from app.middleware.security.rate_limit_middleware import RateLimitMiddleware
@@ -41,7 +28,6 @@ __all__ = [
     "MiddlewareSpec",
     "RouterSpec",
     "StaticFilesSpec",
-    "base_router_registry",
     "build_cors_options",
     "build_kernel_config",
     "build_kernel_spec",
@@ -54,7 +40,6 @@ __all__ = [
 
 
 type MiddlewareSpec = tuple[type[BaseHTTPMiddleware] | type, dict[str, object]]
-type RouterSpec = tuple[APIRouter, str]
 
 BASE_CORS_OPTIONS: dict[str, object] = {
     "allow_credentials": True,
@@ -244,25 +229,6 @@ def build_static_files_spec(config: KernelConfig) -> StaticFilesSpec:
         enabled=config.enable_static_files,
         serve_spa=True,
     )
-
-
-def base_router_registry() -> list[RouterSpec]:
-    """يبني سجل الموجهات الأساسية للتطبيق بدون موجه البوابة."""
-    return [
-        (system.root_router, ""),
-        (system.router, ""),
-        (admin.router, ""),
-        (ums.router, ""),
-        (security.router, "/api/security"),
-        (data_mesh.router, "/api/v1/data-mesh"),
-        (observability.router, "/api/observability"),
-        (crud.router, "/api/v1"),
-        (customer_chat.router, ""),
-        (agents.router, ""),
-        (overmind.router, ""),
-        (missions.router, ""),
-        (content.router, ""),
-    ]
 
 
 def is_dev_environment(settings_dict: dict[str, object]) -> bool:
