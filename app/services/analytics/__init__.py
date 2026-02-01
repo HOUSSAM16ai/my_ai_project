@@ -23,12 +23,12 @@ from app.services.analytics.predictive_analyzer import (
 )
 
 __all__ = [
+    "ErrorPattern",
+    # Pattern Detector
+    "PatternDetector",
     # Predictive Analyzer
     "PredictiveAnalyzer",
     "StrugglePrediction",
-    "get_predictive_analyzer",
-    # Pattern Detector
-    "PatternDetector",
-    "ErrorPattern",
     "get_pattern_detector",
+    "get_predictive_analyzer",
 ]

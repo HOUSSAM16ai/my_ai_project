@@ -12,6 +12,7 @@
 هذا الملف يوفر واجهة موحدة للتكامل مع كل هذه التقنيات.
 """
 
+import contextlib
 from pathlib import Path
 from typing import Any
 
@@ -23,7 +24,7 @@ logger = get_logger(__name__)
 class MCPIntegrations:
     """
     تكاملات MCP مع التقنيات المتقدمة.
-    
+
     يوفر واجهة موحدة للتفاعل مع:
     - LangGraph: تشغيل سير العمل المتعدد الوكلاء
     - LlamaIndex: البحث الدلالي واسترجاع السياق
@@ -31,15 +32,15 @@ class MCPIntegrations:
     - Reranker: إعادة ترتيب النتائج
     - Kagent: تنفيذ الإجراءات عبر الوكلاء
     """
-    
+
     def __init__(self, project_root: Path | None = None) -> None:
         self.project_root = project_root or Path.cwd()
         self._langgraph_engine = None
         self._kagent_mesh = None
         self._reranker = None
-    
+
     # ============== LangGraph ==============
-    
+
     async def run_langgraph_workflow(
         self,
         goal: str,
@@ -47,26 +48,26 @@ class MCPIntegrations:
     ) -> dict[str, Any]:
         """
         تشغيل سير عمل LangGraph.
-        
+
         Args:
             goal: الهدف المطلوب تحقيقه
             context: سياق إضافي (اختياري)
-            
+
         Returns:
             dict: نتيجة سير العمل
         """
         try:
-            from app.services.overmind.langgraph import LangGraphAgentService
             from app.services.overmind.domain.api_schemas import LangGraphRunRequest
-            
+            from app.services.overmind.langgraph import LangGraphAgentService
+
             service = LangGraphAgentService()
             request = LangGraphRunRequest(
                 goal=goal,
                 context=context or {},
             )
-            
+
             result = await service.run(request)
-            
+
             return {
                 "success": True,
                 "run_id": result.run_id,
@@ -76,11 +77,12 @@ class MCPIntegrations:
         except Exception as e:
             logger.error(f"خطأ في LangGraph: {e}")
             return {"success": False, "error": str(e)}
-    
+
     def get_langgraph_status(self) -> dict[str, Any]:
         """حالة LangGraph."""
         try:
-            from app.services.overmind.langgraph import LangGraphAgentService
+            from app.services.overmind.langgraph import LangGraphAgentService  # noqa: F401
+
             return {
                 "status": "active",
                 "agents": ["contextualizer", "strategist", "architect", "operator", "auditor"],
@@ -88,9 +90,9 @@ class MCPIntegrations:
             }
         except ImportError:
             return {"status": "unavailable", "error": "LangGraph غير متوفر"}
-    
+
     # ============== LlamaIndex ==============
-    
+
     async def semantic_search(
         self,
         query: str,
@@ -99,12 +101,12 @@ class MCPIntegrations:
     ) -> dict[str, Any]:
         """
         بحث دلالي باستخدام LlamaIndex.
-        
+
         Args:
             query: نص البحث
             top_k: عدد النتائج
             filters: فلاتر البحث (السنة، الموضوع، الفرع)
-            
+
         Returns:
             dict: نتائج البحث
         """
@@ -112,11 +114,11 @@ class MCPIntegrations:
             from microservices.research_agent.src.search_engine import (
                 get_retriever,
             )
-            
+
             # ملاحظة: قد يحتاج URL قاعدة البيانات
             retriever = get_retriever("postgresql://...")
             results = await retriever.search(query, top_k=top_k, filters=filters)
-            
+
             return {
                 "success": True,
                 "query": query,
@@ -126,20 +128,23 @@ class MCPIntegrations:
         except Exception as e:
             logger.error(f"خطأ في LlamaIndex: {e}")
             return {"success": False, "error": str(e)}
-    
+
     def get_llamaindex_status(self) -> dict[str, Any]:
         """حالة LlamaIndex."""
         try:
-            from microservices.research_agent.src.search_engine import LlamaIndexRetriever
+            from microservices.research_agent.src.search_engine import (  # noqa: F401
+                LlamaIndexRetriever,
+            )
+
             return {
                 "status": "active",
                 "capabilities": ["semantic_search", "metadata_filtering", "reranking"],
             }
         except ImportError:
             return {"status": "unavailable"}
-    
+
     # ============== DSPy ==============
-    
+
     async def refine_query(
         self,
         query: str,
@@ -147,11 +152,11 @@ class MCPIntegrations:
     ) -> dict[str, Any]:
         """
         تحسين استعلام باستخدام DSPy.
-        
+
         Args:
             query: الاستعلام الأصلي
             api_key: مفتاح API (اختياري)
-            
+
         Returns:
             dict: الاستعلام المحسن مع الفلاتر
         """
@@ -159,9 +164,9 @@ class MCPIntegrations:
             from microservices.research_agent.src.search_engine.query_refiner import (
                 get_refined_query,
             )
-            
+
             result = get_refined_query(query, api_key)
-            
+
             return {
                 "success": True,
                 "original_query": query,
@@ -175,7 +180,7 @@ class MCPIntegrations:
         except Exception as e:
             logger.error(f"خطأ في DSPy: {e}")
             return {"success": False, "error": str(e)}
-    
+
     async def generate_plan(
         self,
         goal: str,
@@ -183,20 +188,20 @@ class MCPIntegrations:
     ) -> dict[str, Any]:
         """
         توليد خطة باستخدام DSPy.
-        
+
         Args:
             goal: الهدف المطلوب
             context: السياق
-            
+
         Returns:
             dict: خطوات الخطة
         """
         try:
             from microservices.planning_agent.cognitive import PlanGenerator
-            
+
             generator = PlanGenerator()
             result = generator.forward(goal=goal, context=context)
-            
+
             return {
                 "success": True,
                 "goal": goal,
@@ -205,20 +210,21 @@ class MCPIntegrations:
         except Exception as e:
             logger.error(f"خطأ في توليد الخطة: {e}")
             return {"success": False, "error": str(e)}
-    
+
     def get_dspy_status(self) -> dict[str, Any]:
         """حالة DSPy."""
         try:
-            import dspy
+            import dspy  # noqa: F401
+
             return {
                 "status": "active",
                 "modules": ["GeneratePlan", "CritiquePlan", "QueryRefiner"],
             }
         except ImportError:
             return {"status": "unavailable"}
-    
+
     # ============== Reranker ==============
-    
+
     async def rerank_results(
         self,
         query: str,
@@ -227,12 +233,12 @@ class MCPIntegrations:
     ) -> dict[str, Any]:
         """
         إعادة ترتيب النتائج باستخدام Reranker.
-        
+
         Args:
             query: نص الاستعلام
             documents: قائمة المستندات
             top_n: عدد النتائج المطلوبة
-            
+
         Returns:
             dict: النتائج المرتبة
         """
@@ -240,10 +246,10 @@ class MCPIntegrations:
             from microservices.research_agent.src.search_engine.reranker import (
                 get_reranker,
             )
-            
+
             reranker = get_reranker()
             reranked = reranker.rerank(query, documents, top_n=top_n)
-            
+
             return {
                 "success": True,
                 "query": query,
@@ -252,20 +258,23 @@ class MCPIntegrations:
         except Exception as e:
             logger.error(f"خطأ في Reranker: {e}")
             return {"success": False, "error": str(e)}
-    
+
     def get_reranker_status(self) -> dict[str, Any]:
         """حالة Reranker."""
         try:
-            from microservices.research_agent.src.search_engine.reranker import Reranker
+            from microservices.research_agent.src.search_engine.reranker import (  # noqa: F401
+                Reranker,
+            )
+
             return {
                 "status": "active",
                 "model": "BAAI/bge-reranker-base",
             }
         except ImportError:
             return {"status": "unavailable"}
-    
+
     # ============== Kagent ==============
-    
+
     async def execute_action(
         self,
         action: str,
@@ -274,27 +283,27 @@ class MCPIntegrations:
     ) -> dict[str, Any]:
         """
         تنفيذ إجراء عبر Kagent.
-        
+
         Args:
             action: اسم الإجراء
             capability: القدرة المطلوبة
             payload: بيانات الإجراء
-            
+
         Returns:
             dict: نتيجة التنفيذ
         """
         try:
-            from app.services.kagent import KagentMesh, AgentRequest
-            
+            from app.services.kagent import AgentRequest, KagentMesh
+
             mesh = KagentMesh()
             request = AgentRequest(
                 action=action,
                 capability=capability,
                 payload=payload or {},
             )
-            
+
             response = await mesh.execute_action(request)
-            
+
             return {
                 "success": response.success,
                 "result": response.result,
@@ -303,20 +312,21 @@ class MCPIntegrations:
         except Exception as e:
             logger.error(f"خطأ في Kagent: {e}")
             return {"success": False, "error": str(e)}
-    
+
     def get_kagent_status(self) -> dict[str, Any]:
         """حالة Kagent."""
         try:
-            from app.services.kagent import KagentMesh
+            from app.services.kagent import KagentMesh  # noqa: F401
+
             return {
                 "status": "active",
                 "components": ["ServiceRegistry", "SecurityMesh", "LocalAdapter"],
             }
         except ImportError:
             return {"status": "unavailable"}
-    
+
     # ============== ملخص الحالة ==============
-    
+
     def get_all_integrations_status(self) -> dict[str, Any]:
         """
         تعيد حالة جميع التكاملات (للوحة تحكم الأدمن).
@@ -324,72 +334,65 @@ class MCPIntegrations:
         # جلب إحصائيات الإصلاح الحقيقية
         try:
             from app.services.overmind.agents.self_healing import get_self_healing_agent
+
             healing_agent = get_self_healing_agent()
             healing_stats = healing_agent.get_healing_stats()
         except ImportError:
             healing_stats = {"status": "module_not_found"}
 
         return {
-            "langgraph": {
-                "status": "connected",
-                "version": "0.1.0",
-                "workflows_active": 5
-            },
-            "kagent": {
-                "status": "connected", 
-                "agents_online": 3,
-                "mesh_health": "stable"
-            },
+            "langgraph": {"status": "connected", "version": "0.1.0", "workflows_active": 5},
+            "kagent": {"status": "connected", "agents_online": 3, "mesh_health": "stable"},
             "learning": {
-                "status": "active", 
+                "status": "active",
                 "integration": "student_profile",
-                "algorithms": ["elo_rating", "forgetting_curve"]
+                "algorithms": ["elo_rating", "forgetting_curve"],
             },
             "knowledge": {
-                "status": "active", 
+                "status": "active",
                 "integration": "concept_graph",
-                "concepts_loaded": 17
+                "concepts_loaded": 17,
             },
             "analytics_dashboard": {
                 "status": "active",
                 "integration": "predictive_analyzer",
-                "healing_metrics": healing_stats  # إحصائيات حقيقية للأدمن
+                "healing_metrics": healing_stats,  # إحصائيات حقيقية للأدمن
             },
             "vision": {
-                "status": "active", 
+                "status": "active",
                 "integration": "multimodal_processor",
-                "models": ["gpt-4o", "clip"]
+                "models": ["gpt-4o", "clip"],
             },
             "collaboration": {
                 "status": "active",
                 "integration": "kagent_help_desk",
-                "active_sessions": 0
-            }
+                "active_sessions": 0,
+            },
         }
-    
+
     # ============== Learning Services ==============
-    
+
     async def get_student_profile(
         self,
         student_id: int,
     ) -> dict[str, Any]:
         """
         جلب ملف الطالب التعليمي.
-        
+
         يستخدم LlamaIndex لإثراء الملف بالسياق.
         """
         try:
             from app.services.learning.student_profile import get_student_profile
-            
+
             profile = await get_student_profile(student_id)
-            
+
             # إثراء بالسياق من LlamaIndex (إذا متوفر)
-            try:
-                from microservices.research_agent.src.search_engine import get_retriever
+            with contextlib.suppress(ImportError):
+                from microservices.research_agent.src.search_engine import (  # noqa: F401
+                    get_retriever,
+                )
                 # يمكن جلب تاريخ الطالب من المحتوى
-            except ImportError:
-                pass
-            
+
             return {
                 "success": True,
                 "student_id": student_id,
@@ -402,7 +405,7 @@ class MCPIntegrations:
         except Exception as e:
             logger.error(f"خطأ في ملف الطالب: {e}")
             return {"success": False, "error": str(e)}
-    
+
     async def record_learning_event(
         self,
         student_id: int,
@@ -413,19 +416,24 @@ class MCPIntegrations:
     ) -> dict[str, Any]:
         """تسجيل حدث تعليمي."""
         try:
-            from app.services.learning.student_profile import get_student_profile, save_student_profile
-            
+            from app.services.learning.student_profile import (
+                get_student_profile,
+                save_student_profile,
+            )
+
             profile = await get_student_profile(student_id)
             profile.record_attempt(topic_id, topic_name, is_correct, content_id)
             await save_student_profile(profile)
-            
+
             return {
                 "success": True,
-                "new_mastery": profile.topic_mastery.get(topic_id).mastery_score if topic_id in profile.topic_mastery else 0,
+                "new_mastery": profile.topic_mastery.get(topic_id).mastery_score
+                if topic_id in profile.topic_mastery
+                else 0,
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+
     async def get_difficulty_recommendation(
         self,
         student_id: int,
@@ -433,13 +441,13 @@ class MCPIntegrations:
     ) -> dict[str, Any]:
         """توصية بمستوى الصعوبة."""
         try:
-            from app.services.learning.student_profile import get_student_profile
             from app.services.learning.difficulty_adjuster import get_difficulty_adjuster
-            
+            from app.services.learning.student_profile import get_student_profile
+
             profile = await get_student_profile(student_id)
             adjuster = get_difficulty_adjuster()
             rec = adjuster.recommend(profile, topic_id)
-            
+
             return {
                 "success": True,
                 "level": rec.level.value,
@@ -448,20 +456,25 @@ class MCPIntegrations:
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+
     def get_learning_status(self) -> dict[str, Any]:
         """حالة خدمات التعلم."""
         try:
-            from app.services.learning import StudentProfile, DifficultyAdjuster, MasteryTracker
+            from app.services.learning import (  # noqa: F401
+                DifficultyAdjuster,
+                MasteryTracker,
+                StudentProfile,
+            )
+
             return {
                 "status": "active",
                 "components": ["StudentProfile", "DifficultyAdjuster", "MasteryTracker"],
             }
         except ImportError:
             return {"status": "unavailable"}
-    
+
     # ============== Knowledge Graph ==============
-    
+
     async def check_prerequisites(
         self,
         student_id: int,
@@ -469,17 +482,17 @@ class MCPIntegrations:
     ) -> dict[str, Any]:
         """
         فحص المتطلبات السابقة.
-        
+
         يستخدم Reranker لترتيب المفاهيم المفقودة.
         """
         try:
-            from app.services.learning.student_profile import get_student_profile
             from app.services.knowledge.prerequisite_checker import get_prerequisite_checker
-            
+            from app.services.learning.student_profile import get_student_profile
+
             profile = await get_student_profile(student_id)
             checker = get_prerequisite_checker()
             report = checker.check_readiness(profile, concept_id)
-            
+
             # استخدام Reranker لترتيب المتطلبات حسب الأهمية
             missing = report.missing_prerequisites
             if missing and len(missing) > 1:
@@ -493,7 +506,7 @@ class MCPIntegrations:
                         missing = reranked["reranked_results"]
                 except Exception:
                     pass
-            
+
             return {
                 "success": True,
                 "concept": report.concept_name,
@@ -504,7 +517,7 @@ class MCPIntegrations:
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+
     async def get_learning_path(
         self,
         from_concept: str,
@@ -513,10 +526,10 @@ class MCPIntegrations:
         """إيجاد مسار التعلم."""
         try:
             from app.services.knowledge.concept_graph import get_concept_graph
-            
+
             graph = get_concept_graph()
             path = graph.get_learning_path(from_concept, to_concept)
-            
+
             return {
                 "success": True,
                 "path": [c.name_ar for c in path],
@@ -524,34 +537,34 @@ class MCPIntegrations:
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+
     async def find_related_concepts(
         self,
         topic: str,
     ) -> dict[str, Any]:
         """
         إيجاد المفاهيم المرتبطة.
-        
+
         يستخدم DSPy لتحسين البحث.
         """
         try:
             from app.services.knowledge.concept_graph import get_concept_graph
-            
+
             graph = get_concept_graph()
-            
+
             # تحسين البحث بـ DSPy
             refined = await self.refine_query(topic)
             search_term = refined.get("refined_query", topic) if refined.get("success") else topic
-            
+
             concept = graph.find_concept_by_topic(search_term)
-            
+
             if not concept:
                 return {"success": False, "error": "مفهوم غير موجود"}
-            
+
             related = graph.get_related_concepts(concept.concept_id)
             prereqs = graph.get_prerequisites(concept.concept_id)
             next_concepts = graph.get_next_concepts(concept.concept_id)
-            
+
             return {
                 "success": True,
                 "concept": concept.name_ar,
@@ -561,12 +574,13 @@ class MCPIntegrations:
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+
     def get_knowledge_status(self) -> dict[str, Any]:
         """حالة خدمات المعرفة."""
         try:
-            from app.services.knowledge import ConceptGraph, PrerequisiteChecker
+            from app.services.knowledge import ConceptGraph, PrerequisiteChecker  # noqa: F401
             from app.services.knowledge.concept_graph import get_concept_graph
+
             graph = get_concept_graph()
             return {
                 "status": "active",
@@ -575,24 +589,24 @@ class MCPIntegrations:
             }
         except ImportError:
             return {"status": "unavailable"}
-    
+
     # ============== Predictive Analytics ==============
-    
+
     async def predict_struggles(
         self,
         student_id: int,
     ) -> dict[str, Any]:
         """
         التنبؤ بالصعوبات المستقبلية.
-        
+
         يستخدم DSPy لتحسين التنبؤات.
         """
         try:
             from app.services.analytics.predictive_analyzer import get_predictive_analyzer
-            
+
             analyzer = get_predictive_analyzer()
             predictions = await analyzer.predict_struggles(student_id)
-            
+
             return {
                 "success": True,
                 "predictions": [
@@ -607,7 +621,7 @@ class MCPIntegrations:
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+
     async def detect_error_patterns(
         self,
         student_id: int,
@@ -615,10 +629,10 @@ class MCPIntegrations:
         """كشف أنماط الأخطاء."""
         try:
             from app.services.analytics.pattern_detector import get_pattern_detector
-            
+
             detector = get_pattern_detector()
             patterns = await detector.detect_patterns(student_id)
-            
+
             return {
                 "success": True,
                 "patterns": [
@@ -633,35 +647,36 @@ class MCPIntegrations:
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+
     def get_analytics_status(self) -> dict[str, Any]:
         """حالة خدمات التحليل."""
         try:
-            from app.services.analytics import PredictiveAnalyzer, PatternDetector
+            from app.services.analytics import PatternDetector, PredictiveAnalyzer  # noqa: F401
+
             return {
                 "status": "active",
                 "components": ["PredictiveAnalyzer", "PatternDetector"],
             }
         except ImportError:
             return {"status": "unavailable"}
-    
+
     # ============== Vision Services ==============
-    
+
     async def analyze_exercise_image(
         self,
         image_path: str,
     ) -> dict[str, Any]:
         """
         تحليل صورة تمرين.
-        
+
         يستخدم LlamaIndex لربط المحتوى بالمعرفة.
         """
         try:
             from app.services.vision.multimodal_processor import get_multimodal_processor
-            
+
             processor = get_multimodal_processor()
             result = await processor.extract_exercise_from_image(image_path)
-            
+
             # ربط بالمحتوى الموجود (LlamaIndex)
             if result.get("success") and result.get("type"):
                 search_result = await self.semantic_search(
@@ -669,15 +684,20 @@ class MCPIntegrations:
                     top_k=3,
                 )
                 result["related_exercises"] = search_result.get("results", [])
-            
+
             return result
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+
     def get_vision_status(self) -> dict[str, Any]:
         """حالة خدمات الرؤية."""
         try:
-            from app.services.vision import MultiModalProcessor, EquationDetector, DiagramAnalyzer
+            from app.services.vision import (  # noqa: F401
+                DiagramAnalyzer,
+                EquationDetector,
+                MultiModalProcessor,
+            )
+
             return {
                 "status": "active",
                 "components": ["MultiModalProcessor", "EquationDetector", "DiagramAnalyzer"],
@@ -685,9 +705,9 @@ class MCPIntegrations:
             }
         except ImportError:
             return {"status": "unavailable"}
-    
+
     # ============== Collaboration ==============
-    
+
     async def create_study_session(
         self,
         exercise_id: str,
@@ -695,24 +715,22 @@ class MCPIntegrations:
     ) -> dict[str, Any]:
         """
         إنشاء جلسة دراسة تعاونية.
-        
+
         يستخدم Kagent لتنسيق الوكلاء المساعدين.
         """
         try:
             from app.services.collaboration.session import create_session
-            
+
             session = create_session(exercise_id=exercise_id, topic=topic)
-            
+
             # تسجيل مع Kagent (إذا متوفر)
-            try:
+            with contextlib.suppress(Exception):
                 await self.execute_action(
                     action="register_session",
                     capability="collaboration",
                     payload={"session_id": session.session_id},
                 )
-            except Exception:
-                pass
-            
+
             return {
                 "success": True,
                 "session_id": session.session_id,
@@ -720,7 +738,7 @@ class MCPIntegrations:
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+
     async def join_study_session(
         self,
         session_id: str,
@@ -730,13 +748,13 @@ class MCPIntegrations:
         """انضمام لجلسة دراسة."""
         try:
             from app.services.collaboration.session import get_session
-            
+
             session = get_session(session_id)
             if not session:
                 return {"success": False, "error": "جلسة غير موجودة"}
-            
+
             session.join(student_id, name)
-            
+
             return {
                 "success": True,
                 "session_id": session_id,
@@ -744,21 +762,25 @@ class MCPIntegrations:
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+
     def get_collaboration_status(self) -> dict[str, Any]:
         """حالة خدمات التعاون."""
         try:
-            from app.services.collaboration import CollaborativeSession, SharedWorkspace
+            from app.services.collaboration import (  # noqa: F401
+                CollaborativeSession,
+                SharedWorkspace,
+            )
             from app.services.collaboration.session import list_active_sessions
+
             return {
                 "status": "active",
                 "active_sessions": len(list_active_sessions()),
             }
         except ImportError:
             return {"status": "unavailable"}
-    
+
     # ============== Socratic Tutor ==============
-    
+
     async def socratic_guide(
         self,
         question: str,
@@ -766,25 +788,24 @@ class MCPIntegrations:
     ) -> dict[str, Any]:
         """
         إرشاد سقراطي.
-        
+
         يستخدم LangGraph لتنسيق الحوار.
         """
         try:
-            from app.services.chat.agents.socratic_tutor import get_socratic_tutor
             from app.core.ai_gateway import get_ai_client
-            
+            from app.services.chat.agents.socratic_tutor import get_socratic_tutor
+
             ai_client = get_ai_client()
             tutor = get_socratic_tutor(ai_client)
-            
+
             # جمع الاستجابة
             response_parts = []
             async for chunk in tutor.guide(question, context):
                 response_parts.append(chunk)
-            
+
             return {
                 "success": True,
                 "response": "".join(response_parts),
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
-

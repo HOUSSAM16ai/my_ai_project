@@ -23,18 +23,18 @@ logger = logging.getLogger(__name__)
 
 class SocraticPhase(str, Enum):
     """مراحل الحوار السقراطي."""
-    
-    ASSESS = "assess"           # تقييم فهم الطالب الحالي
-    PROBE = "probe"             # طرح سؤال استكشافي
-    GUIDE = "guide"             # توجيه نحو الاكتشاف
-    CONFIRM = "confirm"         # تأكيد الفهم
-    CELEBRATE = "celebrate"     # الاحتفاء بالاكتشاف
+
+    ASSESS = "assess"  # تقييم فهم الطالب الحالي
+    PROBE = "probe"  # طرح سؤال استكشافي
+    GUIDE = "guide"  # توجيه نحو الاكتشاف
+    CONFIRM = "confirm"  # تأكيد الفهم
+    CELEBRATE = "celebrate"  # الاحتفاء بالاكتشاف
 
 
 @dataclass
 class SocraticState:
     """حالة الحوار السقراطي."""
-    
+
     original_question: str
     student_understanding: str = ""
     current_phase: SocraticPhase = SocraticPhase.ASSESS
@@ -46,7 +46,7 @@ class SocraticState:
 class SocraticTutor:
     """
     المعلم السقراطي - يرشد بدلاً من يجيب.
-    
+
     الاستراتيجية:
     1. يقيّم ما يعرفه الطالب حالياً
     2. يطرح أسئلة استكشافية تقود للإجابة
@@ -77,7 +77,7 @@ class SocraticTutor:
 
 ❌ الإجابة السيئة: "P = 3/8 = 0.375"
 
-✅ الإجابة السقراطية: 
+✅ الإجابة السقراطية:
 "سؤال جيد! دعني أساعدك على اكتشاف الحل معاً 🤔
 - كم عدد الكرات الإجمالي في الكيس؟
 - وكم منها حمراء؟
@@ -97,15 +97,16 @@ class SocraticTutor:
     ) -> AsyncGenerator[str, None]:
         """
         يرشد الطالب نحو الإجابة بطريقة سقراطية.
-        
+
         تم التحديث لدعم LangGraph:
         - يحاول استخدام LangGraph لإدارة الحوار المعقد (Assess -> Probe -> Guide).
         - يعود للطريقة التقليدية إذا لم يتوفر LangGraph.
         """
         try:
             from app.services.mcp.integrations import MCPIntegrations
+
             mcp = MCPIntegrations()
-            
+
             # محاولة استخدام LangGraph للحالات المعقدة
             if context and context.get("use_langgraph", False):
                 result = await mcp.run_langgraph_workflow(
@@ -113,22 +114,22 @@ class SocraticTutor:
                     context={
                         "student_response": student_response,
                         "history": context.get("history_messages"),
-                    }
+                    },
                 )
                 if result.get("success"):
                     yield result.get("final_answer", "")
                     return
         except ImportError:
             pass
-            
+
         # التنفيذ التقليدي (Fallback)
         context = context or {}
-        
+
         # بناء السياق
         exercise_content = context.get("exercise_content", "")
         student_level = context.get("student_level", "متوسط")
         hints_given = context.get("hints_given", 0)
-        
+
         # بناء الرسالة
         user_message = self._build_user_message(
             question=question,
@@ -137,20 +138,20 @@ class SocraticTutor:
             student_response=student_response,
             hints_given=hints_given,
         )
-        
+
         messages = [
             {"role": "system", "content": self.SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
         ]
-        
+
         # إذا كان هناك تاريخ محادثة
         history = context.get("history_messages", [])
         if history:
             # إدراج التاريخ قبل الرسالة الأخيرة
-            messages = [messages[0]] + history[-6:] + [messages[-1]]
-        
+            messages = [messages[0], *history[-6:], messages[-1]]
+
         logger.info(f"Socratic Tutor guiding on: {question[:50]}...")
-        
+
         async for chunk in self._stream_response(messages):
             yield chunk
 
@@ -163,21 +164,21 @@ class SocraticTutor:
         hints_given: int,
     ) -> str:
         """يبني رسالة المستخدم للنموذج."""
-        
+
         parts = [f"سؤال/تمرين الطالب:\n{question}"]
-        
+
         if exercise:
             parts.append(f"\nنص التمرين الكامل:\n{exercise}")
-        
+
         parts.append(f"\nمستوى الطالب: {student_level}")
         parts.append(f"عدد التلميحات المعطاة سابقاً: {hints_given}/3")
-        
+
         if student_response:
             parts.append(f"\nرد الطالب على سؤالك السابق:\n{student_response}")
             parts.append("\nقيّم رده وتابع الإرشاد السقراطي.")
         else:
             parts.append("\nابدأ الحوار السقراطي معه.")
-        
+
         return "\n".join(parts)
 
     async def _stream_response(
@@ -185,19 +186,19 @@ class SocraticTutor:
         messages: list[dict[str, str]],
     ) -> AsyncGenerator[str, None]:
         """يبث الاستجابة من النموذج."""
-        
+
         stream = self.ai_client.stream_chat(messages)
-        
+
         if hasattr(stream, "__await__"):
             stream = await stream
-        
+
         async for chunk in stream:
             if hasattr(chunk, "choices"):
                 delta = chunk.choices[0].delta if chunk.choices else None
                 content = delta.content if delta else ""
             else:
                 content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
-            
+
             if content:
                 yield content
 
@@ -208,7 +209,7 @@ class SocraticTutor:
     ) -> dict[str, object]:
         """
         يقيّم فهم الطالب بناءً على إجابته.
-        
+
         Returns:
             dict: {
                 "understanding_level": float (0-1),
@@ -231,22 +232,23 @@ class SocraticTutor:
     "next_step": "ما يجب فعله التالي"
 }}
 """
-        
+
         messages = [
             {"role": "system", "content": "أنت مقيّم تعليمي. أجب بـ JSON فقط."},
             {"role": "user", "content": assessment_prompt},
         ]
-        
+
         try:
             response = await self.ai_client.generate(
                 model="gpt-4o-mini",
                 messages=messages,
                 response_format={"type": "json_object"},
             )
-            
+
             import json
+
             return json.loads(response.choices[0].message.content)
-        
+
         except Exception as e:
             logger.error(f"Assessment failed: {e}")
             return {
@@ -258,7 +260,7 @@ class SocraticTutor:
 
     def get_hint_level(self, hints_given: int) -> str:
         """يحدد مستوى التلميح بناءً على العدد."""
-        
+
         levels = {
             0: "تلميح خفيف (سؤال استكشافي فقط)",
             1: "تلميح متوسط (اذكر المفهوم المطلوب)",

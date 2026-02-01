@@ -32,19 +32,19 @@ from app.services.learning.student_profile import (
 )
 
 __all__ = [
-    # Student Profile
-    "StudentProfile",
-    "TopicMastery",
-    "MasteryLevel",
-    "get_student_profile",
-    "save_student_profile",
     # Difficulty Adjuster
     "DifficultyAdjuster",
     "DifficultyLevel",
     "DifficultyRecommendation",
-    "get_difficulty_adjuster",
+    "MasteryLevel",
     # Mastery Tracker
     "MasteryTracker",
     "MasteryTrend",
+    # Student Profile
+    "StudentProfile",
+    "TopicMastery",
+    "get_difficulty_adjuster",
     "get_mastery_tracker",
+    "get_student_profile",
+    "save_student_profile",
 ]

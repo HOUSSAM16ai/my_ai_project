@@ -1,4 +1,5 @@
-from pydantic import Field, ConfigDict
+from pydantic import ConfigDict, Field
+
 from app.core.schemas import RobustBaseModel
 
 

@@ -89,14 +89,17 @@ get_tool_registry().register(_context_tool)
 
 # Register shell tool
 from .shell_tool import execute_shell, register_shell_tool
+
 register_shell_tool(_TOOL_REGISTRY)
 
 # Register git tools
 from .git_tool import register_git_tools
+
 register_git_tools(_TOOL_REGISTRY)
 
 # Register test tools
 from .test_tool import register_test_tools
+
 register_test_tools(_TOOL_REGISTRY)
 
 
@@ -230,6 +233,7 @@ __all__ = [
     "dispatch_tool_tool",
     "ensure_directory_tool",
     "ensure_file_tool",
+    "execute_shell",
     "file_exists_tool",
     "generic_think_tool",
     "get_active_context_tool",

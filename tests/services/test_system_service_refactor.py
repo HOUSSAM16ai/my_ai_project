@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.system.system_service import (
     FEATURE_VECTOR_SCHEMA_VERSION,
     SystemService,
-    _sanitize_duration,
     TimingAccumulator,
+    _sanitize_duration,
 )
 
 
@@ -140,7 +140,7 @@ async def test_verify_system_integrity_rolls_back_on_internal_error():
 
 
 def test_timing_accumulator_snapshot_is_isolated():
-    accumulator = _TimingAccumulator()
+    accumulator = TimingAccumulator()
 
     first_snapshot = accumulator.snapshot()
     first_snapshot["connection_ms"] = 99.0

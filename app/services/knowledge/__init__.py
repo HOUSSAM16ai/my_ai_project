@@ -25,14 +25,14 @@ from app.services.knowledge.prerequisite_checker import (
 )
 
 __all__ = [
+    "Concept",
     # Concept Graph
     "ConceptGraph",
-    "Concept",
     "ConceptRelation",
-    "RelationType",
-    "get_concept_graph",
     # Prerequisite Checker
     "PrerequisiteChecker",
     "ReadinessReport",
+    "RelationType",
+    "get_concept_graph",
     "get_prerequisite_checker",
 ]

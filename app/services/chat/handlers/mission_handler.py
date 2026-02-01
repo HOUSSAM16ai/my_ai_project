@@ -122,7 +122,7 @@ async def _poll_mission_status(context: ChatContext, mission_id: int) -> AsyncGe
             status = status_result.get("status", "unknown")
             tasks = status_result.get("tasks", {})
             is_terminal = status_result.get("is_terminal", False)
-            
+
             # حساب الوقت المنقضي
             elapsed = int(time.time() - start_time)
             elapsed_str = f"{elapsed}s" if elapsed < 60 else f"{elapsed // 60}m {elapsed % 60}s"
