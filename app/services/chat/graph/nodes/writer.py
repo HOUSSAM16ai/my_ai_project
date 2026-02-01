@@ -5,7 +5,7 @@ Orchestrates the final response generation using a Strategy Pattern
 to handle Student Intent, Context Firewalling, and Adaptive Prompting.
 """
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
 
 from app.core.ai_gateway import AIClient
 from app.core.di import Container
@@ -26,8 +26,6 @@ def _ensure_dependencies():
     # Note: In a real app, this should be done in a main.py or bootstrap.
     # We do it here to keep the node self-contained but avoid import-side-effects.
 
-    # We attempt to resolve. If it fails (or returns None), we register.
-    # Assuming Container.resolve might raise or return None.
     try:
         if not Container.resolve(IIntentDetector):
             Container.register_singleton(IIntentDetector, RegexIntentDetector())
@@ -64,21 +62,44 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
     context_composer = Container.resolve(IContextComposer)
     prompt_strategist = Container.resolve(IPromptStrategist)
 
-    # 2. Extraction
-    messages = state["messages"]
-    last_user_msg = messages[-1].content
+    # 2. Extraction & Smart History Parsing
+    messages = state.get("messages", [])
     search_results = state.get("search_results", [])
     student_level = state.get("diagnosis", "Average")
-
-    # Check for Supervisor instructions
     supervisor_instruction = state.get("supervisor_instruction", "")
 
-    # 3. Analysis
+    # Locate the true User Question and Gather Reasoning Traces (Chain of Thought)
+    last_user_msg = ""
+    reasoning_traces = []
+
+    # Iterate backwards to find the last HumanMessage
+    for msg in reversed(messages):
+        if isinstance(msg, HumanMessage):
+            last_user_msg = msg.content
+            break
+        if isinstance(msg, AIMessage) and msg.content:
+            # This is output from SuperReasoner, Researcher, or ProceduralAuditor
+            reasoning_traces.append(msg.content)
+
+    # Reverse traces to maintain chronological order (Node A output -> Node B output)
+    reasoning_traces.reverse()
+    full_reasoning_context = "\n---\n".join(reasoning_traces)
+
+    # Fallback if no HumanMessage found (edge case)
+    if not last_user_msg and messages:
+        last_user_msg = messages[-1].content
+
+    # 3. Analysis (on the User's actual question, not the reasoning dump)
     intent = intent_detector.analyze(last_user_msg)
     profile = StudentProfile(level=student_level)
 
     # 4. Composition
     context_text = context_composer.compose(search_results, intent, last_user_msg)
+
+    # Inject Reasoning Traces into Context
+    if full_reasoning_context:
+        context_text += f"\n\n### 🧠 DEEP REASONING & ANALYSIS (INTERNAL THOUGHTS):\n{full_reasoning_context}\n(Use this reasoning to construct the final answer, but do not just copy-paste it. Synthesize it.)"
+
     system_prompt = prompt_strategist.build_prompt(profile, intent)
 
     # Inject Supervisor Instructions (Dynamic Orchestration)
@@ -109,6 +130,6 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
 
     return {
         "messages": [AIMessage(content=final_text)],
-        "current_step_index": state["current_step_index"] + 1,
+        "current_step_index": state.get("current_step_index", 0) + 1,
         "final_response": final_text,
     }
