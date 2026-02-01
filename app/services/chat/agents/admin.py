@@ -26,6 +26,7 @@ from app.services.chat.agents.admin_handlers.users import (
 from app.services.chat.agents.data_access import DataAccessAgent
 from app.services.chat.agents.refactor import RefactorAgent
 from app.services.chat.tools import ToolRegistry
+from app.services.mcp.integrations import MCPIntegrations
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class AdminAgent:
     - التعامل مع استفسارات إدارة المستخدمين (Count, List, Profile).
     - استعلامات قاعدة البيانات (Schema, Stats).
     - استكشاف بنية المشروع والشيفرة.
+    - تنفيذ مهام بحث واستنتاج عميق عبر MCP.
     """
 
     def __init__(self, tools: ToolRegistry, ai_client: AIClient | None = None) -> None:
@@ -45,6 +47,13 @@ class AdminAgent:
         self.ai_client = ai_client
         self.data_agent = DataAccessAgent()
         self.refactor_agent = RefactorAgent()
+
+        # MCP Integration for advanced capabilities
+        try:
+            self.mcp = MCPIntegrations()
+        except Exception as e:
+            logger.warning(f"Failed to initialize MCP integrations: {e}")
+            self.mcp = None
 
         # Register Handlers (Order matters for priority)
         self.handlers: list[AdminCommandHandler] = [
@@ -110,11 +119,15 @@ class AdminAgent:
         4. PROJECT_INFO: معلومات عن هيكل المشروع والملفات.
         5. MICROSERVICES_INFO: معلومات عن الخدمات المصغرة.
         6. CODE_SEARCH: البحث في الكود المصدري.
+        7. DEEP_RESEARCH: بحث عميق في المعرفة والمستندات (استخدمه للأسئلة الأكاديمية أو البحثية المعقدة).
+        8. COMPLEX_REASONING: تفكير منطقي معقد وحل مشكلات (استخدمه للتحليل العميق أو التخطيط).
 
         إذا كان السؤال غامضًا، حاول ربطه بأقرب أداة.
         إذا كان السؤال عن "الخدمات المصغرة" (microservices) استخدم MICROSERVICES_INFO.
         إذا كان السؤال عن "البنية" أو "هيكل المشروع"، استخدم PROJECT_INFO.
         إذا كان السؤال عن "أسماء المستخدمين" أو "الأعضاء"، استخدم LIST_USERS.
+        إذا كان السؤال يتطلب بحثاً في مراجع أو تحليل موضوع معقد: استخدم DEEP_RESEARCH.
+        إذا كان السؤال يتطلب خطة عمل أو تحليل منطقي متعدد الخطوات: استخدم COMPLEX_REASONING.
 
         يجب أن يكون ردك النهائي هو الإجابة الدقيقة بناءً على الأداة المناسبة.
         إذا كنت بحاجة لتنفيذ أداة، قم بذكر اسم الأداة بوضوح في سياق تفكيرك، وسأقوم أنا بتنفيذها لك (محاكاة).
@@ -124,6 +137,8 @@ class AdminAgent:
         - إذا طلب عدد مستخدمين: قل "EXECUTE_TOOL: get_user_count"
         - إذا طلب معلومات المشروع: قل "EXECUTE_TOOL: get_project_overview"
         - إذا طلب معلومات الخدمات المصغرة: قل "EXECUTE_TOOL: get_microservices_overview"
+        - إذا تطلب بحثاً عميقاً: قل "EXECUTE_TOOL: deep_research"
+        - إذا تطلب تفكيراً معقداً: قل "EXECUTE_TOOL: complex_reasoning"
         - غير ذلك: أجب كخبير نظام بناءً على معرفتك العامة بالسياق المرفق.
         """
 
@@ -147,7 +162,6 @@ class AdminAgent:
         # Check for command
         # We recursively call run but we need to match the handler manually to avoid infinite loop
         # or just invoke the handler directly.
-        # But here we just want to execute the specific tool mapped to the command.
 
         if "EXECUTE_TOOL: list_users" in full_response:
             # Find UserListHandler
@@ -171,6 +185,26 @@ class AdminAgent:
             h = next((x for x in self.handlers if isinstance(x, MicroservicesHandler)), None)
             if h:
                 yield await h.handle(question, question.lower())
+
+        elif "EXECUTE_TOOL: deep_research" in full_response and self.mcp:
+            yield "جاري تنفيذ البحث العميق عبر MCP..."
+            # Use MCP for semantic search
+            result = await self.mcp.semantic_search(query=question, top_k=5)
+            if result.get("success"):
+                yield "\n\nنتائج البحث العميق:\n"
+                for node in result.get("results", []):
+                     yield f"- {node.text[:200]}...\n"
+            else:
+                yield f"حدث خطأ في البحث: {result.get('error')}"
+
+        elif "EXECUTE_TOOL: complex_reasoning" in full_response and self.mcp:
+            yield "جاري تنفيذ التفكير المعقد عبر MCP (LangGraph)..."
+            # Use MCP to run LangGraph workflow
+            result = await self.mcp.run_langgraph_workflow(goal=question)
+            if result.get("success"):
+                yield f"\n\nالنتيجة النهائية:\n{result.get('final_answer')}"
+            else:
+                yield f"حدث خطأ في المعالجة: {result.get('error')}"
 
         else:
             yield full_response
