@@ -2,36 +2,45 @@ import sys
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-# Mock heavy dependencies
-sys.modules["app.services.overmind.langgraph"] = MagicMock()
-sys.modules["microservices.research_agent.src.search_engine"] = MagicMock()
-sys.modules["microservices.planning_agent.cognitive"] = MagicMock()
-# llama_index.core is installed
-
-sys.modules["app.services.chat.agents.data_access"] = MagicMock()
-sys.modules["app.services.chat.agents.refactor"] = MagicMock()
-
-sys.modules["app.services.chat.agents.admin_handlers.base"] = MagicMock()
-sys.modules["app.services.chat.agents.admin_handlers.code"] = MagicMock()
-sys.modules["app.services.chat.agents.admin_handlers.database"] = MagicMock()
-sys.modules["app.services.chat.agents.admin_handlers.project"] = MagicMock()
-sys.modules["app.services.chat.agents.admin_handlers.users"] = MagicMock()
-
-sys.modules["langgraph.graph"] = MagicMock()
-sys.modules["langgraph.prebuilt"] = MagicMock()
-
-sys.modules["app.services.chat.graph.search"] = MagicMock()
-
-from app.services.chat.agents.admin import AdminAgent
-from app.services.chat.graph.nodes.researcher import researcher_node
-from app.services.chat.tools import ToolRegistry
-
+# Pre-load C-extension modules to prevent "cannot load module more than once" errors
+# when sys.modules is patched and restored.
+import numpy  # noqa: F401
+import llama_index.core  # noqa: F401
 
 class TestFullStackFlow(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        # Define the modules to mock
+        self.modules_to_mock = {
+            "app.services.overmind.langgraph": MagicMock(),
+            "microservices.research_agent.src.search_engine": MagicMock(),
+            "microservices.planning_agent.cognitive": MagicMock(),
+            "app.services.chat.agents.data_access": MagicMock(),
+            "app.services.chat.agents.refactor": MagicMock(),
+            "app.services.chat.agents.admin_handlers.base": MagicMock(),
+            "app.services.chat.agents.admin_handlers.code": MagicMock(),
+            "app.services.chat.agents.admin_handlers.database": MagicMock(),
+            "app.services.chat.agents.admin_handlers.project": MagicMock(),
+            "app.services.chat.agents.admin_handlers.users": MagicMock(),
+            "langgraph.graph": MagicMock(),
+            "langgraph.prebuilt": MagicMock(),
+            "app.services.chat.graph.search": MagicMock(),
+        }
+
+        # Apply the patch to sys.modules
+        self.patcher = patch.dict(sys.modules, self.modules_to_mock)
+        self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
+
     async def test_admin_flow_uses_mcp(self):
         """
         Verify that AdminAgent uses MCPIntegrations for complex tasks.
         """
+        # Local imports to ensure they use the mocked modules
+        from app.services.chat.agents.admin import AdminAgent
+        from app.services.chat.tools import ToolRegistry
+
         # Setup
         tools = ToolRegistry()
         ai_client = MagicMock()  # Changed from AsyncMock to MagicMock
@@ -78,6 +87,9 @@ class TestFullStackFlow(unittest.IsolatedAsyncioTestCase):
         """
         Verify that Student Researcher uses Kagent.
         """
+        # Local imports
+        from app.services.chat.graph.nodes.researcher import researcher_node
+
         kagent_mesh = AsyncMock()
         kagent_mesh.execute_action.return_value.status = "success"
         kagent_mesh.execute_action.return_value.data = {"results": ["Doc 1"]}
