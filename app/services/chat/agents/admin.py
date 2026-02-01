@@ -193,7 +193,7 @@ class AdminAgent:
             if result.get("success"):
                 yield "\n\nنتائج البحث العميق:\n"
                 for node in result.get("results", []):
-                     yield f"- {node.text[:200]}...\n"
+                    yield f"- {node.text[:200]}...\n"
             else:
                 yield f"حدث خطأ في البحث: {result.get('error')}"
 
