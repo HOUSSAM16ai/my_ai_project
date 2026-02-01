@@ -25,6 +25,7 @@ Jinja2==3.1.6
 typer==0.20.0
 tenacity==8.2.3
 langgraph>=0.2.39
+langchain-core>=0.2.39
 
 # Supporting Libraries
 click==8.3.1
@@ -57,3 +58,10 @@ typing_extensions==4.15.0
 sentence-transformers
 dspy-ai
 openai
+
+# LlamaIndex Stack (Pinned)
+llama-index==0.10.58
+llama-index-core==0.10.58
+llama-index-readers-file==0.1.30
+llama-index-vector-stores-supabase==0.1.2
+llama-index-embeddings-huggingface==0.2.2
