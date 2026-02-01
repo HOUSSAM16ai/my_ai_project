@@ -47,7 +47,10 @@ class TestFullStackFlow(unittest.IsolatedAsyncioTestCase):
 
         # Mock AI Client to return specific triggers
         # stream_chat should return an async iterator
-        ai_client.stream_chat.return_value = self._mock_stream("EXECUTE_TOOL: complex_reasoning")
+        # Use new JSON format
+        import json
+        complex_reasoning_json = json.dumps({"tool": "COMPLEX_REASONING", "reason": "test"})
+        ai_client.stream_chat.return_value = self._mock_stream(complex_reasoning_json)
 
         agent = AdminAgent(tools, ai_client)
         # Clear handlers to force fallback to dynamic router (Step 2)
@@ -73,7 +76,8 @@ class TestFullStackFlow(unittest.IsolatedAsyncioTestCase):
 
         # 2. Deep Research
         # Reset mocks
-        ai_client.stream_chat.return_value = self._mock_stream("EXECUTE_TOOL: deep_research")
+        deep_research_json = json.dumps({"tool": "DEEP_RESEARCH", "reason": "test"})
+        ai_client.stream_chat.return_value = self._mock_stream(deep_research_json)
         agent.mcp.reset_mock()
 
         print("\n--- Testing Admin Deep Research ---")
