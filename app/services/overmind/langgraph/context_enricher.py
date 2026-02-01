@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import asyncio
-import os
 from dataclasses import dataclass
 
-from app.core.logging import get_logger
-from microservices.research_agent.src.search_engine.query_refiner import get_refined_query
-from microservices.research_agent.src.search_engine.reranker import get_reranker
-from microservices.research_agent.src.search_engine.retriever import get_retriever
-
-logger = get_logger(__name__)
+from app.services.overmind.langgraph.context_contracts import (
+    ObjectiveRefiner,
+    Snippet,
+    SnippetRetriever,
+)
+from app.services.overmind.langgraph.context_providers import (
+    build_default_refiner,
+    build_default_retriever,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,125 +26,43 @@ class ContextEnrichmentResult:
 
 class ContextEnricher:
     """
-    خدمة إثراء سياق تجمع بين DSPy و LlamaIndex.
+    خدمة إثراء سياق مبنية على مزودات قابلة للتبديل.
 
-    تعتمد على إعادة صياغة الهدف ثم استرجاع مقتطفات معرفة داعمة
-    لضمان أن الوكلاء يفهمون نية المستخدم بعمق أكبر.
+    تعتمد على تنقيح الهدف عبر مزود مخصص ثم استرجاع مقتطفات داعمة
+    من مصدر خارجي دون اقتران مباشر على تفاصيل التنفيذ.
     """
 
-    def __init__(self, *, max_snippets: int = 4) -> None:
+    def __init__(
+        self,
+        *,
+        max_snippets: int = 4,
+        refiner: ObjectiveRefiner | None = None,
+        retriever: SnippetRetriever | None = None,
+    ) -> None:
         self.max_snippets = max_snippets
+        self.refiner = refiner or build_default_refiner()
+        self.retriever = retriever or build_default_retriever()
 
     async def enrich(self, objective: str, context: dict[str, object]) -> ContextEnrichmentResult:
         """
         تنفيذ خط إثراء السياق وإرجاع النتيجة المجمعة.
         """
-        refined_objective, metadata = await self._refine_objective(objective)
-        snippets = await self._retrieve_snippets(refined_objective, context, metadata)
+        refine_result = await self.refiner.refine(objective)
+        snippets = await self.retriever.retrieve(
+            refine_result.refined_objective,
+            context=context,
+            metadata=refine_result.metadata,
+            max_snippets=self.max_snippets,
+        )
         return ContextEnrichmentResult(
-            refined_objective=refined_objective, metadata=metadata, snippets=snippets
+            refined_objective=refine_result.refined_objective,
+            metadata=refine_result.metadata,
+            snippets=[_serialize_snippet(snippet) for snippet in snippets],
         )
 
-    async def _refine_objective(self, objective: str) -> tuple[str, dict[str, object]]:
-        """
-        تحسين صياغة الهدف اعتماداً على DSPy عند توفر مفتاح واجهة.
-        """
-        api_key = os.environ.get("OPENROUTER_API_KEY")
-        if not api_key:
-            return objective, {}
 
-        try:
-            result = await asyncio.to_thread(get_refined_query, objective, api_key)
-        except Exception as exc:
-            logger.warning("فشل تحسين الهدف عبر DSPy: %s", exc)
-            return objective, {}
-
-        if not isinstance(result, dict):
-            return objective, {}
-
-        refined = str(result.get("refined_query") or objective)
-        metadata = {
-            "year": result.get("year"),
-            "subject": result.get("subject"),
-            "branch": result.get("branch"),
-        }
-        cleaned_metadata = {k: v for k, v in metadata.items() if v is not None}
-        return refined, cleaned_metadata
-
-    async def _retrieve_snippets(
-        self, query: str, context: dict[str, object], metadata: dict[str, object]
-    ) -> list[dict[str, object]]:
-        """
-        جلب مقتطفات دلالية عبر LlamaIndex عند توفر قاعدة المتجهات.
-        """
-        db_url = os.environ.get("DATABASE_URL")
-        if not db_url:
-            return []
-
-        filters = _extract_metadata_filters(context, metadata)
-
-        try:
-            retriever = get_retriever(db_url)
-            nodes = retriever.search(query, limit=self.max_snippets, filters=filters)
-        except Exception as exc:
-            logger.warning("فشل استرجاع مقتطفات LlamaIndex: %s", exc)
-            return []
-
-        nodes = self._rerank_nodes(query, nodes)
-        snippets: list[dict[str, object]] = []
-        for node in nodes:
-            text, metadata = _extract_node_payload(node)
-            if not text:
-                continue
-            snippets.append({"text": text, "metadata": metadata})
-        return snippets
-
-    def _rerank_nodes(self, query: str, nodes: list[object]) -> list[object]:
-        """
-        إعادة ترتيب نتائج LlamaIndex عبر Reranker إن توفر.
-        """
-        if not nodes:
-            return []
-
-        try:
-            reranker = get_reranker()
-            reranked = reranker.rerank(query, nodes, top_n=self.max_snippets)
-            return list(reranked)
-        except Exception as exc:
-            logger.warning("فشل إعادة الترتيب عبر Reranker: %s", exc)
-            return nodes[: self.max_snippets]
-
-
-def _extract_metadata_filters(
-    context: dict[str, object], metadata: dict[str, object]
-) -> dict[str, object]:
+def _serialize_snippet(snippet: Snippet) -> dict[str, object]:
     """
-    استخراج مرشحات البحث من السياق المشترك إن وجدت.
+    تحويل المقتطف إلى قاموس قابل للإرسال.
     """
-    candidate = context.get("metadata_filters")
-    if isinstance(candidate, dict):
-        return candidate
-    return metadata
-
-
-def _extract_node_payload(node: object) -> tuple[str | None, dict[str, object]]:
-    """
-    استخراج النص والبيانات الوصفية من عقدة LlamaIndex بشكل آمن.
-    """
-    payload = getattr(node, "node", node)
-    text_value = _safe_text(payload)
-    metadata_value = getattr(payload, "metadata", {})
-    if not isinstance(metadata_value, dict):
-        metadata_value = {}
-    return text_value, metadata_value
-
-
-def _safe_text(payload: object) -> str | None:
-    """
-    استخراج النص من العقدة مع دعم عدة أشكال للواجهة.
-    """
-    if hasattr(payload, "get_text"):
-        text_value = payload.get_text()
-        return text_value if isinstance(text_value, str) else None
-    text_value = getattr(payload, "text", None)
-    return text_value if isinstance(text_value, str) else None
+    return {"text": snippet.text, "metadata": snippet.metadata}

@@ -129,6 +129,7 @@ class LangGraphOvermindEngine:
         architect: AgentArchitect,
         operator: AgentExecutor,
         auditor: AgentReflector,
+        context_enricher: ContextEnricher | None = None,
         loop_policy: LoopPolicy | None = None,
     ) -> None:
         self.strategist = strategist
@@ -136,7 +137,7 @@ class LangGraphOvermindEngine:
         self.operator = operator
         self.auditor = auditor
         self.loop_policy = loop_policy or LoopPolicy()
-        self.context_enricher = ContextEnricher()
+        self.context_enricher = context_enricher or ContextEnricher()
         self.supervisor = SupervisorOrchestrator(self.loop_policy)
         self._compiled_graph = self._build_graph()
 

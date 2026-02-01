@@ -14,6 +14,26 @@ from app.services.overmind.langgraph.engine import LangGraphOvermindEngine
 from app.services.overmind.langgraph.state_manager import EphemeralMissionStateManager
 
 
+def build_default_engine() -> LangGraphOvermindEngine:
+    """
+    بناء محرك LangGraph الافتراضي مع جميع الاعتماديات الأساسية.
+    """
+    ai_client = get_ai_client()
+    registry = get_registry()
+    state_manager = EphemeralMissionStateManager()
+    executor = TaskExecutor(state_manager=state_manager, registry=registry)
+    strategist = StrategistAgent(ai_client)
+    architect = ArchitectAgent(ai_client)
+    operator = OperatorAgent(executor, ai_client=ai_client)
+    auditor = AuditorAgent(ai_client)
+    return LangGraphOvermindEngine(
+        strategist=strategist,
+        architect=architect,
+        operator=operator,
+        auditor=auditor,
+    )
+
+
 class LangGraphAgentService:
     """
     خدمة تشغيل LangGraph للوكلاء المتعددين.
@@ -22,21 +42,11 @@ class LangGraphAgentService:
     مبادئ API First وبنية الخدمات المصغرة.
     """
 
-    def __init__(self) -> None:
-        ai_client = get_ai_client()
-        registry = get_registry()
-        state_manager = EphemeralMissionStateManager()
-        executor = TaskExecutor(state_manager=state_manager, registry=registry)
-        strategist = StrategistAgent(ai_client)
-        architect = ArchitectAgent(ai_client)
-        operator = OperatorAgent(executor, ai_client=ai_client)
-        auditor = AuditorAgent(ai_client)
-        self.engine = LangGraphOvermindEngine(
-            strategist=strategist,
-            architect=architect,
-            operator=operator,
-            auditor=auditor,
-        )
+    def __init__(self, *, engine: LangGraphOvermindEngine | None = None) -> None:
+        """
+        تهيئة الخدمة مع دعم حقن المحرك للاختبار أو الاستبدال.
+        """
+        self.engine = engine or build_default_engine()
 
     async def run(self, payload: LangGraphRunRequest) -> LangGraphRunData:
         """
