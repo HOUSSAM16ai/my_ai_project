@@ -1,15 +1,12 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
 from app.services.procedural_knowledge.domain import (
     AuditResult,
     AuditStatus,
-    NodeType,
     ProceduralGraph,
     RelationType,
 )
 from app.services.procedural_knowledge.engine import GraphAuditor, GraphBuilder
-
 
 # --- GraphBuilder Tests ---
 
