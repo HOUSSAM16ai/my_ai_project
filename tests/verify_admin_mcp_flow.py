@@ -2,10 +2,12 @@ import sys
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import llama_index.core  # noqa: F401
+
 # Pre-load C-extension modules to prevent "cannot load module more than once" errors
 # when sys.modules is patched and restored.
 import numpy  # noqa: F401
-import llama_index.core  # noqa: F401
+
 
 class TestFullStackFlow(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
