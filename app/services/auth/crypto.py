@@ -9,11 +9,11 @@ from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from typing import Final
 
-import jwt
 from fastapi import HTTPException, status
 
 from app.core.config import AppSettings
 from app.core.domain.user import User
+from app.core.jwt_compat import jwt
 
 ACCESS_EXPIRE_MINUTES: Final[int] = 30
 REAUTH_EXPIRE_MINUTES: Final[int] = 10

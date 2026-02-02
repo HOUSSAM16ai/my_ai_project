@@ -1,9 +1,8 @@
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-import jwt
-
 from app.core import security
+from app.core.jwt_compat import jwt
 from app.security.passwords import pwd_context
 
 

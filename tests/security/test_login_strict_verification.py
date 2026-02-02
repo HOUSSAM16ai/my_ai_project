@@ -173,7 +173,7 @@ async def test_jwt_token_contains_correct_claims(async_client: AsyncClient):
     """
     import os
 
-    import jwt
+    from app.core.jwt_compat import jwt
 
     # Register and login
     register_payload = {

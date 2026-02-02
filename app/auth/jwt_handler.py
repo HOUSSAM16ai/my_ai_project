@@ -7,8 +7,9 @@
 import logging
 from datetime import datetime, timedelta
 
-import jwt
 from pydantic import BaseModel
+
+from app.core.jwt_compat import jwt
 
 logger = logging.getLogger(__name__)
 

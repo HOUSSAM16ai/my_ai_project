@@ -10,12 +10,12 @@ Standards:
 - Redaction of sensitive keys (Secrets).
 """
 
+import importlib
+import importlib.util
 import logging
 import sys
 from contextvars import ContextVar
 from typing import Final
-
-from pythonjsonlogger import jsonlogger
 
 from app.core.settings.base import get_settings
 
@@ -33,8 +33,23 @@ SENSITIVE_KEYS: Final[set[str]] = {
 }
 
 
-class RedactingJsonFormatter(jsonlogger.JsonFormatter):
-    """JSON Formatter that automatically redacts sensitive keys."""
+class _FallbackJsonFormatter(logging.Formatter):
+    """مُنسّق احتياطي يعرض السجلات بصيغة قابلة للقراءة عند غياب JSON Logger."""
+
+
+def _resolve_json_formatter_base() -> type[logging.Formatter]:
+    """يحسم نوع المُنسّق اعتماداً على توافر python-json-logger."""
+    if importlib.util.find_spec("pythonjsonlogger") is None:
+        return _FallbackJsonFormatter
+    jsonlogger_module = importlib.import_module("pythonjsonlogger")
+    return jsonlogger_module.jsonlogger.JsonFormatter
+
+
+_JsonFormatterBase = _resolve_json_formatter_base()
+
+
+class RedactingJsonFormatter(_JsonFormatterBase):
+    """مُنسّق JSON يقوم بحجب المفاتيح الحساسة تلقائياً."""
 
     def process_log_record(self, log_record: dict[str, object]) -> dict[str, object]:
         """Redacts sensitive keys from the log record."""
@@ -48,7 +63,10 @@ class RedactingJsonFormatter(jsonlogger.JsonFormatter):
                 if key.lower() in SENSITIVE_KEYS:
                     log_record["message"][key] = "***REDACTED***"  # type: ignore
 
-        return super().process_log_record(log_record)
+        base_process = getattr(super(), "process_log_record", None)
+        if callable(base_process):
+            return base_process(log_record)
+        return log_record
 
 
 class CorrelationIdFilter(logging.Filter):

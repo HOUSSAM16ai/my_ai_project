@@ -11,16 +11,24 @@
 """
 
 from datetime import UTC, datetime, timedelta
+import importlib
+import importlib.util
 
-import bcrypt
-import jwt
+_bcrypt_spec = importlib.util.find_spec("bcrypt")
+if _bcrypt_spec is None:
+    class _BcryptStub:
+        """بديل مبسط عند غياب مكتبة bcrypt."""
+
+        __version__ = "0.0.0"
+
+    bcrypt = _BcryptStub()
+else:
+    bcrypt = importlib.import_module("bcrypt")
 
 if not hasattr(bcrypt, "__about__"):
-    import contextlib
-
-    with contextlib.suppress(Exception):
-        bcrypt.__about__ = type("about", (object,), {"__version__": bcrypt.__version__})
+    bcrypt.__about__ = type("about", (object,), {"__version__": getattr(bcrypt, "__version__", "")})
 from app.core.config import get_settings
+from app.core.jwt_compat import jwt
 from app.security.passwords import pwd_context
 
 

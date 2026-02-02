@@ -1,9 +1,14 @@
 import asyncio
+import importlib.util
 
 # Mute noisy logs
 import logging
 
+import pytest
 from sqlalchemy import text
+
+if importlib.util.find_spec("llama_index.embeddings.huggingface") is None:
+    pytest.skip("llama_index غير متاح في البيئة الحالية.", allow_module_level=True)
 
 from app.core.database import async_session_factory
 from app.core.logging import get_logger

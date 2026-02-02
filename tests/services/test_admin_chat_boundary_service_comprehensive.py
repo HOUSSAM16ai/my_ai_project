@@ -1,11 +1,11 @@
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import jwt
 import pytest
 from fastapi import HTTPException
 
 from app.core.domain.models import AdminConversation, AdminMessage, MessageRole, User
+from app.core.jwt_compat import jwt
 from app.services.boundaries.admin_chat_boundary_service import AdminChatBoundaryService
 
 

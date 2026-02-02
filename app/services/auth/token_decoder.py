@@ -7,8 +7,9 @@
 
 from __future__ import annotations
 
-import jwt
 from fastapi import HTTPException
+
+from app.core.jwt_compat import jwt
 
 ALGORITHM = "HS256"
 

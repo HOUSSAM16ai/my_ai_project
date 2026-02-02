@@ -1,6 +1,12 @@
 import asyncio
+import importlib.util
 import logging
 import os
+
+import pytest
+
+if importlib.util.find_spec("llama_index.embeddings.huggingface") is None:
+    pytest.skip("llama_index غير متاح في البيئة الحالية.", allow_module_level=True)
 
 from app.core.gateway.simple_client import SimpleAIClient
 from microservices.reasoning_agent.src.workflow import SuperReasoningWorkflow

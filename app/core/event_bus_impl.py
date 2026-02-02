@@ -16,6 +16,37 @@ from uuid import UUID, uuid4
 logger = logging.getLogger(__name__)
 
 
+def _build_event(
+    *,
+    event_type: str,
+    payload: dict[str, object],
+    source: str,
+    correlation_id: UUID | None,
+) -> "Event":
+    """يبني حدثاً جديداً كدالة نقية لفرض الوضوح والقابلية للاختبار."""
+    return Event(
+        event_id=uuid4(),
+        event_type=event_type,
+        payload=payload,
+        timestamp=datetime.utcnow(),
+        source=source,
+        correlation_id=correlation_id,
+    )
+
+
+def _resolve_handlers(
+    handlers: dict[str, list["EventHandler"]],
+    event_type: str,
+) -> list["EventHandler"]:
+    """يعيد نسخة مستقلة من معالجات الحدث لحماية من التعديلات أثناء التنفيذ."""
+    return list(handlers.get(event_type, []))
+
+
+def build_event_bus() -> "EventBus":
+    """ينشئ ناقل أحداث جديداً بصورة صريحة بعيداً عن الأنماط العالمية."""
+    return EventBus()
+
+
 @dataclass(frozen=True, slots=True)
 class Event:
     """
@@ -154,7 +185,7 @@ class EventBus:
 
         def decorator(func: EventHandler) -> EventHandler:
             self._handlers[event_type].append(func)
-            logger.info(f"✅ Subscribed to event: {event_type}")
+            logger.info("✅ Subscribed to event: %s", event_type)
             return func
 
         if handler is not None:
@@ -172,9 +203,9 @@ class EventBus:
         if event_type in self._handlers:
             try:
                 self._handlers[event_type].remove(handler)
-                logger.info(f"✅ Unsubscribed from event: {event_type}")
+                logger.info("✅ Unsubscribed from event: %s", event_type)
             except ValueError:
-                logger.warning(f"⚠️ Handler not found for event: {event_type}")
+                logger.warning("⚠️ Handler not found for event: %s", event_type)
 
     async def publish(
         self,
@@ -195,11 +226,9 @@ class EventBus:
         Returns:
             Event: الحدث المنشور
         """
-        event = Event(
-            event_id=uuid4(),
+        event = _build_event(
             event_type=event_type,
             payload=payload,
-            timestamp=datetime.utcnow(),
             source=source,
             correlation_id=correlation_id,
         )
@@ -208,12 +237,12 @@ class EventBus:
         self._event_history.add(event)
 
         # إرسال إلى المعالجات
-        handlers = self._handlers.get(event_type, [])
+        handlers = _resolve_handlers(self._handlers, event_type)
         if not handlers:
-            logger.debug(f"📢 Event published with no subscribers: {event_type}")
+            logger.debug("📢 Event published with no subscribers: %s", event_type)
             return event
 
-        logger.info(f"📢 Publishing event: {event_type} to {len(handlers)} handlers")
+        logger.info("📢 Publishing event: %s to %s handlers", event_type, len(handlers))
 
         # تنفيذ المعالجات بشكل متزامن
         tasks = [self._safe_handle(handler, event) for handler in handlers]
@@ -233,8 +262,10 @@ class EventBus:
             await handler(event)
         except Exception as exc:
             logger.error(
-                f"❌ Error handling event {event.event_type} "
-                f"with handler {handler.__name__}: {exc}",
+                "❌ Error handling event %s with handler %s: %s",
+                event.event_type,
+                handler.__name__,
+                exc,
                 exc_info=True,
             )
 
@@ -296,5 +327,5 @@ def get_event_bus() -> EventBus:
     """
     global _global_event_bus
     if _global_event_bus is None:
-        _global_event_bus = EventBus()
+        _global_event_bus = build_event_bus()
     return _global_event_bus

@@ -60,6 +60,25 @@ logger = logging.getLogger(__name__)
 __all__ = ["RealityKernel"]
 
 
+async def _validate_database_schema() -> None:
+    """يتحقق من سلامة مخطط قاعدة البيانات عند بدء التشغيل."""
+    try:
+        await validate_schema_on_startup()
+        logger.info("✅ Database Schema Validated")
+    except Exception as exc:
+        logger.warning("⚠️ Schema validation warning: %s", exc)
+
+
+async def _bootstrap_admin_account(settings: AppSettings) -> None:
+    """يقوم بتهيئة حساب المشرف عند الحاجة باستخدام الإعدادات المعتمدة."""
+    try:
+        async with async_session_factory() as session:
+            await bootstrap_admin_account(session, settings=settings)
+            logger.info("✅ Admin account bootstrapped and validated")
+    except Exception as exc:
+        logger.error("❌ Failed to bootstrap admin account: %s", exc)
+
+
 def _apply_middleware(app: FastAPI, stack: list[MiddlewareSpec]) -> FastAPI:
     """
     Combinator: تطبيق قائمة الميدل وير على التطبيق.
@@ -202,18 +221,8 @@ class RealityKernel:
         """
         logger.info("🚀 CogniForge System Initializing... (Strict Mode Active)")
 
-        try:
-            await validate_schema_on_startup()
-            logger.info("✅ Database Schema Validated")
-        except Exception as e:
-            logger.warning(f"⚠️ Schema validation warning: {e}")
-
-        try:
-            async with async_session_factory() as session:
-                await bootstrap_admin_account(session, settings=self.settings_obj)
-                logger.info("✅ Admin account bootstrapped and validated")
-        except Exception as exc:
-            logger.error(f"❌ Failed to bootstrap admin account: {exc}")
+        await _validate_database_schema()
+        await _bootstrap_admin_account(self.settings_obj)
 
         logger.info("✅ System Ready")
         yield

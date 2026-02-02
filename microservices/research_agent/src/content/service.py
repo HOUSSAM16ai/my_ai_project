@@ -19,6 +19,10 @@ class ContentService:
     def __init__(self, session_factory=None):
         self.session_factory = session_factory or default_session_factory
 
+    def normalize_set_name(self, value: str | None) -> str | None:
+        """يوحد اسم الحزمة/المجموعة لضمان اتساق البحث."""
+        return normalize_set_name(value)
+
     async def search_content(
         self,
         q: str | None = None,

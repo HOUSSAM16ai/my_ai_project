@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from fastapi import FastAPI
 
-from app.core.event_bus_impl import get_event_bus
+from app.core.event_bus_impl import build_event_bus
 from app.core.protocols import EventBusProtocol
 from app.gateway import APIGateway, ServiceRegistry
 from app.gateway.config import DEFAULT_GATEWAY_CONFIG, GatewayConfig
@@ -23,6 +23,7 @@ __all__ = [
     "apply_app_state",
     "build_app_state",
     "build_gateway_components",
+    "build_state_event_bus",
 ]
 
 
@@ -44,6 +45,17 @@ class AppStateServices:
     event_bus: EventBusProtocol
     service_registry: ServiceRegistry
     api_gateway: APIGateway
+
+    def as_mapping(self) -> dict[str, object]:
+        """يعيد تمثيلاً صريحاً لحالة التطبيق كقاموس قابل للتطبيق."""
+        return {
+            "agent_plan_registry": self.agent_plan_registry,
+            "agent_plan_service": self.agent_plan_service,
+            "langgraph_service": self.langgraph_service,
+            "event_bus": self.event_bus,
+            "service_registry": self.service_registry,
+            "api_gateway": self.api_gateway,
+        }
 
 
 def build_gateway_components(
@@ -67,10 +79,17 @@ def build_app_state() -> AppStateServices:
         agent_plan_registry=AgentPlanRegistry(),
         agent_plan_service=AgentPlanService(),
         langgraph_service=LangGraphAgentService(),
-        event_bus=get_event_bus(),
+        event_bus=build_state_event_bus(),
         service_registry=gateway_components.registry,
         api_gateway=gateway_components.gateway,
     )
+
+
+def build_state_event_bus() -> EventBusProtocol:
+    """
+    يبني ناقل أحداث صريحاً لحالة التطبيق لتجنب الاعتماد على الحالة العالمية.
+    """
+    return build_event_bus()
 
 
 def apply_app_state(app: FastAPI, state: AppStateServices) -> None:
@@ -81,9 +100,5 @@ def apply_app_state(app: FastAPI, state: AppStateServices) -> None:
         app: كائن FastAPI الأساسي.
         state: حاوية حالة التطبيق.
     """
-    app.state.agent_plan_registry = state.agent_plan_registry
-    app.state.agent_plan_service = state.agent_plan_service
-    app.state.langgraph_service = state.langgraph_service
-    app.state.event_bus = state.event_bus
-    app.state.service_registry = state.service_registry
-    app.state.api_gateway = state.api_gateway
+    for key, value in state.as_mapping().items():
+        setattr(app.state, key, value)

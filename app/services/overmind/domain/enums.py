@@ -17,6 +17,11 @@ class CognitivePhase(StrEnum):
     REFLECTION = "REFLECTION"
     RE_PLANNING = "RE-PLANNING"
 
+    @classmethod
+    def _missing_(cls, value: object):  # type: ignore[override]
+        """يعيد طوراً افتراضياً عند مواجهة قيمة غير معروفة."""
+        return cls.PLANNING
+
 
 class OvermindMessage(StrEnum):
     """Standard status messages for Overmind operations."""

@@ -1,10 +1,10 @@
 from unittest.mock import MagicMock, patch
 
-import jwt
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import AppSettings
+from app.core.jwt_compat import jwt
 
 
 @pytest.mark.asyncio

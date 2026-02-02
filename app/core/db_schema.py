@@ -24,6 +24,29 @@ _SQLITE_SKIP_INDEX_PATTERNS: tuple[re.Pattern[str], ...] = (
 __all__ = ["validate_schema_on_startup"]
 
 
+def _format_table_column(table_name: str, column_name: str) -> str:
+    """يعيد تمثيلاً موحداً لاسم الجدول والعمود لسهولة القراءة."""
+    return f"{table_name}.{column_name}"
+
+
+def _log_schema_action(message: str, table_name: str, column_name: str) -> None:
+    """يسجل حدثاً متعلقاً بالمخطط مع تنسيق موحد للأسماء."""
+    logger.info("%s %s", message, _format_table_column(table_name, column_name))
+
+
+def _format_table_index(table_name: str, index_name: str) -> str:
+    """يعيد تمثيلاً موحداً لاسم الجدول والفهرس لسهولة القراءة."""
+    return f"{table_name}.{index_name}"
+
+
+def _format_index_from_query(table_name: str, index_query: str) -> str | None:
+    """يعيد اسم الفهرس المنسق إن أمكن استخلاصه من استعلام الإنشاء."""
+    index_name = _infer_index_name(index_query)
+    if not index_name:
+        return None
+    return _format_table_index(table_name, index_name)
+
+
 def _to_sqlite_ddl(sql: str) -> str:
     """يحوّل أوامر PostgreSQL إلى صيغة متوافقة مع SQLite."""
     sql = re.sub(
@@ -130,25 +153,36 @@ async def _fix_missing_column(
 
     try:
         await conn.execute(text(query))
-        logger.info(f"✅ Added missing column: {table_name}.{col}")
+        _log_schema_action("✅ Added missing column:", table_name, col)
 
         if col in index_queries:
-            idx_query = _apply_dialect_ddl(conn, index_queries[col])
+            index_query = index_queries[col]
+            idx_query = _apply_dialect_ddl(conn, index_query)
             await conn.execute(text(idx_query))
-            logger.info(f"✅ Created index for: {table_name}.{col}")
+            formatted_index = _format_index_from_query(table_name, index_query)
+            if formatted_index:
+                logger.info("✅ Created missing index: %s", formatted_index)
+            else:
+                _log_schema_action("✅ Created index for:", table_name, col)
 
         return True
     except Exception as exc:
-        logger.error(f"❌ Failed to fix {table_name}.{col}: {exc}")
+        logger.error("❌ Failed to fix %s: %s", _format_table_column(table_name, col), exc)
         return False
 
 
 def _infer_index_name(index_query: str) -> str | None:
     """يستنتج اسم الفهرس من عبارة SQL."""
-    pattern = re.compile(r"INDEX(?: IF NOT EXISTS)?\s+\"([^\"]+)\"", flags=re.IGNORECASE)
+    pattern = re.compile(
+        r"INDEX(?: IF NOT EXISTS)?\s+(?:\"([^\"]+)\"|([^\s\"]+))",
+        flags=re.IGNORECASE,
+    )
     match = pattern.search(index_query)
     if match:
-        return match.group(1)
+        raw_name = match.group(1) or match.group(2)
+        if raw_name and "." in raw_name:
+            return raw_name.split(".")[-1]
+        return raw_name
     return None
 
 
@@ -186,36 +220,47 @@ async def _ensure_missing_indexes(
     try:
         existing_indexes = await _get_existing_indexes(conn, table_name)
     except Exception as exc:
-        return missing_indexes, fixed_indexes, [f"Error reading indexes for {table_name}: {exc}"]
+        return missing_indexes, fixed_indexes, [
+            f"Error reading indexes for {table_name}: {exc}"
+        ]
 
     for key, index_query in index_queries.items():
         index_name = index_names.get(key) or _infer_index_name(index_query)
 
         if not index_name:
-            errors.append(f"Unable to infer index name for {table_name}.{key}")
+            errors.append(
+                "Unable to infer index name for "
+                f"{_format_table_column(table_name, key)}"
+            )
             continue
 
         if index_name in existing_indexes:
             continue
 
         if not auto_fix:
-            missing_indexes.append(f"{table_name}.{index_name}")
+            missing_indexes.append(_format_table_index(table_name, index_name))
             continue
 
         if key not in existing_columns:
             errors.append(
-                f"Cannot create index {index_name} on {table_name} because column {key} is missing"
+                "Cannot create index "
+                f"{_format_table_index(table_name, index_name)} "
+                f"because column {_format_table_column(table_name, key)} is missing"
             )
-            missing_indexes.append(f"{table_name}.{index_name}")
+            missing_indexes.append(_format_table_index(table_name, index_name))
             continue
 
         try:
             await conn.execute(text(_apply_dialect_ddl(conn, index_query)))
-            fixed_indexes.append(f"{table_name}.{index_name}")
-            logger.info(f"✅ Created missing index: {table_name}.{index_name}")
+            fixed_indexes.append(_format_table_index(table_name, index_name))
+            logger.info(
+                "✅ Created missing index: %s", _format_table_index(table_name, index_name)
+            )
         except Exception as exc:
-            errors.append(f"Failed to create index {table_name}.{index_name}: {exc}")
-            missing_indexes.append(f"{table_name}.{index_name}")
+            errors.append(
+                f"Failed to create index {_format_table_index(table_name, index_name)}: {exc}"
+            )
+            missing_indexes.append(_format_table_index(table_name, index_name))
 
     return missing_indexes, fixed_indexes, errors
 

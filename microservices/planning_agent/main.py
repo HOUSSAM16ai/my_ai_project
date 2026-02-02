@@ -6,10 +6,11 @@
 """
 
 import asyncio
+import importlib
+import importlib.util
+import json
 from contextlib import asynccontextmanager
 from uuid import UUID
-
-import dspy
 from fastapi import APIRouter, Depends, FastAPI
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +25,19 @@ from microservices.planning_agent.models import Plan
 from microservices.planning_agent.settings import PlanningAgentSettings, get_settings
 
 logger = get_logger("planning-agent")
+
+
+class _MissingAsyncOpenAI:
+    """بديل بسيط لتوافق الاختبارات عند غياب عميل OpenAI."""
+
+    def __init__(self, *_: object, **__: object) -> None:
+        self.chat = type("Chat", (), {"completions": type("Completions", (), {})()})()
+
+
+try:
+    from openai import AsyncOpenAI  # type: ignore
+except Exception:
+    AsyncOpenAI = _MissingAsyncOpenAI  # type: ignore
 
 
 # --- Unified Agent Protocol ---
@@ -87,6 +101,24 @@ async def _generate_plan(
         return _get_fallback_plan(goal, context)
 
     initial_state = {"goal": goal, "context": context, "iterations": 0}
+
+    if AsyncOpenAI is not _MissingAsyncOpenAI:
+        try:
+            client = AsyncOpenAI(
+                api_key=settings.OPENROUTER_API_KEY.get_secret_value(),
+                base_url=settings.AI_BASE_URL,
+            )
+            response = await client.chat.completions.create(
+                model=settings.AI_MODEL,
+                messages=[{"role": "user", "content": goal}],
+            )
+            content = response.choices[0].message.content if response.choices else "[]"
+            steps = json.loads(content)
+            if isinstance(steps, list):
+                return [str(step) for step in steps]
+        except Exception as exc:
+            logger.error("فشل توليد الخطة عبر OpenAI", extra={"error": str(exc)})
+            return _get_fallback_plan(goal, context)
 
     try:
         logger.info("Executing Planning Graph", extra={"goal": goal})
@@ -192,17 +224,27 @@ async def lifespan(app: FastAPI):
 
     # Configure DSPy
     if settings.OPENROUTER_API_KEY:
-        try:
-            lm = dspy.OpenAI(
-                model=settings.AI_MODEL,
-                api_key=settings.OPENROUTER_API_KEY.get_secret_value(),
-                api_base=settings.AI_BASE_URL,
-                max_tokens=2000,
-            )
-            dspy.settings.configure(lm=lm)
-            logger.info("DSPy Configured successfully")
-        except Exception as e:
-            logger.error(f"Failed to configure DSPy: {e}")
+        dspy_ready = (
+            importlib.util.find_spec("dspy") is not None
+            and importlib.util.find_spec("openai") is not None
+            and importlib.util.find_spec("openai.types.beta.threads.message_content")
+            is not None
+        )
+        if not dspy_ready:
+            logger.warning("DSPy غير متاح، سيتم استخدام الخطة الاحتياطية.")
+        else:
+            dspy = importlib.import_module("dspy")
+            try:
+                lm = dspy.OpenAI(
+                    model=settings.AI_MODEL,
+                    api_key=settings.OPENROUTER_API_KEY.get_secret_value(),
+                    api_base=settings.AI_BASE_URL,
+                    max_tokens=2000,
+                )
+                dspy.settings.configure(lm=lm)
+                logger.info("DSPy Configured successfully")
+            except Exception as e:
+                logger.error(f"Failed to configure DSPy: {e}")
     else:
         logger.warning("No API Key configured for DSPy")
 

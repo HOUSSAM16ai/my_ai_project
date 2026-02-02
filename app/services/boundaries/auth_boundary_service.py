@@ -14,12 +14,11 @@ from __future__ import annotations
 
 import datetime
 import logging
-
-import jwt
 from fastapi import HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.jwt_compat import jwt
 from app.security.chrono_shield import chrono_shield
 from app.services.rbac import STANDARD_ROLE, RBACService
 from app.services.security.auth_persistence import AuthPersistence
