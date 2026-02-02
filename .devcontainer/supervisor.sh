@@ -107,9 +107,9 @@ install_dependencies() {
         return 1
     fi
     
-    # OPTIMIZATION: Install CPU-only torch first if not present
-    # This prevents runtime installation from downloading 2GB+ CUDA wheels if image wasn't rebuilt
-    if ! python -c "import torch" 2>/dev/null; then
+    # OPTIMIZATION: Install CPU-only torch only when explicitly enabled.
+    # This prevents runtime installation from downloading 2GB+ CUDA wheels.
+    if [ "${INSTALL_TORCH:-0}" = "1" ] && ! python -c "import torch" 2>/dev/null; then
         lifecycle_info "Installing CPU-only Torch (optimization)..."
         pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu || true
     fi

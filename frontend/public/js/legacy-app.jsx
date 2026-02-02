@@ -66,13 +66,14 @@ const { useState, useEffect, useRef, useCallback, memo } = React;
 
 
         const API_ORIGIN = (() => {
-            const protocol = window.location.protocol;
-            const hostname = window.location.hostname;
-            const port = window.location.port;
-            if (port === '3000') {
-                return `${protocol}//${hostname}:8000`;
+            const configuredOrigin = window.NEXT_PUBLIC_API_URL || '';
+            if (configuredOrigin) {
+                return configuredOrigin;
             }
-            return window.location.origin;
+            if (window.location.port === '3000') {
+                return `${window.location.protocol}//${window.location.hostname}:8000`;
+            }
+            return '';
         })();
 
         const apiUrl = (path) => `${API_ORIGIN}${path}`;

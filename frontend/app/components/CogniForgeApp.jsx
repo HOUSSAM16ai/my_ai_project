@@ -17,8 +17,18 @@ const IS_CLOUD_ENV = isBrowser && (IS_CODESPACES ||
     window.location.hostname.includes('gitpod.io') ||
     window.location.hostname.includes('repl.it'));
 
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? '';
+const RAW_API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? '';
 const WS_ORIGIN = process.env.NEXT_PUBLIC_WS_URL ?? '';
+const resolveApiOrigin = () => {
+    if (RAW_API_ORIGIN) return RAW_API_ORIGIN;
+    if (!isBrowser) return '';
+    const { protocol, hostname, port } = window.location;
+    if (port === '3000') {
+        return `${protocol}//${hostname}:8000`;
+    }
+    return '';
+};
+const API_ORIGIN = resolveApiOrigin();
 const apiUrl = (path) => `${API_ORIGIN}${path}`;
 const isDevEnvironment = process.env.NODE_ENV === 'development';
 const logWebSocketEvent = (...args) => {

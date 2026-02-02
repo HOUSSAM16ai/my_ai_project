@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.6
+
 # Stage 1: Builder
 FROM python:3.12-slim as builder
 
@@ -21,12 +23,20 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 COPY requirements.txt .
 COPY constraints.txt .
+ARG INSTALL_TORCH=0
+ARG SKIP_PIP_INSTALL=0
 # Use cache mount for pip to persist downloads
-# OPTIMIZATION: Install CPU-only torch first to prevent downloading 2GB+ CUDA wheels
-# This fixes "Codespaces not launching" due to timeout/storage exhaustion
+# OPT-IN: Install CPU-only torch only when explicitly requested to avoid
+# Codespaces build timeouts and storage exhaustion.
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu && \
-    pip install -r requirements.txt -c constraints.txt
+    if [ "$SKIP_PIP_INSTALL" != "1" ]; then \
+        if [ "$INSTALL_TORCH" = "1" ]; then \
+            pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu; \
+        fi; \
+        pip install -r requirements.txt -c constraints.txt; \
+    else \
+        echo "Skipping Python dependency installation during build."; \
+    fi
 
 # Stage 2: Final Runtime
 FROM python:3.12-slim
