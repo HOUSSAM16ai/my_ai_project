@@ -22,6 +22,7 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: "1"
         INSTALL_TORCH: "0"
+        SKIP_PIP_INSTALL: "1"
     container_name: cogniforge-backend
     restart: unless-stopped
 
@@ -34,6 +35,7 @@ services:
     environment:
       <<: *common-environment
       PORT: 8000
+      INSTALL_TORCH: "0"
 
     healthcheck:
       test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health || exit 1"]
