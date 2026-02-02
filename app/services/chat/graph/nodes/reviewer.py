@@ -133,15 +133,19 @@ async def reviewer_node(state: AgentState, ai_client: AIClient) -> dict:
 
     # Continual Learning: Save the experience
     try:
-        engine = get_memory_engine()
-        await engine.learn(
-            ai_client=ai_client,
-            query=last_user_msg,
-            plan=state.get("plan", []),
-            response=last_response,
-            score=review_result.score,
-            feedback=review_result.feedback
-        )
+        # Ensure we have valid data before attempting to learn
+        if last_user_msg and last_response:
+            engine = get_memory_engine()
+            await engine.learn(
+                ai_client=ai_client,
+                query=last_user_msg,
+                plan=state.get("plan", []),
+                response=last_response,
+                score=review_result.score,
+                feedback=review_result.feedback
+            )
+        else:
+            logger.warning("Skipping learning: Missing query or response.")
     except Exception as e:
         logger.error(f"Failed to save learning experience: {e}")
 

@@ -7,8 +7,9 @@
 المبدأ:
 1. التذكر (Recall): استرجاع دروس سابقة مشابهة للسياق الحالي.
 2. التعلم (Learn): تحليل التفاعل بعد انتهائه (Reflection) وتخزين الدرس المستفاد.
-""",
+"""
 
+import asyncio
 import os
 from typing import Optional
 
@@ -156,7 +157,11 @@ Output ONLY the lesson text.
             )
 
             self.index.insert(doc)
-            self.index.storage_context.persist(persist_dir=self.storage_dir)
+
+            # Offload blocking I/O to a thread
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, lambda: self.index.storage_context.persist(persist_dir=self.storage_dir))
+
             logger.info(f"Memory learned new lesson. Score: {score}")
 
         except Exception as e:
