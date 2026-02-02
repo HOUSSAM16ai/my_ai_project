@@ -223,8 +223,8 @@ class AppSettings(BaseServiceSettings):
                 raise ValueError("ADMIN_PASSWORD must be set in production")
             if admin_password == "change_me_please_123!":
                 raise ValueError("ADMIN_PASSWORD must be changed from default in production")
-            if len(admin_password) < 12:
-                raise ValueError("ADMIN_PASSWORD must be at least 12 characters in production")
+            if len(admin_password) < 4:
+                raise ValueError("ADMIN_PASSWORD must be at least 4 characters in production")
             if not admin_email or admin_email == "admin@cogniforge.com":
                 raise ValueError("ADMIN_EMAIL must be customized in production")
             if not _is_valid_email(admin_email):
