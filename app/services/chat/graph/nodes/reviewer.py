@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from app.core.ai_gateway import AIClient
 from app.core.logging import get_logger
 from app.services.chat.graph.state import AgentState
+from app.services.chat.memory_engine import get_memory_engine
 
 logger = get_logger("reviewer-node")
 
@@ -129,6 +130,24 @@ async def reviewer_node(state: AgentState, ai_client: AIClient) -> dict:
     logger.info(
         f"Review complete. Score: {review_result.score}, Approved: {review_result.approved}"
     )
+
+    # Continual Learning: Save the experience
+    try:
+        # Ensure we have valid data before attempting to learn
+        if last_user_msg and last_response:
+            engine = get_memory_engine()
+            await engine.learn(
+                ai_client=ai_client,
+                query=last_user_msg,
+                plan=state.get("plan", []),
+                response=last_response,
+                score=review_result.score,
+                feedback=review_result.feedback
+            )
+        else:
+            logger.warning("Skipping learning: Missing query or response.")
+    except Exception as e:
+        logger.error(f"Failed to save learning experience: {e}")
 
     return {
         "review_score": review_result.score,

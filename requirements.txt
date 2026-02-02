@@ -76,7 +76,7 @@ huggingface-hub>=0.23.0
 sentence-transformers
 dspy-ai
 openai
-llama-index==0.10.58
+# llama-index meta-package removed to reduce bloat/conflicts
 llama-index-core==0.10.58
 llama-index-readers-file==0.1.30
 llama-index-vector-stores-supabase==0.1.2
