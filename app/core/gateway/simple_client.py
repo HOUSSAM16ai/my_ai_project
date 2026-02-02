@@ -77,13 +77,15 @@ class SimpleAIClient:
         context_hash = self._get_context_hash(messages)
 
         # 1. Check Cognitive Cache (if user message)
-        if last_message.get("role") == "user":
-            cached = self.cognitive_engine.recall(prompt, context_hash)
-            if cached:
-                logger.info(f"⚡️ Cache Hit: Serving response for '{prompt[:20]}...'")
-                for chunk in cached:
-                    yield chunk  # type: ignore
-                return
+        # DISABLED FOR AUTONOMY: The "Static Answer" bug was caused by aggressive fuzzy matching
+        # returning cached hallucinations. We force the agent to "Sense" every time.
+        # if last_message.get("role") == "user":
+        #     cached = self.cognitive_engine.recall(prompt, context_hash)
+        #     if cached:
+        #         logger.info(f"⚡️ Cache Hit: Serving response for '{prompt[:20]}...'")
+        #         for chunk in cached:
+        #             yield chunk  # type: ignore
+        #         return
 
         # 2. Prepare Model List (Primary + Fallbacks)
         models_to_try = [

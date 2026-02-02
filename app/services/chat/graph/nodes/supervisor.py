@@ -97,7 +97,20 @@ Based on the above, what is the next step?
 
             # Clean JSON
             clean_content = response.replace("```json", "").replace("```", "").strip()
-            decision = json.loads(clean_content)
+
+            try:
+                decision = json.loads(clean_content)
+            except json.JSONDecodeError:
+                # PERCEPTION-ACTION LOOP REPAIR: Self-Correction
+                # If the agent failed to produce valid JSON, we feed the error back to it (Feedback Loop).
+                logger.warning("Supervisor produced invalid JSON. Retrying with feedback...")
+                retry_context = f"{context_str}\n\nERROR: Your previous response was not valid JSON:\n{clean_content}\n\nFIX: Return ONLY valid JSON."
+
+                response = await ai_client.send_message(
+                    system_prompt=SupervisorNode.SYSTEM_PROMPT, user_message=retry_context
+                )
+                clean_content = response.replace("```json", "").replace("```", "").strip()
+                decision = json.loads(clean_content)
 
             next_node = decision.get("next", "FINISH")
             instruction = decision.get("instruction", "")
@@ -113,10 +126,19 @@ Based on the above, what is the next step?
 
         except Exception as e:
             logger.error(f"Supervisor logic failed: {e}")
-            # Fallback logic if LLM fails
+            # Intelligent Fallback
+            # If we have no plan, we MUST plan.
             if not plan:
-                return {"next": "planner", "supervisor_instruction": "Fallback: Create a plan."}
-            return {"next": "writer", "supervisor_instruction": "Fallback: Write response."}
+                return {
+                    "next": "planner",
+                    "supervisor_instruction": "Fallback: System error, please create a recovery plan.",
+                }
+
+            # If we are deep in the process, go to writer but warn them.
+            return {
+                "next": "writer",
+                "supervisor_instruction": "Fallback: Supervisor encountered an error. Synthesize available information carefully.",
+            }
 
 
 async def supervisor_node(state: AgentState, ai_client: AIClient) -> dict:

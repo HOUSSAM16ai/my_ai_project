@@ -153,8 +153,40 @@ class AdminAgent:
         # Clean JSON (remove markdown blocks if present)
         clean_json = full_response.replace("```json", "").replace("```", "").strip()
 
+        decision = {}
         try:
             decision = json.loads(clean_json)
+        except json.JSONDecodeError:
+            # RETRY LOGIC (Self-Correction)
+            logger.warning("Admin Router Invalid JSON. Retrying...")
+            messages.append({"role": "assistant", "content": full_response})
+            messages.append(
+                {
+                    "role": "user",
+                    "content": "SYSTEM ERROR: Response must be valid JSON only. Try again.",
+                }
+            )
+
+            full_response_retry = ""
+            if self.ai_client:
+                async for chunk in self.ai_client.stream_chat(messages):
+                    content = ""
+                    if hasattr(chunk, "choices"):
+                        delta = chunk.choices[0].delta if chunk.choices else None
+                        content = delta.content if delta else ""
+                    else:
+                        content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                    full_response_retry += content
+
+            clean_json = full_response_retry.replace("```json", "").replace("```", "").strip()
+            try:
+                decision = json.loads(clean_json)
+            except json.JSONDecodeError:
+                # Fallback: Just yield the raw text
+                yield full_response_retry if full_response_retry else full_response
+                return
+
+        try:
             tool_name = decision.get("tool", "GENERAL_ANSWER")
             reason = decision.get("reason", "")
             logger.info(f"Admin Dynamic Router: {tool_name} ({reason})")
@@ -211,7 +243,6 @@ class AdminAgent:
                 # We should probably ask it to answer now.
                 yield f"التحليل: {reason}\n(لم يتم تحديد أداة خاصة لهذا الطلب، يرجى التوضيح)."
 
-        except json.JSONDecodeError:
-            logger.warning(f"Failed to parse JSON from Admin Router: {full_response}")
-            # Fallback: Just yield the raw text if it wasn't JSON
-            yield full_response
+        except Exception as e:
+            logger.error(f"Error in Admin Router processing: {e}")
+            yield "حدث خطأ غير متوقع في معالجة طلبك."
