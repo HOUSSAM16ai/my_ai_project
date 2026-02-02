@@ -160,7 +160,12 @@ class AdminAgent:
             # RETRY LOGIC (Self-Correction)
             logger.warning("Admin Router Invalid JSON. Retrying...")
             messages.append({"role": "assistant", "content": full_response})
-            messages.append({"role": "user", "content": "SYSTEM ERROR: Response must be valid JSON only. Try again."})
+            messages.append(
+                {
+                    "role": "user",
+                    "content": "SYSTEM ERROR: Response must be valid JSON only. Try again.",
+                }
+            )
 
             full_response_retry = ""
             if self.ai_client:

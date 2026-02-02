@@ -12,7 +12,9 @@ class TestAutonomy(unittest.IsolatedAsyncioTestCase):
 
         # Mock cognitive engine to ALWAYS return a cached value if called
         client.cognitive_engine = MagicMock()
-        client.cognitive_engine.recall.return_value = [{"choices": [{"delta": {"content": "STATIC_ANSWER"}}]}]
+        client.cognitive_engine.recall.return_value = [
+            {"choices": [{"delta": {"content": "STATIC_ANSWER"}}]}
+        ]
 
         # Mock stream_model to return dynamic answers
         client._stream_model = MagicMock()
@@ -46,8 +48,8 @@ class TestAutonomy(unittest.IsolatedAsyncioTestCase):
 
         # First return invalid JSON, then valid JSON
         mock_ai_client.send_message.side_effect = [
-            "I am thinking... here is the json: {invalid", # Fail 1
-            '{"next": "planner", "reason": "Retry worked"}' # Success 2
+            "I am thinking... here is the json: {invalid",  # Fail 1
+            '{"next": "planner", "reason": "Retry worked"}',  # Success 2
         ]
 
         state = {"messages": [], "plan": []}
@@ -57,7 +59,10 @@ class TestAutonomy(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result["next"], "planner")
         self.assertEqual(result["routing_trace"][0]["reason"], "Retry worked")
-        self.assertEqual(mock_ai_client.send_message.call_count, 2, "Should have called LLM twice (retry)")
+        self.assertEqual(
+            mock_ai_client.send_message.call_count, 2, "Should have called LLM twice (retry)"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

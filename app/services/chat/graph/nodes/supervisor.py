@@ -129,10 +129,16 @@ Based on the above, what is the next step?
             # Intelligent Fallback
             # If we have no plan, we MUST plan.
             if not plan:
-                return {"next": "planner", "supervisor_instruction": "Fallback: System error, please create a recovery plan."}
+                return {
+                    "next": "planner",
+                    "supervisor_instruction": "Fallback: System error, please create a recovery plan.",
+                }
 
             # If we are deep in the process, go to writer but warn them.
-            return {"next": "writer", "supervisor_instruction": "Fallback: Supervisor encountered an error. Synthesize available information carefully."}
+            return {
+                "next": "writer",
+                "supervisor_instruction": "Fallback: Supervisor encountered an error. Synthesize available information carefully.",
+            }
 
 
 async def supervisor_node(state: AgentState, ai_client: AIClient) -> dict:
