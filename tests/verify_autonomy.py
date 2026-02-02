@@ -1,8 +1,9 @@
-import asyncio
 import unittest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
+
 from app.core.gateway.simple_client import SimpleAIClient
 from app.services.chat.graph.nodes.supervisor import SupervisorNode
+
 
 class TestAutonomy(unittest.IsolatedAsyncioTestCase):
     async def test_cache_disabled(self):
