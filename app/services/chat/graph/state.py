@@ -1,8 +1,9 @@
 """
-حالة الوكيل (Agent State).
---------------------------
-تعريف هيكل البيانات التي تمر عبر الرسم البياني (Graph).
-يستخدم هذا الملف لتعريف الذاكرة المشتركة بين الوكلاء.
+تعريف حالة النظام (System State Definition).
+-------------------------------------------
+يحتوي هذا الملف على تعريفات هياكل البيانات التي تمثل الذاكرة المشتركة (Shared Memory)
+بين مختلف عقد الرسم البياني (Graph Nodes). يتم استخدام `TypedDict` لضمان
+التوافق مع مكتبة LangGraph وتوفير تلميحات أنواع دقيقة (Type Hints).
 """
 
 from typing import Annotated, NotRequired, TypedDict
@@ -13,7 +14,19 @@ from langchain_core.messages import BaseMessage
 def add_messages_reducer(
     left: list[BaseMessage], right: list[BaseMessage] | BaseMessage
 ) -> list[BaseMessage]:
-    """Reducer to append messages to the history."""
+    """
+    دالة تجميع (Reducer Function) لإدارة تاريخ الرسائل.
+
+    تقوم هذه الدالة بدمج الرسائل الجديدة مع القائمة الموجودة مسبقًا. هذه الآلية ضرورية
+    للحفاظ على سياق المحادثة عبر خطوات التنفيذ المختلفة في LangGraph.
+
+    المعاملات:
+        left (list[BaseMessage]): القائمة الحالية للرسائل.
+        right (list[BaseMessage] | BaseMessage): الرسالة الجديدة أو قائمة الرسائل الجديدة.
+
+    الإرجاع:
+        list[BaseMessage]: القائمة المحدثة تحتوي على جميع الرسائل.
+    """
     if isinstance(right, list):
         return [*left, *right]
     return [*left, right]
@@ -21,20 +34,25 @@ def add_messages_reducer(
 
 class AgentState(TypedDict):
     """
-    الحالة المشتركة للرسم البياني.
+    بنية البيانات للحالة المشتركة (Shared State Structure).
 
-    Attributes:
-        messages: تاريخ المحادثة الكامل.
-        next: اسم العقدة التالية (للتوجيه).
-        plan: خطة العمل (قائمة خطوات).
-        current_step_index: الخطوة الحالية في الخطة.
-        search_results: نتائج البحث الخام من Researcher.
-        final_response: الإجابة النهائية (اختياري).
-        user_context: سياق المستخدم الإضافي.
-        review_feedback: ملاحظات الناقد (Reviewer) لتحسين الجودة.
-        review_score: تقييم الجودة (0.0 - 10.0).
-        iteration_count: عداد التكرارات لتجنب الحلقات المفرغة.
-        supervisor_instruction: تعليمات خاصة من المشرف للوكيل التالي.
+    تمثل هذه الفئة "السبورة السوداء" (Blackboard) التي يكتب ويقرأ منها جميع الوكلاء.
+    تحتوي على سياق المحادثة، خطة العمل الحالية، النتائج المرحلية، ومؤشرات التوجيه.
+
+    السمات (Attributes):
+        messages (Annotated[list[BaseMessage], add_messages_reducer]): سجل المحادثة الكامل، مع دالة تجميع لضمان الإلحاق.
+        next (str): معرف العقدة التالية التي يجب تنفيذها (Routing Target).
+        plan (list[str]): قائمة الخطوات المخطط لها لتنفيذ المهمة.
+        current_step_index (int): مؤشر الخطوة الحالية قيد التنفيذ.
+        search_results (list[dict[str, object]]): البيانات الخام المسترجعة من محركات البحث.
+        user_context (dict[str, object]): معلومات سياقية إضافية عن المستخدم (تفضيلات، موقع، إلخ).
+        final_response (str): النص النهائي للإجابة التي سيتم إرسالها للمستخدم.
+        routing_trace (NotRequired[list[dict[str, object]]]): سجل تتبع قرارات التوجيه لأغراض التصحيح.
+        review_feedback (NotRequired[str]): ملاحظات الناقد (Reviewer) لتحسين الجودة قبل التسليم.
+        review_score (NotRequired[float]): درجة تقييم الجودة (0.0 - 1.0 أو مقياس آخر).
+        iteration_count (NotRequired[int]): عداد لحماية النظام من الحلقات اللانهائية.
+        supervisor_instruction (NotRequired[str]): تعليمات محددة من المشرف لتوجيه عمل الوكيل التالي.
+        last_compliance_report (NotRequired[dict[str, object]]): تقرير التدقيق الإجرائي الأخير (للأغراض الرقابية).
     """
 
     messages: Annotated[list[BaseMessage], add_messages_reducer]
