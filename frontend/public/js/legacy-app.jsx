@@ -69,10 +69,20 @@ const { useState, useEffect, useRef, useCallback, memo } = React;
             const protocol = window.location.protocol;
             const hostname = window.location.hostname;
             const port = window.location.port;
-            if (port === '3000') {
+            const origin = window.location.origin;
+            const isCodespacesHost = hostname.endsWith('.app.github.dev') ||
+                                     hostname.endsWith('.preview.app.github.dev');
+            if (isCodespacesHost) {
+                const apiHost = hostname.replace(/-\d+\.(preview\.)?app\.github\.dev$/, '-8000.$1app.github.dev');
+                return `${protocol}//${apiHost}`;
+            }
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
                 return `${protocol}//${hostname}:8000`;
             }
-            return window.location.origin;
+            if (port && port !== '8000') {
+                return `${protocol}//${hostname}:8000`;
+            }
+            return origin;
         })();
 
         const apiUrl = (path) => `${API_ORIGIN}${path}`;
