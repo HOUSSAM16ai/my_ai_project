@@ -20,21 +20,8 @@ const IS_CLOUD_ENV = isBrowser && (IS_CODESPACES ||
 const RAW_API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? '';
 const WS_ORIGIN = process.env.NEXT_PUBLIC_WS_URL ?? '';
 const resolveApiOrigin = () => {
-    if (!isBrowser) return RAW_API_ORIGIN;
     if (RAW_API_ORIGIN) return RAW_API_ORIGIN;
-    const { protocol, hostname, port, origin } = window.location;
-    const isCodespacesHost = hostname.endsWith('.app.github.dev') || hostname.endsWith('.preview.app.github.dev');
-    if (isCodespacesHost) {
-        const apiHost = hostname.replace(/-\d+\.(preview\.)?app\.github\.dev$/, '-8000.$1app.github.dev');
-        return `${protocol}//${apiHost}`;
-    }
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return `${protocol}//${hostname}:8000`;
-    }
-    if (port && port !== '8000') {
-        return `${protocol}//${hostname}:8000`;
-    }
-    return origin;
+    return '';
 };
 const API_ORIGIN = resolveApiOrigin();
 const apiUrl = (path) => `${API_ORIGIN}${path}`;
