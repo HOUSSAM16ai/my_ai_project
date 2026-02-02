@@ -10,6 +10,7 @@ import logging
 
 from app.core.ai_gateway import AIClient
 from app.services.chat.graph.state import AgentState
+from app.services.chat.memory_engine import get_memory_engine
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,21 @@ Valid `next` values: `planner`, `researcher`, `super_reasoner`, `procedural_audi
         review_score = state.get("review_score")
         review_feedback = state.get("review_feedback")
 
+        # Memory Recall (Long-term Memory)
+        memory_context = ""
+        try:
+            engine = get_memory_engine()
+            # Recall based on the last human message for better context
+            target_query = last_message
+            for msg in reversed(messages):
+                if msg.type == "human":
+                    target_query = msg.content
+                    break
+
+            memory_context = await engine.recall(target_query)
+        except Exception as e:
+            logger.warning(f"Memory recall failed: {e}")
+
         context_str = f"""
 --- CURRENT STATE ---
 Last Message: {last_message[:500]}... (truncated)
@@ -85,6 +101,7 @@ Current Plan: {plan}
 Current Step Index: {current_step}
 Last Review Score: {review_score}
 Last Review Feedback: {review_feedback}
+{memory_context}
 ---------------------
 
 Based on the above, what is the next step?
