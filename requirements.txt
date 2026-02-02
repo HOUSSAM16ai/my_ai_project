@@ -75,7 +75,8 @@ pyyaml==6.0.1
 huggingface-hub>=0.23.0
 sentence-transformers
 dspy-ai
-openai
+openai>=1.55.0
+litellm>=1.50.0
 llama-index==0.13.0
 llama-index-core==0.13.0
 llama-index-readers-file>=0.5.0
