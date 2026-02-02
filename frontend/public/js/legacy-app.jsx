@@ -70,6 +70,9 @@ const { useState, useEffect, useRef, useCallback, memo } = React;
             if (configuredOrigin) {
                 return configuredOrigin;
             }
+            if (window.location.port === '3000') {
+                return `${window.location.protocol}//${window.location.hostname}:8000`;
+            }
             return '';
         })();
 
