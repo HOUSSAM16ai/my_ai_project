@@ -21,6 +21,7 @@ services:
       dockerfile: Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
+        INSTALL_TORCH: "0"
     container_name: cogniforge-backend
     restart: unless-stopped
 
