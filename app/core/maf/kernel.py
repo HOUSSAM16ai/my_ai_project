@@ -47,22 +47,22 @@ class MAFKernel:
         # If Attack fails (too many flaws), we don't Seal. We Regenerate.
 
         attack_obj = AttackReport(**attack) if isinstance(attack, dict) else attack
-        if attack_obj and attack_obj.successful: # Attack successful means "Flaws Found"
-             # In a strict loop, this would trigger regeneration.
-             # But here we return ATTACK phase to indicate we just finished attacking?
-             # No, determine_phase returns what we SHOULD do or where we ARE.
-             # Let's define it as "What is the Next Required Action?"
-             pass
+        if attack_obj and attack_obj.successful:  # Attack successful means "Flaws Found"
+            # In a strict loop, this would trigger regeneration.
+            # But here we return ATTACK phase to indicate we just finished attacking?
+            # No, determine_phase returns what we SHOULD do or where we ARE.
+            # Let's define it as "What is the Next Required Action?"
+            pass
 
         # 4. Attack done. Check Verification.
         if not verification:
             # If attack showed severe failure, maybe we shouldn't even verify?
             # But let's follow the linear path for now, or short-circuit.
             if attack_obj and attack_obj.severity > 8.0:
-                 # Too bad, go back to start?
-                 # For now, let's proceed to VERIFY to get a full picture, or loop back.
-                 # Let's assume we proceed to VERIFY to get compliance check too.
-                 return MAFPhase.VERIFY
+                # Too bad, go back to start?
+                # For now, let's proceed to VERIFY to get a full picture, or loop back.
+                # Let's assume we proceed to VERIFY to get compliance check too.
+                return MAFPhase.VERIFY
             return MAFPhase.VERIFY
 
         # 5. Verification done. Ready to Seal (or Fail).
@@ -92,7 +92,7 @@ class MAFKernel:
                 logger.warning("Max iterations reached during generation. Forcing Seal.")
                 return {
                     "next": "writer",
-                    "instruction": "Max iterations reached. Synthesize best available info."
+                    "instruction": "Max iterations reached. Synthesize best available info.",
                 }
 
             # Default to Planner for high-level plan, or Reasoner if specific.
@@ -103,23 +103,23 @@ class MAFKernel:
             # If we have a plan in `state["plan"]`, maybe we need execution.
             # Let's route to PLANNER first if empty.
             if not state.get("plan"):
-                 return {
+                return {
                     "next": "planner",
-                    "instruction": "Generate a rigorous plan. Treat this as a Proposal with Claims."
+                    "instruction": "Generate a rigorous plan. Treat this as a Proposal with Claims.",
                 }
 
             # If Plan exists, we need execution to generate Claims.
             # Route to SuperReasoner or Researcher.
             return {
                 "next": "super_reasoner",
-                "instruction": "Execute the plan. Output a Proposal with supported Claims."
+                "instruction": "Execute the plan. Output a Proposal with supported Claims.",
             }
 
         # --- PHASE: ATTACK ---
         if phase == MAFPhase.ATTACK:
             return {
                 "next": "reviewer",
-                "instruction": "ATTACK PHASE: Act as an Adversary. Find flaws, counterexamples, and logical gaps. Output an Attack Report."
+                "instruction": "ATTACK PHASE: Act as an Adversary. Find flaws, counterexamples, and logical gaps. Output an Attack Report.",
             }
 
         # --- PHASE: VERIFY ---
@@ -128,15 +128,15 @@ class MAFKernel:
             if attack_data:
                 att = AttackReport(**attack_data)
                 if att.successful and att.severity > 9.0:
-                     # Critical failure. Skip verification, go to Planner to Fix.
-                     return {
-                         "next": "planner",
-                         "instruction": f"Previous proposal destroyed by adversary (Severity {att.severity}). Create a NEW plan to address: {att.feedback}"
-                     }
+                    # Critical failure. Skip verification, go to Planner to Fix.
+                    return {
+                        "next": "planner",
+                        "instruction": f"Previous proposal destroyed by adversary (Severity {att.severity}). Create a NEW plan to address: {att.feedback}",
+                    }
 
             return {
                 "next": "procedural_auditor",
-                "instruction": "VERIFY PHASE: Check compliance, evidence existence, and logical consistency. Output Verification."
+                "instruction": "VERIFY PHASE: Check compliance, evidence existence, and logical consistency. Output Verification.",
             }
 
         # --- PHASE: SEAL ---
@@ -151,18 +151,22 @@ class MAFKernel:
                 attack_critical = attack and attack.successful and attack.severity > 7.0
 
                 if (verification_failed or attack_critical) and iteration < max_iterations:
-                     # LOOP BACK
-                     feedback = f"Verification Failed: {ver.gaps}" if verification_failed else f"Attack Severity {attack.severity}: {attack.feedback}"
-                     return {
-                         "next": "planner", # Or Reasoner
-                         "instruction": f"REJECTED. {feedback}. Refine the solution.",
-                         "increment_iteration": True
-                     }
+                    # LOOP BACK
+                    feedback = (
+                        f"Verification Failed: {ver.gaps}"
+                        if verification_failed
+                        else f"Attack Severity {attack.severity}: {attack.feedback}"
+                    )
+                    return {
+                        "next": "planner",  # Or Reasoner
+                        "instruction": f"REJECTED. {feedback}. Refine the solution.",
+                        "increment_iteration": True,
+                    }
 
             # APPROVAL
             return {
                 "next": "writer",
-                "instruction": "SEAL PHASE: Format the final output as a Certified Audit Bundle. Include Claims, Evidence, and Audit Log."
+                "instruction": "SEAL PHASE: Format the final output as a Certified Audit Bundle. Include Claims, Evidence, and Audit Log.",
             }
 
         return {"next": "FINISH", "instruction": "Protocol Complete."}

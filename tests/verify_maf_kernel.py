@@ -20,7 +20,7 @@ class TestMAFKernel(unittest.TestCase):
     def test_determine_phase_verify(self):
         state = {
             "maf_proposal": {"claims": [], "raw_content": "plan"},
-            "maf_attack": {"successful": False, "severity": 0.0, "feedback": "Good"}
+            "maf_attack": {"successful": False, "severity": 0.0, "feedback": "Good"},
         }
         phase = MAFKernel.determine_phase(state)
         self.assertEqual(phase, MAFPhase.VERIFY)
@@ -29,7 +29,7 @@ class TestMAFKernel(unittest.TestCase):
         state = {
             "maf_proposal": {"claims": [], "raw_content": "plan"},
             "maf_attack": {"successful": False, "feedback": "Good"},
-            "maf_verification": {"passed": True}
+            "maf_verification": {"passed": True},
         }
         phase = MAFKernel.determine_phase(state)
         self.assertEqual(phase, MAFPhase.SEAL)
@@ -54,7 +54,7 @@ class TestMAFKernel(unittest.TestCase):
         # 3. Verify
         state = {
             "maf_proposal": {"claims": [], "raw_content": "prop"},
-            "maf_attack": {"successful": False, "feedback": "Good", "severity": 0.0}
+            "maf_attack": {"successful": False, "feedback": "Good", "severity": 0.0},
         }
         decision = MAFKernel.decide_next_node(state)
         self.assertEqual(decision["next"], "procedural_auditor")
@@ -63,7 +63,7 @@ class TestMAFKernel(unittest.TestCase):
         state = {
             "maf_proposal": {"claims": [], "raw_content": "prop"},
             "maf_attack": {"successful": False, "feedback": "Good", "severity": 0.0},
-            "maf_verification": {"passed": True, "status": "PASS"}
+            "maf_verification": {"passed": True, "status": "PASS"},
         }
         decision = MAFKernel.decide_next_node(state)
         self.assertEqual(decision["next"], "writer")
@@ -74,11 +74,12 @@ class TestMAFKernel(unittest.TestCase):
             "maf_proposal": {"claims": [], "raw_content": "prop"},
             "maf_attack": {"successful": False, "feedback": "Good", "severity": 0.0},
             "maf_verification": {"passed": False, "status": "FAIL", "gaps": ["Error"]},
-            "iteration_count": 0
+            "iteration_count": 0,
         }
         decision = MAFKernel.decide_next_node(state)
         self.assertEqual(decision["next"], "planner")
         self.assertTrue(decision.get("increment_iteration"))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

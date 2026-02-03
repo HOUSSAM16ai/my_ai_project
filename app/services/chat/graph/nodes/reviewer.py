@@ -142,7 +142,7 @@ async def reviewer_node(state: AgentState, ai_client: AIClient) -> dict:
                 plan=state.get("plan", []),
                 response=last_response,
                 score=review_result.score,
-                feedback=review_result.feedback
+                feedback=review_result.feedback,
             )
         else:
             logger.warning("Skipping learning: Missing query or response.")
@@ -156,7 +156,7 @@ async def reviewer_node(state: AgentState, ai_client: AIClient) -> dict:
         "failure_modes": ["Quality check failed" if not review_result.approved else "None"],
         "severity": (10.0 - review_result.score) if not review_result.approved else 0.0,
         "successful": not review_result.approved,
-        "feedback": review_result.feedback
+        "feedback": review_result.feedback,
     }
 
     return {

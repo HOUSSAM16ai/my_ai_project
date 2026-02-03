@@ -131,7 +131,7 @@ Valid Relation Types: owns, participated_in, won, issued_by, located_at, related
                 "status": report.overall_status.value.upper(),
                 "evidence_ids": [e for r in report.findings for e in r.evidence],
                 "gaps": [r.message for r in report.findings if r.status == AuditStatus.FAIL],
-                "risk_score": report.risk_score
+                "risk_score": report.risk_score,
             }
 
             # Format Output for Chat

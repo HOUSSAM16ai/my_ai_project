@@ -87,7 +87,11 @@ class EpisodicMemoryEngine:
                 return ""
 
             header = "--- 🧠 PAST MEMORY & LESSONS (From Previous Interactions) ---"
-            return f"{header}\n" + "\n".join(experiences) + "\n------------------------------------------------------------"
+            return (
+                f"{header}\n"
+                + "\n".join(experiences)
+                + "\n------------------------------------------------------------"
+            )
 
         except Exception as e:
             logger.error(f"Memory recall failed: {e}")
@@ -159,7 +163,9 @@ Output ONLY the lesson text.
 
             # Offload blocking I/O to a thread
             loop = asyncio.get_running_loop()
-            await loop.run_in_executor(None, lambda: self.index.storage_context.persist(persist_dir=self.storage_dir))
+            await loop.run_in_executor(
+                None, lambda: self.index.storage_context.persist(persist_dir=self.storage_dir)
+            )
 
             logger.info(f"Memory learned new lesson. Score: {score}")
 

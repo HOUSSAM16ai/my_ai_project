@@ -53,7 +53,7 @@ class AgentState(TypedDict):
     last_compliance_report: NotRequired[dict[str, object]]
 
     # MAF-1.0 Protocol Fields
-    maf_proposal: NotRequired[dict[str, object]]      # Serialized Proposal
-    maf_attack: NotRequired[dict[str, object]]        # Serialized AttackReport
+    maf_proposal: NotRequired[dict[str, object]]  # Serialized Proposal
+    maf_attack: NotRequired[dict[str, object]]  # Serialized AttackReport
     maf_verification: NotRequired[dict[str, object]]  # Serialized Verification
-    audit_bundle: NotRequired[dict[str, object]]      # Serialized AuditBundle
+    audit_bundle: NotRequired[dict[str, object]]  # Serialized AuditBundle
