@@ -8,18 +8,20 @@ def run(playwright):
     page = browser.new_page()
 
     # Mock Admin User API
-    page.route("**/api/security/user/me", lambda route: route.fulfill(
-        status=200,
-        content_type="application/json",
-        body='{"id": "999", "email": "admin@overmind.com", "full_name": "Supreme Admin", "is_admin": true}'
-    ))
+    page.route(
+        "**/api/security/user/me",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"id": "999", "email": "admin@overmind.com", "full_name": "Supreme Admin", "is_admin": true}',
+        ),
+    )
 
     # Mock Admin Conversations API
-    page.route("**/admin/api/conversations", lambda route: route.fulfill(
-        status=200,
-        content_type="application/json",
-        body='[]'
-    ))
+    page.route(
+        "**/admin/api/conversations",
+        lambda route: route.fulfill(status=200, content_type="application/json", body="[]"),
+    )
 
     # Set token in localStorage before load
     page.add_init_script("""
@@ -47,6 +49,7 @@ def run(playwright):
     page.screenshot(path="verification_admin_mission_selector.png")
 
     browser.close()
+
 
 with sync_playwright() as playwright:
     run(playwright)

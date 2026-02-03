@@ -214,7 +214,7 @@ def db_lifecycle(event_loop: asyncio.AbstractEventLoop) -> None:
 
         # 1. Drop all tables to ensure clean slate (avoids FK issues)
         async with engine.begin() as connection:
-             await connection.run_sync(SQLModel.metadata.drop_all)
+            await connection.run_sync(SQLModel.metadata.drop_all)
 
         # 2. Recreate schema
         async with engine.begin() as connection:
