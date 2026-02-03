@@ -4,20 +4,20 @@ Simple AI Client (Refactored for SOLID).
 Implements the LLMClient protocol with proper Dependency Injection.
 """
 
-import asyncio
 import hashlib
 import json
 import logging
-import httpx
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from typing import Any
 
+import httpx
+
 from app.core.ai_config import get_ai_config
 from app.core.cognitive_cache import get_cognitive_engine
 from app.core.gateway.connection import BASE_TIMEOUT, ConnectionManager
-from app.core.types import JSONDict
 from app.core.interfaces.llm import LLMClient
+from app.core.types import JSONDict
 from app.services.llm.safety_net import SafetyNetService
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class OpenRouterClient(LLMClient):
         primary_model: str,
         fallback_models: list[str],
         cognitive_engine: Any,
-        safety_net: SafetyNetService
+        safety_net: SafetyNetService,
     ):
         self.api_key = api_key
         self.primary_model = primary_model
@@ -205,6 +205,7 @@ class SimpleAIClient(OpenRouterClient):
     """
     Backward-compatible wrapper that automatically injects global dependencies.
     """
+
     def __init__(self, api_key: str | None = None):
         config = get_ai_config()
         key = api_key or config.openrouter_api_key or "dummy_key"
@@ -214,5 +215,5 @@ class SimpleAIClient(OpenRouterClient):
             primary_model=config.primary_model,
             fallback_models=config.get_fallback_models(),
             cognitive_engine=get_cognitive_engine(),
-            safety_net=SafetyNetService()
+            safety_net=SafetyNetService(),
         )

@@ -6,22 +6,26 @@ Handles intent classification and routing to appropriate handlers.
 
 import json
 import logging
-from typing import Any, AsyncGenerator, Protocol
+from collections.abc import AsyncGenerator
+from typing import Any, Protocol
 
 from app.core.interfaces.llm import LLMClient
 from app.core.interfaces.router import IntentRouter
-from app.services.chat.agents.admin_handlers.base import AdminCommandHandler
-from app.services.chat.agents.admin_handlers.users import UserListHandler, UserCountHandler
-from app.services.chat.agents.admin_handlers.project import ProjectInfoHandler, MicroservicesHandler
-from app.services.chat.agents.base import FORMAL_ARABIC_STYLE_PROMPT
 from app.services.chat.agents.admin_components.responder import FormalResponder
+from app.services.chat.agents.admin_handlers.base import AdminCommandHandler
+from app.services.chat.agents.admin_handlers.project import MicroservicesHandler, ProjectInfoHandler
+from app.services.chat.agents.admin_handlers.users import UserCountHandler, UserListHandler
+from app.services.chat.agents.base import FORMAL_ARABIC_STYLE_PROMPT
 
 logger = logging.getLogger(__name__)
 
+
 class MCPService(Protocol):
     """Protocol for MCP Integrations to avoid hard dependency here."""
+
     async def semantic_search(self, query: str, top_k: int = 5) -> dict[str, Any]: ...
     async def run_langgraph_workflow(self, goal: str) -> dict[str, Any]: ...
+
 
 class AdminRouter(IntentRouter):
     """
@@ -33,7 +37,7 @@ class AdminRouter(IntentRouter):
         ai_client: LLMClient,
         handlers: list[AdminCommandHandler],
         mcp: MCPService | None,
-        responder: FormalResponder
+        responder: FormalResponder,
     ):
         self.ai_client = ai_client
         self.handlers = handlers
@@ -41,11 +45,8 @@ class AdminRouter(IntentRouter):
         self.responder = responder
 
     async def route_and_execute(
-        self,
-        question: str,
-        context: dict[str, Any] | None = None
+        self, question: str, context: dict[str, Any] | None = None
     ) -> AsyncGenerator[str, None]:
-
         lowered = question.lower().strip()
 
         # 1. Fast Path (Regex/Keyword Strategy)
@@ -56,8 +57,8 @@ class AdminRouter(IntentRouter):
 
         # 2. LLM Classification Strategy
         if not self.ai_client:
-             yield "عذرًا، خدمة الذكاء الاصطناعي غير متاحة للتوجيه الذكي."
-             return
+            yield "عذرًا، خدمة الذكاء الاصطناعي غير متاحة للتوجيه الذكي."
+            return
 
         intent = await self._classify_intent(question)
         tool_name = intent.get("tool", "GENERAL_ANSWER")
@@ -78,7 +79,7 @@ class AdminRouter(IntentRouter):
             "LIST_USERS": UserListHandler,
             "COUNT_USERS": UserCountHandler,
             "PROJECT_INFO": ProjectInfoHandler,
-            "MICROSERVICES_INFO": MicroservicesHandler
+            "MICROSERVICES_INFO": MicroservicesHandler,
         }
 
         if tool_name in handler_map:

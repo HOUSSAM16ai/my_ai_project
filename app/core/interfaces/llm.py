@@ -4,9 +4,11 @@ LLM Client Interface (ISP).
 Defines the contract for any Large Language Model provider.
 """
 
-from typing import Protocol, runtime_checkable, Any
 from collections.abc import AsyncGenerator
+from typing import Any, Protocol, runtime_checkable
+
 from app.core.types import JSONDict
+
 
 @runtime_checkable
 class LLMClient(Protocol):

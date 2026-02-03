@@ -4,7 +4,9 @@ Intent Router Interface (ISP).
 Defines the contract for routing intents to handlers.
 """
 
-from typing import Protocol, AsyncGenerator, Any
+from collections.abc import AsyncGenerator
+from typing import Any, Protocol
+
 
 class IntentRouter(Protocol):
     """
@@ -12,9 +14,7 @@ class IntentRouter(Protocol):
     """
 
     async def route_and_execute(
-        self,
-        question: str,
-        context: dict[str, Any] | None = None
+        self, question: str, context: dict[str, Any] | None = None
     ) -> AsyncGenerator[str, None]:
         """
         Analyze the question and context, route to the appropriate handler,

@@ -6,9 +6,10 @@ Acts as a Facade/Coordinator. Delegates logic to AdminRouter (Strategy).
 
 import logging
 from collections.abc import AsyncGenerator
-from typing import Any
 
 from app.core.ai_gateway import AIClient
+from app.services.chat.agents.admin_components.responder import FormalResponder
+from app.services.chat.agents.admin_components.router import AdminRouter
 from app.services.chat.agents.admin_handlers.base import AdminCommandHandler
 from app.services.chat.agents.admin_handlers.code import (
     CodeSearchHandler,
@@ -34,8 +35,6 @@ from app.services.chat.agents.data_access import DataAccessAgent
 from app.services.chat.agents.refactor import RefactorAgent
 from app.services.chat.tools import ToolRegistry
 from app.services.mcp.integrations import MCPIntegrations
-from app.services.chat.agents.admin_components.router import AdminRouter
-from app.services.chat.agents.admin_components.responder import FormalResponder
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +53,7 @@ class AdminAgent:
         self,
         tools: ToolRegistry,
         ai_client: AIClient | None = None,
-        router: AdminRouter | None = None
+        router: AdminRouter | None = None,
     ) -> None:
         self.tools = tools
         self.ai_client = ai_client
@@ -96,7 +95,7 @@ class AdminAgent:
 
             # NOTE: If ai_client is None, Router will have limited functionality.
             # We assume ai_client implements LLMClient protocol if passed.
-            self.router = AdminRouter(ai_client, handlers_list, mcp_instance, responder) # type: ignore
+            self.router = AdminRouter(ai_client, handlers_list, mcp_instance, responder)  # type: ignore
 
     async def run(
         self,

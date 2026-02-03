@@ -4,7 +4,9 @@ Agent Interface.
 Defines the contract for conversational agents.
 """
 
-from typing import Protocol, AsyncGenerator, Any
+from collections.abc import AsyncGenerator
+from typing import Any, Protocol
+
 
 class Agent(Protocol):
     """
@@ -12,9 +14,7 @@ class Agent(Protocol):
     """
 
     async def run(
-        self,
-        question: str,
-        context: dict[str, Any] | None = None
+        self, question: str, context: dict[str, Any] | None = None
     ) -> AsyncGenerator[str, None]:
         """Run the agent loop."""
         ...

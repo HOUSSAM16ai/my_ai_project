@@ -9,15 +9,14 @@ from __future__ import annotations
 
 import time
 from collections.abc import AsyncGenerator
-from typing import Any
 
 from app.core.ai_config import get_ai_config
 from app.core.gateway.circuit_breaker import CircuitBreaker
 from app.core.gateway.exceptions import AIAllModelsExhaustedError, AIProviderError
 from app.core.gateway.node import NeuralNode
 from app.core.gateway.simple_client import SimpleAIClient
-from app.core.types import JSONDict
 from app.core.interfaces.llm import LLMClient as AIClient
+from app.core.types import JSONDict
 
 _ai_config = get_ai_config()
 

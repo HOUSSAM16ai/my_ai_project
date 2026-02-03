@@ -7,7 +7,9 @@ Handles fallback responses when all AI models fail.
 import asyncio
 import time
 from collections.abc import AsyncGenerator
+
 from app.core.types import JSONDict
+
 
 class SafetyNetService:
     """
