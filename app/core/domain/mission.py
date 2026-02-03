@@ -79,6 +79,11 @@ class Mission(SQLModel, table=True):
         sa_column=Column(Integer, ForeignKey("mission_plans.id", use_alter=True)),
     )
 
+    locked: bool = Field(default=False)
+    result_summary: str | None = Field(default=None, sa_column=Column(Text))
+    total_cost_usd: float | None = Field(default=None)
+    adaptive_cycles: int = Field(default=0)
+
     created_at: datetime = Field(
         default_factory=utc_now,
         sa_column=Column(DateTime(timezone=True), server_default=func.now()),
