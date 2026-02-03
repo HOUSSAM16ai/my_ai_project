@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import AsyncGenerator
-from typing import Any, Protocol, runtime_checkable
+from typing import Any
 
 from app.core.ai_config import get_ai_config
 from app.core.gateway.circuit_breaker import CircuitBreaker
@@ -17,6 +17,7 @@ from app.core.gateway.exceptions import AIAllModelsExhaustedError, AIProviderErr
 from app.core.gateway.node import NeuralNode
 from app.core.gateway.simple_client import SimpleAIClient
 from app.core.types import JSONDict
+from app.core.interfaces.llm import LLMClient as AIClient
 
 _ai_config = get_ai_config()
 
@@ -84,40 +85,6 @@ class NeuralRoutingMesh(SimpleAIClient):
             return
 
         raise AIAllModelsExhaustedError("All models are unavailable.")
-
-
-# ============================================================================
-# Protocol Definition
-# ============================================================================
-
-
-@runtime_checkable
-class AIClient(Protocol):
-    """
-    Protocol defining the interface for AI Clients.
-    """
-
-    def stream_chat(self, messages: list[JSONDict]) -> AsyncGenerator[JSONDict, None]:
-        """Stream a chat conversation."""
-        ...
-
-    async def send_message(
-        self, system_prompt: str, user_message: str, temperature: float = 0.7
-    ) -> str:
-        """Send a single message and get the full response string."""
-        ...
-
-    async def __aiter__(self):
-        """Allow async iteration over the client (legacy pattern)."""
-        ...
-
-    async def generate_text(self, prompt: str, **kwargs) -> Any:
-        """Legacy generation method."""
-        ...
-
-    async def forge_new_code(self, **kwargs) -> Any:
-        """Legacy code generation method."""
-        ...
 
 
 class _DefaultOmniRouter:
