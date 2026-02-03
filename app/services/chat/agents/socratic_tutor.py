@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from app.core.ai_gateway import AIClient
+from app.services.chat.agents.base import FORMAL_ARABIC_STYLE_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,8 @@ class SocraticTutor:
     4. يحتفي عندما يكتشف الطالب الإجابة بنفسه
     """
 
-    SYSTEM_PROMPT = """
+    SYSTEM_PROMPT = (
+        """
 أنت معلم سقراطي عبقري. هدفك هو مساعدة الطالب على اكتشاف الإجابة بنفسه.
 
 القواعد الذهبية:
@@ -84,7 +86,10 @@ class SocraticTutor:
 - إذا سحبت كرة عشوائياً، ما احتمال أن تكون حمراء؟ فكّر في النسبة..."
 
 تذكر: نجاحك يقاس بعدد اللحظات التي يقول فيها الطالب "آها! فهمت!"
+
 """
+        + FORMAL_ARABIC_STYLE_PROMPT
+    )
 
     def __init__(self, ai_client: AIClient) -> None:
         self.ai_client = ai_client

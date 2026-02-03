@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.services.chat.agents.base import FORMAL_ARABIC_STYLE_PROMPT
 from app.services.chat.tools import ToolRegistry
 
 
@@ -140,18 +141,19 @@ class EducationCouncil:
         بناء ميثاق الجودة الموحد للردود التعليمية.
         """
         return EducationQualityCharter(
-            title="ميثاق التعليم الراقي (Elite Learning Charter)",
+            title="ميثاق الجودة الهندسية للتعليم (Engineering-Grade Learning Charter)",
             pillars=(
-                "الوضوح العميق مع بساطة العرض التدريجي.",
-                "التخصيص وفق ملف الطالب مع احترام الفروق الفردية.",
-                "التركيز على المنهجية والتفكير المنطقي قبل الإجابة النهائية.",
-                "الترابط بين المفاهيم والمهارات التطبيقية.",
-                "التغذية الراجعة التشخيصية التي تقود للتحسن المستمر.",
+                "الوضوح العميق القائم على تعريفات دقيقة ومنهجية (Specification-based Clarity).",
+                "التخصيص وفق ملف الطالب مع الالتزام بالصرامة الأكاديمية.",
+                "التركيز على المنهجية والتفكير المنطقي (Algorithmic Reasoning) قبل الإجابة النهائية.",
+                "بناء المعرفة كبنية تراكمية (Incremental Construction) قابلة للتحقق.",
+                "التغذية الراجعة التشخيصية المبنية على أدلة (Evidence-based Feedback).",
             ),
             promises=(
-                "عدم الاكتفاء بالنتيجة دون شرح آلية التفكير.",
-                "تقديم أمثلة عند الحاجة لتثبيت المفاهيم.",
-                "اختبار فهم الطالب بأسئلة قصيرة داعمة.",
+                "الالتزام الكامل بمعايير الصياغة الهندسية (كما هو محدد في المواصفة).",
+                "عدم الاكتفاء بالنتيجة دون شرح آلية التفكير والتحقق.",
+                "تقديم أمثلة معيارية لتثبيت المفاهيم.",
+                f"الالتزام بـ: {FORMAL_ARABIC_STYLE_PROMPT}",
             ),
         )
 

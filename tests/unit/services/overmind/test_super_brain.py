@@ -8,6 +8,7 @@ import pytest
 from app.core.domain.models import Mission
 from app.services.overmind.domain.cognitive import SuperBrain
 from app.services.overmind.domain.context import InMemoryCollaborationContext
+from app.services.overmind.domain.enums import CognitivePhase
 
 AUDITOR_EXPECTED_REVIEWS = 2
 STRATEGIST_EXPECTED_CALLS = 2
@@ -193,7 +194,7 @@ async def test_execute_phase_timeout_logs_event():
 
     with pytest.raises(RuntimeError, match="timeout"):
         await brain._execute_phase(
-            phase_name="TEST_PHASE",
+            phase_name=CognitivePhase.EXECUTION,
             agent_name="Tester",
             action=slow_action,
             timeout=0.001,
@@ -201,4 +202,4 @@ async def test_execute_phase_timeout_logs_event():
         )
 
     assert events[0][0] == "phase_start"
-    assert events[-1][0] == "test_phase_timeout"
+    assert events[-1][0] == "execution_timeout"

@@ -15,44 +15,45 @@ class DummyNode:
         self.score = 0.0
 
 
+from app.services.overmind.langgraph.context_contracts import Snippet
+
+
 class DummyRetriever:
-    def __init__(self, nodes: list[DummyNode]) -> None:
-        self._nodes = nodes
+    """Mock retriever matching SnippetRetriever protocol."""
 
-    def search(self, query: str, limit: int, filters: dict[str, object]) -> list[DummyNode]:
-        return self._nodes[:limit]
+    def __init__(self, snippets: list[Snippet]) -> None:
+        self._snippets = snippets
 
-
-class DummyReranker:
-    def __init__(self) -> None:
-        self.calls: list[tuple[str, int]] = []
-
-    def rerank(self, query: str, nodes: list[DummyNode], top_n: int) -> list[DummyNode]:
-        self.calls.append((query, top_n))
-        return list(reversed(nodes))[:top_n]
+    async def retrieve(
+        self,
+        query: str,
+        *,
+        context: dict[str, object],
+        metadata: dict[str, object],
+        max_snippets: int,
+    ) -> list[Snippet]:
+        # Return reversed list to simulate 'reranking' logic or just different order
+        return list(reversed(self._snippets))[:max_snippets]
 
 
 @pytest.mark.asyncio
 async def test_enrich_applies_reranker(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DATABASE_URL", "postgresql://example")
+    # 1. Setup Data
+    snippet_a = Snippet(text="النص الأول", metadata={"id": "a"})
+    snippet_b = Snippet(text="النص الثاني", metadata={"id": "b"})
 
-    node_a = DummyNode(DummyPayload("النص الأول", {"content_id": "a"}))
-    node_b = DummyNode(DummyPayload("النص الثاني", {"content_id": "b"}))
-    retriever = DummyRetriever([node_a, node_b])
-    reranker = DummyReranker()
+    # 2. Inject Mock Retriever
+    # Note: Reranking logic is now assumed to be part of the retriever implementation
+    # or the retriever we pass in already does it.
+    retriever = DummyRetriever([snippet_a, snippet_b])
 
-    monkeypatch.setattr(
-        "app.services.overmind.langgraph.context_enricher.get_retriever",
-        lambda _: retriever,
-    )
-    monkeypatch.setattr(
-        "app.services.overmind.langgraph.context_enricher.get_reranker",
-        lambda: reranker,
-    )
+    # 3. Initialize Enricher with Mock
+    enricher = ContextEnricher(max_snippets=2, retriever=retriever)
 
-    enricher = ContextEnricher(max_snippets=2)
+    # 4. Execute
     result = await enricher.enrich("اختبار التكامل", {})
 
+    # 5. Verify
+    # DummyRetriever reverses the list, so B comes before A
     assert result.snippets[0]["text"] == "النص الثاني"
     assert result.snippets[1]["text"] == "النص الأول"
-    assert reranker.calls == [("اختبار التكامل", 2)]

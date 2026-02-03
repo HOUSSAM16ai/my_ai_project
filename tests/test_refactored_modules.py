@@ -119,6 +119,7 @@ class TestAnalysisPipeline:
     @pytest.mark.asyncio
     async def test_pipeline_executes_steps(self, tmp_path):
         """Pipeline executes all steps in sequence."""
+        from app.services.project_context.domain.context_model import AnalysisContext
         from app.services.project_context.refactored import (
             AnalysisPipeline,
             ComplexityAnalysisStep,
@@ -140,15 +141,16 @@ class TestAnalysisPipeline:
             ]
         )
 
-        result = await pipeline.execute(test_file)
+        context = AnalysisContext(file_path=test_file)
+        result_ctx = await pipeline.execute(context)
 
-        assert "file" in result
-        assert "metrics" in result
-        assert result["status"] == "success"
+        assert result_ctx.analysis_result
+        assert result_ctx.analysis_result["status"] == "success"
 
     @pytest.mark.asyncio
     async def test_pipeline_handles_errors(self, tmp_path):
         """Pipeline handles errors gracefully."""
+        from app.services.project_context.domain.context_model import AnalysisContext
         from app.services.project_context.refactored import (
             AnalysisPipeline,
             FileReadStep,
@@ -156,9 +158,10 @@ class TestAnalysisPipeline:
 
         # Non-existent file
         pipeline = AnalysisPipeline([FileReadStep()])
-        result = await pipeline.execute(tmp_path / "nonexistent.py")
+        context = AnalysisContext(file_path=tmp_path / "nonexistent.py")
+        result_ctx = await pipeline.execute(context)
 
-        assert "errors" in result
+        assert result_ctx.has_errors()
 
 
 class TestApplicationServices:

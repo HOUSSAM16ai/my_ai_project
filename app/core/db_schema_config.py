@@ -261,31 +261,42 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
         "columns": [
             "id",
             "token_id",
+            "family_id",
             "user_id",
             "hashed_token",
             "expires_at",
             "revoked_at",
+            "replaced_by_token_id",
             "created_at",
         ],
-        "auto_fix": {},
+        "auto_fix": {
+            "family_id": 'ALTER TABLE "refresh_tokens" ADD COLUMN "family_id" VARCHAR(36) NOT NULL DEFAULT \'unknown\'',
+            "replaced_by_token_id": 'ALTER TABLE "refresh_tokens" ADD COLUMN "replaced_by_token_id" VARCHAR(36)',
+        },
         "indexes": {
             "user_id": 'CREATE INDEX IF NOT EXISTS "ix_refresh_tokens_user_id" ON "refresh_tokens"("user_id")',
             "expires_at": 'CREATE INDEX IF NOT EXISTS "ix_refresh_tokens_expires_at" ON "refresh_tokens"("expires_at")',
             "token_id": 'CREATE UNIQUE INDEX IF NOT EXISTS "ix_refresh_tokens_token_id" ON "refresh_tokens"("token_id")',
+            "family_id": 'CREATE INDEX IF NOT EXISTS "ix_refresh_tokens_family_id" ON "refresh_tokens"("family_id")',
+            "replaced_by_token_id": 'CREATE INDEX IF NOT EXISTS "ix_refresh_tokens_replaced_by_token_id" ON "refresh_tokens"("replaced_by_token_id")',
         },
         "index_names": {
             "user_id": "ix_refresh_tokens_user_id",
             "expires_at": "ix_refresh_tokens_expires_at",
             "token_id": "ix_refresh_tokens_token_id",
+            "family_id": "ix_refresh_tokens_family_id",
+            "replaced_by_token_id": "ix_refresh_tokens_replaced_by_token_id",
         },
         "create_table": (
             'CREATE TABLE IF NOT EXISTS "refresh_tokens"('
             '"id" SERIAL PRIMARY KEY,'
             '"token_id" VARCHAR(36) NOT NULL UNIQUE,'
+            '"family_id" VARCHAR(36) NOT NULL,'
             '"user_id" INTEGER NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,'
             '"hashed_token" VARCHAR(255) NOT NULL,'
             '"expires_at" TIMESTAMPTZ NOT NULL,'
             '"revoked_at" TIMESTAMPTZ,'
+            '"replaced_by_token_id" VARCHAR(36),'
             '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
             ")"
         ),
