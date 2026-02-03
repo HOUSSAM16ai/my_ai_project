@@ -9,15 +9,14 @@ from collections.abc import AsyncGenerator
 from sqlalchemy import select, text
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
+# Import chat domain to ensure AdminConversation is registered, preventing mapping errors
+import app.core.domain.chat  # noqa: F401
 from app.core.agents.system_principles import (
     format_architecture_system_principles,
     format_system_principles,
 )
-from app.core.domain.mission import Mission, MissionEvent, MissionEventType, MissionStatus
-
-# Import chat domain to ensure AdminConversation is registered, preventing mapping errors
-import app.core.domain.chat  # noqa: F401
 from app.core.db_schema_config import REQUIRED_SCHEMA
+from app.core.domain.mission import Mission, MissionEvent, MissionEventType, MissionStatus
 from app.core.patterns.strategy import Strategy
 from app.services.chat.context import ChatContext
 from app.services.chat.context_service import get_context_service
@@ -211,7 +210,7 @@ class MissionComplexHandler(IntentHandler):
                 yield "⏳ مجلس الحكمة يبدأ التداول (Strategist, Architect, Auditor)...\n"
         except Exception as e:
             logger.error(f"Failed to create mission: {e}", exc_info=True)
-            yield f"\n❌ **خطأ في قاعدة البيانات:** لم نتمكن من بدء المهمة.\n"
+            yield "\n❌ **خطأ في قاعدة البيانات:** لم نتمكن من بدء المهمة.\n"
             yield f"التفاصيل التقنية: `{e!s}`\n"
             yield "💡 **الحل:** يرجى إبلاغ الفريق التقني لفحص حالة قاعدة البيانات.\n"
             return
