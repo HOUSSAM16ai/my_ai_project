@@ -1,15 +1,16 @@
 import sys
 import unittest
-from typing import TypedDict, NotRequired, List, Any
+from typing import Any, NotRequired, TypedDict
 from unittest.mock import MagicMock
+
 
 # 1. Mock AgentState to avoid importing app.services.chat
 class AgentState(TypedDict):
-    messages: List[Any]
+    messages: list[Any]
     next: str
-    plan: List[str]
+    plan: list[str]
     current_step_index: int
-    search_results: List[Any]
+    search_results: list[Any]
     user_context: dict
     final_response: str
     review_packet: NotRequired[dict]
@@ -27,7 +28,8 @@ sys.modules["app.services.chat.graph.state"] = mock_state_module
 
 # Now we can import kernel
 from app.core.maf.kernel import MAFKernel
-from app.core.maf.spec import ReviewPacket, ReviewChecklist, MAFPhase
+from app.core.maf.spec import MAFPhase, ReviewChecklist, ReviewPacket
+
 
 class TestCritiqueLoop(unittest.TestCase):
     def test_critique_loop_rejection(self):

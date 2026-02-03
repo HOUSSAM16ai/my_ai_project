@@ -8,7 +8,7 @@ This kernel replaces loose LLM routing with a normative state machine.
 import logging
 from typing import Any
 
-from app.core.maf.spec import AttackReport, AuditStatus, MAFPhase, ReviewPacket, Verification
+from app.core.maf.spec import AttackReport, MAFPhase, ReviewPacket, Verification
 
 logger = logging.getLogger(__name__)
 

@@ -102,13 +102,12 @@ Perform the Strategic Audit now. Return JSON.
             checklist_data = data.get("checklist", {})
             checklist = ReviewChecklist(**checklist_data)
 
-            packet = ReviewPacket(
+            return ReviewPacket(
                 checklist=checklist,
                 score=float(data.get("score", 5.0)),
                 actionable_feedback=data.get("actionable_feedback", "Check content."),
                 recommendation=data.get("recommendation", "REJECT"),
             )
-            return packet
 
         except Exception as e:
             logger.error(f"Review Audit failed: {e}")
