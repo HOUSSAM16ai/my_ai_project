@@ -1,4 +1,4 @@
-from microservices.research_agent.src.content.service import content_service
+from microservices.research_agent.src.content.utils import normalize_set_name
 
 
 def test_normalize_set_name_subject_1():
@@ -16,7 +16,7 @@ def test_normalize_set_name_subject_1():
         "الموضوع 1",
     ]
     for i in inputs:
-        assert content_service.normalize_set_name(i) == expected, f"Failed for input: {i}"
+        assert normalize_set_name(i) == expected, f"Failed for input: {i}"
 
 
 def test_normalize_set_name_subject_2():
@@ -32,11 +32,11 @@ def test_normalize_set_name_subject_2():
         "الموضوع 2",
     ]
     for i in inputs:
-        assert content_service.normalize_set_name(i) == expected, f"Failed for input: {i}"
+        assert normalize_set_name(i) == expected, f"Failed for input: {i}"
 
 
 def test_normalize_set_name_unknown():
-    assert content_service.normalize_set_name("unknown") == "unknown"
-    assert content_service.normalize_set_name("bac 2024") == "bac 2024"
-    assert content_service.normalize_set_name("") is None
-    assert content_service.normalize_set_name(None) is None
+    assert normalize_set_name("unknown") == "unknown"
+    assert normalize_set_name("bac 2024") == "bac 2024"
+    assert normalize_set_name("") is None
+    assert normalize_set_name(None) is None

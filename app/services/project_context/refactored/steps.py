@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import ast
-from collections.abc import Protocol
+from typing import Protocol
 
 from app.services.project_context.domain.context_model import AnalysisContext
 
