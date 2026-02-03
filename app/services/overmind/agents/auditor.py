@@ -133,8 +133,8 @@ class AuditorAgent(AgentReflector):
                 temperature=0.1,  # درجة حرارة منخفضة للدقة
             )
 
-            # تنظيف الرد من أي نصوص زائدة (Markdown fences)
-            clean_json = response_json.replace("```json", "").replace("```", "").strip()
+            # استخدام دالة تنظيف أكثر قوة
+            clean_json = self._clean_json_block(response_json)
             review_data = json.loads(clean_json)
 
             return {
@@ -204,8 +204,16 @@ class AuditorAgent(AgentReflector):
 
     def _clean_json_block(self, text: str) -> str:
         """استخراج JSON من نص قد يحتوي على Markdown code blocks."""
+        text = text.strip()
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0]
         elif "```" in text:
             text = text.split("```")[1].split("```")[0]
+
+        # محاولة استخراج JSON من بين الأقواس إذا لم يكن هناك كتل كود
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1:
+            text = text[start : end + 1]
+
         return text.strip()
