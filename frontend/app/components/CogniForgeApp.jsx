@@ -554,6 +554,7 @@ const MissionSelector = ({ selected, onSelect }) => {
 const ChatInterface = ({ messages, onSendMessage, status, user }) => {
     const [input, setInput] = useState('');
     const [missionType, setMissionType] = useState('chat');
+    const [isMissionSelected, setIsMissionSelected] = useState(false);
     const messagesEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
     const [autoScroll, setAutoScroll] = useState(true);
@@ -599,6 +600,11 @@ const ChatInterface = ({ messages, onSendMessage, status, user }) => {
         }
     };
 
+    const handleMissionSelect = (type) => {
+        setMissionType(type);
+        setIsMissionSelected(true);
+    };
+
     return (
         <div className="chat-container">
             <div className="messages" ref={messagesContainerRef} onScroll={handleScroll}>
@@ -621,20 +627,37 @@ const ChatInterface = ({ messages, onSendMessage, status, user }) => {
             </div>
 
             <div className="input-area-wrapper">
-                <MissionSelector selected={missionType} onSelect={setMissionType} />
-                <div className="input-area">
-                    <textarea
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder={missionType === 'mission_complex' ? "اكتب مهمتك الخارقة..." : "اكتب سؤالك..."}
-                        rows="1"
-                        disabled={status !== 'connected'}
-                    />
-                    <button onClick={handleSend} disabled={status !== 'connected' || !input.trim()}>
-                        <i className="fas fa-arrow-up"></i>
-                    </button>
-                </div>
+                {!isMissionSelected ? (
+                    <div className="mission-selection-container" style={{ padding: '20px', textAlign: 'center' }}>
+                        <h4 style={{ marginBottom: '15px', color: 'var(--text-color)' }}>اختر نوع المهمة للبدء</h4>
+                        <MissionSelector selected={missionType} onSelect={handleMissionSelect} />
+                    </div>
+                ) : (
+                    <>
+                        <div className="selected-mission-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 15px', fontSize: '0.8em', color: 'var(--text-secondary)' }}>
+                            <span>النمط المحدد: <strong>{missionType}</strong></span>
+                            <button
+                                onClick={() => setIsMissionSelected(false)}
+                                style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', textDecoration: 'underline' }}
+                            >
+                                تغيير
+                            </button>
+                        </div>
+                        <div className="input-area">
+                            <textarea
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                                placeholder={missionType === 'mission_complex' ? "اكتب مهمتك الخارقة..." : "اكتب سؤالك..."}
+                                rows="1"
+                                disabled={status !== 'connected'}
+                            />
+                            <button onClick={handleSend} disabled={status !== 'connected' || !input.trim()}>
+                                <i className="fas fa-arrow-up"></i>
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

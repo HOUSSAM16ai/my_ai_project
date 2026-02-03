@@ -177,7 +177,9 @@ class ChatOrchestrator:
 
         # Override intent if mission_type is provided in metadata
         if metadata and (mission_type := metadata.get("mission_type")):
-            logger.info(f"Overriding intent with mission_type: {mission_type}", extra={"user_id": user_id})
+            logger.info(
+                f"Overriding intent with mission_type: {mission_type}", extra={"user_id": user_id}
+            )
             from app.services.chat.intent_detector import IntentResult
 
             mapping = {

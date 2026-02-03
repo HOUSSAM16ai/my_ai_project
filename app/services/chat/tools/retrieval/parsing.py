@@ -333,7 +333,7 @@ def has_section_stop_marker(text_normalized: str) -> bool:
 def get_core_content(content: str) -> str:
     """Helper to strip the file header if present (separated by ---)."""
     if "\n\n---\n\n" in content:
-        return content.split("\n\n---\n\n")[-1]
+        return content.rsplit("\n\n---\n\n", maxsplit=1)[-1]
     return content
 
 

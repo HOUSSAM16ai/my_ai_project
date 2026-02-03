@@ -5,13 +5,13 @@ This module defines the normative data structures for the High-Reliability Agent
 Adheres to the "Evidence-Based Output" doctrine.
 """
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class AuditStatus(str, Enum):
+class AuditStatus(StrEnum):
     """
     Status of a verification or audit process.
     """
@@ -22,7 +22,7 @@ class AuditStatus(str, Enum):
     SKIPPED = "SKIPPED"
 
 
-class MAFPhase(str, Enum):
+class MAFPhase(StrEnum):
     """
     The distinct phases of the MAF Protocol.
     """

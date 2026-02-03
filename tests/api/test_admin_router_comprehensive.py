@@ -126,9 +126,9 @@ def test_chat_stream_ws_orchestrator_error(app):
     mock_db.get.return_value = mock_actor
 
     app.dependency_overrides[get_db] = lambda: mock_db
-    app.dependency_overrides[get_ai_client] = lambda: MagicMock()
-    app.dependency_overrides[get_chat_dispatcher] = lambda: MagicMock()
-    app.dependency_overrides[get_session_factory] = lambda: lambda: AsyncMock()
+    app.dependency_overrides[get_ai_client] = MagicMock
+    app.dependency_overrides[get_chat_dispatcher] = MagicMock
+    app.dependency_overrides[get_session_factory] = lambda: AsyncMock
 
     with patch(
         "app.api.routers.admin.extract_websocket_auth", return_value=("valid_token", "json")

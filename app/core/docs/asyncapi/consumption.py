@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
 from app.core.docs.asyncapi.models import AsyncAPI30, Operation
 
 
-class ConsumptionModel(str, Enum):
+class ConsumptionModel(StrEnum):
     """يمثل هذا التعداد نموذج الاستهلاك الدلالي عبر البروتوكولات المختلفة."""
 
     QUEUE = "queue"

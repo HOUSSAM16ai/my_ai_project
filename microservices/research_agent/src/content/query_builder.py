@@ -44,7 +44,7 @@ class ContentSearchQuery:
 
     def add_filter(self, field: str, value: object) -> "ContentSearchQuery":
         if value is not None:
-            key = field.split(".")[-1]  # Simple key generation
+            key = field.rsplit(".", maxsplit=1)[-1]  # Simple key generation
             # Avoid collision if field is used multiple times (unlikely here but safe practice)
             if key in self.params:
                 key = f"{key}_{len(self.params)}"

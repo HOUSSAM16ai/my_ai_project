@@ -14,7 +14,7 @@ async def verify_engine(url: str):
     Verifies that the engine can be created and connected to.
     Ensures correct settings for PgBouncer compatibility.
     """
-    print(f"Verifying connection to: {url.split('@')[-1]}")  # Hide credentials
+    print(f"Verifying connection to: {url.rsplit('@', maxsplit=1)[-1]}")  # Hide credentials
 
     try:
         engine = create_unified_async_engine(url)

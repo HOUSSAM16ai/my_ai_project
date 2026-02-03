@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 JsonPrimitive = str | int | float | bool | None
 JsonValue = JsonPrimitive | dict[str, "JsonValue"] | list["JsonValue"]
@@ -12,7 +12,7 @@ JsonValue = JsonPrimitive | dict[str, "JsonValue"] | list["JsonValue"]
 # ======================================================================================
 
 
-class AnomalyType(str, Enum):
+class AnomalyType(StrEnum):
     """أنواع الشذوذ المحتملة في بيانات المراقبة."""
 
     LATENCY_SPIKE = "latency_spike"
@@ -23,7 +23,7 @@ class AnomalyType(str, Enum):
     PATTERN_DEVIATION = "pattern_deviation"
 
 
-class AnomalySeverity(str, Enum):
+class AnomalySeverity(StrEnum):
     """درجات خطورة الشذوذ التي تساعد على ترتيب الأولويات."""
 
     CRITICAL = "critical"
@@ -33,7 +33,7 @@ class AnomalySeverity(str, Enum):
     INFO = "info"
 
 
-class HealingAction(str, Enum):
+class HealingAction(StrEnum):
     """إجراءات المعالجة الذاتية المتاحة لتحسين استقرار الخدمات."""
 
     SCALE_UP = "scale_up"
@@ -46,7 +46,7 @@ class HealingAction(str, Enum):
     ADJUST_RATE_LIMIT = "adjust_rate_limit"
 
 
-class MetricType(str, Enum):
+class MetricType(StrEnum):
     """أنواع المقاييس المستخدمة في نقاط القياس التشغيلية."""
 
     LATENCY = "latency"

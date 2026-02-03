@@ -16,7 +16,7 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any, ClassVar, TypeVar
 
 from pydantic import BaseModel, Field
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class FailureType(str, Enum):
+class FailureType(StrEnum):
     """أنواع الفشل."""
 
     TIMEOUT = "timeout"

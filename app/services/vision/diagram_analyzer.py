@@ -7,13 +7,13 @@
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
-class DiagramType(str, Enum):
+class DiagramType(StrEnum):
     """أنواع الرسوم البيانية."""
 
     FUNCTION_GRAPH = "function_graph"  # رسم دالة

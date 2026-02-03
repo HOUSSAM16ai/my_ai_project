@@ -11,7 +11,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import ClassVar
 
 from pydantic import BaseModel, Field
@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
-class RelationType(str, Enum):
+class RelationType(StrEnum):
     """أنواع العلاقات بين المفاهيم."""
 
     PREREQUISITE = "prerequisite"  # متطلب سابق

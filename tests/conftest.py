@@ -206,6 +206,7 @@ def db_lifecycle(event_loop: asyncio.AbstractEventLoop) -> None:
         from sqlmodel import SQLModel
 
         from app.core.db_schema import validate_and_fix_schema
+
         # Ensure models are loaded so metadata is complete
         from app.core.domain import audit, chat, mission, user  # noqa: F401
 
@@ -213,7 +214,7 @@ def db_lifecycle(event_loop: asyncio.AbstractEventLoop) -> None:
 
         # 1. Drop all tables to ensure clean slate (avoids FK issues)
         async with engine.begin() as connection:
-             await connection.run_sync(SQLModel.metadata.drop_all)
+            await connection.run_sync(SQLModel.metadata.drop_all)
 
         # 2. Recreate schema
         async with engine.begin() as connection:

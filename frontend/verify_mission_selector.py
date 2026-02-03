@@ -1,23 +1,27 @@
-from playwright.sync_api import sync_playwright, expect
 import re
+
+from playwright.sync_api import expect, sync_playwright
+
 
 def run(playwright):
     browser = playwright.chromium.launch(headless=True)
     page = browser.new_page()
 
     # Mock User API
-    page.route("**/api/security/user/me", lambda route: route.fulfill(
-        status=200,
-        content_type="application/json",
-        body='{"id": "123", "email": "test@test.com", "full_name": "Test User", "is_admin": false}'
-    ))
+    page.route(
+        "**/api/security/user/me",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"id": "123", "email": "test@test.com", "full_name": "Test User", "is_admin": false}',
+        ),
+    )
 
     # Mock Conversations API
-    page.route("**/api/chat/conversations", lambda route: route.fulfill(
-        status=200,
-        content_type="application/json",
-        body='[]'
-    ))
+    page.route(
+        "**/api/chat/conversations",
+        lambda route: route.fulfill(status=200, content_type="application/json", body="[]"),
+    )
 
     # Set token in localStorage before load
     page.add_init_script("""
@@ -44,9 +48,9 @@ def run(playwright):
 
     # Take Screenshot
     page.screenshot(path="verification_mission_selector.png")
-    print("Screenshot saved to verification_mission_selector.png")
 
     browser.close()
+
 
 with sync_playwright() as playwright:
     run(playwright)

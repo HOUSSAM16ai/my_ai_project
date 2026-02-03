@@ -4,12 +4,12 @@
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class DecisionPriority(str, Enum):
+class DecisionPriority(StrEnum):
     """
     أولوية القرار (Decision Priority).
 
@@ -23,7 +23,7 @@ class DecisionPriority(str, Enum):
     STRATEGIC = "strategic"  # استراتيجي - للمستقبل البعيد
 
 
-class DecisionCategory(str, Enum):
+class DecisionCategory(StrEnum):
     """
     فئة القرار (Decision Category).
 
@@ -40,7 +40,7 @@ class DecisionCategory(str, Enum):
     HUMAN_BENEFIT = "human_benefit"  # فائدة البشرية
 
 
-class DecisionImpact(str, Enum):
+class DecisionImpact(StrEnum):
     """
     تأثير القرار (Decision Impact).
 

@@ -61,7 +61,7 @@ class ShellOperations:
             dict: نتيجة التنفيذ (stdout, stderr, returncode)
         """
         # استخراج الأمر الأول
-        command_name = command.split()[0] if command.strip() else ""
+        command_name = command.split(maxsplit=1)[0] if command.strip() else ""
 
         # التحقق من القائمة البيضاء
         if command_name not in self.allowed_commands:
