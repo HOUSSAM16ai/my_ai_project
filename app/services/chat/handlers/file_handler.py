@@ -67,7 +67,7 @@ async def handle_file_read(
             yield f"📄 الملف فارغ: `{path}`\n"
         else:
             truncated = data.get("truncated", False)
-            ext = path.split(".")[-1] if "." in path else ""
+            ext = path.rsplit(".", maxsplit=1)[-1] if "." in path else ""
             lang = {"py": "python", "js": "javascript", "ts": "typescript"}.get(ext, ext)
             yield f"```{lang}\n{content}\n```\n"
             if truncated:

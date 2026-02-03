@@ -5,10 +5,10 @@ Domain entities for security metrics and findings
 
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     """Security finding severity levels"""
 
     CRITICAL = "CRITICAL"
@@ -18,7 +18,7 @@ class Severity(str, Enum):
     INFO = "INFO"
 
 
-class TrendDirection(str, Enum):
+class TrendDirection(StrEnum):
     """Security trend direction"""
 
     IMPROVING = "IMPROVING"

@@ -11,7 +11,7 @@
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import ClassVar
 
 from app.services.learning.student_profile import MasteryLevel, StudentProfile
@@ -19,7 +19,7 @@ from app.services.learning.student_profile import MasteryLevel, StudentProfile
 logger = logging.getLogger(__name__)
 
 
-class DifficultyLevel(str, Enum):
+class DifficultyLevel(StrEnum):
     """مستويات الصعوبة."""
 
     EASY = "easy"  # سهل (للمبتدئين)

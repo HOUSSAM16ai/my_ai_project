@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class AuditAction(str, Enum):
+class AuditAction(StrEnum):
     """
     Standardized audit actions to ensure high-precision tracking.
     """

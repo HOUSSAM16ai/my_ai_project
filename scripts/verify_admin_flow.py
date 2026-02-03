@@ -94,7 +94,7 @@ async def verify_flow():
     # 2. Setup App
     print("[2/5] Creating Application...")
     app = create_app()
-    app.dependency_overrides[get_ai_client] = lambda: MockAIClient()
+    app.dependency_overrides[get_ai_client] = MockAIClient
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # 3. Seed Admin

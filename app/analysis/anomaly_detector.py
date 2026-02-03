@@ -1,10 +1,10 @@
 """كاشف شذوذ مبسّط مصمم لتوفير تنبيهات واضحة للمبتدئين."""
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class SeverityLevel(str, Enum):
+class SeverityLevel(StrEnum):
     """درجات خطورة للحالات الشاذة تسهّل تصنيف التنبيهات."""
 
     LOW = "low"

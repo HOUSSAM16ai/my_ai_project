@@ -23,7 +23,7 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-class CaseInsensitiveEnum(str, enum.Enum):
+class CaseInsensitiveEnum(enum.StrEnum):
     """
     Case-Insensitive Enum.
     Allows matching 'user' and 'USER' from database.

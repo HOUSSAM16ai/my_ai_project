@@ -13,14 +13,14 @@
 """
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import AliasChoices, Field
 
 from app.core.schemas import RobustBaseModel
 
 
-class MissionStatusEnum(str, Enum):
+class MissionStatusEnum(StrEnum):
     """حالات المهمة الممكنة."""
 
     # Ensure values match app.models.MissionStatus (lowercase)
@@ -37,7 +37,7 @@ class MissionStatusEnum(str, Enum):
     # Pydantic 2 Enums are strict by default on value
 
 
-class StepStatusEnum(str, Enum):
+class StepStatusEnum(StrEnum):
     """حالات خطوة التنفيذ."""
 
     # Aligned with app.models.TaskStatus
@@ -121,13 +121,13 @@ class MissionEventResponse(RobustBaseModel):
 
     event_type: str = Field(..., description="نوع الحدث (مثلاً: step_start, log, completion)")
     mission_id: int = Field(..., description="معرف المهمة")
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(), description="توقيت الحدث")
+    timestamp: datetime = Field(default_factory=datetime.now, description="توقيت الحدث")
     payload: dict[str, str | int | float | bool | list | dict | None] = Field(
         default_factory=dict, description="بيانات الحدث التفصيلية"
     )
 
 
-class AgentPlanPriority(str, Enum):
+class AgentPlanPriority(StrEnum):
     """مستويات أولوية خطة الوكلاء."""
 
     LOW = "low"

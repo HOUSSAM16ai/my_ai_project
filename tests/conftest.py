@@ -206,6 +206,7 @@ def db_lifecycle(event_loop: asyncio.AbstractEventLoop) -> None:
         from sqlmodel import SQLModel
 
         from app.core.db_schema import validate_and_fix_schema
+
         # Ensure models are loaded so metadata is complete
         from app.core.domain import audit, chat, mission, user  # noqa: F401
 

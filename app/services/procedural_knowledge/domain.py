@@ -1,10 +1,10 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
 
 
-class NodeType(str, Enum):
+class NodeType(StrEnum):
     """
     تصنيف أنواع العقد في الرسم البياني المعرفي (Procedural & Fraud Detection).
     """
@@ -27,7 +27,7 @@ class NodeType(str, Enum):
     BANK_ACCOUNT = "bank_account"  # حساب بنكي
 
 
-class RelationType(str, Enum):
+class RelationType(StrEnum):
     """
     تصنيف أنواع العلاقات بين العقد.
     """
@@ -77,7 +77,7 @@ class Relation(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict, description="بيانات وصفية للعلاقة")
 
 
-class AuditStatus(str, Enum):
+class AuditStatus(StrEnum):
     """
     حالة نتيجة التدقيق الإجرائي.
     """

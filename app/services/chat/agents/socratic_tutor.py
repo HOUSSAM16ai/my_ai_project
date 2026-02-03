@@ -14,7 +14,7 @@
 import logging
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 from app.core.ai_gateway import AIClient
 from app.services.chat.agents.base import FORMAL_ARABIC_STYLE_PROMPT
@@ -22,7 +22,7 @@ from app.services.chat.agents.base import FORMAL_ARABIC_STYLE_PROMPT
 logger = logging.getLogger(__name__)
 
 
-class SocraticPhase(str, Enum):
+class SocraticPhase(StrEnum):
     """مراحل الحوار السقراطي."""
 
     ASSESS = "assess"  # تقييم فهم الطالب الحالي

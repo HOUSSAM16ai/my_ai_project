@@ -20,13 +20,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import TypedDict, cast
 
 from app.core.types import JSONDict
 
 
-class ChangeType(str, Enum):
+class ChangeType(StrEnum):
     """نوع التغيير في العقد."""
 
     BREAKING = "BREAKING"
@@ -140,7 +140,7 @@ class SchemaResolver:
         2. وإلا، نتصرف مثل $ref عادي.
         """
         # استخراج اسم المرساة (عادة ما يكون بعد #)
-        anchor_name = ref.split("#")[-1] if "#" in ref else ref
+        anchor_name = ref.rsplit("#", maxsplit=1)[-1] if "#" in ref else ref
 
         # محاولة العثور على المرساة في النطاق الديناميكي
         dynamic_target = scope.find_dynamic_anchor(anchor_name)

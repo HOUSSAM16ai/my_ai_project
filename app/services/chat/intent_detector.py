@@ -3,10 +3,10 @@
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class ChatIntent(str, Enum):
+class ChatIntent(StrEnum):
     """نوايا المحادثة المعتمدة في طبقة التوجيه."""
 
     FILE_READ = "FILE_READ"

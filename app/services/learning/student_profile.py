@@ -11,7 +11,7 @@
 
 import logging
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
-class MasteryLevel(str, Enum):
+class MasteryLevel(StrEnum):
     """مستويات الإتقان."""
 
     NOVICE = "novice"  # مبتدئ (0-25%)
