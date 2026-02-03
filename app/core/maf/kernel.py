@@ -8,7 +8,7 @@ This kernel replaces loose LLM routing with a normative state machine.
 import logging
 from typing import Any
 
-from app.core.maf.spec import AttackReport, AuditStatus, MAFPhase, Verification
+from app.core.maf.spec import AttackReport, MAFPhase, ReviewPacket, Verification
 
 logger = logging.getLogger(__name__)
 
@@ -25,47 +25,24 @@ class MAFKernel:
         """
         proposal = state.get("maf_proposal")
         attack = state.get("maf_attack")
+        review_packet = state.get("review_packet")
         verification = state.get("maf_verification")
 
         # 1. No Proposal -> GENERATE
-        if not proposal:
+        if not proposal and not state.get("final_response"):
+            # If neither formal proposal nor raw response exists
             return MAFPhase.GENERATE
 
-        # 2. Proposal exists. Check for Attack.
-        # If no attack report, or if the last cycle was a regeneration, we need to Attack.
-        if not attack:
+        # 2. Proposal exists. Check for Attack/Review.
+        # We need a ReviewPacket (Reviewer) OR AttackReport (Legacy/Adversary).
+        if not attack and not review_packet:
             return MAFPhase.ATTACK
 
-        # 3. Attack exists. Check if it was successful (meaning the proposal was bad).
-        # However, the loop logic handles regeneration. If we are here, we have an attack report.
-        # We need to see if we should proceed to verify or regenerate.
-        # Ideally, if Attack was successful (flaws found), we should RE-GENERATE.
-        # But for the linear flow: Proposal -> Attack -> Verify.
-        # If Attack found issues, we might skip verify and go back to Generate?
-        # Let's check strictness.
-        # MAF Spec: Generate -> Attack -> Verify -> Seal.
-        # If Attack fails (too many flaws), we don't Seal. We Regenerate.
-
-        attack_obj = AttackReport(**attack) if isinstance(attack, dict) else attack
-        if attack_obj and attack_obj.successful:  # Attack successful means "Flaws Found"
-            # In a strict loop, this would trigger regeneration.
-            # But here we return ATTACK phase to indicate we just finished attacking?
-            # No, determine_phase returns what we SHOULD do or where we ARE.
-            # Let's define it as "What is the Next Required Action?"
-            pass
-
-        # 4. Attack done. Check Verification.
+        # 3. Attack done. Check Verification.
         if not verification:
-            # If attack showed severe failure, maybe we shouldn't even verify?
-            # But let's follow the linear path for now, or short-circuit.
-            if attack_obj and attack_obj.severity > 8.0:
-                # Too bad, go back to start?
-                # For now, let's proceed to VERIFY to get a full picture, or loop back.
-                # Let's assume we proceed to VERIFY to get compliance check too.
-                return MAFPhase.VERIFY
             return MAFPhase.VERIFY
 
-        # 5. Verification done. Ready to Seal (or Fail).
+        # 4. Verification done. Ready to Seal (or Fail).
         return MAFPhase.SEAL
 
     @staticmethod
@@ -77,6 +54,7 @@ class MAFKernel:
 
         # State Extraction
         attack_data = state.get("maf_attack")
+        review_data = state.get("review_packet")
         verification_data = state.get("maf_verification")
 
         # Iteration Control (Prevent infinite loops)
@@ -87,48 +65,57 @@ class MAFKernel:
 
         # --- PHASE: GENERATE ---
         if phase == MAFPhase.GENERATE:
-            # Initial Request or Regeneration
             if iteration > max_iterations:
-                logger.warning("Max iterations reached during generation. Forcing Seal.")
                 return {
                     "next": "writer",
-                    "instruction": "Max iterations reached. Synthesize best available info.",
+                    "instruction": "Max iterations reached. Synthesize best available info immediately.",
                 }
 
-            # Default to Planner for high-level plan, or Reasoner if specific.
-            # We stick to the existing Supervisor logic for *who* to call, but we enforce the *intent*.
-            # For simplicity, if no plan, call Planner. If plan exists but no proposal, call Reasoner/Writer?
-            # Let's assume Planner -> Proposal.
-            # Or Reasoner -> Proposal.
-            # If we have a plan in `state["plan"]`, maybe we need execution.
-            # Let's route to PLANNER first if empty.
+            # If we have a specific "Next Step" plan, follow it?
+            # For now, default to Planner -> Writer flow.
             if not state.get("plan"):
                 return {
                     "next": "planner",
                     "instruction": "Generate a rigorous plan. Treat this as a Proposal with Claims.",
                 }
 
-            # If Plan exists, we need execution to generate Claims.
-            # Route to SuperReasoner or Researcher.
+            # If plan exists, execute.
             return {
-                "next": "super_reasoner",
+                "next": "writer",  # Direct to writer for efficiency in chat
                 "instruction": "Execute the plan. Output a Proposal with supported Claims.",
             }
 
-        # --- PHASE: ATTACK ---
+        # --- PHASE: ATTACK / CRITIQUE ---
         if phase == MAFPhase.ATTACK:
             return {
                 "next": "reviewer",
-                "instruction": "ATTACK PHASE: Act as an Adversary. Find flaws, counterexamples, and logical gaps. Output an Attack Report.",
+                "instruction": "ATTACK PHASE: Act as the Strategic Auditor. Perform Maker-Checker analysis.",
             }
 
         # --- PHASE: VERIFY ---
         if phase == MAFPhase.VERIFY:
-            # Check if attack was too severe to even verify?
-            if attack_data:
+            # 1. CHECK MAKER-CHECKER LOOP (ReviewPacket)
+            if review_data:
+                packet = ReviewPacket(**review_data)
+
+                # If Rejected, Loop Back IMMEDIATELY (Short-Circuit)
+                if packet.recommendation == "REJECT":
+                    if iteration >= max_iterations:
+                        logger.warning(
+                            "Max iterations reached despite Rejection. Proceeding to Verify."
+                        )
+                    else:
+                        logger.info("Maker-Checker: REJECTED. Looping back to Writer.")
+                        return {
+                            "next": "writer",
+                            "instruction": f"CRITICAL FEEDBACK (Reviewer): {packet.actionable_feedback}. Minimal Fix: {packet.checklist.minimal_fix_suggestion}",
+                            "increment_iteration": True,
+                        }
+
+            # 2. CHECK ADVERSARIAL ATTACK (Legacy/Parallel)
+            if attack_data and not review_data:
                 att = AttackReport(**attack_data)
                 if att.successful and att.severity > 9.0:
-                    # Critical failure. Skip verification, go to Planner to Fix.
                     return {
                         "next": "planner",
                         "instruction": f"Previous proposal destroyed by adversary (Severity {att.severity}). Create a NEW plan to address: {att.feedback}",
@@ -144,29 +131,19 @@ class MAFKernel:
             # Check Verification Status
             if verification_data:
                 ver = Verification(**verification_data)
-                attack = AttackReport(**attack_data) if attack_data else None
 
                 # REJECTION CRITERIA
-                verification_failed = not ver.passed or ver.status == AuditStatus.FAIL
-                attack_critical = attack and attack.successful and attack.severity > 7.0
-
-                if (verification_failed or attack_critical) and iteration < max_iterations:
-                    # LOOP BACK
-                    feedback = (
-                        f"Verification Failed: {ver.gaps}"
-                        if verification_failed
-                        else f"Attack Severity {attack.severity}: {attack.feedback}"
-                    )
+                if not ver.passed and iteration < max_iterations:
                     return {
-                        "next": "planner",  # Or Reasoner
-                        "instruction": f"REJECTED. {feedback}. Refine the solution.",
+                        "next": "planner",
+                        "instruction": f"Verification Failed: {ver.gaps}. Refine the solution.",
                         "increment_iteration": True,
                     }
 
             # APPROVAL
             return {
-                "next": "writer",
-                "instruction": "SEAL PHASE: Format the final output as a Certified Audit Bundle. Include Claims, Evidence, and Audit Log.",
+                "next": "writer",  # Or specialized "Sealer"
+                "instruction": "SEAL PHASE: Format the final output as a Certified Audit Bundle.",
             }
 
         return {"next": "FINISH", "instruction": "Protocol Complete."}

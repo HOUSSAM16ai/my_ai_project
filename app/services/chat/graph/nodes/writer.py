@@ -10,6 +10,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from app.core.ai_gateway import AIClient
 from app.core.di import Container
 from app.core.interfaces import IContextComposer, IIntentDetector, IPromptStrategist
+from app.core.maf.spec import ReviewPacket
 from app.services.chat.graph.components.context_composer import FirewallContextComposer
 from app.services.chat.graph.components.intent_detector import RegexIntentDetector
 from app.services.chat.graph.components.prompt_strategist import StandardPromptStrategist
@@ -111,14 +112,35 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
         )
 
     # Inject Critique if available (The Self-Correction Loop)
-    review_feedback = state.get("review_feedback")
-    if review_feedback:
-        system_prompt += (
-            f"\n\n### CRITICAL INSTRUCTION (Correction Mode):\n"
-            f"Your previous answer was rejected by the Academic Critic.\n"
-            f"REWRITE IT based on this feedback:\n'{review_feedback}'\n"
-            f"Ensure you address every point and maintain the luxurious tone."
-        )
+    review_packet_data = state.get("review_packet")
+
+    if review_packet_data:
+        try:
+            packet = ReviewPacket(**review_packet_data)
+            if packet.recommendation == "REJECT":
+                system_prompt += (
+                    f"\n\n### CRITICAL AUDIT FINDINGS (Correction Mode):\n"
+                    f"Your previous output was REJECTED by the Strategic Auditor.\n"
+                    f"**Actionable Feedback:** {packet.actionable_feedback}\n"
+                    f"**Minimal Fix Required:** {packet.checklist.minimal_fix_suggestion}\n"
+                    f"**Identified Defects:** {', '.join(packet.checklist.contradictions_found + packet.checklist.assumptions_flagged)}\n"
+                    f"You MUST rewrite the response to immediately resolve these specific issues while maintaining the luxurious tone."
+                )
+        except Exception:
+            # Fallback if Pydantic fails (should be rare)
+            system_prompt += (
+                "\n\n### CRITICAL: Previous response rejected. Improve quality immediately."
+            )
+    else:
+        # Fallback to legacy string feedback if Packet not present but feedback is
+        review_feedback = state.get("review_feedback")
+        if review_feedback:
+            system_prompt += (
+                f"\n\n### CRITICAL INSTRUCTION (Correction Mode):\n"
+                f"Your previous answer was rejected by the Academic Critic.\n"
+                f"REWRITE IT based on this feedback:\n'{review_feedback}'\n"
+                f"Ensure you address every point and maintain the luxurious tone."
+            )
 
     # MAF-1.0 Integration: Audit Bundle Formatting
     maf_verification = state.get("maf_verification")

@@ -53,7 +53,7 @@ class MemoryRepository:
         entry = Memory(content=content, tags=db_tags)
         self._session.add(entry)
         await self._session.commit()
-        await self._session.refresh(entry)
+        await self._session.refresh(entry, attribute_names=["tags"])
 
         return entry
 

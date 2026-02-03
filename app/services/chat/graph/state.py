@@ -55,5 +55,6 @@ class AgentState(TypedDict):
     # MAF-1.0 Protocol Fields
     maf_proposal: NotRequired[dict[str, object]]  # Serialized Proposal
     maf_attack: NotRequired[dict[str, object]]  # Serialized AttackReport
+    review_packet: NotRequired[dict[str, object]]  # Serialized ReviewPacket (Maker-Checker)
     maf_verification: NotRequired[dict[str, object]]  # Serialized Verification
     audit_bundle: NotRequired[dict[str, object]]  # Serialized AuditBundle
