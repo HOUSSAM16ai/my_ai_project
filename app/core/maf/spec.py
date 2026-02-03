@@ -79,6 +79,35 @@ class AttackReport(BaseModel):
     feedback: str = Field(..., description="Constructive feedback for regeneration")
 
 
+class ReviewChecklist(BaseModel):
+    """
+    The 'Super Practical Checklist' for Maker-Checker Loops.
+    """
+
+    requirements_met: bool = Field(..., description="Did it meet all stated requirements?")
+    constraints_met: bool = Field(..., description="Did it adhere to time/resource/policy constraints?")
+    assumptions_flagged: list[str] = Field(
+        default_factory=list, description="List of unauthorized assumptions found"
+    )
+    contradictions_found: list[str] = Field(
+        default_factory=list, description="List of internal contradictions or logic gaps"
+    )
+    justification_clear: bool = Field(..., description="Is there a clear cause/reason for every claim?")
+    worst_case_analysis: str = Field(..., description="What is the worst-case failure mode?")
+    minimal_fix_suggestion: str = Field(..., description="The smallest edit to achieve quality.")
+
+
+class ReviewPacket(BaseModel):
+    """
+    The 'Huzmat Muraja'a' (Review Packet) for operational feedback.
+    """
+
+    checklist: ReviewChecklist
+    score: float = Field(..., description="Quality score 0.0-10.0")
+    actionable_feedback: str = Field(..., description="Specific instructions for the Maker")
+    recommendation: str = Field(..., description="'APPROVE' or 'REJECT'")
+
+
 class Verification(BaseModel):
     """
     Result of the formal verification process.
@@ -101,5 +130,6 @@ class AuditBundle(BaseModel):
     evidence: list[Evidence]
     verification: Verification
     attack_report: AttackReport | None = None
+    review_packet: ReviewPacket | None = None
     decision_reason: str
     final_text: str
