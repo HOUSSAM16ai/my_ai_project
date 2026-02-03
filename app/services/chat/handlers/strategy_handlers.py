@@ -6,13 +6,18 @@ import asyncio
 import logging
 from collections.abc import AsyncGenerator
 
-from sqlalchemy import select
+from sqlalchemy import select, text
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from app.core.agents.system_principles import (
     format_architecture_system_principles,
     format_system_principles,
 )
 from app.core.domain.mission import Mission, MissionEvent, MissionEventType, MissionStatus
+
+# Import chat domain to ensure AdminConversation is registered, preventing mapping errors
+import app.core.domain.chat  # noqa: F401
+from app.core.db_schema_config import REQUIRED_SCHEMA
 from app.core.patterns.strategy import Strategy
 from app.services.chat.context import ChatContext
 from app.services.chat.context_service import get_context_service
@@ -188,18 +193,28 @@ class MissionComplexHandler(IntentHandler):
 
         # 1. Initialize Mission in DB
         mission_id = 0
-        async with context.session_factory() as session:
-            mission = Mission(
-                objective=context.question,
-                status=MissionStatus.PENDING,
-                initiator_id=context.user_id or 1,  # Fallback if user_id missing
-            )
-            session.add(mission)
-            await session.commit()
-            await session.refresh(mission)
-            mission_id = mission.id
-            yield f"🆔 رقم المهمة: `{mission.id}`\n"
-            yield "⏳ مجلس الحكمة يبدأ التداول (Strategist, Architect, Auditor)...\n"
+        try:
+            async with context.session_factory() as session:
+                # Self-healing: Ensure schema exists
+                await self._ensure_mission_schema(session)
+
+                mission = Mission(
+                    objective=context.question,
+                    status=MissionStatus.PENDING,
+                    initiator_id=context.user_id or 1,  # Fallback if user_id missing
+                )
+                session.add(mission)
+                await session.commit()
+                await session.refresh(mission)
+                mission_id = mission.id
+                yield f"🆔 رقم المهمة: `{mission.id}`\n"
+                yield "⏳ مجلس الحكمة يبدأ التداول (Strategist, Architect, Auditor)...\n"
+        except Exception as e:
+            logger.error(f"Failed to create mission: {e}", exc_info=True)
+            yield f"\n❌ **خطأ في قاعدة البيانات:** لم نتمكن من بدء المهمة.\n"
+            yield f"التفاصيل التقنية: `{e!s}`\n"
+            yield "💡 **الحل:** يرجى إبلاغ الفريق التقني لفحص حالة قاعدة البيانات.\n"
+            return
 
         # 2. Spawn Background Task (Non-Blocking)
         # We pass the factory so the background task can manage its own session
@@ -249,6 +264,34 @@ class MissionComplexHandler(IntentHandler):
                     yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
 
         yield "\n✅ **تم انتهاء متابعة المهمة.**\n"
+
+    async def _ensure_mission_schema(self, session) -> None:
+        """
+        Checks and attempts to self-heal missing mission tables.
+        Uses definitions from db_schema_config.
+        """
+        required_tables = ["missions", "mission_plans", "tasks", "mission_events"]
+
+        for table_name in required_tables:
+            try:
+                # Check existence by selecting 1 row (will fail if table missing)
+                await session.execute(text(f"SELECT 1 FROM {table_name} LIMIT 1"))
+            except (ProgrammingError, OperationalError):
+                logger.warning(f"Table '{table_name}' missing. Attempting self-healing...")
+                # Reset transaction to allow DDL
+                await session.rollback()
+
+                if table_name in REQUIRED_SCHEMA and "create_table" in REQUIRED_SCHEMA[table_name]:
+                    create_sql = REQUIRED_SCHEMA[table_name]["create_table"]
+                    try:
+                        await session.execute(text(create_sql))
+                        await session.commit()
+                        logger.info(f"Self-healing: Created table '{table_name}'.")
+                    except Exception as e:
+                        logger.error(f"Self-healing failed for '{table_name}': {e}")
+                        # Don't re-raise, let the main insert fail if needed, or maybe it worked
+                else:
+                    logger.error(f"No schema definition found for '{table_name}'.")
 
     async def _run_mission_bg(self, mission_id: int, session_factory):
         """
