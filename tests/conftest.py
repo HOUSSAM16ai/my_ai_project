@@ -193,21 +193,8 @@ def static_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
 
 @pytest.fixture(autouse=True)
-def init_db(event_loop: asyncio.AbstractEventLoop) -> None:
-    """تهيئة قاعدة البيانات قبل كل اختبار."""
-    if _should_skip_db_fixtures():
-        return
-    if not _db_dependencies_available():
-        return
-    _run_async(event_loop, _ensure_schema())
-    from app.core.db_schema import validate_and_fix_schema
-
-    _run_async(event_loop, validate_and_fix_schema(auto_fix=True))
-
-
-@pytest.fixture(autouse=True)
-def clean_db(event_loop: asyncio.AbstractEventLoop) -> None:
-    """تنظيف الجداول قبل وبعد كل اختبار لضمان العزل الكامل."""
+def db_lifecycle(event_loop: asyncio.AbstractEventLoop) -> None:
+    """إدارة دورة حياة قاعدة البيانات (تنظيف + تهيئة) قبل كل اختبار."""
     if _should_skip_db_fixtures():
         yield
         return
@@ -215,44 +202,29 @@ def clean_db(event_loop: asyncio.AbstractEventLoop) -> None:
         yield
         return
 
-    async def _cleanup() -> None:
-        from sqlalchemy import inspect, text
+    async def _reset_db() -> None:
         from sqlmodel import SQLModel
 
-        # Ensure models are loaded so sorted_tables is populated
+        from app.core.db_schema import validate_and_fix_schema
+        # Ensure models are loaded so metadata is complete
         from app.core.domain import audit, chat, mission, user  # noqa: F401
 
         engine = _get_engine()
+
+        # 1. Drop all tables to ensure clean slate (avoids FK issues)
         async with engine.begin() as connection:
-            table_names = await connection.run_sync(
-                lambda sync_conn: inspect(sync_conn).get_table_names()
-            )
-            if not table_names:
-                return
+             await connection.run_sync(SQLModel.metadata.drop_all)
 
-            is_sqlite = engine.name == "sqlite"
+        # 2. Recreate schema
+        async with engine.begin() as connection:
+            await connection.run_sync(SQLModel.metadata.create_all)
 
-            # Disable foreign key checks for SQLite to allow deletion in any order
-            if is_sqlite:
-                await connection.execute(text("PRAGMA foreign_keys = OFF"))
+        # 3. Validate and fix (adds default data or structural adjustments if needed)
+        await validate_and_fix_schema(auto_fix=True)
 
-            for table in reversed(SQLModel.metadata.sorted_tables):
-                if table.name in table_names:
-                    await connection.execute(table.delete())
-
-            # Re-enable foreign key checks
-            if is_sqlite:
-                await connection.execute(text("PRAGMA foreign_keys = ON"))
-
-    # Clean before test if schema is ready
-    if _schema_initialized:
-        _run_async(event_loop, _cleanup())
+    _run_async(event_loop, _reset_db())
 
     yield
-
-    # Clean after test if schema is ready
-    if _schema_initialized:
-        _run_async(event_loop, _cleanup())
 
 
 @pytest.fixture
