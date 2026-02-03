@@ -6,8 +6,10 @@
 
 from langgraph.graph import END, StateGraph
 
-from app.core.ai_gateway import AIClient
 from app.core.di import get_kagent_mesh
+
+# DIP: Use the Interface, not the concrete implementation or legacy facade
+from app.core.interfaces.llm import LLMClient
 from app.services.chat.graph.nodes.planner import planner_node
 from app.services.chat.graph.nodes.procedural_auditor import procedural_auditor_node
 from app.services.chat.graph.nodes.researcher import researcher_node
@@ -19,7 +21,7 @@ from app.services.chat.graph.state import AgentState
 from app.services.chat.tools import ToolRegistry
 
 
-def create_multi_agent_graph(ai_client: AIClient, tools: ToolRegistry) -> object:
+def create_multi_agent_graph(ai_client: LLMClient, tools: ToolRegistry) -> object:
     """
     بناء الرسم البياني للوكلاء المتعددين.
     """

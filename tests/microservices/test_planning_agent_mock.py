@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from pydantic import SecretStr
@@ -9,35 +9,32 @@ from microservices.planning_agent.settings import PlanningAgentSettings
 
 @pytest.mark.asyncio
 async def test_generate_plan_success():
-    """Test successful plan generation via LLM."""
+    """Test successful plan generation via Graph."""
     mock_settings = PlanningAgentSettings(
         OPENROUTER_API_KEY=SecretStr("sk-test"),
         AI_MODEL="test-model",
         AI_BASE_URL="http://test/api",
     )
 
-    mock_response = MagicMock()
-    mock_response.choices = [MagicMock()]
-    mock_response.choices[0].message.content = '["Step 1", "Step 2"]'
+    mock_result = {"plan": ["Step 1", "Step 2"]}
 
-    with patch("microservices.planning_agent.main.AsyncOpenAI") as mock_client:
-        mock_instance = mock_client.return_value
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+    # Patch the graph object imported in main.py
+    with patch("microservices.planning_agent.main.graph") as mock_graph:
+        mock_graph.invoke.return_value = mock_result
 
         steps = await _generate_plan("Learn Python", [], mock_settings)
 
         assert steps == ["Step 1", "Step 2"]
-        mock_instance.chat.completions.create.assert_called_once()
+        mock_graph.invoke.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_generate_plan_fallback_on_error():
-    """Test fallback when LLM fails."""
+    """Test fallback when Graph fails."""
     mock_settings = PlanningAgentSettings(OPENROUTER_API_KEY=SecretStr("sk-test"))
 
-    with patch("microservices.planning_agent.main.AsyncOpenAI") as mock_client:
-        mock_instance = mock_client.return_value
-        mock_instance.chat.completions.create = AsyncMock(side_effect=Exception("API Error"))
+    with patch("microservices.planning_agent.main.graph") as mock_graph:
+        mock_graph.invoke.side_effect = Exception("Graph Error")
 
         steps = await _generate_plan("Learn Python", [], mock_settings)
 
