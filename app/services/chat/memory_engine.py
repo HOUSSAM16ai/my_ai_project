@@ -11,7 +11,6 @@
 
 import asyncio
 import os
-from typing import Optional
 
 from llama_index.core import (
     Document,
@@ -169,7 +168,7 @@ Output ONLY the lesson text.
 
 
 # Singleton Instance
-_instance: Optional[EpisodicMemoryEngine] = None
+_instance: EpisodicMemoryEngine | None = None
 
 
 def get_memory_engine() -> EpisodicMemoryEngine:

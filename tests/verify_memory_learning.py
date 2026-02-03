@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 from llama_index.core import Settings
 from llama_index.core.embeddings.mock_embed_model import MockEmbedding
 
-from app.services.chat.memory_engine import EpisodicMemoryEngine
 from app.core.ai_gateway import AIClient
+from app.services.chat.memory_engine import EpisodicMemoryEngine
 
 TEST_DIR = "./data/test_memory_store"
 
