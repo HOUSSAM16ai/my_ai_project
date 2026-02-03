@@ -5,10 +5,11 @@ from unittest.mock import AsyncMock, MagicMock
 from llama_index.core import Settings
 from llama_index.core.embeddings.mock_embed_model import MockEmbedding
 
-from app.services.chat.memory_engine import EpisodicMemoryEngine
 from app.core.ai_gateway import AIClient
+from app.services.chat.memory_engine import EpisodicMemoryEngine
 
 TEST_DIR = "./data/test_memory_store"
+
 
 class TestMemoryLearning(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -45,9 +46,7 @@ class TestMemoryLearning(unittest.IsolatedAsyncioTestCase):
 
         print(f"Learning from failure: {query} (Score: {score})")
 
-        await self.engine.learn(
-            self.ai_client, query, plan, response, score, feedback
-        )
+        await self.engine.learn(self.ai_client, query, plan, response, score, feedback)
 
         # Verify Reflection was called
         self.ai_client.generate_text.assert_called_once()
@@ -66,7 +65,8 @@ class TestMemoryLearning(unittest.IsolatedAsyncioTestCase):
         # Assertions
         self.assertIn("LESSON: Do not attempt to divide by zero", recall_result)
         self.assertIn("Score: 2.0", recall_result)
-        self.assertIn("WARNING", recall_result) # Low score should trigger WARNING prefix
+        self.assertIn("WARNING", recall_result)  # Low score should trigger WARNING prefix
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -125,6 +125,15 @@ Valid Relation Types: owns, participated_in, won, issued_by, located_at, related
                 timestamp=datetime.now().timestamp(),
             )
 
+            # MAF-1.0 Integration: Map to Verification
+            maf_verification = {
+                "passed": report.overall_status != AuditStatus.FAIL,
+                "status": report.overall_status.value.upper(),
+                "evidence_ids": [e for r in report.findings for e in r.evidence],
+                "gaps": [r.message for r in report.findings if r.status == AuditStatus.FAIL],
+                "risk_score": report.risk_score,
+            }
+
             # Format Output for Chat
             output_text = "**Procedural Audit Report**\n\n"
             output_text += f"**Status:** {overall_status.value.upper()}\n"
@@ -145,8 +154,8 @@ Valid Relation Types: owns, participated_in, won, issued_by, located_at, related
             # Return update to state
             return {
                 "messages": [AIMessage(content=output_text, name="procedural_auditor")],
-                # We will add audit_report to state definition in next step
                 "user_context": {"last_audit_report": report.model_dump()},
+                "maf_verification": maf_verification,  # Push to state for Kernel
                 "review_score": None,  # Reset review
                 "review_feedback": None,
             }

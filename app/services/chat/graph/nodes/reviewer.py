@@ -142,15 +142,26 @@ async def reviewer_node(state: AgentState, ai_client: AIClient) -> dict:
                 plan=state.get("plan", []),
                 response=last_response,
                 score=review_result.score,
-                feedback=review_result.feedback
+                feedback=review_result.feedback,
             )
         else:
             logger.warning("Skipping learning: Missing query or response.")
     except Exception as e:
         logger.error(f"Failed to save learning experience: {e}")
 
+    # MAF-1.0 Integration: Generate Attack Report
+    # We treat any low score as a successful "Attack" (finding flaws).
+    attack_report = {
+        "counterexamples": [],
+        "failure_modes": ["Quality check failed" if not review_result.approved else "None"],
+        "severity": (10.0 - review_result.score) if not review_result.approved else 0.0,
+        "successful": not review_result.approved,
+        "feedback": review_result.feedback,
+    }
+
     return {
         "review_score": review_result.score,
         "review_feedback": review_result.feedback,
         "iteration_count": current_iter + 1,
+        "maf_attack": attack_report,  # Push to state for Kernel
     }

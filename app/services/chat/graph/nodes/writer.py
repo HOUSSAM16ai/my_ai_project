@@ -120,6 +120,19 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
             f"Ensure you address every point and maintain the luxurious tone."
         )
 
+    # MAF-1.0 Integration: Audit Bundle Formatting
+    maf_verification = state.get("maf_verification")
+    if maf_verification and maf_verification.get("passed", False):
+        system_prompt += (
+            "\n\n### MAF-1.0 PROTOCOL: SEALED AUDIT BUNDLE\n"
+            "You are creating the Final Audit Bundle. Your output MUST be structured as a formal Engineering Spec.\n"
+            "1. **Claims**: List the key assertions.\n"
+            "2. **Evidence**: Cite the proofs/reasoning used.\n"
+            "3. **Verification**: Confirm the status (PASS).\n"
+            "4. **Conclusion**: The final answer.\n"
+            "Tone: Ultra-Professional, High-End Engineering, Authoritative."
+        )
+
     # 5. Payload Construction
     final_user_content = f"Context:\n{context_text}\n\nStudent Question: {last_user_msg}"
 
