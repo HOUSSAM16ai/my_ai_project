@@ -24,6 +24,7 @@ from app.services.chat.agents.admin_handlers.users import (
     UserProfileHandler,
     UserStatsHandler,
 )
+from app.services.chat.agents.base import FORMAL_ARABIC_STYLE_PROMPT
 from app.services.chat.agents.data_access import DataAccessAgent
 from app.services.chat.agents.refactor import RefactorAgent
 from app.services.chat.tools import ToolRegistry
@@ -104,6 +105,26 @@ class AdminAgent:
         except Exception as e:
             logger.error(f"AdminAgent failed: {e}", exc_info=True)
             yield f"حدث خطأ أثناء تنفيذ الأمر الإداري: {e}"
+
+    async def _generate_formal_answer(self, question: str) -> AsyncGenerator[str, None]:
+        """توليد إجابة رسمية باستخدام النمط العربي الرصين."""
+        messages = [
+            {
+                "role": "system",
+                "content": f"أنت مساعد إداري خبير.\n{FORMAL_ARABIC_STYLE_PROMPT}",
+            },
+            {"role": "user", "content": question},
+        ]
+
+        if self.ai_client:
+            async for chunk in self.ai_client.stream_chat(messages):
+                content = ""
+                if hasattr(chunk, "choices"):
+                    delta = chunk.choices[0].delta if chunk.choices else None
+                    content = delta.content if delta else ""
+                else:
+                    content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                yield content
 
     async def _handle_dynamic_router(
         self, question: str, context: dict | None
@@ -229,7 +250,8 @@ class AdminAgent:
             elif tool_name == "COMPLEX_REASONING":
                 if self.mcp:
                     yield "جاري تنفيذ التفكير المعقد عبر MCP (LangGraph)..."
-                    result = await self.mcp.run_langgraph_workflow(goal=question)
+                    goal_with_style = f"{question}\n\n{FORMAL_ARABIC_STYLE_PROMPT}"
+                    result = await self.mcp.run_langgraph_workflow(goal=goal_with_style)
                     if result.get("success"):
                         yield f"\n\n### النتيجة النهائية:\n{result.get('final_answer')}"
                     else:
@@ -237,11 +259,16 @@ class AdminAgent:
                 else:
                     yield "عذراً، خدمة التفكير المعقد (MCP) غير متاحة حالياً."
 
+            elif tool_name == "GENERAL_ANSWER":
+                async for chunk in self._generate_formal_answer(question):
+                    yield chunk
+
             else:
-                # Fallback to General Answer (which ideally would be the reasoning in the JSON, but here we might need to re-ask or just return the reason)
-                # Since the model only outputted JSON, we don't have a conversational answer.
-                # We should probably ask it to answer now.
-                yield f"التحليل: {reason}\n(لم يتم تحديد أداة خاصة لهذا الطلب، يرجى التوضيح)."
+                # Fallback
+                if reason:
+                    yield f"التحليل: {reason}\n"
+                async for chunk in self._generate_formal_answer(question):
+                    yield chunk
 
         except Exception as e:
             logger.error(f"Error in Admin Router processing: {e}")
