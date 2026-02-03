@@ -53,6 +53,7 @@ class AdminChatStreamer:
         history: list[dict[str, object]],
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
+        metadata: dict[str, object] | None = None,
     ) -> AsyncGenerator[ChatStreamEvent, None]:
         """
         تنفيذ عملية البث الحي للاستجابة.
@@ -81,6 +82,7 @@ class AdminChatStreamer:
                 history,
                 session_factory_func,
                 full_response,
+                metadata,
             ):
                 yield chunk
 
@@ -136,6 +138,7 @@ class AdminChatStreamer:
         history: list[dict[str, object]],
         session_factory_func: Callable[[], AsyncSession],
         full_response: list[str],
+        metadata: dict[str, object] | None = None,
     ) -> AsyncGenerator[ChatStreamEvent, None]:
         """
         بث مع فحوصات السلامة (الحد الأقصى للحجم).
@@ -152,6 +155,7 @@ class AdminChatStreamer:
             ai_client=ai_client,
             history_messages=history_casted,
             session_factory=session_factory_func,
+            metadata=metadata,
         ):
             if not content_part:
                 continue

@@ -24,6 +24,7 @@ class ChatDispatchRequest:
     session_factory: Callable[[], AsyncSession]
     ip: str | None = None
     user_agent: str | None = None
+    metadata: dict[str, object] | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -36,6 +36,7 @@ class CustomerChatStreamer:
         history: list[dict[str, str]],
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
+        metadata: dict[str, object] | None = None,
     ) -> AsyncGenerator[ChatStreamEvent, None]:
         """
         بث استجابة الذكاء الاصطناعي مع حفظ الرسالة النهائية.
@@ -53,6 +54,7 @@ class CustomerChatStreamer:
                 ai_client=ai_client,
                 history_messages=history,
                 session_factory=session_factory_func,
+                metadata=metadata,
             ):
                 if not content:
                     continue

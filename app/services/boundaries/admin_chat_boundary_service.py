@@ -124,12 +124,13 @@ class AdminChatBoundaryService:
         history: list[dict[str, object]],
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
+        metadata: dict[str, object] | None = None,
     ) -> AsyncGenerator[ChatStreamEvent, None]:
         """
         تفويض عملية البث إلى Streamer.
         """
         async for chunk in self.streamer.stream_response(
-            user.id, conversation, question, history, ai_client, session_factory_func
+            user.id, conversation, question, history, ai_client, session_factory_func, metadata
         ):
             yield chunk
 
@@ -141,6 +142,7 @@ class AdminChatBoundaryService:
         history: list[dict[str, object]],
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
+        metadata: dict[str, object] | None = None,
     ) -> AsyncGenerator[ChatStreamEvent, None]:
         """
         تغليف عملية البث بشبكة أمان (Safety Net).
@@ -148,7 +150,7 @@ class AdminChatBoundaryService:
         """
         try:
             async for chunk in self.stream_chat_response(
-                user, conversation, question, history, ai_client, session_factory_func
+                user, conversation, question, history, ai_client, session_factory_func, metadata
             ):
                 yield chunk
         except Exception as e:
@@ -165,6 +167,7 @@ class AdminChatBoundaryService:
         conversation_id: str | int | None,
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
+        metadata: dict[str, object] | None = None,
     ) -> ChatDispatchResult:
         """
         تنسيق تدفق المحادثة الكامل:
@@ -187,7 +190,7 @@ class AdminChatBoundaryService:
 
         # 4. Stream Response
         stream = self.stream_chat_response_safe(
-            user, conversation, question, history, ai_client, session_factory_func
+            user, conversation, question, history, ai_client, session_factory_func, metadata
         )
         return ChatDispatchResult(status_code=200, stream=stream)
 
