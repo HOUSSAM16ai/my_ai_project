@@ -1,160 +1,65 @@
 """
-عقدة المشرف الذكي (Smart Supervisor Node).
------------------------------------------
-يعمل هذا المشرف كـ "قائد الأوركسترا" (Orchestrator)، حيث يستخدم الذكاء الاصطناعي
-لتحديد الخطوة التالية ديناميكيًا بناءً على حالة المحادثة وجودة المخرجات.
+عقدة المشرف الذكي (Smart Supervisor Node) - MAF-1.0 Kernel Edition.
+-------------------------------------------------------------------
+يعمل هذا المشرف كـ "نواة النسيج" (Fabric Kernel)، ويطبق بروتوكول MAF-1.0 بصرامة.
+يحل محل التوجيه القائم على LLM بآلة حالة حتمية (Deterministic State Machine) لضمان الموثوقية.
 """
 
-import json
 import logging
 
 from app.core.ai_gateway import AIClient
+from app.core.maf.kernel import MAFKernel
 from app.services.chat.graph.state import AgentState
-from app.services.chat.memory_engine import get_memory_engine
 
 logger = logging.getLogger(__name__)
 
 
 class SupervisorNode:
     """
-    المشرف الذكي (The Intelligent Supervisor).
-    يوزع المهام على الوكلاء المتخصصين ويراقب الجودة.
+    المشرف المتوافق مع MAF (The MAF-Compliant Supervisor).
+    ينفذ دورة: Generate -> Attack -> Verify -> Seal.
     """
 
-    SYSTEM_PROMPT = """
-You are the **Supervisor Agent** (Orchestrator) of an advanced educational AI system.
-Your goal is to manage the workflow to provide the "Legendary Quality" answer to the student or admin.
-
-**Your Workers:**
-1. **Planner**: Decomposes complex requests into a step-by-step plan.
-2. **Researcher**: Searches for information, exercises, or facts.
-3. **SuperReasoner**: Solves complex logical/mathematical problems deeply.
-4. **ProceduralAuditor**: Specialized agent for fraud detection, conflict of interest, and compliance verification (Knowledge Graph).
-5. **Writer**: Drafts the final response based on gathered information.
-6. **Reviewer**: Critiques the Writer's draft for accuracy and quality.
-
-**Decision Logic (The "Super" Protocol):**
-1. **COMPLEXITY CHECK**: Is the user asking a complex question, a math problem, or an admin query requiring deep analysis?
-   - **YES**: Route to **SuperReasoner** (for logic) or **Researcher** (for data) first. NEVER route directly to Writer unless the context is already populated.
-   - **NO** (Simple greeting/thanks): Route to **Writer**.
-
-2. **AUDIT CHECK**: Does the user mention fraud, compliance, or "check this"?
-   - **YES**: Route to **ProceduralAuditor**.
-
-3. **WRITING PHASE**: Once information is gathered (from Reasoner/Researcher):
-   - Route to **Writer**.
-   - **CRITICAL**: You MUST provide this instruction to the Writer: "Synthesize the Reasoning/Research findings into a Legendary Professional Arabic response. Ensure deep analysis."
-
-4. **REVIEW PHASE**: ALWAYS send the Writer's draft to **Reviewer** before finishing.
-   - If **Reviewer** rejects (< 8.0), send back to **Writer** with the feedback.
-   - If **Reviewer** approves, choose **FINISH**.
-
-**Input Context:**
-- **Last Message**: The latest output from a worker or user.
-- **Plan**: Current plan steps.
-- **Review**: Last review score and feedback (if any).
-
-**Output Format:**
-You must return a JSON object ONLY:
-{
-    "next": "<worker_name_or_FINISH>",
-    "instruction": "<specific_instruction_for_the_worker>",
-    "reason": "<why_you_chose_this>"
-}
-
-Valid `next` values: `planner`, `researcher`, `super_reasoner`, `procedural_auditor`, `writer`, `reviewer`, `FINISH`.
-"""
-
     @staticmethod
-    async def decide_next_step(state: AgentState, ai_client: AIClient) -> dict:
+    async def decide_next_step(state: AgentState, _ai_client: AIClient) -> dict:
         """
-        يقرر الخطوة التالية باستخدام LLM.
+        يقرر الخطوة التالية بناءً على بروتوكول MAF.
         """
-        messages = state.get("messages", [])
-        last_message = messages[-1].content if messages else "No history."
+        state.get("messages", [])
 
-        # Prepare Context
-        plan = state.get("plan", [])
-        current_step = state.get("current_step_index", 0)
-        review_score = state.get("review_score")
-        review_feedback = state.get("review_feedback")
-
-        # Memory Recall (Long-term Memory)
-        memory_context = ""
-        try:
-            engine = get_memory_engine()
-            # Recall based on the last human message for better context
-            target_query = last_message
-            for msg in reversed(messages):
-                if msg.type == "human":
-                    target_query = msg.content
-                    break
-
-            memory_context = await engine.recall(target_query)
-        except Exception as e:
-            logger.warning(f"Memory recall failed: {e}")
-
-        context_str = f"""
---- CURRENT STATE ---
-Last Message: {last_message[:500]}... (truncated)
-Current Plan: {plan}
-Current Step Index: {current_step}
-Last Review Score: {review_score}
-Last Review Feedback: {review_feedback}
-{memory_context}
----------------------
-
-Based on the above, what is the next step?
-"""
+        # Memory Recall (Context Loading)
+        # Even with deterministic routing, we might want to load memory to pass to workers?
+        # Ideally, workers recall their own memory, or Supervisor injects it.
+        # We will keep the recall logic but just log it or pass it if needed.
+        # For now, we trust the workers to do their job or the Kernel instruction to be sufficient.
 
         try:
-            response = await ai_client.send_message(
-                system_prompt=SupervisorNode.SYSTEM_PROMPT, user_message=context_str
-            )
+            # Execute MAF Kernel Logic
+            decision = MAFKernel.decide_next_node(state)
 
-            # Clean JSON
-            clean_content = response.replace("```json", "").replace("```", "").strip()
+            next_node = decision["next"]
+            instruction = decision["instruction"]
+            increment_iteration = decision.get("increment_iteration", False)
 
-            try:
-                decision = json.loads(clean_content)
-            except json.JSONDecodeError:
-                # PERCEPTION-ACTION LOOP REPAIR: Self-Correction
-                # If the agent failed to produce valid JSON, we feed the error back to it (Feedback Loop).
-                logger.warning("Supervisor produced invalid JSON. Retrying with feedback...")
-                retry_context = f"{context_str}\n\nERROR: Your previous response was not valid JSON:\n{clean_content}\n\nFIX: Return ONLY valid JSON."
+            logger.info(f"MAF Kernel Decision: {next_node} | Instruction: {instruction[:50]}...")
 
-                response = await ai_client.send_message(
-                    system_prompt=SupervisorNode.SYSTEM_PROMPT, user_message=retry_context
-                )
-                clean_content = response.replace("```json", "").replace("```", "").strip()
-                decision = json.loads(clean_content)
-
-            next_node = decision.get("next", "FINISH")
-            instruction = decision.get("instruction", "")
-            reason = decision.get("reason", "")
-
-            logger.info(f"Supervisor Decision: {next_node} | Reason: {reason}")
-
-            return {
+            updates = {
                 "next": next_node,
                 "supervisor_instruction": instruction,
-                "routing_trace": [{"node": next_node, "reason": reason}],
+                "routing_trace": [{"node": next_node, "reason": "MAF Protocol Enforcement"}],
             }
 
-        except Exception as e:
-            logger.error(f"Supervisor logic failed: {e}")
-            # Intelligent Fallback
-            # If we have no plan, we MUST plan.
-            if not plan:
-                return {
-                    "next": "planner",
-                    "supervisor_instruction": "Fallback: System error, please create a recovery plan.",
-                }
+            if increment_iteration:
+                updates["iteration_count"] = state.get("iteration_count", 0) + 1
 
-            # If we are deep in the process, go to writer but warn them.
+            return updates
+
+        except Exception as e:
+            logger.error(f"Supervisor (MAF Kernel) failed: {e}", exc_info=True)
+            # Fail-safe Fallback
             return {
                 "next": "writer",
-                "supervisor_instruction": "Fallback: Supervisor encountered an error. Synthesize available information carefully.",
+                "supervisor_instruction": "CRITICAL KERNEL FAILURE. Synthesize immediate response apologizing for the error.",
             }
 
 
