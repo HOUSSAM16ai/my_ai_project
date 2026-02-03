@@ -9,6 +9,7 @@
 """
 
 import asyncio
+import inspect
 import json
 import logging
 from collections.abc import Awaitable, Callable
@@ -77,7 +78,10 @@ class TaskExecutor:
                 result = await tool_func(**tool_args)
             else:
                 loop = asyncio.get_running_loop()
+                # قد تعيد الدالة المتزامنة coroutine إذا كانت تغلف دالة async (مثل lambda: async_wrapper)
                 result = await loop.run_in_executor(None, lambda: tool_func(**tool_args))  # type: ignore
+                if inspect.isawaitable(result):
+                    result = await result
 
             # 4. تنسيق النتيجة
             result_text = str(result)
