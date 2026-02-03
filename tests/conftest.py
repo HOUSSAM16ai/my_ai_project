@@ -207,18 +207,20 @@ def init_db(event_loop: asyncio.AbstractEventLoop) -> None:
 
 @pytest.fixture(autouse=True)
 def clean_db(event_loop: asyncio.AbstractEventLoop) -> None:
-    """تنظيف الجداول بعد كل اختبار لضمان العزل."""
-    yield
+    """تنظيف الجداول قبل وبعد كل اختبار لضمان العزل الكامل."""
     if _should_skip_db_fixtures():
+        yield
         return
     if not _db_dependencies_available():
-        return
-    if not _schema_initialized:
+        yield
         return
 
     async def _cleanup() -> None:
-        from sqlalchemy import inspect
+        from sqlalchemy import inspect, text
         from sqlmodel import SQLModel
+
+        # Ensure models are loaded so sorted_tables is populated
+        from app.core.domain import audit, chat, mission, user  # noqa: F401
 
         engine = _get_engine()
         async with engine.begin() as connection:
@@ -227,11 +229,30 @@ def clean_db(event_loop: asyncio.AbstractEventLoop) -> None:
             )
             if not table_names:
                 return
+
+            is_sqlite = engine.name == "sqlite"
+
+            # Disable foreign key checks for SQLite to allow deletion in any order
+            if is_sqlite:
+                await connection.execute(text("PRAGMA foreign_keys = OFF"))
+
             for table in reversed(SQLModel.metadata.sorted_tables):
                 if table.name in table_names:
                     await connection.execute(table.delete())
 
-    _run_async(event_loop, _cleanup())
+            # Re-enable foreign key checks
+            if is_sqlite:
+                await connection.execute(text("PRAGMA foreign_keys = ON"))
+
+    # Clean before test if schema is ready
+    if _schema_initialized:
+        _run_async(event_loop, _cleanup())
+
+    yield
+
+    # Clean after test if schema is ready
+    if _schema_initialized:
+        _run_async(event_loop, _cleanup())
 
 
 @pytest.fixture
