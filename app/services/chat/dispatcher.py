@@ -47,6 +47,7 @@ class ChatRoleDispatcher:
                 request.conversation_id,
                 request.ai_client,
                 request.session_factory,
+                metadata=request.metadata,
             )
 
         return await self._customer_boundary.orchestrate_chat_stream(
@@ -57,6 +58,7 @@ class ChatRoleDispatcher:
             request.session_factory,
             request.ip,
             request.user_agent,
+            metadata=request.metadata,
         )
 
 
