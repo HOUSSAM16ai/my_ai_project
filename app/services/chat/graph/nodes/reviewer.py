@@ -176,9 +176,7 @@ async def reviewer_node(state: AgentState, ai_client: AIClient) -> dict:
     # Execute Review
     packet = await ReviewerNode.review(last_response, last_user_msg, ai_client)
 
-    logger.info(
-        f"Audit Complete. Score: {packet.score}, Rec: {packet.recommendation}"
-    )
+    logger.info(f"Audit Complete. Score: {packet.score}, Rec: {packet.recommendation}")
 
     # Continual Learning
     try:

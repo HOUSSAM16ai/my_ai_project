@@ -21,6 +21,7 @@ class AgentState(TypedDict):
     supervisor_instruction: NotRequired[str]
     audit_bundle: NotRequired[dict]
 
+
 # 2. Patch sys.modules BEFORE importing kernel
 mock_state_module = MagicMock()
 mock_state_module.AgentState = AgentState
@@ -49,7 +50,7 @@ class TestCritiqueLoop(unittest.TestCase):
             ),
             score=5.0,
             actionable_feedback="Please fix the resource assumption.",
-            recommendation="REJECT"
+            recommendation="REJECT",
         )
 
         state: AgentState = {
@@ -65,7 +66,7 @@ class TestCritiqueLoop(unittest.TestCase):
             "maf_proposal": {"claims": [], "raw_content": "Bad Response"},
             # maf_attack is usually set by reviewer too
             "maf_attack": {"successful": True, "severity": 5.0},
-            "iteration_count": 0
+            "iteration_count": 0,
         }
 
         # 2. Kernel Decision
@@ -99,7 +100,7 @@ class TestCritiqueLoop(unittest.TestCase):
             ),
             score=9.5,
             actionable_feedback="Good job.",
-            recommendation="APPROVE"
+            recommendation="APPROVE",
         )
 
         state: AgentState = {
@@ -113,7 +114,7 @@ class TestCritiqueLoop(unittest.TestCase):
             "review_packet": packet.model_dump(),
             "maf_proposal": {"claims": [], "raw_content": "Good Response"},
             "maf_attack": {"successful": False, "severity": 0.0},
-            "iteration_count": 1
+            "iteration_count": 1,
         }
 
         # 2. Kernel Decision
@@ -123,6 +124,7 @@ class TestCritiqueLoop(unittest.TestCase):
         print(f"Decision 2 (Approve): {decision}")
         # Should proceed to procedural_auditor (Verify Phase)
         self.assertEqual(decision["next"], "procedural_auditor")
+
 
 if __name__ == "__main__":
     unittest.main()

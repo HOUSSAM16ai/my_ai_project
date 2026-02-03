@@ -128,7 +128,9 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
                 )
         except Exception:
             # Fallback if Pydantic fails (should be rare)
-            system_prompt += "\n\n### CRITICAL: Previous response rejected. Improve quality immediately."
+            system_prompt += (
+                "\n\n### CRITICAL: Previous response rejected. Improve quality immediately."
+            )
     else:
         # Fallback to legacy string feedback if Packet not present but feedback is
         review_feedback = state.get("review_feedback")

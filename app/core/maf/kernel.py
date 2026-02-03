@@ -30,7 +30,7 @@ class MAFKernel:
 
         # 1. No Proposal -> GENERATE
         if not proposal and not state.get("final_response"):
-             # If neither formal proposal nor raw response exists
+            # If neither formal proposal nor raw response exists
             return MAFPhase.GENERATE
 
         # 2. Proposal exists. Check for Attack/Review.
@@ -81,7 +81,7 @@ class MAFKernel:
 
             # If plan exists, execute.
             return {
-                "next": "writer", # Direct to writer for efficiency in chat
+                "next": "writer",  # Direct to writer for efficiency in chat
                 "instruction": "Execute the plan. Output a Proposal with supported Claims.",
             }
 
@@ -101,13 +101,15 @@ class MAFKernel:
                 # If Rejected, Loop Back IMMEDIATELY (Short-Circuit)
                 if packet.recommendation == "REJECT":
                     if iteration >= max_iterations:
-                         logger.warning("Max iterations reached despite Rejection. Proceeding to Verify.")
+                        logger.warning(
+                            "Max iterations reached despite Rejection. Proceeding to Verify."
+                        )
                     else:
                         logger.info("Maker-Checker: REJECTED. Looping back to Writer.")
                         return {
                             "next": "writer",
                             "instruction": f"CRITICAL FEEDBACK (Reviewer): {packet.actionable_feedback}. Minimal Fix: {packet.checklist.minimal_fix_suggestion}",
-                            "increment_iteration": True
+                            "increment_iteration": True,
                         }
 
             # 2. CHECK ADVERSARIAL ATTACK (Legacy/Parallel)
@@ -140,7 +142,7 @@ class MAFKernel:
 
             # APPROVAL
             return {
-                "next": "writer", # Or specialized "Sealer"
+                "next": "writer",  # Or specialized "Sealer"
                 "instruction": "SEAL PHASE: Format the final output as a Certified Audit Bundle.",
             }
 
