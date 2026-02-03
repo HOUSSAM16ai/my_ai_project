@@ -268,7 +268,7 @@ const useChat = (endpoint, token, onConversationUpdate) => {
         };
     }, [connect]);
 
-    const sendMessage = useCallback((text) => {
+    const sendMessage = useCallback((text, metadata = {}) => {
         if (!text.trim()) return;
 
         if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
@@ -280,7 +280,7 @@ const useChat = (endpoint, token, onConversationUpdate) => {
         addMessage({ id: generateId(), role: 'user', content: text });
         addMessage({ id: generateId(), role: 'assistant', content: '', isComplete: false });
 
-        const payload = { question: text };
+        const payload = { question: text, ...metadata };
         if (conversationId) payload.conversation_id = String(conversationId);
 
         socketRef.current.send(JSON.stringify(payload));
@@ -526,17 +526,40 @@ const DashboardLayout = ({ user, onLogout }) => {
     );
 };
 
+const MissionSelector = ({ selected, onSelect }) => {
+    const modes = [
+        { id: 'chat', label: 'دردشة عادية', icon: 'fa-comments', color: '#3b82f6' },
+        { id: 'mission_complex', label: 'المهمة الخارقة', icon: 'fa-rocket', color: '#8b5cf6' },
+        { id: 'deep_analysis', label: 'تحليل عميق', icon: 'fa-brain', color: '#ec4899' },
+        { id: 'code_search', label: 'برمجة وبحث', icon: 'fa-code', color: '#10b981' },
+    ];
+
+    return (
+        <div className="mission-selector">
+            {modes.map(mode => (
+                <button
+                    key={mode.id}
+                    className={`mission-btn ${selected === mode.id ? 'active' : ''}`}
+                    onClick={() => onSelect(mode.id)}
+                    style={{ '--btn-color': mode.color }}
+                >
+                    <i className={`fas ${mode.icon}`}></i>
+                    <span>{mode.label}</span>
+                </button>
+            ))}
+        </div>
+    );
+};
+
 const ChatInterface = ({ messages, onSendMessage, status, user }) => {
     const [input, setInput] = useState('');
+    const [missionType, setMissionType] = useState('chat');
     const messagesEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
     const [autoScroll, setAutoScroll] = useState(true);
 
     const scrollToBottom = useCallback(() => {
         if (messagesEndRef.current) {
-             // Use scrollIntoView with 'auto' for instant update during streaming to prevent jitter
-             // or 'smooth' only for new messages.
-             // But for streaming 'auto' is often better to avoid the "machine gun" smooth-scroll lag.
              messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
         }
     }, []);
@@ -546,7 +569,6 @@ const ChatInterface = ({ messages, onSendMessage, status, user }) => {
         if (autoScroll) {
             const container = messagesContainerRef.current;
             if (container) {
-                // If we are close to bottom, snap to bottom
                 const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
                 if (isNearBottom) {
                     container.scrollTop = container.scrollHeight;
@@ -566,7 +588,7 @@ const ChatInterface = ({ messages, onSendMessage, status, user }) => {
     const handleSend = () => {
         if (!input.trim()) return;
         setAutoScroll(true); // Re-enable auto-scroll on send
-        onSendMessage(input);
+        onSendMessage(input, { mission_type: missionType });
         setInput('');
     };
 
@@ -597,18 +619,22 @@ const ChatInterface = ({ messages, onSendMessage, status, user }) => {
                 )}
                 <div ref={messagesEndRef} />
             </div>
-            <div className="input-area">
-                <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="اكتب سؤالك..."
-                    rows="1"
-                    disabled={status !== 'connected'}
-                />
-                <button onClick={handleSend} disabled={status !== 'connected' || !input.trim()}>
-                    <i className="fas fa-arrow-up"></i>
-                </button>
+
+            <div className="input-area-wrapper">
+                <MissionSelector selected={missionType} onSelect={setMissionType} />
+                <div className="input-area">
+                    <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder={missionType === 'mission_complex' ? "اكتب مهمتك الخارقة..." : "اكتب سؤالك..."}
+                        rows="1"
+                        disabled={status !== 'connected'}
+                    />
+                    <button onClick={handleSend} disabled={status !== 'connected' || !input.trim()}>
+                        <i className="fas fa-arrow-up"></i>
+                    </button>
+                </div>
             </div>
         </div>
     );

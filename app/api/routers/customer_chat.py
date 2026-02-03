@@ -132,6 +132,11 @@ async def chat_stream_ws(
             client_ip = websocket.client.host if websocket.client else None
             user_agent = websocket.headers.get("user-agent")
 
+            mission_type = payload.get("mission_type")
+            metadata = {}
+            if mission_type:
+                metadata["mission_type"] = mission_type
+
             dispatch_request = ChatDispatchRequest(
                 question=question,
                 conversation_id=payload.get("conversation_id"),
@@ -139,6 +144,7 @@ async def chat_stream_ws(
                 session_factory=session_factory,
                 ip=client_ip,
                 user_agent=user_agent,
+                metadata=metadata,
             )
 
             try:

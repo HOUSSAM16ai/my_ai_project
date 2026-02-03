@@ -7,12 +7,22 @@ import logging
 from collections.abc import AsyncGenerator
 
 from sqlalchemy import select
+from sqlmodel import SQLModel
 
+# Import chat domain to ensure AdminConversation is registered, preventing mapping errors
+import app.core.domain.chat  # noqa: F401
 from app.core.agents.system_principles import (
     format_architecture_system_principles,
     format_system_principles,
 )
-from app.core.domain.mission import Mission, MissionEvent, MissionEventType, MissionStatus
+from app.core.domain.mission import (
+    Mission,
+    MissionEvent,
+    MissionEventType,
+    MissionPlan,
+    MissionStatus,
+    Task,
+)
 from app.core.patterns.strategy import Strategy
 from app.services.chat.context import ChatContext
 from app.services.chat.context_service import get_context_service
@@ -180,75 +190,128 @@ class MissionComplexHandler(IntentHandler):
         Creates a Mission DB entry and triggers the Overmind in background.
         Streams updates to the user.
         """
-        yield "🚀 **بدء المهمة الخارقة (Super Agent)**...\n"
+        # Global try-except to prevent stream crash
+        try:
+            yield "🚀 **بدء المهمة الخارقة (Super Agent)**...\n"
 
-        if not context.session_factory:
-            yield "❌ خطأ: لا يوجد مصنع جلسات (Session Factory).\n"
-            return
+            if not context.session_factory:
+                yield "❌ خطأ: لا يوجد مصنع جلسات (Session Factory).\n"
+                return
 
-        # 1. Initialize Mission in DB
-        mission_id = 0
-        async with context.session_factory() as session:
-            mission = Mission(
-                objective=context.question,
-                status=MissionStatus.PENDING,
-                initiator_id=context.user_id or 1,  # Fallback if user_id missing
-            )
-            session.add(mission)
-            await session.commit()
-            await session.refresh(mission)
-            mission_id = mission.id
-            yield f"🆔 رقم المهمة: `{mission.id}`\n"
-            yield "⏳ مجلس الحكمة يبدأ التداول (Strategist, Architect, Auditor)...\n"
+            # 1. Initialize Mission in DB
+            mission_id = 0
+            try:
+                async with context.session_factory() as session:
+                    # Self-healing: Ensure schema exists
+                    await self._ensure_mission_schema(session)
 
-        # 2. Spawn Background Task (Non-Blocking)
-        # We pass the factory so the background task can manage its own session
-        task = asyncio.create_task(self._run_mission_bg(mission_id, context.session_factory))
+                    mission = Mission(
+                        objective=context.question,
+                        status=MissionStatus.PENDING,
+                        initiator_id=context.user_id or 1,  # Fallback if user_id missing
+                    )
+                    session.add(mission)
+                    await session.commit()
+                    await session.refresh(mission)
+                    mission_id = mission.id
+                    yield f"🆔 رقم المهمة: `{mission.id}`\n"
+                    yield "⏳ مجلس الحكمة يبدأ التداول (Strategist, Architect, Auditor)...\n"
+            except Exception as e:
+                logger.error(f"Failed to create mission: {e}", exc_info=True)
+                yield "\n❌ **خطأ في قاعدة البيانات:** لم نتمكن من بدء المهمة.\n"
+                yield f"التفاصيل التقنية: `{e!s}`\n"
+                yield "💡 **الحل:** يرجى إبلاغ الفريق التقني لفحص حالة قاعدة البيانات.\n"
+                return
 
-        # 3. Poll for Updates
-        last_event_id = 0
-        running = True
+            # 2. Spawn Background Task (Non-Blocking)
+            # We pass the factory so the background task can manage its own session
+            task = asyncio.create_task(self._run_mission_bg(mission_id, context.session_factory))
 
-        while running:
-            await asyncio.sleep(1.0)  # Poll interval
+            # 3. Poll for Updates
+            last_event_id = 0
+            running = True
 
-            # Check if background task crashed or finished
-            if task.done():
-                running = False
-                try:
-                    await task  # Check for exceptions
-                except Exception as e:
-                    yield f"❌ **خطأ غير متوقع في النظام:** {e}\n"
-                    logger.error(f"Background mission task failed: {e}")
-                    return
+            while running:
+                await asyncio.sleep(1.0)  # Poll interval
 
-            # Poll events
-            async with context.session_factory() as session:
-                # Fetch new events
-                stmt = (
-                    select(MissionEvent)
-                    .where(MissionEvent.mission_id == mission_id)
-                    .where(MissionEvent.id > last_event_id)
-                    .order_by(MissionEvent.id)
-                )
-                result = await session.execute(stmt)
-                events = result.scalars().all()
-
-                for event in events:
-                    last_event_id = event.id
-                    yield self._format_event(event)
-
-                # Check mission status if task is done or we suspect completion
-                mission_check = await session.get(Mission, mission_id)
-                if (
-                    mission_check.status
-                    in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED)
-                    and running
-                ):
+                # Check if background task crashed or finished
+                if task.done():
                     running = False
-                    yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
+                    try:
+                        await task  # Check for exceptions
+                    except Exception as e:
+                        yield f"❌ **خطأ غير متوقع في النظام:** {e}\n"
+                        logger.error(f"Background mission task failed: {e}")
+                        return
 
-        yield "\n✅ **تم انتهاء متابعة المهمة.**\n"
+                # Poll events
+                async with context.session_factory() as session:
+                    # Fetch new events
+                    stmt = (
+                        select(MissionEvent)
+                        .where(MissionEvent.mission_id == mission_id)
+                        .where(MissionEvent.id > last_event_id)
+                        .order_by(MissionEvent.id)
+                    )
+                    result = await session.execute(stmt)
+                    events = result.scalars().all()
+
+                    for event in events:
+                        last_event_id = event.id
+                        yield self._format_event(event)
+
+                    # Check mission status if task is done or we suspect completion
+                    mission_check = await session.get(Mission, mission_id)
+                    if (
+                        mission_check.status
+                        in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED)
+                        and running
+                    ):
+                        running = False
+                        yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
+
+            yield "\n✅ **تم انتهاء متابعة المهمة.**\n"
+        except Exception as global_ex:
+            logger.critical(f"Critical error in MissionComplexHandler: {global_ex}", exc_info=True)
+            yield f"\n🛑 **حدث خطأ حرج أثناء تنفيذ المهمة:** {global_ex}\n"
+
+    async def _ensure_mission_schema(self, session) -> None:
+        """
+        Checks and attempts to self-heal missing mission tables.
+        Now uses SQLModel metadata to ensure cross-database compatibility (SQLite/Postgres).
+        """
+        try:
+            # Explicitly define tables to verify/create
+            # This avoids creating incompatible tables (e.g. vector type on SQLite)
+            target_tables = [
+                Mission.__table__,
+                MissionPlan.__table__,
+                Task.__table__,
+                MissionEvent.__table__,
+            ]
+
+            bind = session.bind
+            if not bind:
+                logger.warning("No bind found for session in schema check.")
+                return
+
+            # Check if bind is AsyncConnection (has run_sync) or AsyncEngine (needs connect)
+            if hasattr(bind, "run_sync"):
+                await bind.run_sync(
+                    SQLModel.metadata.create_all, tables=target_tables, checkfirst=True
+                )
+            else:
+                # Assume AsyncEngine
+                async with bind.begin() as conn:
+                    await conn.run_sync(
+                        SQLModel.metadata.create_all, tables=target_tables, checkfirst=True
+                    )
+
+            logger.info("Schema self-healing: Verified mission tables.")
+
+        except Exception as e:
+            # Log error but attempt to continue, assuming tables might exist or partial failure
+            logger.error(f"Schema self-healing failed: {e}")
 
     async def _run_mission_bg(self, mission_id: int, session_factory):
         """

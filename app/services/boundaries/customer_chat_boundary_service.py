@@ -100,12 +100,13 @@ class CustomerChatBoundaryService:
         history: list[dict[str, str]],
         ai_client: AIClient,
         session_factory_func: Callable[[], AsyncSession],
+        metadata: dict[str, object] | None = None,
     ) -> AsyncGenerator[ChatStreamEvent, None]:
         """
         تفويض عملية البث إلى Streamer.
         """
         async for chunk in self.streamer.stream_response(
-            conversation, question, history, ai_client, session_factory_func
+            conversation, question, history, ai_client, session_factory_func, metadata
         ):
             yield chunk
 
@@ -118,6 +119,7 @@ class CustomerChatBoundaryService:
         session_factory_func: Callable[[], AsyncSession],
         ip: str | None,
         user_agent: str | None,
+        metadata: dict[str, object] | None = None,
     ) -> ChatDispatchResult:
         """
         تنسيق تدفق المحادثة مع بوابة السياسات والتخزين.
@@ -236,7 +238,7 @@ class CustomerChatBoundaryService:
         history = await self.get_chat_history(conversation.id)
 
         stream = self.stream_chat_response(
-            conversation, question, history, ai_client, session_factory_func
+            conversation, question, history, ai_client, session_factory_func, metadata
         )
         return ChatDispatchResult(status_code=200, stream=stream)
 

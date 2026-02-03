@@ -163,6 +163,7 @@ class ChatOrchestrator:
         ai_client: AIClient,
         history_messages: list[dict[str, str]],
         session_factory: Callable[[], AsyncSession] | None = None,
+        metadata: dict[str, object] | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         معالجة طلب المحادثة.
@@ -173,6 +174,24 @@ class ChatOrchestrator:
 
         # 0. الكشف عن النية (Intent Detection)
         intent_result = await self._intent_detector.detect(question)
+
+        # Override intent if mission_type is provided in metadata
+        if metadata and (mission_type := metadata.get("mission_type")):
+            logger.info(f"Overriding intent with mission_type: {mission_type}", extra={"user_id": user_id})
+            from app.services.chat.intent_detector import IntentResult
+
+            mapping = {
+                "mission_complex": ChatIntent.MISSION_COMPLEX,
+                "deep_analysis": ChatIntent.DEEP_ANALYSIS,
+                "code_search": ChatIntent.CODE_SEARCH,
+                "chat": ChatIntent.DEFAULT,
+            }
+            if mission_type in mapping:
+                intent_result = IntentResult(
+                    intent=mapping[mission_type],
+                    confidence=1.0,
+                    params=intent_result.params,
+                )
 
         logger.info(
             f"Intent detected: {intent_result.intent} (confidence={intent_result.confidence:.2f})",

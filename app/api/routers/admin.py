@@ -213,11 +213,17 @@ async def chat_stream_ws(
                 )
                 continue
 
+            mission_type = payload.get("mission_type")
+            metadata = {}
+            if mission_type:
+                metadata["mission_type"] = mission_type
+
             dispatch_request = ChatDispatchRequest(
                 question=question,
                 conversation_id=payload.get("conversation_id"),
                 ai_client=ai_client,
                 session_factory=session_factory,
+                metadata=metadata,
             )
 
             try:
