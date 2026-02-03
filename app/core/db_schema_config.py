@@ -267,11 +267,15 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             "expires_at",
             "revoked_at",
             "replaced_by_token_id",
+            "created_ip",
+            "user_agent",
             "created_at",
         ],
         "auto_fix": {
             "family_id": 'ALTER TABLE "refresh_tokens" ADD COLUMN "family_id" VARCHAR(36) NOT NULL DEFAULT \'unknown\'',
             "replaced_by_token_id": 'ALTER TABLE "refresh_tokens" ADD COLUMN "replaced_by_token_id" VARCHAR(36)',
+            "created_ip": 'ALTER TABLE "refresh_tokens" ADD COLUMN "created_ip" VARCHAR(64)',
+            "user_agent": 'ALTER TABLE "refresh_tokens" ADD COLUMN "user_agent" VARCHAR(255)',
         },
         "indexes": {
             "user_id": 'CREATE INDEX IF NOT EXISTS "ix_refresh_tokens_user_id" ON "refresh_tokens"("user_id")',
@@ -297,6 +301,8 @@ REQUIRED_SCHEMA: Final[dict[str, TableSchemaConfig]] = {
             '"expires_at" TIMESTAMPTZ NOT NULL,'
             '"revoked_at" TIMESTAMPTZ,'
             '"replaced_by_token_id" VARCHAR(36),'
+            '"created_ip" VARCHAR(64),'
+            '"user_agent" VARCHAR(255),'
             '"created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()'
             ")"
         ),
