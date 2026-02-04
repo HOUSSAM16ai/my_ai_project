@@ -9,6 +9,11 @@ from app.services.users.user_service import UserService
 
 @pytest.mark.asyncio
 async def test_get_all_users(db_session):
+    from sqlalchemy import text
+    # Ensure clean slate
+    await db_session.execute(text("DELETE FROM users"))
+    await db_session.commit()
+
     # Setup
     settings = MagicMock()
     # Refactored: UserService now strictly requires session, no logger injection needed
@@ -26,8 +31,10 @@ async def test_get_all_users(db_session):
     # Test
     users = await service.get_all_users()
     assert len(users) == 2
-    assert users[0].email == "test1@example.com"
-    assert users[1].email == "test2@example.com"
+    # Order isn't guaranteed without order_by, so check containment
+    emails = {u.email for u in users}
+    assert "test1@example.com" in emails
+    assert "test2@example.com" in emails
 
 
 @pytest.mark.asyncio
@@ -79,6 +86,11 @@ async def test_create_new_user_exception(db_session):
 
 @pytest.mark.asyncio
 async def test_ensure_admin_user_exists_create_new(db_session):
+    from sqlalchemy import text
+    # Ensure clean slate
+    await db_session.execute(text("DELETE FROM users WHERE email = 'admin@example.com'"))
+    await db_session.commit()
+
     settings = MagicMock()
     settings.ADMIN_EMAIL = "admin@example.com"
     settings.ADMIN_PASSWORD = "adminpass"

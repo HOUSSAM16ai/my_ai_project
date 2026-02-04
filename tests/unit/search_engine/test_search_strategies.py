@@ -30,20 +30,17 @@ def setup_module_environment():
         "dspy": MagicMock(),
     }
 
-    # Import models BEFORE patching to ensure it's not mocked or affected by mocked deps
-    import microservices.research_agent.src.search_engine.models as m
-
-    models_module = m
-
     # Start the patch
     patcher = patch.dict(sys.modules, mock_modules)
     patcher.start()
 
     try:
         # Import modules ONCE here
+        import microservices.research_agent.src.search_engine.models as m
         import microservices.research_agent.src.search_engine.orchestrator as o
         import microservices.research_agent.src.search_engine.strategies as s
 
+        models_module = m
         strategies_module = s
         orchestrator_module = o
 
