@@ -247,10 +247,11 @@ class OrchestratorAgent:
         )
 
         if raw_data and raw_data.get("content"):
-            content_text = raw_data["content"]
+            full_content = raw_data["content"]
+            content_text = full_content
             requested_index = _extract_requested_index(question)
             if requested_index is not None:
-                extracted = _extract_section_by_index(content_text, requested_index)
+                extracted = _extract_section_by_index(full_content, requested_index)
                 if extracted:
                     content_text = extracted
             yield "---\n\n"
@@ -267,7 +268,7 @@ class OrchestratorAgent:
                 ):
                     yield chunk
             if include_grading and not exclude_solution:
-                grading_blocks = _extract_marking_scheme_blocks(content_text)
+                grading_blocks = _extract_marking_scheme_blocks(full_content)
                 if grading_blocks:
                     yield "\n\n### سلم التنقيط (Marking Scheme):\n"
                     yield "\n\n".join(grading_blocks)

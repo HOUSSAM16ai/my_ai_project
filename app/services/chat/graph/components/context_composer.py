@@ -60,15 +60,15 @@ class FirewallContextComposer(IContextComposer):
             if not allow_solution and node_type in self.SOLUTION_NODE_TYPES:
                 continue
 
-            content = str(item.get("content", ""))
-            content = self._extract_requested_segment(content, user_message)
+            full_content = str(item.get("content", ""))
+            requested_content = self._extract_requested_segment(full_content, user_message)
             sanitized_content = self._sanitize_content(
-                content, show_hidden_marker=show_hidden_marker
+                requested_content, show_hidden_marker=show_hidden_marker
             )
 
             solution_display = self._compose_solution_display(
                 item=item,
-                content=content,
+                content=full_content,
                 allow_solution=allow_solution,
                 allow_grading=allow_grading,
                 show_solution_banner=show_hidden_marker,
