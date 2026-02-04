@@ -19,6 +19,7 @@ def mock_db_session():
 def mock_state_manager():
     manager = AsyncMock(spec=MissionStateManager)
     manager.update_mission_status = AsyncMock()
+    manager.complete_mission = AsyncMock()
     manager.log_event = AsyncMock()
     return manager
 
@@ -57,10 +58,12 @@ async def test_overmind_orchestrator_run_mission_success(
         1, MissionStatus.RUNNING, "Council of Wisdom Convening"
     )
     mock_brain.process_mission.assert_called_once()
-    mock_state_manager.update_mission_status.assert_any_call(
-        1, MissionStatus.SUCCESS, "Mission Accomplished by Super Agent"
-    )
-    mock_state_manager.log_event.assert_called()
+
+    # We now call complete_mission instead of update_mission_status for success
+    mock_state_manager.complete_mission.assert_called_once()
+    args, kwargs = mock_state_manager.complete_mission.call_args
+    assert args[0] == 1  # mission_id
+    assert kwargs['result_json'] == {"result": "success"}
 
 
 @pytest.mark.asyncio
