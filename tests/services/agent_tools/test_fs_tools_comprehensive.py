@@ -87,9 +87,7 @@ class TestWriteFile:
         # If AUTOFILL was removed, we remove the patch.
         result = write_file(path="test.txt", content=123)
         assert not result.ok
-        assert (
-            "must be of type 'string'" in result.error or result.error == "CONTENT_NOT_STRING"
-        )
+        assert "must be of type 'string'" in result.error or result.error == "CONTENT_NOT_STRING"
 
     def test_write_file_json_compression(self, mock_project_root):
         """Test automatic compression for large JSON files."""

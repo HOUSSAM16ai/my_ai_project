@@ -14,6 +14,7 @@ from app.services.overmind.code_intelligence.models import ProjectAnalysis
 
 logger = logging.getLogger(__name__)
 
+
 def build_index(root: str = ".") -> ProjectAnalysis:
     """
     Build a structural index of the project.
@@ -43,6 +44,7 @@ def build_index(root: str = ".") -> ProjectAnalysis:
     sci = StructuralCodeIntelligence(repo_path, target_paths)
     return sci.analyze_project()
 
+
 def summarize_for_prompt(index: ProjectAnalysis, max_len: int = 3000) -> str:
     """
     Summarize the project analysis for use in an LLM prompt.
@@ -62,8 +64,12 @@ def summarize_for_prompt(index: ProjectAnalysis, max_len: int = 3000) -> str:
     lines.append("-" * 40)
     lines.append(f"• Total Files: {index.total_files}")
     lines.append(f"• Total Lines: {index.total_lines} (Code: {index.total_code_lines})")
-    lines.append(f"• Complexity: Avg {index.avg_file_complexity:.2f} (Max {index.max_file_complexity})")
-    lines.append(f"• Architecture: {index.total_classes} Classes, {index.total_functions} Functions")
+    lines.append(
+        f"• Complexity: Avg {index.avg_file_complexity:.2f} (Max {index.max_file_complexity})"
+    )
+    lines.append(
+        f"• Architecture: {index.total_classes} Classes, {index.total_functions} Functions"
+    )
 
     if index.critical_hotspots:
         lines.append("\n🔥 **Critical Hotspots (Refactor Priority):**")

@@ -342,9 +342,7 @@ class MissionComplexHandler(IntentHandler):
                     # Check for explicit answer/output first
                     if result.get("output") or result.get("answer") or result.get("summary"):
                         result_text = (
-                            result.get("output")
-                            or result.get("answer")
-                            or result.get("summary")
+                            result.get("output") or result.get("answer") or result.get("summary")
                         )
                     # Check for OperatorAgent results list (Customer Visibility Fix)
                     elif "results" in result and isinstance(result["results"], list):
@@ -354,11 +352,7 @@ class MissionComplexHandler(IntentHandler):
                             if isinstance(t, dict):
                                 name = t.get("name", "مهمة")
                                 res = t.get("result", {})
-                                val = (
-                                    res.get("result_text")
-                                    if isinstance(res, dict)
-                                    else str(res)
-                                )
+                                val = res.get("result_text") if isinstance(res, dict) else str(res)
                                 lines.append(f"🔹 **{name}**:\n{val}\n")
                         result_text = "\n".join(lines)
                     else:

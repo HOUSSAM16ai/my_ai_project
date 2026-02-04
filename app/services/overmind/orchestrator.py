@@ -156,11 +156,7 @@ class OvermindOrchestrator:
                     name = t.get("name", "Task")
                     res = t.get("result", {})
                     # If result is a dict with result_text (Executor format)
-                    val = (
-                        res.get("result_text")
-                        if isinstance(res, dict)
-                        else str(res)
-                    )
+                    val = res.get("result_text") if isinstance(res, dict) else str(res)
                     # Truncate if too long
                     val_str = str(val)
                     if len(val_str) > 100:
