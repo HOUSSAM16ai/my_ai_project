@@ -339,12 +339,30 @@ class MissionComplexHandler(IntentHandler):
                 result = payload.get("result", {})
                 result_text = ""
                 if isinstance(result, dict):
-                    result_text = (
-                        result.get("output")
-                        or result.get("answer")
-                        or result.get("summary")
-                        or json.dumps(result, ensure_ascii=False, indent=2)
-                    )
+                    # Check for explicit answer/output first
+                    if result.get("output") or result.get("answer") or result.get("summary"):
+                        result_text = (
+                            result.get("output")
+                            or result.get("answer")
+                            or result.get("summary")
+                        )
+                    # Check for OperatorAgent results list (Customer Visibility Fix)
+                    elif "results" in result and isinstance(result["results"], list):
+                        tasks = result["results"]
+                        lines = [f"✅ **تم تنفيذ {len(tasks)} مهمة بنجاح:**\n"]
+                        for t in tasks:
+                            if isinstance(t, dict):
+                                name = t.get("name", "مهمة")
+                                res = t.get("result", {})
+                                val = (
+                                    res.get("result_text")
+                                    if isinstance(res, dict)
+                                    else str(res)
+                                )
+                                lines.append(f"🔹 **{name}**:\n{val}\n")
+                        result_text = "\n".join(lines)
+                    else:
+                        result_text = json.dumps(result, ensure_ascii=False, indent=2)
                 else:
                     result_text = str(result)
                 return f"🎉 **المهمة اكتملت بنجاح!**\n\n**النتيجة:**\n{result_text}\n"

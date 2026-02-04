@@ -113,11 +113,11 @@ class OvermindOrchestrator:
             # تفويض كامل للعقل (Abstraction Barrier)
             result = await self.brain.process_mission(mission, log_event=_log_bridge)
 
-            await self.state.update_mission_status(
-                mission.id, MissionStatus.SUCCESS, OvermindMessage.MISSION_ACCOMPLISHED
-            )
-            await self.state.log_event(
-                mission.id, MissionEventType.MISSION_COMPLETED, {"result": result}
+            # Extract summary for Admin Dashboard visibility
+            summary = self._extract_summary(result)
+
+            await self.state.complete_mission(
+                mission.id, result_summary=summary, result_json=result
             )
 
         except Exception as e:
@@ -130,3 +130,43 @@ class OvermindOrchestrator:
                 MissionEventType.MISSION_FAILED,
                 {"error": str(e), "error_type": type(e).__name__},
             )
+
+    def _extract_summary(self, result: dict[str, object]) -> str:
+        """
+        استخراج ملخص نصي للنتيجة لعرضه في لوحة الإدارة.
+        Extracts a text summary for the Admin Dashboard.
+        """
+        if not result:
+            return "تمت المهمة بنجاح."
+
+        # 1. Try explicit summary/output fields
+        if "summary" in result and result["summary"]:
+            return str(result["summary"])
+        if "output" in result and result["output"]:
+            return str(result["output"])
+        if "answer" in result and result["answer"]:
+            return str(result["answer"])
+
+        # 2. Handle OperatorAgent results list
+        if "results" in result and isinstance(result["results"], list):
+            tasks = result["results"]
+            lines = [f"✅ Executed {len(tasks)} tasks:"]
+            for t in tasks:
+                if isinstance(t, dict):
+                    name = t.get("name", "Task")
+                    res = t.get("result", {})
+                    # If result is a dict with result_text (Executor format)
+                    val = (
+                        res.get("result_text")
+                        if isinstance(res, dict)
+                        else str(res)
+                    )
+                    # Truncate if too long
+                    val_str = str(val)
+                    if len(val_str) > 100:
+                        val_str = val_str[:100] + "..."
+                    lines.append(f"- {name}: {val_str}")
+            return "\n".join(lines)
+
+        # 3. Fallback to string representation
+        return str(result)[:500]
