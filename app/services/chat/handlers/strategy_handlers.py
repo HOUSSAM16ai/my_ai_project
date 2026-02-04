@@ -357,7 +357,9 @@ class MissionComplexHandler(IntentHandler):
                                 file_content = ""
 
                                 # Auto-read file content if written
-                                result_data = res.get("result_data") if isinstance(res, dict) else None
+                                result_data = (
+                                    res.get("result_data") if isinstance(res, dict) else None
+                                )
                                 if result_data and isinstance(result_data, dict):
                                     data_payload = result_data.get("data", {})
                                     if (
