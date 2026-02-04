@@ -41,9 +41,7 @@ def build_index(root: str = ".") -> ProjectAnalysis:
     logger.info(f"Building deep index for: {repo_path} (Targets: {target_paths})")
 
     sci = StructuralCodeIntelligence(repo_path, target_paths)
-    analysis = sci.analyze_project()
-
-    return analysis
+    return sci.analyze_project()
 
 def summarize_for_prompt(index: ProjectAnalysis, max_len: int = 3000) -> str:
     """

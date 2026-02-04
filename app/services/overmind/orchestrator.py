@@ -140,11 +140,11 @@ class OvermindOrchestrator:
             return "تمت المهمة بنجاح."
 
         # 1. Try explicit summary/output fields
-        if "summary" in result and result["summary"]:
+        if result.get("summary"):
             return str(result["summary"])
-        if "output" in result and result["output"]:
+        if result.get("output"):
             return str(result["output"])
-        if "answer" in result and result["answer"]:
+        if result.get("answer"):
             return str(result["answer"])
 
         # 2. Handle OperatorAgent results list
