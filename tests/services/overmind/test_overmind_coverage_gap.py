@@ -63,7 +63,7 @@ async def test_overmind_orchestrator_run_mission_success(
     mock_state_manager.complete_mission.assert_called_once()
     args, kwargs = mock_state_manager.complete_mission.call_args
     assert args[0] == 1  # mission_id
-    assert kwargs['result_json'] == {"result": "success"}
+    assert kwargs["result_json"] == {"result": "success"}
 
 
 @pytest.mark.asyncio
