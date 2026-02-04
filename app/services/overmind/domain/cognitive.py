@@ -14,6 +14,7 @@
 """
 
 import logging
+import re
 from collections.abc import Awaitable, Callable
 
 from app.core.domain.mission import Mission
@@ -102,6 +103,7 @@ class SuperBrain:
         base_context["objective"] = mission.objective
 
         collab_context = InMemoryCollaborationContext(base_context)
+        await self._seed_education_context(mission.objective, collab_context)
         session = CouncilSession(hub=self.collaboration_hub, context=collab_context)
         safe_log = await self.runner.create_safe_logger(log_event)
 
@@ -225,6 +227,33 @@ class SuperBrain:
                 {"type": "critical_stalemate", "reason": str(error)},
             )
 
+    async def _seed_education_context(
+        self, objective: str, context: InMemoryCollaborationContext
+    ) -> None:
+        """
+        تهيئة سياق تعليمي مسبقاً عند رصد طلب تمرين محدد.
+
+        الهدف: تحسين نجاح المهمة الخارقة عبر تزويد الوكلاء بنص التمرين بشكل مبكر.
+        """
+        if not objective:
+            return
+
+        extracted = _extract_exercise_request(objective)
+        if not extracted:
+            return
+
+        try:
+            from app.services.chat.tools.retrieval import search_educational_content
+
+            content = await search_educational_content(**extracted)
+        except Exception as exc:
+            logger.warning("Educational content retrieval failed: %s", exc)
+            return
+
+        if content:
+            context.update("exercise_content", content)
+            context.update("exercise_metadata", extracted)
+
     async def _handle_phase_error(
         self,
         error: Exception,
@@ -260,3 +289,78 @@ class SuperBrain:
             timeout=timeout,
             log_func=log_func,
         )
+
+
+def _extract_exercise_request(objective: str) -> dict[str, str | None] | None:
+    """
+    استخراج بيانات طلب تمرين من نص الهدف بأسلوب بسيط وقابل للتوسع.
+    """
+    text = objective.strip()
+    if not text:
+        return None
+
+    normalized = _normalize_digits(text)
+
+    year_match = re.search(r"(20\d{2})", normalized)
+    year = year_match.group(1) if year_match else None
+
+    exam_ref = _extract_exam_ref(normalized)
+    exercise_id = _extract_exercise_id(normalized)
+
+    subject = "رياضيات" if "رياضيات" in normalized or "math" in normalized.lower() else None
+    branch = "علوم تجريبية" if "علوم تجريبية" in normalized else None
+
+    has_exercise_hint = "تمرين" in normalized or "exercise" in normalized.lower()
+    if not (year or exam_ref or exercise_id or subject or branch or has_exercise_hint):
+        return None
+
+    return {
+        "query": text,
+        "year": year,
+        "subject": subject,
+        "branch": branch,
+        "exam_ref": exam_ref,
+        "exercise_id": exercise_id,
+    }
+
+
+def _normalize_digits(text: str) -> str:
+    """
+    توحيد الأرقام العربية الهندية إلى أرقام ASCII لتسهيل الاستخراج.
+    """
+    translations = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
+    return text.translate(translations)
+
+
+def _extract_exam_ref(text: str) -> str | None:
+    """
+    استخراج رقم الموضوع إذا كان مذكوراً في النص.
+    """
+    lower_text = text.lower()
+    if "الموضوع" not in text and "subject" not in lower_text:
+        return None
+
+    if "الثاني" in text or "2" in text or "subject 2" in lower_text:
+        return "الموضوع الثاني"
+    if "الثالث" in text or "3" in text or "subject 3" in lower_text:
+        return "الموضوع الثالث"
+    if "الأول" in text or "الاول" in text or "1" in text or "subject 1" in lower_text:
+        return "الموضوع الأول"
+    return None
+
+
+def _extract_exercise_id(text: str) -> str | None:
+    """
+    استخراج رقم التمرين إذا كان مذكوراً في النص.
+    """
+    lower_text = text.lower()
+    if "التمرين" not in text and "exercise" not in lower_text:
+        return None
+
+    if "الثاني" in text or "2" in text or "exercise 2" in lower_text:
+        return "2"
+    if "الثالث" in text or "3" in text or "exercise 3" in lower_text:
+        return "3"
+    if "الأول" in text or "الاول" in text or "1" in text or "exercise 1" in lower_text:
+        return "1"
+    return None

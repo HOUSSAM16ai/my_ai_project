@@ -112,9 +112,10 @@ async def test_overmind_factory_assembly(mock_db_session):
     """
     Test that the factory correctly assembles the Overmind components.
     """
+    registry: dict[str, object] = {}
     with (
         patch("app.services.overmind.factory.get_ai_client"),
-        patch("app.services.overmind.factory.get_registry"),
+        patch("app.services.overmind.factory.get_registry", return_value=registry),
         patch("app.services.overmind.factory.MissionStateManager"),
         patch("app.services.overmind.factory.TaskExecutor"),
         patch("app.services.overmind.factory.StrategistAgent") as mock_strat,
@@ -122,6 +123,7 @@ async def test_overmind_factory_assembly(mock_db_session):
         patch("app.services.overmind.factory.OperatorAgent"),
         patch("app.services.overmind.factory.AuditorAgent"),
         patch("app.services.overmind.factory.SuperBrain") as mock_brain_cls,
+        patch("app.services.chat.tools.content.register_content_tools"),
     ):
         mock_db = AsyncMock()
         orchestrator = await create_overmind(mock_db)
@@ -129,3 +131,4 @@ async def test_overmind_factory_assembly(mock_db_session):
         assert isinstance(orchestrator, OvermindOrchestrator)
         mock_brain_cls.assert_called_once()
         mock_strat.assert_called_once()
+        assert "search_educational_content" in registry

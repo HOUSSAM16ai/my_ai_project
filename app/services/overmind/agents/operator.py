@@ -213,20 +213,26 @@ class OperatorAgent(AgentExecutor):
         تنفيذ مهمة واحدة.
         Execute a single task.
         """
-        task_name = task_def.get("name", f"Task-{index}")
-        tool_name = task_def.get("tool_name")
+        prepared_task = self._prepare_task_definition(task_def, context)
+        task_name = prepared_task.get("name", f"Task-{index}")
+        tool_name = prepared_task.get("tool_name")
 
         # التحقق من وجود أداة | Validate tool
         if not tool_name:
             logger.warning(f"Skipping task '{task_name}': No tool_name provided.")
             return {"name": task_name, "status": "skipped", "reason": "no_tool_name"}
 
+        should_skip, skip_reason = self._should_skip_task(tool_name, context)
+        if should_skip:
+            logger.warning(f"Skipping task '{task_name}': {skip_reason}.")
+            return {"name": task_name, "status": "skipped", "reason": skip_reason}
+
         logger.info(
             f"Executing Task [{index + 1}/{len(tasks_data)}]: {task_name} using {tool_name}"
         )
 
         # إنشاء المهمة وتنفيذها | Create and execute task
-        temp_task = self._create_task_object(task_def, context)
+        temp_task = self._create_task_object(prepared_task, context)
         exec_result = await self._execute_task_safely(temp_task, task_name)
 
         return {"name": task_name, "tool": tool_name, "result": exec_result}
@@ -290,3 +296,161 @@ class OperatorAgent(AgentExecutor):
         elif "```" in text:
             text = text.split("```")[1].split("```")[0]
         return text.strip()
+
+    def _prepare_task_definition(
+        self, task_def: dict[str, object], context: CollaborationContext
+    ) -> dict[str, object]:
+        """
+        تهيئة مهمة قبل التنفيذ عبر تنقية الوسائط وتغذية بيانات التمرين.
+
+        الهدف: منع أخطاء الوسائط الشائعة وضمان تمرير بيانات الطلب التعليمي.
+        """
+        prepared = dict(task_def)
+        tool_name = prepared.get("tool_name")
+        raw_args = prepared.get("tool_args", {})
+        tool_args = raw_args if isinstance(raw_args, dict) else {}
+
+        if tool_name == "search_educational_content":
+            tool_args = self._prepare_search_educational_args(tool_args, context)
+        if tool_name in {"write_file", "write_file_if_changed", "append_file"}:
+            tool_args = self._inject_exercise_content(tool_args, context)
+
+        prepared["tool_args"] = tool_args
+        return prepared
+
+    def _prepare_search_educational_args(
+        self, tool_args: dict[str, object], context: CollaborationContext
+    ) -> dict[str, object]:
+        """
+        تنقية وسائط البحث التعليمي وإضافة البيانات الناقصة من السياق.
+        """
+        normalized: dict[str, object] = {}
+        allowed_keys = {"query", "year", "subject", "branch", "exam_ref", "exercise_id"}
+
+        query_value = tool_args.get("query") or tool_args.get("q")
+        if query_value:
+            normalized["query"] = query_value
+
+        metadata = self._get_exercise_metadata(context)
+        for key in allowed_keys:
+            if key in tool_args and tool_args.get(key):
+                normalized[key] = tool_args[key]
+            elif key in metadata and metadata.get(key):
+                normalized[key] = metadata[key]
+
+        if "query" not in normalized:
+            objective = self._get_objective_from_context(context)
+            if objective:
+                normalized["query"] = objective
+
+        return {key: value for key, value in normalized.items() if key in allowed_keys}
+
+    def _get_exercise_metadata(self, context: CollaborationContext) -> dict[str, object]:
+        """
+        قراءة بيانات التمرين من السياق المشترك.
+        """
+        if hasattr(context, "get"):
+            metadata = context.get("exercise_metadata")
+            if isinstance(metadata, dict):
+                return metadata
+        if hasattr(context, "shared_memory"):
+            shared_memory = getattr(context, "shared_memory", {})
+            if isinstance(shared_memory, dict):
+                metadata = shared_memory.get("exercise_metadata")
+                if isinstance(metadata, dict):
+                    return metadata
+        return {}
+
+    def _get_objective_from_context(self, context: CollaborationContext) -> str | None:
+        """
+        استخراج الهدف الأصلي من السياق لاستخدامه كسؤال بحث.
+        """
+        if hasattr(context, "get"):
+            value = context.get("objective")
+            return value if isinstance(value, str) else None
+        if hasattr(context, "shared_memory"):
+            shared_memory = getattr(context, "shared_memory", {})
+            if isinstance(shared_memory, dict):
+                value = shared_memory.get("objective")
+                return value if isinstance(value, str) else None
+        return None
+
+    def _inject_exercise_content(
+        self, tool_args: dict[str, object], context: CollaborationContext
+    ) -> dict[str, object]:
+        """
+        حقن نص التمرين داخل مهام الكتابة عند توفره في السياق.
+        """
+        content_value = tool_args.get("content")
+        if isinstance(content_value, str) and content_value.strip():
+            return tool_args
+
+        exercise_content = None
+        if hasattr(context, "get"):
+            value = context.get("exercise_content")
+            if isinstance(value, str):
+                exercise_content = value
+        if exercise_content is None and hasattr(context, "shared_memory"):
+            shared_memory = getattr(context, "shared_memory", {})
+            if isinstance(shared_memory, dict):
+                value = shared_memory.get("exercise_content")
+                if isinstance(value, str):
+                    exercise_content = value
+
+        if exercise_content:
+            tool_args = dict(tool_args)
+            tool_args["content"] = exercise_content
+        return tool_args
+
+    def _should_skip_task(
+        self, tool_name: str, context: CollaborationContext
+    ) -> tuple[bool, str]:
+        """
+        تحديد ما إذا كان يجب تجاوز المهمة حمايةً لجودة المهمة الخارقة.
+
+        الهدف: منع أدوات غير مناسبة عند طلب تمارين تعليمية حساسة، مع الإبقاء على الأدوات
+        المعرفية المتخصصة التي تُنتج محتوى التمرين مباشرة.
+        """
+        if not tool_name:
+            return True, "no_tool_name"
+
+        has_exercise_context = False
+        if hasattr(context, "get"):
+            has_exercise_context = bool(
+                context.get("exercise_content") or context.get("exercise_metadata")
+            )
+        elif hasattr(context, "shared_memory"):
+            shared_memory = getattr(context, "shared_memory", {})
+            if isinstance(shared_memory, dict):
+                has_exercise_context = bool(
+                    shared_memory.get("exercise_content") or shared_memory.get("exercise_metadata")
+                )
+
+        if not has_exercise_context:
+            return False, ""
+
+        blocked_tools = {
+            "run_shell",
+            "execute_shell",
+            "shell",
+            "bash",
+            "sh",
+            "powershell",
+            "cmd",
+        }
+        redundant_tools = {
+            "read_file",
+            "file_exists",
+            "list_dir",
+            "analyze_path_semantics",
+        }
+        if tool_name == "get_content_raw" and has_exercise_context:
+            return True, "content_already_seeded"
+
+        if tool_name in redundant_tools and has_exercise_context:
+            return True, "redundant_with_seeded_content"
+
+        if tool_name in blocked_tools:
+            return True, "unsafe_tool_for_education_request"
+
+        return False, ""

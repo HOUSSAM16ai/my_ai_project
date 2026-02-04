@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from collections.abc import AsyncGenerator
 
 from app.core.ai_gateway import AIClient
@@ -22,6 +23,23 @@ from app.services.overmind.agents.memory import MemoryAgent
 from app.services.overmind.domain.context import InMemoryCollaborationContext
 
 logger = logging.getLogger("orchestrator-agent")
+
+
+def _extract_marking_scheme_blocks(content: str) -> list[str]:
+    """
+    استخراج كتل سلم التنقيط من النص الخام إذا كانت مضمّنة.
+    """
+    patterns = [
+        r"(?is)\n\[(grading|marking|rubric):[^\]]+\][\s\S]+?(?=\n\s*\[(ex|exercise|sol|solution):|$)",
+        r"(?i)\n(#{1,3}\s*(سلم التنقيط|سلم التصحيح|marking scheme|grading scheme))[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
+    ]
+    extracted: list[str] = []
+    for pattern in patterns:
+        for match in re.finditer(pattern, content, flags=re.DOTALL):
+            block = match.group(0).strip()
+            if block and block not in extracted:
+                extracted.append(block)
+    return extracted
 
 
 class OrchestratorRunResult:
@@ -208,8 +226,12 @@ class OrchestratorAgent:
         writer_intent = RegexIntentDetector().analyze(question)
 
         # Logic: Only include solution if EXPLICITLY requested, NOT by default
-        include_solution = writer_intent == WriterIntent.SOLUTION_REQUEST
+        include_solution = writer_intent in (
+            WriterIntent.SOLUTION_REQUEST,
+            WriterIntent.GRADING_REQUEST,
+        )
         exclude_solution = writer_intent == WriterIntent.QUESTION_ONLY_REQUEST
+        include_grading = writer_intent == WriterIntent.GRADING_REQUEST
 
         # Log for debugging
         logger.info(
@@ -225,10 +247,11 @@ class OrchestratorAgent:
         )
 
         if raw_data and raw_data.get("content"):
-            content_text = raw_data["content"]
+            full_content = raw_data["content"]
+            content_text = full_content
             requested_index = _extract_requested_index(question)
             if requested_index is not None:
-                extracted = _extract_section_by_index(content_text, requested_index)
+                extracted = _extract_section_by_index(full_content, requested_index)
                 if extracted:
                     content_text = extracted
             yield "---\n\n"
@@ -244,6 +267,13 @@ class OrchestratorAgent:
                     question, content_text, personalization_context, solution=solution
                 ):
                     yield chunk
+            if include_grading and not exclude_solution:
+                grading_blocks = _extract_marking_scheme_blocks(full_content)
+                if grading_blocks:
+                    yield "\n\n### سلم التنقيط (Marking Scheme):\n"
+                    yield "\n\n".join(grading_blocks)
+                else:
+                    yield "\n\n⚠️ لم يتم العثور على سلم التنقيط في نص المحتوى."
             else:
                 yield "هل ترغب أن أقدّم الحل أو تفضّل المحاولة أولاً؟"
         else:
