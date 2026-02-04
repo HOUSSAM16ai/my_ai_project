@@ -17,8 +17,9 @@ class TestHistoryServiceComprehensive:
         # It's better to build() the object and add/commit manually in the async fixture.
 
         async def _seed_user_and_conversations():
-            from tests.conftest import engine
             from sqlalchemy import text
+
+            from tests.conftest import engine
 
             async with engine.begin() as conn:
                 await conn.run_sync(SQLModel.metadata.create_all)
