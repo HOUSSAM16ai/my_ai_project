@@ -86,6 +86,16 @@ class AuditorAgent(AgentReflector):
         """
         logger.info("Auditor is reviewing the work using AI...")
 
+        # 0. اكتشاف نوع المدخلات (هل هي خطة أم نتيجة؟)
+        if (
+            isinstance(result, dict)
+            and "steps" in result
+            and isinstance(result["steps"], list)
+            and "strategy_name" in result
+        ):
+            logger.info("Auditor detected a Plan. Switching to Plan Review mode.")
+            return await self._review_plan(result, original_objective)
+
         # 1. التحقق السريع (Fast Fail)
         result_str = str(result).lower()
         if "error" in result_str and len(result_str) < 200:
@@ -149,6 +159,64 @@ class AuditorAgent(AgentReflector):
             return {
                 "approved": False,
                 "feedback": f"فشل نظام التدقيق الذكي. يرجى إعادة المحاولة. الخطأ: {e!s}",
+                "confidence": 0.0,
+            }
+
+    async def _review_plan(self, plan: dict[str, object], objective: str) -> dict[str, object]:
+        """
+        مراجعة خطة العمل (وليس النتائج).
+        Review the proposed plan logic.
+        """
+        system_prompt = """
+        أنت "المدقق" (The Auditor).
+        دورك هو مراجعة "خطة عمل" (Action Plan) مقترحة من الاستراتيجي.
+
+        معايير قبول الخطة:
+        1. هل الخطوات منطقية وتؤدي لتحقيق الهدف؟
+        2. هل الخطة آمنة؟ (لا تتضمن حذف ملفات حساسة أو وصول غير مصرح).
+        3. هل الأدوات المقترحة تبدو مناسبة؟
+
+        إذا كانت الخطة جيدة، وافق عليها فوراً.
+        لا ترفض الخطة لأنها "لم تنفذ بعد". هي مجرد خطة.
+
+        تنسيق الإجابة JSON فقط:
+        {
+            "approved": boolean,
+            "feedback": "string (arabic)",
+            "score": float (0.0 - 1.0)
+        }
+        """
+
+        user_message = f"""
+        الهدف: {objective}
+
+        الخطة المقترحة:
+        {json.dumps(plan, ensure_ascii=False, default=str)}
+
+        هل الخطة منطقية وآمنة للتنفيذ؟
+        """
+
+        try:
+            response_json = await self.ai.send_message(
+                system_prompt=system_prompt,
+                user_message=user_message,
+                temperature=0.1,
+            )
+
+            clean_json = self._clean_json_block(response_json)
+            review_data = json.loads(clean_json)
+
+            return {
+                "approved": review_data.get("approved", False),
+                "feedback": review_data.get("feedback", "لم يتم تقديم ملاحظات."),
+                "score": review_data.get("score", 0.0),
+            }
+
+        except Exception as e:
+            logger.error(f"AI Plan Auditor failed: {e}")
+            return {
+                "approved": False,
+                "feedback": f"فشل تدقيق الخطة: {e}",
                 "confidence": 0.0,
             }
 

@@ -35,6 +35,17 @@ def setup_module_environment():
     patcher.start()
 
     try:
+        # Explicitly remove target modules from sys.modules to ensure we get fresh imports
+        # (or at least imports that respect our environment/mocks as intended,
+        # and aren't stale Mocks from other tests)
+        targets = [
+            "microservices.research_agent.src.search_engine.models",
+            "microservices.research_agent.src.search_engine.orchestrator",
+            "microservices.research_agent.src.search_engine.strategies"
+        ]
+        for t in targets:
+            sys.modules.pop(t, None)
+
         # Import modules ONCE here
         import microservices.research_agent.src.search_engine.models as m
         import microservices.research_agent.src.search_engine.orchestrator as o
