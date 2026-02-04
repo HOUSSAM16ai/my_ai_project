@@ -7,7 +7,7 @@ from tests.conftest import engine as test_engine
 
 
 @pytest.mark.asyncio
-async def test_validate_and_fix_schema_bug_on_sqlite(init_db):
+async def test_validate_and_fix_schema_bug_on_sqlite():
     """
     Verifies that validate_and_fix_schema passes on SQLite
     after the fix.

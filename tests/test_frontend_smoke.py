@@ -3,7 +3,7 @@ from httpx import ASGITransport, AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_frontend_smoke_flow(init_db, test_app):
+async def test_frontend_smoke_flow(test_app):
     """
     Verifies the critical frontend integration flow:
     1. Root path (/) serves index.html
