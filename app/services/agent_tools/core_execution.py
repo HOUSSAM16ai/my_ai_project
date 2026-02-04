@@ -12,9 +12,9 @@ from .utils import _coerce_to_tool_result, _dbg
 
 def _autofill_enabled() -> bool:
     """إرجاع حالة تفعيل الملء التلقائي للأدوات."""
-    from . import core
+    from .definitions import AUTOFILL
 
-    return core.AUTOFILL
+    return AUTOFILL
 
 
 def _apply_autofill(kwargs: dict[str, object], canonical_name: str, trace_id: str) -> None:
