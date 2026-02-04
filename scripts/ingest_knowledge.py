@@ -10,6 +10,7 @@ from app.core.database import async_session_factory
 from app.core.db_schema import validate_schema_on_startup
 from app.core.gateway.simple_client import SimpleAIClient
 from app.core.logging import get_logger
+
 try:
     from microservices.research_agent.src.search_engine.retriever import get_embedding_model
 except ImportError:
