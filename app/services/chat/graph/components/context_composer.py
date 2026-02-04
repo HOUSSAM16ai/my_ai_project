@@ -39,6 +39,10 @@ class FirewallContextComposer(IContextComposer):
         r"(?is)\n\[(sol|solution):[^\]]+\][\s\S]+?(?=\n\s*\[(ex|exercise):|$)",
         r"(?is)\n\s*\*{0,2}حل\s+التمرين[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
     ]
+    GRADING_PATTERNS: ClassVar[list[str]] = [
+        r"(?is)\n\[(grading|marking|rubric):[^\]]+\][\s\S]+?(?=\n\s*\[(ex|exercise|sol|solution):|$)",
+        r"(?i)\n(#{1,3}\s*(سلم التنقيط|سلم التصحيح|marking scheme|grading scheme))[\s\S]+?(?=\n\s*\*{0,2}(#{1,3}|Exercise|Question|السؤال|تمرين|التمرين)|$)",
+    ]
 
     def compose(
         self,
@@ -49,7 +53,7 @@ class FirewallContextComposer(IContextComposer):
         if not search_results:
             return ""
 
-        allow_solution, show_hidden_marker = self._derive_intent_flags(intent)
+        allow_solution, allow_grading, show_hidden_marker = self._derive_intent_flags(intent)
         context_text = ""
         for item in search_results:
             node_type = str(item.get("type", "")).lower()
@@ -66,6 +70,7 @@ class FirewallContextComposer(IContextComposer):
                 item=item,
                 content=content,
                 allow_solution=allow_solution,
+                allow_grading=allow_grading,
                 show_solution_banner=show_hidden_marker,
             )
             context_text += self._render_context_entry(
@@ -74,11 +79,12 @@ class FirewallContextComposer(IContextComposer):
 
         return context_text
 
-    def _derive_intent_flags(self, intent: WriterIntent) -> tuple[bool, bool]:
+    def _derive_intent_flags(self, intent: WriterIntent) -> tuple[bool, bool, bool]:
         """يشتق أعلام التحكم الرئيسية من نية المستخدم."""
-        allow_solution = intent == WriterIntent.SOLUTION_REQUEST
+        allow_solution = intent in (WriterIntent.SOLUTION_REQUEST, WriterIntent.GRADING_REQUEST)
+        allow_grading = intent == WriterIntent.GRADING_REQUEST
         show_hidden_marker = intent == WriterIntent.GENERAL_INQUIRY
-        return allow_solution, show_hidden_marker
+        return allow_solution, allow_grading, show_hidden_marker
 
     def _sanitize_content(self, content: str, show_hidden_marker: bool) -> str:
         """
@@ -101,6 +107,7 @@ class FirewallContextComposer(IContextComposer):
         item: dict[str, object],
         content: str,
         allow_solution: bool,
+        allow_grading: bool,
         show_solution_banner: bool,
     ) -> str:
         """يبني عرض الحل بناءً على نية المستخدم."""
@@ -118,11 +125,19 @@ class FirewallContextComposer(IContextComposer):
             embedded_solutions = self._extract_solution_blocks(content)
             if embedded_solutions:
                 solution_data["embedded_solution"] = "\n\n".join(embedded_solutions)
+        grading_block = ""
+        if allow_grading:
+            grading_blocks = self._extract_grading_blocks(content)
+            if grading_blocks:
+                grading_block = "\n\n".join(grading_blocks)
         if solution_data:
             combined_sols = "\n\n".join(
                 [f"**{k.title()}**:\n{v}" for k, v in solution_data.items()]
             )
-            return f"### الحل النموذجي (Official Solution):\n{combined_sols}"
+            grading_section = f"\n\n### سلم التنقيط (Marking Scheme):\n{grading_block}" if grading_block else ""
+            return f"### الحل النموذجي (Official Solution):\n{combined_sols}{grading_section}"
+        if grading_block:
+            return f"### سلم التنقيط (Marking Scheme):\n{grading_block}"
         return "⚠️ [No official solution record found in database]"
 
     def _render_context_entry(self, sanitized_content: str, solution_display: str) -> str:
@@ -141,6 +156,18 @@ class FirewallContextComposer(IContextComposer):
                 if block and block not in extracted:
                     extracted.append(block)
 
+        return extracted
+
+    def _extract_grading_blocks(self, content: str) -> list[str]:
+        """
+        استخراج كتل سلم التنقيط المضمّنة داخل المحتوى.
+        """
+        extracted: list[str] = []
+        for pattern in self.GRADING_PATTERNS:
+            for match in re.finditer(pattern, content, flags=re.DOTALL):
+                block = match.group(0).strip()
+                if block and block not in extracted:
+                    extracted.append(block)
         return extracted
 
     def _extract_requested_segment(self, content: str, user_message: str) -> str:

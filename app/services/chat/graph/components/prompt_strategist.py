@@ -34,7 +34,7 @@ class StandardPromptStrategist(IPromptStrategist):
         )
 
         dual_mode_instructions = ""
-        if intent == WriterIntent.SOLUTION_REQUEST:
+        if intent in (WriterIntent.SOLUTION_REQUEST, WriterIntent.GRADING_REQUEST):
             dual_mode_instructions = (
                 "\n### بروتوكول الوضع المزدوج (Dual Mode Protocol):\n"
                 "عندما يطلب الطالب الحل، يجب عليك تقديم الرد في جزأين منفصلين:\n"
@@ -45,6 +45,11 @@ class StandardPromptStrategist(IPromptStrategist):
                 "   - اشرح الحل بأسلوب مبسط وعميق.\n"
                 f"   - مستوى الطالب: **{profile.level}**.\n"
             )
+            if intent == WriterIntent.GRADING_REQUEST:
+                dual_mode_instructions += (
+                    "3. **سلم التنقيط:**\n"
+                    "   - اعرض سلم التنقيط الرسمي إذا كان متوفراً في السياق.\n"
+                )
 
         diagnosis_instructions = ""
         if intent == WriterIntent.DIAGNOSIS_REQUEST:
