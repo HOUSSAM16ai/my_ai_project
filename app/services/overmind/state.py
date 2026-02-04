@@ -98,6 +98,35 @@ class MissionStateManager:
             # Explicit commit to ensure status update is visible
             await self.session.commit()
 
+    async def complete_mission(
+        self,
+        mission_id: int,
+        result_summary: str | None = None,
+        result_json: dict[str, object] | None = None,
+    ) -> None:
+        """
+        Completes the mission, updates the result summary, and logs the completion event.
+        Fixes the visibility issue in Admin Dashboard.
+        """
+        stmt = select(Mission).where(Mission.id == mission_id)
+        result = await self.session.execute(stmt)
+        mission = result.scalar_one_or_none()
+        if mission:
+            mission.status = MissionStatus.SUCCESS
+            mission.updated_at = utc_now()
+            if result_summary:
+                mission.result_summary = result_summary
+
+            # Log completion event
+            payload = {"result": result_json} if result_json else {}
+            await self.log_event(
+                mission_id,
+                MissionEventType.MISSION_COMPLETED,
+                payload,
+            )
+            # Explicit commit to ensure persistence
+            await self.session.commit()
+
     async def log_event(
         self, mission_id: int, event_type: MissionEventType, payload: dict[str, object]
     ) -> None:

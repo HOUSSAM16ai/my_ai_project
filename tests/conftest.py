@@ -316,6 +316,7 @@ def admin_user(db_session: AsyncSession, event_loop: asyncio.AbstractEventLoop) 
 
     async def _create_user() -> User:
         from sqlalchemy import select
+
         stmt = select(User).where(User.email == "admin@example.com")
         existing = (await db_session.execute(stmt)).scalar_one_or_none()
         if existing:
