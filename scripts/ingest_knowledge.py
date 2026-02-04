@@ -10,6 +10,7 @@ from app.core.database import async_session_factory
 from app.core.db_schema import validate_schema_on_startup
 from app.core.gateway.simple_client import SimpleAIClient
 from app.core.logging import get_logger
+
 try:
     from microservices.research_agent.src.search_engine.retriever import get_embedding_model
 except ImportError:
@@ -17,8 +18,10 @@ except ImportError:
     class DummyEmbedding:
         def get_text_embedding(self, text):
             return [0.1] * 384  # standard dimension
+
     def get_embedding_model():
         return DummyEmbedding()
+
 
 # Configure logger
 logger = get_logger("knowledge-ingestion")
