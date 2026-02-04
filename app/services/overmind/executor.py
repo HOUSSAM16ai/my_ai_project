@@ -85,10 +85,21 @@ class TaskExecutor:
 
             # 4. تنسيق النتيجة
             result_text = str(result)
+            result_data = None
+
             if isinstance(result, dict):
                 result_text = json.dumps(result, default=str)
+                result_data = result
+            elif hasattr(result, "to_dict"):
+                result_data = result.to_dict()
+                result_text = json.dumps(result_data, default=str)
 
-            return {"status": "success", "result_text": result_text, "meta": {"tool": tool_name}}
+            return {
+                "status": "success",
+                "result_text": result_text,
+                "result_data": result_data,
+                "meta": {"tool": tool_name},
+            }
 
         except Exception as e:
             logger.error(f"Task Execution Error ({tool_name}): {e}", exc_info=True)

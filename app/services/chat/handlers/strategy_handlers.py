@@ -352,8 +352,28 @@ class MissionComplexHandler(IntentHandler):
                             if isinstance(t, dict):
                                 name = t.get("name", "مهمة")
                                 res = t.get("result", {})
+
                                 val = res.get("result_text") if isinstance(res, dict) else str(res)
-                                lines.append(f"🔹 **{name}**:\n{val}\n")
+                                file_content = ""
+
+                                # Auto-read file content if written
+                                result_data = res.get("result_data") if isinstance(res, dict) else None
+                                if result_data and isinstance(result_data, dict):
+                                    data_payload = result_data.get("data", {})
+                                    if (
+                                        isinstance(data_payload, dict)
+                                        and data_payload.get("written")
+                                        and data_payload.get("path")
+                                    ):
+                                        path = data_payload["path"]
+                                        try:
+                                            with open(path, encoding="utf-8") as f:
+                                                content = f.read()
+                                            file_content = f"\n\n**محتوى الملف ({path}):**\n```\n{content}\n```"
+                                        except Exception as e:
+                                            logger.warning(f"Failed to auto-read file {path}: {e}")
+
+                                lines.append(f"🔹 **{name}**:\n{val}\n{file_content}\n")
                         result_text = "\n".join(lines)
                     else:
                         result_text = json.dumps(result, ensure_ascii=False, indent=2)
