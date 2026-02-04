@@ -152,7 +152,7 @@ run_semgrep_scan() {
     echo -e "${CYAN}🔍 SEMGREP SAST SCAN (${SEMGREP_MODE^^} MODE)${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    
+
     # Check if Semgrep is installed
     if ! command -v semgrep &> /dev/null; then
         echo -e "${YELLOW}⚠️  Semgrep is not installed${NC}"
@@ -160,20 +160,20 @@ run_semgrep_scan() {
         echo -e "${CYAN}Or use Docker: docker run --rm -v \"\${PWD}:/src\" returntocorp/semgrep${NC}"
         return 0
     fi
-    
+
     echo -e "${CYAN}Running Semgrep security scan (${SEMGREP_MODE} mode)...${NC}"
     echo ""
-    
+
     # Configure rulesets based on mode
     local RULESETS=""
     local USE_ONLINE_RULES=true
-    
+
     # Check if we can access semgrep.dev
     if ! curl -s --fail --connect-timeout 5 --max-time 10 https://semgrep.dev > /dev/null 2>&1; then
         echo -e "${YELLOW}⚠️  Cannot access semgrep.dev - using local rules only${NC}"
         USE_ONLINE_RULES=false
     fi
-    
+
     if [ "$USE_ONLINE_RULES" = true ]; then
         case "$SEMGREP_MODE" in
             rapid)
@@ -193,7 +193,7 @@ run_semgrep_scan() {
                 ;;
         esac
     fi
-    
+
     # Always add custom rules if exists (these are local)
     if [ -f "${PROJECT_ROOT}/.semgrep.yml" ]; then
         if [ -z "$RULESETS" ]; then
@@ -208,15 +208,15 @@ run_semgrep_scan() {
     else
         RULESETS="--config $RULESETS"
     fi
-    
+
     # Run Semgrep with appropriate options
     echo -e "${CYAN}Configuration: ${RULESETS}${NC}"
-    
+
     # Add exclusions
     if [ -f "${PROJECT_ROOT}/.semgrepignore" ]; then
         echo -e "${CYAN}Using .semgrepignore for exclusions${NC}"
     fi
-    
+
     # Run Semgrep scan
     local SEMGREP_EXIT=0
     if semgrep scan \
@@ -231,7 +231,7 @@ run_semgrep_scan() {
         SEMGREP_EXIT=$?
         echo -e "${YELLOW}⚠️  Semgrep found some issues${NC}"
     fi
-    
+
     # Generate SARIF report for GitHub (if online rules were used)
     if [ "$USE_ONLINE_RULES" = true ]; then
         semgrep scan \
@@ -240,12 +240,12 @@ run_semgrep_scan() {
             --output="${REPORT_DIR}/semgrep.sarif" \
             . 2>/dev/null || true
     fi
-    
+
     # Generate text summary
     semgrep scan \
         $RULESETS \
         . > "${REPORT_DIR}/semgrep-summary.txt" 2>&1 || true
-    
+
     # Parse results
     if [ -f "${REPORT_DIR}/semgrep-report.json" ]; then
         # Count findings by severity (using jq if available, otherwise grep)
@@ -261,7 +261,7 @@ run_semgrep_scan() {
             INFO_COUNT=$(grep -o '"severity": "INFO"' "${REPORT_DIR}/semgrep-report.json" | wc -l || echo "0")
             SEMGREP_FINDINGS=$((ERROR_COUNT + WARNING_COUNT + INFO_COUNT))
         fi
-        
+
         echo ""
         echo -e "${CYAN}📊 Semgrep Findings:${NC}"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -271,14 +271,14 @@ run_semgrep_scan() {
         echo -e "  📊 Total:   ${SEMGREP_FINDINGS} findings"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
-        
+
         # Show summary (last 30 lines)
         if [ -f "${REPORT_DIR}/semgrep-summary.txt" ]; then
             echo -e "${CYAN}Semgrep Summary (last 30 lines):${NC}"
             tail -30 "${REPORT_DIR}/semgrep-summary.txt"
             echo ""
         fi
-        
+
         # Check if we should fail
         if [ "$FAIL_ON_FINDINGS" = true ] && [ "$ERROR_COUNT" -gt 0 ]; then
             echo -e "${RED}❌ CRITICAL: ${ERROR_COUNT} error-level findings detected${NC}"
@@ -290,7 +290,7 @@ run_semgrep_scan() {
             fi
         fi
     fi
-    
+
     echo ""
 }
 
@@ -309,34 +309,34 @@ if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "co
     echo -e "${CYAN}🛡️  CODE SECURITY SCAN (Bandit)${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    
+
     # Check if Bandit is installed
     if ! command -v bandit &> /dev/null; then
         echo -e "${RED}❌ Bandit is not installed${NC}"
         echo -e "${YELLOW}Install with: pip install bandit[toml]${NC}"
         exit 1
     fi
-    
+
     # Run Bandit
     echo -e "${CYAN}Running Bandit security scan...${NC}"
-    
+
     # JSON report
     if bandit -r app/ -c pyproject.toml -f json -o "${REPORT_DIR}/bandit-report.json" 2>&1 | tee "${REPORT_DIR}/bandit-output.txt"; then
         echo -e "${GREEN}✅ Bandit scan completed without critical issues${NC}"
     else
         echo -e "${YELLOW}⚠️  Bandit found some issues (analyzing...)${NC}"
     fi
-    
+
     # Text report for display
     bandit -r app/ -c pyproject.toml > "${REPORT_DIR}/bandit-summary.txt" 2>&1 || true
-    
+
     # Extract severity counts
     if [ -f "${REPORT_DIR}/bandit-output.txt" ]; then
         HIGH_ISSUES=$(grep -o "High: [0-9]*" "${REPORT_DIR}/bandit-output.txt" | grep -o "[0-9]*" || echo "0")
         MEDIUM_ISSUES=$(grep -o "Medium: [0-9]*" "${REPORT_DIR}/bandit-output.txt" | grep -o "[0-9]*" || echo "0")
         LOW_ISSUES=$(grep -o "Low: [0-9]*" "${REPORT_DIR}/bandit-output.txt" | grep -o "[0-9]*" || echo "0")
     fi
-    
+
     echo ""
     echo -e "${CYAN}📊 Security Summary:${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -345,12 +345,12 @@ if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "co
     echo -e "  🟢 Low Severity:    ${LOW_ISSUES} issues"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    
+
     # Show last 20 lines of summary
     echo -e "${CYAN}Last 20 lines of Bandit report:${NC}"
     tail -20 "${REPORT_DIR}/bandit-summary.txt" || true
     echo ""
-    
+
     # Check threshold (max 15 high severity - progressive improvement)
     # NOTE: This is a transitional threshold. Target is <5 for true superhuman standards
     # Progressive improvement: 15 → 10 → 5 → 0
@@ -385,14 +385,14 @@ if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "de
     echo -e "${CYAN}🔐 DEPENDENCY SECURITY SCAN (Safety)${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    
+
     # Check if Safety is installed
     if ! command -v safety &> /dev/null; then
         echo -e "${YELLOW}⚠️  Safety is not installed (optional)${NC}"
         echo -e "${CYAN}Install with: pip install safety${NC}"
     else
         echo -e "${CYAN}Checking dependencies for known vulnerabilities...${NC}"
-        
+
         # JSON report
         if safety check --json --output "${REPORT_DIR}/safety-report.json" 2>&1 | tee "${REPORT_DIR}/safety-output.txt"; then
             echo -e "${GREEN}✅ No known vulnerabilities found in dependencies${NC}"
@@ -402,10 +402,10 @@ if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "de
             echo "Last 20 lines of Safety report:"
             tail -20 "${REPORT_DIR}/safety-output.txt" || true
         fi
-        
+
         # Text report
         safety check > "${REPORT_DIR}/safety-summary.txt" 2>&1 || true
-        
+
         echo ""
         echo -e "${CYAN}💡 Note: Dependency vulnerabilities are monitored but don't block deployment${NC}"
         echo -e "${CYAN}Review and plan updates for affected dependencies${NC}"
@@ -421,9 +421,9 @@ if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "se
     echo -e "${CYAN}🔑 SECRET DETECTION SCAN${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    
+
     echo -e "${CYAN}Scanning for exposed secrets...${NC}"
-    
+
     # Simple pattern-based secret detection
     SECRET_PATTERNS=(
         "password.*=.*['\"].*['\"]"
@@ -433,9 +433,9 @@ if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "se
         "AWS_ACCESS_KEY"
         "PRIVATE[_-]?KEY"
     )
-    
+
     SECRETS_FOUND=0
-    
+
     for pattern in "${SECRET_PATTERNS[@]}"; do
         if grep -r -i -E "$pattern" app/ tests/ --exclude-dir=.git --exclude-dir=__pycache__ --exclude="*.pyc" > "${REPORT_DIR}/secrets-${pattern}.txt" 2>/dev/null; then
             COUNT=$(wc -l < "${REPORT_DIR}/secrets-${pattern}.txt" || echo "0")
@@ -446,7 +446,7 @@ if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "se
             rm -f "${REPORT_DIR}/secrets-${pattern}.txt"
         fi
     done
-    
+
     if [ $SECRETS_FOUND -gt 0 ]; then
         echo ""
         echo -e "${YELLOW}⚠️  Found $SECRETS_FOUND potential secrets in code${NC}"
@@ -455,7 +455,7 @@ if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "se
     else
         echo -e "${GREEN}✅ No obvious secrets detected${NC}"
     fi
-    
+
     echo ""
 fi
 
@@ -467,9 +467,9 @@ if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "re
     echo -e "${CYAN}📋 GENERATING SBOM (Software Bill of Materials)${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    
+
     echo -e "${CYAN}Generating dependency list...${NC}"
-    
+
     # Generate simple SBOM from requirements
     {
         echo "# Software Bill of Materials (SBOM)"
@@ -480,7 +480,7 @@ if [ "$SCAN_MODE" = "all" ] || [ "$SCAN_MODE" = "full" ] || [ "$SCAN_MODE" = "re
         echo ""
         pip freeze
     } > "${REPORT_DIR}/SBOM.txt"
-    
+
     echo -e "${GREEN}✅ SBOM generated: ${REPORT_DIR}/SBOM.txt${NC}"
     echo ""
 fi

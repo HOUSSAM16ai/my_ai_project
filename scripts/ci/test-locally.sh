@@ -24,12 +24,12 @@ FAILED=0
 run_check() {
     local name="$1"
     local cmd="$2"
-    
+
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "🔍 Running: $name"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
+
     if eval "$cmd"; then
         echo -e "${GREEN}✅ $name: PASSED${NC}"
     else

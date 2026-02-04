@@ -48,7 +48,7 @@ EMPTY_VALUE=
 INVALID KEY=bad
 
 # Value with trimming needed
-  TRIMMED_KEY  =  trimmed_value  
+  TRIMMED_KEY  =  trimmed_value
 
 # Admin name with quotes
 ADMIN_NAME="Admin User"
@@ -105,15 +105,15 @@ echo "----------------------------------------"
 test_var() {
   local var_name="$1"
   local expected="$2"
-  
+
   # Check if variable is set (even if empty)
   if [ -z "${!var_name+x}" ]; then
     echo -e "${RED}❌${NC} $var_name is not set (expected: \"$expected\")"
     return 1
   fi
-  
+
   local actual="${!var_name}"
-  
+
   if [ "$actual" = "$expected" ]; then
     echo -e "${GREEN}✅${NC} $var_name = \"$actual\""
   else

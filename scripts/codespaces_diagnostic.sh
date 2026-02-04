@@ -4,7 +4,7 @@
 #
 # تشخيص صحة بيئة GitHub Codespaces - أداة شاملة لفحص النظام
 # Comprehensive health check tool for diagnosing application issues in Codespaces
-# 
+#
 # Purpose:
 #   Comprehensive health check for the application running in Codespaces
 #   to diagnose crashes and performance issues
@@ -36,7 +36,7 @@ NC='\033[0m' # No Color
 print_status() {
     local status=$1
     local message=$2
-    
+
     case "$status" in
         "OK")
             echo -e "${GREEN}✅ OK${NC} - $message"
@@ -195,7 +195,7 @@ if [ -f ".env" ]; then
     ENV_SIZE=$(wc -c < .env)
     if [ "$ENV_SIZE" -gt 100 ]; then
         print_status "OK" ".env file exists (${ENV_SIZE} bytes)"
-        
+
         # Check critical variables (without showing values)
         for var in DATABASE_URL SECRET_KEY; do
             if grep -q "^${var}=" .env; then

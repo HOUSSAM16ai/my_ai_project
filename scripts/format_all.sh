@@ -93,15 +93,15 @@ echo ""
 run_formatter() {
     local name=$1
     local cmd=$2
-    
+
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${CYAN}🔧 Running $name...${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    
+
     if [ "$VERBOSE" = true ]; then
         echo "Command: $cmd"
     fi
-    
+
     if eval "$cmd"; then
         echo -e "${GREEN}✅ $name: PASSED${NC}"
         return 0

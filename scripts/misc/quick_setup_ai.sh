@@ -47,12 +47,12 @@ case $choice in
         echo ""
         echo "Enter your OpenRouter API key (starts with sk-or-v1-):"
         read -r api_key
-        
+
         if [[ ! $api_key == sk-or-* ]]; then
             echo "⚠️  Warning: OpenRouter keys usually start with 'sk-or-'"
             echo "   But continuing anyway..."
         fi
-        
+
         # Update .env file
         if grep -q "^OPENROUTER_API_KEY=" .env 2>/dev/null; then
             # Update existing line
@@ -61,20 +61,20 @@ case $choice in
             # Add new line
             echo "OPENROUTER_API_KEY=\"$api_key\"" >> .env
         fi
-        
+
         echo "✅ OpenRouter API key configured!"
         ;;
-        
+
     2)
         echo ""
         echo "Enter your OpenAI API key (starts with sk-):"
         read -r api_key
-        
+
         if [[ ! $api_key == sk-* ]]; then
             echo "⚠️  Warning: OpenAI keys usually start with 'sk-'"
             echo "   But continuing anyway..."
         fi
-        
+
         # Update .env file
         if grep -q "^OPENAI_API_KEY=" .env 2>/dev/null; then
             # Update existing line
@@ -83,10 +83,10 @@ case $choice in
             # Add new line
             echo "OPENAI_API_KEY=\"$api_key\"" >> .env
         fi
-        
+
         echo "✅ OpenAI API key configured!"
         ;;
-        
+
     *)
         echo "❌ Invalid choice. Exiting."
         exit 1

@@ -155,15 +155,15 @@ if [ "$TOKEN_NEEDS_SETUP" = true ]; then
     echo "     ${CHECK} workflow"
     echo "  4. Copy the generated token"
     echo ""
-    
+
     read -p "Do you want to enter your token now? (y/n) | هل تريد إدخال الرمز الآن؟ " -n 1 -r
     echo ""
-    
+
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo ""
         read -sp "Enter your AI Agent Token (GitHub PAT): " GITHUB_TOKEN
         echo ""
-        
+
         if [ -z "$GITHUB_TOKEN" ]; then
             print_error "Token cannot be empty!"
             print_info "You can manually add it to .env file later."
@@ -179,12 +179,12 @@ if [ "$TOKEN_NEEDS_SETUP" = true ]; then
                 else
                     echo "AI_AGENT_TOKEN=\"${GITHUB_TOKEN}\"" >> .env
                 fi
-                
+
                 # Also add legacy token for backward compatibility
                 if ! grep -q "^GITHUB_PERSONAL_ACCESS_TOKEN=" .env; then
                     echo "GITHUB_PERSONAL_ACCESS_TOKEN=\"\${AI_AGENT_TOKEN}\"" >> .env
                 fi
-                
+
                 print_success "AI Agent Token added to .env file"
                 print_info "Token will work in GitHub Actions, Codespaces, and Dependabot!"
             else
@@ -272,19 +272,19 @@ case $STARTUP_CHOICE in
         if [ -f .env ]; then
             source .env
         fi
-        
+
         if [ -z "$GITHUB_PERSONAL_ACCESS_TOKEN" ]; then
             print_error "GITHUB_PERSONAL_ACCESS_TOKEN not set in .env"
             exit 1
         fi
-        
+
         docker run -d \
             --name github-mcp-server \
             --network host \
             --restart unless-stopped \
             -e GITHUB_PERSONAL_ACCESS_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}" \
             ghcr.io/github/github-mcp-server
-        
+
         print_success "MCP container started"
         ;;
     4)
@@ -304,18 +304,18 @@ print_header "${CHECK} Verification - التحقق"
 echo "Checking container status..."
 if docker ps | grep -q github-mcp; then
     print_success "GitHub MCP Server container is running"
-    
+
     echo ""
     print_info "Container details:"
     docker ps --filter "name=github-mcp" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-    
+
     echo ""
     print_info "To view logs, run:"
     echo "  docker logs github-mcp-server"
     echo ""
     print_info "To stop the server, run:"
     echo "  docker stop github-mcp-server"
-    
+
 else
     print_warning "GitHub MCP Server container is not running"
     print_info "You can start it manually using one of the methods above."

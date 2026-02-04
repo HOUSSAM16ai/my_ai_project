@@ -87,13 +87,13 @@ run_check() {
     local name=$1
     local cmd=$2
     local required=${3:-true}  # Is this check required to pass?
-    
+
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-    
+
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${CYAN}🔍 Running: $name${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    
+
     if eval "$cmd" > /tmp/check_output_$TOTAL_CHECKS.log 2>&1; then
         echo -e "${GREEN}✅ $name: PASSED${NC}"
         RESULTS[$name]="PASSED"
@@ -121,16 +121,16 @@ run_check() {
 if [ "$RUN_MODE" = "all" ] || [ "$RUN_MODE" = "fast" ]; then
     echo -e "${CYAN}📋 SECTION 1: Code Style & Formatting${NC}"
     echo ""
-    
+
     run_check "Black formatting" "black --check --line-length=100 app/ tests/" true
     echo ""
-    
+
     run_check "isort import sorting" "isort --check-only --profile=black --line-length=100 app/ tests/" true
     echo ""
-    
+
     run_check "Ruff linting" "ruff check app/ tests/" true
     echo ""
-    
+
     run_check "Flake8 style checking" "flake8 app/ tests/ --count --statistics" true
     echo ""
 fi
@@ -141,7 +141,7 @@ fi
 if [ "$RUN_MODE" = "all" ] || [ "$RUN_MODE" = "security" ]; then
     echo -e "${CYAN}🔒 SECTION 2: Security & Vulnerability Scanning${NC}"
     echo ""
-    
+
     # Bandit security scan
     echo -e "${CYAN}Running Bandit security scan...${NC}"
     if bandit -r app/ -c pyproject.toml -f json -o /tmp/bandit-report.json 2>&1 | tee /tmp/bandit-output.txt; then
@@ -152,12 +152,12 @@ if [ "$RUN_MODE" = "all" ] || [ "$RUN_MODE" = "security" ]; then
         # Check severity counts
         HIGH_COUNT=$(grep -o "High: [0-9]*" /tmp/bandit-output.txt | grep -o "[0-9]*" || echo "0")
         MEDIUM_COUNT=$(grep -o "Medium: [0-9]*" /tmp/bandit-output.txt | grep -o "[0-9]*" || echo "0")
-        
+
         echo ""
         echo -e "${YELLOW}📊 Security Summary:${NC}"
         echo "  🔴 High Severity:   $HIGH_COUNT issues"
         echo "  🟡 Medium Severity: $MEDIUM_COUNT issues"
-        
+
         if [ "$HIGH_COUNT" -gt 15 ]; then
             echo -e "${RED}❌ Bandit: Too many high severity issues ($HIGH_COUNT > 15)${NC}"
             RESULTS["Bandit security scan"]="FAILED"
@@ -168,10 +168,10 @@ if [ "$RUN_MODE" = "all" ] || [ "$RUN_MODE" = "security" ]; then
             PASSED_CHECKS=$((PASSED_CHECKS + 1))
         fi
     fi
-    
+
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
     echo ""
-    
+
     # Safety dependency check (informational)
     run_check "Safety dependency scan" "safety check --json --output /tmp/safety-report.json" false || true
     echo ""
@@ -183,7 +183,7 @@ fi
 if [ "$RUN_MODE" = "all" ] || [ "$RUN_MODE" = "type" ]; then
     echo -e "${CYAN}🔍 SECTION 3: Type Safety (Progressive)${NC}"
     echo ""
-    
+
     run_check "MyPy type checking" "mypy app/ --ignore-missing-imports --show-error-codes" false
     echo ""
 fi
@@ -194,17 +194,17 @@ fi
 if [ "$RUN_MODE" = "all" ]; then
     echo -e "${CYAN}📊 SECTION 4: Code Complexity & Maintainability${NC}"
     echo ""
-    
+
     echo -e "${CYAN}Running Radon complexity analysis...${NC}"
     radon cc app/ -a -nb --total-average | tee /tmp/radon-output.txt
     echo -e "${GREEN}✅ Complexity analysis complete${NC}"
     echo ""
-    
+
     echo -e "${CYAN}Running maintainability index...${NC}"
     radon mi app/ -nb --min B --show | tee /tmp/radon-mi.txt
     echo -e "${GREEN}✅ Maintainability index complete${NC}"
     echo ""
-    
+
     # Xenon complexity check (informational)
     run_check "Xenon complexity threshold" "xenon --max-absolute B --max-modules B --max-average A app/" false || true
     echo ""

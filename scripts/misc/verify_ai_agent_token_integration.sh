@@ -103,11 +103,11 @@ print_header "${GEAR} Test 1: Local Environment Configuration"
 
 if [ -f .env ]; then
     print_success ".env file exists"
-    
+
     # Check for AI_AGENT_TOKEN
     if grep -q "^AI_AGENT_TOKEN=" .env 2>/dev/null; then
         TOKEN_VALUE=$(grep "^AI_AGENT_TOKEN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d ' ')
-        
+
         if [ -z "$TOKEN_VALUE" ] || [ "$TOKEN_VALUE" == "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" ]; then
             check_warn "AI_AGENT_TOKEN is not configured yet"
             echo "       Add your token to .env file"
@@ -122,7 +122,7 @@ if [ -f .env ]; then
         check_fail "AI_AGENT_TOKEN not found in .env"
         echo "       Add: AI_AGENT_TOKEN=\"ghp_your_token_here\""
     fi
-    
+
     # Check for legacy token
     if grep -q "^GITHUB_PERSONAL_ACCESS_TOKEN=" .env 2>/dev/null; then
         check_pass "Legacy GITHUB_PERSONAL_ACCESS_TOKEN found (backward compatibility)"
@@ -140,13 +140,13 @@ print_header "${GEAR} Test 2: Example Configuration File"
 
 if [ -f .env.example ]; then
     print_success ".env.example exists"
-    
+
     if grep -q "AI_AGENT_TOKEN=" .env.example; then
         check_pass "AI_AGENT_TOKEN template found in .env.example"
     else
         check_fail "AI_AGENT_TOKEN not found in .env.example"
     fi
-    
+
     # Check for documentation
     if grep -q "SUPERHUMAN" .env.example; then
         check_pass "Superhuman documentation included"
@@ -163,23 +163,23 @@ print_header "${GEAR} Test 3: Docker Compose Configuration"
 
 if [ -f docker-compose.yml ]; then
     print_success "docker-compose.yml exists"
-    
+
     # Check for MCP server configuration
     if grep -q "github_mcp:" docker-compose.yml; then
         check_pass "GitHub MCP service configured"
-        
+
         # Check for AI_AGENT_TOKEN support
         if grep -q "AI_AGENT_TOKEN" docker-compose.yml; then
             check_pass "AI_AGENT_TOKEN integrated in MCP service"
         else
             check_warn "AI_AGENT_TOKEN not found in docker-compose.yml"
         fi
-        
+
         # Check for dual token support
         if grep -q "GITHUB_PERSONAL_ACCESS_TOKEN.*AI_AGENT_TOKEN" docker-compose.yml; then
             check_pass "Dual token support enabled (backward compatibility)"
         fi
-        
+
         # Check for superhuman labels
         if grep -q "superhuman" docker-compose.yml; then
             check_pass "Superhuman edition configured"
@@ -199,19 +199,19 @@ print_header "${GEAR} Test 4: GitHub Codespaces Configuration"
 
 if [ -f .devcontainer/devcontainer.json ]; then
     print_success ".devcontainer/devcontainer.json exists"
-    
+
     # Check for AI_AGENT_TOKEN
     if grep -q "AI_AGENT_TOKEN" .devcontainer/devcontainer.json; then
         check_pass "AI_AGENT_TOKEN configured for Codespaces"
     else
         check_fail "AI_AGENT_TOKEN not found in devcontainer.json"
     fi
-    
+
     # Check for localEnv support
     if grep -q '${localEnv:AI_AGENT_TOKEN}' .devcontainer/devcontainer.json; then
         check_pass "Secret loading from Codespaces configured"
     fi
-    
+
     # Check for backward compatibility
     if grep -q "GITHUB_PERSONAL_ACCESS_TOKEN" .devcontainer/devcontainer.json; then
         check_pass "Legacy token support maintained"
@@ -230,23 +230,23 @@ WORKFLOWS_DIR=".github/workflows"
 
 if [ -d "$WORKFLOWS_DIR" ]; then
     print_success "GitHub workflows directory exists"
-    
+
     # Check for MCP integration workflow
     if [ -f "$WORKFLOWS_DIR/mcp-server-integration.yml" ]; then
         check_pass "MCP Server integration workflow found"
-        
+
         # Check for AI_AGENT_TOKEN usage
         if grep -q "AI_AGENT_TOKEN" "$WORKFLOWS_DIR/mcp-server-integration.yml"; then
             check_pass "AI_AGENT_TOKEN used in workflow"
         else
             check_warn "AI_AGENT_TOKEN not found in MCP workflow"
         fi
-        
+
         # Check for secrets reference
         if grep -q 'secrets.AI_AGENT_TOKEN' "$WORKFLOWS_DIR/mcp-server-integration.yml"; then
             check_pass "GitHub secrets correctly referenced"
         fi
-        
+
         # Check for superhuman features
         if grep -q "SUPERHUMAN" "$WORKFLOWS_DIR/mcp-server-integration.yml"; then
             check_pass "Superhuman features enabled"
@@ -255,11 +255,11 @@ if [ -d "$WORKFLOWS_DIR" ]; then
         check_warn "MCP Server integration workflow not found"
         echo "       Create .github/workflows/mcp-server-integration.yml"
     fi
-    
+
     # Check all workflows for AI_AGENT_TOKEN
     WORKFLOW_COUNT=$(find "$WORKFLOWS_DIR" -name "*.yml" -o -name "*.yaml" | wc -l)
     AI_TOKEN_WORKFLOWS=$(grep -l "AI_AGENT_TOKEN" "$WORKFLOWS_DIR"/*.yml 2>/dev/null | wc -l || echo 0)
-    
+
     print_info "Total workflows: $WORKFLOW_COUNT"
     print_info "Workflows using AI_AGENT_TOKEN: $AI_TOKEN_WORKFLOWS"
 else
@@ -276,27 +276,27 @@ DEPENDABOT_FILE=".github/dependabot.yml"
 
 if [ -f "$DEPENDABOT_FILE" ]; then
     print_success "Dependabot configuration exists"
-    
+
     # Check for AI labels
     if grep -q "ai-review-enabled" "$DEPENDABOT_FILE"; then
         check_pass "AI review labels configured"
     else
         check_warn "AI review labels not found"
     fi
-    
+
     if grep -q "mcp-server-ready" "$DEPENDABOT_FILE"; then
         check_pass "MCP Server integration labels configured"
     fi
-    
+
     # Check for superhuman comments
     if grep -q "SUPERHUMAN" "$DEPENDABOT_FILE"; then
         check_pass "Superhuman features documented"
     fi
-    
+
     # Count ecosystems
     ECOSYSTEM_COUNT=$(grep -c "package-ecosystem:" "$DEPENDABOT_FILE" || echo 0)
     print_info "Monitoring $ECOSYSTEM_COUNT package ecosystems"
-    
+
     # List ecosystems
     print_info "Ecosystems:"
     grep "package-ecosystem:" "$DEPENDABOT_FILE" | sed 's/.*: "/  - /' | sed 's/"//'
@@ -314,7 +314,7 @@ print_header "${GEAR} Test 7: Documentation"
 # Check for AI_AGENT_TOKEN setup guide
 if [ -f "AI_AGENT_TOKEN_SETUP_GUIDE.md" ]; then
     check_pass "AI_AGENT_TOKEN setup guide exists"
-    
+
     # Check for comprehensive content
     if grep -q "GitHub Actions" "AI_AGENT_TOKEN_SETUP_GUIDE.md" && \
        grep -q "Codespaces" "AI_AGENT_TOKEN_SETUP_GUIDE.md" && \
@@ -343,7 +343,7 @@ print_header "${GEAR} Test 8: Shell Scripts"
 # Check quick_start_mcp.sh
 if [ -f "quick_start_mcp.sh" ]; then
     print_success "quick_start_mcp.sh exists"
-    
+
     # Should support both tokens
     if grep -q "AI_AGENT_TOKEN" "quick_start_mcp.sh" || \
        grep -q "GITHUB_PERSONAL_ACCESS_TOKEN" "quick_start_mcp.sh"; then
@@ -366,40 +366,40 @@ print_header "${GEAR} Test 9: GitHub API Connection Test"
 
 if [ -f .env ]; then
     source .env 2>/dev/null || true
-    
+
     # Try AI_AGENT_TOKEN first, fallback to legacy
     TOKEN="${AI_AGENT_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN}}"
-    
+
     if [ ! -z "$TOKEN" ] && [ "$TOKEN" != "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" ]; then
         print_info "Testing GitHub API connection..."
-        
+
         # Test API connection
         RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: token $TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/user)
-        
+
         if [ "$RESPONSE" == "200" ]; then
             # Get user info
             USER_INFO=$(curl -s \
                 -H "Authorization: token $TOKEN" \
                 -H "Accept: application/vnd.github.v3+json" \
                 https://api.github.com/user)
-            
+
             USER_LOGIN=$(echo "$USER_INFO" | grep -o '"login": *"[^"]*"' | cut -d'"' -f4)
             USER_NAME=$(echo "$USER_INFO" | grep -o '"name": *"[^"]*"' | cut -d'"' -f4)
-            
+
             check_pass "GitHub API connection successful"
             print_info "Authenticated as: $USER_LOGIN ($USER_NAME)"
-            
+
             # Test rate limit
             RATE_LIMIT=$(curl -s \
                 -H "Authorization: token $TOKEN" \
                 https://api.github.com/rate_limit)
-            
+
             REMAINING=$(echo "$RATE_LIMIT" | grep -o '"remaining": *[0-9]*' | grep -o '[0-9]*')
             LIMIT=$(echo "$RATE_LIMIT" | grep -o '"limit": *[0-9]*' | head -1 | grep -o '[0-9]*')
-            
+
             print_info "API rate limit: $REMAINING / $LIMIT remaining"
         elif [ "$RESPONSE" == "401" ]; then
             check_fail "GitHub API authentication failed (401 Unauthorized)"
@@ -423,20 +423,20 @@ print_header "${GEAR} Test 10: Docker MCP Server Status"
 
 if command -v docker &> /dev/null; then
     print_success "Docker is installed"
-    
+
     # Check if MCP server is running
     if docker ps --format "{{.Names}}" | grep -q "github-mcp"; then
         check_pass "GitHub MCP Server container is running"
-        
+
         # Check environment variable in container
         CONTAINER_NAME=$(docker ps --format "{{.Names}}" | grep "github-mcp" | head -1)
-        
+
         if docker exec "$CONTAINER_NAME" env 2>/dev/null | grep -q "GITHUB_PERSONAL_ACCESS_TOKEN"; then
             check_pass "Token is set in MCP Server container"
         else
             check_warn "Token not found in MCP Server container"
         fi
-        
+
         # Check container logs
         print_info "Recent MCP Server logs:"
         docker logs --tail 5 "$CONTAINER_NAME" 2>&1 | sed 's/^/       /'

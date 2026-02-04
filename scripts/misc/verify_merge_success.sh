@@ -64,14 +64,14 @@ echo ""
 echo "📝 Test 2: Verifying GitHub Actions workflow..."
 if [ -f ".github/workflows/mcp-server-integration.yml" ]; then
     check_pass "MCP Server workflow exists"
-    
+
     # Check for AI_AGENT_TOKEN usage
     if grep -q "secrets.AI_AGENT_TOKEN" .github/workflows/mcp-server-integration.yml; then
         check_pass "AI_AGENT_TOKEN secret reference found"
     else
         check_fail "AI_AGENT_TOKEN secret reference missing"
     fi
-    
+
     # Check for direct API integration
     if grep -q "curl.*github.com/user" .github/workflows/mcp-server-integration.yml; then
         check_pass "Direct GitHub API integration found"
@@ -89,7 +89,7 @@ echo ""
 echo "📝 Test 3: Verifying Codespaces configuration..."
 if [ -f ".devcontainer/devcontainer.json" ]; then
     check_pass "Devcontainer config exists"
-    
+
     # Check for AI_AGENT_TOKEN
     if grep -q "AI_AGENT_TOKEN.*localEnv" .devcontainer/devcontainer.json; then
         check_pass "AI_AGENT_TOKEN auto-loading configured"
@@ -107,21 +107,21 @@ echo ""
 echo "📝 Test 4: Verifying Docker Compose MCP configuration..."
 if [ -f "docker-compose.yml" ]; then
     check_pass "Docker Compose file exists"
-    
+
     # Check for github_mcp service
     if grep -q "github_mcp:" docker-compose.yml; then
         check_pass "MCP Server service defined"
     else
         check_fail "MCP Server service not found"
     fi
-    
+
     # Check for health check
     if grep -q "healthcheck:" docker-compose.yml; then
         check_pass "Health check configured"
     else
         check_warn "Health check not configured"
     fi
-    
+
     # Check for AI_AGENT_TOKEN
     if grep -q "AI_AGENT_TOKEN" docker-compose.yml; then
         check_pass "AI_AGENT_TOKEN environment variable set"
@@ -139,7 +139,7 @@ echo ""
 echo "📝 Test 5: Verifying MCP wrapper script..."
 if [ -f "mcp-server-wrapper.sh" ]; then
     check_pass "MCP wrapper script exists"
-    
+
     if [ -x "mcp-server-wrapper.sh" ]; then
         check_pass "MCP wrapper script is executable"
     else
@@ -218,7 +218,7 @@ if command -v pytest &> /dev/null; then
     export ENVIRONMENT=testing
     export TESTING=1
     export SECRET_KEY=test-secret-key
-    
+
     if pytest tests/test_app.py -q 2>&1 | grep -q "passed"; then
         check_pass "Basic tests passed"
     else

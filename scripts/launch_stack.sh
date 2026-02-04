@@ -107,7 +107,7 @@ else
     bash scripts/start.sh >> "$LOG_FILE" 2>&1 &
     PID=$!
     log "✅ Uvicorn started with PID $PID. Logs are streaming to $LOG_FILE"
-    
+
     # Wait for application to be ready
     log "⏳ Waiting for application health check..."
     for i in {1..30}; do

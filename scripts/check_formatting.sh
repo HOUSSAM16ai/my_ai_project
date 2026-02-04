@@ -4,7 +4,7 @@
 # ======================================================================================
 # This script checks if code matches Black and isort standards WITHOUT modifying files
 # Usage: ./scripts/check_formatting.sh
-# 
+#
 # Features:
 # ✅ Checks Black formatting (line-length: 100)
 # ✅ Checks import sorting (isort)

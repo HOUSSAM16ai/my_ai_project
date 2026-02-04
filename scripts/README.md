@@ -53,7 +53,7 @@ async def my_method(self):  # WRONG! Not inside class
 class MyService:
     def __init__(self):
         pass
-    
+
     async def my_method(self):  # ✅ Correct indentation
         pass
 ```

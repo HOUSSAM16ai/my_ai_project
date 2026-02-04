@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # verify_platform_setup.sh
-# 
+#
 # سكريبت التحقق من جاهزية المنصات المتعددة
 # Multi-Platform Setup Verification Script
 #
@@ -76,7 +76,7 @@ section "2️⃣  فحص ملفات التكوين / Configuration Files"
 # Check .gitpod.yml
 if [ -f ".gitpod.yml" ]; then
   success "وجد ملف .gitpod.yml ✅"
-  
+
   # Only check Gitpod port configuration when actually running on Gitpod
   if [ "$PLATFORM" = "Gitpod" ]; then
     # Verify ports configuration
@@ -86,7 +86,7 @@ if [ -f ".gitpod.yml" ]; then
       error "  ↳ المنفذ 5000 غير مُكوّن ❌"
       ((ISSUES++))
     fi
-    
+
     # Verify port 5432 for Supabase connection
     if grep -q "port: 5432" .gitpod.yml; then
       success "  ↳ المنفذ 5432 (Supabase Direct) مُكوّن ✅"
@@ -94,7 +94,7 @@ if [ -f ".gitpod.yml" ]; then
       warning "  ↳ المنفذ 5432 (Supabase Direct) غير مُكوّن ⚠️"
       warning "     يُنصح بإضافة المنفذ 5432 للاتصال بـ Supabase"
     fi
-    
+
     # Verify port 6543 for Supabase Pooler
     if grep -q "port: 6543" .gitpod.yml; then
       success "  ↳ المنفذ 6543 (Supabase Pooler - موصى به) مُكوّن ✅"
@@ -118,7 +118,7 @@ fi
 # Check .devcontainer/devcontainer.json
 if [ -f ".devcontainer/devcontainer.json" ]; then
   success "وجد ملف devcontainer.json ✅"
-  
+
   # Verify SKIP_DB_WAIT
   if grep -q '"SKIP_DB_WAIT": "true"' .devcontainer/devcontainer.json; then
     success "  ↳ SKIP_DB_WAIT=true مُفعّل ✅ (حل مشكلة Port 5432)"
@@ -126,7 +126,7 @@ if [ -f ".devcontainer/devcontainer.json" ]; then
     error "  ↳ SKIP_DB_WAIT غير مُفعّل ❌"
     ((ISSUES++))
   fi
-  
+
   # Verify ports
   if grep -q '"forwardPorts"' .devcontainer/devcontainer.json; then
     success "  ↳ المنافذ مُكوّنة للتوجيه التلقائي ✅"
@@ -140,7 +140,7 @@ fi
 # Check .env.example
 if [ -f ".env.example" ]; then
   success "وجد ملف .env.example ✅"
-  
+
   if grep -q "DATABASE_URL" .env.example; then
     success "  ↳ DATABASE_URL موجود في .env.example ✅"
   else
@@ -160,11 +160,11 @@ section "3️⃣  تكوين البيئة / Environment Configuration"
 # Check .env file
 if [ -f ".env" ]; then
   success "وجد ملف .env ✅"
-  
+
   # Check DATABASE_URL
   if grep -q "DATABASE_URL" .env; then
     success "  ↳ DATABASE_URL موجود في .env ✅"
-    
+
     # Check if it's configured (not placeholder)
     if grep -q "DATABASE_URL=.*supabase" .env; then
       success "  ↳ DATABASE_URL مُكوّن لـ Supabase ✅"
@@ -192,7 +192,7 @@ section "4️⃣  تكوين Docker / Docker Configuration"
 # Check docker-compose.yml
 if [ -f "docker-compose.yml" ]; then
   success "وجد ملف docker-compose.yml ✅"
-  
+
   # Check if local DB service is removed
   if grep -q "db:" docker-compose.yml; then
     warning "  ↳ خدمة قاعدة بيانات محلية موجودة (قديمة) ⚠️"
@@ -200,7 +200,7 @@ if [ -f "docker-compose.yml" ]; then
   else
     success "  ↳ لا توجد خدمة قاعدة بيانات محلية ✅ (Supabase فقط)"
   fi
-  
+
   # Check web service
   if grep -q "web:" docker-compose.yml; then
     success "  ↳ خدمة web موجودة ✅"
@@ -221,7 +221,7 @@ section "5️⃣  فحص السكريبتات / Scripts Check"
 # Check on-start.sh
 if [ -f ".devcontainer/on-start.sh" ]; then
   success "وجد سكريبت on-start.sh ✅"
-  
+
   # Verify SKIP_DB_WAIT logic
   if grep -q 'SKIP_DB_WAIT.*true' .devcontainer/on-start.sh; then
     success "  ↳ منطق SKIP_DB_WAIT موجود ✅"
@@ -302,7 +302,7 @@ platforms=(
 for platform_file in "${platforms[@]}"; do
   platform="${platform_file%%:*}"
   file="${platform_file##*:}"
-  
+
   if [ -f "$file" ]; then
     success "✅ $platform - مدعوم (ملف التكوين موجود)"
   else

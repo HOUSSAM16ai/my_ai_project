@@ -4,7 +4,7 @@
 # ======================================================================================
 # This script sets up pre-commit hooks to automatically format code before commits
 # Usage: ./scripts/setup_pre_commit.sh
-# 
+#
 # Features:
 # ✅ Installs pre-commit package
 # ✅ Installs all configured hooks

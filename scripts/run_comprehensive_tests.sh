@@ -118,12 +118,12 @@ if Path('reports/comprehensive/coverage.json').exists():
         coverage = data['totals']['percent_covered']
         lines_covered = data['totals']['covered_lines']
         lines_total = data['totals']['num_statements']
-        
+
         print(f'\\n📊 Coverage:')
         print(f'  Total Lines: {lines_total}')
         print(f'  Covered Lines: {lines_covered}')
         print(f'  Coverage: {coverage:.2f}%')
-        
+
         if coverage >= 100:
             print('  ✅ 100% coverage achieved!')
         elif coverage >= 90:
@@ -136,19 +136,19 @@ if Path('reports/comprehensive/junit.xml').exists():
     import xml.etree.ElementTree as ET
     tree = ET.parse('reports/comprehensive/junit.xml')
     root = tree.getroot()
-    
+
     tests = int(root.attrib.get('tests', 0))
     failures = int(root.attrib.get('failures', 0))
     errors = int(root.attrib.get('errors', 0))
     skipped = int(root.attrib.get('skipped', 0))
-    
+
     print(f'\\n🧪 Test Results:')
     print(f'  Total Tests: {tests}')
     print(f'  Passed: {tests - failures - errors - skipped}')
     print(f'  Failed: {failures}')
     print(f'  Errors: {errors}')
     print(f'  Skipped: {skipped}')
-    
+
     if failures == 0 and errors == 0:
         print('  ✅ All tests passed!')
     else:

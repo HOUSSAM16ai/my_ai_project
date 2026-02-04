@@ -21,7 +21,7 @@ FAILED=0
 check_command() {
     local name=$1
     local command=$2
-    
+
     echo -n "Checking $name... "
     if eval "$command" > /dev/null 2>&1; then
         echo -e "${GREEN}✅ PASSED${NC}"

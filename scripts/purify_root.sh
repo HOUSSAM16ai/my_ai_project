@@ -69,7 +69,7 @@ mv *_REPORT*.md docs/archive/reports/ 2>/dev/null || true
 echo "   Moving *_IMPLEMENTATION*.md files..."
 mv *_IMPLEMENTATION*.md docs/archive/implementations/ 2>/dev/null || true
 
-# Move TROUBLESHOOTING/VERIFICATION files  
+# Move TROUBLESHOOTING/VERIFICATION files
 echo "   Moving troubleshooting files..."
 mv *_TROUBLESHOOTING*.md docs/archive/troubleshooting/ 2>/dev/null || true
 mv *_VERIFICATION*.md docs/archive/troubleshooting/ 2>/dev/null || true
@@ -84,7 +84,7 @@ echo "   Moving remaining non-essential files..."
 for md_file in *.md; do
     # Skip if file doesn't exist
     [ -f "$md_file" ] || continue
-    
+
     # Check if file is in KEEP_FILES
     keep=false
     for keep_file in "${KEEP_FILES[@]}"; do
@@ -93,7 +93,7 @@ for md_file in *.md; do
             break
         fi
     done
-    
+
     # Move if not in keep list
     if [ "$keep" = false ]; then
         mv "$md_file" docs/archive/guides/ 2>/dev/null || true

@@ -73,10 +73,10 @@ case $choice in
     1)
         echo ""
         echo -e "${FIRE} ${YELLOW}Enabling EXTREME MODE...${NC}"
-        
+
         # Remove ULTIMATE mode if exists
         sed -i '/^LLM_ULTIMATE_COMPLEXITY_MODE=/d' "$PROJECT_ROOT/.env" 2>/dev/null || true
-        
+
         # Add or update EXTREME mode
         if grep -q "^LLM_EXTREME_COMPLEXITY_MODE=" "$PROJECT_ROOT/.env"; then
             sed -i 's/^LLM_EXTREME_COMPLEXITY_MODE=.*/LLM_EXTREME_COMPLEXITY_MODE=1/' "$PROJECT_ROOT/.env"
@@ -85,7 +85,7 @@ case $choice in
             echo "# EXTREME MODE - Enabled by quick-enable script" >> "$PROJECT_ROOT/.env"
             echo "LLM_EXTREME_COMPLEXITY_MODE=1" >> "$PROJECT_ROOT/.env"
         fi
-        
+
         echo -e "${CHECK} ${GREEN}EXTREME MODE enabled!${NC}"
         echo ""
         echo -e "${INFO} Configuration:"
@@ -93,14 +93,14 @@ case $choice in
         echo -e "  - Retries: ${YELLOW}8 attempts${NC}"
         echo -e "  - Max tokens: ${YELLOW}64,000${NC}"
         ;;
-        
+
     2)
         echo ""
         echo -e "${ROCKET} ${YELLOW}Enabling ULTIMATE MODE...${NC}"
-        
+
         # Remove EXTREME mode if exists
         sed -i '/^LLM_EXTREME_COMPLEXITY_MODE=/d' "$PROJECT_ROOT/.env" 2>/dev/null || true
-        
+
         # Add or update ULTIMATE mode
         if grep -q "^LLM_ULTIMATE_COMPLEXITY_MODE=" "$PROJECT_ROOT/.env"; then
             sed -i 's/^LLM_ULTIMATE_COMPLEXITY_MODE=.*/LLM_ULTIMATE_COMPLEXITY_MODE=1/' "$PROJECT_ROOT/.env"
@@ -109,7 +109,7 @@ case $choice in
             echo "# ULTIMATE MODE - Enabled by quick-enable script" >> "$PROJECT_ROOT/.env"
             echo "LLM_ULTIMATE_COMPLEXITY_MODE=1" >> "$PROJECT_ROOT/.env"
         fi
-        
+
         echo -e "${CHECK} ${GREEN}ULTIMATE MODE enabled!${NC}"
         echo ""
         echo -e "${INFO} Configuration:"
@@ -119,15 +119,15 @@ case $choice in
         echo ""
         echo -e "${ROCKET} ${MAGENTA}SUPERHUMAN MODE ACTIVATED!${NC}"
         ;;
-        
+
     3)
         echo ""
         echo -e "${INFO} ${YELLOW}Disabling special modes...${NC}"
-        
+
         # Remove both modes
         sed -i '/^LLM_EXTREME_COMPLEXITY_MODE=/d' "$PROJECT_ROOT/.env" 2>/dev/null || true
         sed -i '/^LLM_ULTIMATE_COMPLEXITY_MODE=/d' "$PROJECT_ROOT/.env" 2>/dev/null || true
-        
+
         echo -e "${CHECK} ${GREEN}Returned to Normal mode${NC}"
         echo ""
         echo -e "${INFO} Configuration:"
@@ -135,12 +135,12 @@ case $choice in
         echo -e "  - Retries: ${YELLOW}2 attempts${NC}"
         echo -e "  - Max tokens: ${YELLOW}4,000${NC}"
         ;;
-        
+
     4)
         echo ""
         echo -e "${INFO} ${CYAN}Current Configuration:${NC}"
         echo ""
-        
+
         if grep -q "^LLM_ULTIMATE_COMPLEXITY_MODE=1" "$PROJECT_ROOT/.env" 2>/dev/null; then
             echo -e "  Mode: ${ROCKET} ${MAGENTA}ULTIMATE MODE${NC} ${CHECK}"
             echo -e "  - Timeout: ${YELLOW}1800 seconds (30 minutes)${NC}"
@@ -157,17 +157,17 @@ case $choice in
             echo -e "  - Retries: ${YELLOW}2 attempts${NC}"
             echo -e "  - Max tokens: ${YELLOW}4,000${NC}"
         fi
-        
+
         echo ""
         exit 0
         ;;
-        
+
     5)
         echo ""
         echo -e "${INFO} ${CYAN}Exiting...${NC}"
         exit 0
         ;;
-        
+
     *)
         echo ""
         echo -e "${RED}Invalid choice. Exiting...${NC}"

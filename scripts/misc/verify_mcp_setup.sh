@@ -106,7 +106,7 @@ print_info "Test 4: Checking GitHub token configuration..."
 if [ -f .env ]; then
     if grep -q "^GITHUB_PERSONAL_ACCESS_TOKEN=" .env; then
         TOKEN_VALUE=$(grep "^GITHUB_PERSONAL_ACCESS_TOKEN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d ' ')
-        
+
         if [ -z "$TOKEN_VALUE" ] || [ "$TOKEN_VALUE" == "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" ]; then
             check_fail "GitHub token is not configured"
             echo "       Add your token to .env file"
@@ -144,7 +144,7 @@ fi
 print_info "Test 6: Checking docker-compose.yml..."
 if [ -f docker-compose.yml ]; then
     check_pass "docker-compose.yml exists"
-    
+
     if grep -q "github_mcp:" docker-compose.yml; then
         check_pass "GitHub MCP service is configured"
     else
@@ -163,7 +163,7 @@ if docker ps --format "{{.Names}}" | grep -q "github-mcp"; then
     CONTAINER_NAME=$(docker ps --filter "name=github-mcp" --format "{{.Names}}" | head -1)
     CONTAINER_STATUS=$(docker ps --filter "name=github-mcp" --format "{{.Status}}" | head -1)
     check_pass "Container is running: $CONTAINER_NAME ($CONTAINER_STATUS)"
-    
+
     # Check uptime
     print_info "Test 7a: Checking container uptime..."
     if [[ $CONTAINER_STATUS =~ "Up" ]]; then
@@ -171,7 +171,7 @@ if docker ps --format "{{.Names}}" | grep -q "github-mcp"; then
     else
         check_warn "Container status: $CONTAINER_STATUS"
     fi
-    
+
     # Check environment variable
     print_info "Test 7b: Checking container environment..."
     if docker exec "$CONTAINER_NAME" env 2>/dev/null | grep -q "GITHUB_PERSONAL_ACCESS_TOKEN"; then
@@ -179,7 +179,7 @@ if docker ps --format "{{.Names}}" | grep -q "github-mcp"; then
     else
         check_fail "GITHUB_PERSONAL_ACCESS_TOKEN not found in container"
     fi
-    
+
 else
     check_warn "GitHub MCP Server container is not running"
     echo "       Start with: docker-compose --profile mcp up -d github_mcp"
@@ -214,24 +214,24 @@ fi
 
 if docker ps --format "{{.Names}}" | grep -q "github-mcp"; then
     print_info "Test 9: Testing GitHub API connection..."
-    
+
     if [ -f .env ]; then
         source .env
-        
+
         if [ ! -z "$GITHUB_PERSONAL_ACCESS_TOKEN" ] && [ "$GITHUB_PERSONAL_ACCESS_TOKEN" != "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" ]; then
             # Test API connection
             RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
                 -H "Authorization: token $GITHUB_PERSONAL_ACCESS_TOKEN" \
                 -H "Accept: application/vnd.github.v3+json" \
                 https://api.github.com/user)
-            
+
             if [ "$RESPONSE" == "200" ]; then
                 # Get user info
                 USER_LOGIN=$(curl -s \
                     -H "Authorization: token $GITHUB_PERSONAL_ACCESS_TOKEN" \
                     -H "Accept: application/vnd.github.v3+json" \
                     https://api.github.com/user | grep -o '"login": "[^"]*' | cut -d'"' -f4)
-                
+
                 check_pass "GitHub API connection successful (user: $USER_LOGIN)"
             elif [ "$RESPONSE" == "401" ]; then
                 check_fail "GitHub API authentication failed (401 Unauthorized)"
@@ -268,7 +268,7 @@ fi
 
 if [ -f quick_start_mcp.sh ]; then
     check_pass "Quick setup script exists (quick_start_mcp.sh)"
-    
+
     if [ -x quick_start_mcp.sh ]; then
         check_pass "Setup script is executable"
     else

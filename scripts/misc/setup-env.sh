@@ -49,30 +49,30 @@ echo -e "${BLUE}🔍 Checking database configuration...${NC}"
 if grep -q "your-project-id" "$PROJECT_ROOT/.env"; then
     echo -e "${YELLOW}⚠️  WARNING: DATABASE_URL still contains placeholder values!${NC}"
     echo -e "${YELLOW}   You need to choose a database configuration:${NC}\n"
-    
+
     echo -e "${BLUE}Choose database mode:${NC}"
     echo "  1) Local Database (Docker Compose) - Recommended for development"
     echo "  2) Remote Supabase - For production or remote access"
     echo ""
     read -p "Enter your choice (1 or 2): " -n 1 -r DB_CHOICE
     echo
-    
+
     if [[ $DB_CHOICE == "1" ]]; then
         echo -e "${BLUE}📝 Configuring for LOCAL database...${NC}"
-        
+
         # Replace the database configuration section
         sed -i.bak '/^# OPTION 1:/,/^# DATABASE_URL=/c\
 # OPTION 1: LOCAL DATABASE (Default - for Docker Compose)\
 # Use this for local development with docker-compose\
 DATABASE_PASSWORD=Aog2Df4lIlIXiCGk\
 DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD}@db:5432/postgres' "$PROJECT_ROOT/.env"
-        
+
         # Comment out Supabase options
         sed -i.bak 's/^SUPABASE_URL=/# SUPABASE_URL=/g' "$PROJECT_ROOT/.env"
         sed -i.bak 's/^SUPABASE_KEY=/# SUPABASE_KEY=/g' "$PROJECT_ROOT/.env"
-        
+
         echo -e "${GREEN}✅ Configured for LOCAL database (db:5432)${NC}"
-        
+
     elif [[ $DB_CHOICE == "2" ]]; then
         echo -e "${BLUE}📝 Configuring for REMOTE Supabase...${NC}"
         echo -e "${YELLOW}⚠️  You'll need to manually edit .env with your Supabase credentials${NC}"
@@ -81,7 +81,7 @@ DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD}@db:5432/postgres' "$PROJ
         echo "  - SUPABASE_URL"
         echo "  - SUPABASE_KEY"
         echo "  - DATABASE_URL (Supabase connection string)"
-        
+
     else
         echo -e "${YELLOW}⚠️  Invalid choice. Please edit .env manually.${NC}"
     fi

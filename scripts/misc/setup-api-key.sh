@@ -42,7 +42,7 @@ case $service_choice in
         echo "4. Copy the key (starts with 'sk-or-v1-')"
         echo ""
         read -p "Enter your OpenRouter API key: " api_key
-        
+
         if [[ ! $api_key =~ ^sk-or-v1- ]]; then
             echo ""
             echo "⚠️  Warning: OpenRouter keys usually start with 'sk-or-v1-'"
@@ -52,7 +52,7 @@ case $service_choice in
                 exit 1
             fi
         fi
-        
+
         # Create or update .env
         if [ -f .env ]; then
             # Update existing .env
@@ -61,7 +61,7 @@ case $service_choice in
             else
                 echo "OPENROUTER_API_KEY=\"$api_key\"" >> .env
             fi
-            
+
             if ! grep -q "^DEFAULT_AI_MODEL=" .env; then
                 echo "DEFAULT_AI_MODEL=\"openai/gpt-4o-mini\"" >> .env
             fi
@@ -72,7 +72,7 @@ case $service_choice in
             sed -i "s|DEFAULT_AI_MODEL=.*|DEFAULT_AI_MODEL=\"openai/gpt-4o-mini\"|" .env
         fi
         ;;
-        
+
     2)
         echo ""
         echo "📝 You selected: OpenAI Direct"
@@ -84,7 +84,7 @@ case $service_choice in
         echo "4. Copy the key (starts with 'sk-')"
         echo ""
         read -p "Enter your OpenAI API key: " api_key
-        
+
         if [[ ! $api_key =~ ^sk- ]]; then
             echo ""
             echo "⚠️  Warning: OpenAI keys usually start with 'sk-'"
@@ -94,7 +94,7 @@ case $service_choice in
                 exit 1
             fi
         fi
-        
+
         # Create or update .env
         if [ -f .env ]; then
             # Update existing .env
@@ -103,7 +103,7 @@ case $service_choice in
             else
                 echo "OPENAI_API_KEY=\"$api_key\"" >> .env
             fi
-            
+
             if ! grep -q "^DEFAULT_AI_MODEL=" .env; then
                 echo "DEFAULT_AI_MODEL=\"gpt-4o-mini\"" >> .env
             fi
@@ -114,7 +114,7 @@ case $service_choice in
             sed -i "s|DEFAULT_AI_MODEL=.*|DEFAULT_AI_MODEL=\"gpt-4o-mini\"|" .env
         fi
         ;;
-        
+
     *)
         echo ""
         echo "❌ Invalid choice. Please run the script again and select 1 or 2."

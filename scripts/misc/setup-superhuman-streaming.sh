@@ -6,7 +6,7 @@
 #
 # Usage:
 #   ./setup-superhuman-streaming.sh enable    # Enable all features
-#   ./setup-superhuman-streaming.sh disable   # Disable all features  
+#   ./setup-superhuman-streaming.sh disable   # Disable all features
 #   ./setup-superhuman-streaming.sh status    # Show current status
 
 set -e
@@ -28,7 +28,7 @@ fi
 set_env() {
     local key=$1
     local value=$2
-    
+
     if grep -q "^${key}=" .env; then
         # Update existing
         sed -i.bak "s|^${key}=.*|${key}=${value}|g" .env
@@ -50,13 +50,13 @@ show_status() {
     echo -e "${BLUE}📊 Superhuman Streaming Status${NC}"
     echo -e "${BLUE}========================================${NC}"
     echo ""
-    
+
     echo -e "Mock LLM (Dev Mode):        $(get_env ALLOW_MOCK_LLM)"
     echo -e "Hybrid Streaming:           $(get_env ENABLE_HYBRID_STREAMING)"
     echo -e "Intelligent Routing:        $(get_env ENABLE_INTELLIGENT_ROUTING)"
     echo -e "Daily Budget:               \$$(get_env LLM_DAILY_BUDGET)"
     echo ""
-    
+
     echo -e "${BLUE}Model Tier Configuration:${NC}"
     echo -e "  NANO:   $(get_env NANO_MODEL)"
     echo -e "  FAST:   $(get_env FAST_MODEL)"
@@ -68,12 +68,12 @@ show_status() {
 # Function to enable features
 enable_features() {
     echo -e "${GREEN}🚀 Enabling Superhuman Streaming Features...${NC}"
-    
+
     # Core streaming config
     set_env "ALLOW_MOCK_LLM" "false"
     set_env "ENABLE_HYBRID_STREAMING" "true"
     set_env "ENABLE_INTELLIGENT_ROUTING" "true"
-    
+
     # Ensure model configs exist
     if [ "$(get_env NANO_MODEL)" = "not set" ]; then
         set_env "NANO_MODEL" "openai/gpt-4o-mini"
@@ -90,7 +90,7 @@ enable_features() {
     if [ "$(get_env LLM_DAILY_BUDGET)" = "not set" ]; then
         set_env "LLM_DAILY_BUDGET" "100"
     fi
-    
+
     echo -e "${GREEN}✅ Superhuman Streaming enabled!${NC}"
     echo ""
     show_status
@@ -99,11 +99,11 @@ enable_features() {
 # Function to disable features
 disable_features() {
     echo -e "${YELLOW}⏸️  Disabling Superhuman Streaming Features...${NC}"
-    
+
     set_env "ALLOW_MOCK_LLM" "false"
     set_env "ENABLE_HYBRID_STREAMING" "false"
     set_env "ENABLE_INTELLIGENT_ROUTING" "false"
-    
+
     echo -e "${YELLOW}✅ Superhuman Streaming disabled (standard streaming active)${NC}"
     echo ""
     show_status
@@ -112,11 +112,11 @@ disable_features() {
 # Function to enable dev mode
 enable_dev_mode() {
     echo -e "${BLUE}🔧 Enabling Development Mode...${NC}"
-    
+
     set_env "ALLOW_MOCK_LLM" "true"
     set_env "ENABLE_HYBRID_STREAMING" "false"
     set_env "ENABLE_INTELLIGENT_ROUTING" "false"
-    
+
     echo -e "${BLUE}✅ Development mode enabled (mock LLM active)${NC}"
     echo ""
     show_status
@@ -125,12 +125,12 @@ enable_dev_mode() {
 # Function to deploy nginx config
 deploy_nginx() {
     echo -e "${BLUE}🌐 Deploying NGINX Configuration...${NC}"
-    
+
     if [ ! -d "infra/nginx" ]; then
         echo -e "${RED}❌ Error: infra/nginx directory not found${NC}"
         exit 1
     fi
-    
+
     echo ""
     echo -e "${YELLOW}📋 NGINX Configuration Files:${NC}"
     echo "  - infra/nginx/sse.conf         (SSE streaming config)"
