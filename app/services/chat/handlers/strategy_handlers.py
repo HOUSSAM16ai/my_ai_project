@@ -3,6 +3,7 @@ Intent handlers using Strategy pattern.
 """
 
 import asyncio
+import json
 import logging
 from collections.abc import AsyncGenerator
 
@@ -335,7 +336,18 @@ class MissionComplexHandler(IntentHandler):
                 return f"🔄 **تحديث حالة:** {payload.get('old_status')} -> {payload.get('new_status')}\n"
 
             if event.event_type == MissionEventType.MISSION_COMPLETED:
-                return "🎉 **المهمة اكتملت بنجاح!**\n"
+                result = payload.get("result", {})
+                result_text = ""
+                if isinstance(result, dict):
+                    result_text = (
+                        result.get("output")
+                        or result.get("answer")
+                        or result.get("summary")
+                        or json.dumps(result, ensure_ascii=False, indent=2)
+                    )
+                else:
+                    result_text = str(result)
+                return f"🎉 **المهمة اكتملت بنجاح!**\n\n**النتيجة:**\n{result_text}\n"
 
             if event.event_type == MissionEventType.MISSION_FAILED:
                 return f"💀 **فشل المهمة:** {payload.get('error')}\n"
@@ -397,7 +409,16 @@ def _format_brain_event(event_name: str, data: dict[str, object] | object) -> st
     if normalized.endswith("_timeout"):
         return "⏳ **تأخر غير متوقع** — جاري إعادة المزامنة لضمان الجودة.\n"
 
-    if normalized in {"mission_success", "mission_critique_failed", "phase_error"}:
+    if normalized == "mission_critique_failed":
+        critique = data.get("critique", {})
+        feedback = (
+            critique.get("feedback", "لم يتم تقديم ملاحظات.")
+            if isinstance(critique, dict)
+            else str(critique)
+        )
+        return f"🔔 **تحديث معرفي (فشل التدقيق):**\n📝 **الملاحظات:** {feedback}\n🔄 جاري إعادة التخطيط...\n"
+
+    if normalized in {"mission_success", "phase_error"}:
         return f"🔔 **تحديث معرفي:** {event_name}.\n"
 
     return f"🔹 **{event_name}**: {data}\n"

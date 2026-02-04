@@ -82,13 +82,14 @@ class TestWriteFile:
 
     def test_write_file_not_string(self, mock_project_root):
         """Test error when content is not a string."""
-        # Disable AUTOFILL to prevent automatic type coercion/replacement in decorator
-        with patch("app.services.agent_tools.core.AUTOFILL", False):
-            result = write_file(path="test.txt", content=123)
-            assert not result.ok
-            assert (
-                "must be of type 'string'" in result.error or result.error == "CONTENT_NOT_STRING"
-            )
+        # AUTOFILL doesn't exist in core anymore, but the test logic seems relevant if type checking exists.
+        # If the decorator handles coercion or validation, we just test the result.
+        # If AUTOFILL was removed, we remove the patch.
+        result = write_file(path="test.txt", content=123)
+        assert not result.ok
+        assert (
+            "must be of type 'string'" in result.error or result.error == "CONTENT_NOT_STRING"
+        )
 
     def test_write_file_json_compression(self, mock_project_root):
         """Test automatic compression for large JSON files."""
