@@ -6,6 +6,8 @@ This module provides tools for file system operations.
 It delegates logic to specialized handlers in `domain.filesystem`.
 """
 
+import logging
+
 # Re-export constants for backward compatibility if needed,
 # though ideally they should be imported from config.
 from app.services.agent_tools.domain.filesystem.config import MAX_READ_BYTES
@@ -28,6 +30,8 @@ from app.services.agent_tools.domain.filesystem.handlers.write_handlers import (
     write_file_logic,
 )
 from app.services.agent_tools.tool_model import ToolResult, tool
+
+logger = logging.getLogger(__name__)
 
 # ======================================================================================
 # Tool Definitions (Decorated wrappers)
@@ -227,3 +231,35 @@ def read_bulk_files(
     merge_mode: str = "json",
 ) -> ToolResult:
     return read_bulk_files_logic(paths, max_bytes_per_file, ignore_missing, merge_mode)
+
+
+def register_fs_tools(registry: dict) -> None:
+    """
+    Register FS tools into the provided registry.
+    """
+    tools = [
+        read_file,
+        write_file,
+        write_file_if_changed,
+        append_file,
+        file_exists,
+        list_dir,
+        delete_file,
+        ensure_file,
+        ensure_directory,
+        read_bulk_files,
+    ]
+
+    for tool_func in tools:
+        if hasattr(tool_func, "_tool_config"):
+            name = tool_func._tool_config.name
+            registry[name] = tool_func
+            # Register aliases if any (none defined in decorator currently but future proofing)
+            for alias in tool_func._tool_config.aliases:
+                registry[alias] = tool_func
+
+    # Manual aliases
+    registry["list_files"] = list_dir
+    registry["check_file"] = file_exists
+
+    logger.info("FS tools registered successfully")

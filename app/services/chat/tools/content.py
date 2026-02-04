@@ -302,3 +302,15 @@ async def _search_vectors(
             if content_id:
                 content_ids.append(content_id)
     return content_ids
+
+
+def register_content_tools(registry: dict) -> None:
+    """
+    Register content tools into the provided registry.
+    """
+    registry["search_content"] = search_content
+    registry["get_content_raw"] = get_content_raw
+    registry["get_solution_raw"] = get_solution_raw
+    registry["get_curriculum_structure"] = get_curriculum_structure
+
+    logger.info("Content tools registered successfully in agent registry")
