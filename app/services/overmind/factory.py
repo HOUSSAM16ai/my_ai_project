@@ -43,6 +43,12 @@ async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
 
     # 2. Execution Layer
     registry = get_registry()
+
+    # Register Content tools dynamically to avoid circular dependency
+    from app.services.chat.tools.content import register_content_tools
+
+    register_content_tools(registry)
+
     # تم تحديث TaskExecutor ليقبل السجل صراحةً (Dependency Injection)
     # Refactoring: Using keyword arguments for Static Connascence
     executor = TaskExecutor(state_manager=state_manager, registry=registry)

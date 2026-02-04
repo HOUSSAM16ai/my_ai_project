@@ -18,9 +18,14 @@ class TestHistoryServiceComprehensive:
 
         async def _seed_user_and_conversations():
             from tests.conftest import engine
+            from sqlalchemy import text
 
             async with engine.begin() as conn:
                 await conn.run_sync(SQLModel.metadata.create_all)
+
+            # Cleanup potential conflicts from previous tests (IntegrityError fix)
+            await db_session.execute(text("DELETE FROM users"))
+            await db_session.commit()
 
             user = user_factory.build()
             db_session.add(user)

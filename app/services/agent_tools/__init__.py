@@ -102,6 +102,11 @@ from .test_tool import register_test_tools
 
 register_test_tools(_TOOL_REGISTRY)
 
+# Register FS tools
+from .fs_tools import register_fs_tools
+
+register_fs_tools(_TOOL_REGISTRY)
+
 
 def get_registry() -> None:
     """

@@ -154,7 +154,7 @@ def _build_router() -> APIRouter:
 
         return [PlanResponse(plan_id=p.id, goal=p.goal, steps=p.steps) for p in plans]
 
-    @router.post("/execute", response_model=AgentResponse, tags=["Agent"])
+    @router.post("/execute", response_model=AgentResponse, tags=["Agent"], include_in_schema=False)
     async def execute(
         request: AgentRequest,
         session: AsyncSession = Depends(get_session),
