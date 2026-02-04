@@ -18,8 +18,10 @@ except ImportError:
     class DummyEmbedding:
         def get_text_embedding(self, text):
             return [0.1] * 384  # standard dimension
+
     def get_embedding_model():
         return DummyEmbedding()
+
 
 # Configure logger
 logger = get_logger("knowledge-ingestion")
