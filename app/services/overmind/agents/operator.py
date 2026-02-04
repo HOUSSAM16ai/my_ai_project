@@ -221,6 +221,11 @@ class OperatorAgent(AgentExecutor):
             logger.warning(f"Skipping task '{task_name}': No tool_name provided.")
             return {"name": task_name, "status": "skipped", "reason": "no_tool_name"}
 
+        should_skip, skip_reason = self._should_skip_task(tool_name, context)
+        if should_skip:
+            logger.warning(f"Skipping task '{task_name}': {skip_reason}.")
+            return {"name": task_name, "status": "skipped", "reason": skip_reason}
+
         logger.info(
             f"Executing Task [{index + 1}/{len(tasks_data)}]: {task_name} using {tool_name}"
         )
@@ -290,3 +295,44 @@ class OperatorAgent(AgentExecutor):
         elif "```" in text:
             text = text.split("```")[1].split("```")[0]
         return text.strip()
+
+    def _should_skip_task(
+        self, tool_name: str, context: CollaborationContext
+    ) -> tuple[bool, str]:
+        """
+        تحديد ما إذا كان يجب تجاوز المهمة حمايةً لجودة المهمة الخارقة.
+
+        الهدف: منع أدوات غير مناسبة عند طلب تمارين تعليمية حساسة، مع الإبقاء على الأدوات
+        المعرفية المتخصصة التي تُنتج محتوى التمرين مباشرة.
+        """
+        if not tool_name:
+            return True, "no_tool_name"
+
+        has_exercise_context = False
+        if hasattr(context, "get"):
+            has_exercise_context = bool(
+                context.get("exercise_content") or context.get("exercise_metadata")
+            )
+        elif hasattr(context, "shared_memory"):
+            shared_memory = getattr(context, "shared_memory", {})
+            if isinstance(shared_memory, dict):
+                has_exercise_context = bool(
+                    shared_memory.get("exercise_content") or shared_memory.get("exercise_metadata")
+                )
+
+        if not has_exercise_context:
+            return False, ""
+
+        blocked_tools = {
+            "run_shell",
+            "execute_shell",
+            "shell",
+            "bash",
+            "sh",
+            "powershell",
+            "cmd",
+        }
+        if tool_name in blocked_tools:
+            return True, "unsafe_tool_for_education_request"
+
+        return False, ""
