@@ -82,8 +82,8 @@ class ArchitectAgent(AgentArchitect):
         تحويل خطوات الخطة الاستراتيجية إلى مهام تقنية دقيقة قابلة للتنفيذ بواسطة أدوات النظام.
 
         الأدوات المتاحة (Common Tools):
-        - read_file(filepath)
-        - write_file(filepath, content)
+        - read_file(path)
+        - write_file(path, content)
         - list_files(path)
         - run_shell(command) (Use carefully)
         - git_status()
@@ -102,7 +102,7 @@ class ArchitectAgent(AgentArchitect):
                 {
                     "name": "اسم المهمة",
                     "tool_name": "write_file",
-                    "tool_args": {"filepath": "src/main.py", "content": "logger.info('hello')"},
+                    "tool_args": {"path": "src/main.py", "content": "logger.info('hello')"},
                     "description": "وصف تقني"
                 }
             ]
