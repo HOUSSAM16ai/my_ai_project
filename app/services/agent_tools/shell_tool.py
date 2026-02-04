@@ -232,4 +232,5 @@ def register_shell_tool(registry: dict) -> None:
     registry["shell"] = execute_shell
     registry["execute_shell"] = execute_shell
     registry["run_command"] = execute_shell
+    registry["run_shell"] = execute_shell
     logger.info("Shell tool registered successfully")
