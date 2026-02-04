@@ -32,6 +32,7 @@ def setup_module_environment():
 
     # Import models BEFORE patching to ensure it's not mocked or affected by mocked deps
     import microservices.research_agent.src.search_engine.models as m
+
     models_module = m
 
     # Start the patch

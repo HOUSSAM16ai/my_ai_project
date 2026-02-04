@@ -37,6 +37,7 @@ async def test_bootstrap_admin_allows_login(db_session, async_client: AsyncClien
 @pytest.mark.asyncio
 async def test_bootstrap_updates_rotated_credentials(db_session, monkeypatch):
     from sqlalchemy import text
+
     # Ensure clean slate for this test specifically if global fixture failed
     await db_session.execute(text("DELETE FROM users WHERE email = 'codespaces-admin@example.com'"))
     await db_session.commit()

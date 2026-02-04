@@ -111,6 +111,7 @@ async def test_login_rate_limit_blocks_bruteforce(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_admin_can_suspend_user_and_audit(db_session, async_client: AsyncClient):
     from sqlalchemy import text
+
     # Ensure clean slate
     await db_session.execute(text("DELETE FROM users WHERE email = 'admin@example.com'"))
     await db_session.commit()
