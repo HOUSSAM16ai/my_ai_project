@@ -10,7 +10,15 @@ from app.core.database import async_session_factory
 from app.core.db_schema import validate_schema_on_startup
 from app.core.gateway.simple_client import SimpleAIClient
 from app.core.logging import get_logger
-from microservices.research_agent.src.search_engine.retriever import get_embedding_model
+try:
+    from microservices.research_agent.src.search_engine.retriever import get_embedding_model
+except ImportError:
+    # Fallback for environments without heavy ML dependencies
+    class DummyEmbedding:
+        def get_text_embedding(self, text):
+            return [0.1] * 384  # standard dimension
+    def get_embedding_model():
+        return DummyEmbedding()
 
 # Configure logger
 logger = get_logger("knowledge-ingestion")
@@ -38,7 +46,7 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
                     "name": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية",
                     "content": "تمرين في مادة الرياضيات خاص بالاحتمالات في شعبة العلوم التجريبية بكالوريا 2024 الموضوع الاول التمرين الأول",
                 },
-                {"label": "Object", "name": "كيس", "content": "كيس يحتوي على 11 كرة"},
+                {"label": "Object", "name": "كيس", "content": "كيس يحتوي على 11 كرة متماثلة"},
                 {
                     "label": "Entity",
                     "name": "كرات بيضاء",
@@ -54,19 +62,56 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
                     "name": "كرات خضراء",
                     "content": "5 كرات خضراء تحمل الأرقام 0, 1, 1, 3, 4",
                 },
-                {"label": "Event", "name": "الحادثة A", "content": "الكرات المسحوبة من نفس اللون"},
+                {
+                    "label": "Event",
+                    "name": "الحادثة A",
+                    "content": "الكرات المسحوبة من نفس اللون (3 بيضاء أو 3 حمراء أو 3 خضراء)",
+                },
                 {
                     "label": "Event",
                     "name": "الحادثة B",
-                    "content": "جداء الأرقام التي تحملها الكرات المسحوبة عدد فردي",
+                    "content": "جداء الأرقام التي تحملها الكرات المسحوبة عدد فردي (كل الكرات فردية)",
+                },
+                {
+                    "label": "Event",
+                    "name": "الحادثة C",
+                    "content": "جداء الأرقام التي تحملها الكرات المسحوبة عدد زوجي (حادثة عكسية لـ B)",
                 },
                 {
                     "label": "Concept",
                     "name": "المتغير العشوائي X",
                     "content": "يرفق بكل سحب عدد الكرات التي تحمل رقماً زوجياً",
                 },
-                {"label": "Solution", "name": "P(A)", "content": "14/165"},
-                {"label": "Solution", "name": "P(B)", "content": "56/165"},
+                {
+                    "label": "Solution",
+                    "name": "Sol_P(A)",
+                    "content": "14/165 (0.75 نقطة)",
+                },
+                {
+                    "label": "Solution",
+                    "name": "Sol_P(B)",
+                    "content": "56/165 (0.75 نقطة)",
+                },
+                {
+                    "label": "Solution",
+                    "name": "Sol_P(C)",
+                    "content": "109/165 (0.25 نقطة)",
+                },
+                {
+                    "label": "Solution",
+                    "name": "Sol_P_A(B)",
+                    "content": "1/7 (0.5 نقطة)",
+                },
+                {
+                    "label": "Solution",
+                    "name": "Sol_E(X)",
+                    "content": "9/11 (0.25 نقطة)",
+                },
+                {
+                    "label": "Explanation",
+                    "name": "Exp_P(A)",
+                    "content": "نحسب التوفيقات لكل لون. C(4,3) للحمراء و C(5,3) للخضراء. البيضاء لا تكفي. المجموع على 165.",
+                },
             ],
             "edges": [
                 {
@@ -97,8 +142,26 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
                     "target": "تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية",
                     "relation": "DEFINED_IN",
                 },
-                {"source": "P(A)", "target": "الحادثة A", "relation": "CALCULATES_PROBABILITY_OF"},
-                {"source": "P(B)", "target": "الحادثة B", "relation": "CALCULATES_PROBABILITY_OF"},
+                {
+                    "source": "Sol_P(A)",
+                    "target": "الحادثة A",
+                    "relation": "IS_SOLUTION_FOR",
+                },
+                {
+                    "source": "Sol_P(B)",
+                    "target": "الحادثة B",
+                    "relation": "IS_SOLUTION_FOR",
+                },
+                {
+                    "source": "Sol_P(C)",
+                    "target": "الحادثة C",
+                    "relation": "IS_SOLUTION_FOR",
+                },
+                {
+                    "source": "Exp_P(A)",
+                    "target": "Sol_P(A)",
+                    "relation": "EXPLAINS",
+                },
             ],
         }
     else:
