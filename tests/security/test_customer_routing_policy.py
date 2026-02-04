@@ -5,6 +5,7 @@ from httpx import AsyncClient
 @pytest.mark.asyncio
 async def test_standard_login_returns_chat_landing(async_client: AsyncClient, db_session) -> None:
     from sqlalchemy import text
+
     # Cleanup before test to avoid 400 Bad Request (Duplicate Email)
     await db_session.execute(text("DELETE FROM users WHERE email = 'student@example.com'"))
     await db_session.commit()
