@@ -88,12 +88,16 @@ class ArchitectAgent(AgentArchitect):
         - run_shell(command) (Use carefully)
         - git_status()
         - git_commit(message)
+        - search_educational_content(query, year, subject, branch, exam_ref, exercise_id)
+        - search_content(q, level, subject, branch, set_name, year, type, lang, limit)
+        - get_content_raw(content_id, include_solution)
 
         القواعد:
         1. كل خطوة في الخطة يجب أن تتحول إلى مهمة واحدة أو أكثر.
         2. يجب تحديد اسم الأداة (tool_name) بدقة.
         3. معاملات الأداة (tool_args) يجب أن تكون JSON object.
-        4. المخرجات يجب أن تكون JSON صالح فقط.
+        4. عند طلب تمرين أو محتوى تعليمي محدد، ابدأ بـ search_educational_content مع تمرير السنة والشعبة والموضوع ورقم التمرين، ثم استخدم get_content_raw إذا عاد معرف محتوى.
+        5. المخرجات يجب أن تكون JSON صالح فقط.
 
         صيغة JSON المطلوبة:
         {

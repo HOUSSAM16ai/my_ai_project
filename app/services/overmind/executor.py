@@ -16,6 +16,7 @@ from collections.abc import Awaitable, Callable
 
 from app.core.domain.mission import Task
 from app.core.protocols import MissionStateManagerProtocol
+from app.services.overmind.tool_canonicalizer import canonicalize_tool_name
 
 logger = logging.getLogger(__name__)
 
@@ -65,12 +66,27 @@ class TaskExecutor:
         if not self.registry:
             return {"status": "failed", "error": "Agent tools registry is empty."}
 
+        if not tool_name:
+            return {"status": "failed", "error": "Task is missing tool_name."}
+
+        resolved_name, canonical_notes = self._resolve_tool_name(
+            tool_name, task.description or ""
+        )
+
         try:
             # 2. البحث عن الأداة
-            tool_func = self.registry.get(tool_name)
+            tool_func = self.registry.get(resolved_name)
 
             if not tool_func:
-                return {"status": "failed", "error": f"Tool '{tool_name}' not found in registry."}
+                return {
+                    "status": "failed",
+                    "error": f"Tool '{resolved_name}' not found in registry.",
+                    "meta": {
+                        "tool": resolved_name,
+                        "original_tool": tool_name,
+                        "canonical_notes": canonical_notes,
+                    },
+                }
 
             # 3. التنفيذ (Execution)
             # دعم الأدوات المتزامنة وغير المتزامنة
@@ -98,12 +114,24 @@ class TaskExecutor:
                 "status": "success",
                 "result_text": result_text,
                 "result_data": result_data,
-                "meta": {"tool": tool_name},
+                "meta": {
+                    "tool": resolved_name,
+                    "original_tool": tool_name,
+                    "canonical_notes": canonical_notes,
+                },
             }
 
         except Exception as e:
             logger.error(f"Task Execution Error ({tool_name}): {e}", exc_info=True)
-            return {"status": "failed", "error": str(e)}
+            return {
+                "status": "failed",
+                "error": str(e),
+                "meta": {
+                    "tool": resolved_name,
+                    "original_tool": tool_name,
+                    "canonical_notes": canonical_notes,
+                },
+            }
 
     def _parse_args(self, args_json: str | dict[str, object] | None) -> dict[str, object]:
         """
@@ -127,3 +155,17 @@ class TaskExecutor:
         except json.JSONDecodeError:
             logger.warning("Failed to decode tool arguments JSON.")
             return {}
+
+    def _resolve_tool_name(self, tool_name: str, description: str) -> tuple[str, list[str]]:
+        """
+        توحيد اسم الأداة قبل التنفيذ لضمان التوافق مع سجل الأدوات.
+
+        Args:
+            tool_name: الاسم الخام للأداة القادمة من الوكلاء.
+            description: وصف المهمة لاستخلاص النية عند الحاجة.
+
+        Returns:
+            tuple[str, list[str]]: الاسم الموحّد وملاحظات التوحيد.
+        """
+        canonical_name, notes = canonicalize_tool_name(tool_name, description)
+        return canonical_name, notes

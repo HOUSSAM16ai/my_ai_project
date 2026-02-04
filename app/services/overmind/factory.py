@@ -46,8 +46,10 @@ async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
 
     # Register Content tools dynamically to avoid circular dependency
     from app.services.chat.tools.content import register_content_tools
+    from app.services.chat.tools.retrieval import search_educational_content
 
     register_content_tools(registry)
+    registry["search_educational_content"] = search_educational_content
 
     # تم تحديث TaskExecutor ليقبل السجل صراحةً (Dependency Injection)
     # Refactoring: Using keyword arguments for Static Connascence

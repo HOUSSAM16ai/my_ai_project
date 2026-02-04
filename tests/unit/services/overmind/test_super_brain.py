@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import asyncio
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from app.core.domain.models import Mission
-from app.services.overmind.domain.cognitive import SuperBrain
+from app.services.overmind.domain.cognitive import SuperBrain, _extract_exercise_request
 from app.services.overmind.domain.context import InMemoryCollaborationContext
 from app.services.overmind.domain.enums import CognitivePhase
 
@@ -124,7 +125,11 @@ async def test_super_brain_loop_success():
     mission = Mission(id=1, objective="Build a spaceship")
 
     # 2. Execute
-    result = await brain.process_mission(mission)
+    with patch(
+        "app.services.chat.tools.retrieval.search_educational_content",
+        new=AsyncMock(return_value=""),
+    ):
+        result = await brain.process_mission(mission)
 
     # 3. Verify
     assert result == {"status": "success"}
@@ -138,6 +143,49 @@ async def test_super_brain_loop_success():
 
     # Auditor called twice (Plan Review + Final Review)
     assert auditor.review_calls == AUDITOR_EXPECTED_REVIEWS
+
+
+@pytest.mark.asyncio
+async def test_super_brain_seeds_exercise_context():
+    strategist = StubPlanner(plans=[{"steps": ["do_something"]}])
+    architect = StubArchitect(design={"tasks": [{"id": 1}]})
+    operator = StubOperator(result={"status": "success"})
+    auditor = StubAuditor(
+        reviews=[
+            {"approved": True, "feedback": "Plan Good"},
+            {"approved": True, "feedback": "Execution Good"},
+        ]
+    )
+
+    brain = SuperBrain(
+        strategist=strategist, architect=architect, operator=operator, auditor=auditor
+    )
+
+    mission = Mission(
+        id=3,
+        objective="اعطني تمرين الاحتمالات بكالوريا شعبة علوم تجريبية الموضوع الاول التمرين الأول لسنة 2024 في مادة الرياضيات",
+    )
+
+    with patch(
+        "app.services.chat.tools.retrieval.search_educational_content",
+        new=AsyncMock(return_value="نص التمرين"),
+    ):
+        await brain.process_mission(mission)
+
+    seeded_context = strategist.contexts[0]
+    assert seeded_context.get("exercise_content") == "نص التمرين"
+    assert seeded_context.get("exercise_metadata")["year"] == "2024"
+
+
+def test_extract_exercise_request_handles_arabic_digits():
+    payload = _extract_exercise_request(
+        "أعطني تمرين بكالوريا ٢٠٢٤ الموضوع الثاني التمرين ٢"
+    )
+
+    assert payload is not None
+    assert payload["year"] == "2024"
+    assert payload["exam_ref"] == "الموضوع الثاني"
+    assert payload["exercise_id"] == "2"
 
 
 @pytest.mark.asyncio
