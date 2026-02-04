@@ -10,6 +10,23 @@ import yaml
 from app.core.logging import get_logger
 from app.services.chat.tools.retrieval import parsing
 
+_SUBJECT_VARIANTS = {
+    "رياضيات": {"mathematics", "math", "الرياضيات", "مادة الرياضيات"},
+    "mathematics": {"رياضيات", "math", "الرياضيات"},
+}
+
+_BRANCH_VARIANTS = {
+    "علوم تجريبية": {"experimental sciences", "experimental_sciences", "science", "sciences"},
+    "experimental sciences": {"علوم تجريبية", "science", "sciences"},
+    "experimental_sciences": {"علوم تجريبية", "experimental sciences", "science", "sciences"},
+}
+
+_EXAM_REF_VARIANTS = {
+    "الموضوع الأول": {"subject 1", "subject_1", "الموضوع 1", "موضوع 1"},
+    "الموضوع الثاني": {"subject 2", "subject_2", "الموضوع 2", "موضوع 2"},
+    "الموضوع الثالث": {"subject 3", "subject_3", "الموضوع 3", "موضوع 3"},
+}
+
 logger = get_logger("tool-retrieval-local")
 
 # Directories to search for content
@@ -68,7 +85,6 @@ def search_local_knowledge_base(
                             meta_dict = metadata
 
                         # Flexible Matching Logic for Fallback
-
                         # 1. Check Year
                         if year and str(meta_dict.get("year", "")) != str(year):
                             continue
@@ -76,9 +92,8 @@ def search_local_knowledge_base(
                         # 2. Check Subject
                         if subject:
                             file_subject = str(meta_dict.get("subject", "")).lower()
-                            if (
-                                subject.lower() not in file_subject
-                                and file_subject not in subject.lower()
+                            if not _matches_semantic_value(
+                                subject, file_subject, _SUBJECT_VARIANTS
                             ):
                                 continue
 
@@ -99,9 +114,8 @@ def search_local_knowledge_base(
                                     continue
                             else:
                                 file_branch_norm = str(file_branch).lower().replace("_", " ")
-                                if (
-                                    file_branch_norm not in branch_query
-                                    and branch_query not in file_branch_norm
+                                if not _matches_semantic_value(
+                                    branch_query, file_branch_norm, _BRANCH_VARIANTS
                                 ):
                                     continue
 
@@ -111,9 +125,8 @@ def search_local_knowledge_base(
                             file_ref = str(
                                 meta_dict.get("exam_ref", "") or meta_dict.get("set", "")
                             ).lower()
-                            if (
-                                exam_ref.lower() not in file_ref
-                                and file_ref not in exam_ref.lower()
+                            if not _matches_semantic_value(
+                                exam_ref, file_ref, _EXAM_REF_VARIANTS
                             ):
                                 continue
 
@@ -131,6 +144,39 @@ def search_local_knowledge_base(
                     except yaml.YAMLError:
                         logger.error(f"Failed to parse YAML in {md_file}")
                         continue
+            else:
+                metadata, body = _parse_inline_metadata(content)
+                if not metadata:
+                    continue
+
+                if year and str(metadata.get("year", "")) != str(year):
+                    continue
+
+                if subject:
+                    file_subject = str(metadata.get("subject", "")).lower()
+                    if not _matches_semantic_value(subject, file_subject, _SUBJECT_VARIANTS):
+                        continue
+
+                if branch:
+                    file_branch_norm = str(metadata.get("branch", "")).lower().replace("_", " ")
+                    branch_query = branch.lower().replace("_", " ")
+                    if not _matches_semantic_value(
+                        branch_query, file_branch_norm, _BRANCH_VARIANTS
+                    ):
+                        continue
+
+                if exam_ref:
+                    file_ref = str(metadata.get("exam_ref", "") or metadata.get("set", "")).lower()
+                    if not _matches_semantic_value(exam_ref, file_ref, _EXAM_REF_VARIANTS):
+                        continue
+
+                extracted_exercise = parsing.extract_specific_exercise(body, query)
+                is_specific = parsing.is_specific_request(query)
+
+                if extracted_exercise:
+                    matches.append(extracted_exercise)
+                elif not is_specific:
+                    matches.append(body.strip())
 
             # Support files without frontmatter or with different format?
             # For now, we stick to frontmatter-based files as per original logic,
@@ -147,3 +193,52 @@ def search_local_knowledge_base(
     unique_matches = parsing.deduplicate_contents(matches)
 
     return "\n\n".join(unique_matches[:3]).strip()
+
+
+def _matches_semantic_value(
+    query: str, file_value: str, variants_map: dict[str, set[str]]
+) -> bool:
+    """
+    مطابقة مرنة بين قيم الاستعلام والقيم المخزنة في الملفات.
+    """
+    query_norm = query.lower().strip()
+    file_norm = file_value.lower().strip()
+
+    if query_norm in file_norm or file_norm in query_norm:
+        return True
+
+    variants = variants_map.get(query_norm, set())
+    if any(variant in file_norm or file_norm in variant for variant in variants):
+        return True
+
+    return False
+
+
+def _parse_inline_metadata(content: str) -> tuple[dict[str, object], str]:
+    """
+    استخراج بيانات وصفية في حال كانت في بداية الملف بدون فاصل YAML.
+    """
+    lines = content.splitlines()
+    metadata_lines: list[str] = []
+    body_start = 0
+
+    for idx, line in enumerate(lines):
+        if not line.strip():
+            body_start = idx + 1
+            break
+        if ":" not in line:
+            metadata_lines = []
+            body_start = 0
+            break
+        metadata_lines.append(line)
+
+    if not metadata_lines:
+        return {}, content
+
+    try:
+        metadata = yaml.safe_load("\n".join(metadata_lines)) or {}
+    except yaml.YAMLError:
+        return {}, content
+
+    body = "\n".join(lines[body_start:]).strip()
+    return metadata if isinstance(metadata, dict) else {}, body
