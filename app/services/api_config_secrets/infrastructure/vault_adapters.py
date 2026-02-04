@@ -17,7 +17,15 @@ class SecretEncryption:
             # Generate a key from environment or create new one
             master_key_str = os.environ.get("MASTER_ENCRYPTION_KEY")
             if master_key_str:
-                master_key = base64.urlsafe_b64decode(master_key_str.encode())
+                # The environment variable is expected to be the base64-encoded key itself
+                # Fernet(key) expects the url-safe base64-encoded 32-byte key directly.
+                # If we decode it, we might be getting raw bytes that Fernet.init() doesn't want
+                # if it expects the encoded version.
+                # However, Fernet(key) doc says:
+                # key (bytes or str) – A URL-safe base64-encoded 32-byte key.
+                # So we should pass the encoded bytes or string directly.
+                if isinstance(master_key_str, str):
+                    master_key = master_key_str.encode()
             else:
                 master_key = Fernet.generate_key()
 

@@ -108,11 +108,15 @@ async def test_ensure_admin_user_exists_already_admin(db_session):
 
     service = UserService(db_session, settings)
 
-    # Pre-create admin
-    admin = User(email="admin@example.com", full_name="Admin", is_admin=True)
-    admin.set_password("adminpass")
-    db_session.add(admin)
-    await db_session.commit()
+    # Pre-create admin if not exists
+    stmt = select(User).filter_by(email="admin@example.com")
+    existing = (await db_session.execute(stmt)).scalar_one_or_none()
+
+    if not existing:
+        admin = User(email="admin@example.com", full_name="Admin", is_admin=True)
+        admin.set_password("adminpass")
+        db_session.add(admin)
+        await db_session.commit()
 
     result = await service.ensure_admin_user_exists()
 
@@ -129,11 +133,20 @@ async def test_ensure_admin_user_exists_promote_user(db_session):
 
     service = UserService(db_session, settings)
 
-    # Pre-create normal user
-    user = User(email="user@example.com", full_name="User", is_admin=False)
-    user.set_password("pass")
-    db_session.add(user)
-    await db_session.commit()
+    # Pre-create normal user if not exists
+    stmt = select(User).filter_by(email="user@example.com")
+    existing = (await db_session.execute(stmt)).scalar_one_or_none()
+
+    if not existing:
+        user = User(email="user@example.com", full_name="User", is_admin=False)
+        user.set_password("pass")
+        db_session.add(user)
+        await db_session.commit()
+    else:
+        user = existing
+        user.is_admin = False
+        db_session.add(user)
+        await db_session.commit()
 
     result = await service.ensure_admin_user_exists()
 

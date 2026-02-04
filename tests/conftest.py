@@ -315,6 +315,12 @@ def admin_user(db_session: AsyncSession, event_loop: asyncio.AbstractEventLoop) 
     from app.core.domain.user import User
 
     async def _create_user() -> User:
+        from sqlalchemy import select
+        stmt = select(User).where(User.email == "admin@example.com")
+        existing = (await db_session.execute(stmt)).scalar_one_or_none()
+        if existing:
+            return existing
+
         user = User(full_name="Admin", email="admin@example.com", is_admin=True)
         user.set_password("AdminPass123!")
         db_session.add(user)
