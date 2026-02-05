@@ -125,9 +125,7 @@ def search_local_knowledge_base(
                             file_ref = str(
                                 meta_dict.get("exam_ref", "") or meta_dict.get("set", "")
                             ).lower()
-                            if not _matches_semantic_value(
-                                exam_ref, file_ref, _EXAM_REF_VARIANTS
-                            ):
+                            if not _matches_semantic_value(exam_ref, file_ref, _EXAM_REF_VARIANTS):
                                 continue
 
                         # 5. Extract Specific Exercise if requested
@@ -195,9 +193,7 @@ def search_local_knowledge_base(
     return "\n\n".join(unique_matches[:3]).strip()
 
 
-def _matches_semantic_value(
-    query: str, file_value: str, variants_map: dict[str, set[str]]
-) -> bool:
+def _matches_semantic_value(query: str, file_value: str, variants_map: dict[str, set[str]]) -> bool:
     """
     مطابقة مرنة بين قيم الاستعلام والقيم المخزنة في الملفات.
     """
@@ -208,10 +204,7 @@ def _matches_semantic_value(
         return True
 
     variants = variants_map.get(query_norm, set())
-    if any(variant in file_norm or file_norm in variant for variant in variants):
-        return True
-
-    return False
+    return any(variant in file_norm or file_norm in variant for variant in variants)
 
 
 def _parse_inline_metadata(content: str) -> tuple[dict[str, object], str]:

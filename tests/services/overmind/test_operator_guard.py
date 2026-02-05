@@ -39,7 +39,5 @@ async def test_operator_skips_shell_when_exercise_context_present():
     assert result["tasks_executed"] == 2
     assert executor.execute_task.call_count == 1
 
-    skipped = next(
-        item for item in result["results"] if item.get("status") == "skipped"
-    )
+    skipped = next(item for item in result["results"] if item.get("status") == "skipped")
     assert skipped["reason"] == "unsafe_tool_for_education_request"

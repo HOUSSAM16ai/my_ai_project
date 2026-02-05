@@ -5,6 +5,7 @@ Intent handlers using Strategy pattern.
 import asyncio
 import json
 import logging
+import re
 from collections.abc import AsyncGenerator
 
 from sqlalchemy import select
@@ -349,33 +350,65 @@ class MissionComplexHandler(IntentHandler):
                         tasks = result["results"]
                         lines = [f"✅ **تم تنفيذ {len(tasks)} مهمة بنجاح:**\n"]
                         for t in tasks:
-                            if isinstance(t, dict):
-                                name = t.get("name", "مهمة")
-                                res = t.get("result", {})
+                            if not isinstance(t, dict):
+                                continue
 
-                                val = res.get("result_text") if isinstance(res, dict) else str(res)
-                                file_content = ""
+                            name = t.get("name", "مهمة")
 
-                                # Auto-read file content if written
-                                result_data = (
-                                    res.get("result_data") if isinstance(res, dict) else None
-                                )
-                                if result_data and isinstance(result_data, dict):
-                                    data_payload = result_data.get("data", {})
-                                    if (
-                                        isinstance(data_payload, dict)
-                                        and data_payload.get("written")
-                                        and data_payload.get("path")
-                                    ):
-                                        path = data_payload["path"]
-                                        try:
-                                            with open(path, encoding="utf-8") as f:
-                                                content = f.read()
-                                            file_content = f"\n\n**محتوى الملف ({path}):**\n```\n{content}\n```"
-                                        except Exception as e:
-                                            logger.warning(f"Failed to auto-read file {path}: {e}")
+                            # Handle Skipped
+                            if t.get("status") == "skipped":
+                                reason = t.get("reason", "غير محدد")
+                                lines.append(f"🔹 **{name}**: ⏭️ تم التجاوز ({reason})\n")
+                                continue
 
-                                lines.append(f"🔹 **{name}**:\n{val}\n{file_content}\n")
+                            res = t.get("result", {})
+                            if not res:
+                                lines.append(f"🔹 **{name}**: (لا توجد نتيجة)\n")
+                                continue
+
+                            # Extract content
+                            result_data = res.get("result_data")
+                            result_text = res.get("result_text")
+
+                            display_text = ""
+
+                            if result_data:
+                                display_text = _format_tool_result_data(result_data)
+                            elif result_text:
+                                if isinstance(result_text, str):
+                                    try:
+                                        if result_text.strip().startswith(("{", "[")):
+                                            parsed = json.loads(result_text)
+                                            display_text = _format_tool_result_data(parsed)
+                                        else:
+                                            display_text = _clean_raw_string(result_text)
+                                    except Exception:
+                                        display_text = result_text
+                                else:
+                                    display_text = str(result_text)
+                            else:
+                                display_text = "لا توجد بيانات"
+
+                            # Auto-read file content if written
+                            file_content = ""
+                            if result_data and isinstance(result_data, dict):
+                                data_payload = result_data.get("data", {})
+                                if (
+                                    isinstance(data_payload, dict)
+                                    and data_payload.get("written")
+                                    and data_payload.get("path")
+                                ):
+                                    path = data_payload["path"]
+                                    try:
+                                        with open(path, encoding="utf-8") as f:
+                                            content = f.read()
+                                        file_content = (
+                                            f"\n\n**محتوى الملف ({path}):**\n```\n{content}\n```"
+                                        )
+                                    except Exception as e:
+                                        logger.warning(f"Failed to auto-read file {path}: {e}")
+
+                            lines.append(f"🔹 **{name}**:\n{display_text}\n{file_content}\n")
                         result_text = "\n".join(lines)
                     else:
                         result_text = json.dumps(result, ensure_ascii=False, indent=2)
@@ -456,6 +489,42 @@ def _format_brain_event(event_name: str, data: dict[str, object] | object) -> st
         return f"🔔 **تحديث معرفي:** {event_name}.\n"
 
     return f"🔹 **{event_name}**: {data}\n"
+
+
+def _format_tool_result_data(data: object) -> str:
+    """Format tool result data for display."""
+    if not isinstance(data, (dict, list)):
+        return str(data)
+
+    # Handle ToolResult structure (only if dict)
+    if isinstance(data, dict) and "ok" in data and ("data" in data or "error" in data):
+        if not data.get("ok"):
+            return f"❌ خطأ: {data.get('error')}"
+
+        inner_data = data.get("data")
+        if inner_data is None:
+            return "✅ تم التنفيذ بنجاح."
+
+        return _format_inner_data(inner_data)
+
+    return _format_inner_data(data)
+
+
+def _format_inner_data(data: object) -> str:
+    """Format inner data (dict/list) nicely."""
+    if isinstance(data, (dict, list)):
+        return json.dumps(data, ensure_ascii=False, indent=2)
+    return str(data)
+
+
+def _clean_raw_string(text: str) -> str:
+    """Clean raw ToolResult string representation."""
+    if text.startswith("ToolResult("):
+        match = re.search(r"data=(.*?)(, error=|$)", text)
+        if match:
+            return f"✅ {match.group(1)}"
+        return text
+    return text
 
 
 class HelpHandler(IntentHandler):

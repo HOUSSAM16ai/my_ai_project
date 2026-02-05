@@ -47,8 +47,7 @@ class StandardPromptStrategist(IPromptStrategist):
             )
             if intent == WriterIntent.GRADING_REQUEST:
                 dual_mode_instructions += (
-                    "3. **سلم التنقيط:**\n"
-                    "   - اعرض سلم التنقيط الرسمي إذا كان متوفراً في السياق.\n"
+                    "3. **سلم التنقيط:**\n   - اعرض سلم التنقيط الرسمي إذا كان متوفراً في السياق.\n"
                 )
 
         diagnosis_instructions = ""
