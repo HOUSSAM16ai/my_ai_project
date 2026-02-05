@@ -53,38 +53,39 @@ class StructuralCodeIntelligence:
 
     def should_analyze(self, file_path: Path) -> bool:
         """Should this file be analyzed?"""
-        path_str = str(file_path)
-
-        # Check exclusions
-        for pattern in self.exclude_patterns:
-            # Enhanced check to avoid partial matches (e.g. matching "src/tests" against "test_")
-            # For directories, ensure they are delimited. For suffixes, check end.
-            if pattern in path_str.split("/"):  # naive directory check
-                return False
-            if pattern in path_str:  # fallback
-                # Special case for node_modules to be strict
-                if "node_modules" in pattern and "node_modules" in path_str:
-                    return True  # This seems wrong, let's fix logic below
-                return False
-
-        # Correct logic for exclusion
-        path_parts = path_str.split("/")
-        for pattern in self.exclude_patterns:
-            if pattern in path_parts:
-                return False
-            if pattern in path_str and not "/" in pattern: # Substring match for filenames mostly
-                 pass # Let the simpler check handle it
-
-        # Robust exclusion
-        if any(ex in path_str for ex in self.exclude_patterns):
-             return False
-
-        # Supported extensions
+        # 1. Supported extensions
         if file_path.suffix not in {".py", ".js", ".jsx", ".ts", ".tsx"}:
             return False
 
-        # Must be in target paths
-        return any(target in path_str for target in self.target_paths)
+        path_str = str(file_path)
+
+        # 2. Must be in target paths
+        if not any(target in path_str for target in self.target_paths):
+            return False
+
+        # 3. Check exclusions
+        # Split path into parts to check directories safely
+        parts = file_path.parts
+
+        for pattern in self.exclude_patterns:
+            # Case A: Pattern is an exact directory name (e.g., 'node_modules', 'venv')
+            if pattern in parts:
+                return False
+
+            # Case B: Pattern matches a file suffix or prefix in any part of the path
+            # This handles 'test_' matching 'test_utils.py' or '_test.py' matching 'api_test.py'
+            for part in parts:
+                if part.startswith(pattern) or part.endswith(pattern):
+                    # Ensure we don't accidentally match things like "latest" with "test"
+                    # Only strict start/end matches or full containment for explicit markers
+                    if pattern == "test_" and not part.startswith("test_"):
+                        continue
+                    return False
+
+            # Case C: Fallback for explicit full-path substrings (less safe, use sparingly)
+            # Generally, the parts check above covers most cases.
+
+        return True
 
     def _create_base_metrics(
         self,
