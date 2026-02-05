@@ -1,7 +1,10 @@
-import pytest
 import json
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from app.services.overmind.agents.auditor import AuditorAgent
+
 
 @pytest.mark.asyncio
 async def test_auditor_handles_empty_response():
