@@ -25,6 +25,7 @@ async def test_auditor_handles_empty_response():
     assert result["approved"] is False
     assert result["score"] == 0.0
 
+
 @pytest.mark.asyncio
 async def test_auditor_handles_malformed_text_response():
     """Test response with no JSON braces."""
@@ -38,6 +39,7 @@ async def test_auditor_handles_malformed_text_response():
 
     assert result["approved"] is False
     assert result["score"] == 0.0
+
 
 @pytest.mark.asyncio
 async def test_auditor_handles_markdown_wrapped_json():
@@ -55,6 +57,7 @@ async def test_auditor_handles_markdown_wrapped_json():
 
     assert result["approved"] is True
     assert result["feedback"] == "Good job"
+
 
 @pytest.mark.asyncio
 async def test_auditor_handles_text_wrapped_json_no_markdown():
