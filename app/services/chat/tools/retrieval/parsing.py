@@ -137,6 +137,29 @@ def extract_solution_block(content: str) -> str | None:
     return "\n".join(extracted_lines).strip()
 
 
+def remove_solution_section(content: str) -> str:
+    """
+    يعيد المحتوى بعد حذف قسم الحل (إذا وجد).
+    مفيد عند طلب 'الأسئلة فقط' من ملف كامل.
+    """
+    lines = content.split("\n")
+    kept_lines = []
+    header_pattern = re.compile(r"^(#{1,3})\s*(.*)")
+
+    for line in lines:
+        match = header_pattern.match(line)
+        if match:
+            header_text = match.group(2)
+            # If we hit a solution header, stop (or skip until next section? Usually solution is at end)
+            # For safety, we assume solution is the last major section or we just truncate there.
+            if is_solution_header(header_text):
+                break
+
+        kept_lines.append(line)
+
+    return "\n".join(kept_lines).strip()
+
+
 def detect_exercise_number(query_lower: str) -> int | None:
     """
     يحدد رقم التمرين المطلوب من نص البحث إن وجد.
