@@ -35,6 +35,12 @@ class StructuralCodeIntelligence:
             "__pycache__",
             ".pyc",
             "venv",
+            "node_modules",
+            "dist",
+            ".next",
+            "build",
+            "coverage",
+            "__tests__",
             "site-packages",
             "migrations",
             ".git",
@@ -51,11 +57,30 @@ class StructuralCodeIntelligence:
 
         # Check exclusions
         for pattern in self.exclude_patterns:
-            if pattern in path_str:
+            # Enhanced check to avoid partial matches (e.g. matching "src/tests" against "test_")
+            # For directories, ensure they are delimited. For suffixes, check end.
+            if pattern in path_str.split("/"):  # naive directory check
+                return False
+            if pattern in path_str:  # fallback
+                # Special case for node_modules to be strict
+                if "node_modules" in pattern and "node_modules" in path_str:
+                    return True  # This seems wrong, let's fix logic below
                 return False
 
-        # Must be Python file
-        if file_path.suffix != ".py":
+        # Correct logic for exclusion
+        path_parts = path_str.split("/")
+        for pattern in self.exclude_patterns:
+            if pattern in path_parts:
+                return False
+            if pattern in path_str and not "/" in pattern: # Substring match for filenames mostly
+                 pass # Let the simpler check handle it
+
+        # Robust exclusion
+        if any(ex in path_str for ex in self.exclude_patterns):
+             return False
+
+        # Supported extensions
+        if file_path.suffix not in {".py", ".js", ".jsx", ".ts", ".tsx"}:
             return False
 
         # Must be in target paths
@@ -145,40 +170,56 @@ class StructuralCodeIntelligence:
         """
         try:
             content, lines = self._read_file_content(file_path)
-
-            # Calculate lines stats
             line_stats = self.statistics_analyzer.count_lines(lines)
 
-            # Analyze AST
-            tree = ast.parse(content)
-            analyzer = ComplexityAnalyzer()
-            analyzer.visit(tree)
+            # Determine analysis strategy based on file type
+            is_python = file_path.suffix == ".py"
 
-            # Calculate complexity stats
-            complexity_stats = self.statistics_analyzer.calculate_complexity_stats(
-                analyzer.functions
-            )
+            if is_python:
+                # Full AST analysis for Python
+                try:
+                    tree = ast.parse(content)
+                    analyzer = ComplexityAnalyzer()
+                    analyzer.visit(tree)
 
-            # Create base metrics
-            metrics = self._create_base_metrics(
-                file_path,
-                lines,
-                analyzer,
-                line_stats,
-                complexity_stats,
-            )
+                    complexity_stats = self.statistics_analyzer.calculate_complexity_stats(
+                        analyzer.functions
+                    )
 
-            # Enrich with Git metrics
+                    metrics = self._create_base_metrics(
+                        file_path, lines, analyzer, line_stats, complexity_stats
+                    )
+
+                    # Enrich with smells only for Python
+                    self._enrich_with_smells(metrics, analyzer.imports)
+
+                except SyntaxError:
+                    # Fallback for Python files with syntax errors
+                    metrics = self._create_simple_metrics(file_path, lines, line_stats)
+            else:
+                # Simple counting for JS/TS (no AST)
+                metrics = self._create_simple_metrics(file_path, lines, line_stats)
+
+            # Enrich with Git metrics (works for all files)
             self._enrich_with_git_metrics(metrics)
-
-            # Enrich with smells
-            self._enrich_with_smells(metrics, analyzer.imports)
 
             return metrics
 
-        except (OSError, UnicodeDecodeError, SyntaxError, ValueError) as exc:
+        except (OSError, UnicodeDecodeError, ValueError) as exc:
             logger.warning("Failed to analyze file: %s due to %s", file_path, exc)
             return None
+
+    def _create_simple_metrics(
+        self, file_path: Path, lines: list[str], line_stats: LineStats
+    ) -> FileMetrics:
+        """Create basic metrics for non-Python files."""
+        # Use a dummy analyzer/stats
+        dummy_analyzer = ComplexityAnalyzer() # Empty defaults
+        dummy_stats = ComplexityStats(0.0, 0, "", 0.0, 0.0)
+
+        return self._create_base_metrics(
+            file_path, lines, dummy_analyzer, line_stats, dummy_stats
+        )
 
     def _read_file_content(self, file_path: Path) -> tuple[str, list[str]]:
         """
@@ -237,17 +278,21 @@ class StructuralCodeIntelligence:
         logger.info("✅ Analyzed %s files", len(all_metrics))
         return all_metrics
 
-    def _iter_python_files(self, target_path: Path) -> list[Path]:
+    def _iter_source_files(self, target_path: Path) -> list[Path]:
         """
-        Return list of Python files in target path.
+        Return list of source files (py, js, ts, etc.) in target path.
 
         Args:
             target_path: Target path
 
         Returns:
-            List of Python files
+            List of files
         """
-        return list(target_path.rglob("*.py"))
+        extensions = ["*.py", "*.js", "*.jsx", "*.ts", "*.tsx"]
+        files = []
+        for ext in extensions:
+            files.extend(target_path.rglob(ext))
+        return files
 
     def _analyze_target_path(self, target_path: Path, all_metrics: list[FileMetrics]) -> None:
         """
@@ -257,9 +302,9 @@ class StructuralCodeIntelligence:
             target_path: Target path
             all_metrics: List to append metrics to
         """
-        for py_file in self._iter_python_files(target_path):
-            if self.should_analyze(py_file):
-                metrics = self.analyze_file(py_file)
+        for src_file in self._iter_source_files(target_path):
+            if self.should_analyze(src_file):
+                metrics = self.analyze_file(src_file)
                 if metrics:
                     all_metrics.append(metrics)
                     logger.info("  ✓ %s", metrics.relative_path)

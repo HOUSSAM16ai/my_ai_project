@@ -35,6 +35,10 @@ _SECTION_STOP_MARKERS_AR_LIST = [
     "تصحيح",
     "اجابة",
     "إجابة",
+    "الاجابة",
+    "الإجابة",
+    "اجابه",
+    "الاجابه",
 ]
 # Regex for Arabic stop markers with word boundaries to avoid false positives (e.g. "تحليل" matching "حل")
 _SECTION_STOP_MARKERS_AR_PATTERN = re.compile(
@@ -47,6 +51,10 @@ _SOLUTION_MARKERS_AR_LIST = [
     "تصحيح",
     "اجابة",
     "إجابة",
+    "الاجابة",
+    "الإجابة",
+    "اجابه",
+    "الاجابه",
 ]
 _SOLUTION_MARKERS_AR_PATTERN = re.compile(r"\b(" + "|".join(_SOLUTION_MARKERS_AR_LIST) + r")\b")
 
