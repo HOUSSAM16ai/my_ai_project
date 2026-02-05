@@ -138,12 +138,11 @@ def search_local_knowledge_base(
                         elif not is_specific:
                             # Only append full body if request was NOT specific
                             matches.append(body.strip())
-                        else:
+                        elif _is_relevant_fallback(meta_dict, body, query):
                             # Fallback: If specific but not found in headers,
                             # check if the file itself is the "specific" thing requested.
                             # e.g. Title contains the query topic or tags contain it.
-                            if _is_relevant_fallback(meta_dict, body, query):
-                                matches.append(body.strip())
+                            matches.append(body.strip())
 
                     except yaml.YAMLError:
                         logger.error(f"Failed to parse YAML in {md_file}")
@@ -179,11 +178,8 @@ def search_local_knowledge_base(
 
                 if extracted_exercise:
                     matches.append(extracted_exercise)
-                elif not is_specific:
+                elif not is_specific or _is_relevant_fallback(metadata, body, query):
                     matches.append(body.strip())
-                else:
-                    if _is_relevant_fallback(metadata, body, query):
-                        matches.append(body.strip())
 
             # Support files without frontmatter or with different format?
             # For now, we stick to frontmatter-based files as per original logic,
