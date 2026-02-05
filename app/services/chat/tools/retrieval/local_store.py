@@ -138,6 +138,12 @@ def search_local_knowledge_base(
                         elif not is_specific:
                             # Only append full body if request was NOT specific
                             matches.append(body.strip())
+                        else:
+                            # Fallback: If specific but not found in headers,
+                            # check if the file itself is the "specific" thing requested.
+                            # e.g. Title contains the query topic or tags contain it.
+                            if _is_relevant_fallback(meta_dict, body, query):
+                                matches.append(body.strip())
 
                     except yaml.YAMLError:
                         logger.error(f"Failed to parse YAML in {md_file}")
@@ -175,6 +181,9 @@ def search_local_knowledge_base(
                     matches.append(extracted_exercise)
                 elif not is_specific:
                     matches.append(body.strip())
+                else:
+                    if _is_relevant_fallback(metadata, body, query):
+                        matches.append(body.strip())
 
             # Support files without frontmatter or with different format?
             # For now, we stick to frontmatter-based files as per original logic,
@@ -205,6 +214,36 @@ def _matches_semantic_value(query: str, file_value: str, variants_map: dict[str,
 
     variants = variants_map.get(query_norm, set())
     return any(variant in file_norm or file_norm in variant for variant in variants)
+
+
+def _is_relevant_fallback(metadata: dict, body: str, query: str) -> bool:
+    """
+    Check if the file is relevant to the specific query (topic/keyword)
+    even if a specific section wasn't extracted.
+    """
+    query_norm = query.lower().strip()
+    query_tokens = query_norm.split()
+
+    # Check title
+    title = str(metadata.get("title", "")).lower()
+    for token in query_tokens:
+        if len(token) < 3:  # Skip short words to avoid noise
+            continue
+        if token in title:
+            return True
+
+    # Check tags
+    tags = metadata.get("tags", [])
+    if isinstance(tags, list):
+        for tag in tags:
+            tag_str = str(tag).lower()
+            for token in query_tokens:
+                if len(token) < 3:
+                    continue
+                if token in tag_str:
+                    return True
+
+    return False
 
 
 def _parse_inline_metadata(content: str) -> tuple[dict[str, object], str]:

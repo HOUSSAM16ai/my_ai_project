@@ -4,6 +4,7 @@ import os
 import uuid
 from pathlib import Path
 
+import yaml
 from sqlalchemy import text
 
 from app.core.database import async_session_factory
@@ -30,6 +31,19 @@ logger = get_logger("knowledge-ingestion")
 async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
     logger.info(f"Processing {filepath}...")
     content = filepath.read_text()
+
+    file_metadata = {"source": str(filepath)}
+
+    # Extract frontmatter
+    if content.startswith("---"):
+        try:
+            parts = content.split("---", 2)
+            if len(parts) >= 3:
+                frontmatter = yaml.safe_load(parts[1])
+                if isinstance(frontmatter, dict):
+                    file_metadata.update(frontmatter)
+        except Exception as e:
+            logger.warning(f"Failed to parse frontmatter for {filepath}: {e}")
 
     # 1. Extraction (The Machine)
     # Check for forced fallback (Deterministic Mode for Demo Files)
@@ -235,7 +249,7 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
                 "name": name,
                 "content": desc,
                 "embedding": embedding,
-                "metadata": json.dumps({"source": str(filepath)}),
+                "metadata": json.dumps(file_metadata),
             }
         )
 
