@@ -424,9 +424,7 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
         await ingest_legacy_content(filepath, file_metadata, content, session)
 
         await session.commit()
-        logger.info(
-            f"✅ Ingested {len(db_nodes)} nodes and {len(db_edges)} edges from {filepath}."
-        )
+        logger.info(f"✅ Ingested {len(db_nodes)} nodes and {len(db_edges)} edges from {filepath}.")
 
 
 async def main():
@@ -474,9 +472,7 @@ async def main():
         # Monkey patch or ensure calls use the desired model
         original_generate = client.generate_text
 
-        async def generate_with_model_override(
-            prompt, model=None, system_prompt=None, **kwargs
-        ):
+        async def generate_with_model_override(prompt, model=None, system_prompt=None, **kwargs):
             return await original_generate(
                 prompt, model=desired_model, system_prompt=system_prompt, **kwargs
             )
