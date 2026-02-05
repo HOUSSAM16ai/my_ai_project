@@ -15,8 +15,10 @@ from app.services.chat.tools.retrieval.constants import (
     _EXERCISE_MARKERS_EN_PATTERN,
     _EXERCISE_NUMBER_PATTERN,
     _EXERCISE_ORDINALS,
-    _SECTION_STOP_MARKERS_AR,
+    _SECTION_STOP_MARKERS_AR_PATTERN,
     _SECTION_STOP_MARKERS_EN_PATTERN,
+    _SOLUTION_MARKERS_AR_PATTERN,
+    _SOLUTION_MARKERS_EN_PATTERN,
     _SUBJECT_SYNONYMS,
     _TOPIC_MAP,
 )
@@ -57,12 +59,33 @@ def is_specific_request(query: str) -> bool:
     return False
 
 
+def is_solution_request(query: str) -> bool:
+    """يتحقق مما إذا كان المستخدم يطلب الحل بشكل صريح."""
+    normalized = normalize_semantic_text(query)
+    if _SOLUTION_MARKERS_AR_PATTERN.search(normalized):
+        return True
+    return _SOLUTION_MARKERS_EN_PATTERN.search(normalized) is not None
+
+
 def extract_specific_exercise(content: str, query: str) -> str | None:
     """
     يستخرج تمرينًا محددًا من محتوى Markdown مع الحفاظ على رأس الملف (العنوان وبطاقة الامتحان).
     يدعم الاستخراج حسب رقم التمرين أو حسب الموضوع.
     """
     query_lower = normalize_semantic_text(query)
+
+    # NEW LOGIC: Check for solution request
+    if is_solution_request(query):
+        sol_text = extract_solution_block(content)
+        if not sol_text:
+            return None
+        # Prepend header for context
+        lines = content.split("\n")
+        header_text = extract_header_block(lines)
+        if header_text:
+            return f"{header_text}\n\n---\n\n{sol_text}"
+        return sol_text
+
     target_exercise_num = detect_exercise_number(query_lower)
     target_topics = collect_target_topics(query_lower, target_exercise_num)
 
@@ -78,6 +101,40 @@ def extract_specific_exercise(content: str, query: str) -> str | None:
     if header_text:
         return f"{header_text}\n\n---\n\n{exercise_text}"
     return exercise_text
+
+
+def extract_solution_block(content: str) -> str | None:
+    """
+    يستخرج قسم الحل من المحتوى.
+    """
+    lines = content.split("\n")
+    extracted_lines = []
+    capture = False
+    header_pattern = re.compile(r"^(#{1,3})\s*(.*)")
+    capture_level = 0
+
+    for line in lines:
+        match = header_pattern.match(line)
+        if match:
+            level = len(match.group(1))
+            header_text = match.group(2)
+
+            if is_solution_header(header_text):
+                capture = True
+                capture_level = level
+                extracted_lines.append(line)
+                continue
+
+            # Stop capturing if we hit a new header of same or higher level
+            if capture and level <= capture_level:
+                capture = False
+
+        if capture:
+            extracted_lines.append(line)
+
+    if not extracted_lines:
+        return None
+    return "\n".join(extracted_lines).strip()
 
 
 def detect_exercise_number(query_lower: str) -> int | None:
@@ -159,12 +216,15 @@ def extract_exercise_block(
     """
     extracted_lines: list[str] = []
     capture = False
-    header_pattern = re.compile(r"^(#{2,3})\s*(.*)")
+    # FIXED: Support H1 (#) headers
+    header_pattern = re.compile(r"^(#{1,3})\s*(.*)")
     number_patterns = build_number_patterns(target_exercise_num)
+    capture_level = 0
 
     for line in lines:
         match = header_pattern.match(line)
         if match:
+            level = len(match.group(1))
             header_text_match = match.group(2)
             header_text_normalized = normalize_semantic_text(header_text_match)
             is_match = is_exercise_header_match(
@@ -176,11 +236,19 @@ def extract_exercise_block(
 
             if is_match:
                 capture = True
+                capture_level = level
                 extracted_lines.append(line)
                 continue
 
-            if capture and is_new_section_header(header_text_normalized):
-                capture = False
+            if capture:
+                # 1. Hierarchy Stop: If new header is same level or higher (e.g. H1 -> H1)
+                if level <= capture_level:
+                    capture = False
+
+                # 2. Explicit Stop Markers (Solution)
+                # Solution usually terminates the exercise block
+                if is_solution_header(header_text_match):
+                    capture = False
 
         if capture:
             extracted_lines.append(line)
@@ -228,9 +296,20 @@ def is_exercise_header_match(
     return False
 
 
+def is_solution_header(header_text: str) -> bool:
+    """
+    يتحقق مما إذا كان العنوان يمثل قسم الحل.
+    """
+    normalized = normalize_semantic_text(header_text)
+    if _SOLUTION_MARKERS_AR_PATTERN.search(normalized):
+        return True
+    return _SOLUTION_MARKERS_EN_PATTERN.search(normalized) is not None
+
+
 def is_new_section_header(header_text: str) -> bool:
     """
     يحدد ما إذا كان العنوان يمثل قسمًا جديدًا يجب إنهاء الالتقاط عنده.
+    (Deprecated logic kept for reference, replaced by hierarchy logic in extract_exercise_block)
     """
     header_normalized = normalize_semantic_text(header_text)
     return has_section_stop_marker(header_normalized)
@@ -325,7 +404,7 @@ def has_section_stop_marker(text_normalized: str) -> bool:
     """
     يتحقق مما إذا كان النص يمثل عنوان قسم جديد يتطلب إيقاف الالتقاط.
     """
-    if any(marker in text_normalized for marker in _SECTION_STOP_MARKERS_AR):
+    if _SECTION_STOP_MARKERS_AR_PATTERN.search(text_normalized):
         return True
     return _SECTION_STOP_MARKERS_EN_PATTERN.search(text_normalized) is not None
 

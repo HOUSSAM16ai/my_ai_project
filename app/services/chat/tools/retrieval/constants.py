@@ -24,7 +24,8 @@ _EXERCISE_ORDINALS = {
 }
 
 _EXERCISE_MARKERS_AR = ["التمرين", "تمرين"]
-_SECTION_STOP_MARKERS_AR = [
+
+_SECTION_STOP_MARKERS_AR_LIST = [
     "التمرين",
     "تمرين",
     "الموضوع",
@@ -35,11 +36,25 @@ _SECTION_STOP_MARKERS_AR = [
     "اجابة",
     "إجابة",
 ]
+# Regex for Arabic stop markers with word boundaries to avoid false positives (e.g. "تحليل" matching "حل")
+_SECTION_STOP_MARKERS_AR_PATTERN = re.compile(
+    r"\b(" + "|".join(_SECTION_STOP_MARKERS_AR_LIST) + r")\b"
+)
+
+_SOLUTION_MARKERS_AR_LIST = [
+    "الحل",
+    "حل",
+    "تصحيح",
+    "اجابة",
+    "إجابة",
+]
+_SOLUTION_MARKERS_AR_PATTERN = re.compile(r"\b(" + "|".join(_SOLUTION_MARKERS_AR_LIST) + r")\b")
 
 _EXERCISE_MARKERS_EN_PATTERN = re.compile(r"(?:^|\b)(exercise|ex)(?:\b|$)")
 _SECTION_STOP_MARKERS_EN_PATTERN = re.compile(
     r"(?:^|\b)(exercise|ex|subject|solution|correction|answer)(?:\b|$)"
 )
+_SOLUTION_MARKERS_EN_PATTERN = re.compile(r"(?:^|\b)(solution|correction|answer)(?:\b|$)")
 _EXERCISE_NUMBER_PATTERN = re.compile(
     r"(?:^|\s)(?:exercise|ex|تمرين|التمرين)"
     r"(?:\s+رقم|\s+no\.?|\s+num\.?|\s+number)?\s*[#(]?\s*(\d+)\s*\)?(?:\s|$)"
