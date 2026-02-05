@@ -413,13 +413,17 @@ class OperatorAgent(AgentExecutor):
             return True, "no_tool_name"
 
         has_exercise_context = False
+        has_exercise_content = False
+
         if hasattr(context, "get"):
+            has_exercise_content = bool(context.get("exercise_content"))
             has_exercise_context = bool(
                 context.get("exercise_content") or context.get("exercise_metadata")
             )
         elif hasattr(context, "shared_memory"):
             shared_memory = getattr(context, "shared_memory", {})
             if isinstance(shared_memory, dict):
+                has_exercise_content = bool(shared_memory.get("exercise_content"))
                 has_exercise_context = bool(
                     shared_memory.get("exercise_content") or shared_memory.get("exercise_metadata")
                 )
@@ -442,10 +446,11 @@ class OperatorAgent(AgentExecutor):
             "list_dir",
             "analyze_path_semantics",
         }
-        if tool_name == "get_content_raw" and has_exercise_context:
+        if tool_name == "get_content_raw" and has_exercise_content:
             return True, "content_already_seeded"
 
-        if tool_name in redundant_tools and has_exercise_context:
+        # Only block redundant tools if we actually have the content
+        if tool_name in redundant_tools and has_exercise_content:
             return True, "redundant_with_seeded_content"
 
         if tool_name in blocked_tools:
