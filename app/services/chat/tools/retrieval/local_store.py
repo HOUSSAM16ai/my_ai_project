@@ -208,10 +208,7 @@ def _matches_semantic_value(
         return True
 
     variants = variants_map.get(query_norm, set())
-    if any(variant in file_norm or file_norm in variant for variant in variants):
-        return True
-
-    return False
+    return any(variant in file_norm or file_norm in variant for variant in variants)
 
 
 def _parse_inline_metadata(content: str) -> tuple[dict[str, object], str]:
