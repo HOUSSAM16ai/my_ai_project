@@ -48,17 +48,13 @@ _SOLUTION_MARKERS_AR_LIST = [
     "اجابة",
     "إجابة",
 ]
-_SOLUTION_MARKERS_AR_PATTERN = re.compile(
-    r"\b(" + "|".join(_SOLUTION_MARKERS_AR_LIST) + r")\b"
-)
+_SOLUTION_MARKERS_AR_PATTERN = re.compile(r"\b(" + "|".join(_SOLUTION_MARKERS_AR_LIST) + r")\b")
 
 _EXERCISE_MARKERS_EN_PATTERN = re.compile(r"(?:^|\b)(exercise|ex)(?:\b|$)")
 _SECTION_STOP_MARKERS_EN_PATTERN = re.compile(
     r"(?:^|\b)(exercise|ex|subject|solution|correction|answer)(?:\b|$)"
 )
-_SOLUTION_MARKERS_EN_PATTERN = re.compile(
-    r"(?:^|\b)(solution|correction|answer)(?:\b|$)"
-)
+_SOLUTION_MARKERS_EN_PATTERN = re.compile(r"(?:^|\b)(solution|correction|answer)(?:\b|$)")
 _EXERCISE_NUMBER_PATTERN = re.compile(
     r"(?:^|\s)(?:exercise|ex|تمرين|التمرين)"
     r"(?:\s+رقم|\s+no\.?|\s+num\.?|\s+number)?\s*[#(]?\s*(\d+)\s*\)?(?:\s|$)"
