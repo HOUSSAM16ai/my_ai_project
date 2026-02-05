@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import json
 import os
 import uuid
@@ -18,7 +19,7 @@ except ImportError:
     # Fallback for environments without heavy ML dependencies
     class DummyEmbedding:
         def get_text_embedding(self, text):
-            return [0.1] * 384  # standard dimension
+            return [0.1] * 1024  # aligned with DB schema (1024)
 
     def get_embedding_model():
         return DummyEmbedding()
@@ -26,6 +27,106 @@ except ImportError:
 
 # Configure logger
 logger = get_logger("knowledge-ingestion")
+
+
+async def ingest_legacy_content(filepath: Path, metadata: dict, content: str, session):
+    """
+    Heuristically ingests the file into content_items and content_solutions
+    to ensure backward compatibility with the existing API.
+    """
+    logger.info(f"Syncing {filepath} to legacy content tables...")
+
+    # 1. Derive ID
+    content_id = filepath.stem  # e.g. bac_2024_probability
+
+    # 2. Heuristic Split (Problem vs Solution)
+    # Strategy: Look for "Solution", "الإجابة", or "Correction" header
+    # If found, split. If not, everything is content.
+
+    # Common headers in this dataset
+    split_markers = ["## 2. الإجابة", "## Solution", "## Correction", "## الحل"]
+
+    problem_md = content
+    solution_md = None
+
+    for marker in split_markers:
+        if marker in content:
+            parts = content.split(marker, 1)
+            problem_md = parts[0].strip()
+            # Re-add marker to solution for context
+            solution_md = marker + parts[1]
+            break
+
+    # 3. Prepare Data
+    title = metadata.get("title", filepath.stem)
+    item_type = metadata.get("type", "exercise")  # Default
+    level = str(metadata.get("grade", ""))
+    subject = metadata.get("subject", "general")
+    branch = metadata.get("branch", "")
+    year = metadata.get("year")
+    set_name = metadata.get("exam_ref", "")
+
+    # SHA for updates
+    sha256 = hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+    # 4. Upsert content_items
+    stmt = text("""
+        INSERT INTO content_items (
+            id, type, title, level, subject, branch, set_name, year, lang, md_content, source_path, sha256, updated_at
+        ) VALUES (
+            :id, :type, :title, :level, :subject, :branch, :set_name, :year, 'ar', :md_content, :source_path, :sha256, NOW()
+        )
+        ON CONFLICT (id) DO UPDATE SET
+            title = EXCLUDED.title,
+            level = EXCLUDED.level,
+            subject = EXCLUDED.subject,
+            branch = EXCLUDED.branch,
+            set_name = EXCLUDED.set_name,
+            year = EXCLUDED.year,
+            md_content = EXCLUDED.md_content,
+            sha256 = EXCLUDED.sha256,
+            updated_at = NOW()
+    """)
+
+    try:
+        await session.execute(
+            stmt,
+            {
+                "id": content_id,
+                "type": item_type,
+                "title": title,
+                "level": level,
+                "subject": subject,
+                "branch": branch,
+                "set_name": set_name,
+                "year": year,
+                "md_content": problem_md,
+                "source_path": str(filepath),
+                "sha256": sha256,
+            },
+        )
+        logger.info(f"✅ Synced content_item: {content_id}")
+    except Exception as e:
+        logger.error(f"Failed to sync content_item {content_id}: {e}")
+
+    # 5. Upsert content_solutions (if exists)
+    if solution_md:
+        sol_sha = hashlib.sha256(solution_md.encode("utf-8")).hexdigest()
+        sol_stmt = text("""
+            INSERT INTO content_solutions (content_id, solution_md, sha256)
+            VALUES (:id, :solution_md, :sha256)
+            ON CONFLICT (content_id) DO UPDATE SET
+                solution_md = EXCLUDED.solution_md,
+                sha256 = EXCLUDED.sha256
+        """)
+        try:
+            await session.execute(
+                sol_stmt,
+                {"id": content_id, "solution_md": solution_md, "sha256": sol_sha},
+            )
+            logger.info(f"✅ Synced content_solution: {content_id}")
+        except Exception as e:
+            logger.error(f"Failed to sync content_solution {content_id}: {e}")
 
 
 async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
@@ -319,8 +420,13 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
                 },
             )
 
+        # 🚀 NEW: Sync to Legacy Content Tables
+        await ingest_legacy_content(filepath, file_metadata, content, session)
+
         await session.commit()
-        logger.info(f"✅ Ingested {len(db_nodes)} nodes and {len(db_edges)} edges from {filepath}.")
+        logger.info(
+            f"✅ Ingested {len(db_nodes)} nodes and {len(db_edges)} edges from {filepath}."
+        )
 
 
 async def main():
@@ -368,7 +474,9 @@ async def main():
         # Monkey patch or ensure calls use the desired model
         original_generate = client.generate_text
 
-        async def generate_with_model_override(prompt, model=None, system_prompt=None, **kwargs):
+        async def generate_with_model_override(
+            prompt, model=None, system_prompt=None, **kwargs
+        ):
             return await original_generate(
                 prompt, model=desired_model, system_prompt=system_prompt, **kwargs
             )
