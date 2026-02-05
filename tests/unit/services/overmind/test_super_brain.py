@@ -178,9 +178,7 @@ async def test_super_brain_seeds_exercise_context():
 
 
 def test_extract_exercise_request_handles_arabic_digits():
-    payload = _extract_exercise_request(
-        "أعطني تمرين بكالوريا ٢٠٢٤ الموضوع الثاني التمرين ٢"
-    )
+    payload = _extract_exercise_request("أعطني تمرين بكالوريا ٢٠٢٤ الموضوع الثاني التمرين ٢")
 
     assert payload is not None
     assert payload["year"] == "2024"

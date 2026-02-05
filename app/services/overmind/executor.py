@@ -69,9 +69,7 @@ class TaskExecutor:
         if not tool_name:
             return {"status": "failed", "error": "Task is missing tool_name."}
 
-        resolved_name, canonical_notes = self._resolve_tool_name(
-            tool_name, task.description or ""
-        )
+        resolved_name, canonical_notes = self._resolve_tool_name(tool_name, task.description or "")
 
         try:
             # 2. البحث عن الأداة

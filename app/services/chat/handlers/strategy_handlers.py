@@ -402,7 +402,9 @@ class MissionComplexHandler(IntentHandler):
                                     try:
                                         with open(path, encoding="utf-8") as f:
                                             content = f.read()
-                                        file_content = f"\n\n**محتوى الملف ({path}):**\n```\n{content}\n```"
+                                        file_content = (
+                                            f"\n\n**محتوى الملف ({path}):**\n```\n{content}\n```"
+                                        )
                                     except Exception as e:
                                         logger.warning(f"Failed to auto-read file {path}: {e}")
 

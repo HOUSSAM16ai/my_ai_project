@@ -41,7 +41,7 @@ def setup_module_environment():
         targets = [
             "microservices.research_agent.src.search_engine.models",
             "microservices.research_agent.src.search_engine.orchestrator",
-            "microservices.research_agent.src.search_engine.strategies"
+            "microservices.research_agent.src.search_engine.strategies",
         ]
         for t in targets:
             sys.modules.pop(t, None)

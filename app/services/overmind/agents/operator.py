@@ -402,9 +402,7 @@ class OperatorAgent(AgentExecutor):
             tool_args["content"] = exercise_content
         return tool_args
 
-    def _should_skip_task(
-        self, tool_name: str, context: CollaborationContext
-    ) -> tuple[bool, str]:
+    def _should_skip_task(self, tool_name: str, context: CollaborationContext) -> tuple[bool, str]:
         """
         تحديد ما إذا كان يجب تجاوز المهمة حمايةً لجودة المهمة الخارقة.
 

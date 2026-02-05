@@ -134,7 +134,9 @@ class FirewallContextComposer(IContextComposer):
             combined_sols = "\n\n".join(
                 [f"**{k.title()}**:\n{v}" for k, v in solution_data.items()]
             )
-            grading_section = f"\n\n### سلم التنقيط (Marking Scheme):\n{grading_block}" if grading_block else ""
+            grading_section = (
+                f"\n\n### سلم التنقيط (Marking Scheme):\n{grading_block}" if grading_block else ""
+            )
             return f"### الحل النموذجي (Official Solution):\n{combined_sols}{grading_section}"
         if grading_block:
             return f"### سلم التنقيط (Marking Scheme):\n{grading_block}"

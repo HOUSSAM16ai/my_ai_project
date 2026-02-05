@@ -13,7 +13,9 @@ class RegexIntentDetector(IIntentDetector):
     # Regex patterns for high-precision detection
     REQUEST_INDICATORS = r"(أريد|بدي|ابغى|عطيني|اعطني|هات|وريني|show|give|want|provide|display|please|plz|من فضلك|لو سمحت)"
     TARGET_NOUNS = r"(حل|إجابة|اجابة|جواب|صحح|تصحيح|solution|answer|result|correction)"
-    GRADING_KEYWORDS = r"(سلم\s*التنقيط|سلم\s*التصحيح|شبكة\s*التنقيط|marking\s*scheme|grading\s*scheme|grading)"
+    GRADING_KEYWORDS = (
+        r"(سلم\s*التنقيط|سلم\s*التصحيح|شبكة\s*التنقيط|marking\s*scheme|grading\s*scheme|grading)"
+    )
     # Updated negation to include "without" variants
     NEGATION_PATTERN = r"(don't|do not|not|no|never|without|sans|لا|ما|لم|لن|ليس|بدون|بلاش|من غير).{0,20}(want|need|give|show|solution|answer|أريد|بدي|تعطيني|عطيني|هات|حل|إجابة)"
     DIAGNOSIS_KEYWORDS = (
