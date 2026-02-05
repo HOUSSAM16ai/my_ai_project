@@ -179,6 +179,18 @@ async def stream_mission_ws(
             await websocket.send_json(
                 {"type": "mission_status", "payload": {"status": status_value}}
             )
+            if not user.is_admin and mission.initiator_id != user.id:
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "payload": {"details": "Unauthorized mission access."},
+                    }
+                )
+                await websocket.close(code=4403)
+                return
+            if mission.status in terminal_statuses:
+                await websocket.close()
+                return
 
             stmt = (
                 select(MissionEvent)
