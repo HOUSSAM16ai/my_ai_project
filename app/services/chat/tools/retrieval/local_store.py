@@ -142,7 +142,13 @@ def search_local_knowledge_base(
                             # Fallback: If specific but not found in headers,
                             # check if the file itself is the "specific" thing requested.
                             # e.g. Title contains the query topic or tags contain it.
-                            matches.append(body.strip())
+
+                            # If the user did NOT explicitly ask for the solution, strip it.
+                            if not parsing.is_solution_request(query):
+                                clean_body = parsing.remove_solution_section(body)
+                                matches.append(clean_body)
+                            else:
+                                matches.append(body.strip())
 
                     except yaml.YAMLError:
                         logger.error(f"Failed to parse YAML in {md_file}")
