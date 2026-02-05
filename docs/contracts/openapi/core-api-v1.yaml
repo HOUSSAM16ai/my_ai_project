@@ -1499,22 +1499,6 @@ paths:
         '200':
           description: Mission details
 
-  /api/v1/overmind/missions/{mission_id}/stream:
-    get:
-      tags:
-        - Agents
-      summary: Stream Overmind Mission
-      operationId: overmindMissionStream
-      parameters:
-        - name: mission_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Mission stream
-
   /qa/question:
     post:
       tags:

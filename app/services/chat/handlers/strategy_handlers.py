@@ -17,6 +17,7 @@ from app.core.agents.system_principles import (
     format_architecture_system_principles,
     format_system_principles,
 )
+from app.core.event_bus import get_event_bus
 from app.core.domain.mission import (
     Mission,
     MissionEvent,
@@ -225,30 +226,40 @@ class MissionComplexHandler(IntentHandler):
                 yield "💡 **الحل:** يرجى إبلاغ الفريق التقني لفحص حالة قاعدة البيانات.\n"
                 return
 
-            # 2. Spawn Background Task (Non-Blocking)
+            # 2. Subscribe for mission events before launching background task
+            event_bus = get_event_bus()
+            event_queue = event_bus.subscribe_queue(f"mission:{mission_id}")
+
+            # 3. Spawn Background Task (Non-Blocking)
             # We pass the factory so the background task can manage its own session
             task = asyncio.create_task(self._run_mission_bg(mission_id, context.session_factory))
 
-            # 3. Poll for Updates
+            # 4. Stream Updates (Event-Driven)
             last_event_id = 0
             running = True
 
-            while running:
-                await asyncio.sleep(1.0)  # Poll interval
-
-                # Check if background task crashed or finished
-                if task.done():
-                    running = False
+            try:
+                while running:
                     try:
-                        await task  # Check for exceptions
-                    except Exception as e:
-                        yield f"❌ **خطأ غير متوقع في النظام:** {e}\n"
-                        logger.error(f"Background mission task failed: {e}")
-                        return
+                        event = await asyncio.wait_for(event_queue.get(), timeout=1.0)
+                    except asyncio.TimeoutError:
+                        event = None
 
-                # Poll events
+                    if event is not None:
+                        last_event_id = max(last_event_id, event.id)
+                        yield self._format_event(event)
+
+                    if task.done():
+                        running = False
+                        try:
+                            await task  # Check for exceptions
+                        except Exception as e:
+                            yield f"❌ **خطأ غير متوقع في النظام:** {e}\n"
+                            logger.error(f"Background mission task failed: {e}")
+                            return
+
+                # Catch-up from DB to ensure no event is missed after task completion.
                 async with context.session_factory() as session:
-                    # Fetch new events
                     stmt = (
                         select(MissionEvent)
                         .where(MissionEvent.mission_id == mission_id)
@@ -262,17 +273,13 @@ class MissionComplexHandler(IntentHandler):
                         last_event_id = event.id
                         yield self._format_event(event)
 
-                    # Check mission status if task is done or we suspect completion
                     mission_check = await session.get(Mission, mission_id)
-                    if (
-                        mission_check.status
-                        in (MissionStatus.SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED)
-                        and running
-                    ):
-                        running = False
+                    if mission_check:
                         yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
 
-            yield "\n✅ **تم انتهاء متابعة المهمة.**\n"
+                yield "\n✅ **تم انتهاء متابعة المهمة.**\n"
+            finally:
+                event_bus.unsubscribe_queue(f"mission:{mission_id}", event_queue)
         except Exception as global_ex:
             logger.critical(f"Critical error in MissionComplexHandler: {global_ex}", exc_info=True)
             yield f"\n🛑 **حدث خطأ حرج أثناء تنفيذ المهمة:** {global_ex}\n"
