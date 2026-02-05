@@ -1,6 +1,10 @@
-import pytest
+import asyncio
 import logging
-from unittest.mock import patch, AsyncMock
+import sys
+from unittest.mock import AsyncMock, patch
+
+import pytest
+
 from app.services.chat.tools.retrieval import service
 
 # Configure logging to see the retrieval process
@@ -71,13 +75,12 @@ async def test_retrieve_bac_2024_probability_exercise():
 
 if __name__ == "__main__":
     # Manually run the async test if executed as script
-    import asyncio
     try:
         asyncio.run(test_retrieve_bac_2024_probability_exercise())
         print("\n🎉 ALL TESTS PASSED: The retrieval system is working efficiently!")
     except AssertionError as e:
         print(f"\n❌ TEST FAILED: {e}")
-        exit(1)
+        sys.exit(1)
     except Exception as e:
         print(f"\n❌ ERROR: {e}")
-        exit(1)
+        sys.exit(1)
