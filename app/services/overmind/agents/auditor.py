@@ -12,6 +12,7 @@
 
 import hashlib
 import json
+import re
 
 from app.core.ai_gateway import AIClient
 from app.core.di import get_logger
@@ -273,15 +274,20 @@ class AuditorAgent(AgentReflector):
     def _clean_json_block(self, text: str) -> str:
         """استخراج JSON من نص قد يحتوي على Markdown code blocks."""
         text = text.strip()
-        if "```json" in text:
-            text = text.split("```json")[1].split("```")[0]
-        elif "```" in text:
-            text = text.split("```")[1].split("```")[0]
 
-        # محاولة استخراج JSON من بين الأقواس إذا لم يكن هناك كتل كود
+        # 1. محاولة استخراج JSON من كتل الكود (Markdown)
+        json_code_block_pattern = r"```(?:json)?\s*(\{.*?\})\s*```"
+        match = re.search(json_code_block_pattern, text, re.DOTALL)
+        if match:
+            return match.group(1).strip()
+
+        # 2. محاولة استخراج JSON من بين الأقواس (Outermost Braces)
         start = text.find("{")
         end = text.rfind("}")
-        if start != -1 and end != -1:
-            text = text[start : end + 1]
 
-        return text.strip()
+        if start != -1 and end != -1 and end > start:
+            return text[start : end + 1].strip()
+
+        # 3. في حال عدم العثور على أي هيكل JSON، نعيد كائن فارغ نصي لتجنب الانهيار
+        # هذا سيؤدي إلى dictionary فارغ، مما يجعل review_work يعيد قيم افتراضية (False)
+        return "{}"
