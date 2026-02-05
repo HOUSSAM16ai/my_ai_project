@@ -215,12 +215,10 @@ class StructuralCodeIntelligence:
     ) -> FileMetrics:
         """Create basic metrics for non-Python files."""
         # Use a dummy analyzer/stats
-        dummy_analyzer = ComplexityAnalyzer() # Empty defaults
+        dummy_analyzer = ComplexityAnalyzer()  # Empty defaults
         dummy_stats = ComplexityStats(0.0, 0, "", 0.0, 0.0)
 
-        return self._create_base_metrics(
-            file_path, lines, dummy_analyzer, line_stats, dummy_stats
-        )
+        return self._create_base_metrics(file_path, lines, dummy_analyzer, line_stats, dummy_stats)
 
     def _read_file_content(self, file_path: Path) -> tuple[str, list[str]]:
         """
