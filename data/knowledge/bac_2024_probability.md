@@ -1,12 +1,12 @@
 ---
 title: تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية الموضوع الاول التمرين الأول
-subject: رياضيات
-grade: 3 ثانوي
+subject: Mathematics
+grade: 3AS
 year: 2024
-branch: علوم تجريبية
-exam_ref: الموضوع الأول
-type: تمرين مع الحل والشرح
-tags: [احتمالات, بكالوريا, علوم تجريبية, 2024]
+branch: Experimental Sciences
+exam_ref: Subject 1
+type: exercise_with_solution
+tags: [probability, baccalaureate, experimental_sciences, 2024]
 ---
 
 # تمرين الاحتمالات بكالوريا 2024 شعبة علوم تجريبية - الموضوع الأول
