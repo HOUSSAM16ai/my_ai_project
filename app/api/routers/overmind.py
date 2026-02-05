@@ -3,7 +3,7 @@
 واجهة برمجة تطبيقات "العقل المدبر" (Overmind Router).
 ---------------------------------------------------------
 توفر هذه الوحدة نقاط النهاية (Endpoints) للتحكم في منظومة الوكلاء الخارقين.
-تعتمد على مبادئ RESTful API وتدعم التدفق (Streaming) للأحداث الحية.
+تعتمد على مبادئ RESTful API مع تشغيل المهام في الخلفية وبث عبر WebSocket.
 
 المعايير:
 - CS50 2025 Strict Mode.
@@ -11,16 +11,20 @@
 - فصل كامل للمسؤوليات (Delegation to Orchestrator).
 """
 
-import json
-from collections.abc import AsyncGenerator, Callable
+import asyncio
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.routers.ws_auth import extract_websocket_auth
+from app.core.config import get_settings
 from app.core.database import async_session_factory, get_db
 from app.core.di import get_logger
-from app.core.domain.mission import Mission
+from app.core.domain.mission import Mission, MissionEvent, MissionEventType, MissionStatus
+from app.core.domain.user import User
+from app.core.event_bus import get_event_bus
+from app.services.auth.token_decoder import decode_user_id
 from app.services.overmind.domain.api_schemas import (
     MissionCreate,
     MissionResponse,
@@ -28,7 +32,6 @@ from app.services.overmind.domain.api_schemas import (
 from app.services.overmind.factory import create_overmind
 from app.services.overmind.orchestrator import OvermindOrchestrator
 from app.services.overmind.runner import run_mission_in_background
-from app.services.overmind.state import MissionStateManager
 
 logger = get_logger(__name__)
 
@@ -36,11 +39,6 @@ router = APIRouter(
     prefix="/api/v1/overmind",
     tags=["Overmind (Super Agent)"],
 )
-
-
-def get_session_factory() -> Callable[[], AsyncSession]:
-    """تبعية للحصول على مصنع الجلسات."""
-    return async_session_factory
 
 
 async def get_orchestrator(db: AsyncSession = Depends(get_db)) -> OvermindOrchestrator:
@@ -129,49 +127,129 @@ async def get_mission(
     return _serialize_mission(mission)
 
 
-@router.get("/missions/{mission_id}/stream", summary="بث أحداث المهمة (Live Stream)")
-async def stream_mission(
+@router.websocket("/missions/{mission_id}/ws")
+async def stream_mission_ws(
+    websocket: WebSocket,
     mission_id: int,
-    db_factory: Callable[[], AsyncSession] = Depends(get_session_factory),
-) -> StreamingResponse:
+) -> None:
     """
-    فتح قناة SSE (Server-Sent Events) لمراقبة تقدم المهمة في الوقت الفعلي.
-
-    ملاحظة:
-    نستخدم `db_factory` لإنشاء جلسة جديدة داخل المولد (Generator) لأن
-    الجلسة المحقونة عبر `Depends` قد تغلق قبل انتهاء البث.
+    بث أحداث المهمة عبر WebSocket مع اعتماد ناقل الأحداث الداخلي.
     """
+    token, selected_protocol = extract_websocket_auth(websocket)
+    if not token:
+        await websocket.close(code=4401)
+        return
 
-    async def event_generator() -> AsyncGenerator[str, None]:
-        async with db_factory() as session:
-            state_manager = MissionStateManager(session)
+    try:
+        user_id = decode_user_id(token, get_settings().SECRET_KEY)
+    except HTTPException:
+        await websocket.close(code=4401)
+        return
 
-            # 1. التحقق من وجود المهمة
-            mission = await state_manager.get_mission(mission_id)
+    async with async_session_factory() as session:
+        user = await session.get(User, user_id)
+        if user is None or not user.is_active:
+            await websocket.close(code=4401)
+            return
+
+    await websocket.accept(subprotocol=selected_protocol)
+
+    event_bus = get_event_bus()
+    event_queue = event_bus.subscribe_queue(f"mission:{mission_id}")
+    last_event_id = 0
+    terminal_statuses = {
+        MissionStatus.SUCCESS,
+        MissionStatus.FAILED,
+        MissionStatus.CANCELED,
+    }
+
+    try:
+        async with async_session_factory() as session:
+            mission = await session.get(Mission, mission_id)
             if not mission:
-                yield "event: error\ndata: Mission not found\n\n"
+                await websocket.send_json(
+                    {"type": "error", "payload": {"details": "Mission not found"}}
+                )
+                await websocket.close(code=4404)
                 return
 
-            # 2. بدء المراقبة عبر مدير الحالة (Information Expert)
-            async for event in state_manager.monitor_mission_events(mission_id):
-                # Serialization: Ensure payload is a JSON string
-                try:
-                    data_str = json.dumps(event.payload_json)
-                except Exception:
-                    data_str = "{}"  # Fallback
+            status_value = (
+                mission.status.value if hasattr(mission.status, "value") else mission.status
+            )
+            await websocket.send_json(
+                {"type": "mission_status", "payload": {"status": status_value}}
+            )
 
-                # إرسال الحدث بتنسيق SSE
-                yield f"event: {event.event_type.value}\ndata: {data_str}\n\n"
+            stmt = (
+                select(MissionEvent)
+                .where(MissionEvent.mission_id == mission_id)
+                .order_by(MissionEvent.id)
+            )
+            result = await session.execute(stmt)
+            events = result.scalars().all()
 
-            # 3. إشارة نهاية التدفق
-            yield "event: close\ndata: [DONE]\n\n"
+            for event in events:
+                last_event_id = event.id
+                await websocket.send_json(
+                    {
+                        "type": "mission_event",
+                        "payload": {
+                            "event_type": event.event_type.value,
+                            "data": event.payload_json,
+                        },
+                    }
+                )
 
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
+        while True:
+            try:
+                event = await asyncio.wait_for(event_queue.get(), timeout=1.0)
+            except asyncio.TimeoutError:
+                async with async_session_factory() as session:
+                    mission = await session.get(Mission, mission_id)
+                    if mission and mission.status in terminal_statuses:
+                        status_value = (
+                            mission.status.value
+                            if hasattr(mission.status, "value")
+                            else mission.status
+                        )
+                        await websocket.send_json(
+                            {"type": "mission_status", "payload": {"status": status_value}}
+                        )
+                        await websocket.close()
+                        return
+                continue
+
+            if event.id <= last_event_id:
+                continue
+
+            last_event_id = event.id
+            await websocket.send_json(
+                {
+                    "type": "mission_event",
+                    "payload": {
+                        "event_type": event.event_type.value,
+                        "data": event.payload_json,
+                    },
+                }
+            )
+
+            if event.event_type in {
+                MissionEventType.MISSION_COMPLETED,
+                MissionEventType.MISSION_FAILED,
+            }:
+                async with async_session_factory() as session:
+                    mission = await session.get(Mission, mission_id)
+                    status_value = (
+                        mission.status.value
+                        if mission and hasattr(mission.status, "value")
+                        else (mission.status if mission else event.event_type.value)
+                    )
+                    await websocket.send_json(
+                        {"type": "mission_status", "payload": {"status": status_value}}
+                    )
+                await websocket.close()
+                return
+    except WebSocketDisconnect:
+        logger.info("Overmind mission websocket disconnected", extra={"mission_id": mission_id})
+    finally:
+        event_bus.unsubscribe_queue(f"mission:{mission_id}", event_queue)
