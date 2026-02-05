@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Verification of Fix</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #f0f2f5;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .phone-container {
+            width: 375px;
+            background: white;
+            border-radius: 30px;
+            border: 8px solid #333;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .header {
+            background: #0088cc;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .chat-area {
+            padding: 15px;
+            background: #e5ddd5;
+            min-height: 300px;
+        }
+        .message {
+            background: white;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .message.system {
+            background: #e1f5fe;
+            border: 1px solid #b3e5fc;
+        }
+        .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            display: block;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 0;
+            font-family: monospace;
+            white-space: pre-wrap; /* Crucial for wrapping long lines in pre if needed, or pre-scroll */
+        }
+
+        /* Simulating the breakage */
+        .broken-layout {
+            /* If the user had overflow: hidden issues or button overlap, it mimics that */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-container">
+        <div class="header">قبل الإصلاح (Before)</div>
+        <div class="chat-area">
+            <div class="message system">
+                <span class="label">Super Mission Agent:</span>
+                <div>
+                    ✅ تم تنفيذ المهمة بنجاح:
+                    <br>
+                    🔹 <strong>إنشاء استمارة</strong>:
+                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 1px solid red; padding: 2px;">
+                        [{"label": "الاسم الكامل", "placeholder": "أدخل الاسم هنا", "type": "text"}, {"label": "العمر", "placeholder": "أدخل العمر", "type": "number"}, {"label": "المدينة", "placeholder": "أدخل المدينة", "type": "text"}]
+                    </div>
+                    <div style="color: red; font-size: 10px;">(Overflowing/Unreadable)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="phone-container">
+        <div class="header">بعد الإصلاح (After)</div>
+        <div class="chat-area">
+            <div class="message system">
+                <span class="label">Super Mission Agent:</span>
+                <div>
+                    ✅ تم تنفيذ المهمة بنجاح:
+                    <br>
+                    🔹 <strong>إنشاء استمارة</strong>:
+                    <pre>
+[
+  {
+    "label": "الاسم الكامل",
+    "placeholder": "أدخل الاسم هنا",
+    "type": "text"
+  },
+  {
+    "label": "العمر",
+    "placeholder": "أدخل العمر",
+    "type": "number"
+  },
+  {
+    "label": "المدينة",
+    "placeholder": "أدخل المدينة",
+    "type": "text"
+  }
+]
+                    </pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
