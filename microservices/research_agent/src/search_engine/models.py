@@ -42,6 +42,7 @@ class SearchResult(BaseModel):
     set_name: str | None = Field(None, alias="set")  # Alias 'set' to match legacy dict
     year: int | None = None
     lang: str | None = None
+    content: str | None = None
 
     # Extra metadata not strictly in the DB schema but useful for debugging
     score: float | None = None

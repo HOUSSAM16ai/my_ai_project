@@ -15,6 +15,8 @@ from app.core.logging import get_logger
 
 try:
     from microservices.research_agent.src.search_engine.retriever import get_embedding_model
+    from llama_index.core import Document, VectorStoreIndex
+    from llama_index.vector_stores.supabase import SupabaseVectorStore
 except ImportError:
     # Fallback for environments without heavy ML dependencies
     class DummyEmbedding:
@@ -23,6 +25,11 @@ except ImportError:
 
     def get_embedding_model():
         return DummyEmbedding()
+
+    # Mock classes if missing
+    Document = None
+    VectorStoreIndex = None
+    SupabaseVectorStore = None
 
 
 # Configure logger
@@ -426,6 +433,50 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
         await session.commit()
         logger.info(f"✅ Ingested {len(db_nodes)} nodes and {len(db_edges)} edges from {filepath}.")
 
+    # 5. Sync to Vectors (Semantic Search)
+    if SupabaseVectorStore and VectorStoreIndex:
+        try:
+            logger.info("Indexing to Supabase Vectors...")
+            db_url = os.environ.get("DATABASE_URL")
+            if db_url:
+                # Ensure sync connection for LlamaIndex
+                pg_url = db_url.replace("+asyncpg", "")
+
+                # Extract content ID for metadata linking
+                content_id = filepath.stem
+
+                # Add specific metadata for search filtering
+                vector_metadata = {
+                    "source": str(filepath),
+                    "content_id": content_id,
+                    "year": file_metadata.get("year"),
+                    "subject": file_metadata.get("subject"),
+                    "branch": file_metadata.get("branch"),
+                    "type": file_metadata.get("type"),
+                }
+
+                # Remove None values
+                vector_metadata = {k: v for k, v in vector_metadata.items() if v is not None}
+
+                doc = Document(text=content, metadata=vector_metadata)
+
+                vector_store = SupabaseVectorStore(
+                    postgres_connection_string=pg_url,
+                    collection_name="vectors",
+                    dimension=1024  # Enforce 1024 for BAAI/bge-m3
+                )
+
+                # Create index (inserts into DB)
+                # We use the same embed_model
+                VectorStoreIndex.from_documents(
+                    [doc],
+                    vector_store=vector_store,
+                    embed_model=embed_model
+                )
+                logger.info("✅ Indexed to Vectors.")
+        except Exception as e:
+            logger.error(f"Failed to index vectors: {e}")
+
 
 async def main():
     print("🚀 Starting Knowledge Ingestion (The Ultimate Super Stack)...")
@@ -434,9 +485,16 @@ async def main():
 
     # Clear existing data to prevent duplicates (since we are force-ingesting demo data)
     async with async_session_factory() as session:
-        print("🧹 Clearing existing Knowledge Graph...")
+        print("🧹 Clearing existing Knowledge Graph & Vectors...")
         await session.execute(text("DELETE FROM knowledge_edges"))
         await session.execute(text("DELETE FROM knowledge_nodes"))
+        # Clear vectors completely to reset dimensions if needed
+        try:
+            await session.execute(text("DROP TABLE IF EXISTS vecs.vectors CASCADE"))
+            await session.execute(text("DROP TABLE IF EXISTS vectors CASCADE"))
+        except Exception as e:
+            logger.warning(f"Failed to drop vectors table: {e}")
+
         await session.commit()
 
     # Configure AI (The Utilities)
