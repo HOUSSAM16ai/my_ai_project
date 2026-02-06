@@ -13,7 +13,14 @@
 
 import asyncio
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -215,7 +222,7 @@ async def stream_mission_ws(
         while True:
             try:
                 event = await asyncio.wait_for(event_queue.get(), timeout=1.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 async with async_session_factory() as session:
                     mission = await session.get(Mission, mission_id)
                     if mission and mission.status in terminal_statuses:
