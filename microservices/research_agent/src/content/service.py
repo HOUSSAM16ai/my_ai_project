@@ -71,6 +71,7 @@ class ContentService:
                 "set": row[6],
                 "year": row[7],
                 "lang": row[8],
+                "content": row[9],
             }
             for row in rows
         ]

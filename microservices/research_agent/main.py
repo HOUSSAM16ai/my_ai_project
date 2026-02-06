@@ -5,11 +5,15 @@
 وإدارة المحتوى (Content Management) من مصادر المعرفة المختلفة.
 """
 
+import asyncio
 import os
 from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
 from pydantic import BaseModel, Field
+
+from microservices.research_agent.src.search_engine.models import SearchFilters, SearchRequest
+from microservices.research_agent.src.search_engine.orchestrator import search_orchestrator
 
 
 @asynccontextmanager
@@ -68,36 +72,48 @@ def _build_router() -> APIRouter:
             if request.action in {"search", "retrieve"}:
                 # Extract parameters
                 query = request.payload.get("query", "")
+                filters_dict = request.payload.get("filters")
+                if not isinstance(filters_dict, dict):
+                    filters_dict = {}
+                limit = request.payload.get("limit")
+                if not isinstance(limit, int):
+                    limit = 5
 
-                # TODO: Integrate with microservices.research_agent.src.search_engine.orchestrator
+                # Construct SearchRequest
+                try:
+                    search_filters = SearchFilters(**filters_dict)
+                except Exception as e:
+                    return AgentResponse(status="error", error=f"Invalid filters: {e}")
 
-                # Mock Result for Simplification/Stub
-                results = [
-                    {
-                        "title": f"Result for {query}",
-                        "snippet": "Relevant content snippet...",
-                        "score": 0.95,
-                    },
-                    {"title": "Secondary Source", "snippet": "More content...", "score": 0.88},
-                ]
+                search_req = SearchRequest(q=query, filters=search_filters, limit=limit)
+
+                # Execute Search via Orchestrator
+                results = await search_orchestrator.search(search_req)
+
+                # Serialize results
+                data_results = [r.model_dump() for r in results]
 
                 return AgentResponse(
                     status="success",
-                    data={"results": results, "total": len(results)},
-                    metrics={"retrieval_ms": 200, "reranking_ms": 50},
+                    data={"results": data_results, "total": len(data_results)},
+                    metrics={"retrieval_ms": 0},  # Orchestrator metrics to be added
                 )
+
             if request.action == "refine":
                 query = request.payload.get("query")
                 api_key = request.payload.get("api_key") or os.environ.get("OPENROUTER_API_KEY")
+
                 if not isinstance(query, str) or not query:
                     return AgentResponse(status="error", error="Missing query for refinement.")
                 if not isinstance(api_key, str) or not api_key:
                     return AgentResponse(status="error", error="Missing API key for refinement.")
+
                 from microservices.research_agent.src.search_engine.query_refiner import (
                     get_refined_query,
                 )
 
-                refined = get_refined_query(query, api_key)
+                # Use asyncio.to_thread to prevent blocking the event loop
+                refined = await asyncio.to_thread(get_refined_query, query, api_key)
                 return AgentResponse(status="success", data=refined, metrics={})
 
             return AgentResponse(
