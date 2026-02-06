@@ -68,14 +68,34 @@ async def test_get_project_metrics_handler(mock_subprocess_run):
     mock_subprocess_run.return_value.stdout = "file1.py\nfile2.py\nfile3.txt"
     mock_subprocess_run.return_value.returncode = 0
 
+    # Mock the return value of build_index to match the expected test data
+    from app.services.overmind.code_intelligence.models import ProjectAnalysis, FileMetrics
+
+    mock_analysis = ProjectAnalysis(
+        timestamp="2024-01-01 00:00:00",
+        files=[
+            FileMetrics(file_path="file1.py", relative_path="file1.py", total_lines=10, code_lines=5, comment_lines=2, blank_lines=3, file_complexity=1),
+            FileMetrics(file_path="file2.py", relative_path="file2.py", total_lines=10, code_lines=5, comment_lines=2, blank_lines=3, file_complexity=1),
+            FileMetrics(file_path="file3.txt", relative_path="file3.txt", total_lines=10, code_lines=0, comment_lines=0, blank_lines=0, file_complexity=0),
+        ],
+        total_files=3,
+        total_lines=30,
+        total_code_lines=10,
+        total_functions=5,
+        total_classes=2,
+        avg_file_complexity=1.0,
+        max_file_complexity=1
+    )
+
     with patch("pathlib.Path.read_text", return_value="# Metrics"):
         with patch("pathlib.Path.exists", return_value=True):
-            metrics = await get_project_metrics_handler()
+            with patch("app.services.agent_tools.domain.metrics.build_index", return_value=mock_analysis):
+                metrics = await get_project_metrics_handler()
 
-            assert metrics["source"] == "PROJECT_METRICS.md"
-            assert metrics["content"] == "# Metrics"
-            assert metrics["live_stats"]["python_files"] == 2
-            assert metrics["live_stats"]["total_files"] == 3
+                assert metrics["source"] == "PROJECT_METRICS.md"
+                assert metrics["content"] == "# Metrics"
+                assert metrics["live_stats"]["python_files"] == 2
+                assert metrics["live_stats"]["total_files"] == 3
 
 
 @pytest.mark.asyncio
