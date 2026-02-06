@@ -2,11 +2,14 @@
 Domain tools for project metrics and file system statistics.
 """
 
+import asyncio
 import os
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from app.services.agent_tools.tool_model import Tool, ToolConfig
+from app.services.overmind.planning.deep_indexer import build_index
 
 
 def get_project_root() -> Path:
@@ -51,7 +54,7 @@ async def count_files_handler(
 
 
 async def get_project_metrics_handler() -> dict[str, object]:
-    """Read PROJECT_METRICS.md and supplement with live data."""
+    """Read PROJECT_METRICS.md and supplement with live data using Deep Indexer."""
     metrics = {}
     metrics_file = get_project_root() / "PROJECT_METRICS.md"
 
@@ -61,19 +64,41 @@ async def get_project_metrics_handler() -> dict[str, object]:
         metrics["content"] = content
     else:
         metrics["source"] = "calculated"
-        metrics["content"] = "Metrics file not found."
+        metrics["content"] = "Metrics file not found. Calculating live..."
 
-    # Live stats
-    # We call the handler directly or replicate logic.
-    # Replicating logic is safer to avoid circular async issues if simple.
-    # But we can await the handler.
-    py_count = (await count_files_handler(".", ".py"))["count"]
-    total_count = (await count_files_handler("."))["count"]
+    # Use Deep Indexer for robust counting (includes JS/TS/etc)
+    try:
+        loop = asyncio.get_running_loop()
+        # Run synchronous build_index in a thread to avoid blocking the loop
+        analysis = await loop.run_in_executor(None, build_index, ".")
 
-    metrics["live_stats"] = {
-        "python_files": py_count,
-        "total_files": total_count,
-    }
+        # Calculate language breakdown
+        js_ts_count = sum(
+            1
+            for f in analysis.files
+            if f.file_path.endswith((".js", ".jsx", ".ts", ".tsx"))
+        )
+        py_count = sum(1 for f in analysis.files if f.file_path.endswith(".py"))
+
+        metrics["live_stats"] = {
+            "total_files": analysis.total_files,
+            "python_files": py_count,
+            "js_ts_files": js_ts_count,
+            "total_lines": analysis.total_lines,
+            "code_lines": analysis.total_code_lines,
+            "avg_complexity": analysis.avg_file_complexity,
+        }
+
+    except Exception as e:
+        # Fallback to simple counter if deep indexer fails
+        py_count = (await count_files_handler(".", ".py"))["count"]
+        total_count = (await count_files_handler("."))["count"]
+        metrics["live_stats"] = {
+            "python_files": py_count,
+            "total_files": total_count,
+            "error": f"Deep Indexer failed: {str(e)}",
+        }
+
     return metrics
 
 
