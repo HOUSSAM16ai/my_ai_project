@@ -88,6 +88,8 @@ class ArchitectAgent(AgentArchitect):
         - run_shell(command) (Use carefully)
         - git_status()
         - git_commit(message)
+        - get_project_metrics()
+        - count_files(directory, extension)
         - search_educational_content(query, year, subject, branch, exam_ref, exercise_id)
         - search_content(q, level, subject, branch, set_name, year, type, lang, limit)
         - get_content_raw(content_id, include_solution)

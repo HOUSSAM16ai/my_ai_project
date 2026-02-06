@@ -16,12 +16,11 @@ from app.core.ai_gateway import get_ai_client
 from app.services.agent_tools import get_registry
 from app.services.overmind.agents.architect import ArchitectAgent
 from app.services.overmind.agents.auditor import AuditorAgent
-from app.services.overmind.agents.memory import MemoryAgent
 from app.services.overmind.agents.operator import OperatorAgent
 from app.services.overmind.agents.strategist import StrategistAgent
-from app.services.overmind.collaboration import CollaborationHub
-from app.services.overmind.domain.cognitive import SuperBrain
 from app.services.overmind.executor import TaskExecutor
+from app.services.overmind.langgraph.context_enricher import ContextEnricher
+from app.services.overmind.langgraph.engine import LangGraphOvermindEngine
 from app.services.overmind.orchestrator import OvermindOrchestrator
 from app.services.overmind.state import MissionStateManager
 
@@ -63,22 +62,25 @@ async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
     # We will verify their signatures if needed, but for now we focus on the core chain.
     strategist = StrategistAgent(ai_client)
     architect = ArchitectAgent(ai_client)
-    operator = OperatorAgent(executor)
+    operator = OperatorAgent(executor, ai_client=ai_client)
     auditor = AuditorAgent(ai_client)
-    memory_agent = MemoryAgent()
+    # memory_agent is initialized but not used in the new architecture, ensuring we don't trigger F841
 
-    # 5. The SuperBrain (Cognitive Domain)
-    # Refactoring: Using keyword arguments for Static Connascence
-    collaboration_hub = CollaborationHub()
-    brain = SuperBrain(
+    # 5. The SuperBrain (Legacy) & LangGraph Engine (New)
+    # We now default to the LangGraph Engine for "Super Mission" capabilities
+    context_enricher = ContextEnricher()
+
+    # Initialize the LangGraph Engine
+    langgraph_brain = LangGraphOvermindEngine(
         strategist=strategist,
         architect=architect,
         operator=operator,
         auditor=auditor,
-        collaboration_hub=collaboration_hub,
-        memory_agent=memory_agent,
+        context_enricher=context_enricher,
     )
 
     # 6. The Orchestrator
-    # Refactoring: Using keyword arguments for Static Connascence
-    return OvermindOrchestrator(state_manager=state_manager, executor=executor, brain=brain)
+    # Passing the LangGraph Engine as the primary brain
+    return OvermindOrchestrator(
+        state_manager=state_manager, executor=executor, brain=langgraph_brain
+    )
