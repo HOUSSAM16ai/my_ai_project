@@ -39,6 +39,11 @@ from app.services.overmind.domain.api_schemas import (
 from app.services.overmind.factory import create_overmind
 from app.services.overmind.orchestrator import OvermindOrchestrator
 from app.services.overmind.runner import run_mission_in_background
+# EXPORT: MissionStateManager is required by integration tests
+from app.services.overmind.state import MissionStateManager  # noqa: F401
+
+# EXPORT: get_session_factory is required by integration tests
+get_session_factory = async_session_factory
 
 logger = get_logger(__name__)
 

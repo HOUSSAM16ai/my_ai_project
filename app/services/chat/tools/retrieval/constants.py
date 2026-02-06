@@ -58,6 +58,24 @@ _SOLUTION_MARKERS_AR_LIST = [
 ]
 _SOLUTION_MARKERS_AR_PATTERN = re.compile(r"\b(" + "|".join(_SOLUTION_MARKERS_AR_LIST) + r")\b")
 
+# NEGATION MARKERS (NEW)
+_SOLUTION_NEGATION_MARKERS_LIST = [
+    "بدون حل",
+    "بلا حل",
+    "دون حل",
+    "من دون حل",
+    "غير محلول",
+    "اسئلة فقط",
+    "الاسئلة فقط",
+    "اسئله فقط",
+    "الاسئله فقط",
+    "questions only",
+    "no solution",
+    "without solution",
+    "without answer",
+]
+_SOLUTION_NEGATION_PATTERN = re.compile(r"(" + "|".join(_SOLUTION_NEGATION_MARKERS_LIST) + r")")
+
 _EXERCISE_MARKERS_EN_PATTERN = re.compile(r"(?:^|\b)(exercise|ex)(?:\b|$)")
 _SECTION_STOP_MARKERS_EN_PATTERN = re.compile(
     r"(?:^|\b)(exercise|ex|subject|solution|correction|answer)(?:\b|$)"
