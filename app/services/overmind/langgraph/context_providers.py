@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass
 
 import dspy
+
 from app.core.logging import get_logger
 from app.services.overmind.domain.dspy_modules import ObjectiveRefinerModule, parse_metadata
 from app.services.overmind.langgraph.context_contracts import RefineResult, Snippet

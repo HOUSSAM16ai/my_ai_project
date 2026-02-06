@@ -11,8 +11,10 @@ Standards:
 - Output structured data where possible
 """
 
-import dspy
 import json
+
+import dspy
+
 
 class RefineObjectiveSignature(dspy.Signature):
     """

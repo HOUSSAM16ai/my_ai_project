@@ -126,6 +126,7 @@ async def search_educational_content(
         # Rerank contents using Cross-Encoder (Async/Non-blocking)
         try:
             import asyncio
+
             from sentence_transformers import CrossEncoder
 
             # Define a synchronous reranking function to run in a thread
@@ -137,7 +138,9 @@ async def search_educational_content(
                     reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
                     pairs = [(query, c) for c in items]
                     scores = reranker.predict(pairs)
-                    scored = sorted(zip(scores, items), key=lambda x: x[0], reverse=True)
+                    scored = sorted(
+                        zip(scores, items, strict=False), key=lambda x: x[0], reverse=True
+                    )
                     return [c for _, c in scored]
                 except Exception as exc:
                     logger.warning(f"Reranking computation failed: {exc}")
