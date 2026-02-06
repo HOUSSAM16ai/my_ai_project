@@ -7,12 +7,11 @@
 import logging
 import sys
 
-from microservices.planning_agent.settings import get_settings
-
+# Removed circular import of get_settings from global scope
 
 def setup_logging(service_name: str | None = None) -> None:
     """تهيئة سجلّات وكيل التخطيط حسب الإعدادات المحلية."""
-
+    from microservices.planning_agent.settings import get_settings
     settings = get_settings()
     log_level = settings.LOG_LEVEL.upper()
     svc_name = service_name or settings.SERVICE_NAME
@@ -40,7 +39,7 @@ def setup_logging(service_name: str | None = None) -> None:
     logging.setLogRecordFactory(record_factory)
 
 
-def get_logger(name: str) -> logging.Logger:
+def get_logger(name: str) -> "logging.Logger":
     """الحصول على Logger باسم محدد."""
 
     return logging.getLogger(name)

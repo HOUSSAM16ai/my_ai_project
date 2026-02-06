@@ -4,18 +4,19 @@ from llama_index.core.vector_stores import ExactMatchFilter, MetadataFilters
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.vector_stores.supabase import SupabaseVectorStore
 
-# Initialize Embedding Model (Singleton to avoid reload)
-# Using the model specified in memory: intfloat/multilingual-e5-small
-_EMBED_MODEL = None
+import functools
+
+# Using functools.lru_cache to manage singletons in a thread-safe way
+# instead of global mutable variables.
 
 
+@functools.lru_cache(maxsize=1)
 def get_embedding_model():
-    global _EMBED_MODEL
-    if _EMBED_MODEL is None:
-        # Using BAAI/bge-m3 as requested for "The Ultimate Super Stack"
-        # M3 supports multi-linguality (Arabic/English) and high performance.
-        _EMBED_MODEL = HuggingFaceEmbedding(model_name="BAAI/bge-m3")
-    return _EMBED_MODEL
+    """
+    Get the embedding model (Cached).
+    Uses BAAI/bge-m3 for high-performance multilingual support.
+    """
+    return HuggingFaceEmbedding(model_name="BAAI/bge-m3")
 
 
 class LlamaIndexRetriever:
@@ -58,12 +59,11 @@ class LlamaIndexRetriever:
         return retriever.retrieve(query)
 
 
-# Global instance manager
-_RETRIEVER_INSTANCE = None
-
-
+@functools.lru_cache(maxsize=4)
 def get_retriever(db_url: str) -> LlamaIndexRetriever:
-    global _RETRIEVER_INSTANCE
-    if _RETRIEVER_INSTANCE is None:
-        _RETRIEVER_INSTANCE = LlamaIndexRetriever(db_url)
-    return _RETRIEVER_INSTANCE
+    """
+    Get or create a retriever instance for the given DB URL.
+    Cached to avoid recreating heavy connections, but scoped by URL
+    to prevent cross-contamination if multiple DBs are used.
+    """
+    return LlamaIndexRetriever(db_url)
