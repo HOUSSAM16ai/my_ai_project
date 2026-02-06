@@ -1,5 +1,6 @@
-from app.services.overmind.planning.deep_indexer import build_index
 import logging
+
+from app.services.overmind.planning.deep_indexer import build_index
 
 # Configure logging to print to console
 logging.basicConfig(level=logging.INFO)

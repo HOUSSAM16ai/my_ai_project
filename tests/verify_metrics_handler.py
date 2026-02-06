@@ -1,11 +1,12 @@
 
 import asyncio
-import sys
 import os
+import sys
 
 sys.path.append(os.getcwd())
 
 from app.services.agent_tools.domain.metrics import get_project_metrics_handler
+
 
 async def test_handler():
     print("Testing get_project_metrics_handler...")

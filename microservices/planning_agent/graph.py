@@ -74,11 +74,8 @@ def generate_node(state: PlanningState) -> dict:
                     import re
                     # البحث عن أنماط مثل "1. الخطوة" أو "- الخطوة"
                     matches = re.findall(r"(?:^\d+\.|-|\*)\s+(.+)$", clean, re.MULTILINE)
-                    if matches:
-                        steps = matches
-                    else:
-                        # تقسيم الأسطر كحل أخير
-                        steps = [line.strip() for line in clean.split("\n") if line.strip()]
+                    # Use ternary operator as preferred by ruff SIM108
+                    steps = matches or [line.strip() for line in clean.split("\n") if line.strip()]
 
                 if not isinstance(steps, list):
                     steps = [str(steps)]

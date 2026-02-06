@@ -520,11 +520,15 @@ def _format_tool_result_data(data: object) -> str:
 def _format_inner_data(data: object) -> str:
     """Format inner data (dict/list) nicely."""
     # Custom formatting for search results (List of content items)
-    if isinstance(data, list) and data and isinstance(data[0], dict):
-        # Check for standard content keys to identify this as a search result
-        if "title" in data[0] and "id" in data[0]:
-            lines = ["✅ **تم العثور على النتائج التالية:**\n"]
-            for item in data:
+    if (
+        isinstance(data, list)
+        and data
+        and isinstance(data[0], dict)
+        and "title" in data[0]
+        and "id" in data[0]
+    ):
+        lines = ["✅ **تم العثور على النتائج التالية:**\n"]
+        for item in data:
                 title = item.get("title", "بدون عنوان")
                 year = item.get("year", "")
                 subject = item.get("subject", "")
@@ -541,9 +545,9 @@ def _format_inner_data(data: object) -> str:
                 meta_str = f" *({', '.join(str(x) for x in meta)})*" if meta else ""
                 lines.append(f"* 🔹 **{title}**{meta_str}")
 
-            # Add a hint about how to proceed
-            lines.append("\n💡 *يمكنك طلب محتوى أي عنصر باستخدام اسمه أو تفاصيله.*")
-            return "\n".join(lines)
+        # Add a hint about how to proceed
+        lines.append("\n💡 *يمكنك طلب محتوى أي عنصر باستخدام اسمه أو تفاصيله.*")
+        return "\n".join(lines)
 
     if isinstance(data, (dict, list)):
         return json.dumps(data, ensure_ascii=False, indent=2)

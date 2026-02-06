@@ -1,10 +1,10 @@
+import functools
+
 from llama_index.core import VectorStoreIndex
 from llama_index.core.schema import NodeWithScore
 from llama_index.core.vector_stores import ExactMatchFilter, MetadataFilters
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.vector_stores.supabase import SupabaseVectorStore
-
-import functools
 
 # Using functools.lru_cache to manage singletons in a thread-safe way
 # instead of global mutable variables.
