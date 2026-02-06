@@ -73,9 +73,7 @@ async def get_project_metrics_handler() -> dict[str, object]:
 
         # Calculate language breakdown
         js_ts_count = sum(
-            1
-            for f in analysis.files
-            if f.file_path.endswith((".js", ".jsx", ".ts", ".tsx"))
+            1 for f in analysis.files if f.file_path.endswith((".js", ".jsx", ".ts", ".tsx"))
         )
         py_count = sum(1 for f in analysis.files if f.file_path.endswith(".py"))
 

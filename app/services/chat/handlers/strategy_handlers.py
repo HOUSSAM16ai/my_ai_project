@@ -529,21 +529,21 @@ def _format_inner_data(data: object) -> str:
     ):
         lines = ["✅ **تم العثور على النتائج التالية:**\n"]
         for item in data:
-                title = item.get("title", "بدون عنوان")
-                year = item.get("year", "")
-                subject = item.get("subject", "")
-                branch = item.get("branch", "")
+            title = item.get("title", "بدون عنوان")
+            year = item.get("year", "")
+            subject = item.get("subject", "")
+            branch = item.get("branch", "")
 
-                meta = []
-                if year:
-                    meta.append(str(year))
-                if subject:
-                    meta.append(subject)
-                if branch:
-                    meta.append(branch)
+            meta = []
+            if year:
+                meta.append(str(year))
+            if subject:
+                meta.append(subject)
+            if branch:
+                meta.append(branch)
 
-                meta_str = f" *({', '.join(str(x) for x in meta)})*" if meta else ""
-                lines.append(f"* 🔹 **{title}**{meta_str}")
+            meta_str = f" *({', '.join(str(x) for x in meta)})*" if meta else ""
+            lines.append(f"* 🔹 **{title}**{meta_str}")
 
         # Add a hint about how to proceed
         lines.append("\n💡 *يمكنك طلب محتوى أي عنصر باستخدام اسمه أو تفاصيله.*")

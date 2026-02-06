@@ -58,11 +58,11 @@ def generate_node(state: PlanningState) -> dict:
                 # محاولة تنظيف النص من علامات Markdown واستخلاص JSON أو القائمة
                 clean = raw_steps.strip()
                 if "```" in clean:
-                     clean = clean.split("```")[1]
-                     if clean.startswith("json"):
-                         clean = clean[4:]
-                     elif clean.startswith("python"):
-                         clean = clean[6:]
+                    clean = clean.split("```")[1]
+                    if clean.startswith("json"):
+                        clean = clean[4:]
+                    elif clean.startswith("python"):
+                        clean = clean[6:]
 
                 clean = clean.strip()
 
@@ -72,6 +72,7 @@ def generate_node(state: PlanningState) -> dict:
                 except (ValueError, SyntaxError):
                     # محاولة استخراج عناصر القائمة باستخدام Regex إذا فشل التحليل المباشر
                     import re
+
                     # البحث عن أنماط مثل "1. الخطوة" أو "- الخطوة"
                     matches = re.findall(r"(?:^\d+\.|-|\*)\s+(.+)$", clean, re.MULTILINE)
                     # Use ternary operator as preferred by ruff SIM108
