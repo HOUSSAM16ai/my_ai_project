@@ -464,15 +464,13 @@ async def ingest_file(filepath: Path, client: SimpleAIClient, embed_model):
                 vector_store = SupabaseVectorStore(
                     postgres_connection_string=pg_url,
                     collection_name="vectors",
-                    dimension=1024  # Enforce 1024 for BAAI/bge-m3
+                    dimension=1024,  # Enforce 1024 for BAAI/bge-m3
                 )
 
                 # Create index (inserts into DB)
                 # We use the same embed_model
                 VectorStoreIndex.from_documents(
-                    [doc],
-                    vector_store=vector_store,
-                    embed_model=embed_model
+                    [doc], vector_store=vector_store, embed_model=embed_model
                 )
                 logger.info("✅ Indexed to Vectors.")
         except Exception as e:
