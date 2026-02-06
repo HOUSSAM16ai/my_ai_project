@@ -69,7 +69,10 @@ async def test_get_project_metrics_handler(mock_subprocess_run):
     mock_subprocess_run.return_value.returncode = 0
 
     # Mock the return value of build_index to match the expected test data
-    from app.services.overmind.code_intelligence.models import ProjectAnalysis, FileMetrics
+    from app.services.overmind.code_intelligence.models import (
+        FileMetrics,
+        ProjectAnalysis,
+    )
 
     mock_analysis = ProjectAnalysis(
         timestamp="2024-01-01 00:00:00",

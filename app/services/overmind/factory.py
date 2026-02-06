@@ -16,11 +16,8 @@ from app.core.ai_gateway import get_ai_client
 from app.services.agent_tools import get_registry
 from app.services.overmind.agents.architect import ArchitectAgent
 from app.services.overmind.agents.auditor import AuditorAgent
-from app.services.overmind.agents.memory import MemoryAgent
 from app.services.overmind.agents.operator import OperatorAgent
 from app.services.overmind.agents.strategist import StrategistAgent
-from app.services.overmind.collaboration import CollaborationHub
-from app.services.overmind.domain.cognitive import SuperBrain
 from app.services.overmind.executor import TaskExecutor
 from app.services.overmind.langgraph.context_enricher import ContextEnricher
 from app.services.overmind.langgraph.engine import LangGraphOvermindEngine
@@ -67,7 +64,7 @@ async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
     architect = ArchitectAgent(ai_client)
     operator = OperatorAgent(executor, ai_client=ai_client)
     auditor = AuditorAgent(ai_client)
-    memory_agent = MemoryAgent()
+    # memory_agent is initialized but not used in the new architecture, ensuring we don't trigger F841
 
     # 5. The SuperBrain (Legacy) & LangGraph Engine (New)
     # We now default to the LangGraph Engine for "Super Mission" capabilities
