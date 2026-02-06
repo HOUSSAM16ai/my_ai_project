@@ -76,13 +76,11 @@ async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
         architect=architect,
         operator=operator,
         auditor=auditor,
-        context_enricher=context_enricher
+        context_enricher=context_enricher,
     )
 
     # 6. The Orchestrator
     # Passing the LangGraph Engine as the primary brain
     return OvermindOrchestrator(
-        state_manager=state_manager,
-        executor=executor,
-        brain=langgraph_brain
+        state_manager=state_manager, executor=executor, brain=langgraph_brain
     )
