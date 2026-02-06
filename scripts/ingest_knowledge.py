@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 from sqlalchemy import text
 
+from app.core.ai_config import get_ai_config
 from app.core.database import async_session_factory
 from app.core.db_schema import validate_schema_on_startup
 from app.core.gateway.simple_client import SimpleAIClient
@@ -522,7 +523,8 @@ async def main():
     # but `SimpleAIClient.generate_text` signature is `(prompt, model=None, ...)`.
     # So we can just pass the model there!
 
-    desired_model = "mistralai/devstral-2512:free"
+    # Use the primary model from configuration (e.g., DeepSeek)
+    desired_model = get_ai_config().primary_model
 
     try:
         client = SimpleAIClient(api_key=api_key)
