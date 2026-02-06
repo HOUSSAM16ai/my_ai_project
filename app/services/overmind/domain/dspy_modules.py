@@ -25,14 +25,20 @@ class RefineObjectiveSignature(dspy.Signature):
 
     objective: str = dspy.InputField(desc="The raw user objective or query.")
 
-    refined_objective: str = dspy.OutputField(desc="A refined, technical, and actionable version of the objective.")
-    metadata_json: str = dspy.OutputField(desc="A JSON string containing extracted metadata (e.g., {'year': '2024', 'subject': 'Math'}). Return '{}' if none.")
+    refined_objective: str = dspy.OutputField(
+        desc="A refined, technical, and actionable version of the objective."
+    )
+    metadata_json: str = dspy.OutputField(
+        desc="A JSON string containing extracted metadata (e.g., {'year': '2024', 'subject': 'Math'}). Return '{}' if none."
+    )
     reasoning: str = dspy.OutputField(desc="Brief reasoning behind the refinement.")
+
 
 class ObjectiveRefinerModule(dspy.Module):
     """
     DSPy Module to refine objectives using Chain of Thought.
     """
+
     def __init__(self):
         super().__init__()
         self.prog = dspy.ChainOfThought(RefineObjectiveSignature)
@@ -43,6 +49,7 @@ class ObjectiveRefinerModule(dspy.Module):
         """
         # Ensure we return a prediction object compatible with dspy
         return self.prog(objective=objective)
+
 
 def parse_metadata(json_str: str) -> dict[str, object]:
     """Helper to safely parse the JSON output."""
