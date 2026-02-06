@@ -317,7 +317,15 @@ def is_exercise_header_match(
     """
     header_normalized = normalize_semantic_text(header_text)
     if target_exercise_num:
-        return any(pattern in header_normalized for pattern in number_patterns)
+        # 1. Check explicit text patterns (Exercise 1, etc.)
+        if any(pattern in header_normalized for pattern in number_patterns):
+            return True
+
+        # 2. Check for "N." or "N)" style headers
+        # Matches: "1.", "1)", "1-", "1 " at the start of the line
+        start_number_pattern = re.compile(rf"^{target_exercise_num}\s*[.)-]")
+        if start_number_pattern.match(header_normalized):
+            return True
 
     if target_topics and has_exercise_marker(header_normalized):
         return any(topic in header_normalized for topic in target_topics)

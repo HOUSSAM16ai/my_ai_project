@@ -191,7 +191,9 @@ class LangGraphOvermindEngine:
             "next_step": None,
         }
 
-        final_state = await self._compiled_graph.ainvoke(initial_state)
+        final_state = await self._compiled_graph.ainvoke(
+            initial_state, config={"recursion_limit": 100}
+        )
         return LangGraphRunResult(run_id=run_id, state=final_state)
 
     def _build_graph(self):
