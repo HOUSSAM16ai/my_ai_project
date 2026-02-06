@@ -4,7 +4,7 @@ class ContentSearchQuery:
     def __init__(self) -> None:
         self.select_clause = (
             "SELECT i.id, i.title, i.type, i.level, i.subject, i.branch, "
-            "i.set_name, i.year, i.lang, i.content_md "
+            "i.set_name, i.year, i.lang, i.md_content "
         )
         self.from_clause = (
             "FROM content_items i LEFT JOIN content_search cs ON i.id = cs.content_id"
