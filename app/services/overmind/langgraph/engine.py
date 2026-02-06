@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TypedDict
+from typing import TypedDict, Callable, Awaitable
 
 from langgraph.graph import END, StateGraph
 
@@ -140,6 +140,7 @@ class LangGraphOvermindEngine:
         self.context_enricher = context_enricher or ContextEnricher()
         self.supervisor = SupervisorOrchestrator(self.loop_policy)
         self._compiled_graph = self._build_graph()
+        self._observer: Callable[[str, dict], Awaitable[None]] | None = None
 
     async def run(
         self,
@@ -149,6 +150,7 @@ class LangGraphOvermindEngine:
         context: dict[str, object],
         constraints: list[str],
         priority: str,
+        observer: Callable[[str, dict], Awaitable[None]] | None = None,
     ) -> LangGraphRunResult:
         """
         تشغيل دورة LangGraph كاملة مع الحفاظ على حالة مشتركة.
@@ -159,10 +161,13 @@ class LangGraphOvermindEngine:
             context: سياق إضافي.
             constraints: قيود تشغيلية.
             priority: أولوية الطلب.
+            observer: دالة مراقبة غير متزامنة لتلقي الأحداث.
 
         Returns:
             LangGraphRunResult: حالة التشغيل النهائية.
         """
+        self._observer = observer
+
         initial_state: LangGraphState = {
             "objective": objective,
             "context": context,
@@ -271,6 +276,9 @@ class LangGraphOvermindEngine:
         """
         عقدة إثراء السياق بإسناد DSPy و LlamaIndex قبل التخطيط.
         """
+        if self._observer:
+            await self._observer("phase_start", {"phase": "CONTEXT_ENRICHMENT", "agent": "Contextualizer"})
+
         enrichment = await self.context_enricher.enrich(state["objective"], state["context"])
         shared_memory = {
             **state.get("shared_memory", {}),
@@ -279,6 +287,10 @@ class LangGraphOvermindEngine:
             "knowledge_snippets": enrichment.snippets,
             "context_enriched": True,
         }
+
+        if self._observer:
+            await self._observer("phase_completed", {"phase": "CONTEXT_ENRICHMENT"})
+
         return {
             "shared_memory": shared_memory,
             "timeline": self._append_timeline(
@@ -296,6 +308,9 @@ class LangGraphOvermindEngine:
         """
         عقدة الاستراتيجي في LangGraph.
         """
+        if self._observer:
+            await self._observer("phase_start", {"phase": "PLANNING", "agent": "Strategist"})
+
         context = self._build_context(state)
         objective = context.shared_memory.get("refined_objective", state["objective"])
         plan = await self.strategist.create_plan(str(objective), context)
@@ -317,6 +332,10 @@ class LangGraphOvermindEngine:
                     state, "strategist", {"status": "loop_detected", "error": str(exc)}
                 ),
             }
+
+        if self._observer:
+            await self._observer("phase_completed", {"phase": "PLANNING"})
+
         return {
             "plan": plan,
             "shared_memory": context.shared_memory,
@@ -334,10 +353,18 @@ class LangGraphOvermindEngine:
                     state, "architect", {"status": "skipped_due_to_loop"}
                 )
             }
+
+        if self._observer:
+            await self._observer("phase_start", {"phase": "DESIGN", "agent": "Architect"})
+
         context = self._build_context(state)
         plan = state.get("plan") or {}
         design = await self.architect.design_solution(plan, context)
         context.update("last_design", design)
+
+        if self._observer:
+            await self._observer("phase_completed", {"phase": "DESIGN"})
+
         return {
             "design": design,
             "shared_memory": context.shared_memory,
@@ -354,10 +381,18 @@ class LangGraphOvermindEngine:
                     state, "operator", {"status": "skipped_due_to_loop"}
                 )
             }
+
+        if self._observer:
+            await self._observer("phase_start", {"phase": "EXECUTION", "agent": "Operator"})
+
         context = self._build_context(state)
         design = state.get("design") or {}
         execution = await self.operator.execute_tasks(design, context)
         context.update("last_execution", execution)
+
+        if self._observer:
+            await self._observer("phase_completed", {"phase": "EXECUTION"})
+
         return {
             "execution": execution,
             "shared_memory": context.shared_memory,
@@ -377,10 +412,18 @@ class LangGraphOvermindEngine:
                 },
                 "timeline": self._append_timeline(state, "auditor", {"status": "loop_stopped"}),
             }
+
+        if self._observer:
+            await self._observer("phase_start", {"phase": "REFLECTION", "agent": "Auditor"})
+
         context = self._build_context(state)
         execution = state.get("execution") or {}
         audit = await self.auditor.review_work(execution, state["objective"], context)
         context.update("last_audit", audit)
+
+        if self._observer:
+            await self._observer("phase_completed", {"phase": "REFLECTION"})
+
         return {
             "audit": audit,
             "shared_memory": context.shared_memory,
@@ -405,6 +448,9 @@ class LangGraphOvermindEngine:
         """
         عقدة ضبط الحلقة لإعادة التخطيط استناداً إلى ملاحظات التدقيق.
         """
+        if self._observer:
+            await self._observer("phase_start", {"phase": "RE-PLANNING", "agent": "LoopController"})
+
         next_iteration = state.get("iteration", 0) + 1
         audit = state.get("audit") or {}
         feedback = ""
@@ -415,6 +461,14 @@ class LangGraphOvermindEngine:
             "audit_feedback": feedback,
             "iteration": next_iteration,
         }
+
+        if self._observer:
+            await self._observer("loop_start", {
+                "iteration": next_iteration,
+                "chief_agent": "Strategist",
+                "graph_mode": "cognitive_loop"
+            })
+
         return {
             "iteration": next_iteration,
             "plan": None,
