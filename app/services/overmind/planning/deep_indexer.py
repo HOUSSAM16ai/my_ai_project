@@ -28,7 +28,7 @@ def build_index(root: str = ".") -> ProjectAnalysis:
     repo_path = Path(root).resolve()
 
     # Auto-detect target paths
-    candidates = ["app", "src", "microservices", "scripts", "lib"]
+    candidates = ["app", "src", "microservices", "scripts", "lib", "frontend"]
     target_paths = []
 
     for candidate in candidates:

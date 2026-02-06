@@ -13,7 +13,14 @@
 
 import asyncio
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,6 +39,12 @@ from app.services.overmind.domain.api_schemas import (
 from app.services.overmind.factory import create_overmind
 from app.services.overmind.orchestrator import OvermindOrchestrator
 from app.services.overmind.runner import run_mission_in_background
+
+# EXPORT: MissionStateManager is required by integration tests
+from app.services.overmind.state import MissionStateManager  # noqa: F401
+
+# EXPORT: get_session_factory is required by integration tests
+get_session_factory = async_session_factory
 
 logger = get_logger(__name__)
 
@@ -215,7 +228,7 @@ async def stream_mission_ws(
         while True:
             try:
                 event = await asyncio.wait_for(event_queue.get(), timeout=1.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 async with async_session_factory() as session:
                     mission = await session.get(Mission, mission_id)
                     if mission and mission.status in terminal_statuses:

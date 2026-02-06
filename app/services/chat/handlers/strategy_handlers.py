@@ -17,7 +17,6 @@ from app.core.agents.system_principles import (
     format_architecture_system_principles,
     format_system_principles,
 )
-from app.core.event_bus import get_event_bus
 from app.core.domain.mission import (
     Mission,
     MissionEvent,
@@ -26,6 +25,7 @@ from app.core.domain.mission import (
     MissionStatus,
     Task,
 )
+from app.core.event_bus import get_event_bus
 from app.core.patterns.strategy import Strategy
 from app.services.chat.context import ChatContext
 from app.services.chat.context_service import get_context_service
@@ -242,7 +242,7 @@ class MissionComplexHandler(IntentHandler):
                 while running:
                     try:
                         event = await asyncio.wait_for(event_queue.get(), timeout=1.0)
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         event = None
 
                     if event is not None:

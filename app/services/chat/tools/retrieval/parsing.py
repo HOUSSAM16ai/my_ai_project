@@ -19,6 +19,7 @@ from app.services.chat.tools.retrieval.constants import (
     _SECTION_STOP_MARKERS_EN_PATTERN,
     _SOLUTION_MARKERS_AR_PATTERN,
     _SOLUTION_MARKERS_EN_PATTERN,
+    _SOLUTION_NEGATION_PATTERN,
     _SUBJECT_SYNONYMS,
     _TOPIC_MAP,
 )
@@ -62,6 +63,11 @@ def is_specific_request(query: str) -> bool:
 def is_solution_request(query: str) -> bool:
     """يتحقق مما إذا كان المستخدم يطلب الحل بشكل صريح."""
     normalized = normalize_semantic_text(query)
+
+    # Check for explicit negation FIRST (e.g. "without solution")
+    if _SOLUTION_NEGATION_PATTERN.search(normalized):
+        return False
+
     if _SOLUTION_MARKERS_AR_PATTERN.search(normalized):
         return True
     return _SOLUTION_MARKERS_EN_PATTERN.search(normalized) is not None

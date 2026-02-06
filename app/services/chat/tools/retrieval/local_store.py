@@ -138,10 +138,11 @@ def search_local_knowledge_base(
                         elif not is_specific:
                             # Only append full body if request was NOT specific
                             matches.append(body.strip())
-                        elif _is_relevant_fallback(meta_dict, body, query):
+                        elif _is_relevant_fallback(meta_dict, body, query) or (year and subject):
                             # Fallback: If specific but not found in headers,
                             # check if the file itself is the "specific" thing requested.
                             # e.g. Title contains the query topic or tags contain it.
+                            # OR if strong metadata (Year + Subject) is present, implies relevance.
 
                             # If the user did NOT explicitly ask for the solution, strip it.
                             if not parsing.is_solution_request(query):
@@ -184,8 +185,17 @@ def search_local_knowledge_base(
 
                 if extracted_exercise:
                     matches.append(extracted_exercise)
-                elif not is_specific or _is_relevant_fallback(metadata, body, query):
-                    matches.append(body.strip())
+                elif (
+                    not is_specific
+                    or _is_relevant_fallback(metadata, body, query)
+                    or (year and subject)
+                ):
+                    # Check for solution stripping in fallback case too
+                    if not parsing.is_solution_request(query):
+                        clean_body = parsing.remove_solution_section(body)
+                        matches.append(clean_body)
+                    else:
+                        matches.append(body.strip())
 
             # Support files without frontmatter or with different format?
             # For now, we stick to frontmatter-based files as per original logic,
