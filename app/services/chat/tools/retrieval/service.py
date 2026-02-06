@@ -123,6 +123,38 @@ async def search_educational_content(
         if not contents and is_specific:
             return "عذراً، لم أتمكن من العثور على التمرين المحدد في السياق المطلوب."
 
+        # Rerank contents using Cross-Encoder (Async/Non-blocking)
+        try:
+            import asyncio
+            from sentence_transformers import CrossEncoder
+
+            # Define a synchronous reranking function to run in a thread
+            def _rerank_sync(query: str, items: list[str]) -> list[str]:
+                try:
+                    # Model loading should ideally be global/cached, but for now we rely on internal caching
+                    # or we could make it a global singleton.
+                    # To be safe and simple here without global state issues:
+                    reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+                    pairs = [(query, c) for c in items]
+                    scores = reranker.predict(pairs)
+                    scored = sorted(zip(scores, items), key=lambda x: x[0], reverse=True)
+                    return [c for _, c in scored]
+                except Exception as exc:
+                    logger.warning(f"Reranking computation failed: {exc}")
+                    return items
+
+            if contents:
+                # Offload to thread pool to prevent blocking the event loop
+                contents = await asyncio.get_running_loop().run_in_executor(
+                    None, _rerank_sync, semantic_query, contents
+                )
+                logger.info("Reranking complete.")
+
+        except ImportError:
+            logger.warning("sentence-transformers not installed, skipping reranking.")
+        except Exception as e:
+            logger.warning(f"Reranking setup failed: {e}")
+
         # Deduplicate contents
         unique_contents = parsing.deduplicate_contents(contents)
 

@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 from app.core.domain.mission import Mission, MissionEventType, MissionStatus
 from app.core.protocols import MissionStateManagerProtocol, TaskExecutorProtocol
 from app.services.overmind.domain.enums import OvermindMessage
+from app.services.overmind.langgraph.engine import LangGraphOvermindEngine
 
 if TYPE_CHECKING:
     from app.services.overmind.domain.cognitive import SuperBrain
@@ -46,7 +47,7 @@ class OvermindOrchestrator:
         *,
         state_manager: MissionStateManagerProtocol,
         executor: TaskExecutorProtocol,
-        brain: "SuperBrain",
+        brain: "SuperBrain | LangGraphOvermindEngine",
     ) -> None:
         """
         تهيئة المنسق مع التبعيات اللازمة.
@@ -54,7 +55,7 @@ class OvermindOrchestrator:
         Args:
             state_manager (MissionStateManagerProtocol): مدير حالة المهمة.
             executor (TaskExecutorProtocol): الذراع التنفيذي.
-            brain (SuperBrain): العقل المفكر (Council of Wisdom).
+            brain (SuperBrain | LangGraphOvermindEngine): العقل المفكر (Council of Wisdom).
         """
         self.state = state_manager
         self.executor = executor
@@ -110,8 +111,18 @@ class OvermindOrchestrator:
             )
 
         try:
-            # تفويض كامل للعقل (Abstraction Barrier)
-            result = await self.brain.process_mission(mission, log_event=_log_bridge)
+            if isinstance(self.brain, LangGraphOvermindEngine):
+                result_obj = await self.brain.run(
+                    run_id=f"mission-{mission.id}",
+                    objective=mission.objective,
+                    context={"mission_id": mission.id},
+                    constraints=[],
+                    priority="high",
+                )
+                result = result_obj.state
+            else:
+                # تفويض كامل للعقل (Abstraction Barrier)
+                result = await self.brain.process_mission(mission, log_event=_log_bridge)
 
             # Extract summary for Admin Dashboard visibility
             summary = self._extract_summary(result)
