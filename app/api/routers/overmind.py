@@ -13,14 +13,7 @@
 
 import asyncio
 
-from fastapi import (
-    APIRouter,
-    BackgroundTasks,
-    Depends,
-    HTTPException,
-    WebSocket,
-    WebSocketDisconnect,
-)
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +34,9 @@ from app.services.overmind.orchestrator import OvermindOrchestrator
 from app.services.overmind.runner import run_mission_in_background
 
 logger = get_logger(__name__)
+
+# Legacy Alias for Tests
+get_session_factory = async_session_factory
 
 router = APIRouter(
     prefix="/api/v1/overmind",
