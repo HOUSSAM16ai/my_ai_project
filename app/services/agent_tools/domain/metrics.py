@@ -5,7 +5,6 @@ Domain tools for project metrics and file system statistics.
 import asyncio
 import os
 import subprocess
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from app.services.agent_tools.tool_model import Tool, ToolConfig
@@ -74,9 +73,7 @@ async def get_project_metrics_handler() -> dict[str, object]:
 
         # Calculate language breakdown
         js_ts_count = sum(
-            1
-            for f in analysis.files
-            if f.file_path.endswith((".js", ".jsx", ".ts", ".tsx"))
+            1 for f in analysis.files if f.file_path.endswith((".js", ".jsx", ".ts", ".tsx"))
         )
         py_count = sum(1 for f in analysis.files if f.file_path.endswith(".py"))
 
@@ -96,7 +93,7 @@ async def get_project_metrics_handler() -> dict[str, object]:
         metrics["live_stats"] = {
             "python_files": py_count,
             "total_files": total_count,
-            "error": f"Deep Indexer failed: {str(e)}",
+            "error": f"Deep Indexer failed: {e!s}",
         }
 
     return metrics

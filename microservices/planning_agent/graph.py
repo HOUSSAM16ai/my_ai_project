@@ -55,15 +55,31 @@ def generate_node(state: PlanningState) -> dict:
             steps = raw_steps
         elif isinstance(raw_steps, str):
             try:
-                clean = (
-                    raw_steps.replace("```json", "")
-                    .replace("```", "")
-                    .replace("python", "")
-                    .strip()
-                )
-                steps = ast.literal_eval(clean)
+                # محاولة تنظيف النص من علامات Markdown واستخلاص JSON أو القائمة
+                clean = raw_steps.strip()
+                if "```" in clean:
+                    clean = clean.split("```")[1]
+                    if clean.startswith("json"):
+                        clean = clean[4:]
+                    elif clean.startswith("python"):
+                        clean = clean[6:]
+
+                clean = clean.strip()
+
+                # استخدام ast.literal_eval بأمان مع fallback
+                try:
+                    steps = ast.literal_eval(clean)
+                except (ValueError, SyntaxError):
+                    # محاولة استخراج عناصر القائمة باستخدام Regex إذا فشل التحليل المباشر
+                    import re
+
+                    # البحث عن أنماط مثل "1. الخطوة" أو "- الخطوة"
+                    matches = re.findall(r"(?:^\d+\.|-|\*)\s+(.+)$", clean, re.MULTILINE)
+                    # Use ternary operator as preferred by ruff SIM108
+                    steps = matches or [line.strip() for line in clean.split("\n") if line.strip()]
+
                 if not isinstance(steps, list):
-                    steps = [line.strip() for line in clean.split("\n") if line.strip()]
+                    steps = [str(steps)]
             except Exception:
                 steps = [line.strip() for line in raw_steps.split("\n") if line.strip()]
         else:
