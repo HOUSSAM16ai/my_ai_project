@@ -1,6 +1,9 @@
-import pytest
 from pathlib import Path
+
+import pytest
+
 from app.services.overmind.planning.deep_indexer import build_index
+
 
 def test_frontend_files_are_indexed():
     """
