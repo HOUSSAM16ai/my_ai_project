@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import TypedDict, Callable, Awaitable
+from typing import TypedDict
 
 from langgraph.graph import END, StateGraph
 
@@ -277,7 +278,9 @@ class LangGraphOvermindEngine:
         عقدة إثراء السياق بإسناد DSPy و LlamaIndex قبل التخطيط.
         """
         if self._observer:
-            await self._observer("phase_start", {"phase": "CONTEXT_ENRICHMENT", "agent": "Contextualizer"})
+            await self._observer(
+                "phase_start", {"phase": "CONTEXT_ENRICHMENT", "agent": "Contextualizer"}
+            )
 
         enrichment = await self.context_enricher.enrich(state["objective"], state["context"])
         shared_memory = {
@@ -449,7 +452,9 @@ class LangGraphOvermindEngine:
         عقدة ضبط الحلقة لإعادة التخطيط استناداً إلى ملاحظات التدقيق.
         """
         if self._observer:
-            await self._observer("phase_start", {"phase": "RE-PLANNING", "agent": "LoopController"})
+            await self._observer(
+                "phase_start", {"phase": "RE-PLANNING", "agent": "LoopController"}
+            )
 
         next_iteration = state.get("iteration", 0) + 1
         audit = state.get("audit") or {}
@@ -463,11 +468,14 @@ class LangGraphOvermindEngine:
         }
 
         if self._observer:
-            await self._observer("loop_start", {
-                "iteration": next_iteration,
-                "chief_agent": "Strategist",
-                "graph_mode": "cognitive_loop"
-            })
+            await self._observer(
+                "loop_start",
+                {
+                    "iteration": next_iteration,
+                    "chief_agent": "Strategist",
+                    "graph_mode": "cognitive_loop",
+                },
+            )
 
         return {
             "iteration": next_iteration,
