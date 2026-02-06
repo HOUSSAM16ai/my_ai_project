@@ -121,6 +121,7 @@ class OvermindOrchestrator:
                     context={},  # Could inject initial context if needed
                     constraints=[],
                     priority="normal",
+                    observer=_log_bridge,
                 )
                 # Convert LangGraph state to result dict
                 result = run_result.state
