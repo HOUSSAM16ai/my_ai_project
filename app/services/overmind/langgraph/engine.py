@@ -452,9 +452,7 @@ class LangGraphOvermindEngine:
         عقدة ضبط الحلقة لإعادة التخطيط استناداً إلى ملاحظات التدقيق.
         """
         if self._observer:
-            await self._observer(
-                "phase_start", {"phase": "RE-PLANNING", "agent": "LoopController"}
-            )
+            await self._observer("phase_start", {"phase": "RE-PLANNING", "agent": "LoopController"})
 
         next_iteration = state.get("iteration", 0) + 1
         audit = state.get("audit") or {}
