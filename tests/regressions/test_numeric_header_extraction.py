@@ -1,6 +1,11 @@
 
 import pytest
-from app.services.chat.tools.retrieval.parsing import is_exercise_header_match, build_number_patterns
+
+from app.services.chat.tools.retrieval.parsing import (
+    build_number_patterns,
+    is_exercise_header_match,
+)
+
 
 @pytest.mark.parametrize("header, exercise_num, expected", [
     ("1. Questions", 1, True),
