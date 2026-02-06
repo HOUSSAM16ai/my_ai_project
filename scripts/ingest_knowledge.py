@@ -14,9 +14,10 @@ from app.core.gateway.simple_client import SimpleAIClient
 from app.core.logging import get_logger
 
 try:
-    from microservices.research_agent.src.search_engine.retriever import get_embedding_model
     from llama_index.core import Document, VectorStoreIndex
     from llama_index.vector_stores.supabase import SupabaseVectorStore
+
+    from microservices.research_agent.src.search_engine.retriever import get_embedding_model
 except ImportError:
     # Fallback for environments without heavy ML dependencies
     class DummyEmbedding:
