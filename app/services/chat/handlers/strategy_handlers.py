@@ -354,69 +354,17 @@ class MissionComplexHandler(IntentHandler):
                         )
                     # Check for OperatorAgent results list (Customer Visibility Fix)
                     elif "results" in result and isinstance(result["results"], list):
-                        tasks = result["results"]
-                        lines = [f"✅ **تم تنفيذ {len(tasks)} مهمة بنجاح:**\n"]
-                        for t in tasks:
-                            if not isinstance(t, dict):
-                                continue
-
-                            name = t.get("name", "مهمة")
-
-                            # Handle Skipped
-                            if t.get("status") == "skipped":
-                                reason = t.get("reason", "غير محدد")
-                                lines.append(f"🔹 **{name}**: ⏭️ تم التجاوز ({reason})\n")
-                                continue
-
-                            res = t.get("result", {})
-                            if not res:
-                                lines.append(f"🔹 **{name}**: (لا توجد نتيجة)\n")
-                                continue
-
-                            # Extract content
-                            result_data = res.get("result_data")
-                            result_text = res.get("result_text")
-
-                            display_text = ""
-
-                            if result_data:
-                                display_text = _format_tool_result_data(result_data)
-                            elif result_text:
-                                if isinstance(result_text, str):
-                                    try:
-                                        if result_text.strip().startswith(("{", "[")):
-                                            parsed = json.loads(result_text)
-                                            display_text = _format_tool_result_data(parsed)
-                                        else:
-                                            display_text = _clean_raw_string(result_text)
-                                    except Exception:
-                                        display_text = result_text
-                                else:
-                                    display_text = str(result_text)
-                            else:
-                                display_text = "لا توجد بيانات"
-
-                            # Auto-read file content if written
-                            file_content = ""
-                            if result_data and isinstance(result_data, dict):
-                                data_payload = result_data.get("data", {})
-                                if (
-                                    isinstance(data_payload, dict)
-                                    and data_payload.get("written")
-                                    and data_payload.get("path")
-                                ):
-                                    path = data_payload["path"]
-                                    try:
-                                        with open(path, encoding="utf-8") as f:
-                                            content = f.read()
-                                        file_content = (
-                                            f"\n\n**محتوى الملف ({path}):**\n```\n{content}\n```"
-                                        )
-                                    except Exception as e:
-                                        logger.warning(f"Failed to auto-read file {path}: {e}")
-
-                            lines.append(f"🔹 **{name}**:\n{display_text}\n{file_content}\n")
-                        result_text = "\n".join(lines)
+                        result_text = _format_task_results(result["results"])
+                    # Check nested execution report (Common fallback)
+                    elif (
+                        "last_execution_report" in result
+                        and isinstance(result["last_execution_report"], dict)
+                        and "results" in result["last_execution_report"]
+                        and isinstance(result["last_execution_report"]["results"], list)
+                    ):
+                        result_text = _format_task_results(
+                            result["last_execution_report"]["results"]
+                        )
                     else:
                         result_text = json.dumps(result, ensure_ascii=False, indent=2)
                 else:
@@ -429,6 +377,70 @@ class MissionComplexHandler(IntentHandler):
             return f"ℹ️ {event.event_type.value}: {payload}\n"
         except Exception:
             return "ℹ️ حدث جديد...\n"
+
+
+def _format_task_results(tasks: list) -> str:
+    """Format a list of task results into a readable string."""
+    lines = [f"✅ **تم تنفيذ {len(tasks)} مهمة بنجاح:**\n"]
+    for t in tasks:
+        if not isinstance(t, dict):
+            continue
+
+        name = t.get("name", "مهمة")
+
+        # Handle Skipped
+        if t.get("status") == "skipped":
+            reason = t.get("reason", "غير محدد")
+            lines.append(f"🔹 **{name}**: ⏭️ تم التجاوز ({reason})\n")
+            continue
+
+        res = t.get("result", {})
+        if not res:
+            lines.append(f"🔹 **{name}**: (لا توجد نتيجة)\n")
+            continue
+
+        # Extract content
+        result_data = res.get("result_data")
+        result_text = res.get("result_text")
+
+        display_text = ""
+
+        if result_data:
+            display_text = _format_tool_result_data(result_data)
+        elif result_text:
+            if isinstance(result_text, str):
+                try:
+                    if result_text.strip().startswith(("{", "[")):
+                        parsed = json.loads(result_text)
+                        display_text = _format_tool_result_data(parsed)
+                    else:
+                        display_text = _clean_raw_string(result_text)
+                except Exception:
+                    display_text = result_text
+            else:
+                display_text = str(result_text)
+        else:
+            display_text = "لا توجد بيانات"
+
+        # Auto-read file content if written
+        file_content = ""
+        if result_data and isinstance(result_data, dict):
+            data_payload = result_data.get("data", {})
+            if (
+                isinstance(data_payload, dict)
+                and data_payload.get("written")
+                and data_payload.get("path")
+            ):
+                path = data_payload["path"]
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        content = f.read()
+                    file_content = f"\n\n**محتوى الملف ({path}):**\n```\n{content}\n```"
+                except Exception as e:
+                    logger.warning(f"Failed to auto-read file {path}: {e}")
+
+        lines.append(f"🔹 **{name}**:\n{display_text}\n{file_content}\n")
+    return "\n".join(lines)
 
 
 def _format_brain_event(event_name: str, data: dict[str, object] | object) -> str:
