@@ -27,6 +27,7 @@ from app.services.overmind.domain.enums import OvermindMessage
 
 if TYPE_CHECKING:
     from app.services.overmind.domain.cognitive import SuperBrain
+    from app.services.overmind.langgraph.engine import LangGraphOvermindEngine
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class OvermindOrchestrator:
         *,
         state_manager: MissionStateManagerProtocol,
         executor: TaskExecutorProtocol,
-        brain: "SuperBrain",
+        brain: "SuperBrain | LangGraphOvermindEngine",
     ) -> None:
         """
         تهيئة المنسق مع التبعيات اللازمة.
@@ -54,7 +55,7 @@ class OvermindOrchestrator:
         Args:
             state_manager (MissionStateManagerProtocol): مدير حالة المهمة.
             executor (TaskExecutorProtocol): الذراع التنفيذي.
-            brain (SuperBrain): العقل المفكر (Council of Wisdom).
+            brain (SuperBrain | LangGraphOvermindEngine): العقل المفكر (Council of Wisdom).
         """
         self.state = state_manager
         self.executor = executor
@@ -111,7 +112,21 @@ class OvermindOrchestrator:
 
         try:
             # تفويض كامل للعقل (Abstraction Barrier)
-            result = await self.brain.process_mission(mission, log_event=_log_bridge)
+            # Support for both Legacy SuperBrain and New LangGraph Engine
+            if hasattr(self.brain, "run"):
+                # LangGraph Path
+                run_result = await self.brain.run(
+                    run_id=str(mission.id),
+                    objective=mission.objective,
+                    context={},  # Could inject initial context if needed
+                    constraints=[],
+                    priority="normal",
+                )
+                # Convert LangGraph state to result dict
+                result = run_result.state
+            else:
+                # Legacy SuperBrain Path
+                result = await self.brain.process_mission(mission, log_event=_log_bridge)
 
             # Extract summary for Admin Dashboard visibility
             summary = self._extract_summary(result)
@@ -147,11 +162,18 @@ class OvermindOrchestrator:
         if result.get("answer"):
             return str(result["answer"])
 
-        # 2. Handle OperatorAgent results list
-        if "results" in result and isinstance(result["results"], list):
-            tasks = result["results"]
-            lines = [f"✅ Executed {len(tasks)} tasks:"]
-            for t in tasks:
+        # 2. Support LangGraph State Structure (nested execution report)
+        execution = result.get("execution")
+        if isinstance(execution, dict) and "results" in execution:
+            # Flatten execution results for the summary logic below
+            result_results = execution["results"]
+        else:
+            result_results = result.get("results")
+
+        # 3. Handle OperatorAgent results list
+        if result_results and isinstance(result_results, list):
+            lines = [f"✅ Executed {len(result_results)} tasks:"]
+            for t in result_results:
                 if isinstance(t, dict):
                     name = t.get("name", "Task")
                     res = t.get("result", {})
@@ -164,5 +186,5 @@ class OvermindOrchestrator:
                     lines.append(f"- {name}: {val_str}")
             return "\n".join(lines)
 
-        # 3. Fallback to string representation
+        # 4. Fallback to string representation
         return str(result)[:500]

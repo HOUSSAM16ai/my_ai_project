@@ -125,7 +125,16 @@ class DirectMatchStrategy(CanonicalStrategy):
     """Handle direct canonical name matches."""
 
     def __init__(self):
-        self.canonical_names = {"ensure_file", "append_file"}
+        self.canonical_names = {
+            "ensure_file",
+            "append_file",
+            "get_project_metrics",
+            "count_files",
+            "search_educational_content",
+            "search_content",
+            "get_content_raw",
+            "list_files",
+        }
 
     @property
     def priority(self) -> int:
