@@ -29,7 +29,7 @@ from app.services.overmind.langgraph.state_manager import EphemeralMissionStateM
 from app.services.overmind.orchestrator import OvermindOrchestrator
 from app.services.overmind.state import MissionStateManager
 
-__all__ = ["create_overmind", "create_langgraph_service"]
+__all__ = ["create_langgraph_service", "create_overmind"]
 
 
 def _build_engine_with_components(
@@ -106,10 +106,7 @@ def create_langgraph_service(db: AsyncSession | None = None) -> LangGraphAgentSe
     Returns:
         LangGraphAgentService: الخدمة جاهزة للاستخدام.
     """
-    if db:
-        state_manager = MissionStateManager(db)
-    else:
-        state_manager = EphemeralMissionStateManager()
+    state_manager = MissionStateManager(db) if db else EphemeralMissionStateManager()
 
     engine, _ = _build_engine_with_components(state_manager)
     return LangGraphAgentService(engine=engine)

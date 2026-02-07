@@ -13,9 +13,8 @@ alembic==1.13.1
 asyncpg==0.29.0
 aiosqlite==0.17.0
 psycopg2-binary==2.9.9
-pydantic==2.7.4
+pydantic>=2.11.5,<3.0.0
 pydantic-settings==2.3.0
-pydantic_core==2.18.4
 PyJWT==2.8.0
 passlib==1.7.4
 bcrypt==3.2.0
@@ -78,9 +77,9 @@ dspy-ai==2.5.43
 openai==1.55.0
 # llama-index meta-package removed to reduce bloat/conflicts
 llama-index-core==0.14.13
-llama-index-readers-file==0.1.30
-llama-index-vector-stores-supabase==0.1.2
-llama-index-embeddings-huggingface==0.2.2
+llama-index-readers-file
+llama-index-vector-stores-supabase
+llama-index-embeddings-huggingface
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
 PyYAML
 passlib
