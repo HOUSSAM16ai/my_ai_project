@@ -4,8 +4,10 @@ pydantic>=2.8.0,<3.0.0
 pydantic-settings==2.2.1
 sqlmodel==0.0.16
 aiosqlite==0.20.0
-openai==1.12.0
+openai==1.55.0
 langgraph
-dspy-ai
-llama-index-core==0.13.0
+dspy-ai==2.5.43
+llama-index-core==0.14.13
 llama-index-embeddings-openai
+dspy==2.5.7
+litellm==1.50.0

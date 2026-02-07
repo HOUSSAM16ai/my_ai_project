@@ -13,6 +13,7 @@ from app.core.event_bus_impl import get_event_bus
 from app.core.protocols import EventBusProtocol
 from app.gateway import APIGateway, ServiceRegistry
 from app.gateway.config import DEFAULT_GATEWAY_CONFIG, GatewayConfig
+from app.services.overmind.factory import create_langgraph_service
 from app.services.overmind.langgraph.service import LangGraphAgentService
 from app.services.overmind.plan_registry import AgentPlanRegistry
 from app.services.overmind.plan_service import AgentPlanService
@@ -66,7 +67,7 @@ def build_app_state() -> AppStateServices:
     return AppStateServices(
         agent_plan_registry=AgentPlanRegistry(),
         agent_plan_service=AgentPlanService(),
-        langgraph_service=LangGraphAgentService(),
+        langgraph_service=create_langgraph_service(),
         event_bus=get_event_bus(),
         service_registry=gateway_components.registry,
         api_gateway=gateway_components.gateway,

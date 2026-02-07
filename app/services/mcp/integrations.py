@@ -59,9 +59,9 @@ class MCPIntegrations:
         """
         try:
             from app.services.overmind.domain.api_schemas import LangGraphRunRequest
-            from app.services.overmind.langgraph import LangGraphAgentService
+            from app.services.overmind.factory import create_langgraph_service
 
-            service = LangGraphAgentService()
+            service = create_langgraph_service()
             request = LangGraphRunRequest(
                 goal=goal,
                 context=context or {},

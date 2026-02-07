@@ -2,51 +2,23 @@ from __future__ import annotations
 
 import uuid
 
-from app.core.ai_gateway import get_ai_client
-from app.services.agent_tools import get_registry
-from app.services.overmind.agents.architect import ArchitectAgent
-from app.services.overmind.agents.auditor import AuditorAgent
-from app.services.overmind.agents.operator import OperatorAgent
-from app.services.overmind.agents.strategist import StrategistAgent
 from app.services.overmind.domain.api_schemas import LangGraphRunData, LangGraphRunRequest
-from app.services.overmind.executor import TaskExecutor
 from app.services.overmind.langgraph.engine import LangGraphOvermindEngine
-from app.services.overmind.langgraph.state_manager import EphemeralMissionStateManager
-
-
-def build_default_engine() -> LangGraphOvermindEngine:
-    """
-    بناء محرك LangGraph الافتراضي مع جميع الاعتماديات الأساسية.
-    """
-    ai_client = get_ai_client()
-    registry = get_registry()
-    state_manager = EphemeralMissionStateManager()
-    executor = TaskExecutor(state_manager=state_manager, registry=registry)
-    strategist = StrategistAgent(ai_client)
-    architect = ArchitectAgent(ai_client)
-    operator = OperatorAgent(executor, ai_client=ai_client)
-    auditor = AuditorAgent(ai_client)
-    return LangGraphOvermindEngine(
-        strategist=strategist,
-        architect=architect,
-        operator=operator,
-        auditor=auditor,
-    )
 
 
 class LangGraphAgentService:
     """
     خدمة تشغيل LangGraph للوكلاء المتعددين.
 
-    تقوم هذه الخدمة بتجميع الوكلاء وإنشاء محرك LangGraph متسق مع
+    تقوم هذه الخدمة بتشغيل محرك LangGraph متسق مع
     مبادئ API First وبنية الخدمات المصغرة.
     """
 
-    def __init__(self, *, engine: LangGraphOvermindEngine | None = None) -> None:
+    def __init__(self, *, engine: LangGraphOvermindEngine) -> None:
         """
-        تهيئة الخدمة مع دعم حقن المحرك للاختبار أو الاستبدال.
+        تهيئة الخدمة عبر حقن المحرك (Dependency Injection).
         """
-        self.engine = engine or build_default_engine()
+        self.engine = engine
 
     async def run(self, payload: LangGraphRunRequest) -> LangGraphRunData:
         """
