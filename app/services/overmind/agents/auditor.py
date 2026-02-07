@@ -120,11 +120,17 @@ class AuditorAgent(AgentReflector):
         الموافقة تعني: "نعم، هذا تقدم جيد ويمكننا البناء عليه".
         الرفض يعني فقط: "هناك خطأ جوهري يمنع التقدم".
 
+        تعليمات هامة عند الموافقة (Approved = true):
+        - يجب عليك تجميع النتائج وصياغة إجابة نهائية احترافية للمستخدم (Markdown Formatted).
+        - ضع الإجابة في حقل "final_response".
+        - يجب أن تكون الإجابة شاملة ومنسقة بشكل جميل (مثل الكتب الدراسية أو التقارير المهنية).
+
         تنسيق الإجابة يجب أن يكون JSON فقط:
         {
             "approved": boolean,
             "feedback": "string (arabic)",
-            "score": float (0.0 - 1.0)
+            "score": float (0.0 - 1.0),
+            "final_response": "string (markdown formatted professional response)"
         }
         """
 
@@ -135,6 +141,7 @@ class AuditorAgent(AgentReflector):
         {json.dumps(result, ensure_ascii=False, default=str)}
 
         هل تم تحقيق الهدف بنجاح؟ قدم تحليلاً نقدياً.
+        إذا كانت النتيجة مقبولة، صغ الإجابة النهائية في final_response.
         """
 
         try:
@@ -152,6 +159,7 @@ class AuditorAgent(AgentReflector):
                 "approved": review_data.get("approved", False),
                 "feedback": review_data.get("feedback", "لم يتم تقديم ملاحظات."),
                 "score": review_data.get("score", 0.0),
+                "final_response": review_data.get("final_response"),
             }
 
         except Exception as e:
