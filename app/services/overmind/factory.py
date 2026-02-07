@@ -8,9 +8,12 @@
 - CS50 2025: توثيق عربي، صرامة في النوع.
 """
 
+from __future__ import annotations
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ai_gateway import get_ai_client
+from app.core.protocols import MissionStateManagerProtocol
 
 # استيراد الأدوات (يجب ضمان وجود هذا المسار أو استخدام واجهة بديلة)
 from app.services.agent_tools import get_registry
@@ -21,10 +24,53 @@ from app.services.overmind.agents.strategist import StrategistAgent
 from app.services.overmind.executor import TaskExecutor
 from app.services.overmind.langgraph.context_enricher import ContextEnricher
 from app.services.overmind.langgraph.engine import LangGraphOvermindEngine
+from app.services.overmind.langgraph.service import LangGraphAgentService
+from app.services.overmind.langgraph.state_manager import EphemeralMissionStateManager
 from app.services.overmind.orchestrator import OvermindOrchestrator
 from app.services.overmind.state import MissionStateManager
 
-__all__ = ["create_overmind"]
+__all__ = ["create_overmind", "create_langgraph_service"]
+
+
+def _build_engine_with_components(
+    state_manager: MissionStateManagerProtocol,
+) -> tuple[LangGraphOvermindEngine, TaskExecutor]:
+    """
+    بناء المحرك ومكوناته الأساسية بناءً على مدير الحالة الممرر.
+    """
+    # 1. Execution Layer
+    registry = get_registry()
+
+    # Register Content tools dynamically to avoid circular dependency
+    from app.services.chat.tools.content import register_content_tools
+    from app.services.chat.tools.retrieval import search_educational_content
+
+    register_content_tools(registry)
+    registry["search_educational_content"] = search_educational_content
+
+    # تم تحديث TaskExecutor ليقبل السجل صراحةً (Dependency Injection)
+    executor = TaskExecutor(state_manager=state_manager, registry=registry)
+
+    # 2. AI Gateway
+    ai_client = get_ai_client()
+
+    # 3. The Council of Wisdom
+    strategist = StrategistAgent(ai_client)
+    architect = ArchitectAgent(ai_client)
+    operator = OperatorAgent(executor, ai_client=ai_client)
+    auditor = AuditorAgent(ai_client)
+
+    context_enricher = ContextEnricher()
+
+    # Initialize the LangGraph Engine
+    engine = LangGraphOvermindEngine(
+        strategist=strategist,
+        architect=architect,
+        operator=operator,
+        auditor=auditor,
+        context_enricher=context_enricher,
+    )
+    return engine, executor
 
 
 async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
@@ -40,47 +86,30 @@ async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
     # 1. State Layer
     state_manager = MissionStateManager(db)
 
-    # 2. Execution Layer
-    registry = get_registry()
+    # 2. Build Engine
+    engine, executor = _build_engine_with_components(state_manager)
 
-    # Register Content tools dynamically to avoid circular dependency
-    from app.services.chat.tools.content import register_content_tools
-    from app.services.chat.tools.retrieval import search_educational_content
-
-    register_content_tools(registry)
-    registry["search_educational_content"] = search_educational_content
-
-    # تم تحديث TaskExecutor ليقبل السجل صراحةً (Dependency Injection)
-    # Refactoring: Using keyword arguments for Static Connascence
-    executor = TaskExecutor(state_manager=state_manager, registry=registry)
-
-    # 3. AI Gateway (Energy Engine)
-    ai_client = get_ai_client()
-
-    # 4. The Council of Wisdom (الوكلاء المتخصصون)
-    # Assuming agents are still positional or simple enough, but best practice:
-    # We will verify their signatures if needed, but for now we focus on the core chain.
-    strategist = StrategistAgent(ai_client)
-    architect = ArchitectAgent(ai_client)
-    operator = OperatorAgent(executor, ai_client=ai_client)
-    auditor = AuditorAgent(ai_client)
-    # memory_agent is initialized but not used in the new architecture, ensuring we don't trigger F841
-
-    # 5. The SuperBrain (Legacy) & LangGraph Engine (New)
-    # We now default to the LangGraph Engine for "Super Mission" capabilities
-    context_enricher = ContextEnricher()
-
-    # Initialize the LangGraph Engine
-    langgraph_brain = LangGraphOvermindEngine(
-        strategist=strategist,
-        architect=architect,
-        operator=operator,
-        auditor=auditor,
-        context_enricher=context_enricher,
-    )
-
-    # 6. The Orchestrator
-    # Passing the LangGraph Engine as the primary brain
+    # 3. The Orchestrator
     return OvermindOrchestrator(
-        state_manager=state_manager, executor=executor, brain=langgraph_brain
+        state_manager=state_manager, executor=executor, brain=engine
     )
+
+
+def create_langgraph_service(db: AsyncSession | None = None) -> LangGraphAgentService:
+    """
+    دالة مصنع لإنشاء خدمة LangGraphAgentService مع كافة الاعتماديات محقونة.
+
+    Args:
+        db (AsyncSession | None): جلسة قاعدة البيانات (اختياري).
+                                 في حالة عدم التوفير، يتم استخدام مدير حالة مؤقت.
+
+    Returns:
+        LangGraphAgentService: الخدمة جاهزة للاستخدام.
+    """
+    if db:
+        state_manager = MissionStateManager(db)
+    else:
+        state_manager = EphemeralMissionStateManager()
+
+    engine, _ = _build_engine_with_components(state_manager)
+    return LangGraphAgentService(engine=engine)
