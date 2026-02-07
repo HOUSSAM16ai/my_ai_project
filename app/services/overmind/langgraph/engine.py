@@ -38,6 +38,7 @@ class LangGraphState(TypedDict):
     plan_hashes: list[str]
     loop_detected: bool
     next_step: str | None
+    answer: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -189,6 +190,7 @@ class LangGraphOvermindEngine:
             "plan_hashes": [],
             "loop_detected": False,
             "next_step": None,
+            "answer": None,
         }
 
         final_state = await self._compiled_graph.ainvoke(
@@ -429,11 +431,16 @@ class LangGraphOvermindEngine:
         if self._observer:
             await self._observer("phase_completed", {"phase": "REFLECTION"})
 
-        return {
+        updates = {
             "audit": audit,
             "shared_memory": context.shared_memory,
             "timeline": self._append_timeline(state, "auditor", {"status": "audited"}),
         }
+
+        if isinstance(audit, dict) and audit.get("final_response"):
+            updates["answer"] = str(audit["final_response"])
+
+        return updates
 
     async def _supervisor_node(self, state: LangGraphState) -> dict[str, object]:
         """

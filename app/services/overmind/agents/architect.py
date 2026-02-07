@@ -100,7 +100,7 @@ class ArchitectAgent(AgentArchitect):
         3. معاملات الأداة (tool_args) يجب أن تكون JSON object.
         4. عند طلب تمرين أو محتوى تعليمي محدد، ابدأ بـ search_educational_content مع تمرير السنة والشعبة والموضوع ورقم التمرين، ثم استخدم get_content_raw إذا عاد معرف محتوى.
         5. المخرجات يجب أن تكون JSON صالح فقط.
-        6. تحذير صارم: يمنع منعاً باتاً البحث في الإنترنت أو استخدام محركات بحث خارجية. اعتمد فقط على أدوات البحث الداخلية (search_content, search_educational_content).
+        6. يفضل استخدام أدوات البحث الداخلية (search_content, search_educational_content)، ولكن يُسمح باستخدام `run_shell` للبحث في الإنترنت (curl/wget) عند الضرورة القصوى أو بطلب صريح من المستخدم للتحقق من المصادر الخارجية.
 
         صيغة JSON المطلوبة:
         {
