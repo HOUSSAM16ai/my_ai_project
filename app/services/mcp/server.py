@@ -78,7 +78,10 @@ class MCPServer:
         )
 
     async def call_tool(
-        self, tool_name: str, arguments: dict[str, Any] | None = None
+        self,
+        tool_name: str,
+        arguments: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         استدعاء أداة MCP.
@@ -86,6 +89,7 @@ class MCPServer:
         Args:
             tool_name: اسم الأداة
             arguments: معاملات الأداة
+            context: سياق الاستدعاء (للأمان والتحقق)
 
         Returns:
             dict: نتيجة الأداة
@@ -93,14 +97,26 @@ class MCPServer:
         if not self._initialized:
             await self.initialize()
 
+        # التحقق من الصلاحيات
+        if not self._validate_access("call_tool", tool_name, context):
+            return {
+                "error": "Access Denied",
+                "message": f"ليس لديك صلاحية لاستدعاء الأداة: {tool_name}",
+            }
+
         return await self.tool_registry.execute_tool(tool_name, arguments or {})
 
-    async def get_resource(self, resource_uri: str) -> dict[str, Any]:
+    async def get_resource(
+        self,
+        resource_uri: str,
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         الحصول على مورد MCP.
 
         Args:
             resource_uri: معرف المورد
+            context: سياق الاستدعاء (للأمان والتحقق)
 
         Returns:
             dict: محتوى المورد
@@ -108,7 +124,74 @@ class MCPServer:
         if not self._initialized:
             await self.initialize()
 
+        # التحقق من الصلاحيات
+        if not self._validate_access("get_resource", resource_uri, context):
+            return {
+                "error": "Access Denied",
+                "message": f"ليس لديك صلاحية للوصول للمورد: {resource_uri}",
+            }
+
         return await self.resource_provider.get_resource(resource_uri)
+
+    def _validate_access(
+        self,
+        action: str,
+        item_name: str,
+        context: dict[str, Any] | None,
+    ) -> bool:
+        """
+        التحقق من صلاحية الوصول.
+
+        Args:
+            action: نوع الإجراء (call_tool, get_resource)
+            item_name: اسم العنصر
+            context: سياق الاستدعاء
+
+        Returns:
+            bool: هل الوصول مسموح
+        """
+        # قائمة الأدوات الحساسة التي تتطلب صلاحيات إدارية
+        SENSITIVE_TOOLS = {
+            "execute_command",
+            "write_file",
+            "delete_file",
+            "db_query",
+            "shutdown",
+        }
+
+        # قائمة الموارد الحساسة
+        SENSITIVE_RESOURCES = {
+            "project://database",
+            "project://environment",  # قد تحتوي على مفاتيح API
+        }
+
+        # السياق الافتراضي (للاستدعاءات الداخلية)
+        if context is None:
+            # يمكن اعتبار الاستدعاءات الداخلية آمنة، أو تطبيق سياسة صارمة
+            # هنا سنسمح بالأدوات غير الحساسة فقط بدون سياق صريح
+            if action == "call_tool" and item_name in SENSITIVE_TOOLS:
+                logger.warning(f"⚠️ محاولة وصول لأداة حساسة بدون سياق: {item_name}")
+                return False
+            if action == "get_resource" and item_name in SENSITIVE_RESOURCES:
+                logger.warning(f"⚠️ محاولة وصول لمورد حساس بدون سياق: {item_name}")
+                return False
+            return True
+
+        # التحقق من الدور (Role-Based Access Control)
+        role = context.get("role", "guest")
+
+        if role == "admin":
+            return True
+
+        # المستخدم العادي لا يمكنه استخدام الأدوات الحساسة
+        if action == "call_tool" and item_name in SENSITIVE_TOOLS:
+            return False
+
+        # المستخدم العادي لا يمكنه الوصول للموارد الحساسة
+        if action == "get_resource" and item_name in SENSITIVE_RESOURCES:
+            return False
+
+        return True
 
     async def get_project_metrics(self) -> dict[str, Any]:
         """

@@ -9,6 +9,7 @@
 - الخدمات المصغرة
 """
 
+import time
 from pathlib import Path
 from typing import Any
 
@@ -69,7 +70,8 @@ class MCPResourceProvider:
     ) -> None:
         self.project_root = project_root
         self.resources: dict[str, MCPResource] = {}
-        self._cache: dict[str, dict[str, Any]] = {}
+        # Cache stores (content, timestamp)
+        self._cache: dict[str, tuple[dict[str, Any], float]] = {}
 
         # تسجيل fetchers (OCP: يمكن إضافة fetchers جديدة بدون تعديل الكود)
         from app.services.mcp.protocols import get_default_fetchers
@@ -162,12 +164,13 @@ class MCPResourceProvider:
 
         logger.info(f"✅ تم تهيئة {len(self.resources)} مورد MCP")
 
-    async def get_resource(self, uri: str) -> dict[str, Any]:
+    async def get_resource(self, uri: str, ttl: float = 300.0) -> dict[str, Any]:
         """
         الحصول على محتوى مورد.
 
         Args:
             uri: معرف المورد
+            ttl: مدة صلاحية الـ cache بالثواني (الافتراضي 5 دقائق)
 
         Returns:
             dict: محتوى المورد
@@ -180,13 +183,15 @@ class MCPResourceProvider:
 
         # التحقق من الـ cache
         if uri in self._cache:
-            return self._cache[uri]
+            content, timestamp = self._cache[uri]
+            if time.time() - timestamp < ttl:
+                return content
 
         # جلب البيانات باستخدام fetcher
         content = await self._fetch_resource_content(uri)
 
-        # تخزين في الـ cache
-        self._cache[uri] = content
+        # تخزين في الـ cache مع الوقت الحالي
+        self._cache[uri] = (content, time.time())
 
         return content
 

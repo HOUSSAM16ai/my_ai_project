@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from app.core.logging import get_logger
+from app.core.settings.base import get_settings
 
 logger = get_logger(__name__)
 
@@ -116,7 +117,9 @@ class MCPIntegrations:
             )
 
             # ملاحظة: قد يحتاج URL قاعدة البيانات
-            retriever = get_retriever("postgresql://...")
+            # تم إصلاح الـ Placeholder واستخدام الإعدادات الحقيقية
+            db_url = str(get_settings().database.url)
+            retriever = get_retriever(db_url)
             results = await retriever.search(query, top_k=top_k, filters=filters)
 
             return {
@@ -330,6 +333,7 @@ class MCPIntegrations:
     def get_all_integrations_status(self) -> dict[str, Any]:
         """
         تعيد حالة جميع التكاملات (للوحة تحكم الأدمن).
+        يتم فحص الحالة فعلياً بدلاً من إرجاع قيم ثابتة.
         """
         # جلب إحصائيات الإصلاح الحقيقية
         try:
@@ -341,34 +345,39 @@ class MCPIntegrations:
             healing_stats = {"status": "module_not_found"}
 
         return {
-            "langgraph": {"status": "connected", "version": "0.1.0", "workflows_active": 5},
-            "kagent": {"status": "connected", "agents_online": 3, "mesh_health": "stable"},
-            "learning": {
-                "status": "active",
-                "integration": "student_profile",
-                "algorithms": ["elo_rating", "forgetting_curve"],
-            },
-            "knowledge": {
-                "status": "active",
-                "integration": "concept_graph",
-                "concepts_loaded": 17,
-            },
+            "langgraph": self._check_langgraph_status(),
+            "kagent": self._check_kagent_status(),
+            "learning": self.get_learning_status(),
+            "knowledge": self.get_knowledge_status(),
             "analytics_dashboard": {
                 "status": "active",
                 "integration": "predictive_analyzer",
-                "healing_metrics": healing_stats,  # إحصائيات حقيقية للأدمن
+                "healing_metrics": healing_stats,
             },
-            "vision": {
-                "status": "active",
-                "integration": "multimodal_processor",
-                "models": ["gpt-4o", "clip"],
-            },
-            "collaboration": {
-                "status": "active",
-                "integration": "kagent_help_desk",
-                "active_sessions": 0,
-            },
+            "vision": self.get_vision_status(),
+            "collaboration": self.get_collaboration_status(),
         }
+
+    def _check_langgraph_status(self) -> dict[str, Any]:
+        try:
+            from app.services.overmind.langgraph import LangGraphAgentService
+
+            # يمكن إضافة فحص أعمق هنا إذا توفرت طريقة ping
+            return {"status": "active", "version": "0.1.0", "service": "LangGraphAgentService"}
+        except ImportError:
+            return {"status": "unavailable", "error": "Module not found"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def _check_kagent_status(self) -> dict[str, Any]:
+        try:
+            from app.services.kagent import KagentMesh
+
+            return {"status": "active", "mesh": "KagentMesh"}
+        except ImportError:
+            return {"status": "unavailable", "error": "Module not found"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
 
     # ============== Learning Services ==============
 
