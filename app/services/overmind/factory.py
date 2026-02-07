@@ -90,9 +90,7 @@ async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
     engine, executor = _build_engine_with_components(state_manager)
 
     # 3. The Orchestrator
-    return OvermindOrchestrator(
-        state_manager=state_manager, executor=executor, brain=engine
-    )
+    return OvermindOrchestrator(state_manager=state_manager, executor=executor, brain=engine)
 
 
 def create_langgraph_service(db: AsyncSession | None = None) -> LangGraphAgentService:
