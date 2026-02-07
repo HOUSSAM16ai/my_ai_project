@@ -14,7 +14,7 @@ MCP Server الرئيسي - خادم البروتوكول الموحد.
 """
 
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.logging import get_logger
 from app.services.mcp.resources import MCPResourceProvider
@@ -133,6 +133,19 @@ class MCPServer:
 
         return await self.resource_provider.get_resource(resource_uri)
 
+    _SENSITIVE_TOOLS: ClassVar[set[str]] = {
+        "execute_command",
+        "write_file",
+        "delete_file",
+        "db_query",
+        "shutdown",
+    }
+
+    _SENSITIVE_RESOURCES: ClassVar[set[str]] = {
+        "project://database",
+        "project://environment",  # قد تحتوي على مفاتيح API
+    }
+
     def _validate_access(
         self,
         action: str,
@@ -150,29 +163,14 @@ class MCPServer:
         Returns:
             bool: هل الوصول مسموح
         """
-        # قائمة الأدوات الحساسة التي تتطلب صلاحيات إدارية
-        SENSITIVE_TOOLS = {
-            "execute_command",
-            "write_file",
-            "delete_file",
-            "db_query",
-            "shutdown",
-        }
-
-        # قائمة الموارد الحساسة
-        SENSITIVE_RESOURCES = {
-            "project://database",
-            "project://environment",  # قد تحتوي على مفاتيح API
-        }
-
         # السياق الافتراضي (للاستدعاءات الداخلية)
         if context is None:
             # يمكن اعتبار الاستدعاءات الداخلية آمنة، أو تطبيق سياسة صارمة
             # هنا سنسمح بالأدوات غير الحساسة فقط بدون سياق صريح
-            if action == "call_tool" and item_name in SENSITIVE_TOOLS:
+            if action == "call_tool" and item_name in self._SENSITIVE_TOOLS:
                 logger.warning(f"⚠️ محاولة وصول لأداة حساسة بدون سياق: {item_name}")
                 return False
-            if action == "get_resource" and item_name in SENSITIVE_RESOURCES:
+            if action == "get_resource" and item_name in self._SENSITIVE_RESOURCES:
                 logger.warning(f"⚠️ محاولة وصول لمورد حساس بدون سياق: {item_name}")
                 return False
             return True
@@ -184,14 +182,11 @@ class MCPServer:
             return True
 
         # المستخدم العادي لا يمكنه استخدام الأدوات الحساسة
-        if action == "call_tool" and item_name in SENSITIVE_TOOLS:
+        if action == "call_tool" and item_name in self._SENSITIVE_TOOLS:
             return False
 
         # المستخدم العادي لا يمكنه الوصول للموارد الحساسة
-        if action == "get_resource" and item_name in SENSITIVE_RESOURCES:
-            return False
-
-        return True
+        return not (action == "get_resource" and item_name in self._SENSITIVE_RESOURCES)
 
     async def get_project_metrics(self) -> dict[str, Any]:
         """

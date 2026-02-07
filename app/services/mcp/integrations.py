@@ -362,8 +362,10 @@ class MCPIntegrations:
         try:
             from app.services.overmind.langgraph import LangGraphAgentService
 
-            # يمكن إضافة فحص أعمق هنا إذا توفرت طريقة ping
-            return {"status": "active", "version": "0.1.0", "service": "LangGraphAgentService"}
+            # Verify availability
+            if LangGraphAgentService:
+                return {"status": "active", "version": "0.1.0", "service": "LangGraphAgentService"}
+            return {"status": "unknown"}
         except ImportError:
             return {"status": "unavailable", "error": "Module not found"}
         except Exception as e:
@@ -373,7 +375,10 @@ class MCPIntegrations:
         try:
             from app.services.kagent import KagentMesh
 
-            return {"status": "active", "mesh": "KagentMesh"}
+            # Verify availability
+            if KagentMesh:
+                return {"status": "active", "mesh": "KagentMesh"}
+            return {"status": "unknown"}
         except ImportError:
             return {"status": "unavailable", "error": "Module not found"}
         except Exception as e:
