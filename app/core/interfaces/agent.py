@@ -1,20 +1,20 @@
 """
-Agent Interface.
-----------------
-Defines the contract for conversational agents.
+واجهة الوكيل.
+-------------
+تحدد هذه الواجهة عقد تنفيذ الوكلاء الحواريين بشكل واضح وقابل للاختبار.
 """
 
 from collections.abc import AsyncGenerator
-from typing import Any, Protocol
+from typing import Protocol
 
 
 class Agent(Protocol):
     """
-    Protocol for a conversational agent.
+    بروتوكول يحدد سلوك الوكيل الحواري.
     """
 
     async def run(
-        self, question: str, context: dict[str, Any] | None = None
+        self, question: str, context: dict[str, object] | None = None
     ) -> AsyncGenerator[str, None]:
-        """Run the agent loop."""
+        """تشغيل حلقة الوكيل وإرجاع دفعات الاستجابة."""
         ...

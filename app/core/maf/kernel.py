@@ -1,12 +1,11 @@
 """
-Multi-Agent Fabric Kernel (MAF-Kernel).
----------------------------------------
-The core logic engine that enforces the 'Generate -> Attack -> Verify -> Seal' protocol.
-This kernel replaces loose LLM routing with a normative state machine.
+نواة نسيج الوكلاء المتعددين (MAF-Kernel).
+-----------------------------------------
+محرك المنطق الأساسي الذي يفرض بروتوكول
+'توليد -> هجوم -> تحقق -> ختم' كآلة حالات معيارية.
 """
 
 import logging
-from typing import Any
 
 from app.core.maf.spec import AttackReport, MAFPhase, ReviewPacket, Verification
 
@@ -15,13 +14,13 @@ logger = logging.getLogger(__name__)
 
 class MAFKernel:
     """
-    The Orchestrator that governs the Agent Fabric.
+    المنسّق الذي يدير نسيج الوكلاء.
     """
 
     @staticmethod
-    def determine_phase(state: dict[str, Any]) -> MAFPhase:
+    def determine_phase(state: dict[str, object]) -> MAFPhase:
         """
-        Analyzes the state to determine the current MAF Phase.
+        يحلل الحالة لتحديد مرحلة MAF الحالية.
         """
         proposal = state.get("maf_proposal")
         attack = state.get("maf_attack")
@@ -46,9 +45,9 @@ class MAFKernel:
         return MAFPhase.SEAL
 
     @staticmethod
-    def decide_next_node(state: dict[str, Any]) -> dict[str, Any]:
+    def decide_next_node(state: dict[str, object]) -> dict[str, object]:
         """
-        Decides the next graph node based on the MAF Phase and artifact quality.
+        يقرر العقدة التالية بناءً على مرحلة MAF وجودة المخرجات.
         """
         phase = MAFKernel.determine_phase(state)
 

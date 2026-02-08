@@ -1,13 +1,10 @@
 """
-Kagent Domain Models.
----------------------
-Core data structures for the Kagent Agent Mesh, defining Service Profiles,
-Requests, and Responses for the inter-agent communication layer.
+نماذج نطاق Kagent.
+------------------
+البنى الأساسية لشبكة الوكلاء، وتشمل تعريفات الخدمات والطلبات والاستجابات.
 
-Standard: Legendary Professional Arabic Docstrings.
+المعيار: توثيق عربي احترافي للنماذج الجوهرية.
 """
-
-from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -36,7 +33,9 @@ class AgentRequest(BaseModel):
     caller_id: str = Field(..., description="معرف الجهة الطالبة (Node ID)")
     target_service: str = Field(..., description="اسم الخدمة المستهدفة")
     action: str = Field(..., description="اسم الإجراء/الدالة المطلوبة")
-    payload: dict[str, Any] = Field(default_factory=dict, description="البيانات المدخلة للإجراء")
+    payload: dict[str, object] = Field(
+        default_factory=dict, description="البيانات المدخلة للإجراء"
+    )
     security_token: str | None = Field(None, description="رمز التحقق (Simulated mTLS)")
 
 
@@ -47,8 +46,8 @@ class AgentResponse(BaseModel):
     """
 
     status: str = Field(..., description="حالة التنفيذ ('success', 'error')")
-    data: dict[str, Any] | Any = Field(None, description="مخرجات التنفيذ")
+    data: dict[str, object] | object | None = Field(None, description="مخرجات التنفيذ")
     error: str | None = Field(None, description="رسالة الخطأ إن وجدت")
-    metrics: dict[str, Any] = Field(
+    metrics: dict[str, object] = Field(
         default_factory=dict, description="قياسات الأداء (Time, Tokens)"
     )

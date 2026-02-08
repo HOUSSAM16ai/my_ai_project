@@ -1,16 +1,16 @@
 import sys
 import unittest
-from typing import Any, NotRequired, TypedDict
+from typing import NotRequired, TypedDict
 from unittest.mock import MagicMock
 
 
 # 1. Mock AgentState to avoid importing app.services.chat
 class AgentState(TypedDict):
-    messages: list[Any]
+    messages: list[object]
     next: str
     plan: list[str]
     current_step_index: int
-    search_results: list[Any]
+    search_results: list[object]
     user_context: dict
     final_response: str
     review_packet: NotRequired[dict]

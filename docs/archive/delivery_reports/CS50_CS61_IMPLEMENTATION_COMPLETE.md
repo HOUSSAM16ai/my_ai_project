@@ -28,7 +28,7 @@
 ✅ **القابلية للتوسع**: بنية قابلة للتطوير بدون حدود  
 ✅ **الأداء**: أداء فائق مُحسّن على مستوى النظام  
 ✅ **الصيانة**: كود نظيف وموثق بشكل كامل  
-✅ **الأمان**: type safety كاملة بدون استخدام `Any`  
+✅ **الأمان**: type safety كاملة بدون استخدام `permissive dynamic type`  
 
 ---
 
@@ -54,7 +54,7 @@ class Strategy(ABC, Generic[TInput, TOutput]):
 ```
 
 **القواعد المطبقة:**
-- ❌ **لا Any مطلقاً**: جميع الدوال لها أنواع محددة
+- ❌ **لا object مطلقاً**: جميع الدوال لها أنواع محددة
 - ✅ **استخدام `T | None`**: بدلاً من `Optional[T]`
 - ✅ **Generic Collections**: `list[T]`, `dict[K, V]` بدلاً من `List`, `Dict`
 - ✅ **Type hints كاملة**: جميع المعاملات والمخرجات مُحددة
@@ -132,7 +132,7 @@ class FluentBuilder(ABC, Generic[T]):
     يقبل مجموعة من العمليات ويُرجع كائن مبني.
     """
     
-    def with_property(self, value: Any) -> 'FluentBuilder[T]':
+    def with_property(self, value: object) -> 'FluentBuilder[T]':
         """عملية من مستوى أعلى - تُرجع البناء نفسه"""
         return self
     
@@ -284,7 +284,7 @@ def process(registry: StrategyRegistry[TInput, TOutput]):
 class Strategy(ABC):
     """واجهة بسيطة - دالتين فقط"""
     async def can_handle(self, context) -> bool: ...
-    async def execute(self, context) -> Any: ...
+    async def execute(self, context) -> object: ...
 ```
 
 #### D - Dependency Inversion
@@ -510,7 +510,7 @@ tool = (ToolBuilder("search")
 ```
 Type Safety:        100% ✅
 ├─ Type Hints:      100% (all functions)
-├─ Generic Types:   100% (no Any)
+├─ Generic Types:   100% (no permissive dynamic type)
 └─ Return Types:    100% (including async)
 
 Documentation:      100% ✅

@@ -1,18 +1,24 @@
 """
-Dependency Injection Container and Facade.
-------------------------------------------
-This module acts as the central registry for dependencies (DIP) and provides
-facade functions for legacy/core components to maintain backward compatibility.
+حاوية حقن التبعيات والواجهة الموحّدة.
+-----------------------------------
+يوفّر هذا الملف سجلًا مركزيًا للتبعيات وفق مبدأ عكس الاعتماد (DIP)، مع دوال
+واجهة تحافظ على التوافق مع المكوّنات الأساسية القديمة.
 
-It combines the new 'Container' for SOLID refactoring with re-exports of
-existing core services.
+يعتمد التصميم على حاوية بسيطة قابلة للتوسّع مع إعادة تصدير الخدمات الأساسية.
 """
 
+from __future__ import annotations
+
 from collections.abc import Callable
-from typing import Annotated, Any, ClassVar, TypeVar
+from typing import Annotated, ClassVar, TYPE_CHECKING, TypeVar, cast
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
+if TYPE_CHECKING:
+    from app.application.services import DefaultHealthCheckService
+    from app.services.kagent.interface import KagentMesh
+    from app.services.system.system_service import SystemService
 
 # --- Legacy / Core Re-exports ---
 from app.core.config import get_settings
@@ -23,13 +29,17 @@ from app.core.logging import get_logger
 # --- Facade Functions for Legacy Routers ---
 
 
-def get_system_service():
+def get_system_service() -> SystemService:
+    """إرجاع خدمة النظام الأساسية مع الحفاظ على التوافق الخلفي."""
     from app.services.system.system_service import system_service
 
     return system_service
 
 
-async def get_health_check_service(db: Annotated[AsyncSession, Depends(get_db)]):
+async def get_health_check_service(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> DefaultHealthCheckService:
+    """بناء خدمة فحص الصحة باستخدام المستودع المعتمد على قاعدة البيانات."""
     from app.application.services import DefaultHealthCheckService
     from app.infrastructure.repositories.database_repository import SQLAlchemyDatabaseRepository
 
@@ -44,34 +54,38 @@ T = TypeVar("T")
 
 class Container:
     """
-    A simple Dependency Injection Container to enforce DIP (Dependency Inversion Principle).
+    حاوية بسيطة لحقن التبعيات تضمن الالتزام بمبدأ عكس الاعتماد (DIP).
     """
 
-    _factories: ClassVar[dict[type, Callable[[], Any]]] = {}
-    _singletons: ClassVar[dict[type, Any]] = {}
+    _factories: ClassVar[dict[type[object], Callable[[], object]]] = {}
+    _singletons: ClassVar[dict[type[object], object]] = {}
 
     @classmethod
-    def register(cls, interface: type[T], factory: Callable[[], T]):
+    def register(cls, interface: type[T], factory: Callable[[], T]) -> None:
         """
-        Register a factory function for a given interface.
-        Whenever resolve is called, this factory is executed (Transient).
+        تسجيل مُنشئ للتبعيات لنوع محدّد.
+        يتم تنفيذ المُنشئ عند كل عملية حل (Transient).
         """
         cls._factories[interface] = factory
 
     @classmethod
-    def register_singleton(cls, interface: type[T], instance: T):
+    def register_singleton(cls, interface: type[T], instance: T) -> None:
         """
-        Register a specific instance as a Singleton.
+        تسجيل نسخة مفردة (Singleton) لواجهة معيّنة.
         """
         cls._singletons[interface] = instance
 
     @classmethod
-    def register_singleton_factory(cls, interface: type[T], factory: Callable[[], T]):
+    def register_singleton_factory(
+        cls,
+        interface: type[T],
+        factory: Callable[[], T],
+    ) -> None:
         """
-        Register a factory that is called once, then cached (Lazy Singleton).
+        تسجيل مُنشئ كسول يُستدعى مرة واحدة ثم يُخزّن (Lazy Singleton).
         """
 
-        def lazy_wrapper():
+        def lazy_wrapper() -> object:
             if interface not in cls._singletons:
                 cls._singletons[interface] = factory()
             return cls._singletons[interface]
@@ -81,19 +95,19 @@ class Container:
     @classmethod
     def resolve(cls, interface: type[T]) -> T:
         """
-        Resolve the dependency for the given interface.
+        حلّ التبعية لواجهة معيّنة وإرجاع النسخة المناسبة.
         """
         if interface in cls._singletons:
-            return cls._singletons[interface]
+            return cast(T, cls._singletons[interface])
 
         if interface in cls._factories:
-            return cls._factories[interface]()
+            return cast(T, cls._factories[interface]())
 
         raise ValueError(f"No registration found for {interface.__name__}")
 
     @classmethod
-    def clear(cls):
-        """Clear the container (useful for testing)."""
+    def clear(cls) -> None:
+        """تفريغ الحاوية بالكامل (مفيد للاختبارات)."""
         cls._factories.clear()
         cls._singletons.clear()
 
@@ -111,14 +125,16 @@ __all__ = [
 ]
 
 
-def get_kagent_mesh():
+def get_kagent_mesh() -> KagentMesh:
+    """جلب شبكة الوكيل الذكي عبر الحاوية."""
     from app.services.kagent.interface import KagentMesh
 
     return Container.resolve(KagentMesh)
 
 
 # Bootstrap Kagent as a Lazy Singleton
-def _create_kagent_mesh():
+def _create_kagent_mesh() -> KagentMesh:
+    """إنشاء نسخة جديدة من شبكة الوكيل الذكي."""
     from app.services.kagent.interface import KagentMesh
 
     return KagentMesh()

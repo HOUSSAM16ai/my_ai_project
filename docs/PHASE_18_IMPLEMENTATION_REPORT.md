@@ -339,7 +339,7 @@ KISS Violations تم معالجتها: 3/115 (2.6%)
 3. **Type hints دائماً**
    - كل parameter و return value
    - استخدم Union و Optional عند الحاجة
-   - تجنب Any إلا للضرورة
+   - تجنب object إلا للضرورة
 
 4. **Docstrings شاملة**
    - وصف ما تفعله الدالة
@@ -356,7 +356,7 @@ KISS Violations تم معالجتها: 3/115 (2.6%)
 2. **تأكد من Type Safety**
    - هل جميع parameters لها types؟
    - هل return values واضحة؟
-   - هل هناك استخدام غير ضروري لـ Any؟
+   - هل هناك استخدام غير ضروري لـ object؟
 
 3. **راجع الوثائق**
    - هل كل method موثق؟

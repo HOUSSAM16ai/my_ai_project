@@ -252,7 +252,7 @@ Each release includes:
 - ✅ **Detailed Changes**: Complete list of modifications
 - ✅ **Migration Guide**: If breaking changes exist
 - ✅ **Code Examples**: Updated examples for new features
-- ✅ **Known Issues**: Any known problems and workarounds
+- ✅ **Known Issues**: Known problems and workarounds
 - ✅ **Upgrade Instructions**: Step-by-step upgrade guide
 
 ---

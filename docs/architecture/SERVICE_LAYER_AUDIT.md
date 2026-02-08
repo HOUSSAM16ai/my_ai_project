@@ -48,6 +48,6 @@ This code is not integrated into the application and should be removed after a f
 
 ## 3. Key Architectural Risks
 
-1.  **Logic Duplication:** The CLI layer's direct database access is the biggest risk. Any changes to user or data models must be implemented in two places, which is unsustainable.
+1.  **Logic Duplication:** The CLI layer's direct database access is the biggest risk. All changes to user or data models must be implemented in two places, which is unsustainable.
 2.  **Inconsistent State Management:** With two different ways to access the database (service layer vs. CLI), there is a risk of inconsistent transaction management and state.
 3.  **Service Discovery:** The current singleton pattern (`get_..._service()`) is a form of service location that hides dependencies. Moving to an explicit DI model will make the codebase more transparent and testable.

@@ -14,7 +14,7 @@ MCP Server الرئيسي - خادم البروتوكول الموحد.
 """
 
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from app.core.logging import get_logger
 from app.services.mcp.resources import MCPResourceProvider
@@ -80,9 +80,9 @@ class MCPServer:
     async def call_tool(
         self,
         tool_name: str,
-        arguments: dict[str, Any] | None = None,
-        context: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        arguments: dict[str, object] | None = None,
+        context: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         """
         استدعاء أداة MCP.
 
@@ -109,8 +109,8 @@ class MCPServer:
     async def get_resource(
         self,
         resource_uri: str,
-        context: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        context: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         """
         الحصول على مورد MCP.
 
@@ -150,7 +150,7 @@ class MCPServer:
         self,
         action: str,
         item_name: str,
-        context: dict[str, Any] | None,
+        context: dict[str, object] | None,
     ) -> bool:
         """
         التحقق من صلاحية الوصول.
@@ -188,7 +188,7 @@ class MCPServer:
         # المستخدم العادي لا يمكنه الوصول للموارد الحساسة
         return not (action == "get_resource" and item_name in self._SENSITIVE_RESOURCES)
 
-    async def get_project_metrics(self) -> dict[str, Any]:
+    async def get_project_metrics(self) -> dict[str, object]:
         """
         الحصول على إحصائيات المشروع الدقيقة.
 
@@ -197,7 +197,7 @@ class MCPServer:
         """
         return await self.call_tool("get_project_metrics")
 
-    async def get_complete_project_knowledge(self) -> dict[str, Any]:
+    async def get_complete_project_knowledge(self) -> dict[str, object]:
         """
         الحصول على المعرفة الكاملة عن المشروع.
 
@@ -213,7 +213,7 @@ class MCPServer:
         """
         return await self.call_tool("get_complete_knowledge")
 
-    async def analyze_file(self, file_path: str) -> dict[str, Any]:
+    async def analyze_file(self, file_path: str) -> dict[str, object]:
         """
         تحليل ملف بايثون معين.
 
@@ -225,7 +225,7 @@ class MCPServer:
         """
         return await self.call_tool("analyze_file", {"file_path": file_path})
 
-    async def search_codebase(self, query: str, search_type: str = "semantic") -> dict[str, Any]:
+    async def search_codebase(self, query: str, search_type: str = "semantic") -> dict[str, object]:
         """
         البحث في الكود.
 
@@ -256,7 +256,7 @@ class MCPServer:
         """
         return self.resource_provider.list_resources()
 
-    async def get_tools_for_llm(self) -> list[dict[str, Any]]:
+    async def get_tools_for_llm(self) -> list[dict[str, object]]:
         """
         الحصول على مخطط الأدوات بتنسيق OpenAI.
 

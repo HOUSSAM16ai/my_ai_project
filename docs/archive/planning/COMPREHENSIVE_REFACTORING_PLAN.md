@@ -145,7 +145,7 @@ payment_service.register_strategy(CryptoStrategy())  # جديد!
 
 #### 1. انتهاكات قابلية الاستبدال (Replaceability Violations)
 ```
-❌ 160 ملف يستخدم Any type (غير محدد)
+❌ 160 ملف يستخدم permissive dynamic type (غير محدد)
 ❌ تبعيات صلبة في بعض الخدمات
 ❌ عدم استخدام DI في كل مكان
 ```
@@ -249,11 +249,11 @@ payment_service.register_strategy(CryptoStrategy())  # جديد!
 
 ---
 
-### المرحلة 3: إزالة Any Type (Type Safety)
+### المرحلة 3: إزالة object Type (Type Safety)
 **الوقت المقدر:** 4 أيام
 
 #### استراتيجية العمل:
-1. [ ] تحديد جميع استخدامات Any (160 ملف)
+1. [ ] تحديد جميع استخدامات object (160 ملف)
 2. [ ] تصنيف الاستخدامات:
    - JSON data → TypedDict
    - Generic functions → Generic[T]
@@ -265,7 +265,7 @@ payment_service.register_strategy(CryptoStrategy())  # جديد!
 **مثال:**
 ```python
 # ❌ قبل
-def process_data(data: Any) -> Any:
+def process_data(data: object) -> object:
     return data.get("result")
 
 # ✅ بعد
@@ -475,7 +475,7 @@ examples/
 - [ ] pytest coverage > 80%
 - [ ] جميع الأمثلة تعمل
 - [ ] التوثيق كامل 100%
-- [ ] لا يوجد Any غير مبرر
+- [ ] لا يوجد object غير مبرر
 - [ ] لا يوجد if/elif للأنواع
 - [ ] كل خدمة تستخدم DI
 - [ ] كل سلوك متغير يستخدم Strategy
@@ -486,7 +486,7 @@ examples/
 
 ### قبل (Before)
 ```
-✗ 160 ملف يستخدم Any
+✗ 160 ملف يستخدم object
 ✗ 14 ملف > 300 سطر
 ✗ 20+ TODO/FIXME/HACK
 ✗ if/elif في الخدمات
@@ -497,7 +497,7 @@ examples/
 
 ### بعد (After)
 ```
-✓ 0 استخدام غير مبرر لـ Any
+✓ 0 استخدام غير مبرر لـ object
 ✓ 0 ملف > 200 سطر
 ✓ 0 TODO/FIXME/HACK غير موثق
 ✓ Strategy Pattern في كل مكان
@@ -537,14 +537,14 @@ examples/
 ### الخطوة الأولى (Week 1):
 1. [ ] إنشاء البنية التحتية (Protocols, Registry, DI)
 2. [ ] تقسيم أكبر 5 ملفات
-3. [ ] إزالة Any من 20 ملف
+3. [ ] إزالة object من 20 ملف
 4. [ ] إضافة توثيق لـ 10 ملفات أساسية
 
 ### مؤشرات الأداء الأسبوعية:
 - Week 1: البنية التحتية + 25% من الملفات الكبيرة
-- Week 2: 50% من Any مُحل + 25% من if/elif
+- Week 2: 50% من object مُحل + 25% من if/elif
 - Week 3: باقي الملفات الكبيرة + 50% من التوثيق
-- Week 4: إكمال Any + if/elif + اختبارات
+- Week 4: إكمال object + if/elif + اختبارات
 - Week 5: إكمال التوثيق + أمثلة + تحقق نهائي
 
 ---

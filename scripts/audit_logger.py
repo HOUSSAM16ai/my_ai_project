@@ -11,7 +11,6 @@ import json
 import logging
 import os
 from datetime import UTC, datetime
-from typing import Any
 
 # Configure internal logging for the script itself
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | AUDIT | %(levelname)s | %(message)s")
@@ -36,7 +35,7 @@ class JulesAuditLogger:
         reason: str,
         impact: str,
         status: str = "SUCCESS",
-        metadata: dict[str, Any] | None = None,
+        metadata: dict[str, object] | None = None,
     ):
         """
         Logs a structured event to the audit file.

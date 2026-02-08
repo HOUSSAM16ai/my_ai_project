@@ -1,13 +1,11 @@
 """
-Kagent Telemetry.
------------------
-Performance monitoring and observability for the Agent Mesh.
-Captures execution latency and status metrics.
+قياسات Kagent.
+--------------
+مراقبة الأداء وقابلية الرصد لشبكة الوكلاء مع تتبع زمن التنفيذ وحالته.
 """
 
 import time
 from collections.abc import Callable, Coroutine
-from typing import Any
 
 from app.core.logging import get_logger
 
@@ -24,10 +22,10 @@ class PerformanceMonitor:
     async def trace_execution(
         service_name: str,
         action: str,
-        func: Callable[..., Coroutine[Any, Any, Any]],
+        func: Callable[..., Coroutine[object, object, object]],
         *args,
         **kwargs,
-    ) -> tuple[Any, dict[str, float]]:
+    ) -> tuple[object, dict[str, float]]:
         """
         تنفيذ دالة مع تتبع الزمن (Tracing).
         """

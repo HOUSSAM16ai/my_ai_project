@@ -12,7 +12,6 @@
 
 from collections.abc import Callable, Coroutine
 from pathlib import Path
-from typing import Any
 
 from app.core.logging import get_logger
 from app.services.overmind.knowledge import ProjectKnowledge
@@ -27,7 +26,7 @@ logger = get_logger(__name__)
 
 
 # نوع الأداة
-ToolHandler = Callable[..., Coroutine[Any, Any, dict[str, Any]]]
+ToolHandler = Callable[..., Coroutine[object, object, dict[str, object]]]
 
 
 class MCPTool:
@@ -46,14 +45,14 @@ class MCPTool:
         name: str,
         description: str,
         handler: ToolHandler,
-        parameters: dict[str, Any] | None = None,
+        parameters: dict[str, object] | None = None,
     ) -> None:
         self.name = name
         self.description = description
         self.handler = handler
         self.parameters = parameters or {"type": "object", "properties": {}}
 
-    async def execute(self, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def execute(self, arguments: dict[str, object]) -> dict[str, object]:
         """تنفيذ الأداة."""
         try:
             result = await self.handler(**arguments)
@@ -62,7 +61,7 @@ class MCPTool:
             logger.error(f"خطأ في تنفيذ الأداة {self.name}: {e}")
             return {"success": False, "error": str(e)}
 
-    def to_openai_schema(self) -> dict[str, Any]:
+    def to_openai_schema(self) -> dict[str, object]:
         """تحويل لمخطط OpenAI."""
         return {
             "type": "function",
@@ -233,7 +232,7 @@ class MCPToolRegistry:
         self.tools[tool.name] = tool
         logger.debug(f"📦 تم تسجيل الأداة: {tool.name}")
 
-    async def execute_tool(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def execute_tool(self, tool_name: str, arguments: dict[str, object]) -> dict[str, object]:
         """
         تنفيذ أداة.
 
@@ -257,13 +256,13 @@ class MCPToolRegistry:
         """قائمة الأدوات المتاحة."""
         return [{"name": t.name, "description": t.description} for t in self.tools.values()]
 
-    def get_openai_schema(self) -> list[dict[str, Any]]:
+    def get_openai_schema(self) -> list[dict[str, object]]:
         """الحصول على مخطط OpenAI لجميع الأدوات."""
         return [tool.to_openai_schema() for tool in self.tools.values()]
 
     # ============== معالجات الأدوات ==============
 
-    async def _get_project_metrics(self) -> dict[str, Any]:
+    async def _get_project_metrics(self) -> dict[str, object]:
         """الحصول على إحصائيات المشروع الدقيقة."""
         structure = build_project_structure(self.project_root)
 
@@ -283,7 +282,7 @@ class MCPToolRegistry:
             "main_modules": structure.get("main_modules", []),
         }
 
-    async def _get_complete_knowledge(self) -> dict[str, Any]:
+    async def _get_complete_knowledge(self) -> dict[str, object]:
         """الحصول على المعرفة الكاملة."""
         try:
             return await self._project_knowledge.get_complete_knowledge()
@@ -296,11 +295,11 @@ class MCPToolRegistry:
                 "error": str(e),
             }
 
-    async def _analyze_file(self, file_path: str) -> dict[str, Any]:
+    async def _analyze_file(self, file_path: str) -> dict[str, object]:
         """تحليل ملف بايثون."""
         return get_file_details(self.project_root, file_path)
 
-    async def _search_files(self, pattern: str) -> dict[str, Any]:
+    async def _search_files(self, pattern: str) -> dict[str, object]:
         """البحث عن ملفات."""
         results = search_files_by_name(self.project_root, pattern)
         return {
@@ -309,7 +308,7 @@ class MCPToolRegistry:
             "files": results,
         }
 
-    async def _search_codebase(self, query: str, search_type: str = "lexical") -> dict[str, Any]:
+    async def _search_codebase(self, query: str, search_type: str = "lexical") -> dict[str, object]:
         """البحث في الكود."""
         try:
             from app.services.agent_tools.search_tools import (
@@ -325,7 +324,7 @@ class MCPToolRegistry:
             # Fallback: البحث في أسماء الملفات
             return await self._search_files(query)
 
-    async def _list_functions(self, path: str = "app") -> dict[str, Any]:
+    async def _list_functions(self, path: str = "app") -> dict[str, object]:
         """قائمة الدوال في مسار معين."""
         from app.services.overmind.knowledge_structure import _analyze_directory
 
@@ -347,7 +346,7 @@ class MCPToolRegistry:
             "functions": all_functions[:100],  # أول 100 دالة
         }
 
-    async def _get_technologies(self) -> dict[str, Any]:
+    async def _get_technologies(self) -> dict[str, object]:
         """قائمة التقنيات المستخدمة."""
         return {
             "ai_frameworks": {
@@ -390,6 +389,6 @@ class MCPToolRegistry:
             },
         }
 
-    async def _get_microservices(self) -> dict[str, Any]:
+    async def _get_microservices(self) -> dict[str, object]:
         """معلومات الخدمات المصغرة."""
         return build_microservices_summary(self.project_root)

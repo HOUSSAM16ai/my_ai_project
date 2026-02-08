@@ -62,7 +62,7 @@ class CognitiveCache:
     L3: Redis/External (slow, large)
     """
     def __init__(self):
-        self._l1_cache: dict[str, Any] = {}  # Hot data
+        self._l1_cache: dict[str, object] = {}  # Hot data
         self._l2_cache: LRUCache = LRUCache(maxsize=1000)
         # L3 would be Redis/Memcached
 ```

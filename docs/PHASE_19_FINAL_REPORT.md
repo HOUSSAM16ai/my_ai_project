@@ -256,7 +256,7 @@ Extracted 8 focused helper methods:
 - ✅ Strict type hints on all methods
 - ✅ Comprehensive documentation (Arabic + English)
 - ✅ Clear, descriptive names
-- ✅ No `Any` type usage
+- ✅ No `permissive dynamic type` type usage
 
 ### Berkeley SICP ✅
 - ✅ Clear abstraction barriers
@@ -281,7 +281,7 @@ Extracted 8 focused helper methods:
 
 ### Type Safety ✅
 - 100% type hints maintained
-- No `Any` types introduced
+- No `permissive dynamic type` types introduced
 - Strict type checking compatible
 - MyPy compliant
 

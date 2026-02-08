@@ -64,9 +64,9 @@ def test_asyncapi_30_separation_scenario():
     assert "region" in context1["channel_parameters"]
     # In Pydantic, if we stored it as a generic Dict or if we populated a Pydantic model with extra fields allowed,
     # we need to access it appropriately. The builder passes the raw dict into the Operation.bindings which is:
-    # Optional[Dict[str, Union[OperationBinding, Reference, Any]]]
-    # Since we passed a dict, and the model definition says Union[OperationBinding, Reference, Any],
-    # Pydantic might have instantiated OperationBinding if it matched, or kept it as Dict if Any matched?
+    # Optional[Dict[str, Union[OperationBinding, Reference, object]]]
+    # Since we passed a dict, and the model definition says Union[OperationBinding, Reference, object],
+    # Pydantic might have instantiated OperationBinding if it matched, or kept it as Dict if object matched?
     # Actually OperationBinding is empty with extra=allow. So it likely instantiated OperationBinding.
     # But OperationBinding is a Pydantic model, so we can't use ["amqp"]. We must use .amqp or model_dump() or getattr.
 
@@ -78,7 +78,7 @@ def test_asyncapi_30_separation_scenario():
 
     bindings1 = context1["operation_bindings"]
     # If it's a dict of OperationBinding objects? No, the model says:
-    # bindings: Optional[Dict[str, Union[OperationBinding, Reference, Any]]]
+    # bindings: Optional[Dict[str, Union[OperationBinding, Reference, object]]]
     # We passed `bindings={"amqp": {"queue": ...}}`.
     # Pydantic likely validates the value `{"queue": ...}` against `OperationBinding`.
     # So bindings1 is a Dict where key is "amqp" and value is OperationBinding instance (with extra fields).

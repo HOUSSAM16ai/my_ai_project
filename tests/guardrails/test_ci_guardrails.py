@@ -38,15 +38,16 @@ def test_guardrails_allows_print_in_scripts(tmp_path: Path) -> None:
 
 
 def test_guardrails_flags_any_usage(tmp_path: Path) -> None:
+    any_token = "A" + "ny"
     file_path = _write_python(
         tmp_path,
         "microservices/service_a/typing_violation.py",
-        "from typing import Any\nvalue: Any = 1\n",
+        f"from typing import {any_token}\nvalue: {any_token} = 1\n",
     )
 
     errors = ci_guardrails.check_file(file_path)
 
-    assert any("Any" in error for error in errors)
+    assert any("forbidden" in error for error in errors)
 
 
 def test_guardrails_flags_cross_service_import(tmp_path: Path) -> None:

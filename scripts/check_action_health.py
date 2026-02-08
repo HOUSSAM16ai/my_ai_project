@@ -20,7 +20,6 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 
 class Colors:
@@ -141,7 +140,7 @@ class ActionHealthChecker:
 
         return all_available
 
-    def check_code_quality(self) -> tuple[bool, dict[str, Any]]:
+    def check_code_quality(self) -> tuple[bool, dict[str, object]]:
         """Check current code quality status"""
         self.print_header("📊 CHECKING CODE QUALITY")
 
@@ -226,7 +225,7 @@ class ActionHealthChecker:
         all_passed = all(r["status"] == "pass" for r in results.values())
         return all_passed, results
 
-    def generate_fix_script(self, results: dict[str, Any]):
+    def generate_fix_script(self, results: dict[str, object]):
         """Generate a script to fix detected issues"""
         self.print_header("🔧 GENERATING FIX SCRIPT")
 

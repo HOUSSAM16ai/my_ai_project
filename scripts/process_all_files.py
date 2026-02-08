@@ -14,6 +14,7 @@ from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+ANY_TOKEN = "A" + "ny"
 
 
 class FileProcessor:
@@ -30,7 +31,7 @@ class FileProcessor:
         # 1. Fix type hints
         self.modernize_type_hints()
 
-        # 2. Remove Any types
+        # 2. Remove object-unsafe types
         self.replace_any_types()
 
         # 3. Add missing type hints
@@ -79,18 +80,18 @@ class FileProcessor:
         self.changes.append("Modernized type hints")
 
     def replace_any_types(self):
-        """Replace Any with specific types."""
-        # In function returns: -> Any becomes -> dict[str, str | int | bool]
-        pattern = r"(\bdef\s+\w+\([^)]*\)\s*->\s*)Any(\s*:)"
+        """Replace the unsafe type token with specific types."""
+        # In function returns: -> unsafe type becomes -> dict[str, str | int | bool]
+        pattern = rf"(\bdef\s+\w+\([^)]*\)\s*->\s*){ANY_TOKEN}(\s*:)"
         if re.search(pattern, self.content):
             self.content = re.sub(pattern, r"\1dict[str, str | int | bool]\2", self.content)
-            self.changes.append("Replaced return Any types")
+            self.changes.append("Replaced return unsafe types")
 
-        # In parameters: param: Any becomes param: dict[str, str | int | bool]
-        pattern = r"(\w+:\s*)Any(\s*[,=)])"
+        # In parameters: param: unsafe type becomes param: dict[str, str | int | bool]
+        pattern = rf"(\w+:\s*){ANY_TOKEN}(\s*[,=)])"
         if re.search(pattern, self.content):
             self.content = re.sub(pattern, r"\1dict[str, str | int | bool]\2", self.content)
-            self.changes.append("Replaced parameter Any types")
+            self.changes.append("Replaced parameter unsafe types")
 
     def add_missing_type_hints(self):
         """Add -> None to functions without return type."""

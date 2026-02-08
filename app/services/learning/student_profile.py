@@ -12,7 +12,6 @@
 import logging
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -64,7 +63,7 @@ class LearningEvent(BaseModel):
     topic_id: str
     event_type: str = Field(..., description="نوع الحدث: attempt, correct, wrong, hint")
     content_id: str | None = None
-    details: dict[str, Any] = Field(default_factory=dict)
+    details: dict[str, object] = Field(default_factory=dict)
 
 
 class StudentProfile(BaseModel):

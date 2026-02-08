@@ -1,5 +1,3 @@
-from typing import Any
-
 from sqlalchemy import text
 
 from app.core.database import async_session_factory
@@ -10,7 +8,7 @@ from microservices.research_agent.src.search_engine.retriever import get_embeddi
 logger = get_logger("hybrid-search")
 
 
-async def hybrid_search(query: str, top_k: int = 5) -> list[dict[str, Any]]:
+async def hybrid_search(query: str, top_k: int = 5) -> list[dict[str, object]]:
     """
     Implements a Hybrid Search Strategy:
     1. Dense Retrieval (Vector)

@@ -20,7 +20,6 @@ Built with ❤️ by Houssam Benmerah
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 
 class Colors:
@@ -67,7 +66,7 @@ class SuperhumanWorkflowDashboard:
         """Print info message"""
         print(f"{Colors.OKCYAN}ℹ️  {text}{Colors.ENDC}")
 
-    def get_workflow_status(self) -> dict[str, Any]:
+    def get_workflow_status(self) -> dict[str, object]:
         """Get current status of all workflows"""
         workflows = {
             "Python Application CI": {
@@ -242,7 +241,7 @@ class SuperhumanWorkflowDashboard:
             print(f"   🔧 {rec['action']}")
             print()
 
-    def generate_report(self) -> dict[str, Any]:
+    def generate_report(self) -> dict[str, object]:
         """Generate comprehensive JSON report"""
         report = {
             "timestamp": datetime.now(UTC).isoformat(),

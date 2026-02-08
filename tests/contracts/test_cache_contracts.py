@@ -1,6 +1,5 @@
 import asyncio
 import sys
-from typing import Any
 
 from app.core.gateway.protocols.cache import CacheProviderProtocol
 
@@ -9,10 +8,10 @@ class MockCacheProvider:
     def __init__(self):
         self._store = {}
 
-    async def get(self, key: str) -> Any | None:
+    async def get(self, key: str) -> object | None:
         return self._store.get(key)
 
-    async def set(self, key: str, value: Any, ttl: int | None = None) -> None:
+    async def set(self, key: str, value: object, ttl: int | None = None) -> None:
         self._store[key] = value
 
     async def delete(self, key: str) -> None:
@@ -25,7 +24,7 @@ class MockCacheProvider:
 
 async def test_cache_provider_contract_methods():
     """
-    Contract: Any CacheProvider must implement get, set, delete, clear
+    Contract: CacheProvider must implement get, set, delete, clear
     and return expected types.
     """
     print("Testing Cache Provider Contract...")

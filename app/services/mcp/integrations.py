@@ -14,8 +14,6 @@
 
 import contextlib
 from pathlib import Path
-from typing import Any
-
 from app.core.logging import get_logger
 from app.core.settings.base import get_settings
 
@@ -45,8 +43,8 @@ class MCPIntegrations:
     async def run_langgraph_workflow(
         self,
         goal: str,
-        context: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        context: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         """
         تشغيل سير عمل LangGraph.
 
@@ -79,7 +77,7 @@ class MCPIntegrations:
             logger.error(f"خطأ في LangGraph: {e}")
             return {"success": False, "error": str(e)}
 
-    def get_langgraph_status(self) -> dict[str, Any]:
+    def get_langgraph_status(self) -> dict[str, object]:
         """حالة LangGraph."""
         try:
             from app.services.overmind.langgraph import LangGraphAgentService  # noqa: F401
@@ -98,8 +96,8 @@ class MCPIntegrations:
         self,
         query: str,
         top_k: int = 5,
-        filters: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        filters: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         """
         بحث دلالي باستخدام LlamaIndex.
 
@@ -132,7 +130,7 @@ class MCPIntegrations:
             logger.error(f"خطأ في LlamaIndex: {e}")
             return {"success": False, "error": str(e)}
 
-    def get_llamaindex_status(self) -> dict[str, Any]:
+    def get_llamaindex_status(self) -> dict[str, object]:
         """حالة LlamaIndex."""
         try:
             from microservices.research_agent.src.search_engine import (  # noqa: F401
@@ -152,7 +150,7 @@ class MCPIntegrations:
         self,
         query: str,
         api_key: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         تحسين استعلام باستخدام DSPy.
 
@@ -188,7 +186,7 @@ class MCPIntegrations:
         self,
         goal: str,
         context: str = "",
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         توليد خطة باستخدام DSPy.
 
@@ -214,7 +212,7 @@ class MCPIntegrations:
             logger.error(f"خطأ في توليد الخطة: {e}")
             return {"success": False, "error": str(e)}
 
-    def get_dspy_status(self) -> dict[str, Any]:
+    def get_dspy_status(self) -> dict[str, object]:
         """حالة DSPy."""
         try:
             import dspy  # noqa: F401
@@ -233,7 +231,7 @@ class MCPIntegrations:
         query: str,
         documents: list[str],
         top_n: int = 5,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         إعادة ترتيب النتائج باستخدام Reranker.
 
@@ -262,7 +260,7 @@ class MCPIntegrations:
             logger.error(f"خطأ في Reranker: {e}")
             return {"success": False, "error": str(e)}
 
-    def get_reranker_status(self) -> dict[str, Any]:
+    def get_reranker_status(self) -> dict[str, object]:
         """حالة Reranker."""
         try:
             from microservices.research_agent.src.search_engine.reranker import (  # noqa: F401
@@ -282,8 +280,8 @@ class MCPIntegrations:
         self,
         action: str,
         capability: str,
-        payload: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        payload: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         """
         تنفيذ إجراء عبر Kagent.
 
@@ -316,7 +314,7 @@ class MCPIntegrations:
             logger.error(f"خطأ في Kagent: {e}")
             return {"success": False, "error": str(e)}
 
-    def get_kagent_status(self) -> dict[str, Any]:
+    def get_kagent_status(self) -> dict[str, object]:
         """حالة Kagent."""
         try:
             from app.services.kagent import KagentMesh  # noqa: F401
@@ -330,7 +328,7 @@ class MCPIntegrations:
 
     # ============== ملخص الحالة ==============
 
-    def get_all_integrations_status(self) -> dict[str, Any]:
+    def get_all_integrations_status(self) -> dict[str, object]:
         """
         تعيد حالة جميع التكاملات (للوحة تحكم الأدمن).
         يتم فحص الحالة فعلياً بدلاً من إرجاع قيم ثابتة.
@@ -358,7 +356,7 @@ class MCPIntegrations:
             "collaboration": self.get_collaboration_status(),
         }
 
-    def _check_langgraph_status(self) -> dict[str, Any]:
+    def _check_langgraph_status(self) -> dict[str, object]:
         try:
             from app.services.overmind.langgraph import LangGraphAgentService
 
@@ -371,7 +369,7 @@ class MCPIntegrations:
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
-    def _check_kagent_status(self) -> dict[str, Any]:
+    def _check_kagent_status(self) -> dict[str, object]:
         try:
             from app.services.kagent import KagentMesh
 
@@ -389,7 +387,7 @@ class MCPIntegrations:
     async def get_student_profile(
         self,
         student_id: int,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         جلب ملف الطالب التعليمي.
 
@@ -427,7 +425,7 @@ class MCPIntegrations:
         topic_name: str,
         is_correct: bool,
         content_id: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """تسجيل حدث تعليمي."""
         try:
             from app.services.learning.student_profile import (
@@ -452,7 +450,7 @@ class MCPIntegrations:
         self,
         student_id: int,
         topic_id: str,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """توصية بمستوى الصعوبة."""
         try:
             from app.services.learning.difficulty_adjuster import get_difficulty_adjuster
@@ -471,7 +469,7 @@ class MCPIntegrations:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def get_learning_status(self) -> dict[str, Any]:
+    def get_learning_status(self) -> dict[str, object]:
         """حالة خدمات التعلم."""
         try:
             from app.services.learning import (  # noqa: F401
@@ -493,7 +491,7 @@ class MCPIntegrations:
         self,
         student_id: int,
         concept_id: str,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         فحص المتطلبات السابقة.
 
@@ -536,7 +534,7 @@ class MCPIntegrations:
         self,
         from_concept: str,
         to_concept: str,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """إيجاد مسار التعلم."""
         try:
             from app.services.knowledge.concept_graph import get_concept_graph
@@ -555,7 +553,7 @@ class MCPIntegrations:
     async def find_related_concepts(
         self,
         topic: str,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         إيجاد المفاهيم المرتبطة.
 
@@ -589,7 +587,7 @@ class MCPIntegrations:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def get_knowledge_status(self) -> dict[str, Any]:
+    def get_knowledge_status(self) -> dict[str, object]:
         """حالة خدمات المعرفة."""
         try:
             from app.services.knowledge import ConceptGraph, PrerequisiteChecker  # noqa: F401
@@ -609,7 +607,7 @@ class MCPIntegrations:
     async def predict_struggles(
         self,
         student_id: int,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         التنبؤ بالصعوبات المستقبلية.
 
@@ -639,7 +637,7 @@ class MCPIntegrations:
     async def detect_error_patterns(
         self,
         student_id: int,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """كشف أنماط الأخطاء."""
         try:
             from app.services.analytics.pattern_detector import get_pattern_detector
@@ -662,7 +660,7 @@ class MCPIntegrations:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def get_analytics_status(self) -> dict[str, Any]:
+    def get_analytics_status(self) -> dict[str, object]:
         """حالة خدمات التحليل."""
         try:
             from app.services.analytics import PatternDetector, PredictiveAnalyzer  # noqa: F401
@@ -679,7 +677,7 @@ class MCPIntegrations:
     async def analyze_exercise_image(
         self,
         image_path: str,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         تحليل صورة تمرين.
 
@@ -703,7 +701,7 @@ class MCPIntegrations:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def get_vision_status(self) -> dict[str, Any]:
+    def get_vision_status(self) -> dict[str, object]:
         """حالة خدمات الرؤية."""
         try:
             from app.services.vision import (  # noqa: F401
@@ -726,7 +724,7 @@ class MCPIntegrations:
         self,
         exercise_id: str,
         topic: str,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         إنشاء جلسة دراسة تعاونية.
 
@@ -758,7 +756,7 @@ class MCPIntegrations:
         session_id: str,
         student_id: int,
         name: str = "",
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """انضمام لجلسة دراسة."""
         try:
             from app.services.collaboration.session import get_session
@@ -777,7 +775,7 @@ class MCPIntegrations:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def get_collaboration_status(self) -> dict[str, Any]:
+    def get_collaboration_status(self) -> dict[str, object]:
         """حالة خدمات التعاون."""
         try:
             from app.services.collaboration import (  # noqa: F401
@@ -798,8 +796,8 @@ class MCPIntegrations:
     async def socratic_guide(
         self,
         question: str,
-        context: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        context: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         """
         إرشاد سقراطي.
 

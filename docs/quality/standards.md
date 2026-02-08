@@ -40,7 +40,7 @@ This document defines the **Non-Negotiable Engineering Standards** for the Cogni
 ## 2. Coding Standards (The Harvard + Berkeley Standard)
 
 ### 2.1. Strict Typing
-*   **No `Any`:** The use of `typing.Any` is strictly forbidden. Use `object` or generic protocols if absolutely necessary.
+*   **No permissive dynamic type:** The use of the permissive top type from `typing` is strictly forbidden. Use `object` or generic protocols if absolutely necessary.
 *   **Python 3.12+:** Use `list[str]` instead of `List[str]`. Use `str | None` instead of `Optional[str]`.
 *   **Pydantic V2:** All data models must be Pydantic V2 `BaseModel` or `dataclasses`.
 
@@ -77,11 +77,11 @@ The `scripts/ci_guardrails.py` script enforces these rules.
 | **No Monolith Leaks** | Microservices cannot import `app.services` | `ImportError` |
 | **Admin UI Safety** | Admin layer cannot import SQL/DB modules | `SecurityError` |
 | **No Print** | `print()` statements found | `QualityError` |
-| **No Any** | `Any` type hint found | `TypeError` |
+| **No permissive dynamic type** | Permissive top type hint found | `TypeError` |
 | **No Schema Auto-Create** | `create_all` used outside migrations/tests | `QualityError` |
 | **No Ad-hoc DB Factory** | `create_engine`/`sessionmaker`/`async_sessionmaker` used outside `app.core.database` | `QualityError` |
 
-> **Legacy note:** Some legacy modules are temporarily exempted via explicit path allowlists inside `scripts/ci_guardrails.py` (e.g., `app/**` for legacy `Any` usage). New code must not add `Any`, and these exemptions should shrink over time.
+> **Legacy note:** Some legacy modules are temporarily exempted via explicit path allowlists inside `scripts/ci_guardrails.py` (e.g., `app/**` for legacy top type usage). New code must not add permissive top types, and these exemptions should shrink over time.
 
 > **Scripts/tests note:** Maintenance scripts and tests may use explicit DB factories (including `async_sessionmaker`); guardrails allow them via path allowlists.
 

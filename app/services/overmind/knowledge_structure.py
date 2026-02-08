@@ -10,7 +10,6 @@
 import ast
 import os
 from pathlib import Path
-from typing import Any
 
 from app.core.logging import get_logger
 
@@ -20,7 +19,7 @@ logger = get_logger(__name__)
 TARGET_DIRECTORIES = ["app", "tests", "scripts", "microservices", "migrations"]
 
 
-def _analyze_python_file(file_path: Path) -> dict[str, Any]:
+def _analyze_python_file(file_path: Path) -> dict[str, object]:
     """
     تحليل ملف بايثون واستخراج معلوماته التفصيلية.
 
@@ -91,7 +90,7 @@ def _analyze_python_file(file_path: Path) -> dict[str, Any]:
         }
 
 
-def _analyze_directory(target_dir: Path, project_root: Path) -> dict[str, Any]:
+def _analyze_directory(target_dir: Path, project_root: Path) -> dict[str, object]:
     """
     تحليل مجلد واستخراج إحصائيات الملفات.
 
@@ -102,7 +101,7 @@ def _analyze_directory(target_dir: Path, project_root: Path) -> dict[str, Any]:
     Returns:
         dict: إحصائيات المجلد
     """
-    stats: dict[str, Any] = {
+    stats: dict[str, object] = {
         "python_files": 0,
         "directories": 0,
         "total_lines": 0,
@@ -226,13 +225,13 @@ def build_microservices_summary(project_root: Path) -> dict[str, object]:
         dict: معلومات عن الخدمات المصغرة
     """
     microservices_dir = project_root / "microservices"
-    services: list[dict[str, Any]] = []
+    services: list[dict[str, object]] = []
 
     if microservices_dir.exists():
         for item in microservices_dir.iterdir():
             if item.is_dir() and not item.name.startswith((".", "__")):
                 # تحليل كل خدمة
-                service_info: dict[str, Any] = {
+                service_info: dict[str, object] = {
                     "name": item.name,
                     "has_main": (item / "main.py").exists(),
                     "has_requirements": (item / "requirements.txt").exists(),
@@ -256,7 +255,7 @@ def build_microservices_summary(project_root: Path) -> dict[str, object]:
     }
 
 
-def get_file_details(project_root: Path, relative_path: str) -> dict[str, Any]:
+def get_file_details(project_root: Path, relative_path: str) -> dict[str, object]:
     """
     الحصول على تفاصيل ملف بايثون معين.
 

@@ -5,7 +5,6 @@ Superhuman data validation surpassing enterprise standards
 
 import logging
 import sys
-from typing import Any
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -81,7 +80,7 @@ def run_data_quality_checkpoint() -> bool:
         return False
 
 
-def validate_training_data(data_path: str | None = None) -> dict[str, Any]:
+def validate_training_data(data_path: str | None = None) -> dict[str, object]:
     """
     Validate training data quality
 

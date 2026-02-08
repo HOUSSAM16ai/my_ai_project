@@ -275,7 +275,7 @@ async def save_message(
 
 async def get_chat_history(
     self, conversation_id: int, limit: int = 20
-) -> list[dict[str, Any]]:
+) -> list[dict[str, object]]:
     ...
 ```
 

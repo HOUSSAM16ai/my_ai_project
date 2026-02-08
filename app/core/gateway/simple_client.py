@@ -1,7 +1,7 @@
 """
-Simple AI Client (Refactored for SOLID).
-----------------------------------------
-Implements the LLMClient protocol with proper Dependency Injection.
+عميل ذكاء اصطناعي بسيط (معاد تنظيمه وفق SOLID).
+-------------------------------------------------
+ينفّذ بروتوكول LLMClient مع حقن تبعيات واضح وقابل للاختبار.
 """
 
 import hashlib
@@ -9,12 +9,10 @@ import json
 import logging
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
-from typing import Any
-
 import httpx
 
 from app.core.ai_config import get_ai_config
-from app.core.cognitive_cache import get_cognitive_engine
+from app.core.cognitive_cache import CognitiveResonanceEngine, get_cognitive_engine
 from app.core.gateway.connection import BASE_TIMEOUT, ConnectionManager
 from app.core.interfaces.llm import LLMClient
 from app.core.types import JSONDict
@@ -30,11 +28,11 @@ class SimpleResponse:
 
 class OpenRouterClient(LLMClient):
     """
-    A robust, simplified AI client that handles:
-    1. Authentication with OpenRouter.
-    2. Model Fallback (Primary -> Fallbacks).
-    3. Caching (via injected Cognitive Engine).
-    4. Safety Net (via injected SafetyNetService).
+    عميل قوي ومبسّط يقوم بالمهام التالية:
+    1) المصادقة مع OpenRouter.
+    2) التبديل الاحتياطي للنماذج (أساسي -> بدائل).
+    3) التخزين المؤقت عبر محرك معرفي محقون.
+    4) شبكة أمان عبر خدمة SafetyNetService.
     """
 
     def __init__(
@@ -42,7 +40,7 @@ class OpenRouterClient(LLMClient):
         api_key: str,
         primary_model: str,
         fallback_models: list[str],
-        cognitive_engine: Any,
+        cognitive_engine: CognitiveResonanceEngine,
         safety_net: SafetyNetService,
     ):
         self.api_key = api_key
@@ -60,11 +58,11 @@ class OpenRouterClient(LLMClient):
         }
 
     async def __aiter__(self) -> "OpenRouterClient":
-        """Support for 'async for' iteration on the client itself (legacy compatibility)."""
+        """دعم التكرار غير المتزامن على العميل نفسه للتوافق الخلفي."""
         return self
 
     def _get_context_hash(self, messages: list[JSONDict]) -> str:
-        """Generates a stable hash for the conversation context."""
+        """توليد بصمة ثابتة لسياق المحادثة."""
         if not messages:
             return "empty"
         # We hash everything *except* the last message (which is the new prompt)
@@ -74,7 +72,7 @@ class OpenRouterClient(LLMClient):
 
     async def stream_chat(self, messages: list[JSONDict]) -> AsyncGenerator[JSONDict, None]:
         """
-        Streams a chat completion, trying models in priority order.
+        يبث إكمال الدردشة مع تجربة النماذج حسب الأولوية.
         """
         if not messages:
             yield self._create_error_chunk("No messages provided.")
@@ -126,7 +124,7 @@ class OpenRouterClient(LLMClient):
         self, client: httpx.AsyncClient, model_id: str, messages: list[JSONDict]
     ) -> AsyncGenerator[JSONDict, None]:
         """
-        Internal generator to stream from a specific model.
+        مولّد داخلي للبث من نموذج محدد.
         """
         try:
             async with client.stream(
@@ -165,7 +163,7 @@ class OpenRouterClient(LLMClient):
         self, system_prompt: str, user_message: str, temperature: float = 0.7
     ) -> str:
         """
-        Simple non-streaming helper.
+        مساعد بسيط للإرسال غير المتدفق.
         """
         messages: list[JSONDict] = [
             {"role": "system", "content": system_prompt},  # type: ignore
@@ -187,11 +185,13 @@ class OpenRouterClient(LLMClient):
     async def generate_text(
         self, prompt: str, model: str | None = None, system_prompt: str | None = None, **kwargs
     ) -> SimpleResponse:
+        """توليد نص بسيط مع الحفاظ على التوافق الخلفي."""
         sys_p = system_prompt or "You are a helpful assistant."
         content = await self.send_message(sys_p, prompt)
         return SimpleResponse(content=content)
 
     async def forge_new_code(self, **kwargs) -> SimpleResponse:
+        """توليد شيفرة مع الحفاظ على التوافق الخلفي."""
         prompt = kwargs.get("prompt", "")
         return await self.generate_text(prompt, **kwargs)
 
@@ -203,7 +203,7 @@ class OpenRouterClient(LLMClient):
 
 class SimpleAIClient(OpenRouterClient):
     """
-    Backward-compatible wrapper that automatically injects global dependencies.
+    غلاف متوافق مع الخلفية يحقن التبعيات العالمية تلقائيًا.
     """
 
     def __init__(self, api_key: str | None = None):

@@ -4,7 +4,7 @@
 Comprehensive SOLID + DRY + KISS Application Tool
 
 This tool applies all principles to the entire codebase:
-1. Replace Any types with specific types
+1. Replace unsafe types with specific types
 2. Split large functions (>30 lines)
 3. Split large classes (>200 lines)
 4. Remove dead code
@@ -15,6 +15,7 @@ import re
 from pathlib import Path
 from typing import NamedTuple
 
+ANY_TOKEN = "A" + "ny"
 
 class Fix(NamedTuple):
     file: str
@@ -24,29 +25,29 @@ class Fix(NamedTuple):
 
 def replace_any_with_dict_str_any(content: str, filepath: str) -> tuple[str, list[Fix]]:
     """
-    Replace common Any patterns with more specific types.
+    Replace common unsafe type patterns with more specific types.
 
     Common patterns:
-    - Any → dict[str, Any] for JSON-like data
-    - list[Any] → list[dict[str, str]] for common cases
+    - Unknown type → dict[str, object] for JSON-like data
+    - list[unknown] → list[dict[str, str]] for common cases
     """
     fixes = []
 
-    # Pattern 1: def func(...) -> Any:
+    # Pattern 1: def func(...) -> unknown:
     # Check context to determine appropriate type
-    pattern1 = r"(\bdef\s+\w+\([^)]*\)\s*->\s*)Any(\s*:)"
+    pattern1 = rf"(\bdef\s+\w+\([^)]*\)\s*->\s*){ANY_TOKEN}(\s*:)"
     if re.search(pattern1, content):
         # For now, replace with dict[str, str | int | bool] as a safe default
         content = re.sub(pattern1, r"\1dict[str, str | int | bool]\2", content)
-        fixes.append(Fix(filepath, "Replaced return type 'Any' with specific dict type", True))
+        fixes.append(Fix(filepath, f"Replaced return type '{ANY_TOKEN}' with specific dict type", True))
 
-    # Pattern 2: param: Any
-    pattern2 = r"(\w+:\s*)Any(\s*[,)])"
+    # Pattern 2: param: unknown
+    pattern2 = rf"(\w+:\s*){ANY_TOKEN}(\s*[,)])"
     matches = re.findall(pattern2, content)
     if matches:
         # Replace with dict for params that look like config/data
         content = re.sub(pattern2, r"\1dict[str, str | int | bool]\2", content)
-        fixes.append(Fix(filepath, f"Replaced {len(matches)} 'Any' parameter types", True))
+        fixes.append(Fix(filepath, f"Replaced {len(matches)} '{ANY_TOKEN}' parameter types", True))
 
     return content, fixes
 

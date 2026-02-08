@@ -4,7 +4,6 @@ Infrastructure Layer.
 """
 
 import os
-from typing import Any
 
 import httpx
 
@@ -13,7 +12,7 @@ from app.core.logging import get_logger
 logger = get_logger("tool-retrieval-remote")
 
 
-def _parse_tags_to_filters(tags: list[str]) -> dict[str, Any]:
+def _parse_tags_to_filters(tags: list[str]) -> dict[str, object]:
     """Convert legacy tags list to Research Agent filters dict."""
     filters = {}
     for tag in tags:
@@ -33,7 +32,7 @@ def _parse_tags_to_filters(tags: list[str]) -> dict[str, Any]:
     return filters
 
 
-async def fetch_from_memory_agent(query: str, tags: list[str]) -> list[dict[str, Any]]:
+async def fetch_from_memory_agent(query: str, tags: list[str]) -> list[dict[str, object]]:
     """
     Fetches content from the Research Agent microservice.
     Returns a list of result dictionaries or raises an exception/returns empty on failure.

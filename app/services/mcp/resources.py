@@ -11,9 +11,9 @@
 
 import time
 from pathlib import Path
-from typing import Any
 
 from app.core.logging import get_logger
+from app.services.mcp.protocols import IResourceFetcher
 
 logger = get_logger(__name__)
 
@@ -66,17 +66,17 @@ class MCPResourceProvider:
     def __init__(
         self,
         project_root: Path,
-        fetchers: list[Any] | None = None,
+        fetchers: list[IResourceFetcher] | None = None,
     ) -> None:
         self.project_root = project_root
         self.resources: dict[str, MCPResource] = {}
         # Cache stores (content, timestamp)
-        self._cache: dict[str, tuple[dict[str, Any], float]] = {}
+        self._cache: dict[str, tuple[dict[str, object], float]] = {}
 
         # تسجيل fetchers (OCP: يمكن إضافة fetchers جديدة بدون تعديل الكود)
         from app.services.mcp.protocols import get_default_fetchers
 
-        self._fetchers: dict[str, Any] = {}
+        self._fetchers: dict[str, IResourceFetcher] = {}
         for fetcher in fetchers or get_default_fetchers():
             self._fetchers[fetcher.uri] = fetcher
 
@@ -164,7 +164,7 @@ class MCPResourceProvider:
 
         logger.info(f"✅ تم تهيئة {len(self.resources)} مورد MCP")
 
-    async def get_resource(self, uri: str, ttl: float = 300.0) -> dict[str, Any]:
+    async def get_resource(self, uri: str, ttl: float = 300.0) -> dict[str, object]:
         """
         الحصول على محتوى مورد.
 
@@ -195,7 +195,7 @@ class MCPResourceProvider:
 
         return content
 
-    async def _fetch_resource_content(self, uri: str) -> dict[str, Any]:
+    async def _fetch_resource_content(self, uri: str) -> dict[str, object]:
         """جلب محتوى المورد باستخدام Fetcher المناسب (OCP)."""
 
         fetcher = self._fetchers.get(uri)
@@ -213,7 +213,7 @@ class MCPResourceProvider:
         self._cache.clear()
         logger.debug("🗑️ تم مسح cache الموارد")
 
-    def register_fetcher(self, fetcher: Any) -> None:
+    def register_fetcher(self, fetcher: IResourceFetcher) -> None:
         """
         تسجيل fetcher جديد (OCP: التوسع بدون تعديل).
 

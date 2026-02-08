@@ -1,19 +1,18 @@
 """
-Multi-Agent Fabric Specification (MAF-1.0) Models.
---------------------------------------------------
-This module defines the normative data structures for the High-Reliability Agent System.
-Adheres to the "Evidence-Based Output" doctrine.
+نماذج مواصفات نسيج الوكلاء المتعددين (MAF-1.0).
+------------------------------------------------
+يحدد هذا الملف البنى المعيارية لنظام الوكلاء عالي الاعتمادية
+وفق عقيدة "المخرجات المبنية على الدليل".
 """
 
 from enum import StrEnum
-from typing import Any
 
 from pydantic import BaseModel, Field
 
 
 class AuditStatus(StrEnum):
     """
-    Status of a verification or audit process.
+    حالات عملية التحقق أو التدقيق.
     """
 
     PASS = "PASS"
@@ -24,7 +23,7 @@ class AuditStatus(StrEnum):
 
 class MAFPhase(StrEnum):
     """
-    The distinct phases of the MAF Protocol.
+    المراحل المميزة لبروتوكول MAF.
     """
 
     GENERATE = "GENERATE"  # Production of Claims/Proposals
@@ -35,19 +34,19 @@ class MAFPhase(StrEnum):
 
 class Evidence(BaseModel):
     """
-    A verifiable piece of information supporting a Claim.
+    دليل يمكن التحقق منه يدعم الادعاء.
     """
 
     id: str = Field(..., description="Unique identifier for the evidence")
     content: str = Field(..., description="The evidence content (quote, result, axiom)")
     source_type: str = Field(..., description="Type: 'document', 'simulation', 'logic', 'axiom'")
     confidence: float = Field(..., description="Confidence score 0.0-1.0")
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, object] = Field(default_factory=dict)
 
 
 class Claim(BaseModel):
     """
-    A partial result or assertion that requires evidence.
+    نتيجة جزئية أو ادعاء يتطلب أدلة داعمة.
     """
 
     id: str = Field(..., description="Unique identifier for the claim")
@@ -57,7 +56,7 @@ class Claim(BaseModel):
 
 class Proposal(BaseModel):
     """
-    An agent's proposed solution, containing claims and estimates.
+    مقترح الوكيل الذي يحتوي على الادعاءات والتقديرات.
     """
 
     claims: list[Claim] = Field(default_factory=list)
@@ -69,7 +68,7 @@ class Proposal(BaseModel):
 
 class AttackReport(BaseModel):
     """
-    Result of an adversarial attack on a Proposal.
+    نتيجة هجوم خصمي على المقترح.
     """
 
     counterexamples: list[str] = Field(default_factory=list)
@@ -81,7 +80,7 @@ class AttackReport(BaseModel):
 
 class ReviewChecklist(BaseModel):
     """
-    The 'Super Practical Checklist' for Maker-Checker Loops.
+    قائمة الفحص العملية لدورة المنتج-المراجع.
     """
 
     requirements_met: bool = Field(..., description="Did it meet all stated requirements?")
@@ -103,7 +102,7 @@ class ReviewChecklist(BaseModel):
 
 class ReviewPacket(BaseModel):
     """
-    The 'Huzmat Muraja'a' (Review Packet) for operational feedback.
+    حزمة المراجعة (خزمة مراجعة) للتغذية الراجعة التشغيلية.
     """
 
     checklist: ReviewChecklist
@@ -114,7 +113,7 @@ class ReviewPacket(BaseModel):
 
 class Verification(BaseModel):
     """
-    Result of the formal verification process.
+    نتيجة عملية التحقق الرسمية.
     """
 
     passed: bool = Field(..., description="True if all Critical Gates passed")
@@ -126,7 +125,7 @@ class Verification(BaseModel):
 
 class AuditBundle(BaseModel):
     """
-    The 'Sealed' final output, containing the entire provenance chain.
+    المخرجات النهائية المختومة التي تحتوي على سلسلة المصدر كاملة.
     """
 
     task_id: str

@@ -6,7 +6,6 @@
 """
 
 from contextlib import asynccontextmanager
-from typing import Any
 
 from fastapi import APIRouter, FastAPI
 from pydantic import BaseModel, Field
@@ -34,7 +33,7 @@ class AgentRequest(BaseModel):
     caller_id: str = Field(..., description="Entity requesting the action")
     target_service: str = Field("reasoning_agent", description="Target service name")
     action: str = Field(..., description="Action to perform (e.g., 'reason')")
-    payload: dict[str, Any] = Field(default_factory=dict, description="Action arguments")
+    payload: dict[str, object] = Field(default_factory=dict, description="Action arguments")
     security_token: str | None = Field(None, description="Auth token")
 
 
@@ -44,9 +43,9 @@ class AgentResponse(BaseModel):
     """
 
     status: str = Field(..., description="'success' or 'error'")
-    data: Any = Field(None, description="Result data")
+    data: object | None = Field(None, description="Result data")
     error: str | None = Field(None, description="Error message")
-    metrics: dict[str, Any] = Field(default_factory=dict, description="Performance metrics")
+    metrics: dict[str, object] = Field(default_factory=dict, description="Performance metrics")
 
 
 # ------------------------------
