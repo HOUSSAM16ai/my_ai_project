@@ -1,7 +1,7 @@
 from sqlalchemy import text
 
-from app.core.database import async_session_factory
-from app.core.logging import get_logger
+from microservices.research_agent.src.database import async_session_factory
+from microservices.research_agent.src.logging import get_logger
 from microservices.research_agent.src.search_engine.reranker import get_reranker
 from microservices.research_agent.src.search_engine.retriever import get_embedding_model
 
@@ -26,7 +26,13 @@ async def hybrid_search(query: str, top_k: int = 5) -> list[dict[str, object]]:
     # We fetch a candidate pool larger than top_k to allow reranking to work effectively
     pool_size = top_k * 4
 
-    async with async_session_factory() as session:
+    try:
+        session_factory = async_session_factory()
+    except ValueError as exc:
+        logger.warning(f"Database unavailable for hybrid search: {exc}")
+        return []
+
+    async with session_factory() as session:
         # Combined Query using CTEs
         stmt = text("""
         WITH dense_results AS (

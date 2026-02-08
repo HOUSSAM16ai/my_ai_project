@@ -1,7 +1,7 @@
 from sqlalchemy import text
 
-from app.core.database import async_session_factory as default_session_factory
-from app.core.logging import get_logger
+from microservices.research_agent.src.database import async_session_factory as default_session_factory
+from microservices.research_agent.src.logging import get_logger
 from microservices.research_agent.src.content.query_builder import ContentSearchQuery
 from microservices.research_agent.src.content.repository import ContentRepository
 from microservices.research_agent.src.content.utils import (
@@ -55,7 +55,13 @@ class ContentService:
         logger.info(f"Executing Search SQL: {query_str}")
         logger.info(f"Search Params: {params}")
 
-        async with self.session_factory() as session:
+        try:
+            session_factory = self.session_factory()
+        except ValueError as exc:
+            logger.warning(f"Database unavailable for content search: {exc}")
+            return []
+
+        async with session_factory() as session:
             result = await session.execute(text(query_str), params)
             rows = result.fetchall()
             logger.info(f"Search returned {len(rows)} rows.")
@@ -82,7 +88,13 @@ class ContentService:
         """
         جلب النص الخام (Markdown) لعنصر المحتوى مع التحكم في إرفاق الحل.
         """
-        async with self.session_factory() as session:
+        try:
+            session_factory = self.session_factory()
+        except ValueError as exc:
+            logger.warning(f"Database unavailable for content detail: {exc}")
+            return None
+
+        async with session_factory() as session:
             repo = ContentRepository(session)
             detail = await repo.get_content_detail(content_id)
 
@@ -96,7 +108,13 @@ class ContentService:
         return data
 
     async def get_curriculum_structure(self, level: str | None = None) -> dict[str, object]:
-        async with self.session_factory() as session:
+        try:
+            session_factory = self.session_factory()
+        except ValueError as exc:
+            logger.warning(f"Database unavailable for curriculum structure: {exc}")
+            return {}
+
+        async with session_factory() as session:
             repo = ContentRepository(session)
             rows = await repo.get_tree_items(level)
 

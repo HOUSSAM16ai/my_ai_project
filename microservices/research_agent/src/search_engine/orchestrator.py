@@ -1,7 +1,7 @@
 import asyncio
 import os
 
-from app.core.logging import get_logger
+from microservices.research_agent.src.logging import get_logger
 from microservices.research_agent.src.search_engine.fallback_expander import FallbackQueryExpander
 from microservices.research_agent.src.search_engine.models import SearchRequest, SearchResult
 from microservices.research_agent.src.search_engine.query_refiner import get_refined_query

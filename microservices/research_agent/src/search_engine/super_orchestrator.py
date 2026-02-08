@@ -14,7 +14,7 @@ import asyncio
 import os
 from collections import defaultdict
 
-from app.core.logging import get_logger
+from microservices.research_agent.src.logging import get_logger
 from microservices.research_agent.src.search_engine.fallback_expander import FallbackQueryExpander
 from microservices.research_agent.src.search_engine.models import (
     SearchFilters,

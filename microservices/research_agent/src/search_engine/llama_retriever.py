@@ -2,9 +2,9 @@ from llama_index.core.retrievers import BaseRetriever
 from llama_index.core.schema import NodeWithScore, TextNode
 from sqlalchemy import text
 
-from app.core.database import async_session_factory
-from app.core.interfaces import IKnowledgeRetriever
-from app.core.logging import get_logger
+from microservices.research_agent.src.database import async_session_factory
+from microservices.research_agent.src.interfaces import IKnowledgeRetriever
+from microservices.research_agent.src.logging import get_logger
 from microservices.research_agent.src.search_engine.hybrid import hybrid_search
 
 logger = get_logger("graph-retriever")
@@ -39,7 +39,13 @@ class KnowledgeGraphRetriever(BaseRetriever, IKnowledgeRetriever):
         # 2. Graph Expansion (Fetch Neighbors - 2 Hops)
         seed_ids = [str(r["id"]) for r in results]
 
-        async with async_session_factory() as session:
+        try:
+            session_factory = async_session_factory()
+        except ValueError as exc:
+            logger.warning(f"Database unavailable for graph expansion: {exc}")
+            return []
+
+        async with session_factory() as session:
             # Recursive CTE for 2-hop traversal
             stmt = text("""
                 WITH RECURSIVE traversal AS (

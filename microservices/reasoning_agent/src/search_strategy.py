@@ -1,8 +1,8 @@
 import uuid
 
-from app.core.gateway.simple_client import SimpleAIClient
-from app.core.interfaces import IReasoningStrategy
-from app.core.logging import get_logger
+from microservices.reasoning_agent.src.ai_client import SimpleAIClient
+from microservices.reasoning_agent.src.interfaces import IReasoningStrategy
+from microservices.reasoning_agent.src.logging import get_logger
 from microservices.reasoning_agent.src.models import EvaluationResult, ReasoningNode
 
 logger = get_logger("reasoning-strategy")

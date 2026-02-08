@@ -5,9 +5,9 @@ Adapts the SuperReasoningWorkflow to the Kagent Service Interface.
 Allows the Reasoning Engine to be exposed as a service on the Mesh.
 """
 
-from app.core.ai_gateway import AIClient
-from app.core.interfaces import IKnowledgeRetriever
-from app.core.logging import get_logger
+from microservices.reasoning_agent.src.ai_client import SimpleAIClient
+from microservices.reasoning_agent.src.interfaces import IKnowledgeRetriever
+from microservices.reasoning_agent.src.logging import get_logger
 from microservices.reasoning_agent.src.search_strategy import MathReasoningStrategy, RMCTSStrategy
 from microservices.reasoning_agent.src.workflow import SuperReasoningWorkflow
 from microservices.research_agent.src.search_engine.llama_retriever import KnowledgeGraphRetriever
@@ -21,7 +21,7 @@ class ReasoningService:
     واجهة موحدة لتشغيل سير عمل الاستنتاج العميق عبر Kagent.
     """
 
-    def __init__(self, ai_client: AIClient, retriever: IKnowledgeRetriever | None = None):
+    def __init__(self, ai_client: SimpleAIClient, retriever: IKnowledgeRetriever | None = None):
         self.ai_client = ai_client
         self.retriever = retriever or KnowledgeGraphRetriever(top_k=5)
 

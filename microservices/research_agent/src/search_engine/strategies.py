@@ -1,7 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 
-from app.core.logging import get_logger
+from microservices.research_agent.src.logging import get_logger
 from microservices.research_agent.src.content.service import content_service
 from microservices.research_agent.src.search_engine.models import SearchRequest, SearchResult
 from microservices.research_agent.src.search_engine.reranker import get_reranker
