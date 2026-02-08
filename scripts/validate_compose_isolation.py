@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-
 ALLOWED_CONTEXTS: dict[str, dict[str, str]] = {
     "docker-compose.microservices.yml": {
         "api-gateway": ".",
@@ -54,9 +53,15 @@ def _parse_contexts(compose_path: Path) -> dict[str, str]:
         if in_build_block and stripped.startswith("context:"):
             contexts[current_service] = stripped.removeprefix("context:").strip()
             continue
-        if in_build_block and stripped and not stripped.startswith("#") and ":" in stripped:
-            if stripped.split(":", 1)[0] != "context" and stripped.split(":", 1)[0] != "dockerfile":
-                in_build_block = False
+        if (
+            in_build_block
+            and stripped
+            and not stripped.startswith("#")
+            and ":" in stripped
+            and stripped.split(":", 1)[0] != "context"
+            and stripped.split(":", 1)[0] != "dockerfile"
+        ):
+            in_build_block = False
         if stripped.startswith("volumes:") or stripped.startswith("environment:"):
             in_build_block = False
     return contexts
