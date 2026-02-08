@@ -5,6 +5,7 @@ Provides high-precision logging for sensitive operations.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Mapping
 
@@ -91,7 +92,9 @@ class AuditService:
 
         # 3. Persist (Async)
         try:
-            self.session.add(entry)
+            add_result = self.session.add(entry)
+            if asyncio.iscoroutine(add_result):
+                await add_result
             await self.session.commit()
             await self.session.refresh(entry)
             return entry

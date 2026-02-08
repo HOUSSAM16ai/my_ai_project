@@ -9,7 +9,8 @@ import asyncio
 from contextlib import asynccontextmanager
 from uuid import UUID
 
-import dspy
+import importlib
+import importlib.util
 from fastapi import APIRouter, Depends, FastAPI
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +25,34 @@ from microservices.planning_agent.models import Plan
 from microservices.planning_agent.settings import PlanningAgentSettings, get_settings
 
 logger = get_logger("planning-agent")
+
+
+def _dspy_dependencies_available() -> bool:
+    """يتحقق من توفر اعتمادات DSPy الأساسية قبل محاولة التحميل."""
+
+    required_specs = (
+        "dspy",
+        "litellm",
+        "openai",
+        "openai.types.beta.threads.message_content",
+    )
+    for spec in required_specs:
+        try:
+            if importlib.util.find_spec(spec) is None:
+                return False
+        except ModuleNotFoundError:
+            return False
+    return True
+
+
+def _load_dspy() -> object | None:
+    """يحاول تحميل مكتبة DSPy إذا كانت متاحة دون تعطيل الخدمة."""
+
+    if not _dspy_dependencies_available():
+        logger.warning("مكتبة DSPy أو تبعياتها غير متاحة، سيتم تخطي التهيئة الذكية")
+        return None
+
+    return importlib.import_module("dspy")
 
 
 # --- Unified Agent Protocol ---
@@ -192,17 +221,21 @@ async def lifespan(app: FastAPI):
 
     # Configure DSPy
     if settings.OPENROUTER_API_KEY:
-        try:
-            lm = dspy.OpenAI(
-                model=settings.AI_MODEL,
-                api_key=settings.OPENROUTER_API_KEY.get_secret_value(),
-                api_base=settings.AI_BASE_URL,
-                max_tokens=2000,
-            )
-            dspy.settings.configure(lm=lm)
-            logger.info("DSPy Configured successfully")
-        except Exception as e:
-            logger.error(f"Failed to configure DSPy: {e}")
+        dspy_module = _load_dspy()
+        if dspy_module:
+            try:
+                lm = dspy_module.OpenAI(
+                    model=settings.AI_MODEL,
+                    api_key=settings.OPENROUTER_API_KEY.get_secret_value(),
+                    api_base=settings.AI_BASE_URL,
+                    max_tokens=2000,
+                )
+                dspy_module.settings.configure(lm=lm)
+                logger.info("DSPy Configured successfully")
+            except Exception as e:
+                logger.error(f"Failed to configure DSPy: {e}")
+        else:
+            logger.warning("DSPy غير متاح، سيتم الاعتماد على الخطة الاحتياطية")
     else:
         logger.warning("No API Key configured for DSPy")
 
