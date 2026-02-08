@@ -26,13 +26,18 @@ class SimpleAIClient:
         self.model = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
         self.base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 
-    async def generate_text(self, *, prompt: str, system_prompt: str | None = None) -> SimpleResponse:
+    async def generate_text(
+        self, *, prompt: str, system_prompt: str | None = None
+    ) -> SimpleResponse:
         """ينفّذ توليد نص بسيط ويعيد محتوى الاستجابة."""
         if not self.api_key:
             raise ValueError("OPENROUTER_API_KEY is required for SimpleAIClient.")
 
         messages = [
-            {"role": "system", "content": system_prompt or "You are a helpful assistant."},
+            {
+                "role": "system",
+                "content": system_prompt or "You are a helpful assistant.",
+            },
             {"role": "user", "content": prompt},
         ]
 
