@@ -106,6 +106,7 @@ class AuditorAgent(AgentReflector):
                 "approved": False,
                 "feedback": "تم اكتشاف رسالة خطأ صريحة في التنفيذ. يرجى تحليل الخطأ ومحاولة استراتيجية بديلة.",
                 "confidence": 0.9,
+                "final_response": "⚠️ **تنبيه:** تم إيقاف التنفيذ بسبب خطأ تقني واضح. يرجى مراجعة السجلات.",
             }
 
         # 2. المراجعة العميقة (Deep Review via AI)
@@ -117,13 +118,14 @@ class AuditorAgent(AgentReflector):
         3. تمثل تقدماً حقيقياً حتى لو كان جزئياً.
 
         كن متسامحاً مع الخطوات الجزئية إذا كانت صحيحة الاتجاه.
-        الموافقة تعني: "نعم، هذا تقدم جيد ويمكننا البناء عليه".
-        الرفض يعني فقط: "هناك خطأ جوهري يمنع التقدم".
+        الموافقة (approved: true) تعني: "نعم، هذا تقدم جيد ويمكننا البناء عليه أو إنهاؤه".
+        الرفض (approved: false) يعني: "هناك خطأ جوهري أو نقص حاد يستدعي جولة أخرى".
 
-        تعليمات هامة عند الموافقة (Approved = true):
-        - يجب عليك تجميع النتائج وصياغة إجابة نهائية احترافية للمستخدم (Markdown Formatted).
-        - ضع الإجابة في حقل "final_response".
-        - يجب أن تكون الإجابة شاملة ومنسقة بشكل جميل للغاية (Super Professional Display).
+        تعليمات هامة جداً (الرد النهائي إلزامي):
+        - يجب عليك **دائماً** صياغة إجابة نهائية احترافية للمستخدم في حقل "final_response"، سواء تمت الموافقة أم لا.
+        - إذا تمت الموافقة، صغ الإجابة النهائية الكاملة والجميلة.
+        - إذا تم الرفض، صغ إجابة تشرح ما تم إنجازه حتى الآن وما الذي ينقص، بطريقة مهنية (مثلاً: "قمنا بقراءة الملف ولكن البيانات غير مكتملة...").
+        - لا تترك "final_response" فارغاً أبداً. هو ما سيراه المستخدم في النهاية إذا توقفت المحاولات.
 
         استخدم قدرات Markdown المتقدمة لإنتاج عرض مبهر:
         1. **العناوين:** استخدم العناوين الكبيرة (#) والفرعية (##) لتنظيم المحتوى.
@@ -141,7 +143,7 @@ class AuditorAgent(AgentReflector):
             "approved": boolean,
             "feedback": "string (arabic)",
             "score": float (0.0 - 1.0),
-            "final_response": "string (markdown formatted professional response)"
+            "final_response": "string (markdown formatted professional response - REQUIRED)"
         }
         """
 
@@ -152,7 +154,7 @@ class AuditorAgent(AgentReflector):
         {json.dumps(result, ensure_ascii=False, default=str)}
 
         هل تم تحقيق الهدف بنجاح؟ قدم تحليلاً نقدياً.
-        إذا كانت النتيجة مقبولة، صغ الإجابة النهائية في final_response.
+        تذكر: يجب ملء final_response دائماً.
         """
 
         try:
@@ -166,20 +168,29 @@ class AuditorAgent(AgentReflector):
             clean_json = self._clean_json_block(response_json)
             review_data = json.loads(clean_json)
 
+            # ضمان وجود final_response
+            final_resp = review_data.get("final_response")
+            feedback = review_data.get("feedback", "لم يتم تقديم ملاحظات.")
+
+            if not final_resp:
+                # Fallback if AI didn't provide it
+                final_resp = f"**تقرير المراجعة:**\n{feedback}\n\n*(تم إنشاء هذا الرد تلقائياً لعدم توفر رد نهائي من المدقق)*"
+
             return {
                 "approved": review_data.get("approved", False),
-                "feedback": review_data.get("feedback", "لم يتم تقديم ملاحظات."),
+                "feedback": feedback,
                 "score": review_data.get("score", 0.0),
-                "final_response": review_data.get("final_response"),
+                "final_response": final_resp,
             }
 
         except Exception as e:
             logger.error(f"AI Auditor failed: {e}")
-            # في حال فشل المدقق الذكي، نعود للمنطق الدفاعي (رفض لضمان الأمان)
+            # في حال فشل المدقق الذكي، نعود للمنطق الدفاعي
             return {
                 "approved": False,
                 "feedback": f"فشل نظام التدقيق الذكي. يرجى إعادة المحاولة. الخطأ: {e!s}",
                 "confidence": 0.0,
+                "final_response": f"❌ **خطأ في المراجعة:** حدث خطأ أثناء تدقيق النتائج ({e!s}). يرجى المحاولة مرة أخرى.",
             }
 
     async def _review_plan(self, plan: dict[str, object], objective: str) -> dict[str, object]:
@@ -199,11 +210,14 @@ class AuditorAgent(AgentReflector):
         إذا كانت الخطة جيدة، وافق عليها فوراً.
         لا ترفض الخطة لأنها "لم تنفذ بعد". هي مجرد خطة.
 
+        قم بصياغة ملخص للخطة في final_response ليكون مرجعاً للمستخدم.
+
         تنسيق الإجابة JSON فقط:
         {
             "approved": boolean,
             "feedback": "string (arabic)",
-            "score": float (0.0 - 1.0)
+            "score": float (0.0 - 1.0),
+            "final_response": "string (markdown summary of the plan status)"
         }
         """
 
@@ -226,10 +240,17 @@ class AuditorAgent(AgentReflector):
             clean_json = self._clean_json_block(response_json)
             review_data = json.loads(clean_json)
 
+            final_resp = review_data.get("final_response")
+            feedback = review_data.get("feedback", "لم يتم تقديم ملاحظات.")
+
+            if not final_resp:
+                final_resp = f"📋 **حالة الخطة:**\n{feedback}"
+
             return {
                 "approved": review_data.get("approved", False),
-                "feedback": review_data.get("feedback", "لم يتم تقديم ملاحظات."),
+                "feedback": feedback,
                 "score": review_data.get("score", 0.0),
+                "final_response": final_resp,
             }
 
         except Exception as e:
@@ -238,6 +259,7 @@ class AuditorAgent(AgentReflector):
                 "approved": False,
                 "feedback": f"فشل تدقيق الخطة: {e}",
                 "confidence": 0.0,
+                "final_response": f"❌ **فشل تدقيق الخطة:** {e}",
             }
 
     async def consult(self, situation: str, analysis: dict[str, object]) -> dict[str, object]:
