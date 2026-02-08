@@ -43,9 +43,7 @@ def _iter_python_files() -> list[Path]:
     """يجمع جميع ملفات بايثون ضمن المستودع باستثناء المسارات المستثناة."""
 
     return [
-        path
-        for path in PROJECT_ROOT.rglob("*.py")
-        if path.is_file() and not _is_excluded(path)
+        path for path in PROJECT_ROOT.rglob("*.py") if path.is_file() and not _is_excluded(path)
     ]
 
 

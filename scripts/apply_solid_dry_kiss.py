@@ -17,6 +17,7 @@ from typing import NamedTuple
 
 ANY_TOKEN = "A" + "ny"
 
+
 class Fix(NamedTuple):
     file: str
     description: str
@@ -39,7 +40,9 @@ def replace_any_with_dict_str_any(content: str, filepath: str) -> tuple[str, lis
     if re.search(pattern1, content):
         # For now, replace with dict[str, str | int | bool] as a safe default
         content = re.sub(pattern1, r"\1dict[str, str | int | bool]\2", content)
-        fixes.append(Fix(filepath, f"Replaced return type '{ANY_TOKEN}' with specific dict type", True))
+        fixes.append(
+            Fix(filepath, f"Replaced return type '{ANY_TOKEN}' with specific dict type", True)
+        )
 
     # Pattern 2: param: unknown
     pattern2 = rf"(\w+:\s*){ANY_TOKEN}(\s*[,)])"

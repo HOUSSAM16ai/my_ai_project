@@ -321,9 +321,7 @@ def _check_any_usage(tree: ast.AST, filepath: Path, errors: list[str]) -> None:
                 f"{filepath}:{node.lineno} - Use of '{ANY_TOKEN}' is forbidden. Use specific types or 'object'."
             )
         elif isinstance(node, ast.Attribute) and node.attr == ANY_TOKEN:
-            errors.append(
-                f"{filepath}:{node.lineno} - Use of '{ANY_TOKEN}' is forbidden."
-            )
+            errors.append(f"{filepath}:{node.lineno} - Use of '{ANY_TOKEN}' is forbidden.")
 
 
 def _get_modules_from_import(node: ast.Import | ast.ImportFrom) -> list[str]:

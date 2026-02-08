@@ -33,9 +33,7 @@ class StatisticsAnalyzer:
             blank_lines=blank_lines,
         )
 
-    def calculate_complexity_stats(
-        self, functions: list[dict[str, object]]
-    ) -> ComplexityStats:
+    def calculate_complexity_stats(self, functions: list[dict[str, object]]) -> ComplexityStats:
         """
         Calculate complexity and nesting statistics.
 
