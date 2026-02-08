@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Annotated, ClassVar, TYPE_CHECKING, TypeVar, cast
+from typing import TYPE_CHECKING, Annotated, ClassVar, TypeVar, cast
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession

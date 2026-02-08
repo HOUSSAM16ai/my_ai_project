@@ -9,6 +9,7 @@ import json
 import logging
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
+
 import httpx
 
 from app.core.ai_config import get_ai_config

@@ -33,9 +33,7 @@ class AgentRequest(BaseModel):
     caller_id: str = Field(..., description="معرف الجهة الطالبة (Node ID)")
     target_service: str = Field(..., description="اسم الخدمة المستهدفة")
     action: str = Field(..., description="اسم الإجراء/الدالة المطلوبة")
-    payload: dict[str, object] = Field(
-        default_factory=dict, description="البيانات المدخلة للإجراء"
-    )
+    payload: dict[str, object] = Field(default_factory=dict, description="البيانات المدخلة للإجراء")
     security_token: str | None = Field(None, description="رمز التحقق (Simulated mTLS)")
 
 

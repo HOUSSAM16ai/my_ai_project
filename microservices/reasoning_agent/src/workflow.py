@@ -1,8 +1,7 @@
 import importlib
 import importlib.util
+from collections.abc import Callable
 from dataclasses import dataclass, field
-
-from typing import Callable
 
 
 def _load_llama_index() -> tuple[object | None, object | None]:

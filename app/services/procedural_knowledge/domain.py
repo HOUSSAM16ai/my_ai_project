@@ -74,9 +74,7 @@ class Relation(BaseModel):
     source_id: str = Field(..., description="معرف عقدة المصدر")
     target_id: str = Field(..., description="معرف عقدة الهدف")
     type: RelationType = Field(..., description="نوع العلاقة")
-    metadata: dict[str, object] = Field(
-        default_factory=dict, description="بيانات وصفية للعلاقة"
-    )
+    metadata: dict[str, object] = Field(default_factory=dict, description="بيانات وصفية للعلاقة")
 
 
 class AuditStatus(StrEnum):

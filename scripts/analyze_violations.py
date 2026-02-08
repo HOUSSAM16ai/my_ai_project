@@ -11,6 +11,7 @@ from typing import NamedTuple
 
 ANY_TOKEN = "A" + "ny"
 
+
 class Violation(NamedTuple):
     file: str
     line: int

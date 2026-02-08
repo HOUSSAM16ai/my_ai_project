@@ -10,6 +10,7 @@ from pathlib import Path
 
 ANY_TOKEN = "A" + "ny"
 
+
 class AggressiveProcessor:
     """Aggressive processor that fixes all violations."""
 
