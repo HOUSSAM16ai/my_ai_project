@@ -196,14 +196,14 @@ class CodeArtVisualizer:
     
     def create_complexity_art(
         self,
-        complexity_data: dict[str, Any],
+        complexity_data: dict[str, object],
         title: str = "Code Complexity Landscape"
     ) -> str:
         """تصور التعقيد كمنحوتة طبوغرافية"""
     
     def create_metrics_dashboard(
         self,
-        metrics: dict[str, Any],
+        metrics: dict[str, object],
         title: str = "Code Metrics Art"
     ) -> str:
         """لوحة فنية من المقاييس"""
@@ -230,7 +230,7 @@ class MissionFlowArtist:
     
     def create_mission_timeline(
         self,
-        mission_data: dict[str, Any],
+        mission_data: dict[str, object],
         title: str = "Mission Journey"
     ) -> str:
         """خط زمني فني للمهمة"""
@@ -243,7 +243,7 @@ class DataArtGenerator:
     
     def generate_code_pattern(
         self,
-        code_data: dict[str, Any],
+        code_data: dict[str, object],
         size: tuple[int, int] = (600, 600)
     ) -> str:
         """نمط فني من بنية الكود"""
@@ -319,7 +319,7 @@ class NetworkArtist:
     
     def create_dependency_web(
         self,
-        nodes: list[dict[str, Any]],
+        nodes: list[dict[str, object]],
         edges: list[tuple[str, str]],
         title: str = "Code Dependencies"
     ) -> str:
@@ -339,14 +339,14 @@ class OvermindArtIntegration:
     
     def visualize_code_intelligence(
         self,
-        analysis_result: dict[str, Any],
+        analysis_result: dict[str, object],
         style: ArtStyle | None = None
     ) -> dict[str, str]:
         """تحويل تحليل الكود إلى فن"""
     
     def visualize_mission_journey(
         self,
-        mission_data: dict[str, Any],
+        mission_data: dict[str, object],
         style: ArtStyle | None = None
     ) -> dict[str, str]:
         """تصور رحلة المهمة"""
@@ -361,9 +361,9 @@ class OvermindArtIntegration:
     
     def create_full_report(
         self,
-        analysis_data: dict[str, Any],
+        analysis_data: dict[str, object],
         style: ArtStyle | None = None
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """تقرير فني شامل"""
 ```
 
@@ -569,7 +569,7 @@ mission_art = integration.visualize_mission_journey({
 
 ✅ **Type Safety**: 100% type hints  
 ✅ **Documentation**: توثيق عربي شامل  
-✅ **No `Any`**: لا استخدام لـ Any  
+✅ **No permissive dynamic types**: لا استخدام لأنواع ديناميكية مفرطة  
 ✅ **Clean Code**: كود نظيف ومنظم
 
 ### Berkeley SICP Principles

@@ -83,7 +83,7 @@ class RealityKernel:
     def __init__(
         self,
         *,
-        settings: AppSettings | dict[str, Any],
+        settings: AppSettings | dict[str, object],
         enable_static_files: bool = True,  # ← يمكن تعطيلها!
     ) -> None:
         # ...

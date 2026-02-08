@@ -1,11 +1,8 @@
 """
-Kagent Service Registry.
-------------------------
-Service Discovery mechanism for the Agent Mesh.
-Allows agents to register their capabilities and look up others.
+سجل خدمات Kagent.
+-----------------
+آلية اكتشاف الخدمات لشبكة الوكلاء مع تسجيل القدرات والبحث عنها.
 """
-
-from typing import Any
 
 from fastapi import FastAPI
 
@@ -26,7 +23,7 @@ class ServiceRegistry:
         self._services: dict[str, BaseAgentAdapter] = {}
         self._profiles: dict[str, ServiceProfile] = {}
 
-    def register(self, profile: ServiceProfile, implementation: Any) -> None:
+    def register(self, profile: ServiceProfile, implementation: object) -> None:
         """
         تسجيل خدمة جديدة في الشبكة.
 

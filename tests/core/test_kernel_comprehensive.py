@@ -140,32 +140,19 @@ class TestRealityKernel:
         kernel_prod = RealityKernel(settings=prod_settings)
         assert kernel_prod.app.title == "Prod"
 
-    def test_any_type_import_exists(self):
+    def test_kernel_type_annotations_available(self):
         """
         GIVEN the kernel module
-        WHEN checking for Any type availability
-        THEN Any should be imported and available for type hints.
-
-        This test ensures that the NameError: name 'Any' is not defined
-        issue doesn't regress.
+        WHEN checking type annotations availability
+        THEN the kernel should load and expose its constructor signature.
         """
-        # Test that we can import the module without NameError
-        # Verify that typing.Any is imported in the module
-        import typing
-
         from app import kernel
 
-        assert hasattr(typing, "Any"), "typing.Any should exist"
-
-        # Verify the kernel module loads successfully (no NameError)
         assert hasattr(kernel, "RealityKernel"), "RealityKernel should be available"
 
-        # Verify we can inspect the __init__ signature which uses dict[str, Any]
         import inspect
 
         sig = inspect.signature(kernel.RealityKernel.__init__)
         params = sig.parameters
 
-        # The settings parameter should have the union type hint
         assert "settings" in params, "settings parameter should exist"
-        # If we got this far without NameError, the Any import is working

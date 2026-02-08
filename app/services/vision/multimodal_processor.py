@@ -9,7 +9,6 @@ import base64
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from app.core.ai_gateway import AIClient
 
@@ -147,7 +146,7 @@ class MultiModalProcessor:
     async def extract_exercise_from_image(
         self,
         image_path: str,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         يستخرج تمرين كامل من صورة.
         """

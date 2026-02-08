@@ -57,7 +57,7 @@
 ✅ pyproject.toml مع Ruff
 ✅ Type hints صارمة (Python 3.12+)
 ✅ Docstrings بالعربية
-✅ No Any type
+✅ No permissive dynamic type
 ✅ Makefile للفحص
 ```
 

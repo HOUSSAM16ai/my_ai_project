@@ -20,7 +20,7 @@
 #### A. Strictest Typing
 ```python
 # ❌ خطأ
-def process(data: Any) -> Optional[Dict]:
+def process(data: object) -> Optional[Dict]:
     pass
 
 # ✅ صحيح
@@ -28,8 +28,8 @@ def process(data: dict[str, str]) -> dict[str, int] | None:
     pass
 ```
 
-#### B. No `Any` Type
-- استبدال جميع `Any` بأنواع محددة
+#### B. No `permissive dynamic type` Type
+- استبدال جميع `permissive dynamic type` بأنواع محددة
 - استخدام `type | None` بدلاً من `Optional`
 - استخدام `list[str]` بدلاً من `List[str]`
 

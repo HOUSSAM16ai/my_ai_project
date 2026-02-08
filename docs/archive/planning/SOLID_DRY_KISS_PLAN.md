@@ -12,7 +12,7 @@
 
 #### 1. SOLID Violations
 ```
-❌ 332 دالة تستخدم Any type
+❌ 332 دالة تستخدم permissive dynamic type
 ❌ 182 ملف بـ typing قديمة (Optional, Union, List, Dict)
 ❌ 4 ملفات facade غير ضرورية (طبقة إضافية)
 ❌ 60 مجلد خدمات (تعقيد مفرط)
@@ -223,12 +223,12 @@ Files to update:
 - Script آلي للتحويل
 - Verification بـ mypy
 
-#### 1.2 Eliminate Any Type
-**الهدف:** استبدال جميع Any بأنواع محددة
+#### 1.2 Eliminate object Type
+**الهدف:** استبدال جميع object بأنواع محددة
 
 ```python
 # قبل
-def process(data: Any) -> Any:
+def process(data: object) -> object:
     pass
 
 # بعد
@@ -432,7 +432,7 @@ def process_user(user_data: UserData, options: UserCreationOptions) -> User:
 - [ ] No over-engineering
 
 #### ✅ Type Safety
-- [ ] 0 استخدام لـ Any
+- [ ] 0 استخدام لـ object
 - [ ] 0 استخدام لـ typing القديمة
 - [ ] mypy --strict passes
 - [ ] 100% type coverage
@@ -443,7 +443,7 @@ def process_user(user_data: UserData, options: UserCreationOptions) -> User:
 
 ### Week 1: Foundation
 - Day 1-2: Type hints modernization (182 files)
-- Day 3-4: Eliminate Any type (332 occurrences)
+- Day 3-4: Eliminate permissive dynamic type (332 occurrences)
 - Day 5: Remove facades (4 files)
 
 ### Week 2: Core Services

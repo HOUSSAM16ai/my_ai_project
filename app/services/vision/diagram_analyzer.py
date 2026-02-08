@@ -8,7 +8,6 @@
 import logging
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class DiagramAnalysis:
     diagram_type: DiagramType
     description: str
     elements: list[str]
-    mathematical_info: dict[str, Any]
+    mathematical_info: dict[str, object]
 
 
 class DiagramAnalyzer:
@@ -127,10 +126,10 @@ class DiagramAnalyzer:
         self,
         description: str,
         diagram_type: DiagramType,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """يستخرج المعلومات الرياضية."""
 
-        info: dict[str, Any] = {}
+        info: dict[str, object] = {}
 
         # البحث عن الأرقام
         import re

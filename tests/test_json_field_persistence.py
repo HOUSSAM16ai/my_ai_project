@@ -15,7 +15,7 @@ async def override_get_db():
 @pytest.mark.asyncio
 async def test_task_json_field_persistence(db_session):
     """
-    Test that assigning a dictionary to a field marked as Any but stored as Text
+    Test that assigning a dictionary to a field stored as Text
     works as expected (or fails if serialization is missing).
     """
     # 1. Setup User and Mission
@@ -45,7 +45,7 @@ async def test_task_json_field_persistence(db_session):
     # 3. Verify Persistence
     # We expect that if we read it back, we might get a string that needs parsing,
     # or if the ORM handles it, we get a dict.
-    # Given it is declared as 'Any', SQLModel might leave it as is during validation.
+    # Given it is declared as a generic object type, SQLModel might leave it as is during validation.
     # But SQLAlchemy Text column expects string.
 
     # Let's check what is actually in the DB

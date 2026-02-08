@@ -10,7 +10,6 @@
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -63,7 +62,7 @@ class MasteryTracker:
         self,
         student_id: int,
         days: int = 30,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """
         يولّد تقرير تقدم شامل.
 
@@ -148,7 +147,7 @@ class MasteryTracker:
     def _identify_at_risk_topics(
         self,
         profile: StudentProfile,
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, object]]:
         """يحدد المواضيع المعرضة للنسيان."""
 
         at_risk = []
@@ -185,8 +184,8 @@ class MasteryTracker:
     def _generate_study_plan(
         self,
         profile: StudentProfile,
-        at_risk: list[dict[str, Any]],
-    ) -> dict[str, Any]:
+        at_risk: list[dict[str, object]],
+    ) -> dict[str, object]:
         """يولّد خطة دراسة شخصية."""
 
         # أولوية 1: المواضيع المعرضة للنسيان
@@ -211,7 +210,7 @@ class MasteryTracker:
     def _generate_focus_message(
         self,
         profile: StudentProfile,
-        at_risk: list[dict[str, Any]],
+        at_risk: list[dict[str, object]],
     ) -> str:
         """يولّد رسالة تحفيزية."""
 

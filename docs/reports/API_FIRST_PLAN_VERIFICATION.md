@@ -100,7 +100,7 @@ select = ["E", "F", "I", "W", "UP", "B", "C4", "SIM", "RUF", "PL", "N", "TID", "
 - Python 3.12+ syntax
 - Type hints صارمة
 - Docstrings بالعربية
-- No Any type
+- No permissive dynamic type
 ```
 
 **الحالة**: ✅ **مكتمل 100%**

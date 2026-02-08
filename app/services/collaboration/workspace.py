@@ -7,7 +7,6 @@
 
 import logging
 from datetime import datetime
-from typing import Any
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -20,8 +19,8 @@ class WorkspaceChange(BaseModel):
 
     change_id: str = Field(default_factory=lambda: str(uuid4()))
     field_path: str
-    old_value: Any = None
-    new_value: Any = None
+    old_value: object | None = None
+    new_value: object | None = None
     changed_by: int
     timestamp: datetime = Field(default_factory=datetime.now)
 
@@ -42,7 +41,7 @@ class SharedWorkspace:
         self.workspace_id = str(uuid4())
 
         # البيانات المشتركة
-        self.data: dict[str, Any] = {
+        self.data: dict[str, object] = {
             "problem_statement": "",
             "solution_steps": [],
             "final_answer": "",
@@ -55,7 +54,7 @@ class SharedWorkspace:
         # الأقفال (لمنع التعارض)
         self.locks: dict[str, int] = {}  # field -> student_id
 
-    def get(self, field: str, default: Any = None) -> Any:
+    def get(self, field: str, default: object | None = None) -> object | None:
         """يحصل على قيمة حقل."""
 
         return self.data.get(field, default)
@@ -63,7 +62,7 @@ class SharedWorkspace:
     def set(
         self,
         field: str,
-        value: Any,
+        value: object,
         student_id: int,
     ) -> bool:
         """يعيّن قيمة حقل."""
@@ -182,7 +181,7 @@ class SharedWorkspace:
 
         return False
 
-    def get_snapshot(self) -> dict[str, Any]:
+    def get_snapshot(self) -> dict[str, object]:
         """يحصل على لقطة من الحالة الحالية."""
 
         return {

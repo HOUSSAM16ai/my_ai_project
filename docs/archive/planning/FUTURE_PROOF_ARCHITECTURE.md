@@ -608,7 +608,7 @@ event_bus.subscribe("user.created", create_user_profile)
 ### البنية
 ```python
 # app/kernel/di/container.py
-from typing import TypeVar, Callable, Any, Protocol
+from typing import TypeVar, Callable, Protocol
 from enum import Enum
 
 T = TypeVar('T')
@@ -631,8 +631,8 @@ class DIContainer:
     """
     
     def __init__(self):
-        self._registrations: dict[type, Any] = {}
-        self._singletons: dict[type, Any] = {}
+        self._registrations: dict[type, object] = {}
+        self._singletons: dict[type, object] = {}
         self._lifetimes: dict[type, Lifetime] = {}
     
     def register(

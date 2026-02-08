@@ -60,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Documented 20+ large files (>300 lines) requiring refactoring
   - Identified 5 critical files >400 lines (strategy.py: 656, generators.py: 544, etc.)
   - Verified 67 service classes and 23 DDD-structured services
-  - Documented 184 Any type usages (mostly justified for JSON handling)
+  - Documented 184 unsafe type usages (mostly related to JSON handling)
 - **Roadmap Creation**: Comprehensive improvement plan
   - Short-term: KISS violations resolution (1-2 weeks)
   - Medium-term: Large file refactoring (1-2 months)

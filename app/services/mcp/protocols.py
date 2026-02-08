@@ -9,7 +9,7 @@
 """
 
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -20,15 +20,15 @@ class IProjectKnowledge(Protocol):
     تتيح استبدال التنفيذ الحقيقي بـ mocks للاختبارات.
     """
 
-    async def get_complete_knowledge(self) -> dict[str, Any]:
+    async def get_complete_knowledge(self) -> dict[str, object]:
         """الحصول على المعرفة الكاملة عن المشروع."""
         ...
 
-    async def get_database_info(self) -> dict[str, Any]:
+    async def get_database_info(self) -> dict[str, object]:
         """الحصول على معلومات قاعدة البيانات."""
         ...
 
-    def get_environment_info(self) -> dict[str, Any]:
+    def get_environment_info(self) -> dict[str, object]:
         """الحصول على معلومات البيئة."""
         ...
 
@@ -46,7 +46,7 @@ class IResourceFetcher(Protocol):
         """معرف المورد الذي يتعامل معه هذا الـ fetcher."""
         ...
 
-    async def fetch(self, project_root: Path) -> dict[str, Any]:
+    async def fetch(self, project_root: Path) -> dict[str, object]:
         """جلب محتوى المورد."""
         ...
 
@@ -57,7 +57,7 @@ class IToolExecutor(Protocol):
     واجهة لتنفيذ أداة MCP.
     """
 
-    async def execute(self, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def execute(self, arguments: dict[str, object]) -> dict[str, object]:
         """تنفيذ الأداة بالمعاملات المحددة."""
         ...
 
@@ -68,7 +68,7 @@ class IIntegrationService(Protocol):
     واجهة عامة للتكاملات الخارجية.
     """
 
-    def get_status(self) -> dict[str, Any]:
+    def get_status(self) -> dict[str, object]:
         """الحصول على حالة التكامل."""
         ...
 
@@ -81,7 +81,7 @@ class StructureFetcher:
 
     uri = "project://structure"
 
-    async def fetch(self, project_root: Path) -> dict[str, Any]:
+    async def fetch(self, project_root: Path) -> dict[str, object]:
         from app.services.overmind.knowledge_structure import build_project_structure
 
         return build_project_structure(project_root)
@@ -92,7 +92,7 @@ class MicroservicesFetcher:
 
     uri = "project://microservices"
 
-    async def fetch(self, project_root: Path) -> dict[str, Any]:
+    async def fetch(self, project_root: Path) -> dict[str, object]:
         from app.services.overmind.knowledge_structure import build_microservices_summary
 
         return build_microservices_summary(project_root)
@@ -106,7 +106,7 @@ class DatabaseFetcher:
     def __init__(self, knowledge: IProjectKnowledge | None = None):
         self._knowledge = knowledge
 
-    async def fetch(self, project_root: Path) -> dict[str, Any]:
+    async def fetch(self, project_root: Path) -> dict[str, object]:
         try:
             if self._knowledge:
                 return await self._knowledge.get_database_info()
@@ -126,7 +126,7 @@ class EnvironmentFetcher:
     def __init__(self, knowledge: IProjectKnowledge | None = None):
         self._knowledge = knowledge
 
-    async def fetch(self, project_root: Path) -> dict[str, Any]:
+    async def fetch(self, project_root: Path) -> dict[str, object]:
         try:
             if self._knowledge:
                 return self._knowledge.get_environment_info()
@@ -143,7 +143,7 @@ class TechnologiesFetcher:
 
     uri = "project://technologies"
 
-    async def fetch(self, project_root: Path) -> dict[str, Any]:
+    async def fetch(self, project_root: Path) -> dict[str, object]:
         return {
             "ai_frameworks": [
                 {
@@ -241,7 +241,7 @@ class StatsFetcher:
 
     uri = "project://stats"
 
-    async def fetch(self, project_root: Path) -> dict[str, Any]:
+    async def fetch(self, project_root: Path) -> dict[str, object]:
         from app.services.overmind.knowledge_structure import (
             build_microservices_summary,
             build_project_structure,
@@ -271,7 +271,7 @@ class LearningFetcher:
 
     uri = "genius://learning"
 
-    async def fetch(self, project_root: Path) -> dict[str, Any]:
+    async def fetch(self, project_root: Path) -> dict[str, object]:
         try:
             from app.services.mcp.integrations import MCPIntegrations
 
@@ -286,7 +286,7 @@ class KnowledgeFetcher:
 
     uri = "genius://knowledge"
 
-    async def fetch(self, project_root: Path) -> dict[str, Any]:
+    async def fetch(self, project_root: Path) -> dict[str, object]:
         try:
             from app.services.mcp.integrations import MCPIntegrations
 
@@ -301,7 +301,7 @@ class AnalyticsFetcher:
 
     uri = "genius://analytics"
 
-    async def fetch(self, project_root: Path) -> dict[str, Any]:
+    async def fetch(self, project_root: Path) -> dict[str, object]:
         try:
             from app.services.mcp.integrations import MCPIntegrations
 
@@ -316,7 +316,7 @@ class VisionFetcher:
 
     uri = "genius://vision"
 
-    async def fetch(self, project_root: Path) -> dict[str, Any]:
+    async def fetch(self, project_root: Path) -> dict[str, object]:
         try:
             from app.services.mcp.integrations import MCPIntegrations
 
@@ -331,7 +331,7 @@ class CollaborationFetcher:
 
     uri = "genius://collaboration"
 
-    async def fetch(self, project_root: Path) -> dict[str, Any]:
+    async def fetch(self, project_root: Path) -> dict[str, object]:
         try:
             from app.services.mcp.integrations import MCPIntegrations
 

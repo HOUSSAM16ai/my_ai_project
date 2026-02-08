@@ -1,5 +1,3 @@
-from typing import Any
-
 from app.services.overmind.code_intelligence.models import ComplexityStats, LineStats
 
 
@@ -35,7 +33,9 @@ class StatisticsAnalyzer:
             blank_lines=blank_lines,
         )
 
-    def calculate_complexity_stats(self, functions: list[dict[str, Any]]) -> ComplexityStats:
+    def calculate_complexity_stats(
+        self, functions: list[dict[str, object]]
+    ) -> ComplexityStats:
         """
         Calculate complexity and nesting statistics.
 

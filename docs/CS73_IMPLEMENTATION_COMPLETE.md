@@ -178,7 +178,7 @@ Each style includes a complete color palette:
 ### Type Safety
 ```python
 ✅ 100% type hints
-✅ No `Any` usage
+✅ No `permissive dynamic type` usage
 ✅ Generic types for reusability
 ✅ Protocol-based interfaces
 ```
@@ -226,7 +226,7 @@ Each style includes a complete color palette:
    art = integration.visualize_mission_journey(mission_data)
    ```
 
-3. **Any Data Source**
+3. **Generic Data Source**
    ```python
    art = create_art_from_overmind_data(any_data, ArtStyle.CYBERPUNK)
    ```

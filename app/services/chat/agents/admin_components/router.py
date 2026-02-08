@@ -1,13 +1,13 @@
 """
-Admin Intent Router (OCP/SRP).
-------------------------------
-Handles intent classification and routing to appropriate handlers.
+موجّه النوايا الإداري (OCP/SRP).
+--------------------------------
+يتولى تصنيف النوايا وتوجيهها إلى المعالجات المناسبة.
 """
 
 import json
 import logging
 from collections.abc import AsyncGenerator
-from typing import Any, Protocol
+from typing import Protocol
 
 from app.core.interfaces.llm import LLMClient
 from app.core.interfaces.router import IntentRouter
@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 class MCPService(Protocol):
     """Protocol for MCP Integrations to avoid hard dependency here."""
 
-    async def semantic_search(self, query: str, top_k: int = 5) -> dict[str, Any]: ...
-    async def run_langgraph_workflow(self, goal: str) -> dict[str, Any]: ...
+    async def semantic_search(self, query: str, top_k: int = 5) -> dict[str, object]: ...
+    async def run_langgraph_workflow(self, goal: str) -> dict[str, object]: ...
 
 
 class AdminRouter(IntentRouter):
@@ -45,7 +45,7 @@ class AdminRouter(IntentRouter):
         self.responder = responder
 
     async def route_and_execute(
-        self, question: str, context: dict[str, Any] | None = None
+        self, question: str, context: dict[str, object] | None = None
     ) -> AsyncGenerator[str, None]:
         lowered = question.lower().strip()
 
@@ -106,7 +106,7 @@ class AdminRouter(IntentRouter):
         # Unknown tool
         yield f"عذراً، الأداة المطلوبة '{tool_name}' غير مدعومة."
 
-    async def _classify_intent(self, question: str) -> dict[str, Any]:
+    async def _classify_intent(self, question: str) -> dict[str, object]:
         """Uses LLM to classify the intent."""
         system_prompt = """
         أنت وكيل إداري ذكي (Admin Agent). مهمتك هي مساعدة مسؤول النظام في فهم حالة النظام.

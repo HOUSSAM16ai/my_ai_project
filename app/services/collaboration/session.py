@@ -8,7 +8,6 @@
 import logging
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -70,7 +69,7 @@ class CollaborativeSession:
         self.topic = topic
         self.participants: dict[int, SessionParticipant] = {}
         self.messages: list[SessionMessage] = []
-        self.shared_workspace: dict[str, Any] = {}
+        self.shared_workspace: dict[str, object] = {}
         self.created_at = datetime.now()
         self.is_active = True
 
@@ -224,7 +223,7 @@ class CollaborativeSession:
 
         return self.messages[-limit:]
 
-    def get_summary(self) -> dict[str, Any]:
+    def get_summary(self) -> dict[str, object]:
         """يحصل على ملخص الجلسة."""
 
         return {
@@ -269,7 +268,7 @@ def get_session(session_id: str) -> CollaborativeSession | None:
     return _sessions.get(session_id)
 
 
-def list_active_sessions() -> list[dict[str, Any]]:
+def list_active_sessions() -> list[dict[str, object]]:
     """يسرد الجلسات النشطة."""
 
     return [s.get_summary() for s in _sessions.values() if s.is_active]

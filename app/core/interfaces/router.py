@@ -1,23 +1,23 @@
 """
-Intent Router Interface (ISP).
-------------------------------
-Defines the contract for routing intents to handlers.
+واجهة موجه المقاصد (ISP).
+-------------------------
+تحدد عقد توجيه المقاصد إلى المعالجات المناسبة.
 """
 
 from collections.abc import AsyncGenerator
-from typing import Any, Protocol
+from typing import Protocol
 
 
 class IntentRouter(Protocol):
     """
-    Protocol for determining and executing the correct intent.
+    بروتوكول لتحديد المقصد الصحيح وتنفيذه.
     """
 
     async def route_and_execute(
-        self, question: str, context: dict[str, Any] | None = None
+        self, question: str, context: dict[str, object] | None = None
     ) -> AsyncGenerator[str, None]:
         """
-        Analyze the question and context, route to the appropriate handler,
-        and yield the response chunks.
+        تحليل السؤال والسياق، وتوجيه الطلب إلى المعالج المناسب،
+        ثم بث أجزاء الاستجابة تدريجيًا.
         """
         ...

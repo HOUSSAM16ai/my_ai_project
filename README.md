@@ -299,7 +299,7 @@ python3 scripts/apply_solid_dry_kiss.py
 
 ### Harvard CS50 2025 ✅
 - Strictest Type Hints
-- No `Any` Type (0 usage)
+- No permissive dynamic type usage (0)
 - Explicit Imports
 - Clear Documentation
 

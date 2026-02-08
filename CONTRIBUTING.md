@@ -276,7 +276,7 @@ user_id = 123  # Good
 uid = 123      # Avoid
 
 # Maximum line length: 100 characters
-def some_function(param1: str, param2: int) -> dict[str, Any]:
+def some_function(param1: str, param2: int) -> dict[str, object]:
     """Function docstring in Google style."""
     pass
 

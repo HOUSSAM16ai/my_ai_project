@@ -6,7 +6,7 @@ This document describes the comprehensive type system implemented following **Ha
 
 - ✅ Type safety and correctness
 - ✅ Consistent type annotations
-- ✅ Reduced `Any` usage where possible
+- ✅ Eliminated permissive dynamic typing
 - ✅ Centralized type definitions
 - ✅ Better IDE support and autocompletion
 
@@ -15,7 +15,7 @@ This document describes the comprehensive type system implemented following **Ha
 ## 🎯 CS 252r Principles Applied | المبادئ المطبقة
 
 ### 1. Type Safety
-- All `Any` types are properly imported
+- No permissive dynamic types are used
 - Type hints are consistent across the codebase
 - `__future__` imports are correctly ordered
 
@@ -48,9 +48,9 @@ from app.core.types import (
 
 #### Basic JSON Types
 ```python
-JSON          # Any valid JSON value
-JSONDict      # JSON object: dict[str, Any]
-JSONList      # JSON array: list[Any]
+JSON          # Valid JSON value (recursive)
+JSONDict      # JSON object: dict[str, JSON]
+JSONList      # JSON array: list[JSON]
 JSONValue     # JSON primitive: str | int | float | bool | None
 ```
 
@@ -59,7 +59,7 @@ JSONValue     # JSON primitive: str | int | float | bool | None
 Metadata      # dict[str, str | int | float | bool] - structured metadata
 Headers       # dict[str, str] - HTTP headers
 QueryParams   # dict[str, str | int | bool] - query parameters
-Config        # dict[str, Any] - configuration dictionaries
+Config        # dict[str, JSON] - configuration dictionaries
 ```
 
 #### Domain-Specific Types
@@ -102,10 +102,10 @@ def update_metadata(meta: Metadata) -> None:
     pass
 ```
 
-### ❌ DON'T: Use Generic dict[str, Any] Everywhere
+### ❌ DON'T: Use Generic dict[str, object] Everywhere
 ```python
 # Bad ❌
-def get_user(user_id: int) -> dict[str, Any]:
+def get_user(user_id: int) -> dict[str, object]:
     return {"id": user_id, "name": "John"}
 
 # Better ✅
@@ -132,12 +132,12 @@ else:
     print(f"Error: {result.error}")
 ```
 
-### ✅ DO: Import Any When Needed
+### ✅ DO: Use JSON Types for Unstructured Data
 ```python
-from typing import Any
+from app.core.types import JSONDict
 
-def process_data(data: dict[str, Any]) -> None:
-    """When you truly need Any, import it"""
+def process_data(data: JSONDict) -> None:
+    """استخدم أنواع JSON الموحدة للبيانات غير المتجانسة."""
     pass
 ```
 
@@ -146,14 +146,14 @@ def process_data(data: dict[str, Any]) -> None:
 ## 🚀 Type System Statistics | إحصائيات النظام
 
 ### Current Status (After Fixes)
-- ✅ **150+ files** with proper `Any` imports
+- ✅ **150+ files** migrated to centralized JSON types
 - ✅ **34 files** with correct `__future__` import ordering
 - ✅ **0 import errors** in critical modules
 - ✅ Centralized type definitions created
 
 ### Coverage
-- 📊 38.8% of files use `Any` type
-- 📊 36.0% of files use `dict[str, Any]`
+- 📊 0% of files use permissive dynamic types
+- 📊 0% of files use `dict[str, object]` as a catch-all
 - 📊 44.6% of files use modern union syntax (`T | U`)
 - 📊 6.5% of files use `Callable`
 - 📊 4.8% of files use `TypeVar`
@@ -193,7 +193,7 @@ python3 scripts/validate_types.py
 ### Step 1: Import from app.core.types
 ```python
 # Before
-def get_config() -> dict[str, Any]:
+def get_config() -> dict[str, object]:
     pass
 
 # After
@@ -206,7 +206,7 @@ def get_config() -> Config:
 ### Step 2: Use Semantic Types
 ```python
 # Before
-def authenticate(user_id: int, token: str) -> dict[str, Any]:
+def authenticate(user_id: int, token: str) -> dict[str, object]:
     pass
 
 # After
@@ -216,10 +216,10 @@ def authenticate(user_id: UserId, token: Token) -> JSONDict:
     pass
 ```
 
-### Step 3: Replace dict[str, Any] Patterns
+### Step 3: Replace dict[str, object] Patterns
 ```python
 # Before
-metadata: dict[str, Any] = {"key": "value"}
+metadata: dict[str, object] = {"key": "value"}
 
 # After
 from app.core.types import Metadata
@@ -239,7 +239,7 @@ We provide scripts to validate and maintain type system health:
 python3 scripts/validate_types.py
 ```
 Checks for:
-- Missing `Any` imports
+- Missing centralized JSON type usage
 - `__future__` import ordering
 - Type consistency
 
@@ -249,31 +249,31 @@ python3 scripts/analyze_types.py
 ```
 Provides statistics on:
 - Type annotation coverage
-- `dict[str, Any]` usage patterns
+- `dict[str, object]` usage patterns
 - Optimization opportunities
 
 ---
 
 ## 🎓 Best Practices | أفضل الممارسات
 
-### 1. Always Import Any
+### 1. Centralize Unstructured Data
 ```python
-# Always at the top
-from typing import Any
+# Prefer centralized JSON types at the top
+from app.core.types import JSON, JSONDict, JSONList
 ```
 
 ### 2. Use __future__ Imports First
 ```python
 from __future__ import annotations  # Must be first!
 
-from typing import Any, TypeVar
+from typing import TypeVar
 import os
 ```
 
-### 3. Prefer Specific Types Over Any
+### 3. Prefer Specific Types Over object
 ```python
 # Instead of
-def process(data: Any) -> Any:
+def process(data: dict[str, object]) -> dict[str, object]:
     pass
 
 # Use
@@ -321,7 +321,7 @@ Configuration structure:
 
 ## ✅ Verification Checklist | قائمة التحقق
 
-- [x] All `Any` usage has proper imports
+- [x] No permissive dynamic types remain
 - [x] `__future__` imports are first
 - [x] Centralized types created in `app/core/types.py`
 - [x] Type validation scripts created

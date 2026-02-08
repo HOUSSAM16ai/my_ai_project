@@ -17,15 +17,15 @@
 
 - ✅ **تحديث Type Hints في حزمة Chat** - الانتقال إلى Python 3.12+
   - تحديث `app/services/chat/context.py` لاستخدام `object` و `type | None`.
-  - تحديث `app/services/chat/intent_detector.py` لإزالة `Any` واستخدام `object`.
+  - تحديث `app/services/chat/intent_detector.py` لإزالة النوع الديناميكي المتساهل واستخدام `object`.
   - تحديث `app/services/chat/handlers/mission_handler.py` لاستخدام `dict[str, object]`.
   - تحديث `app/services/chat/handlers/strategy_handlers.py` لاستخدام `dict[str, object]`.
-  - إزالة `typing.Any` من الملفات المذكورة (إلا عند الضرورة القصوى للـ Protocols).
+  - إزالة الأنواع الديناميكية المتساهلة من الملفات المذكورة (إلا عند الضرورة القصوى للـ Protocols).
 
 **Phase 29: مواصلة تنفيذ الخطط المسطرة (Batch 6 - Telemetry)**
 
 - ✅ **تحديث Type Hints في حزمة Telemetry** - الانتقال إلى Python 3.12+
-  - استبدال `typing.Any` بـ `object` أو أنواع محددة في `models.py`, `analyzer.py`, `aggregator.py`, `tracing.py`, `unified_observability.py`.
+  - استبدال الأنواع الديناميكية المتساهلة بـ `object` أو أنواع محددة في `models.py`, `analyzer.py`, `aggregator.py`, `tracing.py`, `unified_observability.py`.
   - إزالة استيرادات `from typing import ...` غير الضرورية.
   - استخدام `type | None` بدلاً من `Optional[type]`.
   - استخدام `list[...]` و `dict[...]` بدلاً من `List[...]` و `Dict[...]`.
@@ -41,7 +41,7 @@
 **Phase 29: مواصلة تنفيذ الخطط المسطرة (Batch 6B - Core)**
 
 - ✅ **تحديث Type Hints في حزمة Core** - الانتقال إلى Python 3.12+
-  - استبدال `typing.Any` بـ `object` أو `dict[str, object]` في `protocols.py` و `ai_gateway.py`.
+  - استبدال `object` بـ `object` أو `dict[str, object]` في `protocols.py` و `ai_gateway.py`.
   - تنظيف الحزمة بإزالة الوحدات الميتة `ai_client_factory.py` و `error_handling.py` بالكامل.
   - تحديث `logging/spine.py` و `cli_logging.py` بتوثيق عربي.
 
@@ -485,7 +485,7 @@ TOTAL: 72 functions refactored
   - DRY: 0 انتهاك
   - KISS: 173 انتهاك
 - **الدوال | Functions:** 1,684
-- **استخدام Any:** متعدد في ملفات مختلفة
+- **استخدام object:** متعدد في ملفات مختلفة
 
 ### بعد التبسيط | After Simplification
 - **إجمالي الانتهاكات | Total Violations:** 335
@@ -493,7 +493,7 @@ TOTAL: 72 functions refactored
   - DRY: 0 انتهاك
   - KISS: 173 انتهاك (مستقر)
 - **الدوال | Functions:** 1,692 (+8 دوال مساعدة أفضل)
-- **استخدام Any:** تقليل ملحوظ في حزمة Telemetry & Chat
+- **استخدام object:** تقليل ملحوظ في حزمة Telemetry & Chat
 
 ---
 
@@ -530,8 +530,8 @@ TOTAL: 72 functions refactored
 
 **قبل:**
 ```python
-from typing import Any
-def detect_anomalies(self) -> list[dict[str, Any]]: ...
+from typing import object
+def detect_anomalies(self) -> list[dict[str, object]]: ...
 ```
 
 **بعد:**
@@ -540,8 +540,8 @@ def detect_anomalies(self) -> list[dict[str, object]]: ...
 ```
 
 **الفائدة:**
-- ✅ إزالة `Any` غير الضرورية
-- ✅ استخدام `object` بدلاً من `Any` للمعاملات
+- ✅ إزالة `permissive dynamic type` غير الضرورية
+- ✅ استخدام `object` بدلاً من `permissive dynamic type` للمعاملات
 - ✅ تحسين دقة الأنواع
 - ✅ التوافق مع Python 3.12+
 
@@ -574,9 +574,9 @@ def detect_anomalies(self) -> list[dict[str, object]]: ...
    - يمكن التبسيط داخل الملفات الموجودة
    - إزالة الطبقات غير الضرورية أكثر أماناً من حذف الملفات
 
-2. **استخدام Any للـ JSON مقبول**
+2. **استخدام object للـ JSON مقبول**
    - JSON يمكن أن يحتوي على أي بنية
-   - استخدام Any هنا أكثر صدقاً من dict[str, object] (ولكن `object` أحياناً أدق)
+   - استخدام object هنا أكثر صدقاً من dict[str, object] (ولكن `object` أحياناً أدق)
 
 3. **تقسيم الدوال يحسن قابلية الاختبار**
    - الدوال الصغيرة أسهل في الاختبار
@@ -617,7 +617,7 @@ python3 -m py_compile app/services/chat/handlers/strategy_handlers.py
 ## 🎉 الخلاصة | Conclusion
 
 تم تطبيق مبادئ التبسيط وتحديث الـ Typing بنجاح في حزمة Chat.
-- ✅ إزالة `typing.Any` غير المبرر
+- ✅ إزالة `object` غير المبرر
 - ✅ تحسين Type Hints لتكون أكثر دقة
 - ✅ التحقق من سلامة الأكواد (Tests Passed)
 

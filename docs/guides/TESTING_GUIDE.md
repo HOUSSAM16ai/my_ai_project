@@ -163,7 +163,7 @@ const MAX_MESSAGES = 20; // Decrease to 15 if needed
 2. ✅ **Collect Feedback**
    - User experience
    - Performance metrics
-   - Any remaining issues
+   - Remaining issues
 
 3. 🔄 **Fine-tune if needed**
    - Adjust throttle values

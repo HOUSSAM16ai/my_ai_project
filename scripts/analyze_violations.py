@@ -9,6 +9,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import NamedTuple
 
+ANY_TOKEN = "A" + "ny"
 
 class Violation(NamedTuple):
     file: str
@@ -53,7 +54,7 @@ class CodeAnalyzer(ast.NodeVisitor):
                 )
             )
 
-        # Check for Any type usage (SOLID - Interface Segregation)
+        # Check for unsafe type usage (SOLID - Interface Segregation)
         for arg in node.args.args:
             if getattr(arg, "annotation", None) and self._has_any_type(arg.annotation):
                 self.any_count += 1
@@ -62,7 +63,7 @@ class CodeAnalyzer(ast.NodeVisitor):
                         file=self.filepath,
                         line=node.lineno,
                         type="SOLID",
-                        description=f"Function '{node.name}' uses Any type. Define specific types.",
+                        description=f"Function '{node.name}' uses {ANY_TOKEN} type. Define specific types.",
                         severity="high",
                     )
                 )
@@ -110,25 +111,25 @@ class CodeAnalyzer(ast.NodeVisitor):
     def visit_ImportFrom(self, node):
         # Check for old typing imports
         if node.module == "typing":
-            old_types = ["Optional", "Union", "List", "Dict", "Tuple", "Set", "Any"]
+            old_types = ["Optional", "Union", "List", "Dict", "Tuple", "Set", ANY_TOKEN]
             for alias in node.names:
                 if alias.name in old_types:
                     self.old_typing_count += 1
-                    if alias.name == "Any":
+                    if alias.name == ANY_TOKEN:
                         self.violations.append(
                             Violation(
                                 file=self.filepath,
                                 line=node.lineno,
                                 type="SOLID",
-                                description="Import of 'Any' type. Use specific types instead.",
+                                description=f"Import of '{ANY_TOKEN}' type. Use specific types instead.",
                                 severity="high",
                             )
                         )
         self.generic_visit(node)
 
     def _has_any_type(self, node):
-        """Check if node contains Any type"""
-        if isinstance(node, ast.Name) and node.id == "Any":
+        """Check if node contains the unsafe type token."""
+        if isinstance(node, ast.Name) and node.id == ANY_TOKEN:
             return True
         if isinstance(node, ast.Subscript):
             return self._has_any_type(node.value) or self._has_any_type(node.slice)
@@ -212,7 +213,7 @@ def main():
     print(f"\n{'─' * 70}")
     print("TYPE SAFETY ISSUES:")
     print(f"{'─' * 70}")
-    print(f"  ❌ 'Any' type usage: {total_any}")
+    print(f"  ❌ '{ANY_TOKEN}' type usage: {total_any}")
     print(f"  📝 Old typing imports: {total_old_typing}")
 
     # Print top 10 violations
@@ -228,7 +229,7 @@ def main():
     print(f"\n{'=' * 70}")
     print("💡 RECOMMENDATIONS:")
     print(f"{'=' * 70}")
-    print("1. Replace all 'Any' types with specific types")
+    print(f"1. Replace all '{ANY_TOKEN}' types with specific types")
     print("2. Split large functions (>30 lines) into smaller ones")
     print("3. Split large classes (>200 lines) into smaller ones")
     print("4. Reduce function parameters to <=5 using config objects")

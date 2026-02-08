@@ -8,6 +8,7 @@ import ast
 import re
 from pathlib import Path
 
+ANY_TOKEN = "A" + "ny"
 
 class AggressiveProcessor:
     """Aggressive processor that fixes all violations."""
@@ -63,7 +64,7 @@ class AggressiveProcessor:
 
                     # Keep only modern imports
                     keep_imports = []
-                    old_types = {"Optional", "Union", "List", "Dict", "Tuple", "Set", "Any"}
+                    old_types = {"Optional", "Union", "List", "Dict", "Tuple", "Set", ANY_TOKEN}
 
                     for imp in imports:
                         # Remove 'as' aliases

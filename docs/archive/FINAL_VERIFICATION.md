@@ -72,12 +72,12 @@ class ServiceDiscovery:
 # من app/gateway/circuit_breaker.py
 class CircuitBreaker:
     async def call(self, func, *args, **kwargs) -> T
-    def get_stats(self) -> dict[str, Any]
+    def get_stats(self) -> dict[str, object]
     async def reset(self) -> None
 
 class CircuitBreakerRegistry:
     def get_breaker(self, name: str) -> CircuitBreaker
-    def get_all_stats(self) -> dict[str, Any]
+    def get_all_stats(self) -> dict[str, object]
 ```
 
 #### Event Bus

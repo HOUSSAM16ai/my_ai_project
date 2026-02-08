@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Any, Protocol
+from typing import Protocol
 
 from pydantic import BaseModel, Field
 
@@ -58,7 +58,7 @@ class KnowledgeNode(BaseModel):
     id: str = Field(..., description="المعرف الفريد للعقدة")
     type: NodeType = Field(..., description="نوع العقدة")
     label: str = Field(..., description="تسمية العقدة للعرض")
-    attributes: dict[str, Any] = Field(
+    attributes: dict[str, object] = Field(
         default_factory=dict, description="الخصائص الديناميكية للعقدة"
     )
 
@@ -74,7 +74,9 @@ class Relation(BaseModel):
     source_id: str = Field(..., description="معرف عقدة المصدر")
     target_id: str = Field(..., description="معرف عقدة الهدف")
     type: RelationType = Field(..., description="نوع العلاقة")
-    metadata: dict[str, Any] = Field(default_factory=dict, description="بيانات وصفية للعلاقة")
+    metadata: dict[str, object] = Field(
+        default_factory=dict, description="بيانات وصفية للعلاقة"
+    )
 
 
 class AuditStatus(StrEnum):

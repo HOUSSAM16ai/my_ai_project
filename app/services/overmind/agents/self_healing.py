@@ -17,7 +17,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, ClassVar, TypeVar
+from typing import ClassVar, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -60,7 +60,7 @@ class HealingAction(BaseModel):
     """إجراء إصلاحي."""
 
     action_type: str
-    parameters: dict[str, Any] = Field(default_factory=dict)
+    parameters: dict[str, object] = Field(default_factory=dict)
     description: str = ""
     # دعم Kagent
     kagent_capability: str | None = None  # القدرة المطلوبة من Kagent
@@ -90,7 +90,7 @@ class SelfHealingAgent:
     """
 
     # استراتيجيات التعافي الافتراضية
-    DEFAULT_STRATEGIES: ClassVar = {
+    DEFAULT_STRATEGIES: ClassVar[dict[FailureType, list[HealingAction]]] = {
         FailureType.TIMEOUT: [
             HealingAction(
                 action_type="increase_timeout",
@@ -159,7 +159,7 @@ class SelfHealingAgent:
 
     def __init__(self) -> None:
         self.failure_patterns: dict[str, FailurePattern] = {}
-        self.recovery_history: list[dict[str, Any]] = []
+        self.recovery_history: list[dict[str, object]] = []
         self.mcp = MCPIntegrations() if MCPIntegrations else None
 
     def analyze_failure(self, error: Exception) -> FailureAnalysis:
@@ -280,9 +280,9 @@ class SelfHealingAgent:
     async def execute_with_healing(
         self,
         func: Callable[..., T],
-        *args: Any,
+        *args: object,
         max_attempts: int = 3,
-        **kwargs: Any,
+        **kwargs: object,
     ) -> T:
         """
         ينفذ دالة مع إصلاح تلقائي باستخدام قدرات المشروع كاملة.
@@ -328,9 +328,9 @@ class SelfHealingAgent:
     async def _apply_advanced_healing(
         self,
         action: HealingAction,
-        kwargs: dict[str, Any],
+        kwargs: dict[str, object],
         error_context: str,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         """يطبق إصلاح متقدم باستخدام تقنيات المشروع."""
 
         new_kwargs = kwargs.copy()
@@ -373,8 +373,8 @@ class SelfHealingAgent:
     def _apply_local_healing(
         self,
         action: HealingAction,
-        kwargs: dict[str, Any],
-    ) -> dict[str, Any]:
+        kwargs: dict[str, object],
+    ) -> dict[str, object]:
         """يطبق الإجراء محلياً (بدون خدمات خارجية)."""
 
         if action.action_type == "increase_timeout":
@@ -393,7 +393,7 @@ class SelfHealingAgent:
         kwargs.update(action.parameters)
         return kwargs
 
-    def _record_success(self, error: Exception | None, kwargs: dict[str, Any]) -> None:
+    def _record_success(self, error: Exception | None, kwargs: dict[str, object]) -> None:
         """يسجل النجاح للتعلم."""
         if error is None:
             return
@@ -419,7 +419,7 @@ class SelfHealingAgent:
 
         logger.info(f"Recorded successful recovery for pattern: {error_sig[:50]}")
 
-    def get_healing_stats(self) -> dict[str, Any]:
+    def get_healing_stats(self) -> dict[str, object]:
         """
         إحصائيات الإصلاح الذاتي (للوحة تحكم الأدمن).
 

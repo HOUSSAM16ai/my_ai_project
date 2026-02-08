@@ -86,7 +86,7 @@ class TestSuperhumanConfiguration:
         # To make this work with Pydantic V2, the field might need to be Union[str, list[str]] initially
         # or the validator must be robust.
         # But `pydantic-settings` often fails BEFORE the validator if it can't parse the expected type (List).
-        # So we will stick to JSON for the test to ensure stability, or modify AppSettings to accept Any.
+        # So we will stick to JSON for the test to ensure stability, or modify AppSettings to accept object.
 
         # Checking AppSettings... BACKEND_CORS_ORIGINS is list[str].
         # EnvSettingsSource tries to parse JSON.

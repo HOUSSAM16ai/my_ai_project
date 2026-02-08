@@ -1,11 +1,8 @@
 """
-Kagent Interface (Facade).
---------------------------
-The main entry point for the Agent Mesh.
-Orchestrates Service Discovery, Security, and Execution.
+واجهة Kagent (Facade).
+----------------------
+نقطة الدخول الرئيسية لشبكة الوكلاء مع تنسيق الاكتشاف والأمان والتنفيذ.
 """
-
-from typing import Any
 
 from app.core.logging import get_logger
 from app.services.kagent.domain import AgentRequest, AgentResponse, ServiceProfile
@@ -27,8 +24,8 @@ class KagentMesh:
         logger.info("🚀 Kagent Mesh Initialized.")
 
     def register_service(
-        self, name: str, implementation: Any, capabilities: list[str] | None = None
-    ):
+        self, name: str, implementation: object, capabilities: list[str] | None = None
+    ) -> None:
         """
         تسجيل خدمة في الشبكة.
         accepts FastAPI app or BaseAgentAdapter.

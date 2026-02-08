@@ -9,7 +9,6 @@ import os
 import sys
 import time
 import traceback
-from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
@@ -67,7 +66,7 @@ class SupabaseVerificationSystem:
         self.database_url = os.environ.get("DATABASE_URL")
         self.engine = None
         self.session = None
-        self.test_results: dict[str, Any] = {
+        self.test_results: dict[str, object] = {
             "connection": False,
             "tables": {},
             "migrations": {},
