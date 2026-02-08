@@ -41,8 +41,8 @@ services:
   # ==========================================
   planning-agent:
     build:
-      context: .
-      dockerfile: microservices/planning_agent/Dockerfile
+      context: ./microservices/planning_agent
+      dockerfile: Dockerfile
     container_name: cogniforge-planning-agent
     ports:
       - "8001:8001"
@@ -64,8 +64,8 @@ services:
   # ==========================================
   memory-agent:
     build:
-      context: .
-      dockerfile: microservices/memory_agent/Dockerfile
+      context: ./microservices/memory_agent
+      dockerfile: Dockerfile
     container_name: cogniforge-memory-agent
     ports:
       - "8002:8002"
@@ -87,8 +87,8 @@ services:
   # ==========================================
   user-service:
     build:
-      context: .
-      dockerfile: microservices/user_service/Dockerfile
+      context: ./microservices/user_service
+      dockerfile: Dockerfile
     container_name: cogniforge-user-service
     ports:
       - "8003:8003"
@@ -110,8 +110,8 @@ services:
   # ==========================================
   orchestrator-service:
     build:
-      context: .
-      dockerfile: microservices/orchestrator_service/Dockerfile
+      context: ./microservices/orchestrator_service
+      dockerfile: Dockerfile
     container_name: cogniforge-orchestrator
     ports:
       - "8004:8004"
@@ -140,8 +140,8 @@ services:
   # ==========================================
   observability-service:
     build:
-      context: .
-      dockerfile: microservices/observability_service/Dockerfile
+      context: ./microservices/observability_service
+      dockerfile: Dockerfile
     container_name: cogniforge-observability
     ports:
       - "8005:8005"

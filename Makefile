@@ -20,7 +20,7 @@
 .PHONY: help install quality test format lint security docs clean run dev deploy \
         microservices-build microservices-up microservices-down microservices-logs \
         microservices-test microservices-health gateway-test event-bus-test \
-        circuit-breaker-test integration-test fmt guardrails ci
+        circuit-breaker-test integration-test fmt guardrails ci compose-isolation
 
 # Colors for output
 BLUE := \033[0;34m
@@ -77,6 +77,7 @@ help:
 	@echo "  make docker-up        - Start Docker containers"
 	@echo "  make docker-down      - Stop Docker containers"
 	@echo "  make docker-logs      - View Docker logs"
+	@echo "  make compose-isolation - Validate compose isolation rules"
 	@echo ""
 	@echo "$(GREEN)🗄️ Database:$(NC)"
 	@echo "  make db-migrate       - Create new migration"
@@ -143,7 +144,12 @@ guardrails:
 	python scripts/ci_guardrails.py
 	@echo "$(GREEN)✅ Guardrails passed!$(NC)"
 
-ci: check lint guardrails test
+compose-isolation:
+	@echo "$(BLUE)🧩 Validating compose isolation rules...$(NC)"
+	python scripts/validate_compose_isolation.py
+	@echo "$(GREEN)✅ Compose isolation validation complete!$(NC)"
+
+ci: check lint guardrails compose-isolation test
 	@echo "$(GREEN)✅ CI checks complete!$(NC)"
 
 check:

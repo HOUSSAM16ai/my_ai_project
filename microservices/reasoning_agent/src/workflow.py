@@ -70,9 +70,9 @@ else:
     Workflow = _workflow_module.Workflow
     step = _workflow_module.step
 
-from app.core.gateway.simple_client import SimpleAIClient
-from app.core.interfaces import IKnowledgeRetriever, IReasoningStrategy
-from app.core.logging import get_logger
+from microservices.reasoning_agent.src.ai_client import SimpleAIClient
+from microservices.reasoning_agent.src.interfaces import IKnowledgeRetriever, IReasoningStrategy
+from microservices.reasoning_agent.src.logging import get_logger
 from microservices.reasoning_agent.src.search_strategy import RMCTSStrategy
 from microservices.research_agent.src.search_engine.llama_retriever import KnowledgeGraphRetriever
 

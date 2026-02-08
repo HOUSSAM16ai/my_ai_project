@@ -7,8 +7,8 @@ Graph Expander - توسيع البحث عبر الرسم البياني.
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import async_session_factory
-from app.core.logging import get_logger
+from microservices.research_agent.src.database import async_session_factory
+from microservices.research_agent.src.logging import get_logger
 
 logger = get_logger("graph-expander")
 
@@ -36,7 +36,13 @@ async def expand_with_neighbors(
         return []
 
     try:
-        async with async_session_factory() as session:
+        session_factory = async_session_factory()
+    except ValueError as exc:
+        logger.warning(f"Database unavailable for graph expansion: {exc}")
+        return []
+
+    try:
+        async with session_factory() as session:
             visited = set(node_ids)
             frontier = list(node_ids)
             neighbors: list[dict[str, object]] = []
@@ -143,7 +149,13 @@ async def find_related_content(
         return []
 
     try:
-        async with async_session_factory() as session:
+        session_factory = async_session_factory()
+    except ValueError as exc:
+        logger.warning(f"Database unavailable for related content: {exc}")
+        return []
+
+    try:
+        async with session_factory() as session:
             # First, find knowledge_nodes linked to these content_items
             placeholders = [f":cid_{i}" for i in range(len(content_ids))]
             params = {f"cid_{i}": cid for i, cid in enumerate(content_ids)}

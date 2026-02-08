@@ -25,9 +25,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
-    volumes:
-      - .:/app
-      - /app/__pycache__
 
   # Frontend - Next.js Application
   frontend:
@@ -49,8 +46,8 @@ services:
   # Orchestrator Service - Coordinates agents
   orchestrator-service:
     build:
-      context: .
-      dockerfile: microservices/orchestrator_service/Dockerfile
+      context: ./microservices/orchestrator_service
+      dockerfile: Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
     container_name: cogniforge-orchestrator
@@ -80,15 +77,12 @@ services:
       retries: 5
       start_period: 15s
 
-    volumes:
-      - .:/app
-      - /app/__pycache__
 
   # Observability Service - AIOps and Monitoring
   observability-service:
     build:
-      context: .
-      dockerfile: microservices/observability_service/Dockerfile
+      context: ./microservices/observability_service
+      dockerfile: Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
     container_name: cogniforge-observability-service
@@ -107,15 +101,12 @@ services:
       retries: 5
       start_period: 15s
 
-    volumes:
-      - .:/app
-      - /app/__pycache__
 
   # Planning Agent - Generates plans
   planning-agent:
     build:
-      context: .
-      dockerfile: microservices/planning_agent/Dockerfile
+      context: ./microservices/planning_agent
+      dockerfile: Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
     container_name: cogniforge-planning-agent
@@ -137,15 +128,12 @@ services:
       retries: 5
       start_period: 15s
 
-    volumes:
-      - .:/app
-      - /app/__pycache__
 
   # Memory Agent - Retrieves context
   memory-agent:
     build:
-      context: .
-      dockerfile: microservices/memory_agent/Dockerfile
+      context: ./microservices/memory_agent
+      dockerfile: Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
     container_name: cogniforge-memory-agent
@@ -167,15 +155,12 @@ services:
       retries: 5
       start_period: 15s
 
-    volumes:
-      - .:/app
-      - /app/__pycache__
 
   # User Service - Manages users
   user-service:
     build:
-      context: .
-      dockerfile: microservices/user_service/Dockerfile
+      context: ./microservices/user_service
+      dockerfile: Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
     container_name: cogniforge-user-service
@@ -197,9 +182,6 @@ services:
       retries: 5
       start_period: 15s
 
-    volumes:
-      - .:/app
-      - /app/__pycache__
 
 networks:
   appnet:
