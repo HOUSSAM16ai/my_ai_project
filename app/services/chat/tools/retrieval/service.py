@@ -75,7 +75,7 @@ async def search_educational_content(
     try:
         results = []
         strict_mode = True
-        K = 5  # Desired minimum results
+        min_results = 5  # Desired minimum results
 
         # Attempt 1: Strict Search (with year)
         strict_tags = list(base_tags)
@@ -86,7 +86,7 @@ async def search_educational_content(
 
         # Attempt 2: Relaxed Search (Progressive Relaxation)
         # If strict search yielded insufficient results, try without the year constraint
-        if year and len(results) < K:
+        if year and len(results) < min_results:
             relaxed_results = await remote_client.fetch_from_memory_agent(semantic_query, base_tags)
 
             # Merge results (avoiding duplicates)

@@ -1,12 +1,13 @@
-import sys
 import os
+import sys
 import unittest
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
 # Add project root to sys.path to allow imports
 sys.path.append(os.getcwd())
 
 from app.services.chat.tools.retrieval.service import search_educational_content
+
 
 class TestRetrievalRelaxation(unittest.IsolatedAsyncioTestCase):
 
@@ -52,8 +53,6 @@ class TestRetrievalRelaxation(unittest.IsolatedAsyncioTestCase):
         result = await search_educational_content("test query", year="2024")
 
         # Expectation: Results found via relaxation
-        # NOTE: Without the fix, this test will fail (it will return LOCAL FALLBACK or empty string)
-        # With the fix, it should return Relaxed Content + Note
 
         if "Relaxed Content 2023" in result:
              self.assertIn("ملاحظة:", result)
@@ -70,27 +69,20 @@ class TestRetrievalRelaxation(unittest.IsolatedAsyncioTestCase):
             if any(t.startswith("year:") for t in tags):
                 # Strict returns 1 result
                 return [{'content': 'Strict 2024', 'metadata': {'year': 2024}, 'payload': {'year': 2024, 'score': 0.5}}]
-            else:
-                # Relaxed returns mixed (including the strict one potentially, but let's assume dedup handles it)
-                return [
-                    {'content': 'Strict 2024', 'metadata': {'year': 2024}, 'payload': {'year': 2024, 'score': 0.5}},
-                    {'content': 'Relaxed 2023 High Score', 'metadata': {'year': 2023}, 'payload': {'year': 2023, 'score': 0.9}}, # Higher score but wrong year
-                    {'content': 'Relaxed No Year', 'metadata': {}, 'payload': {'score': 0.8}},
-                ]
+            # Relaxed returns mixed (including the strict one potentially, but let's assume dedup handles it)
+            return [
+                {'content': 'Strict 2024', 'metadata': {'year': 2024}, 'payload': {'year': 2024, 'score': 0.5}},
+                {'content': 'Relaxed 2023 High Score', 'metadata': {'year': 2023}, 'payload': {'year': 2023, 'score': 0.9}}, # Higher score but wrong year
+                {'content': 'Relaxed No Year', 'metadata': {}, 'payload': {'score': 0.8}},
+            ]
 
         mock_remote.fetch_from_memory_agent = AsyncMock(side_effect=side_effect)
         mock_local.search_local_knowledge_base.return_value = "LOCAL FALLBACK"
 
         result = await search_educational_content("test query", year="2024")
 
-        # Split result by double newline to inspect order
-        parts = result.split("\n\n")
-
         # We expect Strict 2024 to be first (Penalty 0), even though score is lower (0.5 vs 0.9)
         # Because we sort by (Penalty, -Score)
-
-        # Note: formatting adds headers like "--- Source: ... ---"
-        # We check content presence and order
 
         strict_pos = result.find("Strict 2024")
         relaxed_pos = result.find("Relaxed 2023 High Score")
