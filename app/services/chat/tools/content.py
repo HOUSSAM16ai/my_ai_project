@@ -79,8 +79,10 @@ async def search_content(
     limit: int = 10,
 ) -> list[dict[str, object]]:
     """
+    Cognitive Research Infrastructure (CRI).
     Advanced deep-research engine. Use this for ALL information retrieval.
-    It performs multi-step reasoning, scraping, and fact-checking.
+    It performs multi-step reasoning, scraping, and fact-checking using
+    autonomous agents (Tavily/Firecrawl).
     Returns a detailed research report.
     """
     if not q:
