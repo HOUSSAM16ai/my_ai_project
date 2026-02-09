@@ -12,6 +12,25 @@ from app.services.chat.tools.retrieval import local_store, parsing, remote_clien
 logger = get_logger("tool-retrieval-service")
 
 
+def _calculate_year_penalty(payload_year: str | int | None, requested_year: str | None) -> int:
+    """
+    Calculates penalty for year mismatch.
+    0: Exact Match
+    1: Missing Year (Soft Penalty)
+    3: Explicit Mismatch (Hard Penalty)
+    """
+    if not requested_year:
+        return 0
+
+    if payload_year is None or str(payload_year).strip() == "":
+        return 1
+
+    if str(payload_year) == str(requested_year):
+        return 0
+
+    return 3
+
+
 async def search_educational_content(
     query: str,
     year: str | None = None,
@@ -38,15 +57,13 @@ async def search_educational_content(
     """
 
     # 1. تكوين الوسوم المطلوبة للتصفية
-    tags = ["ingested"]
-    if year:
-        tags.append(f"year:{year}")
+    base_tags = ["ingested"]
     if subject:
-        tags.append(f"subject:{subject}")
+        base_tags.append(f"subject:{subject}")
     if branch:
-        tags.append(f"branch:{branch}")
+        base_tags.append(f"branch:{branch}")
     if exam_ref:
-        tags.append(f"exam_ref:{exam_ref}")
+        base_tags.append(f"exam_ref:{exam_ref}")
 
     # If explicit exercise ID is requested, add it to query to boost relevance
     full_query = query
@@ -56,7 +73,37 @@ async def search_educational_content(
     semantic_query = parsing.expand_query_semantics(full_query, year, subject, branch, exam_ref)
 
     try:
-        results = await remote_client.fetch_from_memory_agent(semantic_query, tags)
+        results = []
+        strict_mode = True
+        K = 5  # Desired minimum results
+
+        # Attempt 1: Strict Search (with year)
+        strict_tags = list(base_tags)
+        if year:
+            strict_tags.append(f"year:{year}")
+
+        results = await remote_client.fetch_from_memory_agent(semantic_query, strict_tags)
+
+        # Attempt 2: Relaxed Search (Progressive Relaxation)
+        # If strict search yielded insufficient results, try without the year constraint
+        if year and len(results) < K:
+            relaxed_results = await remote_client.fetch_from_memory_agent(semantic_query, base_tags)
+
+            # Merge results (avoiding duplicates)
+            # We use the raw content as a simple unique key for now
+            existing_contents = {r.get("content", "") for r in results}
+
+            added_relaxed = 0
+            for item in relaxed_results:
+                content = item.get("content", "")
+                if content and content not in existing_contents:
+                    results.append(item)
+                    existing_contents.add(content)
+                    added_relaxed += 1
+
+            # If we added relaxed results, we are no longer in strict mode
+            if added_relaxed > 0:
+                strict_mode = False
 
         if not results:
             logger.info("Memory Agent returned no results. Attempting local fallback.")
@@ -65,7 +112,7 @@ async def search_educational_content(
             )
 
         # Process and filter results
-        contents = []
+        candidates = []
         is_specific = parsing.is_specific_request(semantic_query)
 
         for item in results:
@@ -73,34 +120,22 @@ async def search_educational_content(
             if not content:
                 continue
 
-            # --- STRICT METADATA VERIFICATION ---
-            # Even if API returns results, we must verify they match the requested params.
-            # This prevents "Fuzzy Match" or "Wrong Year" leaks.
+            # --- SOFT METADATA VERIFICATION ---
             payload = item.get("payload") or item.get("metadata") or {}
 
-            # 1. Check Year
-            if year and str(payload.get("year", "")) != str(year):
-                logger.warning(
-                    f"Skipping result with mismatched year: {payload.get('year')} != {year}"
-                )
-                continue
+            # 1. Calculate Year Penalty (Ranking Signal instead of Filter)
+            penalty = _calculate_year_penalty(payload.get("year"), year)
 
-            # 2. Check Subject (Loose string match)
+            # 2. Check Subject (Keep as Strict Filter for now)
             if subject:
                 item_subject = str(payload.get("subject", "")).lower()
                 if subject.lower() not in item_subject and item_subject not in subject.lower():
-                    logger.warning(
-                        f"Skipping result with mismatched subject: {item_subject} != {subject}"
-                    )
                     continue
 
-            # 3. Check Exam Ref
+            # 3. Check Exam Ref (Keep as Strict Filter for now)
             if exam_ref:
                 item_ref = str(payload.get("exam_ref", "")).lower()
                 if exam_ref.lower() not in item_ref and item_ref not in exam_ref.lower():
-                    logger.warning(
-                        f"Skipping result with mismatched exam_ref: {item_ref} != {exam_ref}"
-                    )
                     continue
 
             # Try granular extraction
@@ -114,19 +149,50 @@ async def search_educational_content(
                 final_content = content
 
             if final_content:
-                # Add Source Header for Clarity
-                source_label = (
-                    f"--- Source: {payload.get('year', '')} {payload.get('exam_ref', '')} ---"
-                )
-                contents.append(f"{source_label}\n\n{final_content}")
+                # Extract score for secondary ranking
+                try:
+                    score = float(payload.get("score", 0))
+                except (ValueError, TypeError):
+                    score = 0.0
 
-        if not contents and is_specific:
+                candidates.append({
+                    "content": final_content,
+                    "payload": payload,
+                    "penalty": penalty,
+                    "score": score
+                })
+
+        if not candidates and is_specific:
             return "عذراً، لم أتمكن من العثور على التمرين المحدد في السياق المطلوب."
 
-        # Deduplicate contents
-        unique_contents = parsing.deduplicate_contents(contents)
+        # Sort candidates: Primary = Penalty (ASC), Secondary = Score (DESC)
+        candidates.sort(key=lambda x: (x["penalty"], -x["score"]))
 
-        return "\n\n".join(unique_contents).strip()
+        # Format output and deduplicate (preserving order)
+        final_contents = []
+        seen_cores = set()
+
+        for c in candidates:
+            # Use core content for deduplication to handle overlaps
+            core = parsing.get_core_content(c["content"])
+            if core in seen_cores:
+                continue
+            seen_cores.add(core)
+
+            # Add Source Header for Clarity
+            source_label = (
+                f"--- Source: {c['payload'].get('year', 'Unknown')} {c['payload'].get('exam_ref', '')} ---"
+            )
+            final_contents.append(f"{source_label}\n\n{c['content']}")
+
+        final_output = "\n\n".join(final_contents).strip()
+
+        # Add Explanation Note if needed (Relaxed Mode + Year Requested + Results Exist)
+        if not strict_mode and year and final_output:
+            note = f"\n\nملاحظة: لم أجد نتائج كافية مفهرسة بسنة {year} بدقة، فتم عرض أقرب النتائج."
+            final_output += note
+
+        return final_output
 
     except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
         logger.warning(
