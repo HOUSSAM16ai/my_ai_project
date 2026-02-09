@@ -10,19 +10,40 @@ from app.services.chat.tools.retrieval.service import search_educational_content
 
 
 class TestRetrievalRelaxation(unittest.IsolatedAsyncioTestCase):
-
-    @patch('app.services.chat.tools.retrieval.service.local_store')
-    @patch('app.services.chat.tools.retrieval.service.remote_client')
+    @patch("app.services.chat.tools.retrieval.service.local_store")
+    @patch("app.services.chat.tools.retrieval.service.remote_client")
     async def test_strict_match(self, mock_remote, mock_local):
         """Test exact match scenario where strict search succeeds."""
         # Setup: Remote returns 5 exact matches for year 2024
-        mock_remote.fetch_from_memory_agent = AsyncMock(return_value=[
-            {'content': 'Content 1', 'metadata': {'year': 2024}, 'payload': {'year': 2024, 'score': 0.9}},
-            {'content': 'Content 2', 'metadata': {'year': 2024}, 'payload': {'year': 2024, 'score': 0.8}},
-            {'content': 'Content 3', 'metadata': {'year': 2024}, 'payload': {'year': 2024, 'score': 0.7}},
-            {'content': 'Content 4', 'metadata': {'year': 2024}, 'payload': {'year': 2024, 'score': 0.6}},
-            {'content': 'Content 5', 'metadata': {'year': 2024}, 'payload': {'year': 2024, 'score': 0.5}},
-        ])
+        mock_remote.fetch_from_memory_agent = AsyncMock(
+            return_value=[
+                {
+                    "content": "Content 1",
+                    "metadata": {"year": 2024},
+                    "payload": {"year": 2024, "score": 0.9},
+                },
+                {
+                    "content": "Content 2",
+                    "metadata": {"year": 2024},
+                    "payload": {"year": 2024, "score": 0.8},
+                },
+                {
+                    "content": "Content 3",
+                    "metadata": {"year": 2024},
+                    "payload": {"year": 2024, "score": 0.7},
+                },
+                {
+                    "content": "Content 4",
+                    "metadata": {"year": 2024},
+                    "payload": {"year": 2024, "score": 0.6},
+                },
+                {
+                    "content": "Content 5",
+                    "metadata": {"year": 2024},
+                    "payload": {"year": 2024, "score": 0.5},
+                },
+            ]
+        )
         # Local store fallback
         mock_local.search_local_knowledge_base.return_value = "LOCAL FALLBACK"
 
@@ -32,8 +53,8 @@ class TestRetrievalRelaxation(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Content 1", result)
         self.assertNotIn("ملاحظة:", result)
 
-    @patch('app.services.chat.tools.retrieval.service.local_store')
-    @patch('app.services.chat.tools.retrieval.service.remote_client')
+    @patch("app.services.chat.tools.retrieval.service.local_store")
+    @patch("app.services.chat.tools.retrieval.service.remote_client")
     async def test_relaxed_fallback(self, mock_remote, mock_local):
         """Test fallback to relaxed search (Progressive Relaxation)."""
 
@@ -43,8 +64,16 @@ class TestRetrievalRelaxation(unittest.IsolatedAsyncioTestCase):
                 return []
             # Simulate relaxed search succeeding (returns older content)
             return [
-                {'content': 'Relaxed Content 2023', 'metadata': {'year': 2023}, 'payload': {'year': 2023, 'score': 0.9}},
-                {'content': 'Relaxed Content 2022', 'metadata': {'year': 2022}, 'payload': {'year': 2022, 'score': 0.8}},
+                {
+                    "content": "Relaxed Content 2023",
+                    "metadata": {"year": 2023},
+                    "payload": {"year": 2023, "score": 0.9},
+                },
+                {
+                    "content": "Relaxed Content 2022",
+                    "metadata": {"year": 2022},
+                    "payload": {"year": 2022, "score": 0.8},
+                },
             ]
 
         mock_remote.fetch_from_memory_agent = AsyncMock(side_effect=side_effect)
@@ -55,25 +84,39 @@ class TestRetrievalRelaxation(unittest.IsolatedAsyncioTestCase):
         # Expectation: Results found via relaxation
 
         if "Relaxed Content 2023" in result:
-             self.assertIn("ملاحظة:", result)
-             self.assertIn("2024", result) # The note mentions the requested year
+            self.assertIn("ملاحظة:", result)
+            self.assertIn("2024", result)  # The note mentions the requested year
         else:
-             print("Test output (pre-fix):", result)
+            print("Test output (pre-fix):", result)
 
-    @patch('app.services.chat.tools.retrieval.service.local_store')
-    @patch('app.services.chat.tools.retrieval.service.remote_client')
+    @patch("app.services.chat.tools.retrieval.service.local_store")
+    @patch("app.services.chat.tools.retrieval.service.remote_client")
     async def test_sorting_mixed_results(self, mock_remote, mock_local):
         """Test sorting logic: Exact matches first, then penalized matches."""
 
         async def side_effect(query, tags):
             if any(t.startswith("year:") for t in tags):
                 # Strict returns 1 result
-                return [{'content': 'Strict 2024', 'metadata': {'year': 2024}, 'payload': {'year': 2024, 'score': 0.5}}]
+                return [
+                    {
+                        "content": "Strict 2024",
+                        "metadata": {"year": 2024},
+                        "payload": {"year": 2024, "score": 0.5},
+                    }
+                ]
             # Relaxed returns mixed (including the strict one potentially, but let's assume dedup handles it)
             return [
-                {'content': 'Strict 2024', 'metadata': {'year': 2024}, 'payload': {'year': 2024, 'score': 0.5}},
-                {'content': 'Relaxed 2023 High Score', 'metadata': {'year': 2023}, 'payload': {'year': 2023, 'score': 0.9}}, # Higher score but wrong year
-                {'content': 'Relaxed No Year', 'metadata': {}, 'payload': {'score': 0.8}},
+                {
+                    "content": "Strict 2024",
+                    "metadata": {"year": 2024},
+                    "payload": {"year": 2024, "score": 0.5},
+                },
+                {
+                    "content": "Relaxed 2023 High Score",
+                    "metadata": {"year": 2023},
+                    "payload": {"year": 2023, "score": 0.9},
+                },  # Higher score but wrong year
+                {"content": "Relaxed No Year", "metadata": {}, "payload": {"score": 0.8}},
             ]
 
         mock_remote.fetch_from_memory_agent = AsyncMock(side_effect=side_effect)
@@ -88,7 +131,12 @@ class TestRetrievalRelaxation(unittest.IsolatedAsyncioTestCase):
         relaxed_pos = result.find("Relaxed 2023 High Score")
 
         if strict_pos != -1 and relaxed_pos != -1:
-            self.assertLess(strict_pos, relaxed_pos, "Strict match should appear before relaxed match regardless of score")
+            self.assertLess(
+                strict_pos,
+                relaxed_pos,
+                "Strict match should appear before relaxed match regardless of score",
+            )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
