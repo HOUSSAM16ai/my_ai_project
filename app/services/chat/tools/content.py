@@ -83,102 +83,48 @@ async def search_content(
     limit: int = 10,
 ) -> list[dict[str, object]]:
     """
-    بحث خارق عن المحتوى التعليمي - يضمن إيجاد نتائج مهما كانت الصياغة.
-
-    يستخدم SuperSearchOrchestrator مع:
-    1. Multi-Query Search: بحث بجميع التنويعات بالتوازي
-    2. Score Fusion: دمج النتائج من استراتيجيات متعددة
-    3. Aggressive Fallback: محاولات متعددة مع تخفيف الفلاتر
-    4. Graph Expansion: توسيع النتائج عبر العلاقات
+    Advanced deep-research engine. Use this for ALL information retrieval.
+    It performs multi-step reasoning, scraping, and fact-checking.
+    Returns a detailed research report.
     """
+    if not q:
+        return []
+
     try:
-        from microservices.research_agent.src.search_engine.graph_expander import (
-            enrich_search_with_graph,
-        )
-        from microservices.research_agent.src.search_engine.models import (
-            SearchFilters,
-            SearchRequest,
-        )
-        from microservices.research_agent.src.search_engine.super_orchestrator import (
-            super_search_orchestrator,
-        )
+        from microservices.research_agent.src.search_engine.super_search import SuperSearchOrchestrator
 
-        result_payload: list[dict[str, object]] = []
+        # Build query context
+        context_parts = []
+        if subject: context_parts.append(f"Subject: {subject}")
+        if branch: context_parts.append(f"Branch: {branch}")
+        if year: context_parts.append(f"Year: {year}")
+        if level: context_parts.append(f"Level: {level}")
+        if type: context_parts.append(f"Type: {type}")
 
-        # Normalize branch if provided
-        normalized_branch = _normalize_branch(branch)
+        full_query = q
+        if context_parts:
+            full_query += f" ({', '.join(context_parts)})"
 
-        # Build search request
-        filters = SearchFilters(
-            level=level,
-            subject=subject,
-            branch=normalized_branch,
-            set_name=set_name,
-            year=year,
-            type=type,
-            lang=lang,
-        )
+        orchestrator = SuperSearchOrchestrator()
+        report = await orchestrator.execute(full_query)
 
-        request = SearchRequest(
-            q=q,
-            filters=filters,
-            limit=limit,
-        )
-
-        # Execute super search
-        results = await super_search_orchestrator.search(request)
-
-        if results:
-            # Convert to dict format
-            result_payload = [r.model_dump(by_alias=True) for r in results]
-
-            # Enrich with graph expansion if we have few results
-            if len(result_payload) < limit // 2:
-                try:
-                    result_payload = await enrich_search_with_graph(
-                        result_payload,
-                        max_expansion=limit - len(result_payload),
-                    )
-                except Exception as graph_err:
-                    logger.warning(f"Graph expansion skipped: {graph_err}")
-        else:
-            # If super search returned nothing, try direct content service as last resort
-            logger.warning("Super search returned empty, trying direct content service...")
-            from microservices.research_agent.src.content.service import (
-                content_service as live_content_service,
-            )
-
-            live_content_service.session_factory = async_session_factory
-
-            # Try with just the query, no filters
-            if q:
-                result_payload = await live_content_service.search_content(
-                    q=q,
-                    limit=limit,
-                )
-
-            # Ultimate fallback: return any recent content
-            if not result_payload:
-                result_payload = await live_content_service.search_content(
-                    limit=limit,
-                )
-
-        await _run_legacy_probe(q, branch, set_name, year, limit)
-        return result_payload
+        return [{
+            "id": "research_report",
+            "title": f"Research Report: {q}",
+            "content": report,
+            "type": "report",
+            "metadata": {"query": full_query, "source": "SuperSearchOrchestrator"}
+        }]
 
     except Exception as e:
-        logger.error(f"Search content failed: {e}")
-        # Even on error, try to return something
-        try:
-            from microservices.research_agent.src.content.service import (
-                content_service as fallback_service,
-            )
-
-            result_payload = await fallback_service.search_content(limit=limit)
-            await _run_legacy_probe(q, branch, set_name, year, limit)
-            return result_payload
-        except Exception:
-            return []
+        logger.error(f"SuperSearch failed: {e}")
+        return [{
+            "id": "error",
+            "title": "Research Failed",
+            "content": f"An error occurred during research: {str(e)}",
+            "type": "error",
+            "metadata": {"error": str(e)}
+        }]
 
 
 async def get_content_raw(
@@ -210,98 +156,6 @@ async def get_solution_raw(content_id: str) -> dict[str, object] | None:
             "solution_md": data["solution"],
         }
     return None
-
-
-async def _probe_legacy_query(
-    q: str | None,
-    branch: str | None,
-    set_name: str | None,
-    year: int | None,
-    limit: int,
-) -> None:
-    """تنفيذ استعلام بسيط للحفاظ على توافق اختبارات الاستعلام القديمة."""
-    query = (
-        "SELECT i.id, i.title "
-        "FROM content_items i "
-        "LEFT JOIN content_search cs ON i.id = cs.content_id "
-        "WHERE 1=1"
-    )
-    params: dict[str, object] = {"limit": limit}
-
-    if q:
-        params["q_full"] = q
-        query += " AND (i.title LIKE :q_full OR cs.plain_text LIKE :q_full)"
-
-    if set_name:
-        params["set_name"] = set_name
-        query += " AND i.set_name = :set_name"
-
-    if year is not None:
-        params["year"] = year
-        query += " AND i.year = :year"
-
-    if branch:
-        normalized_branch = _normalize_branch(branch)
-        if normalized_branch:
-            params["branch_kw"] = f"%{normalized_branch}%"
-            query += " AND i.title LIKE :branch_kw"
-
-    query += " LIMIT :limit"
-
-    async with async_session_factory() as session:
-        await session.execute(text(query), params)
-
-
-async def _run_legacy_probe(
-    q: str | None,
-    branch: str | None,
-    set_name: str | None,
-    year: int | None,
-    limit: int,
-) -> None:
-    """يغلف استدعاء الاستعلام التراثي مع معالجة أخطاء آمنة."""
-    try:
-        await _probe_legacy_query(
-            q=q,
-            branch=branch,
-            set_name=set_name,
-            year=year,
-            limit=limit,
-        )
-    except Exception as e:
-        logger.warning(f"Legacy query probe skipped: {e}")
-
-
-async def _search_vectors(
-    query: str | None,
-    limit: int,
-    filters: dict[str, object],
-) -> list[str]:
-    """يجرب البحث المتجهي لإرجاع معرفات المحتوى المطابقة."""
-    if not query:
-        return []
-    db_url = os.environ.get("DATABASE_URL")
-    if not db_url:
-        return []
-
-    try:
-        from microservices.research_agent.src.search_engine.retriever import get_retriever
-
-        retriever = get_retriever(db_url)
-        nodes = retriever.search(query, limit=limit, filters=filters)
-    except Exception as e:
-        logger.warning(f"Vector search skipped: {e}")
-        return []
-
-    content_ids: list[str] = []
-    for node in nodes:
-        meta_holder = getattr(node, "node", node)
-        metadata = getattr(meta_holder, "metadata", {})
-        if isinstance(metadata, dict):
-            content_id = metadata.get("content_id")
-            if content_id:
-                content_ids.append(content_id)
-    return content_ids
 
 
 def register_content_tools(registry: dict) -> None:
