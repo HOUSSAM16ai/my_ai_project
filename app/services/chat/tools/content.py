@@ -111,23 +111,27 @@ async def search_content(
         orchestrator = SuperSearchOrchestrator()
         report = await orchestrator.execute(full_query)
 
-        return [{
-            "id": "research_report",
-            "title": f"Research Report: {q}",
-            "content": report,
-            "type": "report",
-            "metadata": {"query": full_query, "source": "SuperSearchOrchestrator"}
-        }]
+        return [
+            {
+                "id": "research_report",
+                "title": f"Research Report: {q}",
+                "content": report,
+                "type": "report",
+                "metadata": {"query": full_query, "source": "SuperSearchOrchestrator"},
+            }
+        ]
 
     except Exception as e:
         logger.error(f"SuperSearch failed: {e}")
-        return [{
-            "id": "error",
-            "title": "Research Failed",
-            "content": f"An error occurred during research: {e!s}",
-            "type": "error",
-            "metadata": {"error": str(e)}
-        }]
+        return [
+            {
+                "id": "error",
+                "title": "Research Failed",
+                "content": f"An error occurred during research: {e!s}",
+                "type": "error",
+                "metadata": {"error": str(e)},
+            }
+        ]
 
 
 async def get_content_raw(
