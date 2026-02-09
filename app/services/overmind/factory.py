@@ -10,6 +10,8 @@
 
 from __future__ import annotations
 
+import os
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ai_gateway import get_ai_client
@@ -34,6 +36,7 @@ __all__ = ["create_langgraph_service", "create_overmind"]
 
 def _build_engine_with_components(
     state_manager: MissionStateManagerProtocol,
+    tool_timeout_seconds: float,
 ) -> tuple[LangGraphOvermindEngine, TaskExecutor]:
     """
     بناء المحرك ومكوناته الأساسية بناءً على مدير الحالة الممرر.
@@ -49,7 +52,11 @@ def _build_engine_with_components(
     registry["search_educational_content"] = search_educational_content
 
     # تم تحديث TaskExecutor ليقبل السجل صراحةً (Dependency Injection)
-    executor = TaskExecutor(state_manager=state_manager, registry=registry)
+    executor = TaskExecutor(
+        state_manager=state_manager,
+        registry=registry,
+        tool_timeout_seconds=tool_timeout_seconds,
+    )
 
     # 2. AI Gateway
     ai_client = get_ai_client()
@@ -87,7 +94,8 @@ async def create_overmind(db: AsyncSession) -> OvermindOrchestrator:
     state_manager = MissionStateManager(db)
 
     # 2. Build Engine
-    engine, executor = _build_engine_with_components(state_manager)
+    tool_timeout_seconds = _resolve_tool_timeout_seconds()
+    engine, executor = _build_engine_with_components(state_manager, tool_timeout_seconds)
 
     # 3. The Orchestrator
     return OvermindOrchestrator(state_manager=state_manager, executor=executor, brain=engine)
@@ -106,5 +114,20 @@ def create_langgraph_service(db: AsyncSession | None = None) -> LangGraphAgentSe
     """
     state_manager = MissionStateManager(db) if db else EphemeralMissionStateManager()
 
-    engine, _ = _build_engine_with_components(state_manager)
+    tool_timeout_seconds = _resolve_tool_timeout_seconds()
+    engine, _ = _build_engine_with_components(state_manager, tool_timeout_seconds)
     return LangGraphAgentService(engine=engine)
+
+
+def _resolve_tool_timeout_seconds() -> float:
+    """
+    قراءة الحد الزمني لتنفيذ الأدوات من متغيرات البيئة مع ضبط الحدود.
+    """
+    raw = os.environ.get("OVERMIND_TOOL_TIMEOUT_SECONDS", "60")
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return 60.0
+    if value <= 0:
+        return 60.0
+    return min(value, 300.0)

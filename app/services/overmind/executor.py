@@ -34,7 +34,11 @@ class TaskExecutor:
     """
 
     def __init__(
-        self, *, state_manager: MissionStateManagerProtocol, registry: ToolRegistry
+        self,
+        *,
+        state_manager: MissionStateManagerProtocol,
+        registry: ToolRegistry,
+        tool_timeout_seconds: float = 60.0,
     ) -> None:
         """
         تهيئة المنفذ.
@@ -42,9 +46,11 @@ class TaskExecutor:
         Args:
             state_manager (MissionStateManagerProtocol): مدير الحالة (لتسجيل النتائج الجزئية إذا لزم الأمر).
             registry (ToolRegistry): سجل الأدوات المحقون (Dependency Injection).
+            tool_timeout_seconds (float): حد زمني افتراضي لتنفيذ كل أداة (بالثواني).
         """
         self.state_manager = state_manager
         self.registry = registry
+        self.tool_timeout_seconds = tool_timeout_seconds
 
         if not self.registry:
             logger.warning("TaskExecutor initialized with empty registry.")
@@ -88,14 +94,7 @@ class TaskExecutor:
 
             # 3. التنفيذ (Execution)
             # دعم الأدوات المتزامنة وغير المتزامنة
-            if asyncio.iscoroutinefunction(tool_func):
-                result = await tool_func(**tool_args)
-            else:
-                loop = asyncio.get_running_loop()
-                # قد تعيد الدالة المتزامنة coroutine إذا كانت تغلف دالة async (مثل lambda: async_wrapper)
-                result = await loop.run_in_executor(None, lambda: tool_func(**tool_args))  # type: ignore
-                if inspect.isawaitable(result):
-                    result = await result
+            result = await self._execute_tool_with_timeout(tool_func, tool_args)
 
             # 4. تنسيق النتيجة
             result_text = str(result)
@@ -119,6 +118,17 @@ class TaskExecutor:
                 },
             }
 
+        except asyncio.TimeoutError:
+            logger.error("Task Execution Timeout (%s)", tool_name)
+            return {
+                "status": "failed",
+                "error": "Tool execution timed out.",
+                "meta": {
+                    "tool": resolved_name,
+                    "original_tool": tool_name,
+                    "canonical_notes": canonical_notes,
+                },
+            }
         except Exception as e:
             logger.error(f"Task Execution Error ({tool_name}): {e}", exc_info=True)
             return {
@@ -130,6 +140,36 @@ class TaskExecutor:
                     "canonical_notes": canonical_notes,
                 },
             }
+
+    async def _execute_tool_with_timeout(
+        self, tool_func: Callable[..., Awaitable[object] | object], tool_args: dict[str, object]
+    ) -> object:
+        """
+        تنفيذ الأداة مع تطبيق حد زمني لضمان عدم التعليق.
+        """
+        timeout = self._normalize_timeout(self.tool_timeout_seconds)
+        if asyncio.iscoroutinefunction(tool_func):
+            return await asyncio.wait_for(tool_func(**tool_args), timeout=timeout)
+
+        loop = asyncio.get_running_loop()
+        result = await asyncio.wait_for(
+            loop.run_in_executor(None, lambda: tool_func(**tool_args)), timeout=timeout
+        )
+        if inspect.isawaitable(result):
+            return await asyncio.wait_for(result, timeout=timeout)
+        return result
+
+    def _normalize_timeout(self, timeout: float) -> float:
+        """
+        توحيد قيمة الحد الزمني بحيث تكون ضمن نطاق آمن.
+        """
+        try:
+            normalized = float(timeout)
+        except (TypeError, ValueError):
+            return 60.0
+        if normalized <= 0:
+            return 60.0
+        return min(normalized, 300.0)
 
     def _parse_args(self, args_json: str | dict[str, object] | None) -> dict[str, object]:
         """

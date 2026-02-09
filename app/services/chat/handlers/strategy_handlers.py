@@ -280,6 +280,12 @@ class MissionComplexHandler(IntentHandler):
                 yield "\n✅ **تم انتهاء متابعة المهمة.**\n"
             finally:
                 event_bus.unsubscribe_queue(f"mission:{mission_id}", event_queue)
+                if not task.done():
+                    task.cancel()
+                    try:
+                        await task
+                    except asyncio.CancelledError:
+                        logger.info("Background mission task cancelled after stream closure.")
         except Exception as global_ex:
             logger.critical(f"Critical error in MissionComplexHandler: {global_ex}", exc_info=True)
             yield f"\n🛑 **حدث خطأ حرج أثناء تنفيذ المهمة:** {global_ex}\n"

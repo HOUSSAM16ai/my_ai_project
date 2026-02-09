@@ -115,10 +115,11 @@ class OvermindOrchestrator:
             # Support for both Legacy SuperBrain and New LangGraph Engine
             if hasattr(self.brain, "run"):
                 # LangGraph Path
+                initial_context = self._build_initial_context(mission)
                 run_result = await self.brain.run(
                     run_id=str(mission.id),
                     objective=mission.objective,
-                    context={},  # Could inject initial context if needed
+                    context=initial_context,
                     constraints=[],
                     priority="normal",
                     observer=_log_bridge,
@@ -189,3 +190,14 @@ class OvermindOrchestrator:
 
         # 4. Fallback to string representation
         return str(result)[:500]
+
+    def _build_initial_context(self, mission: Mission) -> dict[str, object]:
+        """
+        بناء سياق أولي غني لتمريره إلى محرك LangGraph.
+        """
+        return {
+            "mission_id": mission.id,
+            "objective": mission.objective,
+            "metadata_filters": {},
+            "max_iterations": 3,
+        }
