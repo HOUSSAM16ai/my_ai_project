@@ -1,4 +1,13 @@
 from unittest.mock import AsyncMock, MagicMock, patch
+import sys
+
+# Mock external modules BEFORE importing app modules to avoid dependency issues
+sys.modules["llama_index"] = MagicMock()
+sys.modules["llama_index.core"] = MagicMock()
+sys.modules["llama_index.core.schema"] = MagicMock()
+sys.modules["llama_index.core.vector_stores"] = MagicMock()
+sys.modules["llama_index.embeddings.huggingface"] = MagicMock()
+sys.modules["llama_index.vector_stores.supabase"] = MagicMock()
 
 import pytest
 
@@ -15,62 +24,47 @@ async def test_normalize_branch():
 
 @pytest.mark.asyncio
 async def test_search_content_with_branch_generates_correct_query():
-    # Mock session
-    mock_session = AsyncMock()
-    mock_result = MagicMock()
-    mock_result.fetchall.return_value = []
-    mock_session.execute.return_value = mock_result
+    # Mock SuperSearchOrchestrator
+    mock_orchestrator = AsyncMock()
+    mock_orchestrator.execute.return_value = "Mock Report Content"
 
-    # Context manager mock
-    mock_session_ctx = MagicMock()
-    mock_session_ctx.__aenter__.return_value = mock_session
-    mock_session_ctx.__aexit__.return_value = None
-
+    # Mock the class where it is defined, not where it is imported inside the function
     with patch(
-        "app.services.chat.tools.content.async_session_factory", return_value=mock_session_ctx
+        "microservices.research_agent.src.search_engine.super_search.SuperSearchOrchestrator",
+        return_value=mock_orchestrator,
     ):
         await search_content(
-            q="Probability", year=2024, set_name="subject_1", branch="experimental_sciences"
+            q="Probability",
+            year=2024,
+            set_name="subject_1",
+            branch="experimental_sciences",
         )
 
-        # Verify query construction
-        args, _ = mock_session.execute.call_args
-        query_text = str(args[0])
-        params = args[1]
+        # Verify calls
+        mock_orchestrator.execute.assert_called_once()
+        call_args = mock_orchestrator.execute.call_args[0][0]
 
-        # Check standard params
-        assert params["set_name"] == "subject_1"
-        assert params["q_full"] == "Probability"
-
-        # Check Branch params
-        assert "branch_kw" in params
-        assert params["branch_kw"] == "%علوم تجريبية%"
-
-        # Check SQL Logic
-        assert "i.title LIKE :branch_kw" in query_text
+        # Verify query construction contains key elements
+        assert "Probability" in call_args
+        assert "Branch: علوم تجريبية" in call_args
+        assert "Year: 2024" in call_args
 
 
 @pytest.mark.asyncio
 async def test_search_content_without_branch():
-    # Mock session
-    mock_session = AsyncMock()
-    mock_result = MagicMock()
-    mock_result.fetchall.return_value = []
-    mock_session.execute.return_value = mock_result
-
-    # Context manager mock
-    mock_session_ctx = MagicMock()
-    mock_session_ctx.__aenter__.return_value = mock_session
-    mock_session_ctx.__aexit__.return_value = None
+    # Mock SuperSearchOrchestrator
+    mock_orchestrator = AsyncMock()
+    mock_orchestrator.execute.return_value = "Mock Report Content"
 
     with patch(
-        "app.services.chat.tools.content.async_session_factory", return_value=mock_session_ctx
+        "microservices.research_agent.src.search_engine.super_search.SuperSearchOrchestrator",
+        return_value=mock_orchestrator,
     ):
-        await search_content(q="Test")
+        await search_content(q="Test Query")
 
-        args, _ = mock_session.execute.call_args
-        query_text = str(args[0])
-        params = args[1]
+        # Verify calls
+        mock_orchestrator.execute.assert_called_once()
+        call_args = mock_orchestrator.execute.call_args[0][0]
 
-        assert "branch_kw" not in params
-        assert "i.title LIKE :branch_kw" not in query_text
+        assert "Test Query" in call_args
+        assert "Branch:" not in call_args
