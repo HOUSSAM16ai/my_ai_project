@@ -34,9 +34,7 @@ class ResearchPlan(BaseModel):
     sub_queries: list[str] = Field(
         description="3-5 precise search queries covering different angles."
     )
-    required_info: list[str] = Field(
-        description="Specific facts or data points to extract."
-    )
+    required_info: list[str] = Field(description="Specific facts or data points to extract.")
 
 
 class ResearchResult(BaseModel):
@@ -141,9 +139,7 @@ class SuperSearchOrchestrator:
             raw_results = []
 
         # Deduplicate URLs
-        unique_urls = list({r["link"] for r in raw_results if "link" in r})[
-            :5
-        ]  # Limit to top 5
+        unique_urls = list({r["link"] for r in raw_results if "link" in r})[:5]  # Limit to top 5
         logger.info(f"Found {len(unique_urls)} unique sources.")
 
         # --- Phase 3: Deep Ingestion ---
@@ -219,15 +215,11 @@ class SuperSearchOrchestrator:
                 summary_msg = await self.llm.ainvoke(summary_prompt)
                 summary = summary_msg.content
 
-                return ResearchResult(
-                    content=str(summary), source_url=url, credibility_score=0.8
-                )
+                return ResearchResult(content=str(summary), source_url=url, credibility_score=0.8)
             except Exception as e:
                 logger.warning(f"Summary generation failed for {url}: {e}")
                 # Fallback to raw text truncated
-                return ResearchResult(
-                    content=content[:2000], source_url=url, credibility_score=0.5
-                )
+                return ResearchResult(content=content[:2000], source_url=url, credibility_score=0.5)
 
         tasks = [process_url(url) for url in urls]
         results = await asyncio.gather(*tasks)
@@ -235,9 +227,7 @@ class SuperSearchOrchestrator:
 
     async def _synthesize_report(self, query: str, knowledge: list[ResearchResult]) -> str:
         """Synthesizes the final report."""
-        context_str = "\n\n".join(
-            [f"### Source: {k.source_url}\n{k.content}" for k in knowledge]
-        )
+        context_str = "\n\n".join([f"### Source: {k.source_url}\n{k.content}" for k in knowledge])
 
         prompt = (
             f"You are an elite analyst. Answer the query based ONLY on the context below.\n"
