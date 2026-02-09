@@ -91,12 +91,15 @@ async def search_content(
             SuperSearchOrchestrator,
         )
 
+        # Normalize branch if provided
+        normalized_branch = _normalize_branch(branch) if branch else branch
+
         # Build query context
         context_parts = []
         if subject:
             context_parts.append(f"Subject: {subject}")
-        if branch:
-            context_parts.append(f"Branch: {branch}")
+        if normalized_branch:
+            context_parts.append(f"Branch: {normalized_branch}")
         if year:
             context_parts.append(f"Year: {year}")
         if level:
