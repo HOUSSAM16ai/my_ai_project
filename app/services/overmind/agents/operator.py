@@ -325,9 +325,11 @@ class OperatorAgent(AgentExecutor):
 
         if tool_name == "search_educational_content":
             tool_args = self._prepare_search_educational_args(tool_args, context)
+            tool_name, tool_args = self._upgrade_search_tool(tool_name, tool_args)
         if tool_name in {"write_file", "write_file_if_changed", "append_file"}:
             tool_args = self._inject_exercise_content(tool_args, context)
 
+        prepared["tool_name"] = tool_name
         prepared["tool_args"] = tool_args
         return prepared
 
@@ -357,6 +359,37 @@ class OperatorAgent(AgentExecutor):
                 normalized["query"] = objective
 
         return {key: value for key, value in normalized.items() if key in allowed_keys}
+
+    def _upgrade_search_tool(
+        self, tool_name: str | None, tool_args: dict[str, object]
+    ) -> tuple[str | None, dict[str, object]]:
+        """
+        ترقية أداة البحث التعليمية القديمة إلى الأداة الحديثة مع ضبط الوسائط.
+        """
+        if tool_name != "search_educational_content":
+            return tool_name, tool_args
+
+        query = tool_args.get("query")
+        exercise_id = tool_args.get("exercise_id")
+        if exercise_id and query:
+            query = f"{query} {exercise_id}"
+
+        year_value = tool_args.get("year")
+        year_int = None
+        if isinstance(year_value, int):
+            year_int = year_value
+        elif isinstance(year_value, str) and year_value.isdigit():
+            year_int = int(year_value)
+
+        upgraded_args: dict[str, object] = {
+            "q": query,
+            "subject": tool_args.get("subject"),
+            "branch": tool_args.get("branch"),
+            "year": year_int,
+            "set_name": tool_args.get("exam_ref"),
+            "limit": 5,
+        }
+        return "search_content", {k: v for k, v in upgraded_args.items() if v}
 
     def _get_exercise_metadata(self, context: CollaborationContext) -> dict[str, object]:
         """
