@@ -155,12 +155,14 @@ async def search_educational_content(
                 except (ValueError, TypeError):
                     score = 0.0
 
-                candidates.append({
-                    "content": final_content,
-                    "payload": payload,
-                    "penalty": penalty,
-                    "score": score
-                })
+                candidates.append(
+                    {
+                        "content": final_content,
+                        "payload": payload,
+                        "penalty": penalty,
+                        "score": score,
+                    }
+                )
 
         if not candidates and is_specific:
             return "عذراً، لم أتمكن من العثور على التمرين المحدد في السياق المطلوب."
@@ -180,9 +182,7 @@ async def search_educational_content(
             seen_cores.add(core)
 
             # Add Source Header for Clarity
-            source_label = (
-                f"--- Source: {c['payload'].get('year', 'Unknown')} {c['payload'].get('exam_ref', '')} ---"
-            )
+            source_label = f"--- Source: {c['payload'].get('year', 'Unknown')} {c['payload'].get('exam_ref', '')} ---"
             final_contents.append(f"{source_label}\n\n{c['content']}")
 
         final_output = "\n\n".join(final_contents).strip()
