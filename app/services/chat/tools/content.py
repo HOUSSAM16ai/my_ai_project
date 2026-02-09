@@ -8,11 +8,7 @@
 """
 
 import difflib
-import os
 
-from sqlalchemy import text
-
-from app.core.database import async_session_factory
 from app.core.logging import get_logger
 from microservices.research_agent.src.content.constants import BRANCH_MAP
 
@@ -91,15 +87,22 @@ async def search_content(
         return []
 
     try:
-        from microservices.research_agent.src.search_engine.super_search import SuperSearchOrchestrator
+        from microservices.research_agent.src.search_engine.super_search import (
+            SuperSearchOrchestrator,
+        )
 
         # Build query context
         context_parts = []
-        if subject: context_parts.append(f"Subject: {subject}")
-        if branch: context_parts.append(f"Branch: {branch}")
-        if year: context_parts.append(f"Year: {year}")
-        if level: context_parts.append(f"Level: {level}")
-        if type: context_parts.append(f"Type: {type}")
+        if subject:
+            context_parts.append(f"Subject: {subject}")
+        if branch:
+            context_parts.append(f"Branch: {branch}")
+        if year:
+            context_parts.append(f"Year: {year}")
+        if level:
+            context_parts.append(f"Level: {level}")
+        if type:
+            context_parts.append(f"Type: {type}")
 
         full_query = q
         if context_parts:
@@ -121,7 +124,7 @@ async def search_content(
         return [{
             "id": "error",
             "title": "Research Failed",
-            "content": f"An error occurred during research: {str(e)}",
+            "content": f"An error occurred during research: {e!s}",
             "type": "error",
             "metadata": {"error": str(e)}
         }]
