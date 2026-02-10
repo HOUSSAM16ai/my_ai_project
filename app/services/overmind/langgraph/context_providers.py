@@ -67,7 +67,9 @@ class ResearchAgentSnippetRetriever:
         deep_dive = bool(context.get("deep_dive", False))
         # If no results found in regular search, we might want to auto-trigger deep dive?
         # For now, let's respect the flag.
-        return await self.client.search(query=query, filters=filters, limit=max_snippets, deep_dive=deep_dive)
+        return await self.client.search(
+            query=query, filters=filters, limit=max_snippets, deep_dive=deep_dive
+        )
 
 
 @dataclass(frozen=True, slots=True)
