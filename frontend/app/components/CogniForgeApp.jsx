@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAgentSocket } from '../hooks/useAgentSocket';
 import { ChatInterface } from './ChatInterface';
+import { AgentStatusBoard } from './AgentStatusBoard';
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? '';
 const apiUrl = (path) => `${API_ORIGIN}${path}`;
@@ -118,6 +119,7 @@ const AuthScreen = ({ onLogin }) => {
 
 const DashboardLayout = ({ user, onLogout }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isAgentSidebarOpen, setIsAgentSidebarOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [theme, setTheme] = useState('dark');
     const [conversations, setConversations] = useState([]);
@@ -198,6 +200,14 @@ const DashboardLayout = ({ user, onLogout }) => {
         <div className="app-container">
             <div className="header">
                 <div className="header-title">
+                     <button
+                        className="header-menu-btn"
+                        onClick={() => setIsAgentSidebarOpen(prev => !prev)}
+                        title="فريق العملاء"
+                        style={{ marginLeft: '0.5rem', background: isAgentSidebarOpen ? 'var(--bg-color)' : 'transparent' }}
+                    >
+                        <i className="fas fa-robot"></i>
+                    </button>
                     <h2>
                         {user.is_admin ? 'OVERMIND CLI' : 'Overmind Education'}
                         <span className="header-status">
@@ -236,6 +246,19 @@ const DashboardLayout = ({ user, onLogout }) => {
             </div>
 
             <div className="dashboard-layout">
+                {/* Agent Sidebar (Left in RTL) */}
+                <div className={`agent-sidebar ${isAgentSidebarOpen ? 'open' : ''}`}>
+                     <div className="agent-sidebar-header">
+                        <h3>فريق العملاء</h3>
+                        <button onClick={() => setIsAgentSidebarOpen(false)} style={{background:'none', border:'none', fontSize:'1.2rem', cursor:'pointer'}}>
+                            <i className="fas fa-times"></i>
+                        </button>
+                     </div>
+                     <div style={{ padding: '0.5rem' }}>
+                        <AgentStatusBoard agentStates={agentStates} />
+                     </div>
+                </div>
+
                 <div className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`} onClick={() => setIsSidebarOpen(false)}></div>
                 <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
                      <div className="sidebar-header">
@@ -264,7 +287,6 @@ const DashboardLayout = ({ user, onLogout }) => {
                         onSendMessage={sendMessage}
                         status={status}
                         user={user}
-                        agentStates={agentStates}
                     />
                 </div>
             </div>

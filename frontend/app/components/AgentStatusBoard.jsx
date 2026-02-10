@@ -48,38 +48,53 @@ const AgentCard = ({ name, role, status, progress, icon }) => {
 };
 
 export const AgentStatusBoard = ({ agentStates }) => {
-    const hasActivity = Object.values(agentStates).some(s => s.status !== 'idle');
+    // If no complex mission is active, we might want to hide it, or show "System Ready"
+    // But per requirements, we want visibility.
+    // The "hasActivity" check in previous code hid it if all idle.
+    // Let's keep it visible if at least one agent is not idle.
+    const hasActivity = Object.values(agentStates).some(s => s && s.status !== 'idle');
 
-    if (!hasActivity) return null;
+    if (!hasActivity) return (
+        <div style={{ padding: '1rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
+            <p>لا توجد مهام نشطة حالياً.</p>
+        </div>
+    );
 
     return (
         <div className="agent-board-container">
-            <h3 className="agent-board-title">Overmind Agents Swarm</h3>
+            <h3 className="agent-board-title">مجلس الحكمة (Super Agents)</h3>
             <div className="agent-board">
+                 <AgentCard
+                    name="المُثري السياقي"
+                    role="Contextualizer"
+                    status={agentStates.contextualizer?.status || 'idle'}
+                    progress={agentStates.contextualizer?.progress || 0}
+                    icon="fa-search-location"
+                />
                 <AgentCard
-                    name="Strategist"
-                    role="Missions Planner"
+                    name="المخطط الاستراتيجي"
+                    role="Strategist"
                     status={agentStates.strategist.status}
                     progress={agentStates.strategist.progress}
                     icon="fa-chess-knight"
                 />
                 <AgentCard
-                    name="Architect"
-                    role="System Designer"
+                    name="المصمم المعماري"
+                    role="Architect"
                     status={agentStates.architect.status}
                     progress={agentStates.architect.progress}
                     icon="fa-drafting-compass"
                 />
                 <AgentCard
-                    name="Operator"
-                    role="Task Executor"
+                    name="المنفذ التقني"
+                    role="Operator"
                     status={agentStates.operator.status}
                     progress={agentStates.operator.progress}
                     icon="fa-robot"
                 />
                 <AgentCard
-                    name="Auditor"
-                    role="Quality Assurance"
+                    name="المدقق النوعي"
+                    role="Auditor"
                     status={agentStates.auditor.status}
                     progress={agentStates.auditor.progress}
                     icon="fa-clipboard-check"

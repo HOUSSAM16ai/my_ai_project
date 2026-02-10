@@ -57,7 +57,8 @@ export const useAgentSocket = (endpoint, token, onConversationUpdate) => {
         architect: { status: 'idle', progress: 0 },
         operator: { status: 'idle', progress: 0 },
         auditor: { status: 'idle', progress: 0 },
-        supervisor: { status: 'idle' }
+        supervisor: { status: 'idle' },
+        contextualizer: { status: 'idle', progress: 0 }
     });
 
     const socketRef = useRef(null);
@@ -122,7 +123,8 @@ export const useAgentSocket = (endpoint, token, onConversationUpdate) => {
                 architect: { status: 'pending', progress: 0 },
                 operator: { status: 'pending', progress: 0 },
                 auditor: { status: 'pending', progress: 0 },
-                supervisor: { status: 'active' }
+                supervisor: { status: 'active' },
+                contextualizer: { status: 'completed', progress: 100 } // Keep previous phases
              }));
              return;
         }
@@ -171,7 +173,8 @@ export const useAgentSocket = (endpoint, token, onConversationUpdate) => {
                 architect: { status: 'idle', progress: 0 },
                 operator: { status: 'idle', progress: 0 },
                 auditor: { status: 'idle', progress: 0 },
-                supervisor: { status: 'idle' }
+                supervisor: { status: 'idle' },
+                contextualizer: { status: 'idle', progress: 0 }
             });
         }
     }, [onConversationUpdate, setConversationId, addMessage, updateAgentState]);
@@ -268,6 +271,7 @@ export const useAgentSocket = (endpoint, token, onConversationUpdate) => {
         // Initial agent state for a new mission
         if (metadata.mission_type === 'mission_complex') {
              setAgentStates({
+                contextualizer: { status: 'active', progress: 0 },
                 strategist: { status: 'pending', progress: 0 },
                 architect: { status: 'pending', progress: 0 },
                 operator: { status: 'pending', progress: 0 },
