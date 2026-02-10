@@ -3,7 +3,7 @@ import { useRealtimeConnection } from './useRealtimeConnection';
 
 const isBrowser = typeof window !== 'undefined';
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? '';
-const WS_ORIGIN = process.env.NEXT_PUBLIC_WS_URL ?? (process.env.NODE_ENV === 'development' ? 'ws://127.0.0.1:8000' : '');
+const WS_ORIGIN = process.env.NEXT_PUBLIC_WS_URL ?? '';
 
 const resolveWebSocketProtocol = (protocol) => {
     if (protocol === 'https:') return 'wss:';
