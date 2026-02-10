@@ -193,13 +193,13 @@ class OperatorAgent(AgentExecutor):
         overall_status = "success"
 
         # Parallelizable tools (Read-Only / Side-effect free)
-        PARALLEL_TOOLS = {
+        parallel_tools = {
             "search_content",
             "search_educational_content",
             "read_file",
             "retrieve",
             "deep_research",
-            "get_content_raw"
+            "get_content_raw",
         }
 
         i = 0
@@ -211,7 +211,7 @@ class OperatorAgent(AgentExecutor):
             while j < len(tasks_data):
                 task = tasks_data[j]
                 tool = task.get("tool_name")
-                if tool in PARALLEL_TOOLS:
+                if tool in parallel_tools:
                     batch.append((j, task))
                     j += 1
                 else:

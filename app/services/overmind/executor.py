@@ -118,7 +118,7 @@ class TaskExecutor:
                 },
             }
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error("Task Execution Timeout (%s)", tool_name)
             return {
                 "status": "failed",

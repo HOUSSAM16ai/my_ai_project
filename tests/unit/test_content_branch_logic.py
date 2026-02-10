@@ -1,5 +1,5 @@
-from unittest.mock import AsyncMock, MagicMock, patch
 import sys
+from unittest.mock import AsyncMock, MagicMock, patch
 
 # Mock external modules BEFORE importing app modules to avoid dependency issues
 sys.modules["llama_index"] = MagicMock()
