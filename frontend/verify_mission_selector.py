@@ -34,17 +34,26 @@ def run(playwright):
     # Wait for Dashboard
     expect(page.get_by_text("Overmind Education")).to_be_visible(timeout=10000)
 
-    # Check for Mission Selector
-    mission_btn = page.get_by_text("المهمة الخارقة")
+    # Verify Status Text (Should be Arabic)
+    status_elem = page.locator(".header-status")
+    expect(status_elem).to_contain_text(re.compile(r"متصل|جاري الاتصال|غير متصل|خطأ في الاتصال"))
+
+    # Open Mission Modal
+    trigger_btn = page.locator("button.mission-trigger-btn")
+    expect(trigger_btn).to_be_visible()
+    trigger_btn.click()
+
+    # Check for Mission Selector in Modal
+    mission_btn = page.locator("button.mission-btn").filter(has_text="المهمة الخارقة")
     expect(mission_btn).to_be_visible()
 
     # Click it
     mission_btn.click()
 
-    # Verify active state
-    btn_locator = page.locator("button.mission-btn", has_text="المهمة الخارقة")
-    # The class attribute should contain 'active'. Using regex to match it.
-    expect(btn_locator).to_have_class(re.compile(r"active"))
+    # After clicking, modal closes and mission type changes.
+    # We verify the selected mission bar updates
+    selected_bar = page.locator(".selected-mission-bar")
+    expect(selected_bar).to_contain_text("المهمة الخارقة")
 
     # Take Screenshot
     page.screenshot(path="verification_mission_selector.png")

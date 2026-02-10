@@ -154,7 +154,6 @@ export const ChatInterface = ({ messages, onSendMessage, status, user }) => {
                         className="mission-trigger-btn"
                         onClick={() => setIsMissionModalOpen(true)}
                         title="تغيير المهمة"
-                        disabled={status !== 'connected'}
                     >
                         <i className="fas fa-layer-group"></i>
                     </button>
