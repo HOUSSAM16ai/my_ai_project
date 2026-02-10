@@ -42,9 +42,16 @@ def _extract_token_from_protocols(protocols: list[str]) -> str | None:
 
     if "jwt" not in protocols:
         return None
-    jwt_index = protocols.index("jwt")
+
+    try:
+        jwt_index = protocols.index("jwt")
+    except ValueError:
+        return None
+
+    # Ensure there is a token following the 'jwt' protocol specifier
     if jwt_index + 1 >= len(protocols):
         return None
+
     return protocols[jwt_index + 1]
 
 
