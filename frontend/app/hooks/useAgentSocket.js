@@ -25,6 +25,12 @@ const getWsBase = () => {
             return '';
         }
     }
+
+    // Warn if falling back in production
+    if (process.env.NODE_ENV === 'production') {
+        console.warn('CRITICAL: NEXT_PUBLIC_WS_URL or NEXT_PUBLIC_API_URL is missing in production. Falling back to window.location, which may cause connection failures.');
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const host = window.location.host;
     return `${protocol}://${host}`;
@@ -34,8 +40,7 @@ const buildWebSocketUrlSafe = (baseUrl, endpoint, token) => {
     try {
         const wsUrl = new URL(endpoint, baseUrl);
         // Token is passed in header/protocol by useRealtimeConnection.
-        // We add it to query param as well for compatibility if needed.
-        if (token) wsUrl.searchParams.set('token', token);
+        // REMOVED query param appending to prevent "double method" drift.
         return wsUrl.toString();
     } catch (error) {
         console.error('Invalid WebSocket URL parts', error);

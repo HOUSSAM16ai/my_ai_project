@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 const MAX_BACKOFF = 10000;
+const FATAL_CODES = new Set([4401, 4403]);
 
 /**
  * Hook to manage a robust WebSocket connection.
@@ -14,6 +15,7 @@ export function useRealtimeConnection(wsUrl, token) {
   const [state, setState] = useState("idle");
   const mountedRef = useRef(true);
   const reconnectTimeoutRef = useRef(null);
+  const pendingQueue = useRef([]);
 
   const connect = useCallback(() => {
     if (!wsUrl || !token) return;
@@ -29,6 +31,15 @@ export function useRealtimeConnection(wsUrl, token) {
           if (mountedRef.current) {
             retries.current = 0;
             setState("connected");
+
+            // Flush pending messages
+            if (pendingQueue.current.length > 0) {
+                console.log(`Flushing ${pendingQueue.current.length} pending messages`);
+                while (pendingQueue.current.length > 0) {
+                    const msg = pendingQueue.current.shift();
+                    ws.send(JSON.stringify(msg));
+                }
+            }
           }
         };
 
@@ -43,7 +54,7 @@ export function useRealtimeConnection(wsUrl, token) {
               })
             );
           } catch (e) {
-            console.error("Failed to parse WebSocket message:", e);
+            console.warn("Failed to parse WebSocket message:", e);
           }
         };
 
@@ -51,32 +62,38 @@ export function useRealtimeConnection(wsUrl, token) {
           if (mountedRef.current) {
               setState("degraded");
           }
-          console.error("WebSocket error:", e);
+          console.warn("WebSocket error:", e);
         };
 
         ws.onclose = (e) => {
           if (mountedRef.current) {
              wsRef.current = null;
-             setState("offline");
 
-             // Clean close or auth error: don't reconnect immediately?
-             // User's code reconnects on close. I will follow that but with backoff.
-             // "No hysterical reconnect" is solved by backoff.
+             // Check for fatal auth errors
+             if (FATAL_CODES.has(e.code)) {
+                 console.warn("Fatal auth error, stopping reconnection:", e.code);
+                 setState("auth_error");
+                 return; // STOP reconnection
+             }
+
+             setState("offline");
 
              const delay = Math.min(
                2 ** retries.current * 500,
                MAX_BACKOFF
              );
 
+             const jitter = Math.floor(Math.random() * 200);
+
              retries.current += 1;
              clearTimeout(reconnectTimeoutRef.current);
-             reconnectTimeoutRef.current = setTimeout(connect, delay);
+             reconnectTimeoutRef.current = setTimeout(connect, delay + jitter);
           }
         };
     } catch (err) {
-        console.error("WebSocket connection failed:", err);
+        console.warn("WebSocket connection failed:", err);
         if (mountedRef.current) setState("offline");
-        // Retry?
+
         const delay = Math.min(
             2 ** retries.current * 500,
             MAX_BACKOFF
@@ -91,7 +108,8 @@ export function useRealtimeConnection(wsUrl, token) {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(data));
     } else {
-      console.warn("WebSocket is not connected. Message dropped.", data);
+      console.warn("WebSocket is not connected. Queuing message.", data);
+      pendingQueue.current.push(data);
     }
   }, []);
 
