@@ -296,7 +296,7 @@ class LangGraphOvermindEngine:
         }
 
         if self._observer:
-            await self._observer("phase_completed", {"phase": "CONTEXT_ENRICHMENT"})
+            await self._observer("phase_completed", {"phase": "CONTEXT_ENRICHMENT", "agent": "Contextualizer"})
 
         return {
             "shared_memory": shared_memory,
@@ -341,7 +341,7 @@ class LangGraphOvermindEngine:
             }
 
         if self._observer:
-            await self._observer("phase_completed", {"phase": "PLANNING"})
+            await self._observer("phase_completed", {"phase": "PLANNING", "agent": "Strategist"})
 
         return {
             "plan": plan,
@@ -370,7 +370,7 @@ class LangGraphOvermindEngine:
         context.update("last_design", design)
 
         if self._observer:
-            await self._observer("phase_completed", {"phase": "DESIGN"})
+            await self._observer("phase_completed", {"phase": "DESIGN", "agent": "Architect"})
 
         return {
             "design": design,
@@ -398,7 +398,7 @@ class LangGraphOvermindEngine:
         context.update("last_execution", execution)
 
         if self._observer:
-            await self._observer("phase_completed", {"phase": "EXECUTION"})
+            await self._observer("phase_completed", {"phase": "EXECUTION", "agent": "Operator"})
 
         return {
             "execution": execution,
@@ -429,7 +429,7 @@ class LangGraphOvermindEngine:
         context.update("last_audit", audit)
 
         if self._observer:
-            await self._observer("phase_completed", {"phase": "REFLECTION"})
+            await self._observer("phase_completed", {"phase": "REFLECTION", "agent": "Auditor"})
 
         updates = {
             "audit": audit,

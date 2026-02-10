@@ -14,6 +14,9 @@ from pydantic import BaseModel, Field
 
 from microservices.research_agent.src.search_engine.models import SearchFilters, SearchRequest
 from microservices.research_agent.src.search_engine.orchestrator import search_orchestrator
+from microservices.research_agent.src.search_engine.super_search import SuperSearchOrchestrator
+
+super_search_orchestrator = SuperSearchOrchestrator()
 
 
 @asynccontextmanager
@@ -69,7 +72,7 @@ def _build_router() -> APIRouter:
         """
         try:
             # Dispatch Logic
-            if request.action in {"search", "retrieve"}:
+            if request.action in {"search", "retrieve", "deep_research"}:
                 # Extract parameters
                 query = request.payload.get("query", "")
                 filters_dict = request.payload.get("filters")
@@ -79,19 +82,38 @@ def _build_router() -> APIRouter:
                 if not isinstance(limit, int):
                     limit = 5
 
-                # Construct SearchRequest
-                try:
-                    search_filters = SearchFilters(**filters_dict)
-                except Exception as e:
-                    return AgentResponse(status="error", error=f"Invalid filters: {e}")
+                # Check if deep research is requested or implied
+                is_deep = request.action == "deep_research" or request.payload.get("deep_dive", False)
 
-                search_req = SearchRequest(q=query, filters=search_filters, limit=limit)
+                if is_deep:
+                    # Use Super Search (Internet)
+                    print(f"🚀 Using Deep Research for: {query}")
+                    try:
+                        report = await super_search_orchestrator.execute(query)
+                        # The client expects 'results' list, so we wrap the report as a single result
+                        data_results = [{
+                            "content": report,
+                            "source": "Internet Research",
+                            "score": 1.0,
+                            "title": f"Deep Research Report: {query}",
+                            "snippet": report[:200]
+                        }]
+                    except Exception as e:
+                        return AgentResponse(status="error", error=f"Deep research failed: {e}")
+                else:
+                    # Construct SearchRequest for DB Search
+                    try:
+                        search_filters = SearchFilters(**filters_dict)
+                    except Exception as e:
+                        return AgentResponse(status="error", error=f"Invalid filters: {e}")
 
-                # Execute Search via Orchestrator
-                results = await search_orchestrator.search(search_req)
+                    search_req = SearchRequest(q=query, filters=search_filters, limit=limit)
 
-                # Serialize results
-                data_results = [r.model_dump() for r in results]
+                    # Execute Search via Orchestrator
+                    results = await search_orchestrator.search(search_req)
+
+                    # Serialize results
+                    data_results = [r.model_dump() for r in results]
 
                 return AgentResponse(
                     status="success",

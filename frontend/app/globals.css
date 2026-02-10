@@ -1,31 +1,607 @@
-html, body {
-  margin: 0;
-  padding: 0;
-  min-height: 100%;
-  width: 100%;
-  font-family: "Noto Naskh Arabic", "IBM Plex Sans Arabic", "Cairo", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+:root {
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --secondary-color: #475569;
+    --bg-color: #f8fafc;
+    --surface-color: #ffffff;
+    --text-color: #0f172a;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --font-family: 'Cairo', 'IBM Plex Sans Arabic', sans-serif;
+}
+
+[data-theme='dark'] {
+    --primary-color: #60a5fa;
+    --primary-hover: #3b82f6;
+    --secondary-color: #94a3b8;
+    --bg-color: #0f172a;
+    --surface-color: #1e293b;
+    --text-color: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --border-color: #334155;
+    --success-color: #34d399;
+    --warning-color: #fbbf24;
+    --error-color: #f87171;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-  background: radial-gradient(1200px circle at 10% 0%, rgba(212, 175, 55, 0.15), transparent 60%),
-    radial-gradient(900px circle at 90% 10%, rgba(0, 170, 255, 0.12), transparent 55%),
-    #050506;
-  color: #f7f3ec;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
+    font-family: var(--font-family);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    direction: rtl;
+    line-height: 1.6;
+    transition: background-color 0.3s, color 0.3s;
 }
 
-main {
-  min-height: 100vh;
-  min-height: 100dvh;
-  width: 100%;
+/* App Container */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
 }
 
-iframe {
-  height: 100%;
-  width: 100%;
-  border: none;
-  background: #000000;
+/* Header */
+.header {
+    height: 60px;
+    background-color: var(--surface-color);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    box-shadow: var(--shadow-sm);
+    z-index: 10;
+}
+
+.header-title h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.header-status {
+    font-size: 0.8rem;
+    font-weight: normal;
+    margin-right: 1rem;
+}
+
+.status-online { color: var(--success-color); }
+.status-offline { color: var(--text-secondary); }
+
+.header-menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.header-menu-btn:hover {
+    background-color: var(--bg-color);
+}
+
+.header-actions {
+    position: relative;
+}
+
+.header-menu {
+    position: absolute;
+    top: 100%;
+    left: 0; /* RTL: left implies right side of button in typical layout, but in RTL context left is actually left */
+    /* Since we are in RTL, left: 0 aligns the left edge of menu with left edge of button container. */
+    /* Wait, usually in RTL we want it aligned to the 'start' which is Right. */
+    right: auto;
+    left: 0;
+
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    min-width: 200px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+    z-index: 100;
+}
+
+.header-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-family: var(--font-family);
+    font-size: 0.95rem;
+    text-align: right;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.header-menu-item:hover {
+    background-color: var(--bg-color);
+}
+
+/* Dashboard Layout */
+.dashboard-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 300px;
+    background-color: var(--surface-color);
+    border-left: 1px solid var(--border-color); /* RTL border */
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0; /* RTL Sidebar starts at Right */
+    transform: translateX(100%); /* Hidden initially on mobile? Or desktop logic? */
+    transition: transform 0.3s ease;
+    z-index: 20;
+}
+
+.sidebar.open {
+    transform: translateX(0);
+}
+
+/* Overlay for mobile */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 15;
+}
+.sidebar-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.conversation-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.conversation-item {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.conversation-item:hover {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+.conversation-item.active {
+    background-color: var(--bg-color); /* Need a distinct color or tint */
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Chat Area */
+.chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-color);
+    position: relative;
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1rem 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.message {
+    display: flex;
+    width: 100%;
+}
+
+.message.user {
+    justify-content: flex-start; /* RTL: User messages start from Right? Typically User is Right, Bot is Left in LTR. In RTL, User is Left? Or Right? Usually User Right (Me), Bot Left. */
+    /* Let's follow standard chat apps: Me (Right), Other (Left). */
+    /* In RTL: Right is 'start'. */
+}
+
+.message.assistant {
+    justify-content: flex-end; /* Bot on Left (end) */
+}
+
+.message-bubble {
+    max-width: 85%;
+    padding: 1rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    line-height: 1.6;
+    position: relative;
+}
+
+.message.user .message-bubble {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border-bottom-right-radius: 2px;
+}
+
+.message.assistant .message-bubble {
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-bottom-left-radius: 2px;
+}
+
+/* Agent Status Board */
+.agent-board-container {
+    padding: 1rem 1.5rem 0.5rem 1.5rem;
+    background: var(--bg-color);
+}
+
+.agent-board-title {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.8rem;
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+.agent-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.agent-card {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.agent-card.active {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 1px var(--primary-color), var(--shadow);
+    transform: translateY(-2px);
+}
+
+.agent-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.agent-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-color);
+}
+
+.agent-info h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.agent-role {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.agent-status-icon {
+    margin-right: auto; /* Push to left in RTL */
+}
+
+.agent-progress-container {
+    height: 6px;
+    background: var(--bg-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.agent-progress-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.agent-status-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+/* Input Area */
+.input-area-wrapper {
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+    background: var(--bg-color);
+    position: sticky;
+    bottom: 0;
+}
+
+.input-area {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 0.75rem;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s;
+}
+
+.input-area:focus-within {
+    box-shadow: var(--shadow);
+    border-color: var(--primary-color);
+}
+
+.input-area textarea {
+    flex: 1;
+    border: none;
+    background: none;
+    resize: none;
+    padding: 0.5rem;
+    font-family: var(--font-family);
+    font-size: 1rem;
+    color: var(--text-color);
+    outline: none;
+    max-height: 150px;
+}
+
+.input-area button {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: none;
+    background-color: var(--primary-color);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.input-area button:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+.input-area button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--secondary-color);
+}
+
+/* Mission Selector */
+.mission-selection-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+}
+
+.mission-selection-title {
+    color: var(--text-color);
+    margin-bottom: 1rem;
+}
+
+.mission-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    width: 100%;
+    max-width: 600px;
+}
+
+.mission-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    background: var(--surface-color);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: var(--font-family);
+}
+
+.mission-btn i {
+    font-size: 1.5rem;
+    color: var(--btn-color);
+}
+
+.mission-btn:hover {
+    border-color: var(--btn-color);
+    background-color: var(--bg-color);
+    transform: translateY(-2px);
+}
+
+.mission-btn.active {
+    border-color: var(--btn-color);
+    background-color: rgba(var(--btn-color), 0.1); /* This needs proper RGB handling, ignoring for simplicity */
+    box-shadow: 0 0 0 2px var(--btn-color);
+}
+
+/* Auth Screens */
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: var(--bg-color);
+}
+
+.login-form, .register-form {
+    background: var(--surface-color);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid var(--border-color);
+}
+
+.login-form h2, .register-form h2 {
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: var(--text-color);
+}
+
+.input-group {
+    margin-bottom: 1rem;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-family);
+}
+
+.toggle-form {
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.toggle-form a {
+    color: var(--primary-color);
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.error-message {
+    color: var(--error-color);
+    background: rgba(239, 68, 68, 0.1);
+    padding: 0.5rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.loading-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: var(--bg-color);
+    color: var(--text-secondary);
+    gap: 1rem;
+}
+
+.loading-screen i {
+    font-size: 2rem;
+    color: var(--primary-color);
+}
+
+/* Markdown Content */
+.markdown-content {
+    direction: rtl;
+    text-align: right;
+}
+
+.markdown-content h1, .markdown-content h2, .markdown-content h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.markdown-content p {
+    margin-bottom: 0.75rem;
+}
+
+.markdown-content ul, .markdown-content ol {
+    margin-right: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.markdown-content code {
+    background: rgba(128, 128, 128, 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.markdown-content pre {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    direction: ltr; /* Code blocks usually LTR */
+    text-align: left;
+    margin-bottom: 1rem;
 }
