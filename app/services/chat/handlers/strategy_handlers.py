@@ -237,6 +237,8 @@ class MissionComplexHandler(IntentHandler):
             # 4. Stream Updates (Event-Driven)
             last_event_id = 0
             running = True
+            sequence_id = 0  # Monotonic sequence for frontend FSM
+            current_iteration = 0 # Track iteration for Run Isolation
 
             try:
                 while running:
@@ -247,10 +249,19 @@ class MissionComplexHandler(IntentHandler):
 
                     if event is not None:
                         last_event_id = max(last_event_id, event.id)
+
+                        # Update iteration context if loop_start
+                        payload = event.payload_json or {}
+                        if payload.get("brain_event") == "loop_start":
+                             data = payload.get("data", {})
+                             current_iteration = data.get("iteration", current_iteration)
+
                         # Yield text description for chat bubble
                         yield self._format_event(event)
-                        # Yield structured event for UI status board
-                        structured = self._create_structured_event(event)
+
+                        # Yield structured Canonical Event for UI FSM
+                        sequence_id += 1
+                        structured = self._create_structured_event(event, sequence_id, current_iteration)
                         if structured:
                             yield structured
 
@@ -276,8 +287,16 @@ class MissionComplexHandler(IntentHandler):
 
                     for event in events:
                         last_event_id = event.id
+
+                        # Update iteration context if loop_start
+                        payload = event.payload_json or {}
+                        if payload.get("brain_event") == "loop_start":
+                             data = payload.get("data", {})
+                             current_iteration = data.get("iteration", current_iteration)
+
                         yield self._format_event(event)
-                        structured = self._create_structured_event(event)
+                        sequence_id += 1
+                        structured = self._create_structured_event(event, sequence_id, current_iteration)
                         if structured:
                             yield structured
 
@@ -344,39 +363,58 @@ class MissionComplexHandler(IntentHandler):
             overmind = await create_overmind(session)
             await overmind.run_mission(mission_id)
 
-    def _create_structured_event(self, event: MissionEvent) -> dict | None:
-        """Create standard AgentEvent for UI synchronization."""
+    def _create_structured_event(self, event: MissionEvent, sequence_id: int, current_iteration: int) -> dict | None:
+        """
+        Create Canonical Event (Production-Grade Contract) for UI FSM.
+        """
         try:
             payload = event.payload_json or {}
+            mission_id = event.mission_id
+
+            # Use tracked iteration context to ensure Run Isolation
+            run_id = f"{mission_id}_{current_iteration}"
+            timestamp = str(event.created_at)
+
             if event.event_type == MissionEventType.STATUS_CHANGE:
                 brain_evt = str(payload.get("brain_event", ""))
                 data = payload.get("data", {})
 
-                # Map raw brain events to unified AgentEventType
+                if brain_evt == "loop_start":
+                    # loop_start defines the iteration for the NEW run
+                    iteration = data.get("iteration", current_iteration)
+                    run_id = f"{mission_id}_{iteration}"
+                    return {
+                        "type": "RUN_STARTED",
+                        "payload": {
+                            "run_id": run_id,
+                            "seq": sequence_id,
+                            "timestamp": timestamp,
+                            "iteration": iteration,
+                            "mode": data.get("graph_mode", "standard")
+                        }
+                    }
+
                 if brain_evt == "phase_start":
                     return {
-                        "type": "phase_start",
+                        "type": "PHASE_STARTED",
                         "payload": {
+                            "run_id": run_id,
+                            "seq": sequence_id,
                             "phase": data.get("phase"),
                             "agent": data.get("agent"),
-                            "timestamp": str(event.created_at),
+                            "timestamp": timestamp,
                         },
                     }
+
                 if brain_evt == "phase_completed":
                     return {
-                        "type": "phase_completed",
+                        "type": "PHASE_COMPLETED",
                         "payload": {
+                            "run_id": run_id,
+                            "seq": sequence_id,
                             "phase": data.get("phase"),
                             "agent": data.get("agent"),
-                            "timestamp": str(event.created_at),
-                        },
-                    }
-                if brain_evt == "loop_start":
-                    return {
-                        "type": "loop_start",
-                        "payload": {
-                            "iteration": data.get("iteration"),
-                            "timestamp": str(event.created_at),
+                            "timestamp": timestamp,
                         },
                     }
             return None
