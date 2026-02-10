@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { AgentStatusBoard } from './AgentStatusBoard';
 
 const preprocessMath = (content) => {
     if (!content) return "";
@@ -28,35 +27,47 @@ const Markdown = memo(({ content }) => {
 });
 Markdown.displayName = 'Markdown';
 
-const MissionSelector = ({ selected, onSelect }) => {
-    const modes = [
-        { id: 'chat', label: 'دردشة عادية', icon: 'fa-comments', color: '#3b82f6' },
-        { id: 'mission_complex', label: 'المهمة الخارقة', icon: 'fa-rocket', color: '#8b5cf6' },
-        { id: 'deep_analysis', label: 'تحليل عميق', icon: 'fa-brain', color: '#ec4899' },
-        { id: 'code_search', label: 'برمجة وبحث', icon: 'fa-code', color: '#10b981' },
-    ];
+const MODES = [
+    { id: 'chat', label: 'دردشة عادية', icon: 'fa-comments', color: '#3b82f6' },
+    { id: 'mission_complex', label: 'المهمة الخارقة', icon: 'fa-rocket', color: '#8b5cf6' },
+    { id: 'deep_analysis', label: 'تحليل عميق', icon: 'fa-brain', color: '#ec4899' },
+    { id: 'code_search', label: 'برمجة وبحث', icon: 'fa-code', color: '#10b981' },
+];
+
+const MissionModal = ({ isOpen, onClose, selected, onSelect }) => {
+    if (!isOpen) return null;
 
     return (
-        <div className="mission-selector">
-            {modes.map(mode => (
-                <button
-                    key={mode.id}
-                    className={`mission-btn ${selected === mode.id ? 'active' : ''}`}
-                    onClick={() => onSelect(mode.id)}
-                    style={{ '--btn-color': mode.color }}
-                >
-                    <i className={`fas ${mode.icon}`}></i>
-                    <span>{mode.label}</span>
-                </button>
-            ))}
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h3 className="modal-title">اختر نوع المهمة</h3>
+                    <button className="modal-close-btn" onClick={onClose}>
+                        <i className="fas fa-times"></i>
+                    </button>
+                </div>
+                <div className="mission-selector-grid">
+                    {MODES.map(mode => (
+                        <button
+                            key={mode.id}
+                            className={`mission-btn ${selected === mode.id ? 'active' : ''}`}
+                            onClick={() => { onSelect(mode.id); onClose(); }}
+                            style={{ '--btn-color': mode.color }}
+                        >
+                            <i className={`fas ${mode.icon}`}></i>
+                            <span>{mode.label}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 };
 
-export const ChatInterface = ({ messages, onSendMessage, status, user, agentStates }) => {
+export const ChatInterface = ({ messages, onSendMessage, status, user }) => {
     const [input, setInput] = useState('');
     const [missionType, setMissionType] = useState('chat');
-    const [isMissionSelected, setIsMissionSelected] = useState(false);
+    const [isMissionModalOpen, setIsMissionModalOpen] = useState(false);
     const messagesEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
     const [autoScroll, setAutoScroll] = useState(true);
@@ -101,22 +112,23 @@ export const ChatInterface = ({ messages, onSendMessage, status, user, agentStat
         }
     };
 
-    const handleMissionSelect = (type) => {
-        setMissionType(type);
-        setIsMissionSelected(true);
-    };
+    const currentMode = MODES.find(m => m.id === missionType) || MODES[0];
 
     return (
         <div className="chat-container">
-            {/* Agent Visualization */}
-            {agentStates && <AgentStatusBoard agentStates={agentStates} />}
+            <MissionModal
+                isOpen={isMissionModalOpen}
+                onClose={() => setIsMissionModalOpen(false)}
+                selected={missionType}
+                onSelect={setMissionType}
+            />
 
             <div className="messages" ref={messagesContainerRef} onScroll={handleScroll}>
                 {messages.length === 0 ? (
-                    <div className="welcome-message">
+                    <div className="welcome-message" style={{ textAlign: 'center', marginTop: '20vh', color: 'var(--text-secondary)' }}>
                          <i className={`fas ${user.is_admin ? 'fa-brain' : 'fa-graduation-cap'}`} style={{fontSize: '3em', color: 'var(--primary-color)', marginBottom: '20px'}}></i>
-                        <h3>{user.is_admin ? 'System Ready' : 'Welcome Student'}</h3>
-                        <p>{user.is_admin ? 'The Overmind is listening.' : 'Ask me anything about your studies.'}</p>
+                        <h3>{user.is_admin ? 'System Ready' : 'مرحباً بك'}</h3>
+                        <p>{user.is_admin ? 'The Overmind is listening.' : 'اسألني أي شيء يخص دراستك.'}</p>
                     </div>
                 ) : (
                     messages.map((msg, idx) => (
@@ -131,37 +143,34 @@ export const ChatInterface = ({ messages, onSendMessage, status, user, agentStat
             </div>
 
             <div className="input-area-wrapper">
-                {!isMissionSelected ? (
-                    <div className="mission-selection-container">
-                        <h4 className="mission-selection-title">اختر نوع المهمة للبدء</h4>
-                        <MissionSelector selected={missionType} onSelect={handleMissionSelect} />
-                    </div>
-                ) : (
-                    <>
-                        <div className="selected-mission-bar">
-                            <span>النمط المحدد: <strong>{missionType}</strong></span>
-                            <button
-                                onClick={() => setIsMissionSelected(false)}
-                                className="change-mission-btn"
-                            >
-                                تغيير
-                            </button>
-                        </div>
-                        <div className="input-area">
-                            <textarea
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                placeholder={missionType === 'mission_complex' ? "اكتب مهمتك الخارقة..." : "اكتب سؤالك..."}
-                                rows="1"
-                                disabled={status !== 'connected'}
-                            />
-                            <button onClick={handleSend} disabled={status !== 'connected' || !input.trim()}>
-                                <i className="fas fa-arrow-up"></i>
-                            </button>
-                        </div>
-                    </>
-                )}
+                 <div className="selected-mission-bar">
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <i className={`fas ${currentMode.icon}`} style={{ color: currentMode.color }}></i>
+                        النمط: <strong>{currentMode.label}</strong>
+                    </span>
+                 </div>
+                 <div className="input-area">
+                    <button
+                        className="mission-trigger-btn"
+                        onClick={() => setIsMissionModalOpen(true)}
+                        title="تغيير المهمة"
+                        disabled={status !== 'connected'}
+                    >
+                        <i className="fas fa-layer-group"></i>
+                    </button>
+
+                    <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder={missionType === 'mission_complex' ? "اكتب مهمتك الخارقة..." : "اكتب سؤالك..."}
+                        rows="1"
+                        disabled={status !== 'connected'}
+                    />
+                    <button onClick={handleSend} disabled={status !== 'connected' || !input.trim()}>
+                        <i className="fas fa-arrow-up"></i>
+                    </button>
+                 </div>
             </div>
         </div>
     );

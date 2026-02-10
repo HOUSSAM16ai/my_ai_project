@@ -79,6 +79,10 @@ body {
     font-size: 0.8rem;
     font-weight: normal;
     margin-right: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
 }
 
 .status-online { color: var(--success-color); }
@@ -604,4 +608,170 @@ body {
     direction: ltr; /* Code blocks usually LTR */
     text-align: left;
     margin-bottom: 1rem;
+}
+
+/* Agent Sidebar (Left in RTL) */
+.agent-sidebar {
+    width: 320px;
+    background-color: var(--surface-color);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0; /* RTL End */
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 20;
+    padding: 1rem;
+    overflow-y: auto;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+}
+
+.agent-sidebar.open {
+    transform: translateX(0);
+}
+
+.agent-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.agent-sidebar-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+    background: var(--surface-color);
+    padding: 2rem;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    animation: slideUp 0.3s ease-out;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+.modal-close-btn:hover { background: var(--bg-color); color: var(--text-color); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* Mission Selector in Modal */
+.mission-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+}
+
+/* Selected Mission Bar inside Input Area or Footer */
+.selected-mission-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-color);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.change-mission-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+.change-mission-btn:hover {
+    background: rgba(var(--primary-color-rgb), 0.1); /* fallback if not defined */
+    text-decoration: underline;
+}
+
+/* Mission Trigger Button */
+.mission-trigger-btn {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0 0.75rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-left: 0.5rem; /* RTL: space to the left of input */
+}
+.mission-trigger-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: var(--bg-color);
+}
+.mission-trigger-btn i { font-size: 1.1rem; }
+
+/* Adjustments for Agent Sidebar Layout */
+.dashboard-layout {
+    position: relative; /* Ensure sidebar absolute positioning works relative to this */
+}
+
+/* High Contrast tweaks */
+[data-theme='light'] .mission-btn {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+[data-theme='dark'] .mission-btn {
+    background: rgba(255,255,255,0.05);
 }
