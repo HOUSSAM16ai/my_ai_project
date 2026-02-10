@@ -58,16 +58,27 @@ export function useRealtimeConnection(wsUrl, token) {
           }
         };
 
-        ws.onerror = (e) => {
+        ws.onerror = () => {
           if (mountedRef.current) {
               setState("degraded");
           }
-          console.warn("WebSocket error:", e);
+          console.warn("[WS] error", {
+            url: ws.url,
+            readyState: ws.readyState, // 0..3
+          });
         };
 
         ws.onclose = (e) => {
           if (mountedRef.current) {
              wsRef.current = null;
+
+             console.warn("[WS] closed", {
+               url: ws.url,
+               code: e.code,
+               reason: e.reason,
+               wasClean: e.wasClean,
+               readyState: ws.readyState,
+             });
 
              // Check for fatal auth errors
              if (FATAL_CODES.has(e.code)) {
