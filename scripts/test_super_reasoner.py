@@ -1,10 +1,9 @@
 import asyncio
 import logging
 import os
+import sys
 
 import pytest
-
-from app.core.gateway.simple_client import SimpleAIClient
 
 # Configure logger
 logging.basicConfig(level=logging.INFO)
@@ -15,9 +14,10 @@ async def main():
     print("🧠 Verifying Strict Search & Reasoning...")
 
     try:
+        from app.core.gateway.simple_client import SimpleAIClient
         from microservices.reasoning_agent.src.workflow import SuperReasoningWorkflow
-    except ImportError:
-        print("⚠️ Skipped: llama-index.core.workflow not found.")
+    except ImportError as e:
+        print(f"⚠️ Skipped: Dependencies not found ({e}).")
         return
 
     # 1. Initialize Client

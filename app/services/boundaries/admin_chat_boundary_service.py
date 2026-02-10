@@ -179,6 +179,11 @@ class AdminChatBoundaryService:
         if not user.is_admin:
             raise HTTPException(status_code=403, detail="Admin access required.")
 
+        # Ensure metadata is passed and respected (consistent with customer boundary)
+        # Admin usually has full access, but we might want to log the explicit intent
+        if metadata and metadata.get("mission_type") == "mission_complex":
+            logger.info("Admin initiated complex mission explicitly.")
+
         # 1. Get or Create Conversation
         conversation = await self.get_or_create_conversation(user, question, conversation_id)
 

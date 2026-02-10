@@ -160,13 +160,16 @@ class AdminChatStreamer:
             if not content_part:
                 continue
 
-            full_response.append(content_part)
+            if isinstance(content_part, dict):
+                yield content_part
+            else:
+                full_response.append(content_part)
 
-            if self._exceeds_safety_limit(full_response):
-                yield self._create_size_limit_error()
-                break
+                if self._exceeds_safety_limit(full_response):
+                    yield self._create_size_limit_error()
+                    break
 
-            yield self._create_chunk_event(content_part)
+                yield self._create_chunk_event(content_part)
 
     def _exceeds_safety_limit(self, response_parts: list[str]) -> bool:
         """

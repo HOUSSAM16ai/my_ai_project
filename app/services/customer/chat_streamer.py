@@ -58,8 +58,14 @@ class CustomerChatStreamer:
             ):
                 if not content:
                     continue
-                full_response.append(content)
-                yield self._create_chunk_event(content)
+
+                if isinstance(content, dict):
+                    # Direct pass-through for structured events (AgentEvent)
+                    # content is expected to be {type: ..., payload: ...}
+                    yield content
+                else:
+                    full_response.append(content)
+                    yield self._create_chunk_event(content)
         except Exception as exc:
             logger.error(f"❌ Customer chat streaming failed: {exc}")
             fallback_message = "تعذر الوصول إلى خدمة الذكاء الاصطناعي حالياً. حاول مرة أخرى لاحقاً."

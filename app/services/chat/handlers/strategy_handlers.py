@@ -17,6 +17,7 @@ from app.core.agents.system_principles import (
     format_architecture_system_principles,
     format_system_principles,
 )
+from app.core.domain.agent_events import AgentEvent, AgentEventType, AgentEventPayload
 from app.core.domain.mission import (
     Mission,
     MissionEvent,
@@ -35,7 +36,7 @@ from app.services.overmind.identity import OvermindIdentity
 logger = logging.getLogger(__name__)
 
 
-class IntentHandler(Strategy[ChatContext, AsyncGenerator[str, None]]):
+class IntentHandler(Strategy[ChatContext, AsyncGenerator[str | dict, None]]):
     """Base intent handler."""
 
     def __init__(self, intent_name: str, priority: int = 0):
@@ -187,7 +188,7 @@ class MissionComplexHandler(IntentHandler):
     def __init__(self):
         super().__init__("MISSION_COMPLEX", priority=10)
 
-    async def execute(self, context: ChatContext) -> AsyncGenerator[str, None]:
+    async def execute(self, context: ChatContext) -> AsyncGenerator[str | dict, None]:
         """
         Execute complex mission.
         Creates a Mission DB entry and triggers the Overmind in background.
@@ -247,7 +248,12 @@ class MissionComplexHandler(IntentHandler):
 
                     if event is not None:
                         last_event_id = max(last_event_id, event.id)
+                        # Yield text description for chat bubble
                         yield self._format_event(event)
+                        # Yield structured event for UI status board
+                        structured = self._create_structured_event(event)
+                        if structured:
+                            yield structured
 
                     if task.done():
                         running = False
@@ -272,6 +278,9 @@ class MissionComplexHandler(IntentHandler):
                     for event in events:
                         last_event_id = event.id
                         yield self._format_event(event)
+                        structured = self._create_structured_event(event)
+                        if structured:
+                            yield structured
 
                     mission_check = await session.get(Mission, mission_id)
                     if mission_check:
@@ -335,6 +344,46 @@ class MissionComplexHandler(IntentHandler):
         async with session_factory() as session:
             overmind = await create_overmind(session)
             await overmind.run_mission(mission_id)
+
+    def _create_structured_event(self, event: MissionEvent) -> dict | None:
+        """Create standard AgentEvent for UI synchronization."""
+        try:
+            payload = event.payload_json or {}
+            if event.event_type == MissionEventType.STATUS_CHANGE:
+                brain_evt = str(payload.get("brain_event", ""))
+                data = payload.get("data", {})
+
+                # Map raw brain events to unified AgentEventType
+                if brain_evt == "phase_start":
+                    return {
+                        "type": "phase_start",
+                        "payload": {
+                            "phase": data.get("phase"),
+                            "agent": data.get("agent"),
+                            "timestamp": str(event.created_at)
+                        }
+                    }
+                elif brain_evt == "phase_completed":
+                    return {
+                        "type": "phase_completed",
+                        "payload": {
+                            "phase": data.get("phase"),
+                            "agent": data.get("agent"),
+                            "timestamp": str(event.created_at)
+                        }
+                    }
+                elif brain_evt == "loop_start":
+                    return {
+                        "type": "loop_start",
+                        "payload": {
+                            "iteration": data.get("iteration"),
+                            "timestamp": str(event.created_at)
+                        }
+                    }
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to create structured event: {e}")
+            return None
 
     def _format_event(self, event: MissionEvent) -> str:
         """Format mission event for user display."""
