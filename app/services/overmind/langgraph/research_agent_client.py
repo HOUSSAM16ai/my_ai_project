@@ -25,6 +25,7 @@ class ResearchAgentClient:
         query: str,
         filters: dict[str, object],
         limit: int,
+        deep_dive: bool = False,
     ) -> list[Snippet]:
         """
         تنفيذ عملية بحث عبر واجهة Research Agent الموحدة.
@@ -32,8 +33,8 @@ class ResearchAgentClient:
         payload = {
             "caller_id": "overmind",
             "target_service": "research_agent",
-            "action": "search",
-            "payload": {"query": query, "filters": filters, "limit": limit},
+            "action": "deep_research" if deep_dive else "search",
+            "payload": {"query": query, "filters": filters, "limit": limit, "deep_dive": deep_dive},
             "security_token": None,
         }
         try:

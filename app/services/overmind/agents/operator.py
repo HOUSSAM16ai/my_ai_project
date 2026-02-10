@@ -11,6 +11,7 @@
 - استخدام واجهات صارمة.
 """
 
+import asyncio
 import json
 import re
 
@@ -183,7 +184,7 @@ class OperatorAgent(AgentExecutor):
     ) -> tuple[list[dict[str, object]], str]:
         """
         تنفيذ قائمة المهام.
-        Execute list of tasks sequentially.
+        Execute list of tasks, optimizing for parallelism where safe.
 
         Returns:
             tuple: (النتائج، الحالة الإجمالية)
@@ -191,14 +192,57 @@ class OperatorAgent(AgentExecutor):
         results = []
         overall_status = "success"
 
-        for i, task_def in enumerate(tasks_data):
-            result = await self._execute_single_task(i, task_def, tasks_data, context)
-            results.append(result)
+        # Parallelizable tools (Read-Only / Side-effect free)
+        PARALLEL_TOOLS = {
+            "search_content",
+            "search_educational_content",
+            "read_file",
+            "retrieve",
+            "deep_research",
+            "get_content_raw"
+        }
 
-            if result.get("status") == "skipped":
+        i = 0
+        while i < len(tasks_data):
+            batch = []
+            j = i
+
+            # Identify a sequence of parallelizable tasks
+            while j < len(tasks_data):
+                task = tasks_data[j]
+                tool = task.get("tool_name")
+                if tool in PARALLEL_TOOLS:
+                    batch.append((j, task))
+                    j += 1
+                else:
+                    # If batch is empty, include this non-parallel task to execute it singly
+                    if not batch:
+                        batch.append((j, task))
+                        j += 1
+                    break
+
+            # Execute the identified batch
+            if len(batch) > 1:
+                logger.info(f"Operator: Executing batch of {len(batch)} tasks in parallel...")
+                futures = [
+                    self._execute_single_task(idx, t, tasks_data, context)
+                    for idx, t in batch
+                ]
+                batch_results = await asyncio.gather(*futures)
+                results.extend(batch_results)
+            else:
+                # Single execution
+                idx, t = batch[0]
+                result = await self._execute_single_task(idx, t, tasks_data, context)
+                results.append(result)
+
+            i = j
+
+        # Check overall status
+        for res in results:
+            if res.get("status") == "skipped":
                 continue
-
-            if result["result"].get("status") == "failed":
+            if res.get("result", {}).get("status") == "failed":
                 overall_status = "partial_failure"
 
         return results, overall_status
