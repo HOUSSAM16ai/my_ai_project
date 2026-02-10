@@ -1,7 +1,7 @@
 """Unit tests for content tool logic - aligned with refactored super_search_orchestrator."""
 
 import sys
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 # Mock external modules BEFORE importing app modules
 sys.modules["dspy"] = MagicMock()
