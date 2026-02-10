@@ -11,18 +11,25 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Setup Mock Logger to print
 mock_logger = MagicMock()
+
+
 def log_side_effect(msg, *args):
     print(f"[LOG] {msg} {args}")
+
+
 mock_logger.info.side_effect = log_side_effect
 mock_logger.warning.side_effect = log_side_effect
 mock_logger.error.side_effect = log_side_effect
+
 
 # Define dummy classes for isinstance checks
 class MockTavilyClient:
     pass
 
+
 class MockFirecrawlApp:
     pass
+
 
 # Mock modules
 mock_modules = [
@@ -96,9 +103,9 @@ async def test_search_pipeline():
     # 1. Test Planning
     print("- Testing Planning Phase...")
     # Mock _create_plan to bypass LangChain internals and ensure planning succeeds
-    orchestrator._create_plan = AsyncMock(return_value=ResearchPlan(
-        sub_queries=["q1", "q2"], required_info=["info1"]
-    ))
+    orchestrator._create_plan = AsyncMock(
+        return_value=ResearchPlan(sub_queries=["q1", "q2"], required_info=["info1"])
+    )
 
     # 2. Test Execution
     print("- Testing Execution...")

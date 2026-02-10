@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 class AgentPhase(StrEnum):
     """مراحل عمل الوكلاء الموحدة."""
+
     CONTEXT_ENRICHMENT = "CONTEXT_ENRICHMENT"  # Contextualizer
     PLANNING = "PLANNING"  # Strategist
     REVIEW_PLAN = "REVIEW_PLAN"  # Strategist/Supervisor
@@ -24,6 +25,7 @@ class AgentPhase(StrEnum):
 
 class AgentRole(StrEnum):
     """أسماء الوكلاء الرسمية (للمحرك والواجهة)."""
+
     STRATEGIST = "Strategist"
     ARCHITECT = "Architect"
     OPERATOR = "Operator"
@@ -35,6 +37,7 @@ class AgentRole(StrEnum):
 
 class AgentEventType(StrEnum):
     """أنواع الأحداث المعيارية."""
+
     PHASE_START = "phase_start"
     PHASE_COMPLETED = "phase_completed"
     LOOP_START = "loop_start"
@@ -46,6 +49,7 @@ class AgentEventType(StrEnum):
 
 class AgentEventPayload(BaseModel):
     """حمولة الحدث المعيارية."""
+
     phase: AgentPhase | None = None
     agent: AgentRole | None = None
     iteration: int | None = None
@@ -58,5 +62,6 @@ class AgentEvent(BaseModel):
     بنية الحدث الموحدة (Envelope).
     تتوافق مع CloudEvents بشكل مبسط.
     """
+
     type: AgentEventType
     payload: AgentEventPayload
