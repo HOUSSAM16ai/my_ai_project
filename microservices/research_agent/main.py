@@ -83,7 +83,9 @@ def _build_router() -> APIRouter:
                     limit = 5
 
                 # Check if deep research is requested or implied
-                is_deep = request.action == "deep_research" or request.payload.get("deep_dive", False)
+                is_deep = request.action == "deep_research" or request.payload.get(
+                    "deep_dive", False
+                )
 
                 if is_deep:
                     # Use Super Search (Internet)
@@ -91,13 +93,15 @@ def _build_router() -> APIRouter:
                     try:
                         report = await super_search_orchestrator.execute(query)
                         # The client expects 'results' list, so we wrap the report as a single result
-                        data_results = [{
-                            "content": report,
-                            "source": "Internet Research",
-                            "score": 1.0,
-                            "title": f"Deep Research Report: {query}",
-                            "snippet": report[:200]
-                        }]
+                        data_results = [
+                            {
+                                "content": report,
+                                "source": "Internet Research",
+                                "score": 1.0,
+                                "title": f"Deep Research Report: {query}",
+                                "snippet": report[:200],
+                            }
+                        ]
                     except Exception as e:
                         return AgentResponse(status="error", error=f"Deep research failed: {e}")
                 else:

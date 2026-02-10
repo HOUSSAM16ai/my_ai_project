@@ -296,7 +296,9 @@ class LangGraphOvermindEngine:
         }
 
         if self._observer:
-            await self._observer("phase_completed", {"phase": "CONTEXT_ENRICHMENT", "agent": "Contextualizer"})
+            await self._observer(
+                "phase_completed", {"phase": "CONTEXT_ENRICHMENT", "agent": "Contextualizer"}
+            )
 
         return {
             "shared_memory": shared_memory,

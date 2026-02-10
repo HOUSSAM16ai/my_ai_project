@@ -69,9 +69,7 @@ async def test_search_content_error_handling():
 @pytest.mark.asyncio
 async def test_get_curriculum_structure():
     """Test curriculum structure retrieval."""
-    mock_content_service_instance.get_curriculum_structure.return_value = {
-        "3as": {"subjects": []}
-    }
+    mock_content_service_instance.get_curriculum_structure.return_value = {"3as": {"subjects": []}}
 
     result = await content_module.get_curriculum_structure(level="3as")
 

@@ -225,8 +225,7 @@ class OperatorAgent(AgentExecutor):
             if len(batch) > 1:
                 logger.info(f"Operator: Executing batch of {len(batch)} tasks in parallel...")
                 futures = [
-                    self._execute_single_task(idx, t, tasks_data, context)
-                    for idx, t in batch
+                    self._execute_single_task(idx, t, tasks_data, context) for idx, t in batch
                 ]
                 batch_results = await asyncio.gather(*futures)
                 results.extend(batch_results)
