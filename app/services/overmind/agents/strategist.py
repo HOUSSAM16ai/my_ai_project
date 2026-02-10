@@ -115,6 +115,7 @@ class StrategistAgent(AgentPlanner):
         2. قسم المشكلة إلى خطوات صغيرة جداً (Atomic Steps).
         3. كل خطوة يجب أن تكون قابلة للتنفيذ باستخدام أدوات برمجية (CLI, FileSystem, Git).
         4. المخرجات يجب أن تكون JSON صالح فقط وبدون أي مقدمات.
+        5. تنبيه هام: عند الحاجة للبحث عن معلومات أو محتوى تعليمي، استخدم التلميح "search_content" حصراً.
 
         صيغة JSON المطلوبة:
         {
@@ -124,7 +125,7 @@ class StrategistAgent(AgentPlanner):
                 {
                     "name": "اسم الخطوة",
                     "description": "وصف دقيق لما سيتم فعله",
-                    "tool_hint": "تلميح للأداة المناسبة (مثلاً: shell, read_file)"
+                    "tool_hint": "تلميح للأداة المناسبة (مثلاً: shell, read_file, search_content)"
                 }
             ]
         }
