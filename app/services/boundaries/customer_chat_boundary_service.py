@@ -132,10 +132,18 @@ class CustomerChatBoundaryService:
         role_label = "STANDARD_USER"
         intent_result = await self.intent_detector.detect(question)
         effective_intent = intent_result.intent
+
+        # Override intent if mission_type is provided in metadata (e.g. from UI modal)
+        # This ensures policy checks respect the user's explicit choice
+        if metadata and metadata.get("mission_type") == "mission_complex":
+            effective_intent = ChatIntent.MISSION_COMPLEX
+
         if effective_intent != ChatIntent.CONTENT_RETRIEVAL and self._looks_like_content_request(
             question
         ):
-            effective_intent = ChatIntent.CONTENT_RETRIEVAL
+            # Only switch to content retrieval if not already a mission
+            if effective_intent != ChatIntent.MISSION_COMPLEX:
+                effective_intent = ChatIntent.CONTENT_RETRIEVAL
 
         conversation = await self.get_or_create_conversation(user, question, conversation_id)
 

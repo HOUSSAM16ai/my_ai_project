@@ -164,7 +164,7 @@ class ChatOrchestrator:
         history_messages: list[dict[str, str]],
         session_factory: Callable[[], AsyncSession] | None = None,
         metadata: dict[str, object] | None = None,
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[str | dict, None]:
         """
         معالجة طلب المحادثة.
 
@@ -241,13 +241,15 @@ class ChatOrchestrator:
             return
 
         # 2. التحقق من الذاكرة الدلالية (Semantic Cache) - للنوايا العادية
-        cached_response = await self._semantic_cache.get(question)
-        if cached_response:
-            logger.info("Serving from Semantic Cache", extra={"user_id": user_id})
-            chunk_size = 50
-            for i in range(0, len(cached_response), chunk_size):
-                yield cached_response[i : i + chunk_size]
-            return
+        # Mission Complex MUST bypass cache to ensure deterministic execution
+        if intent_result.intent != ChatIntent.MISSION_COMPLEX:
+            cached_response = await self._semantic_cache.get(question)
+            if cached_response:
+                logger.info("Serving from Semantic Cache", extra={"user_id": user_id})
+                chunk_size = 50
+                for i in range(0, len(cached_response), chunk_size):
+                    yield cached_response[i : i + chunk_size]
+                return
 
         # 3. المعالجة التقليدية (Legacy Strategy Pattern)
         # للنوايا مثل: قراءة ملف، بحث كود، مساعدة، دردشة عامة
@@ -267,11 +269,13 @@ class ChatOrchestrator:
         if result:
             full_response_buffer = []
             async for chunk in result:
-                full_response_buffer.append(chunk)
+                if isinstance(chunk, str):
+                    full_response_buffer.append(chunk)
                 yield chunk
 
+            # Only cache text content, ignore event objects
             full_response = "".join(full_response_buffer)
-            if full_response:
+            if full_response and intent_result.intent != ChatIntent.MISSION_COMPLEX:
                 await self._semantic_cache.set(question, full_response)
 
         duration = (time.time() - start_time) * 1000
