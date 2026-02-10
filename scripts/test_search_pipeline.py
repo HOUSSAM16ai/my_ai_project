@@ -18,8 +18,11 @@ mock_logger.warning.side_effect = log_side_effect
 mock_logger.error.side_effect = log_side_effect
 
 # Define dummy classes for isinstance checks
-class MockTavilyClient: pass
-class MockFirecrawlApp: pass
+class MockTavilyClient:
+    pass
+
+class MockFirecrawlApp:
+    pass
 
 # Mock modules
 mock_modules = [

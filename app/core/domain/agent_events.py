@@ -6,7 +6,7 @@
 """
 
 from enum import StrEnum
-from typing import Any, Dict, Literal, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -46,10 +46,10 @@ class AgentEventType(StrEnum):
 
 class AgentEventPayload(BaseModel):
     """حمولة الحدث المعيارية."""
-    phase: Optional[AgentPhase] = None
-    agent: Optional[AgentRole] = None
-    iteration: Optional[int] = None
-    details: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    phase: AgentPhase | None = None
+    agent: AgentRole | None = None
+    iteration: int | None = None
+    details: dict[str, Any] | None = Field(default_factory=dict)
     timestamp: str | None = None  # ISO format
 
 
