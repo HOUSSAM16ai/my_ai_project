@@ -32,6 +32,15 @@ const getWsBase = () => {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const hostname = window.location.hostname;
+    const port = window.location.port;
+
+    // Smart fallback: if we are on port 3000 (standard Next.js), assume backend is on port 8000
+    // This fixes local production builds or direct access bypassing Nginx where backend is on default port
+    if (port === '3000') {
+         return `${protocol}://${hostname}:8000`;
+    }
+
     const host = window.location.host;
     return `${protocol}://${host}`;
 };
