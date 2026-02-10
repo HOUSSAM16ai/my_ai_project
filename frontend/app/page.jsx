@@ -11,7 +11,7 @@ export default function Home() {
 
        <CogniForgeApp />
 
-       <Script src="/performance-monitor.js" strategy="afterInteractive" />
+       {/* <Script src="/performance-monitor.js" strategy="afterInteractive" /> */}
     </main>
   );
 }

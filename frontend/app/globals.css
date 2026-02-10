@@ -1,5 +1,6 @@
 :root {
     --primary-color: #2563eb;
+    --primary-color-rgb: 37, 99, 235;
     --primary-hover: #1d4ed8;
     --secondary-color: #475569;
     --bg-color: #f8fafc;
@@ -17,6 +18,7 @@
 
 [data-theme='dark'] {
     --primary-color: #60a5fa;
+    --primary-color-rgb: 96, 165, 250;
     --primary-hover: #3b82f6;
     --secondary-color: #94a3b8;
     --bg-color: #0f172a;

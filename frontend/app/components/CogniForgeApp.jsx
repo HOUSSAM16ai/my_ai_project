@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAgentSocket } from '../hooks/useAgentSocket';
 import { ChatInterface } from './ChatInterface';
 import { AgentStatusBoard } from './AgentStatusBoard';
@@ -129,7 +129,7 @@ const DashboardLayout = ({ user, onLogout }) => {
     const convEndpoint = user.is_admin ? '/admin/api/conversations' : '/api/chat/conversations';
     const historyEndpoint = user.is_admin ? (id) => `/admin/api/conversations/${id}` : (id) => `/api/chat/conversations/${id}`;
 
-    const fetchConversations = async () => {
+    const fetchConversations = useCallback(async () => {
          const token = localStorage.getItem('token');
          try {
              const res = await fetch(apiUrl(convEndpoint), {
@@ -137,11 +137,11 @@ const DashboardLayout = ({ user, onLogout }) => {
              });
              if (res.ok) setConversations(await res.json());
          } catch (e) { console.error(e); }
-    };
+    }, [convEndpoint]);
 
     useEffect(() => {
         fetchConversations();
-    }, []);
+    }, [fetchConversations]);
 
     const { messages, sendMessage, status, conversationId, setConversationId, clearMessages, setMessages, agentStates } = useAgentSocket(endpoint, localStorage.getItem('token'), fetchConversations);
 
@@ -196,6 +196,16 @@ const DashboardLayout = ({ user, onLogout }) => {
         setIsMenuOpen(false);
     };
 
+    const getStatusText = (st) => {
+        switch (st) {
+            case 'connected': return 'متصل';
+            case 'connecting': return 'جاري الاتصال...';
+            case 'disconnected': return 'غير متصل';
+            case 'error': return 'خطأ في الاتصال';
+            default: return st;
+        }
+    };
+
     return (
         <div className="app-container">
             <div className="header">
@@ -211,7 +221,10 @@ const DashboardLayout = ({ user, onLogout }) => {
                     <h2>
                         {user.is_admin ? 'OVERMIND CLI' : 'Overmind Education'}
                         <span className="header-status">
-                            {status === 'connected' ? <span className="status-online">● متصل</span> : <span className="status-offline">● {status}</span>}
+                            {status === 'connected' ?
+                                <span className="status-online">● {getStatusText(status)}</span> :
+                                <span className="status-offline">● {getStatusText(status)}</span>
+                            }
                         </span>
                     </h2>
                 </div>

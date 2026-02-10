@@ -2,7 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 const isBrowser = typeof window !== 'undefined';
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? '';
-const WS_ORIGIN = process.env.NEXT_PUBLIC_WS_URL ?? '';
+// Default to local backend if not set, aligning with next.config.js defaults
+const WS_ORIGIN = process.env.NEXT_PUBLIC_WS_URL ?? (process.env.NODE_ENV === 'development' ? 'ws://127.0.0.1:8000' : '');
 
 const logWebSocketEvent = (...args) => {
     if (process.env.NODE_ENV === 'development') {
@@ -46,7 +47,12 @@ const buildWebSocketUrlSafe = (baseUrl, endpoint, token) => {
     }
 };
 
-const generateId = () => Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+const generateId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+};
 
 export const useAgentSocket = (endpoint, token, onConversationUpdate) => {
     const [messages, setMessages] = useState([]);
@@ -65,6 +71,11 @@ export const useAgentSocket = (endpoint, token, onConversationUpdate) => {
     const reconnectTimeoutRef = useRef(null);
     const mountedRef = useRef(true);
     const lastConnectionIssueRef = useRef(null);
+    const onConversationUpdateRef = useRef(onConversationUpdate);
+
+    useEffect(() => {
+        onConversationUpdateRef.current = onConversationUpdate;
+    }, [onConversationUpdate]);
 
     const addMessage = useCallback((msg) => {
         setMessages(prev => [...prev, msg]);
@@ -133,7 +144,7 @@ export const useAgentSocket = (endpoint, token, onConversationUpdate) => {
             if (payload?.conversation_id) {
                 setConversationId(payload.conversation_id);
             }
-            if (onConversationUpdate) onConversationUpdate();
+            if (onConversationUpdateRef.current) onConversationUpdateRef.current();
             return;
         }
 
@@ -177,7 +188,7 @@ export const useAgentSocket = (endpoint, token, onConversationUpdate) => {
                 contextualizer: { status: 'idle', progress: 0 }
             });
         }
-    }, [onConversationUpdate, setConversationId, addMessage, updateAgentState]);
+    }, [setConversationId, addMessage, updateAgentState]);
 
     const connect = useCallback(() => {
         if (!token || !endpoint || !mountedRef.current) return;
