@@ -50,10 +50,7 @@ def check_mobile_config():
         # BUT crucially, the fallback should NOT be hardcoded 'ws://localhost:8000' if we want smart detection.
         # However, the fix was to use window.location.hostname.
 
-        if (
-            "ws://localhost:8000" in content
-            and "window.location.hostname" not in content
-        ):
+        if "ws://localhost:8000" in content and "window.location.hostname" not in content:
             print(colored(f"❌ FAILURE: Hardcoded localhost found in {filepath}", "red"))
             return False
 
@@ -88,16 +85,10 @@ async def check_websocket():
     except InvalidStatus as e:
         # websockets > 14 raises InvalidStatus instead of InvalidStatusCode
         # The status code is in e.response.status_code for modern versions, or just e.code/e.status_code
-        status = getattr(e, "status_code", None) or getattr(
-            e.response, "status_code", None
-        )
+        status = getattr(e, "status_code", None) or getattr(e.response, "status_code", None)
 
         if status in [401, 403] or "HTTP 401" in str(e) or "HTTP 403" in str(e):
-            print(
-                colored(
-                    "✅ SUCCESS: Server reachable (Auth rejected as expected)!", "green"
-                )
-            )
+            print(colored("✅ SUCCESS: Server reachable (Auth rejected as expected)!", "green"))
             return True
 
         print(colored(f"❌ FAILURE: Unexpected status code {status}", "red"))
@@ -114,11 +105,7 @@ async def check_websocket():
         return False
     except Exception as e:
         if "HTTP 403" in str(e) or "HTTP 401" in str(e):
-            print(
-                colored(
-                    "✅ SUCCESS: Server reachable (Auth rejected as expected)!", "green"
-                )
-            )
+            print(colored("✅ SUCCESS: Server reachable (Auth rejected as expected)!", "green"))
             return True
 
         print(colored("❌ FAILURE: WebSocket check failed.", "red"))
@@ -127,11 +114,7 @@ async def check_websocket():
 
 
 async def main():
-    print(
-        colored(
-            "Starting 'Golden Test' System Verification...", "white", attrs=["bold"]
-        )
-    )
+    print(colored("Starting 'Golden Test' System Verification...", "white", attrs=["bold"]))
 
     db_ok = await check_database()
     mobile_ok = check_mobile_config()
@@ -148,11 +131,7 @@ async def main():
         )
         sys.exit(0)
     else:
-        print(
-            colored(
-                "💥 GOLDEN TEST FAILED: SYSTEM HAS ISSUES 💥", "red", attrs=["bold"]
-            )
-        )
+        print(colored("💥 GOLDEN TEST FAILED: SYSTEM HAS ISSUES 💥", "red", attrs=["bold"]))
         sys.exit(1)
 
 

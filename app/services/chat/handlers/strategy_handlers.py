@@ -238,7 +238,7 @@ class MissionComplexHandler(IntentHandler):
             last_event_id = 0
             running = True
             sequence_id = 0  # Monotonic sequence for frontend FSM
-            current_iteration = 0 # Track iteration for Run Isolation
+            current_iteration = 0  # Track iteration for Run Isolation
 
             try:
                 while running:
@@ -253,15 +253,17 @@ class MissionComplexHandler(IntentHandler):
                         # Update iteration context if loop_start
                         payload = event.payload_json or {}
                         if payload.get("brain_event") == "loop_start":
-                             data = payload.get("data", {})
-                             current_iteration = data.get("iteration", current_iteration)
+                            data = payload.get("data", {})
+                            current_iteration = data.get("iteration", current_iteration)
 
                         # Yield text description for chat bubble
                         yield self._format_event(event)
 
                         # Yield structured Canonical Event for UI FSM
                         sequence_id += 1
-                        structured = self._create_structured_event(event, sequence_id, current_iteration)
+                        structured = self._create_structured_event(
+                            event, sequence_id, current_iteration
+                        )
                         if structured:
                             yield structured
 
@@ -291,12 +293,14 @@ class MissionComplexHandler(IntentHandler):
                         # Update iteration context if loop_start
                         payload = event.payload_json or {}
                         if payload.get("brain_event") == "loop_start":
-                             data = payload.get("data", {})
-                             current_iteration = data.get("iteration", current_iteration)
+                            data = payload.get("data", {})
+                            current_iteration = data.get("iteration", current_iteration)
 
                         yield self._format_event(event)
                         sequence_id += 1
-                        structured = self._create_structured_event(event, sequence_id, current_iteration)
+                        structured = self._create_structured_event(
+                            event, sequence_id, current_iteration
+                        )
                         if structured:
                             yield structured
 
@@ -363,7 +367,9 @@ class MissionComplexHandler(IntentHandler):
             overmind = await create_overmind(session)
             await overmind.run_mission(mission_id)
 
-    def _create_structured_event(self, event: MissionEvent, sequence_id: int, current_iteration: int) -> dict | None:
+    def _create_structured_event(
+        self, event: MissionEvent, sequence_id: int, current_iteration: int
+    ) -> dict | None:
         """
         Create Canonical Event (Production-Grade Contract) for UI FSM.
         """
@@ -390,8 +396,8 @@ class MissionComplexHandler(IntentHandler):
                             "seq": sequence_id,
                             "timestamp": timestamp,
                             "iteration": iteration,
-                            "mode": data.get("graph_mode", "standard")
-                        }
+                            "mode": data.get("graph_mode", "standard"),
+                        },
                     }
 
                 if brain_evt == "phase_start":
