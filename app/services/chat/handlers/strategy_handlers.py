@@ -17,7 +17,6 @@ from app.core.agents.system_principles import (
     format_architecture_system_principles,
     format_system_principles,
 )
-from app.core.domain.agent_events import AgentEvent, AgentEventType, AgentEventPayload
 from app.core.domain.mission import (
     Mission,
     MissionEvent,
@@ -363,7 +362,7 @@ class MissionComplexHandler(IntentHandler):
                             "timestamp": str(event.created_at)
                         }
                     }
-                elif brain_evt == "phase_completed":
+                if brain_evt == "phase_completed":
                     return {
                         "type": "phase_completed",
                         "payload": {
@@ -372,7 +371,7 @@ class MissionComplexHandler(IntentHandler):
                             "timestamp": str(event.created_at)
                         }
                     }
-                elif brain_evt == "loop_start":
+                if brain_evt == "loop_start":
                     return {
                         "type": "loop_start",
                         "payload": {

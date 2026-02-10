@@ -138,12 +138,13 @@ class CustomerChatBoundaryService:
         if metadata and metadata.get("mission_type") == "mission_complex":
             effective_intent = ChatIntent.MISSION_COMPLEX
 
-        if effective_intent != ChatIntent.CONTENT_RETRIEVAL and self._looks_like_content_request(
-            question
+        if (
+            effective_intent != ChatIntent.CONTENT_RETRIEVAL
+            and self._looks_like_content_request(question)
+            and effective_intent != ChatIntent.MISSION_COMPLEX
         ):
             # Only switch to content retrieval if not already a mission
-            if effective_intent != ChatIntent.MISSION_COMPLEX:
-                effective_intent = ChatIntent.CONTENT_RETRIEVAL
+            effective_intent = ChatIntent.CONTENT_RETRIEVAL
 
         conversation = await self.get_or_create_conversation(user, question, conversation_id)
 
