@@ -164,9 +164,8 @@ export const ChatInterface = ({ messages, onSendMessage, status, user }) => {
                         onKeyPress={handleKeyPress}
                         placeholder={missionType === 'mission_complex' ? "اكتب مهمتك الخارقة..." : "اكتب سؤالك..."}
                         rows="1"
-                        disabled={status !== 'connected'}
                     />
-                    <button onClick={handleSend} disabled={status !== 'connected' || !input.trim()}>
+                    <button onClick={handleSend} disabled={!input.trim()}>
                         <i className="fas fa-arrow-up"></i>
                     </button>
                  </div>
