@@ -359,8 +359,8 @@ class MissionComplexHandler(IntentHandler):
                         "payload": {
                             "phase": data.get("phase"),
                             "agent": data.get("agent"),
-                            "timestamp": str(event.created_at)
-                        }
+                            "timestamp": str(event.created_at),
+                        },
                     }
                 if brain_evt == "phase_completed":
                     return {
@@ -368,16 +368,16 @@ class MissionComplexHandler(IntentHandler):
                         "payload": {
                             "phase": data.get("phase"),
                             "agent": data.get("agent"),
-                            "timestamp": str(event.created_at)
-                        }
+                            "timestamp": str(event.created_at),
+                        },
                     }
                 if brain_evt == "loop_start":
                     return {
                         "type": "loop_start",
                         "payload": {
                             "iteration": data.get("iteration"),
-                            "timestamp": str(event.created_at)
-                        }
+                            "timestamp": str(event.created_at),
+                        },
                     }
             return None
         except Exception as e:
