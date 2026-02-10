@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAgentSocket } from '../hooks/useAgentSocket';
 import { ChatInterface } from './ChatInterface';
-import { AgentStatusBoard } from './AgentStatusBoard';
+import { AgentTimeline } from './AgentTimeline';
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? '';
 const apiUrl = (path) => `${API_ORIGIN}${path}`;
@@ -143,7 +143,7 @@ const DashboardLayout = ({ user, onLogout }) => {
         fetchConversations();
     }, [fetchConversations]);
 
-    const { messages, sendMessage, status, conversationId, setConversationId, clearMessages, setMessages, agentStates } = useAgentSocket(endpoint, localStorage.getItem('token'), fetchConversations);
+    const { messages, sendMessage, status, conversationId, setConversationId, clearMessages, setMessages } = useAgentSocket(endpoint, localStorage.getItem('token'), fetchConversations);
 
     const loadConversation = async (id) => {
         setIsSidebarOpen(false);
@@ -268,7 +268,7 @@ const DashboardLayout = ({ user, onLogout }) => {
                         </button>
                      </div>
                      <div style={{ padding: '0.5rem' }}>
-                        <AgentStatusBoard agentStates={agentStates} />
+                        <AgentTimeline />
                      </div>
                 </div>
 
