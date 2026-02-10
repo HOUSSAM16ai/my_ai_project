@@ -40,8 +40,6 @@ services:
     environment:
       # API_URL tells the Next.js server side proxy where to find the backend
       API_URL: http://core-kernel:8000
-      # Use localhost:8000 for browser-side WebSocket connections in default local setup
-      NEXT_PUBLIC_WS_URL: ws://localhost:8000
     depends_on:
       - core-kernel
 
