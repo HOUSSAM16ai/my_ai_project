@@ -326,7 +326,9 @@ class MissionComplexHandler(IntentHandler):
                             logger.error(f"Background mission task failed: {e}")
                             yield {
                                 "type": "assistant_error",
-                                "payload": {"content": "❌ **خطأ غير متوقع في النظام:** يرجى مراجعة السجلات."},
+                                "payload": {
+                                    "content": "❌ **خطأ غير متوقع في النظام:** يرجى مراجعة السجلات."
+                                },
                             }
                             return
 
@@ -392,7 +394,9 @@ class MissionComplexHandler(IntentHandler):
             logger.critical(f"Critical error in MissionComplexHandler: {global_ex}", exc_info=True)
             yield {
                 "type": "assistant_error",
-                "payload": {"content": "\n🛑 **حدث خطأ حرج أثناء تنفيذ المهمة.** تم تسجيل المشكلة وجاري العمل على حلها.\n"},
+                "payload": {
+                    "content": "\n🛑 **حدث خطأ حرج أثناء تنفيذ المهمة.** تم تسجيل المشكلة وجاري العمل على حلها.\n"
+                },
             }
 
     def _check_provider_config(self) -> str | None:
