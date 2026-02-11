@@ -166,8 +166,35 @@ async def chat_stream_ws(
                 {"type": "status", "payload": {"status_code": dispatch_result.status_code}}
             )
 
+            content_delivered = False
             async for event in dispatch_result.stream:
+                # Output Guard: Track if any content was delivered
+                if isinstance(event, dict):
+                    evt_type = str(event.get("type", ""))
+                    if evt_type in (
+                        "assistant_delta",
+                        "assistant_final",
+                        "assistant_error",
+                        "tool_result_summary",
+                    ):
+                        content_delivered = True
+
                 await websocket.send_json(event)
+
+            # Output Contract: Ensure something always appears
+            if not content_delivered:
+                logger.warning(
+                    "Output Guard triggered: Stream ended without content.",
+                    extra={"user_id": actor.id},
+                )
+                await websocket.send_json(
+                    {
+                        "type": "assistant_fallback",
+                        "payload": {
+                            "content": "عذراً، لم أتمكن من استخراج نتيجة نهائية لهذه العملية. يرجى المحاولة مرة أخرى أو صياغة الطلب بشكل أوضح."
+                        },
+                    }
+                )
 
     except WebSocketDisconnect:
         logger.info("Customer WebSocket disconnected")
