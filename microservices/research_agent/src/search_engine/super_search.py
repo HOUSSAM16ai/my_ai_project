@@ -117,7 +117,16 @@ class SuperSearchOrchestrator:
             self.search_tool = search_tool
         else:
             tavily_key = os.environ.get("TAVILY_API_KEY")
-            if TavilyClient and tavily_key:
+
+            # Sanitization for MCP URL format (e.g. pasted full URL instead of key)
+            if tavily_key and "tavilyApiKey=" in tavily_key:
+                try:
+                    tavily_key = tavily_key.split("tavilyApiKey=")[1].split("&")[0]
+                    logger.info("Auto-sanitized Tavily API Key from URL.")
+                except IndexError:
+                    pass
+
+            if TavilyClient and tavily_key and tavily_key.startswith("tvly-"):
                 logger.info("Using Tavily Search.")
                 self.search_tool = TavilyClient(api_key=tavily_key)
             else:
