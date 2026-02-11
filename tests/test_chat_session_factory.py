@@ -58,7 +58,12 @@ async def test_chat_orchestrator_passes_session_factory():
     response_gen = handler.execute(ctx_missing)
     response = []
     async for chunk in response_gen:
-        response.append(chunk)
+        # Check if chunk is a dict (JSON output) or string
+        if isinstance(chunk, dict):
+            content = chunk.get("payload", {}).get("content", "")
+            response.append(content)
+        else:
+            response.append(str(chunk))
 
     assert any("لا يوجد مصنع جلسات" in r for r in response)
 

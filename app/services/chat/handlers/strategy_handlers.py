@@ -199,29 +199,29 @@ class MissionComplexHandler(IntentHandler):
         try:
             yield {
                 "type": "assistant_delta",
-                "payload": {"content": "🚀 **بدء المهمة الخارقة (Super Agent)**...\n"}
+                "payload": {"content": "🚀 **بدء المهمة الخارقة (Super Agent)**...\n"},
             }
 
             if not context.session_factory:
                 yield {
                     "type": "assistant_error",
-                    "payload": {"content": "❌ خطأ: لا يوجد مصنع جلسات (Session Factory)."}
+                    "payload": {"content": "❌ خطأ: لا يوجد مصنع جلسات (Session Factory)."},
                 }
                 return
 
             # 0. Fail-Fast Configuration Check
             config_error = self._check_provider_config()
             if config_error:
-                yield {
-                    "type": "assistant_error",
-                    "payload": {"content": f"{config_error}\n"}
-                }
+                yield {"type": "assistant_error", "payload": {"content": f"{config_error}\n"}}
                 return
 
             # Detect Force Research Intent
             force_research = False
             q_lower = context.question.lower()
-            if any(k in q_lower for k in ["بحث", "internet", "db", "مصادر", "search", "database", "قاعدة بيانات"]):
+            if any(
+                k in q_lower
+                for k in ["بحث", "internet", "db", "مصادر", "search", "database", "قاعدة بيانات"]
+            ):
                 force_research = True
 
             # 1. Initialize Mission in DB
@@ -242,13 +242,15 @@ class MissionComplexHandler(IntentHandler):
                     mission_id = mission.id
                     yield {
                         "type": "assistant_delta",
-                        "payload": {"content": f"🆔 رقم المهمة: `{mission.id}`\n⏳ البدء..."}
+                        "payload": {"content": f"🆔 رقم المهمة: `{mission.id}`\n⏳ البدء..."},
                     }
             except Exception as e:
                 logger.error(f"Failed to create mission: {e}", exc_info=True)
                 yield {
                     "type": "assistant_error",
-                    "payload": {"content": f"❌ **خطأ في قاعدة البيانات:** لم نتمكن من بدء المهمة.\n`{e!s}`"}
+                    "payload": {
+                        "content": f"❌ **خطأ في قاعدة البيانات:** لم نتمكن من بدء المهمة.\n`{e!s}`"
+                    },
                 }
                 return
 
@@ -322,7 +324,7 @@ class MissionComplexHandler(IntentHandler):
                         except Exception as e:
                             yield {
                                 "type": "assistant_error",
-                                "payload": {"content": f"❌ **خطأ غير متوقع في النظام:** {e}"}
+                                "payload": {"content": f"❌ **خطأ غير متوقع في النظام:** {e}"},
                             }
                             logger.error(f"Background mission task failed: {e}")
                             return
@@ -362,14 +364,18 @@ class MissionComplexHandler(IntentHandler):
                     if not final_sent:
                         mission_check = await session.get(Mission, mission_id)
                         if mission_check and mission_check.status == MissionStatus.COMPLETED:
-                             yield {
+                            yield {
                                 "type": "assistant_final",
-                                "payload": {"content": "✅ تمت المهمة بنجاح، لكن لم يتم العثور على مخرجات نصية صريحة."}
+                                "payload": {
+                                    "content": "✅ تمت المهمة بنجاح، لكن لم يتم العثور على مخرجات نصية صريحة."
+                                },
                             }
                         elif mission_check and mission_check.status == MissionStatus.FAILED:
-                             yield {
+                            yield {
                                 "type": "assistant_error",
-                                "payload": {"content": f"❌ فشلت المهمة: {mission_check.note or 'Unknown error'}"}
+                                "payload": {
+                                    "content": f"❌ فشلت المهمة: {mission_check.note or 'Unknown error'}"
+                                },
                             }
 
                 # End of stream indicator (implied by closure)
@@ -385,7 +391,7 @@ class MissionComplexHandler(IntentHandler):
             logger.critical(f"Critical error in MissionComplexHandler: {global_ex}", exc_info=True)
             yield {
                 "type": "assistant_error",
-                "payload": {"content": f"\n🛑 **حدث خطأ حرج أثناء تنفيذ المهمة:** {global_ex}\n"}
+                "payload": {"content": f"\n🛑 **حدث خطأ حرج أثناء تنفيذ المهمة:** {global_ex}\n"},
             }
 
     def _check_provider_config(self) -> str | None:
@@ -533,31 +539,30 @@ class MissionComplexHandler(IntentHandler):
                 # Check for explicit output
                 if isinstance(result, dict):
                     if result.get("output") or result.get("answer") or result.get("summary"):
-                        result_text = result.get("output") or result.get("answer") or result.get("summary")
+                        result_text = (
+                            result.get("output") or result.get("answer") or result.get("summary")
+                        )
                     elif "results" in result and isinstance(result["results"], list):
                         # Use Tool Result Summary if no text answer
                         return {
-                             "type": "tool_result_summary",
-                             "payload": {
-                                 "summary": "تم تنفيذ المهام بنجاح.",
-                                 "items": result["results"]
-                             }
+                            "type": "tool_result_summary",
+                            "payload": {
+                                "summary": "تم تنفيذ المهام بنجاح.",
+                                "items": result["results"],
+                            },
                         }
                     else:
                         result_text = json.dumps(result, ensure_ascii=False, indent=2)
                 else:
                     result_text = str(result)
 
-                return {
-                    "type": "assistant_final",
-                    "payload": {"content": result_text}
-                }
+                return {"type": "assistant_final", "payload": {"content": result_text}}
 
             # 2. Handle Failure
             if event.event_type == MissionEventType.MISSION_FAILED:
                 return {
                     "type": "assistant_error",
-                    "payload": {"content": f"💀 **فشل:** {payload.get('error')}"}
+                    "payload": {"content": f"💀 **فشل:** {payload.get('error')}"},
                 }
 
             # 3. Handle Status/Progress (Assistant Delta)
@@ -571,7 +576,10 @@ class MissionComplexHandler(IntentHandler):
 
                 status_note = payload.get("note")
                 if status_note:
-                    return {"type": "assistant_delta", "payload": {"content": f"🔄 {status_note}\n"}}
+                    return {
+                        "type": "assistant_delta",
+                        "payload": {"content": f"🔄 {status_note}\n"},
+                    }
 
                 return None
 
