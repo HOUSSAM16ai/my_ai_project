@@ -1,7 +1,10 @@
-import pytest
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
+
+import pytest
+
 from app.services.overmind.readiness import ProviderReadinessGate, check_mission_readiness
+
 
 @pytest.mark.asyncio
 async def test_check_search_providers_no_egress():
@@ -44,8 +47,8 @@ async def test_check_egress_detailed_mixed_results():
     """Test detail extraction logic (mocking httpx is harder, so we test the aggregator logic via the public method if possible, or trust the manual check).
        For unit testing _check_egress_detailed, we would need to mock httpx.AsyncClient.
     """
-    with patch("httpx.AsyncClient") as MockClient:
-        mock_instance = MockClient.return_value.__aenter__.return_value
+    with patch("httpx.AsyncClient") as mock_client_cls:
+        _ = mock_client_cls.return_value.__aenter__.return_value
 
         # We need to simulate multiple calls to .get()
         # The code runs them concurrently with asyncio.gather

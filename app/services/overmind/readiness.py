@@ -3,9 +3,9 @@ Readiness Gate for Overmind Services.
 Ensures that critical providers are available before starting a mission.
 """
 
+import asyncio
 import logging
 import os
-import asyncio
 from typing import Any
 
 import httpx
@@ -103,14 +103,14 @@ class ProviderReadinessGate:
             return {
                 "status": "OK" if len(failed_probes) == 0 else "PARTIAL",
                 "success_count": success_count,
-                "failed_probes": failed_probes
+                "failed_probes": failed_probes,
             }
-        else:
-            return {
-                "status": "NO_EGRESS",
-                "success_count": 0,
-                "failed_probes": failed_probes
-            }
+
+        return {
+            "status": "NO_EGRESS",
+            "success_count": 0,
+            "failed_probes": failed_probes,
+        }
 
     @staticmethod
     async def _probe_url(client, url, name) -> tuple[bool, str, str | None]:
