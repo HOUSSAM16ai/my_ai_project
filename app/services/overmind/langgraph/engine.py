@@ -78,7 +78,7 @@ class SupervisorOrchestrator:
         # Force Research Check
         force_research = state.get("context", {}).get("force_research")
         if force_research and not shared_memory.get("research_performed"):
-             return SupervisorDecision(
+            return SupervisorDecision(
                 next_step="contextualizer", reason="طلب بحث إلزامي (Force Research)."
             )
 
