@@ -5,6 +5,7 @@ Intent handlers using Strategy pattern.
 import asyncio
 import json
 import logging
+import os
 import re
 from collections.abc import AsyncGenerator
 
@@ -195,6 +196,12 @@ class MissionComplexHandler(IntentHandler):
         """
         # Global try-except to prevent stream crash
         try:
+            # 0. Fail-Fast Configuration Check
+            config_error = self._check_provider_config()
+            if config_error:
+                yield f"{config_error}\n"
+                return
+
             yield "🚀 **بدء المهمة الخارقة (Super Agent)**...\n"
 
             if not context.session_factory:
@@ -321,6 +328,24 @@ class MissionComplexHandler(IntentHandler):
             logger.critical(f"Critical error in MissionComplexHandler: {global_ex}", exc_info=True)
             yield f"\n🛑 **حدث خطأ حرج أثناء تنفيذ المهمة:** {global_ex}\n"
 
+    def _check_provider_config(self) -> str | None:
+        """
+        Check for critical environment configurations (LLM & Search).
+        Returns an error message if missing, else None.
+        """
+        # 1. LLM Check (Critical)
+        if not os.environ.get("OPENROUTER_API_KEY") and not os.environ.get("OPENAI_API_KEY"):
+            return "🛑 **خطأ في التكوين:** مفتاح الذكاء الاصطناعي (LLM Key) مفقود. يرجى التحقق من ملف .env."
+
+        # 2. Search Check (Warn only, as DDG is fallback)
+        has_search_key = os.environ.get("TAVILY_API_KEY") or os.environ.get("FIRECRAWL_API_KEY")
+        if not has_search_key:
+            # We don't block execution because DuckDuckGo is a valid fallback.
+            # But we log it for observability.
+            logger.warning("No dedicated search provider key found (TAVILY/FIRECRAWL). Using Fallback.")
+
+        return None
+
     async def _ensure_mission_schema(self, session) -> None:
         """
         Checks and attempts to self-heal missing mission tables.
@@ -378,7 +403,9 @@ class MissionComplexHandler(IntentHandler):
             mission_id = event.mission_id
 
             # Use tracked iteration context to ensure Run Isolation
-            run_id = f"{mission_id}_{current_iteration}"
+            # FIX: We use stable run_id (Mission ID) to prevent UI jumping,
+            # while passing iteration in payload for logic.
+            run_id = str(mission_id)
             timestamp = str(event.created_at)
 
             if event.event_type == MissionEventType.STATUS_CHANGE:
@@ -388,7 +415,7 @@ class MissionComplexHandler(IntentHandler):
                 if brain_evt == "loop_start":
                     # loop_start defines the iteration for the NEW run
                     iteration = data.get("iteration", current_iteration)
-                    run_id = f"{mission_id}_{iteration}"
+                    # We keep run_id stable, but emit RUN_STARTED to signal loop start
                     return {
                         "type": "RUN_STARTED",
                         "payload": {
