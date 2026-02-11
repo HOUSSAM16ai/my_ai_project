@@ -11,7 +11,7 @@ from app.core.domain.models import MessageRole, MissionStatus, utc_now
 from app.kernel import MiddlewareSpec, RouterSpec
 
 EXPECTED_MESSAGE_ROLES = 4
-EXPECTED_MISSION_STATUSES = 8
+EXPECTED_MISSION_STATUSES = 9
 MAX_DURATION_SECONDS = 0.01
 
 

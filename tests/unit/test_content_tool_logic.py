@@ -56,14 +56,11 @@ async def test_search_content_uses_super_orchestrator():
 
 @pytest.mark.asyncio
 async def test_search_content_error_handling():
-    """Verify error handling returns error object."""
+    """Verify search_content propagates exceptions (fail-fast)."""
     mock_orchestrator_instance.execute.side_effect = Exception("Network error")
 
-    results = await content_module.search_content(q="Error Query")
-
-    assert len(results) == 1
-    assert results[0]["id"] == "error"
-    assert "Network error" in results[0]["content"]
+    with pytest.raises(Exception, match="Network error"):
+        await content_module.search_content(q="Error Query")
 
 
 @pytest.mark.asyncio
