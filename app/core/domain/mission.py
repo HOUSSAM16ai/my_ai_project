@@ -27,6 +27,7 @@ class MissionStatus(CaseInsensitiveEnum):
     RUNNING = "running"
     ADAPTING = "adapting"
     SUCCESS = "success"
+    PARTIAL_SUCCESS = "partial_success"
     FAILED = "failed"
     CANCELED = "canceled"
 
