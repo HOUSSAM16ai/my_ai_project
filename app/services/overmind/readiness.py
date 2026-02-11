@@ -84,10 +84,9 @@ class ProviderReadinessGate:
                     resp = await client.get(url)
                     if 200 <= resp.status_code < 400:
                         return True
-                    else:
-                        logger.warning(
-                            f"Egress check warning: {url} returned {resp.status_code}"
-                        )
+                    logger.warning(
+                        f"Egress check warning: {url} returned {resp.status_code}"
+                    )
                 except Exception as e:
                     logger.debug(f"Egress check failed for {url}: {e}")
                     continue
