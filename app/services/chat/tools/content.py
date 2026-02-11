@@ -77,6 +77,7 @@ async def search_content(
     type: str | None = None,
     lang: str | None = None,
     limit: int = 10,
+    **kwargs,
 ) -> list[dict[str, object]]:
     """
     Cognitive Research Infrastructure (CRI).
@@ -85,6 +86,9 @@ async def search_content(
     autonomous agents (Tavily/Firecrawl).
     Returns a detailed research report.
     """
+    if kwargs:
+        logger.warning(f"search_content received unexpected arguments: {kwargs}")
+
     if not q:
         return []
 
