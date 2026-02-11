@@ -134,7 +134,7 @@ async def search_content(
                 "id": "error",
                 "title": "Validation Error",
                 "content": f"Invalid arguments provided: {e}",
-                "type": "error"
+                "type": "error",
             }
         ]
 

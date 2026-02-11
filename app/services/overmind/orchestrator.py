@@ -82,12 +82,12 @@ class OvermindOrchestrator:
 
             if not readiness_check.get("ready"):
                 error_reason = readiness_check.get("error", "Failed readiness check")
-                logger.error(f"Mission {mission_id} aborted due to readiness failure: {error_reason}")
+                logger.error(
+                    f"Mission {mission_id} aborted due to readiness failure: {error_reason}"
+                )
 
                 await self.state.update_mission_status(
-                    mission_id,
-                    MissionStatus.FAILED,
-                    note=f"Readiness Check Failed: {error_reason}"
+                    mission_id, MissionStatus.FAILED, note=f"Readiness Check Failed: {error_reason}"
                 )
                 await self.state.log_event(
                     mission_id,
@@ -101,7 +101,10 @@ class OvermindOrchestrator:
                 await self.state.log_event(
                     mission_id,
                     MissionEventType.STATUS_CHANGE,
-                    {"info": "Mission running in Degraded Mode (No Tavily Key found). Expecting potentially lower quality search results.", "mode": "degraded"}
+                    {
+                        "info": "Mission running in Degraded Mode (No Tavily Key found). Expecting potentially lower quality search results.",
+                        "mode": "degraded",
+                    },
                 )
             # ----------------------------------------
 
@@ -185,7 +188,9 @@ class OvermindOrchestrator:
                 {"error": str(e), "error_type": type(e).__name__},
             )
 
-    def _arbitrate_mission_outcome(self, result: dict[str, object], mission_id: int) -> MissionStatus:
+    def _arbitrate_mission_outcome(
+        self, result: dict[str, object], mission_id: int
+    ) -> MissionStatus:
         """
         Arbiter: Decides the final mission status based on evidence.
         Enforces "Outcome/Progress Divergence" prevention.
@@ -202,7 +207,9 @@ class OvermindOrchestrator:
                 logger.error(f"Mission {mission_id} FAILED: Operator reported total failure.")
                 return MissionStatus.FAILED
             if exec_status == "partial_failure":
-                logger.warning(f"Mission {mission_id} PARTIAL_SUCCESS: Operator reported partial failures.")
+                logger.warning(
+                    f"Mission {mission_id} PARTIAL_SUCCESS: Operator reported partial failures."
+                )
                 status = MissionStatus.PARTIAL_SUCCESS
 
         # 2. Check for Empty Search Results (Crucial for "No Tavily" scenarios)
@@ -214,13 +221,19 @@ class OvermindOrchestrator:
                 if isinstance(task_res, dict):
                     tool_name = task_res.get("tool")
                     # If search was attempted
-                    if tool_name in ("search_content", "search_educational_content", "deep_research"):
+                    if tool_name in (
+                        "search_content",
+                        "search_educational_content",
+                        "deep_research",
+                    ):
                         tool_output = task_res.get("result", {})
                         if isinstance(tool_output, dict):
                             # Executor wrapper format
                             raw_data = tool_output.get("result_data")
                             if not raw_data or (isinstance(raw_data, list) and len(raw_data) == 0):
-                                logger.warning(f"Mission {mission_id} PARTIAL_SUCCESS: Search tool '{tool_name}' returned empty results.")
+                                logger.warning(
+                                    f"Mission {mission_id} PARTIAL_SUCCESS: Search tool '{tool_name}' returned empty results."
+                                )
                                 status = MissionStatus.PARTIAL_SUCCESS
 
         return status
