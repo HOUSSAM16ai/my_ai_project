@@ -88,55 +88,42 @@ async def search_content(
     if not q:
         return []
 
-    try:
-        from microservices.research_agent.src.search_engine.super_search import (
-            SuperSearchOrchestrator,
-        )
+    from microservices.research_agent.src.search_engine.super_search import (
+        SuperSearchOrchestrator,
+    )
 
-        # Normalize branch if provided
-        normalized_branch = _normalize_branch(branch) if branch else branch
+    # Normalize branch if provided
+    normalized_branch = _normalize_branch(branch) if branch else branch
 
-        # Build query context
-        context_parts = []
-        if subject:
-            context_parts.append(f"Subject: {subject}")
-        if normalized_branch:
-            context_parts.append(f"Branch: {normalized_branch}")
-        if year:
-            context_parts.append(f"Year: {year}")
-        if level:
-            context_parts.append(f"Level: {level}")
-        if type:
-            context_parts.append(f"Type: {type}")
+    # Build query context
+    context_parts = []
+    if subject:
+        context_parts.append(f"Subject: {subject}")
+    if normalized_branch:
+        context_parts.append(f"Branch: {normalized_branch}")
+    if year:
+        context_parts.append(f"Year: {year}")
+    if level:
+        context_parts.append(f"Level: {level}")
+    if type:
+        context_parts.append(f"Type: {type}")
 
-        full_query = q
-        if context_parts:
-            full_query += f" ({', '.join(context_parts)})"
+    full_query = q
+    if context_parts:
+        full_query += f" ({', '.join(context_parts)})"
 
-        orchestrator = SuperSearchOrchestrator()
-        report = await orchestrator.execute(full_query)
+    orchestrator = SuperSearchOrchestrator()
+    report = await orchestrator.execute(full_query)
 
-        return [
-            {
-                "id": "research_report",
-                "title": f"Research Report: {q}",
-                "content": report,
-                "type": "report",
-                "metadata": {"query": full_query, "source": "SuperSearchOrchestrator"},
-            }
-        ]
-
-    except Exception as e:
-        logger.error(f"SuperSearch failed: {e}")
-        return [
-            {
-                "id": "error",
-                "title": "Research Failed",
-                "content": f"An error occurred during research: {e!s}",
-                "type": "error",
-                "metadata": {"error": str(e)},
-            }
-        ]
+    return [
+        {
+            "id": "research_report",
+            "title": f"Research Report: {q}",
+            "content": report,
+            "type": "report",
+            "metadata": {"query": full_query, "source": "SuperSearchOrchestrator"},
+        }
+    ]
 
 
 async def get_content_raw(

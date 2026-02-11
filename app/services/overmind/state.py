@@ -103,6 +103,7 @@ class MissionStateManager:
         mission_id: int,
         result_summary: str | None = None,
         result_json: dict[str, object] | None = None,
+        status: MissionStatus = MissionStatus.SUCCESS,
     ) -> None:
         """
         Completes the mission, updates the result summary, and logs the completion event.
@@ -112,7 +113,7 @@ class MissionStateManager:
         result = await self.session.execute(stmt)
         mission = result.scalar_one_or_none()
         if mission:
-            mission.status = MissionStatus.SUCCESS
+            mission.status = status
             mission.updated_at = utc_now()
             if result_summary:
                 mission.result_summary = result_summary

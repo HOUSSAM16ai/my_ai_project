@@ -133,8 +133,22 @@ class OvermindOrchestrator:
             # Extract summary for Admin Dashboard visibility
             summary = self._extract_summary(result)
 
+            # Determine final status based on execution evidence (Success-by-Evidence)
+            final_status = MissionStatus.SUCCESS
+            execution = result.get("execution")
+            if isinstance(execution, dict):
+                # Check for explicit status in execution report (from OperatorAgent)
+                exec_status = execution.get("status")
+                if exec_status == "partial_failure":
+                    final_status = MissionStatus.PARTIAL_SUCCESS
+                elif exec_status == "failed":
+                    final_status = MissionStatus.FAILED
+
             await self.state.complete_mission(
-                mission.id, result_summary=summary, result_json=result
+                mission.id,
+                result_summary=summary,
+                result_json=result,
+                status=final_status,
             )
 
         except Exception as e:
