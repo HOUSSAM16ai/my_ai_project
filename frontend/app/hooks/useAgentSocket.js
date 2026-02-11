@@ -94,7 +94,7 @@ export const useAgentSocket = (endpoint, token, onConversationUpdate) => {
                     setConversationId(payload.conversation_id);
                 }
                 if (onConversationUpdateRef.current) onConversationUpdateRef.current();
-            } else if (type === 'delta') {
+            } else if (type === 'delta' || type === 'assistant_delta') {
                 const content = payload?.content || '';
                 if (!content) return;
 
@@ -115,9 +115,29 @@ export const useAgentSocket = (endpoint, token, onConversationUpdate) => {
                     }
                     return prev;
                 });
+            } else if (type === 'assistant_final') {
+                const content = payload?.content || '';
+                setMessages(prev => {
+                    const last = prev[prev.length - 1];
+                    if (last && last.role === 'assistant' && !last.isComplete && !last.isError) {
+                         const newContent = last.content + content;
+                         return [...prev.slice(0, -1), { ...last, content: newContent, isComplete: true }];
+                    } else if (content) {
+                         return [...prev, { id: generateId(), role: 'assistant', content: content, isComplete: true }];
+                    }
+                    return prev;
+                });
+            } else if (type === 'assistant_fallback') {
+                 const content = payload?.content || '';
+                 if (content) {
+                    addMessage({ id: generateId(), role: 'assistant', content: content, isComplete: true });
+                 }
             } else if (type === 'error') {
                 const details = payload?.details || 'Unknown error';
                 addMessage({ id: generateId(), role: 'assistant', content: `Error: ${details}`, isError: true });
+            } else if (type === 'assistant_error') {
+                const content = payload?.content || 'Unknown assistant error';
+                addMessage({ id: generateId(), role: 'assistant', content: `Error: ${content}`, isError: true });
             }
         };
 
