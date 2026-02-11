@@ -337,7 +337,11 @@ class MissionComplexHandler(IntentHandler):
 
                     mission_check = await session.get(Mission, mission_id)
                     # Only show status if not success/fail (already handled)
-                    if mission_check and mission_check.status not in (MissionStatus.COMPLETED, MissionStatus.FAILED, MissionStatus.PARTIAL_SUCCESS):
+                    if mission_check and mission_check.status not in (
+                        MissionStatus.COMPLETED,
+                        MissionStatus.FAILED,
+                        MissionStatus.PARTIAL_SUCCESS,
+                    ):
                         yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
 
                 yield "\n✅ **تم انتهاء متابعة المهمة.**\n"
@@ -495,7 +499,7 @@ class MissionComplexHandler(IntentHandler):
                 status_note = payload.get("note")
                 if status_note:
                     return f"🔄 {status_note}\n"
-                return None # Silence old_status -> new_status noise
+                return None  # Silence old_status -> new_status noise
 
             if event.event_type == MissionEventType.MISSION_COMPLETED:
                 result = payload.get("result", {})
@@ -530,11 +534,11 @@ class MissionComplexHandler(IntentHandler):
 
             # Filter out generic 'INFO' events to reduce noise
             if event.event_type == MissionEventType.INFO:
-                 return None
+                return None
 
             return f"ℹ️ {event.event_type.value}: {payload}\n"
         except Exception:
-            return None # Fail safe silence
+            return None  # Fail safe silence
 
 
 def _format_task_results(tasks: list) -> str:
@@ -627,11 +631,7 @@ def _format_brain_event(event_name: str, data: dict[str, object] | object) -> st
 
     if normalized == "mission_critique_failed":
         critique = data.get("critique", {})
-        feedback = (
-            critique.get("feedback", "N/A")
-            if isinstance(critique, dict)
-            else str(critique)
-        )
+        feedback = critique.get("feedback", "N/A") if isinstance(critique, dict) else str(critique)
         return f"🔔 **تدقيق:** {feedback} (جاري التعديل...)\n"
 
     if normalized in {"mission_success", "phase_error"}:
@@ -671,12 +671,12 @@ def _format_inner_data(data: object) -> str:
         and "id" in data[0]
     ):
         lines = ["✅ **النتائج:**\n"]
-        for item in data[:3]: # Limit to top 3 to prevent flooding
+        for item in data[:3]:  # Limit to top 3 to prevent flooding
             title = item.get("title", "بدون عنوان")
             lines.append(f"* 🔹 {title}")
 
         if len(data) > 3:
-            lines.append(f"* ... و {len(data)-3} نتائج أخرى.")
+            lines.append(f"* ... و {len(data) - 3} نتائج أخرى.")
 
         return "\n".join(lines)
 
