@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import Optional, List, Dict, Any
 import logging
+from typing import Any
+
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 logger = logging.getLogger(__name__)
 
@@ -9,14 +10,14 @@ class SearchContentSchema(BaseModel):
     Schema for the search_content tool.
     Strictly validates inputs and handles alias mapping (Adapter Layer).
     """
-    q: Optional[str] = Field(None, alias="query")
-    level: Optional[str] = None
-    subject: Optional[str] = None
-    branch: Optional[str] = None
-    set_name: Optional[str] = None
-    year: Optional[int] = None
-    type: Optional[str] = None
-    lang: Optional[str] = None
+    q: str | None = Field(None, alias="query")
+    level: str | None = None
+    subject: str | None = None
+    branch: str | None = None
+    set_name: str | None = None
+    year: int | None = None
+    type: str | None = None
+    lang: str | None = None
     limit: int = Field(10, ge=1, le=50)
 
     # Catch-all for extra fields to prevent crashes, but log them
