@@ -141,6 +141,9 @@ class OvermindOrchestrator:
                 exec_status = execution.get("status")
                 if exec_status == "partial_failure":
                     final_status = MissionStatus.PARTIAL_SUCCESS
+                    logger.warning(
+                        f"Mission {mission.id} resulted in PARTIAL_SUCCESS due to execution failures."
+                    )
                 elif exec_status == "failed":
                     final_status = MissionStatus.FAILED
 
