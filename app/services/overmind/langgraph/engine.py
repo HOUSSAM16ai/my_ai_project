@@ -74,6 +74,14 @@ class SupervisorOrchestrator:
             return SupervisorDecision(next_step="end", reason="تم اكتشاف حلقة وتم إنهاء المراجعة.")
 
         shared_memory = state.get("shared_memory", {})
+
+        # Force Research Check
+        force_research = state.get("context", {}).get("force_research")
+        if force_research and not shared_memory.get("research_performed"):
+             return SupervisorDecision(
+                next_step="contextualizer", reason="طلب بحث إلزامي (Force Research)."
+            )
+
         if not shared_memory.get("context_enriched"):
             return SupervisorDecision(
                 next_step="contextualizer", reason="السياق لم يتم إثراؤه بعد."
@@ -303,6 +311,7 @@ class LangGraphOvermindEngine:
             "metadata_filters": enrichment.metadata,
             "knowledge_snippets": enrichment.snippets,
             "context_enriched": True,
+            "research_performed": True,
         }
 
         if self._observer:

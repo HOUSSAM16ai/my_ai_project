@@ -61,13 +61,14 @@ class OvermindOrchestrator:
         self.executor = executor
         self.brain = brain
 
-    async def run_mission(self, mission_id: int) -> None:
+    async def run_mission(self, mission_id: int, force_research: bool = False) -> None:
         """
         نقطة الدخول الرئيسية لدورة حياة المهمة غير المتزامنة.
         تقوم بتفويض الحمل المعرفي للعقل الخارق (SuperBrain).
 
         Args:
             mission_id (int): معرف المهمة في قاعدة البيانات.
+            force_research (bool): إجبار النظام على إجراء بحث (Internet/DB).
         """
         try:
             mission = await self.state.get_mission(mission_id)
@@ -108,7 +109,7 @@ class OvermindOrchestrator:
                 )
             # ----------------------------------------
 
-            await self._run_super_agent_loop(mission)
+            await self._run_super_agent_loop(mission, force_research=force_research)
 
         except Exception as e:
             # Catch-all for catastrophic failures preventing the loop from starting
@@ -122,12 +123,13 @@ class OvermindOrchestrator:
                 {"error": str(e), "reason": "catastrophic_crash"},
             )
 
-    async def _run_super_agent_loop(self, mission: Mission) -> None:
+    async def _run_super_agent_loop(self, mission: Mission, force_research: bool = False) -> None:
         """
         الحلقة الذاتية المدفوعة بمجلس الحكمة (Council of Wisdom).
 
         Args:
             mission (Mission): كائن المهمة.
+            force_research (bool): إجبار البحث.
         """
         await self.state.update_mission_status(
             mission.id, MissionStatus.RUNNING, OvermindMessage.CONVENING_COUNCIL
@@ -149,6 +151,10 @@ class OvermindOrchestrator:
             if hasattr(self.brain, "run"):
                 # LangGraph Path
                 initial_context = self._build_initial_context(mission)
+                # Inject Force Research Flag
+                if force_research:
+                    initial_context["force_research"] = True
+
                 run_result = await self.brain.run(
                     run_id=str(mission.id),
                     objective=mission.objective,

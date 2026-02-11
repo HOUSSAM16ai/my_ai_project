@@ -193,21 +193,36 @@ class MissionComplexHandler(IntentHandler):
         """
         Execute complex mission.
         Creates a Mission DB entry and triggers the Overmind in background.
-        Streams updates to the user.
+        Streams updates to the user using Strict Output Contract.
         """
         # Global try-except to prevent stream crash
         try:
-            yield "🚀 **بدء المهمة الخارقة (Super Agent)**...\n"
+            yield {
+                "type": "assistant_delta",
+                "payload": {"content": "🚀 **بدء المهمة الخارقة (Super Agent)**...\n"}
+            }
 
             if not context.session_factory:
-                yield "❌ خطأ: لا يوجد مصنع جلسات (Session Factory).\n"
+                yield {
+                    "type": "assistant_error",
+                    "payload": {"content": "❌ خطأ: لا يوجد مصنع جلسات (Session Factory)."}
+                }
                 return
 
             # 0. Fail-Fast Configuration Check
             config_error = self._check_provider_config()
             if config_error:
-                yield f"{config_error}\n"
+                yield {
+                    "type": "assistant_error",
+                    "payload": {"content": f"{config_error}\n"}
+                }
                 return
+
+            # Detect Force Research Intent
+            force_research = False
+            q_lower = context.question.lower()
+            if any(k in q_lower for k in ["بحث", "internet", "db", "مصادر", "search", "database", "قاعدة بيانات"]):
+                force_research = True
 
             # 1. Initialize Mission in DB
             mission_id = 0
@@ -225,25 +240,26 @@ class MissionComplexHandler(IntentHandler):
                     await session.commit()
                     await session.refresh(mission)
                     mission_id = mission.id
-                    yield f"🆔 رقم المهمة: `{mission.id}`\n"
-                    # Simplified initial message
-                    yield "⏳ البدء...\n"
+                    yield {
+                        "type": "assistant_delta",
+                        "payload": {"content": f"🆔 رقم المهمة: `{mission.id}`\n⏳ البدء..."}
+                    }
             except Exception as e:
                 logger.error(f"Failed to create mission: {e}", exc_info=True)
-                yield "\n❌ **خطأ في قاعدة البيانات:** لم نتمكن من بدء المهمة.\n"
-                yield f"التفاصيل التقنية: `{e!s}`\n"
-                yield "💡 **الحل:** يرجى إبلاغ الفريق التقني لفحص حالة قاعدة البيانات.\n"
+                yield {
+                    "type": "assistant_error",
+                    "payload": {"content": f"❌ **خطأ في قاعدة البيانات:** لم نتمكن من بدء المهمة.\n`{e!s}`"}
+                }
                 return
 
             # 2. Subscribe for mission events before launching background task
             event_bus = get_event_bus()
             event_queue = event_bus.subscribe_queue(f"mission:{mission_id}")
 
-            # ✅ CRITICAL FIX: Emit RUN_STARTED for iteration=0 immediately (no more late run switch)
+            # ✅ CRITICAL FIX: Emit RUN_STARTED for iteration=0 immediately
             sequence_id = 0
             current_iteration = 0
             sequence_id += 1
-            # Use unique ID format for run isolation
             run0_id = f"{mission_id}:{current_iteration}"
             now = datetime.now(UTC).isoformat()
             yield {
@@ -257,14 +273,17 @@ class MissionComplexHandler(IntentHandler):
                 },
             }
 
-            # 3. Spawn Background Task (Non-Blocking)
-            # We pass the factory so the background task can manage its own session
-            task = asyncio.create_task(self._run_mission_bg(mission_id, context.session_factory))
+            # 3. Spawn Background Task (Non-Blocking) with Force Research Flag
+            task = asyncio.create_task(
+                self._run_mission_bg(mission_id, context.session_factory, force_research)
+            )
 
             # 4. Stream Updates (Event-Driven)
             last_event_id = 0
             running = True
-            # sequence_id/current_iteration already initialized above
+
+            # Keep track if we sent a final result to satisfy Output Contract
+            final_sent = False
 
             try:
                 while running:
@@ -276,18 +295,19 @@ class MissionComplexHandler(IntentHandler):
                     if event is not None:
                         last_event_id = max(last_event_id, event.id)
 
-                        # Update iteration context if loop_start
                         payload = event.payload_json or {}
                         if payload.get("brain_event") == "loop_start":
                             data = payload.get("data", {})
                             current_iteration = data.get("iteration", current_iteration)
 
-                        # Yield text description for chat bubble (Filtered & Simplified)
-                        formatted_text = self._format_event(event)
-                        if formatted_text:
-                            yield formatted_text
+                        # Output Protocol: Transform event to structured message
+                        message = self._format_event_to_message(event)
+                        if message:
+                            if message.get("type") == "assistant_final":
+                                final_sent = True
+                            yield message
 
-                        # Yield structured Canonical Event for UI FSM
+                        # Canonical Events for Timeline
                         sequence_id += 1
                         structured = self._create_structured_event(
                             event, sequence_id, current_iteration
@@ -300,11 +320,14 @@ class MissionComplexHandler(IntentHandler):
                         try:
                             await task  # Check for exceptions
                         except Exception as e:
-                            yield f"❌ **خطأ غير متوقع في النظام:** {e}\n"
+                            yield {
+                                "type": "assistant_error",
+                                "payload": {"content": f"❌ **خطأ غير متوقع في النظام:** {e}"}
+                            }
                             logger.error(f"Background mission task failed: {e}")
                             return
 
-                # Catch-up from DB to ensure no event is missed after task completion.
+                # Catch-up from DB
                 async with context.session_factory() as session:
                     stmt = (
                         select(MissionEvent)
@@ -317,16 +340,16 @@ class MissionComplexHandler(IntentHandler):
 
                     for event in events:
                         last_event_id = event.id
-
-                        # Update iteration context if loop_start
                         payload = event.payload_json or {}
                         if payload.get("brain_event") == "loop_start":
                             data = payload.get("data", {})
                             current_iteration = data.get("iteration", current_iteration)
 
-                        formatted_text = self._format_event(event)
-                        if formatted_text:
-                            yield formatted_text
+                        message = self._format_event_to_message(event)
+                        if message:
+                            if message.get("type") == "assistant_final":
+                                final_sent = True
+                            yield message
 
                         sequence_id += 1
                         structured = self._create_structured_event(
@@ -335,16 +358,21 @@ class MissionComplexHandler(IntentHandler):
                         if structured:
                             yield structured
 
-                    mission_check = await session.get(Mission, mission_id)
-                    # Only show status if not success/fail (already handled)
-                    if mission_check and mission_check.status not in (
-                        MissionStatus.COMPLETED,
-                        MissionStatus.FAILED,
-                        MissionStatus.PARTIAL_SUCCESS,
-                    ):
-                        yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
+                    # If mission finished but no final event emitted yet (rare case)
+                    if not final_sent:
+                        mission_check = await session.get(Mission, mission_id)
+                        if mission_check and mission_check.status == MissionStatus.COMPLETED:
+                             yield {
+                                "type": "assistant_final",
+                                "payload": {"content": "✅ تمت المهمة بنجاح، لكن لم يتم العثور على مخرجات نصية صريحة."}
+                            }
+                        elif mission_check and mission_check.status == MissionStatus.FAILED:
+                             yield {
+                                "type": "assistant_error",
+                                "payload": {"content": f"❌ فشلت المهمة: {mission_check.note or 'Unknown error'}"}
+                            }
 
-                yield "\n✅ **تم انتهاء متابعة المهمة.**\n"
+                # End of stream indicator (implied by closure)
             finally:
                 event_bus.unsubscribe_queue(f"mission:{mission_id}", event_queue)
                 if not task.done():
@@ -355,7 +383,10 @@ class MissionComplexHandler(IntentHandler):
                         logger.info("Background mission task cancelled after stream closure.")
         except Exception as global_ex:
             logger.critical(f"Critical error in MissionComplexHandler: {global_ex}", exc_info=True)
-            yield f"\n🛑 **حدث خطأ حرج أثناء تنفيذ المهمة:** {global_ex}\n"
+            yield {
+                "type": "assistant_error",
+                "payload": {"content": f"\n🛑 **حدث خطأ حرج أثناء تنفيذ المهمة:** {global_ex}\n"}
+            }
 
     def _check_provider_config(self) -> str | None:
         """
@@ -415,13 +446,13 @@ class MissionComplexHandler(IntentHandler):
             # Log error but attempt to continue, assuming tables might exist or partial failure
             logger.error(f"Schema self-healing failed: {e}")
 
-    async def _run_mission_bg(self, mission_id: int, session_factory):
+    async def _run_mission_bg(self, mission_id: int, session_factory, force_research: bool = False):
         """
         Runs the Overmind mission in a background task with its own session.
         """
         async with session_factory() as session:
             overmind = await create_overmind(session)
-            await overmind.run_mission(mission_id)
+            await overmind.run_mission(mission_id, force_research=force_research)
 
     def _create_structured_event(
         self, event: MissionEvent, sequence_id: int, current_iteration: int
@@ -486,59 +517,67 @@ class MissionComplexHandler(IntentHandler):
             logger.warning(f"Failed to create structured event: {e}")
             return None
 
-    def _format_event(self, event: MissionEvent) -> str | None:
-        """Format mission event for user display. Returns None if event should be silent."""
+    def _format_event_to_message(self, event: MissionEvent) -> dict | None:
+        """
+        Format mission event into a Strict Output Contract Message.
+        Returns: dict (assistant_delta | assistant_final | tool_result_summary) or None.
+        """
         try:
             payload = event.payload_json or {}
-            if event.event_type == MissionEventType.STATUS_CHANGE:
-                brain_evt = payload.get("brain_event")
-                if brain_evt:
-                    return _format_brain_event(str(brain_evt), payload.get("data", {}))
 
-                # Suppress generic status changes if no note
-                status_note = payload.get("note")
-                if status_note:
-                    return f"🔄 {status_note}\n"
-                return None  # Silence old_status -> new_status noise
-
+            # 1. Handle Final Completion
             if event.event_type == MissionEventType.MISSION_COMPLETED:
                 result = payload.get("result", {})
                 result_text = ""
+
+                # Check for explicit output
                 if isinstance(result, dict):
-                    # Check for explicit answer/output first
                     if result.get("output") or result.get("answer") or result.get("summary"):
-                        result_text = (
-                            result.get("output") or result.get("answer") or result.get("summary")
-                        )
-                    # Check for OperatorAgent results list (Customer Visibility Fix)
+                        result_text = result.get("output") or result.get("answer") or result.get("summary")
                     elif "results" in result and isinstance(result["results"], list):
-                        result_text = _format_task_results(result["results"])
-                    # Check nested execution report (Common fallback)
-                    elif (
-                        "last_execution_report" in result
-                        and isinstance(result["last_execution_report"], dict)
-                        and "results" in result["last_execution_report"]
-                        and isinstance(result["last_execution_report"]["results"], list)
-                    ):
-                        result_text = _format_task_results(
-                            result["last_execution_report"]["results"]
-                        )
+                        # Use Tool Result Summary if no text answer
+                        return {
+                             "type": "tool_result_summary",
+                             "payload": {
+                                 "summary": "تم تنفيذ المهام بنجاح.",
+                                 "items": result["results"]
+                             }
+                        }
                     else:
                         result_text = json.dumps(result, ensure_ascii=False, indent=2)
                 else:
                     result_text = str(result)
-                return f"🎉 **النتيجة النهائية:**\n\n{result_text}\n"
 
+                return {
+                    "type": "assistant_final",
+                    "payload": {"content": result_text}
+                }
+
+            # 2. Handle Failure
             if event.event_type == MissionEventType.MISSION_FAILED:
-                return f"💀 **فشل:** {payload.get('error')}\n"
+                return {
+                    "type": "assistant_error",
+                    "payload": {"content": f"💀 **فشل:** {payload.get('error')}"}
+                }
 
-            # Filter out generic 'INFO' events to reduce noise
-            if event.event_type == MissionEventType.INFO:
+            # 3. Handle Status/Progress (Assistant Delta)
+            if event.event_type == MissionEventType.STATUS_CHANGE:
+                brain_evt = payload.get("brain_event")
+                if brain_evt:
+                    # Convert brain events to text deltas if relevant
+                    text = _format_brain_event(str(brain_evt), payload.get("data", {}))
+                    if text:
+                        return {"type": "assistant_delta", "payload": {"content": text}}
+
+                status_note = payload.get("note")
+                if status_note:
+                    return {"type": "assistant_delta", "payload": {"content": f"🔄 {status_note}\n"}}
+
                 return None
 
-            return f"ℹ️ {event.event_type.value}: {payload}\n"
+            return None
         except Exception:
-            return None  # Fail safe silence
+            return None
 
 
 def _format_task_results(tasks: list) -> str:
