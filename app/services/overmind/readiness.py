@@ -3,10 +3,11 @@ Readiness Gate for Overmind Services.
 Ensures that critical providers are available before starting a mission.
 """
 
-import os
 import logging
+import os
+from typing import Any
+
 import httpx
-from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ class ProviderReadinessGate:
     """
 
     @staticmethod
-    async def check_search_providers() -> Dict[str, Any]:
+    async def check_search_providers() -> dict[str, Any]:
         """
         Checks availability of search providers.
         Returns a status dict: {"status": "ready" | "degraded" | "failed", "details": ...}
@@ -59,7 +60,7 @@ class ProviderReadinessGate:
         except Exception:
             return False
 
-async def check_mission_readiness() -> Dict[str, Any]:
+async def check_mission_readiness() -> dict[str, Any]:
     """
     Master readiness check called before mission start.
     """
