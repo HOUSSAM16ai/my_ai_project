@@ -29,6 +29,7 @@ from app.core.domain.mission import (
 )
 from app.core.event_bus import get_event_bus
 from app.core.patterns.strategy import Strategy
+from app.core.settings.base import get_settings
 from app.services.chat.context import ChatContext
 from app.services.chat.context_service import get_context_service
 from app.services.overmind.factory import create_overmind
@@ -400,7 +401,8 @@ class MissionComplexHandler(IntentHandler):
         Returns an error message if missing, else None.
         """
         # 1. LLM Check (Critical)
-        if not os.environ.get("OPENROUTER_API_KEY") and not os.environ.get("OPENAI_API_KEY"):
+        settings = get_settings()
+        if not settings.OPENROUTER_API_KEY and not settings.OPENAI_API_KEY:
             return "🛑 **خطأ في التكوين:** مفتاح الذكاء الاصطناعي (LLM Key) مفقود. يرجى التحقق من ملف .env."
 
         # 2. Search Check (Warn only, as DDG is fallback)
