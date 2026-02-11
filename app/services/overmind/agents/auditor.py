@@ -378,6 +378,4 @@ class AuditorAgent(AgentReflector):
 
         # 4. Fix trailing commas before closing braces/brackets
         json_str = re.sub(r",\s*}", "}", json_str)
-        json_str = re.sub(r",\s*]", "]", json_str)
-
-        return json_str
+        return re.sub(r",\s*]", "]", json_str)
