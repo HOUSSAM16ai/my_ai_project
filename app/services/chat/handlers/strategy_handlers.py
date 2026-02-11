@@ -226,7 +226,8 @@ class MissionComplexHandler(IntentHandler):
                     await session.refresh(mission)
                     mission_id = mission.id
                     yield f"🆔 رقم المهمة: `{mission.id}`\n"
-                    yield "⏳ مجلس الحكمة يبدأ التداول (Strategist, Architect, Auditor)...\n"
+                    # Simplified initial message
+                    yield "⏳ البدء...\n"
             except Exception as e:
                 logger.error(f"Failed to create mission: {e}", exc_info=True)
                 yield "\n❌ **خطأ في قاعدة البيانات:** لم نتمكن من بدء المهمة.\n"
@@ -242,7 +243,8 @@ class MissionComplexHandler(IntentHandler):
             sequence_id = 0
             current_iteration = 0
             sequence_id += 1
-            run0_id = str(mission_id)
+            # Use unique ID format for run isolation
+            run0_id = f"{mission_id}:{current_iteration}"
             now = datetime.now(UTC).isoformat()
             yield {
                 "type": "RUN_STARTED",
@@ -280,8 +282,10 @@ class MissionComplexHandler(IntentHandler):
                             data = payload.get("data", {})
                             current_iteration = data.get("iteration", current_iteration)
 
-                        # Yield text description for chat bubble
-                        yield self._format_event(event)
+                        # Yield text description for chat bubble (Filtered & Simplified)
+                        formatted_text = self._format_event(event)
+                        if formatted_text:
+                            yield formatted_text
 
                         # Yield structured Canonical Event for UI FSM
                         sequence_id += 1
@@ -320,7 +324,10 @@ class MissionComplexHandler(IntentHandler):
                             data = payload.get("data", {})
                             current_iteration = data.get("iteration", current_iteration)
 
-                        yield self._format_event(event)
+                        formatted_text = self._format_event(event)
+                        if formatted_text:
+                            yield formatted_text
+
                         sequence_id += 1
                         structured = self._create_structured_event(
                             event, sequence_id, current_iteration
@@ -330,7 +337,9 @@ class MissionComplexHandler(IntentHandler):
 
                     mission_check = await session.get(Mission, mission_id)
                     if mission_check:
-                        yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
+                        # Only show status if not success/fail (already handled)
+                        if mission_check.status not in (MissionStatus.COMPLETED, MissionStatus.FAILED, MissionStatus.PARTIAL_SUCCESS):
+                             yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
 
                 yield "\n✅ **تم انتهاء متابعة المهمة.**\n"
             finally:
@@ -422,9 +431,8 @@ class MissionComplexHandler(IntentHandler):
             mission_id = event.mission_id
 
             # Use tracked iteration context to ensure Run Isolation
-            # FIX: We use stable run_id (Mission ID) to prevent UI jumping,
-            # while passing iteration in payload for logic.
-            run_id = str(mission_id)
+            # FIX: We use unique run_id per iteration to prevent UI jumping/merging
+            run_id = f"{mission_id}:{current_iteration}"
             timestamp = str(event.created_at)
 
             if event.event_type == MissionEventType.STATUS_CHANGE:
@@ -434,11 +442,12 @@ class MissionComplexHandler(IntentHandler):
                 if brain_evt == "loop_start":
                     # loop_start defines the iteration for the NEW run
                     iteration = data.get("iteration", current_iteration)
-                    # We keep run_id stable, but emit RUN_STARTED to signal loop start
+                    # Update run_id for the new loop
+                    new_run_id = f"{mission_id}:{iteration}"
                     return {
                         "type": "RUN_STARTED",
                         "payload": {
-                            "run_id": run_id,
+                            "run_id": new_run_id,
                             "seq": sequence_id,
                             "timestamp": timestamp,
                             "iteration": iteration,
@@ -474,18 +483,20 @@ class MissionComplexHandler(IntentHandler):
             logger.warning(f"Failed to create structured event: {e}")
             return None
 
-    def _format_event(self, event: MissionEvent) -> str:
-        """Format mission event for user display."""
+    def _format_event(self, event: MissionEvent) -> str | None:
+        """Format mission event for user display. Returns None if event should be silent."""
         try:
             payload = event.payload_json or {}
             if event.event_type == MissionEventType.STATUS_CHANGE:
                 brain_evt = payload.get("brain_event")
                 if brain_evt:
                     return _format_brain_event(str(brain_evt), payload.get("data", {}))
+
+                # Suppress generic status changes if no note
                 status_note = payload.get("note")
                 if status_note:
-                    return f"🔄 **تحديث حالة:** {status_note}\n"
-                return f"🔄 **تحديث حالة:** {payload.get('old_status')} -> {payload.get('new_status')}\n"
+                    return f"🔄 {status_note}\n"
+                return None # Silence old_status -> new_status noise
 
             if event.event_type == MissionEventType.MISSION_COMPLETED:
                 result = payload.get("result", {})
@@ -513,19 +524,23 @@ class MissionComplexHandler(IntentHandler):
                         result_text = json.dumps(result, ensure_ascii=False, indent=2)
                 else:
                     result_text = str(result)
-                return f"🎉 **المهمة اكتملت بنجاح!**\n\n**النتيجة:**\n{result_text}\n"
+                return f"🎉 **النتيجة النهائية:**\n\n{result_text}\n"
 
             if event.event_type == MissionEventType.MISSION_FAILED:
-                return f"💀 **فشل المهمة:** {payload.get('error')}\n"
+                return f"💀 **فشل:** {payload.get('error')}\n"
+
+            # Filter out generic 'INFO' events to reduce noise
+            if event.event_type == MissionEventType.INFO:
+                 return None
 
             return f"ℹ️ {event.event_type.value}: {payload}\n"
         except Exception:
-            return "ℹ️ حدث جديد...\n"
+            return None # Fail safe silence
 
 
 def _format_task_results(tasks: list) -> str:
     """Format a list of task results into a readable string."""
-    lines = [f"✅ **تم تنفيذ {len(tasks)} مهمة بنجاح:**\n"]
+    lines = [f"✅ **تم تنفيذ {len(tasks)} مهمة:**\n"]
     for t in tasks:
         if not isinstance(t, dict):
             continue
@@ -540,7 +555,7 @@ def _format_task_results(tasks: list) -> str:
 
         res = t.get("result", {})
         if not res:
-            lines.append(f"🔹 **{name}**: (لا توجد نتيجة)\n")
+            # Skip empty results to reduce noise
             continue
 
         # Extract content
@@ -587,71 +602,44 @@ def _format_task_results(tasks: list) -> str:
     return "\n".join(lines)
 
 
-def _format_brain_event(event_name: str, data: dict[str, object] | object) -> str:
+def _format_brain_event(event_name: str, data: dict[str, object] | object) -> str | None:
     """
-    تنسيق أحداث الدماغ الخارق بصورة ملهمة للطالب أثناء التنفيذ.
+    تنسيق أحداث الدماغ الخارق بصورة موجزة جداً لمنع التضخم النصي.
+    Returns None for verbose/minor events.
     """
     if not isinstance(data, dict):
         data = {}
     normalized = event_name.lower()
-    phase = str(data.get("phase", "")).upper()
-    agent = str(data.get("agent", "")).strip() or "رئيس الوكلاء"
 
-    phase_labels = {
-        "PLANNING": "بناء الخطة",
-        "REVIEW_PLAN": "تدقيق الخطة",
-        "DESIGN": "تصميم الحل",
-        "EXECUTION": "تنفيذ المهام",
-        "REFLECTION": "مراجعة النتائج",
-        "RE-PLANNING": "إعادة التخطيط الذكي",
-    }
-
-    if normalized == "loop_start":
-        iteration = data.get("iteration", "؟")
-        chief_agent = str(data.get("chief_agent") or agent)
-        graph_mode = str(data.get("graph_mode") or "cognitive_graph")
-        return (
-            f"🧠 **جاري تفعيل الرسم البياني المعرفي** ({graph_mode}) — **{chief_agent}** يوزّع المهام بخوارزميات عبقرية"
-            f" (الدورة #{iteration}).\n"
-        )
-
-    if normalized == "phase_start":
-        phase_label = phase_labels.get(phase, phase or "مرحلة غير معروفة")
-        unit = data.get("unit_of_work", {})
-        unit_id = ""
-        if isinstance(unit, dict):
-            unit_id = str(unit.get("unit_id") or "")
-        unit_suffix = f" | وحدة العمل: `{unit_id}`" if unit_id else ""
-        return (
-            f"✨ **جاري {phase_label}** داخل شبكة التنسيق العامة بواسطة **{agent}**"
-            f"{unit_suffix}...\n"
-        )
+    # Silence common noisy events
+    if normalized.endswith("_completed") or normalized in {"phase_start", "loop_start"}:
+        # These are handled by the Timeline UI (Canonical Events), no need for text chat noise.
+        # Unless it's a critical failure or specific user info.
+        return None
 
     if normalized == "plan_rejected":
-        return "🧩 **جاري إعادة ضبط الخطة** بعد مراجعة صارمة لضمان أفضل مسار.\n"
+        return "🧩 إعادة ضبط الخطة.\n"
 
     if normalized == "plan_approved":
-        return "✅ **تم اعتماد الخطة العبقرية** والانطلاق نحو التنفيذ المتقدم.\n"
-
-    if normalized.endswith("_completed"):
-        return "🏁 **اكتملت مرحلة أساسية بنجاح** — التقدم جارٍ بشكل خارق.\n"
+        return "✅ تم اعتماد الخطة.\n"
 
     if normalized.endswith("_timeout"):
-        return "⏳ **تأخر غير متوقع** — جاري إعادة المزامنة لضمان الجودة.\n"
+        return "⏳ تأخير... إعادة المزامنة.\n"
 
     if normalized == "mission_critique_failed":
         critique = data.get("critique", {})
         feedback = (
-            critique.get("feedback", "لم يتم تقديم ملاحظات.")
+            critique.get("feedback", "N/A")
             if isinstance(critique, dict)
             else str(critique)
         )
-        return f"🔔 **تحديث معرفي (فشل التدقيق):**\n📝 **الملاحظات:** {feedback}\n🔄 جاري إعادة التخطيط...\n"
+        return f"🔔 **تدقيق:** {feedback} (جاري التعديل...)\n"
 
     if normalized in {"mission_success", "phase_error"}:
-        return f"🔔 **تحديث معرفي:** {event_name}.\n"
+        return f"🔔 {event_name}\n"
 
-    return f"🔹 **{event_name}**: {data}\n"
+    # Default: Silence unknown events to prevent "noise"
+    return None
 
 
 def _format_tool_result_data(data: object) -> str:
@@ -666,7 +654,7 @@ def _format_tool_result_data(data: object) -> str:
 
         inner_data = data.get("data")
         if inner_data is None:
-            return "✅ تم التنفيذ بنجاح."
+            return "✅ تم."
 
         return _format_inner_data(inner_data)
 
@@ -683,30 +671,19 @@ def _format_inner_data(data: object) -> str:
         and "title" in data[0]
         and "id" in data[0]
     ):
-        lines = ["✅ **تم العثور على النتائج التالية:**\n"]
-        for item in data:
+        lines = ["✅ **النتائج:**\n"]
+        for item in data[:3]: # Limit to top 3 to prevent flooding
             title = item.get("title", "بدون عنوان")
-            year = item.get("year", "")
-            subject = item.get("subject", "")
-            branch = item.get("branch", "")
+            lines.append(f"* 🔹 {title}")
 
-            meta = []
-            if year:
-                meta.append(str(year))
-            if subject:
-                meta.append(subject)
-            if branch:
-                meta.append(branch)
+        if len(data) > 3:
+            lines.append(f"* ... و {len(data)-3} نتائج أخرى.")
 
-            meta_str = f" *({', '.join(str(x) for x in meta)})*" if meta else ""
-            lines.append(f"* 🔹 **{title}**{meta_str}")
-
-        # Add a hint about how to proceed
-        lines.append("\n💡 *يمكنك طلب محتوى أي عنصر باستخدام اسمه أو تفاصيله.*")
         return "\n".join(lines)
 
     if isinstance(data, (dict, list)):
-        return json.dumps(data, ensure_ascii=False, indent=2)
+        # Return summary instead of full JSON dump
+        return "📄 (بيانات مهيكلة)"
     return str(data)
 
 
