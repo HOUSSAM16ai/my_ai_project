@@ -166,7 +166,12 @@ class AuditorAgent(AgentReflector):
 
             # استخدام دالة تنظيف أكثر قوة
             clean_json = self._clean_json_block(response_json)
-            review_data = json.loads(clean_json)
+            try:
+                review_data = json.loads(clean_json)
+            except json.JSONDecodeError as e:
+                logger.warning(f"JSON Parse Error in review_work: {e}. Attempting repair...")
+                clean_json = self._repair_json(clean_json)
+                review_data = json.loads(clean_json)
 
             # ضمان وجود final_response
             final_resp = review_data.get("final_response")
@@ -238,7 +243,12 @@ class AuditorAgent(AgentReflector):
             )
 
             clean_json = self._clean_json_block(response_json)
-            review_data = json.loads(clean_json)
+            try:
+                review_data = json.loads(clean_json)
+            except json.JSONDecodeError as e:
+                logger.warning(f"JSON Parse Error in _review_plan: {e}. Attempting repair...")
+                clean_json = self._repair_json(clean_json)
+                review_data = json.loads(clean_json)
 
             final_resp = review_data.get("final_response")
             feedback = review_data.get("feedback", "لم يتم تقديم ملاحظات.")
@@ -304,7 +314,12 @@ class AuditorAgent(AgentReflector):
             )
 
             clean_json = self._clean_json_block(response_text)
-            return json.loads(clean_json)
+            try:
+                return json.loads(clean_json)
+            except json.JSONDecodeError as e:
+                logger.warning(f"JSON Parse Error in consult: {e}. Attempting repair...")
+                clean_json = self._repair_json(clean_json)
+                return json.loads(clean_json)
         except Exception as e:
             logger.warning(f"Auditor consultation failed: {e}")
             return {
@@ -332,3 +347,37 @@ class AuditorAgent(AgentReflector):
         # 3. في حال عدم العثور على أي هيكل JSON، نعيد كائن فارغ نصي لتجنب الانهيار
         # هذا سيؤدي إلى dictionary فارغ، مما يجعل review_work يعيد قيم افتراضية (False)
         return "{}"
+
+    def _repair_json(self, json_str: str) -> str:
+        """
+        Attempt to repair common JSON errors made by LLMs.
+        """
+        # 1. Fix missing commas between key-value pairs (heuristic: value-ender followed by "key":)
+        # Matches: (value ending characters) (whitespace) "key":
+        json_str = re.sub(
+            r'([\}\]"]|\btrue\b|\bfalse\b|\bnull\b|\d)\s*("[^"]*"\s*:)',
+            r"\1, \2",
+            json_str,
+        )
+
+        # 2. Fix missing commas between array items (string-string)
+        # Matches: " (whitespace) "
+        json_str = re.sub(
+            r'"\s*"',
+            r'", "',
+            json_str,
+        )
+
+        # 3. Fix missing commas between array items (object/list - object/list)
+        # Matches: } or ] (whitespace) { or [
+        json_str = re.sub(
+            r"([\}\]])\s*([\{\[])",
+            r"\1, \2",
+            json_str,
+        )
+
+        # 4. Fix trailing commas before closing braces/brackets
+        json_str = re.sub(r",\s*}", "}", json_str)
+        json_str = re.sub(r",\s*]", "]", json_str)
+
+        return json_str
