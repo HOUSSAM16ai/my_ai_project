@@ -5,6 +5,7 @@ Ensures that critical providers are available before starting a mission.
 
 import logging
 import os
+import asyncio
 from typing import Any
 
 import httpx
@@ -37,14 +38,17 @@ class ProviderReadinessGate:
         has_tavily = bool(tavily_key and tavily_key.startswith("tvly-"))
 
         # Check internet egress (using a reliable endpoint like Google or Cloudflare)
-        has_internet = await ProviderReadinessGate._check_egress()
+        internet_status = await ProviderReadinessGate._check_egress_detailed()
 
-        if not has_internet:
+        if internet_status["status"] == "NO_EGRESS":
             return {
                 "status": "failed",
                 "reason": "No internet access (Egress blocked)",
-                "details": "Cannot reach external network.",
+                "details": f"Cannot reach external network. Failed probes: {internet_status['failed_probes']}",
             }
+
+        # If specific protocols failed but others worked, we might still proceed
+        # For now, if status is OK or PARTIAL, we proceed.
 
         if has_tavily:
             return {
@@ -64,30 +68,61 @@ class ProviderReadinessGate:
         }
 
     @staticmethod
-    async def _check_egress() -> bool:
+    async def _check_egress_detailed() -> dict[str, Any]:
         """
         Robust check for network connectivity using multiple endpoints.
         Handles proxies, redirects, and intermittent failures.
+        Returns detailed diagnostic info.
         """
         endpoints = [
-            "https://1.1.1.1",  # Cloudflare
-            "https://8.8.8.8",  # Google DNS
-            "https://www.google.com",  # Google Search
-            "https://www.github.com",  # GitHub
+            ("https://1.1.1.1", "Cloudflare DNS"),
+            ("https://8.8.8.8", "Google DNS"),
+            ("https://www.google.com", "Google Search"),
+            ("https://www.github.com", "GitHub"),
+            ("http://example.com", "HTTP Fallback"),
         ]
 
-        async with httpx.AsyncClient(timeout=5.0, follow_redirects=True, trust_env=True) as client:
-            for url in endpoints:
-                try:
-                    resp = await client.get(url)
-                    if 200 <= resp.status_code < 400:
-                        return True
-                    logger.warning(f"Egress check warning: {url} returned {resp.status_code}")
-                except Exception as e:
-                    logger.debug(f"Egress check failed for {url}: {e}")
-                    continue
+        success_count = 0
+        failed_probes = []
 
-        return False
+        async with httpx.AsyncClient(timeout=5.0, follow_redirects=True, trust_env=True) as client:
+            # Run checks concurrently for speed
+            tasks = []
+            for url, name in endpoints:
+                tasks.append(ProviderReadinessGate._probe_url(client, url, name))
+
+            results = await asyncio.gather(*tasks)
+
+            for is_success, name, error in results:
+                if is_success:
+                    success_count += 1
+                else:
+                    failed_probes.append(f"{name}: {error}")
+
+        if success_count > 0:
+            return {
+                "status": "OK" if len(failed_probes) == 0 else "PARTIAL",
+                "success_count": success_count,
+                "failed_probes": failed_probes
+            }
+        else:
+            return {
+                "status": "NO_EGRESS",
+                "success_count": 0,
+                "failed_probes": failed_probes
+            }
+
+    @staticmethod
+    async def _probe_url(client, url, name) -> tuple[bool, str, str | None]:
+        try:
+            resp = await client.get(url)
+            if 200 <= resp.status_code < 400:
+                return True, name, None
+            logger.warning(f"Egress check warning: {url} returned {resp.status_code}")
+            return False, name, f"Status {resp.status_code}"
+        except Exception as e:
+            logger.debug(f"Egress check failed for {url}: {e}")
+            return False, name, str(e)
 
 
 async def check_mission_readiness() -> dict[str, Any]:
@@ -101,6 +136,7 @@ async def check_mission_readiness() -> dict[str, Any]:
         return {
             "ready": False,
             "error": search_status["reason"],
+            "details": search_status.get("details")
         }
 
     if search_status["status"] == "degraded":

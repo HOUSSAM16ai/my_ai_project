@@ -53,6 +53,7 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100dvh; /* Mobile fix */
     overflow: hidden;
 }
 
@@ -112,11 +113,8 @@ body {
 .header-menu {
     position: absolute;
     top: 100%;
-    left: 0; /* RTL: left implies right side of button in typical layout, but in RTL context left is actually left */
-    /* Since we are in RTL, left: 0 aligns the left edge of menu with left edge of button container. */
-    /* Wait, usually in RTL we want it aligned to the 'start' which is Right. */
+    left: 0; /* RTL: Aligns with the left edge of the button container (which is on the left side of the header) */
     right: auto;
-    left: 0;
 
     background-color: var(--surface-color);
     border: 1px solid var(--border-color);
@@ -125,7 +123,7 @@ body {
     min-width: 200px;
     margin-top: 0.5rem;
     overflow: hidden;
-    z-index: 100;
+    z-index: 1000; /* Ensure it's above everything */
 }
 
 .header-menu-item {
@@ -160,16 +158,16 @@ body {
 .sidebar {
     width: 300px;
     background-color: var(--surface-color);
-    border-left: 1px solid var(--border-color); /* RTL border */
+    border-left: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     position: absolute;
     top: 0;
     bottom: 0;
     right: 0; /* RTL Sidebar starts at Right */
-    transform: translateX(100%); /* Hidden initially on mobile? Or desktop logic? */
+    transform: translateX(100%);
     transition: transform 0.3s ease;
-    z-index: 20;
+    z-index: 50; /* Higher than dashboard content */
 }
 
 .sidebar.open {
@@ -187,7 +185,7 @@ body {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s;
-    z-index: 15;
+    z-index: 40; /* Below sidebar, above everything else */
 }
 .sidebar-overlay.visible {
     opacity: 1;
@@ -226,7 +224,7 @@ body {
 }
 
 .conversation-item.active {
-    background-color: var(--bg-color); /* Need a distinct color or tint */
+    background-color: var(--bg-color);
     color: var(--primary-color);
     font-weight: 600;
 }
@@ -238,6 +236,7 @@ body {
     flex-direction: column;
     background-color: var(--bg-color);
     position: relative;
+    z-index: 1;
 }
 
 .chat-container {
@@ -261,13 +260,11 @@ body {
 }
 
 .message.user {
-    justify-content: flex-start; /* RTL: User messages start from Right? Typically User is Right, Bot is Left in LTR. In RTL, User is Left? Or Right? Usually User Right (Me), Bot Left. */
-    /* Let's follow standard chat apps: Me (Right), Other (Left). */
-    /* In RTL: Right is 'start'. */
+    justify-content: flex-start; /* RTL: User messages start from Right (which is start in RTL) */
 }
 
 .message.assistant {
-    justify-content: flex-end; /* Bot on Left (end) */
+    justify-content: flex-end; /* Bot on Left (End in RTL) */
 }
 
 .message-bubble {
@@ -358,7 +355,7 @@ body {
 }
 
 .agent-status-icon {
-    margin-right: auto; /* Push to left in RTL */
+    margin-right: auto;
 }
 
 .agent-progress-container {
@@ -493,7 +490,7 @@ body {
 
 .mission-btn.active {
     border-color: var(--btn-color);
-    background-color: rgba(var(--btn-color), 0.1); /* This needs proper RGB handling, ignoring for simplicity */
+    background-color: rgba(var(--btn-color), 0.1);
     box-shadow: 0 0 0 2px var(--btn-color);
 }
 
@@ -625,7 +622,7 @@ body {
     left: 0; /* RTL End */
     transform: translateX(-100%);
     transition: transform 0.3s ease;
-    z-index: 20;
+    z-index: 50; /* Ensure high Z-index */
     padding: 1rem;
     overflow-y: auto;
     box-shadow: 2px 0 8px rgba(0,0,0,0.1);
@@ -738,7 +735,7 @@ body {
     font-size: 0.8rem;
 }
 .change-mission-btn:hover {
-    background: rgba(var(--primary-color-rgb), 0.1); /* fallback if not defined */
+    background: rgba(var(--primary-color-rgb), 0.1);
     text-decoration: underline;
 }
 
@@ -756,7 +753,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    margin-left: 0.5rem; /* RTL: space to the left of input */
+    margin-left: 0.5rem;
 }
 .mission-trigger-btn:hover {
     border-color: var(--primary-color);
@@ -767,7 +764,7 @@ body {
 
 /* Adjustments for Agent Sidebar Layout */
 .dashboard-layout {
-    position: relative; /* Ensure sidebar absolute positioning works relative to this */
+    position: relative;
 }
 
 /* High Contrast tweaks */

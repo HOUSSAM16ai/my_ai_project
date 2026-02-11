@@ -69,6 +69,11 @@ services:
       ORCHESTRATOR_PLANNING_AGENT_URL: ${ORCHESTRATOR_PLANNING_AGENT_URL:-http://planning-agent:8000}
       ORCHESTRATOR_MEMORY_AGENT_URL: ${ORCHESTRATOR_MEMORY_AGENT_URL:-http://memory-agent:8000}
       ORCHESTRATOR_USER_SERVICE_URL: ${ORCHESTRATOR_USER_SERVICE_URL:-http://user-service:8000}
+      # Propagate API Keys to Orchestrator (it might need them for tools)
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
 
     depends_on:
       - planning-agent
@@ -125,6 +130,8 @@ services:
 
     environment:
       PLANNING_DATABASE_URL: ${PLANNING_DATABASE_URL:-sqlite+aiosqlite:///./planning_agent.db}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
 
     healthcheck:
       test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health || exit 1"]

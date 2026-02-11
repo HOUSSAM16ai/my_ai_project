@@ -107,7 +107,14 @@ async def search_content(
         filtered_args = {k: v for k, v in explicit_args.items() if v is not None}
 
         # Merge with kwargs (kwargs take precedence if conflict, though usually they fill gaps)
+        # CRITICAL FIX: Gracefully absorb unknown args from LLM hallucination
         raw_args = {**filtered_args, **kwargs}
+
+        # Log unexpected args for debugging but don't crash
+        known_keys = set(explicit_args.keys()) | {"query"}
+        unexpected = set(raw_args.keys()) - known_keys
+        if unexpected:
+            logger.warning(f"search_content received unexpected args (ignored): {unexpected}")
 
         # Validate against the Pydantic Schema (Adapts aliases like 'query' -> 'q')
         validated_data = SearchContentSchema(**raw_args)

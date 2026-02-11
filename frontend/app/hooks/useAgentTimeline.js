@@ -37,12 +37,12 @@ function timelineReducer(state, action) {
   // 1. Handle New Run Start (Run Isolation)
   if (type === 'RUN_STARTED') {
     const runId = payload.run_id;
-    // FIX: Only set activeRunId if it's not already set, to prevent UI jumping.
-    const newActiveRunId = state.activeRunId || runId;
+    // CRITICAL FIX: Always switch activeRunId on new run start to force UI update
+    // This allows iteration loops to be visualized as distinct runs if they share IDs with iteration suffix
     return {
       ...state,
       lastSeq: nextSeq,
-      activeRunId: newActiveRunId,
+      activeRunId: runId,
       runs: {
         ...state.runs,
         [runId]: state.runs[runId] || { phases: {} }
@@ -62,15 +62,16 @@ function timelineReducer(state, action) {
     const runId = payload.run_id || state.activeRunId || 'default_run';
 
     // Auto-switch active run if we receive a strongly typed run_id
-    // (Optional: strict mode would reject events for non-active runs)
-    // For resilience, we update the specific run's state but only display active.
+    // This ensures we follow the backend's lead on which run is active
+    const newActiveRunId = (payload.run_id && payload.run_id !== state.activeRunId)
+        ? payload.run_id
+        : state.activeRunId;
 
     const currentRunState = state.runs[runId] || { phases: {} };
     const newStatus = payload.status; // 'running' | 'completed'
 
     // State Transition Validation (Simple FSM)
     // Prevent regression from 'completed' to 'running' within the SAME run/phase
-    // unless explicitly reset (which happens via new run_id in Re-planning).
     const currentStatus = currentRunState.phases[mappedPhase];
     if (currentStatus === 'completed' && newStatus === 'running') {
        // Illegal transition within same run -> Ignore
@@ -80,12 +81,7 @@ function timelineReducer(state, action) {
     return {
       ...state,
       lastSeq: nextSeq,
-      // If event has explicit run_id, we might want to switch active view?
-      // User requirement: "Steps widget reads active_run_id only".
-      // Let's assume explicit RUN_STARTED sets activeRunId.
-      // Phase events just update their respective run state.
-      // If we haven't seen RUN_STARTED yet, auto-set active.
-      activeRunId: state.activeRunId || runId,
+      activeRunId: newActiveRunId || runId,
       runs: {
         ...state.runs,
         [runId]: {
