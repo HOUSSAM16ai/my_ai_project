@@ -125,18 +125,9 @@ async def search_content(
 
     except Exception as e:
         logger.error(f"Schema Validation Failed in search_content: {e}")
-        # Fail-Closed behavior for critical errors (or decide policy here)
-        # For now, we return empty with a log to avoid total crash, or re-raise if strict
-        # Given the "Final Solution" request, maybe we should return a clear error structure?
-        # But the tool contract returns list[dict].
-        return [
-            {
-                "id": "error",
-                "title": "Validation Error",
-                "content": f"Invalid arguments provided: {e}",
-                "type": "error",
-            }
-        ]
+        # Strict Fail-Fast Policy (RFC 001)
+        # We must propagate exceptions to the TaskExecutor to ensure honest outcome reporting.
+        raise e
 
     # ---------------------------------------------
 

@@ -130,7 +130,12 @@ class SuperSearchOrchestrator:
                 logger.info("Using Tavily Search.")
                 self.search_tool = TavilyClient(api_key=tavily_key)
             else:
-                logger.info("Using DuckDuckGo Search (Fallback).")
+                if tavily_key:
+                    logger.warning(
+                        "Tavily Key found but invalid (must start with 'tvly-'). Using Fallback."
+                    )
+                else:
+                    logger.warning("No Tavily Key found. Using DuckDuckGo Fallback.")
                 self.search_tool = DuckDuckGoSearchAPIWrapper(max_results=5)
 
         # 3. Initialize Scraper (Prioritize Firecrawl)
@@ -188,7 +193,12 @@ class SuperSearchOrchestrator:
             ]
 
         if not full_knowledge_base:
-            return "Unable to find sufficient information to answer the query."
+            logger.error(
+                "SuperSearchOrchestrator failed to find any information (Empty Knowledge Base)."
+            )
+            raise RuntimeError(
+                "SuperSearchOrchestrator: Unable to find sufficient information. Possible internet connectivity issue or API key failure."
+            )
 
         # --- Phase 4: Synthesis ---
         logger.info("Phase 4: Synthesis...")
