@@ -76,17 +76,13 @@ class ProviderReadinessGate:
             "https://www.github.com",  # GitHub
         ]
 
-        async with httpx.AsyncClient(
-            timeout=5.0, follow_redirects=True, trust_env=True
-        ) as client:
+        async with httpx.AsyncClient(timeout=5.0, follow_redirects=True, trust_env=True) as client:
             for url in endpoints:
                 try:
                     resp = await client.get(url)
                     if 200 <= resp.status_code < 400:
                         return True
-                    logger.warning(
-                        f"Egress check warning: {url} returned {resp.status_code}"
-                    )
+                    logger.warning(f"Egress check warning: {url} returned {resp.status_code}")
                 except Exception as e:
                     logger.debug(f"Egress check failed for {url}: {e}")
                     continue
