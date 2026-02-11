@@ -69,6 +69,7 @@ class AvailableModels:
     DEVSTRAL_2512 = "mistralai/devstral-2512:free"
     GLM_4_5_AIR_FREE = "z-ai/glm-4.5-air:free"
     DEEPSEEK_R1_CHIMERA_FREE = "tngtech/deepseek-r1t2-chimera:free"
+    NEMOTRON_3_NANO = "nvidia/nemotron-3-nano-30b-a3b:free"
 
 
 class ActiveModels:
@@ -90,18 +91,18 @@ class ActiveModels:
     ╚═══════════════════════════════════════════════════════════════════════════════════╝
     """
 
-    PRIMARY = AvailableModels.DEEPSEEK_R1_CHIMERA_FREE
-    LOW_COST = "deepseek/deepseek-v3.2-exp"
-    GATEWAY_PRIMARY = AvailableModels.DEEPSEEK_R1_CHIMERA_FREE
+    PRIMARY = AvailableModels.NEMOTRON_3_NANO
+    LOW_COST = AvailableModels.NEMOTRON_3_NANO
+    GATEWAY_PRIMARY = AvailableModels.NEMOTRON_3_NANO
     GATEWAY_FALLBACK_1 = AvailableModels.GEMINI_2_FLASH_EXP_FREE
     GATEWAY_FALLBACK_2 = AvailableModels.QWEN_QWEN3_CODER_FREE
     GATEWAY_FALLBACK_3 = AvailableModels.KAT_CODER_PRO_FREE
     GATEWAY_FALLBACK_4 = AvailableModels.PHI_3_MINI_FREE
     GATEWAY_FALLBACK_5 = AvailableModels.LLAMA_3_2_11B_VISION_FREE
-    TIER_NANO = AvailableModels.GPT_4O_MINI
-    TIER_FAST = AvailableModels.GPT_4O_MINI
-    TIER_SMART = AvailableModels.CLAUDE_35_SONNET
-    TIER_GENIUS = AvailableModels.CLAUDE_3_OPUS
+    TIER_NANO = AvailableModels.NEMOTRON_3_NANO
+    TIER_FAST = AvailableModels.NEMOTRON_3_NANO
+    TIER_SMART = AvailableModels.NEMOTRON_3_NANO
+    TIER_GENIUS = AvailableModels.NEMOTRON_3_NANO
 
 
 @dataclass(frozen=True)
