@@ -1,12 +1,12 @@
-
 import json
-import pytest
-import re
 from unittest.mock import MagicMock
+
+import pytest
+
 from app.services.overmind.agents.auditor import AuditorAgent
 
-class TestAuditorJsonRepair:
 
+class TestAuditorJsonRepair:
     @pytest.fixture
     def auditor(self):
         mock_ai = MagicMock()
