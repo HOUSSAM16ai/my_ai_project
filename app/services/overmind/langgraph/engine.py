@@ -286,7 +286,19 @@ class LangGraphOvermindEngine:
                 "phase_start", {"phase": "CONTEXT_ENRICHMENT", "agent": "Contextualizer"}
             )
 
+        # ✅ Make "RESEARCH" a real phase for the UI (wrap enrichment as research activity)
+        if self._observer:
+            await self._observer(
+                "phase_start", {"phase": "RESEARCH", "agent": "Contextualizer"}
+            )
+
         enrichment = await self.context_enricher.enrich(state["objective"], state["context"])
+
+        if self._observer:
+            await self._observer(
+                "phase_completed", {"phase": "RESEARCH", "agent": "Contextualizer"}
+            )
+
         shared_memory = {
             **state.get("shared_memory", {}),
             "refined_objective": enrichment.refined_objective,
@@ -484,6 +496,12 @@ class LangGraphOvermindEngine:
                     "chief_agent": "Strategist",
                     "graph_mode": "cognitive_loop",
                 },
+            )
+
+        # ✅ Close the RE-PLANNING phase (prevents “hanging” timeline state)
+        if self._observer:
+            await self._observer(
+                "phase_completed", {"phase": "RE-PLANNING", "agent": "LoopController"}
             )
 
         return {
