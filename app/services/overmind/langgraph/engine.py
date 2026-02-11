@@ -288,9 +288,7 @@ class LangGraphOvermindEngine:
 
         # ✅ Make "RESEARCH" a real phase for the UI (wrap enrichment as research activity)
         if self._observer:
-            await self._observer(
-                "phase_start", {"phase": "RESEARCH", "agent": "Contextualizer"}
-            )
+            await self._observer("phase_start", {"phase": "RESEARCH", "agent": "Contextualizer"})
 
         enrichment = await self.context_enricher.enrich(state["objective"], state["context"])
 
