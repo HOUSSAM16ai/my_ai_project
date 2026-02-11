@@ -336,10 +336,9 @@ class MissionComplexHandler(IntentHandler):
                             yield structured
 
                     mission_check = await session.get(Mission, mission_id)
-                    if mission_check:
-                        # Only show status if not success/fail (already handled)
-                        if mission_check.status not in (MissionStatus.COMPLETED, MissionStatus.FAILED, MissionStatus.PARTIAL_SUCCESS):
-                             yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
+                    # Only show status if not success/fail (already handled)
+                    if mission_check and mission_check.status not in (MissionStatus.COMPLETED, MissionStatus.FAILED, MissionStatus.PARTIAL_SUCCESS):
+                        yield f"\n🏁 **الحالة النهائية:** {mission_check.status.value}\n"
 
                 yield "\n✅ **تم انتهاء متابعة المهمة.**\n"
             finally:
