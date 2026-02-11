@@ -10,6 +10,7 @@
 import difflib
 
 from app.core.logging import get_logger
+from app.services.chat.tools.schemas import SearchContentSchema
 from microservices.research_agent.src.content.constants import BRANCH_MAP
 
 logger = get_logger("content-tools")
@@ -86,8 +87,58 @@ async def search_content(
     autonomous agents (Tavily/Firecrawl).
     Returns a detailed research report.
     """
-    if kwargs:
-        logger.warning(f"search_content received unexpected arguments: {kwargs}")
+
+    # --- Layer A: Schema Adapter & Validation ---
+    try:
+        # Create a dictionary of all arguments provided
+        # Filter out None values so Pydantic can use aliases (e.g. 'query') from kwargs
+        # without conflict from the default 'q=None'
+        explicit_args = {
+            "q": q,
+            "level": level,
+            "subject": subject,
+            "branch": branch,
+            "set_name": set_name,
+            "year": year,
+            "type": type,
+            "lang": lang,
+            "limit": limit,
+        }
+        filtered_args = {k: v for k, v in explicit_args.items() if v is not None}
+
+        # Merge with kwargs (kwargs take precedence if conflict, though usually they fill gaps)
+        raw_args = {**filtered_args, **kwargs}
+
+        # Validate against the Pydantic Schema (Adapts aliases like 'query' -> 'q')
+        validated_data = SearchContentSchema(**raw_args)
+
+        # Use validated data
+        q = validated_data.q
+        level = validated_data.level
+        subject = validated_data.subject
+        branch = validated_data.branch
+        set_name = validated_data.set_name
+        year = validated_data.year
+        type = validated_data.type
+        lang = validated_data.lang
+        limit = validated_data.limit
+
+    except Exception as e:
+        logger.error(f"Schema Validation Failed in search_content: {e}")
+        # Fail-Closed behavior for critical errors (or decide policy here)
+        # For now, we return empty with a log to avoid total crash, or re-raise if strict
+        # Given the "Final Solution" request, maybe we should return a clear error structure?
+        # But the tool contract returns list[dict].
+        return [
+            {
+                "id": "error",
+                "title": "Validation Error",
+                "content": f"Invalid arguments provided: {e}",
+                "type": "error"
+            }
+        ]
+
+    # ---------------------------------------------
 
     if not q:
         return []

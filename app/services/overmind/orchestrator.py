@@ -75,6 +75,36 @@ class OvermindOrchestrator:
                 logger.error(f"Mission {mission_id} not found.")
                 return
 
+            # --- Layer C: Provider Readiness Gate ---
+            from app.services.overmind.readiness import check_mission_readiness
+
+            readiness_check = await check_mission_readiness()
+
+            if not readiness_check.get("ready"):
+                error_reason = readiness_check.get("error", "Failed readiness check")
+                logger.error(f"Mission {mission_id} aborted due to readiness failure: {error_reason}")
+
+                await self.state.update_mission_status(
+                    mission_id,
+                    MissionStatus.FAILED,
+                    note=f"Readiness Check Failed: {error_reason}"
+                )
+                await self.state.log_event(
+                    mission_id,
+                    MissionEventType.MISSION_FAILED,
+                    {"error": error_reason, "reason": "readiness_gate_failure"},
+                )
+                return
+
+            # Log degraded mode if applicable
+            if readiness_check.get("mode") == "degraded":
+                await self.state.log_event(
+                    mission_id,
+                    MissionEventType.STATUS_CHANGE,
+                    {"info": "Mission running in Degraded Mode (No Tavily Key found). Expecting potentially lower quality search results.", "mode": "degraded"}
+                )
+            # ----------------------------------------
+
             await self._run_super_agent_loop(mission)
 
         except Exception as e:
@@ -134,18 +164,8 @@ class OvermindOrchestrator:
             summary = self._extract_summary(result)
 
             # Determine final status based on execution evidence (Success-by-Evidence)
-            final_status = MissionStatus.SUCCESS
-            execution = result.get("execution")
-            if isinstance(execution, dict):
-                # Check for explicit status in execution report (from OperatorAgent)
-                exec_status = execution.get("status")
-                if exec_status == "partial_failure":
-                    final_status = MissionStatus.PARTIAL_SUCCESS
-                    logger.warning(
-                        f"Mission {mission.id} resulted in PARTIAL_SUCCESS due to execution failures."
-                    )
-                elif exec_status == "failed":
-                    final_status = MissionStatus.FAILED
+            # --- Layer B: Outcome Arbiter ---
+            final_status = self._arbitrate_mission_outcome(result, mission.id)
 
             await self.state.complete_mission(
                 mission.id,
@@ -164,6 +184,46 @@ class OvermindOrchestrator:
                 MissionEventType.MISSION_FAILED,
                 {"error": str(e), "error_type": type(e).__name__},
             )
+
+    def _arbitrate_mission_outcome(self, result: dict[str, object], mission_id: int) -> MissionStatus:
+        """
+        Arbiter: Decides the final mission status based on evidence.
+        Enforces "Outcome/Progress Divergence" prevention.
+        """
+        execution = result.get("execution")
+
+        # Default assumption
+        status = MissionStatus.SUCCESS
+
+        # 1. Check for explicit OperatorAgent failure flags
+        if isinstance(execution, dict):
+            exec_status = execution.get("status")
+            if exec_status == "failed":
+                logger.error(f"Mission {mission_id} FAILED: Operator reported total failure.")
+                return MissionStatus.FAILED
+            if exec_status == "partial_failure":
+                logger.warning(f"Mission {mission_id} PARTIAL_SUCCESS: Operator reported partial failures.")
+                status = MissionStatus.PARTIAL_SUCCESS
+
+        # 2. Check for Empty Search Results (Crucial for "No Tavily" scenarios)
+        # If the plan involved search, but we got no results, it's not a full success.
+        # We inspect the execution results for search tool calls that returned empty lists/strings.
+        if isinstance(execution, dict) and "results" in execution:
+            results_list = execution.get("results", [])
+            for task_res in results_list:
+                if isinstance(task_res, dict):
+                    tool_name = task_res.get("tool")
+                    # If search was attempted
+                    if tool_name in ("search_content", "search_educational_content", "deep_research"):
+                        tool_output = task_res.get("result", {})
+                        if isinstance(tool_output, dict):
+                            # Executor wrapper format
+                            raw_data = tool_output.get("result_data")
+                            if not raw_data or (isinstance(raw_data, list) and len(raw_data) == 0):
+                                logger.warning(f"Mission {mission_id} PARTIAL_SUCCESS: Search tool '{tool_name}' returned empty results.")
+                                status = MissionStatus.PARTIAL_SUCCESS
+
+        return status
 
     def _extract_summary(self, result: dict[str, object]) -> str:
         """
