@@ -136,7 +136,7 @@ async def check_mission_readiness() -> dict[str, Any]:
         return {
             "ready": False,
             "error": search_status["reason"],
-            "details": search_status.get("details")
+            "details": search_status.get("details"),
         }
 
     if search_status["status"] == "degraded":
