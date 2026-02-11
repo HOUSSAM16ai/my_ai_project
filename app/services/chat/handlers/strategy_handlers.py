@@ -197,16 +197,16 @@ class MissionComplexHandler(IntentHandler):
         """
         # Global try-except to prevent stream crash
         try:
-            # 0. Fail-Fast Configuration Check
-            config_error = self._check_provider_config()
-            if config_error:
-                yield f"{config_error}\n"
-                return
-
             yield "🚀 **بدء المهمة الخارقة (Super Agent)**...\n"
 
             if not context.session_factory:
                 yield "❌ خطأ: لا يوجد مصنع جلسات (Session Factory).\n"
+                return
+
+            # 0. Fail-Fast Configuration Check
+            config_error = self._check_provider_config()
+            if config_error:
+                yield f"{config_error}\n"
                 return
 
             # 1. Initialize Mission in DB
