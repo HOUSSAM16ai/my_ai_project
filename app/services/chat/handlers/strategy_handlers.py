@@ -8,6 +8,7 @@ import logging
 import os
 import re
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlmodel import SQLModel
@@ -237,6 +238,23 @@ class MissionComplexHandler(IntentHandler):
             event_bus = get_event_bus()
             event_queue = event_bus.subscribe_queue(f"mission:{mission_id}")
 
+            # ✅ CRITICAL FIX: Emit RUN_STARTED for iteration=0 immediately (no more late run switch)
+            sequence_id = 0
+            current_iteration = 0
+            sequence_id += 1
+            run0_id = str(mission_id)
+            now = datetime.now(UTC).isoformat()
+            yield {
+                "type": "RUN_STARTED",
+                "payload": {
+                    "run_id": run0_id,
+                    "seq": sequence_id,
+                    "timestamp": now,
+                    "iteration": current_iteration,
+                    "mode": "standard",
+                },
+            }
+
             # 3. Spawn Background Task (Non-Blocking)
             # We pass the factory so the background task can manage its own session
             task = asyncio.create_task(self._run_mission_bg(mission_id, context.session_factory))
@@ -244,8 +262,7 @@ class MissionComplexHandler(IntentHandler):
             # 4. Stream Updates (Event-Driven)
             last_event_id = 0
             running = True
-            sequence_id = 0  # Monotonic sequence for frontend FSM
-            current_iteration = 0  # Track iteration for Run Isolation
+            # sequence_id/current_iteration already initialized above
 
             try:
                 while running:
@@ -342,7 +359,9 @@ class MissionComplexHandler(IntentHandler):
         if not has_search_key:
             # We don't block execution because DuckDuckGo is a valid fallback.
             # But we log it for observability.
-            logger.warning("No dedicated search provider key found (TAVILY/FIRECRAWL). Using Fallback.")
+            logger.warning(
+                "No dedicated search provider key found (TAVILY/FIRECRAWL). Using Fallback."
+            )
 
         return None
 

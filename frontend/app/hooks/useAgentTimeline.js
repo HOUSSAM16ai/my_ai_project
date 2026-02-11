@@ -3,10 +3,11 @@ import { useEffect, useReducer } from "react";
 const PHASE_MAPPING = {
   'CONTEXT_ENRICHMENT': 'contextualize',
   'PLANNING': 'plan',
-  'DESIGN': 'plan',
+  'DESIGN': 'design',
   'EXECUTION': 'execute',
   'REFLECTION': 'review',
-  'RE-PLANNING': 'plan',
+  'RE-PLANNING': 'replan',
+  'RESEARCH': 'research',
 };
 
 const initialState = {
