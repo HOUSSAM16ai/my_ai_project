@@ -65,13 +65,34 @@ class ProviderReadinessGate:
 
     @staticmethod
     async def _check_egress() -> bool:
-        """Simple check for network connectivity."""
-        try:
-            async with httpx.AsyncClient(timeout=3.0) as client:
-                resp = await client.get("https://1.1.1.1")
-                return resp.status_code == 200
-        except Exception:
-            return False
+        """
+        Robust check for network connectivity using multiple endpoints.
+        Handles proxies, redirects, and intermittent failures.
+        """
+        endpoints = [
+            "https://1.1.1.1",  # Cloudflare
+            "https://8.8.8.8",  # Google DNS
+            "https://www.google.com",  # Google Search
+            "https://www.github.com",  # GitHub
+        ]
+
+        async with httpx.AsyncClient(
+            timeout=5.0, follow_redirects=True, trust_env=True
+        ) as client:
+            for url in endpoints:
+                try:
+                    resp = await client.get(url)
+                    if 200 <= resp.status_code < 400:
+                        return True
+                    else:
+                        logger.warning(
+                            f"Egress check warning: {url} returned {resp.status_code}"
+                        )
+                except Exception as e:
+                    logger.debug(f"Egress check failed for {url}: {e}")
+                    continue
+
+        return False
 
 
 async def check_mission_readiness() -> dict[str, Any]:
