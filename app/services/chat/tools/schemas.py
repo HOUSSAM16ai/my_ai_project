@@ -5,11 +5,13 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 logger = logging.getLogger(__name__)
 
+
 class SearchContentSchema(BaseModel):
     """
     Schema for the search_content tool.
     Strictly validates inputs and handles alias mapping (Adapter Layer).
     """
+
     q: str | None = Field(None, alias="query")
     level: str | None = None
     subject: str | None = None
@@ -26,17 +28,17 @@ class SearchContentSchema(BaseModel):
         extra = "ignore"
         populate_by_name = True
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def log_unexpected_fields(cls, data: Any) -> Any:
         if isinstance(data, dict):
-            known_fields = set(cls.model_fields.keys()) | {"query"} # Add known aliases
+            known_fields = set(cls.model_fields.keys()) | {"query"}  # Add known aliases
             unexpected = set(data.keys()) - known_fields
             if unexpected:
                 logger.warning(f"SearchContentSchema received unexpected fields: {unexpected}")
         return data
 
-    @field_validator('year', mode='before')
+    @field_validator("year", mode="before")
     @classmethod
     def parse_year(cls, v):
         if v is None:
@@ -44,5 +46,5 @@ class SearchContentSchema(BaseModel):
         if isinstance(v, str):
             if v.isdigit():
                 return int(v)
-            return None # Fail gracefully or raise error depending on strictness policy
+            return None  # Fail gracefully or raise error depending on strictness policy
         return v

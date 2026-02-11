@@ -11,6 +11,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+
 class ProviderReadinessGate:
     """
     Checks if the necessary external providers (Search, Scraping, LLM) are configured and reachable.
@@ -23,7 +24,17 @@ class ProviderReadinessGate:
         Returns a status dict: {"status": "ready" | "degraded" | "failed", "details": ...}
         """
         tavily_key = os.environ.get("TAVILY_API_KEY")
-        has_tavily = bool(tavily_key)
+
+        # Auto-sanitize if user accidentally pasted the MCP URL
+        if tavily_key and "tavilyApiKey=" in tavily_key:
+            try:
+                tavily_key = tavily_key.split("tavilyApiKey=")[1].split("&")[0]
+                # Log without exposing the full key
+                logger.info("Auto-sanitized Tavily API Key from URL format.")
+            except IndexError:
+                pass
+
+        has_tavily = bool(tavily_key and tavily_key.startswith("tvly-"))
 
         # Check internet egress (using a reliable endpoint like Google or Cloudflare)
         has_internet = await ProviderReadinessGate._check_egress()
@@ -32,22 +43,24 @@ class ProviderReadinessGate:
             return {
                 "status": "failed",
                 "reason": "No internet access (Egress blocked)",
-                "details": "Cannot reach external network."
+                "details": "Cannot reach external network.",
             }
 
         if has_tavily:
             return {
                 "status": "ready",
-                "details": "Tavily API Key present."
+                "details": "Tavily API Key present.",
             }
 
         # Fallback to DuckDuckGo (Implicitly available via langchain community if internet works)
         # We consider this "degraded" because DDG is less reliable/powerful than Tavily for deep research.
-        logger.warning("Running in Degraded Mode: No Tavily API Key found. Using DuckDuckGo fallback.")
+        logger.warning(
+            "Running in Degraded Mode: No Tavily API Key found. Using DuckDuckGo fallback."
+        )
         return {
             "status": "degraded",
             "reason": "missing_tavily_key",
-            "details": "Using DuckDuckGo fallback."
+            "details": "Using DuckDuckGo fallback.",
         }
 
     @staticmethod
@@ -60,6 +73,7 @@ class ProviderReadinessGate:
         except Exception:
             return False
 
+
 async def check_mission_readiness() -> dict[str, Any]:
     """
     Master readiness check called before mission start.
@@ -70,7 +84,7 @@ async def check_mission_readiness() -> dict[str, Any]:
         logger.error(f"Mission Readiness Failed: {search_status}")
         return {
             "ready": False,
-            "error": search_status["reason"]
+            "error": search_status["reason"],
         }
 
     if search_status["status"] == "degraded":
@@ -78,5 +92,5 @@ async def check_mission_readiness() -> dict[str, Any]:
 
     return {
         "ready": True,
-        "mode": search_status["status"]
+        "mode": search_status["status"],
     }
