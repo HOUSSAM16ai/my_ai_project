@@ -114,6 +114,13 @@ class OvermindOrchestrator:
         except Exception as e:
             # Catch-all for catastrophic failures preventing the loop from starting
             logger.exception(f"Catastrophic failure in Mission {mission_id}")
+            # Fix: Rollback session to prevent "current transaction is aborted" errors
+            if hasattr(self.state, "session"):
+                try:
+                    await self.state.session.rollback()
+                except Exception as rollback_ex:
+                    logger.error(f"Failed to rollback session: {rollback_ex}")
+
             await self.state.update_mission_status(
                 mission_id, MissionStatus.FAILED, note=f"Fatal Error: {e}"
             )
@@ -185,6 +192,13 @@ class OvermindOrchestrator:
 
         except Exception as e:
             logger.exception(f"SuperBrain failure in mission {mission.id}: {e}")
+            # Fix: Rollback session to prevent "current transaction is aborted" errors
+            if hasattr(self.state, "session"):
+                try:
+                    await self.state.session.rollback()
+                except Exception as rollback_ex:
+                    logger.error(f"Failed to rollback session: {rollback_ex}")
+
             await self.state.update_mission_status(
                 mission.id, MissionStatus.FAILED, f"Cognitive Error: {e}"
             )

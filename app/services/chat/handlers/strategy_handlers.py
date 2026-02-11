@@ -250,7 +250,7 @@ class MissionComplexHandler(IntentHandler):
                 yield {
                     "type": "assistant_error",
                     "payload": {
-                        "content": f"❌ **خطأ في قاعدة البيانات:** لم نتمكن من بدء المهمة.\n`{e!s}`"
+                        "content": "❌ **خطأ في قاعدة البيانات:** لم نتمكن من بدء المهمة. يرجى المحاولة لاحقاً."
                     },
                 }
                 return
@@ -323,11 +323,11 @@ class MissionComplexHandler(IntentHandler):
                         try:
                             await task  # Check for exceptions
                         except Exception as e:
+                            logger.error(f"Background mission task failed: {e}")
                             yield {
                                 "type": "assistant_error",
-                                "payload": {"content": f"❌ **خطأ غير متوقع في النظام:** {e}"},
+                                "payload": {"content": "❌ **خطأ غير متوقع في النظام:** يرجى مراجعة السجلات."},
                             }
-                            logger.error(f"Background mission task failed: {e}")
                             return
 
                 # Catch-up from DB
@@ -392,7 +392,7 @@ class MissionComplexHandler(IntentHandler):
             logger.critical(f"Critical error in MissionComplexHandler: {global_ex}", exc_info=True)
             yield {
                 "type": "assistant_error",
-                "payload": {"content": f"\n🛑 **حدث خطأ حرج أثناء تنفيذ المهمة:** {global_ex}\n"},
+                "payload": {"content": "\n🛑 **حدث خطأ حرج أثناء تنفيذ المهمة.** تم تسجيل المشكلة وجاري العمل على حلها.\n"},
             }
 
     def _check_provider_config(self) -> str | None:
