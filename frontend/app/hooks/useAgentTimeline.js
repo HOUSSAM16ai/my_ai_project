@@ -149,10 +149,16 @@ export function useAgentTimeline() {
   }, []);
 
   // Transform State to flat Events Array for Component Compatibility
-  // Only expose the ACTIVE run's phases
-  const activeRun = state.runs[state.activeRunId] || { phases: {} };
+  // Fix: Aggregate phases from ALL runs to show cumulative progress
+  const allPhases = {};
 
-  return Object.entries(activeRun.phases).map(([phase, status]) => ({
+  // Sort runs to ensure later runs overwrite earlier ones if needed (chronological order)
+  Object.keys(state.runs).sort().forEach(runId => {
+    const runPhases = state.runs[runId].phases;
+    Object.assign(allPhases, runPhases);
+  });
+
+  return Object.entries(allPhases).map(([phase, status]) => ({
     phase,
     status
   }));

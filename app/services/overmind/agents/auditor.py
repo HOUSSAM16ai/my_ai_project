@@ -97,17 +97,17 @@ class AuditorAgent(AgentReflector):
             logger.info("Auditor detected a Plan. Switching to Plan Review mode.")
             return await self._review_plan(result, original_objective)
 
-        # 1. التحقق السريع (Fast Fail)
-        result_str = str(result).lower()
-        if "error" in result_str and len(result_str) < 200:
-            # أخطاء قصيرة وواضحة نرفضها فوراً
-            logger.warning("Auditor detected explicit errors (Fast Fail).")
-            return {
-                "approved": False,
-                "feedback": "تم اكتشاف رسالة خطأ صريحة في التنفيذ. يرجى تحليل الخطأ ومحاولة استراتيجية بديلة.",
-                "confidence": 0.9,
-                "final_response": "⚠️ **تنبيه:** تم إيقاف التنفيذ بسبب خطأ تقني واضح. يرجى مراجعة السجلات.",
-            }
+        # 1. التحقق السريع (Fast Fail) - DISABLED to prevent infinite loops on minor errors
+        # result_str = str(result).lower()
+        # if "error" in result_str and len(result_str) < 200:
+        #     # أخطاء قصيرة وواضحة نرفضها فوراً
+        #     logger.warning("Auditor detected explicit errors (Fast Fail).")
+        #     return {
+        #         "approved": False,
+        #         "feedback": "تم اكتشاف رسالة خطأ صريحة في التنفيذ. يرجى تحليل الخطأ ومحاولة استراتيجية بديلة.",
+        #         "confidence": 0.9,
+        #         "final_response": "⚠️ **تنبيه:** تم إيقاف التنفيذ بسبب خطأ تقني واضح. يرجى مراجعة السجلات.",
+        #     }
 
         # 2. المراجعة العميقة (Deep Review via AI)
         system_prompt = """
