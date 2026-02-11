@@ -7,7 +7,6 @@ const PHASE_MAPPING = {
   'EXECUTION': 'execute',
   'REFLECTION': 'review',
   'RE-PLANNING': 'plan',
-  'RESEARCH': 'research',
 };
 
 const initialState = {
@@ -37,10 +36,12 @@ function timelineReducer(state, action) {
   // 1. Handle New Run Start (Run Isolation)
   if (type === 'RUN_STARTED') {
     const runId = payload.run_id;
+    // FIX: Only set activeRunId if it's not already set, to prevent UI jumping.
+    const newActiveRunId = state.activeRunId || runId;
     return {
       ...state,
       lastSeq: nextSeq,
-      activeRunId: runId,
+      activeRunId: newActiveRunId,
       runs: {
         ...state.runs,
         [runId]: state.runs[runId] || { phases: {} }
