@@ -80,13 +80,21 @@ async def test_guardrail_supabase_pooler_compatibility(mock_create_engine):
         settings = MockSettings()
         create_db_engine(settings)
 
-        _, kwargs = mock_create_engine.call_args
+        args, kwargs = mock_create_engine.call_args
         connect_args = kwargs.get("connect_args", {})
+        db_url = args[0]
 
         # STRICT CHECK 6: Statement cache size must be 0
         assert connect_args.get("statement_cache_size") == 0, (
             "❌ FAILURE: statement_cache_size must be 0 for Supabase Pooler compatibility."
         )
-        assert connect_args.get("prepared_statement_cache_size") == 0, (
-            "❌ FAILURE: prepared_statement_cache_size must be 0 for Supabase Pooler compatibility."
+
+        # GUARDRAIL: prepared_statement_cache_size must NOT be in connect_args (causes asyncpg TypeError)
+        assert "prepared_statement_cache_size" not in connect_args, (
+            "❌ FAILURE: prepared_statement_cache_size must NOT be in connect_args."
+        )
+
+        # GUARDRAIL: prepared_statement_cache_size must be in URL query string (for SQLAlchemy dialect)
+        assert "prepared_statement_cache_size=0" in db_url, (
+            f"❌ FAILURE: prepared_statement_cache_size=0 must be in URL query string. Got: {db_url}"
         )

@@ -73,22 +73,27 @@ def create_db_engine(settings: BaseServiceSettings) -> AsyncEngine:
         # PgBouncer Compatibility (Supabase)
         # We must set these args explicitly in the connect_args dictionary
         # AND ensure they are passed as integers.
-        engine_args["connect_args"].update(
-            {"statement_cache_size": 0, "prepared_statement_cache_size": 0}
-        )
+        # Note: prepared_statement_cache_size is a Dialect argument, not a driver argument.
+        # It must be passed via URL query params for correct dialect configuration.
+        engine_args["connect_args"]["statement_cache_size"] = 0
 
         # Handle ssl query params and convert them to an SSL context for asyncpg.
         qs = dict(url_obj.query)
+
+        # Force prepared_statement_cache_size=0 in URL query for SQLAlchemy dialect
+        qs["prepared_statement_cache_size"] = "0"
+
         ssl_mode = None
         if "sslmode" in qs:
             ssl_mode = qs.pop("sslmode")
         elif "ssl" in qs:
             ssl_mode = qs.pop("ssl")
 
-        if ssl_mode is not None:
-            # Update db_url to exclude ssl/sslmode
-            url_obj = url_obj.set(query=qs)
+        # Update db_url with modified query params (added cache size, removed sslmode)
+        url_obj = url_obj.set(query=qs)
+        db_url = url_obj.render_as_string(hide_password=False)
 
+        if ssl_mode is not None:
             # [CRITICAL GUARDRAIL]
             # Must use `render_as_string(hide_password=False)`!
             # 1. `str(url_obj)` masks passwords as '***', causing auth failures.

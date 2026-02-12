@@ -6,6 +6,7 @@ from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import pool
+from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.asyncio import create_async_engine
 
 # --- 1. ENVIRONMENT BOOTSTRAP ---
@@ -79,16 +80,24 @@ async def run_async_migrations() -> None:
     # Create engine directly using sqlalchemy.ext.asyncio
     # We apply the same critical settings as the app (e.g. statement_cache_size=0 for Supabase)
 
+    db_url = settings.DATABASE_URL
     connect_args = {}
+
     # Apply Supabase/PgBouncer compatibility fix if using PostgreSQL
-    # Note: asyncpg requires prepared_statement_cache_size=0 alongside statement_cache_size=0
-    # to fully disable prepared statements for transaction poolers.
-    if "postgresql" in settings.DATABASE_URL or "asyncpg" in settings.DATABASE_URL:
+    # Note: statement_cache_size=0 is an asyncpg argument.
+    # prepared_statement_cache_size=0 is a SQLAlchemy dialect argument and must be passed via URL query.
+    if "postgresql" in db_url or "asyncpg" in db_url:
         connect_args["statement_cache_size"] = 0
-        connect_args["prepared_statement_cache_size"] = 0
+
+        # Inject prepared_statement_cache_size=0 into URL query string
+        u = make_url(db_url)
+        q = dict(u.query)
+        q["prepared_statement_cache_size"] = "0"
+        u = u.set(query=q)
+        db_url = u.render_as_string(hide_password=False)
 
     connectable = create_async_engine(
-        settings.DATABASE_URL,
+        db_url,
         echo=True,
         future=True,
         poolclass=pool.NullPool,  # NullPool is used for migrations to avoid locking
