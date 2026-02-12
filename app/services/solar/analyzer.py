@@ -1,7 +1,8 @@
-import random
 import asyncio
-from typing import List
-from .models import PanelAnalysisResult, FaultDetection, FaultType
+import random
+
+from .models import FaultDetection, FaultType, PanelAnalysisResult
+
 
 class SolarPanelAnalyzer:
     """
@@ -12,7 +13,7 @@ class SolarPanelAnalyzer:
         # Simulate processing delay to mimic real model inference
         await asyncio.sleep(0.1)
 
-        faults: List[FaultDetection] = []
+        faults: list[FaultDetection] = []
         status = "Healthy"
         rec = "Routine maintenance only."
 

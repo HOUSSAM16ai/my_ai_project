@@ -1,5 +1,7 @@
 import pytest
-from app.services.solar import SolarPanelAnalyzer, FaultType
+
+from app.services.solar import FaultType, SolarPanelAnalyzer
+
 
 @pytest.mark.asyncio
 async def test_detect_cracks():

@@ -14,7 +14,6 @@ from app.services.chat.tools.content import (
     get_solution_raw,
     search_content,
 )
-from app.services.chat.tools.solar import detect_solar_faults
 from app.services.chat.tools.curriculum import (
     adjust_difficulty_level,
     get_learning_path_progress,
@@ -26,6 +25,7 @@ from app.services.chat.tools.reporting import (
     get_student_diagnostic_report,
 )
 from app.services.chat.tools.retrieval import search_educational_content
+from app.services.chat.tools.solar import detect_solar_faults
 from app.services.codebase.introspection import introspection_service
 from app.services.overmind.knowledge import DatabaseKnowledge, ProjectKnowledge
 from app.services.overmind.user_knowledge.service import UserKnowledge

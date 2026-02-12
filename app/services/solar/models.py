@@ -1,6 +1,7 @@
 from enum import Enum
-from typing import List, Optional
+
 from pydantic import BaseModel, Field
+
 
 class FaultType(str, Enum):
     HOTSPOT = "hotspot"
@@ -12,11 +13,11 @@ class FaultType(str, Enum):
 class FaultDetection(BaseModel):
     fault_type: FaultType
     confidence: float
-    bbox: Optional[List[int]] = Field(default=None, description="[x, y, w, h] if applicable")
+    bbox: list[int] | None = Field(default=None, description="[x, y, w, h] if applicable")
     description: str
 
 class PanelAnalysisResult(BaseModel):
     image_id: str
-    faults: List[FaultDetection]
+    faults: list[FaultDetection]
     overall_status: str  # "Critical", "Warning", "Healthy"
     recommendation: str

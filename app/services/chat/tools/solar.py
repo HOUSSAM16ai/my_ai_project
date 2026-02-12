@@ -1,4 +1,5 @@
 from langchain_core.tools import tool
+
 from app.services.solar import SolarPanelAnalyzer
 
 analyzer = SolarPanelAnalyzer()
