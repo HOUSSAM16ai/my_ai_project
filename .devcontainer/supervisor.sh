@@ -31,7 +31,7 @@ set -Eeuo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly APP_ROOT="/app"
 readonly APP_PORT="${PORT:-8000}"
-readonly FRONTEND_PORT="${FRONTEND_PORT:-3000}"
+readonly FRONTEND_PORT="${FRONTEND_PORT:-3001}"
 readonly HEALTH_ENDPOINT="http://localhost:${APP_PORT}/health"
 
 cd "$APP_ROOT"

@@ -39,7 +39,7 @@ services:
     container_name: cogniforge-frontend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3001:3001"
     networks:
       - appnet
     environment:
