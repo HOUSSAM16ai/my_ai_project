@@ -14,6 +14,7 @@ from app.services.chat.tools.content import (
     get_solution_raw,
     search_content,
 )
+from app.services.chat.tools.solar import detect_solar_faults
 from app.services.chat.tools.curriculum import (
     adjust_difficulty_level,
     get_learning_path_progress,
@@ -73,6 +74,9 @@ class ToolRegistry:
         self.register("search_content", search_content)
         self.register("get_content_raw", get_content_raw)
         self.register("get_solution_raw", get_solution_raw)
+
+        # Solar Tools
+        self.register("detect_solar_faults", detect_solar_faults)
 
     def register(self, name: str, func: Callable) -> None:
         self._tools[name] = func
