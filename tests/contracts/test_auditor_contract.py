@@ -1,11 +1,15 @@
-import pytest
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, Any
+
+import pytest
 
 from app.infrastructure.clients.auditor_client import AuditorClient
-from microservices.auditor_service.src.schemas import ReviewRequest, ReviewResponse, ConsultRequest, ConsultResponse
-from app.core.protocols import CollaborationContext
+from microservices.auditor_service.src.schemas import (
+    ConsultRequest,
+    ReviewRequest,
+    ReviewResponse,
+)
+
 
 # Mock Context
 class MockContext:
@@ -17,6 +21,7 @@ class MockContext:
 
     def get(self, k):
         return self.shared_memory.get(k)
+
 
 @pytest.mark.asyncio
 async def test_auditor_client_complies_with_contract():
@@ -59,7 +64,7 @@ async def test_auditor_client_complies_with_contract():
         # Verify Request Payload (The Contract Check)
         call_args = mock_post.call_args
         url = call_args[0][0]
-        json_payload = call_args.kwargs['json']
+        json_payload = call_args.kwargs["json"]
 
         # 1. Check URL
         assert "/review" in url
@@ -70,6 +75,7 @@ async def test_auditor_client_complies_with_contract():
         except Exception as e:
             pytest.fail(f"Client generated invalid payload according to contract: {e}")
 
+
 @pytest.mark.asyncio
 async def test_auditor_service_implements_contract():
     """
@@ -79,21 +85,20 @@ async def test_auditor_service_implements_contract():
     from microservices.auditor_service.src.core import AuditorService
 
     # Mock AI Client to avoid external calls
-    with patch("microservices.auditor_service.src.core.SimpleAIClient.send_message", new_callable=AsyncMock) as mock_ai:
+    with patch(
+        "microservices.auditor_service.src.core.SimpleAIClient.send_message", new_callable=AsyncMock
+    ) as mock_ai:
         # Mock LLM returning valid JSON matching schema
-        mock_ai.return_value = json.dumps({
-            "approved": True,
-            "feedback": "Excellent",
-            "score": 1.0,
-            "final_response": "Perfect."
-        })
+        mock_ai.return_value = json.dumps(
+            {"approved": True, "feedback": "Excellent", "score": 1.0, "final_response": "Perfect."}
+        )
 
         service = AuditorService()
 
         request_payload = {
             "result": {"status": "done"},
             "original_objective": "Test",
-            "context": {}
+            "context": {},
         }
 
         # Create Request Object (Contract)
@@ -107,6 +112,7 @@ async def test_auditor_service_implements_contract():
         assert response.approved is True
         assert response.score == 1.0
 
+
 @pytest.mark.asyncio
 async def test_auditor_consult_contract():
     """
@@ -117,10 +123,7 @@ async def test_auditor_consult_contract():
     analysis = {"load": 99}
 
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
-        expected_resp = {
-            "recommendation": "Scale up",
-            "confidence": 90.0
-        }
+        expected_resp = {"recommendation": "Scale up", "confidence": 90.0}
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -132,8 +135,8 @@ async def test_auditor_consult_contract():
         await client.consult(situation, analysis)
 
         # Verify Payload
-        json_payload = mock_post.call_args.kwargs['json']
+        json_payload = mock_post.call_args.kwargs["json"]
         try:
             ConsultRequest(**json_payload)
         except Exception as e:
-             pytest.fail(f"Client generated invalid Consult payload: {e}")
+            pytest.fail(f"Client generated invalid Consult payload: {e}")
