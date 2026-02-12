@@ -4,9 +4,9 @@
 
 يجمع بين:
 - LangGraph للتنسيق
-- LlamaIndex للاسترجاع
-- DSPy للتحسين
-- Reranker للترتيب
+- LlamaIndex للاسترجاع (via ResearchGateway)
+- DSPy للتحسين (via ResearchGateway)
+- Reranker للترتيب (via ResearchGateway)
 - Kagent للتنفيذ
 
 هذا الملف يوفر واجهة موحدة للتكامل مع كل هذه التقنيات.
@@ -16,7 +16,6 @@ import contextlib
 from pathlib import Path
 
 from app.core.logging import get_logger
-from app.core.settings.base import get_settings
 
 logger = get_logger(__name__)
 
@@ -35,6 +34,15 @@ class MCPIntegrations:
 
     def __init__(self, project_root: Path | None = None) -> None:
         self.project_root = project_root or Path.cwd()
+
+        # Initialize Integration Plane Gateways (Local Adapters)
+        # In a future iteration, these could be injected or switched to Remote Gateways.
+        from app.integration.gateways.planning import LocalPlanningGateway
+        from app.integration.gateways.research import LocalResearchGateway
+
+        self.research_gateway = LocalResearchGateway()
+        self.planning_gateway = LocalPlanningGateway()
+
         self._langgraph_engine = None
         self._kagent_mesh = None
         self._reranker = None
@@ -91,7 +99,7 @@ class MCPIntegrations:
         except ImportError:
             return {"status": "unavailable", "error": "LangGraph غير متوفر"}
 
-    # ============== LlamaIndex ==============
+    # ============== LlamaIndex (Research Gateway) ==============
 
     async def semantic_search(
         self,
@@ -100,7 +108,7 @@ class MCPIntegrations:
         filters: dict[str, object] | None = None,
     ) -> dict[str, object]:
         """
-        بحث دلالي باستخدام LlamaIndex.
+        بحث دلالي باستخدام LlamaIndex عبر ResearchGateway.
 
         Args:
             query: نص البحث
@@ -111,15 +119,7 @@ class MCPIntegrations:
             dict: نتائج البحث
         """
         try:
-            from microservices.research_agent.src.search_engine import (
-                get_retriever,
-            )
-
-            # ملاحظة: قد يحتاج URL قاعدة البيانات
-            # تم إصلاح الـ Placeholder واستخدام الإعدادات الحقيقية
-            db_url = str(get_settings().database.url)
-            retriever = get_retriever(db_url)
-            results = await retriever.search(query, top_k=top_k, filters=filters)
+            results = await self.research_gateway.semantic_search(query, top_k=top_k, filters=filters)
 
             return {
                 "success": True,
@@ -128,24 +128,14 @@ class MCPIntegrations:
                 "count": len(results),
             }
         except Exception as e:
-            logger.error(f"خطأ في LlamaIndex: {e}")
+            logger.error(f"خطأ في LlamaIndex (Gateway): {e}")
             return {"success": False, "error": str(e)}
 
     def get_llamaindex_status(self) -> dict[str, object]:
-        """حالة LlamaIndex."""
-        try:
-            from microservices.research_agent.src.search_engine import (  # noqa: F401
-                LlamaIndexRetriever,
-            )
+        """حالة LlamaIndex عبر Gateway."""
+        return self.research_gateway.get_llamaindex_status()
 
-            return {
-                "status": "active",
-                "capabilities": ["semantic_search", "metadata_filtering", "reranking"],
-            }
-        except ImportError:
-            return {"status": "unavailable"}
-
-    # ============== DSPy ==============
+    # ============== DSPy (Research Gateway) ==============
 
     async def refine_query(
         self,
@@ -153,7 +143,7 @@ class MCPIntegrations:
         api_key: str | None = None,
     ) -> dict[str, object]:
         """
-        تحسين استعلام باستخدام DSPy.
+        تحسين استعلام باستخدام DSPy عبر ResearchGateway.
 
         Args:
             query: الاستعلام الأصلي
@@ -163,11 +153,7 @@ class MCPIntegrations:
             dict: الاستعلام المحسن مع الفلاتر
         """
         try:
-            from microservices.research_agent.src.search_engine.query_refiner import (
-                get_refined_query,
-            )
-
-            result = get_refined_query(query, api_key)
+            result = await self.research_gateway.refine_query(query, api_key)
 
             return {
                 "success": True,
@@ -180,7 +166,7 @@ class MCPIntegrations:
                 },
             }
         except Exception as e:
-            logger.error(f"خطأ في DSPy: {e}")
+            logger.error(f"خطأ في DSPy (Gateway): {e}")
             return {"success": False, "error": str(e)}
 
     async def generate_plan(
@@ -189,7 +175,7 @@ class MCPIntegrations:
         context: str = "",
     ) -> dict[str, object]:
         """
-        توليد خطة باستخدام DSPy.
+        توليد خطة باستخدام PlanningGateway.
 
         Args:
             goal: الهدف المطلوب
@@ -199,10 +185,7 @@ class MCPIntegrations:
             dict: خطوات الخطة
         """
         try:
-            from microservices.planning_agent.cognitive import PlanGenerator
-
-            generator = PlanGenerator()
-            result = generator.forward(goal=goal, context=context)
+            result = await self.planning_gateway.generate_plan(goal, context=context)
 
             return {
                 "success": True,
@@ -210,22 +193,14 @@ class MCPIntegrations:
                 "plan_steps": result.plan_steps,
             }
         except Exception as e:
-            logger.error(f"خطأ في توليد الخطة: {e}")
+            logger.error(f"خطأ في توليد الخطة (Gateway): {e}")
             return {"success": False, "error": str(e)}
 
     def get_dspy_status(self) -> dict[str, object]:
-        """حالة DSPy."""
-        try:
-            import dspy  # noqa: F401
+        """حالة DSPy عبر Gateway."""
+        return self.research_gateway.get_dspy_status()
 
-            return {
-                "status": "active",
-                "modules": ["GeneratePlan", "CritiquePlan", "QueryRefiner"],
-            }
-        except ImportError:
-            return {"status": "unavailable"}
-
-    # ============== Reranker ==============
+    # ============== Reranker (Research Gateway) ==============
 
     async def rerank_results(
         self,
@@ -234,7 +209,7 @@ class MCPIntegrations:
         top_n: int = 5,
     ) -> dict[str, object]:
         """
-        إعادة ترتيب النتائج باستخدام Reranker.
+        إعادة ترتيب النتائج باستخدام Reranker عبر ResearchGateway.
 
         Args:
             query: نص الاستعلام
@@ -245,12 +220,7 @@ class MCPIntegrations:
             dict: النتائج المرتبة
         """
         try:
-            from microservices.research_agent.src.search_engine.reranker import (
-                get_reranker,
-            )
-
-            reranker = get_reranker()
-            reranked = reranker.rerank(query, documents, top_n=top_n)
+            reranked = await self.research_gateway.rerank_results(query, documents, top_n=top_n)
 
             return {
                 "success": True,
@@ -258,22 +228,12 @@ class MCPIntegrations:
                 "reranked_results": reranked,
             }
         except Exception as e:
-            logger.error(f"خطأ في Reranker: {e}")
+            logger.error(f"خطأ في Reranker (Gateway): {e}")
             return {"success": False, "error": str(e)}
 
     def get_reranker_status(self) -> dict[str, object]:
-        """حالة Reranker."""
-        try:
-            from microservices.research_agent.src.search_engine.reranker import (  # noqa: F401
-                Reranker,
-            )
-
-            return {
-                "status": "active",
-                "model": "BAAI/bge-reranker-base",
-            }
-        except ImportError:
-            return {"status": "unavailable"}
+        """حالة Reranker عبر Gateway."""
+        return self.research_gateway.get_reranker_status()
 
     # ============== Kagent ==============
 
@@ -399,12 +359,11 @@ class MCPIntegrations:
 
             profile = await get_student_profile(student_id)
 
-            # إثراء بالسياق من LlamaIndex (إذا متوفر)
-            with contextlib.suppress(ImportError):
-                from microservices.research_agent.src.search_engine import (  # noqa: F401
-                    get_retriever,
-                )
-                # يمكن جلب تاريخ الطالب من المحتوى
+            # إثراء بالسياق من LlamaIndex عبر Gateway (إذا متوفر)
+            status = self.research_gateway.get_llamaindex_status()
+            if status.get("status") == "active":
+                # Placeholder for future logic
+                pass
 
             return {
                 "success": True,
@@ -506,17 +465,17 @@ class MCPIntegrations:
             checker = get_prerequisite_checker()
             report = checker.check_readiness(profile, concept_id)
 
-            # استخدام Reranker لترتيب المتطلبات حسب الأهمية
+            # استخدام Reranker لترتيب المتطلبات حسب الأهمية (عبر Gateway)
             missing = report.missing_prerequisites
             if missing and len(missing) > 1:
                 try:
-                    reranked = await self.rerank_results(
+                    reranked_result = await self.rerank_results(
                         query=concept_id,
                         documents=missing,
                         top_n=3,
                     )
-                    if reranked.get("success"):
-                        missing = reranked["reranked_results"]
+                    if reranked_result.get("success"):
+                        missing = reranked_result["reranked_results"]
                 except Exception:
                     pass
 
@@ -565,7 +524,7 @@ class MCPIntegrations:
 
             graph = get_concept_graph()
 
-            # تحسين البحث بـ DSPy
+            # تحسين البحث بـ DSPy (عبر Gateway)
             refined = await self.refine_query(topic)
             search_term = refined.get("refined_query", topic) if refined.get("success") else topic
 
