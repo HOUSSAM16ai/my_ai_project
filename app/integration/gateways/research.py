@@ -6,6 +6,7 @@ from app.integration.protocols.research_gateway import ResearchGatewayProtocol
 
 logger = get_logger(__name__)
 
+
 class LocalResearchGateway(ResearchGatewayProtocol):
     """
     Local Adapter for the Research Agent.
@@ -49,6 +50,7 @@ class LocalResearchGateway(ResearchGatewayProtocol):
             from microservices.research_agent.src.search_engine.query_refiner import (
                 get_refined_query,
             )
+
             return get_refined_query(query, api_key)
         except ImportError as e:
             logger.error(f"Research Agent module not found: {e}")
@@ -70,6 +72,7 @@ class LocalResearchGateway(ResearchGatewayProtocol):
             from microservices.research_agent.src.search_engine.reranker import (
                 get_reranker,
             )
+
             reranker = get_reranker()
             return reranker.rerank(query, documents, top_n=top_n)
         except ImportError as e:
@@ -84,6 +87,7 @@ class LocalResearchGateway(ResearchGatewayProtocol):
             from microservices.research_agent.src.search_engine import (  # noqa: F401
                 LlamaIndexRetriever,
             )
+
             return {
                 "status": "active",
                 "capabilities": ["semantic_search", "metadata_filtering", "reranking"],
@@ -94,6 +98,7 @@ class LocalResearchGateway(ResearchGatewayProtocol):
     def get_dspy_status(self) -> dict[str, Any]:
         try:
             import dspy  # noqa: F401
+
             return {
                 "status": "active",
                 "modules": ["GeneratePlan", "CritiquePlan", "QueryRefiner"],
@@ -106,6 +111,7 @@ class LocalResearchGateway(ResearchGatewayProtocol):
             from microservices.research_agent.src.search_engine.reranker import (  # noqa: F401
                 Reranker,
             )
+
             return {
                 "status": "active",
                 "model": "BAAI/bge-reranker-base",

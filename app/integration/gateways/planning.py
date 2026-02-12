@@ -5,6 +5,7 @@ from app.integration.protocols.planning_gateway import PlanningGatewayProtocol
 
 logger = get_logger(__name__)
 
+
 class LocalPlanningGateway(PlanningGatewayProtocol):
     """
     Local Adapter for the Planning Agent.
