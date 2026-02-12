@@ -48,12 +48,14 @@ class TableManager:
             list[str]: أسماء جميع الجداول
         """
         try:
-            query = text("""
+            query = text(
+                """
                 SELECT table_name
                 FROM information_schema.tables
                 WHERE table_schema = 'public'
                 ORDER BY table_name
-            """)
+            """
+            )
 
             result = await self._session.execute(query)
             tables = [row[0] for row in result]
@@ -119,7 +121,8 @@ class TableManager:
         Returns:
             قائمة بمعلومات الأعمدة
         """
-        columns_query = text("""
+        columns_query = text(
+            """
             SELECT
                 column_name,
                 data_type,
@@ -128,7 +131,8 @@ class TableManager:
             FROM information_schema.columns
             WHERE table_name = :table_name
             ORDER BY ordinal_position
-        """)
+        """
+        )
 
         result = await self._session.execute(columns_query, {"table_name": table_name})
 
@@ -157,14 +161,16 @@ class TableManager:
         Returns:
             قائمة بأسماء أعمدة المفاتيح الأساسية
         """
-        pk_query = text("""
+        pk_query = text(
+            """
             SELECT kcu.column_name
             FROM information_schema.table_constraints tc
             JOIN information_schema.key_column_usage kcu
                 ON tc.constraint_name = kcu.constraint_name
             WHERE tc.table_name = :table_name
                 AND tc.constraint_type = 'PRIMARY KEY'
-        """)
+        """
+        )
 
         result = await self._session.execute(pk_query, {"table_name": table_name})
         return [row[0] for row in result]
@@ -181,7 +187,8 @@ class TableManager:
         Returns:
             قائمة بمعلومات المفاتيح الأجنبية
         """
-        fk_query = text("""
+        fk_query = text(
+            """
             SELECT
                 kcu.column_name,
                 ccu.table_name AS foreign_table,
@@ -193,7 +200,8 @@ class TableManager:
                 ON ccu.constraint_name = tc.constraint_name
             WHERE tc.table_name = :table_name
                 AND tc.constraint_type = 'FOREIGN KEY'
-        """)
+        """
+        )
 
         result = await self._session.execute(fk_query, {"table_name": table_name})
 
@@ -221,13 +229,15 @@ class TableManager:
         Returns:
             قائمة بمعلومات الفهارس
         """
-        idx_query = text("""
+        idx_query = text(
+            """
             SELECT
                 indexname,
                 indexdef
             FROM pg_indexes
             WHERE tablename = :table_name
-        """)
+        """
+        )
 
         result = await self._session.execute(idx_query, {"table_name": table_name})
 

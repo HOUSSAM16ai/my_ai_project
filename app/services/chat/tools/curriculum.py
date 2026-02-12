@@ -41,12 +41,14 @@ async def recommend_next_mission(user_id: int, difficulty: str = "medium") -> di
         # محاولة البحث عن محتوى حقيقي في قاعدة البيانات لاقتراحه
         try:
             # البحث عن موضوع عشوائي أو أول موضوع في المستوى الأول
-            content_query = text("""
+            content_query = text(
+                """
                 SELECT title, subject, level, id
                 FROM content_items
                 ORDER BY level ASC, id ASC
                 LIMIT 1
-             """)
+             """
+            )
             content_res = await session.execute(content_query)
             content_row = content_res.fetchone()
 

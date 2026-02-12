@@ -17,9 +17,9 @@ from pathlib import Path
 
 from app.core.logging import get_logger
 from app.core.settings.base import get_settings
-from app.infrastructure.clients.http_research_client import HttpResearchClient
+from app.domain.models.agents import SearchFilters, SearchRequest
 from app.infrastructure.clients.http_planning_client import HttpPlanningClient
-from app.domain.models.agents import SearchRequest, SearchFilters
+from app.infrastructure.clients.http_research_client import HttpResearchClient
 
 logger = get_logger(__name__)
 
@@ -120,11 +120,7 @@ class MCPIntegrations:
         """
         try:
             # Refactored to use HTTP Client
-            req = SearchRequest(
-                q=query,
-                limit=top_k,
-                filters=SearchFilters(**(filters or {}))
-            )
+            req = SearchRequest(q=query, limit=top_k, filters=SearchFilters(**(filters or {})))
             results = await self.research_client.search(req)
 
             return {
@@ -143,7 +139,7 @@ class MCPIntegrations:
         return {
             "status": "active",
             "capabilities": ["semantic_search", "metadata_filtering"],
-            "mode": "microservice"
+            "mode": "microservice",
         }
 
     # ============== DSPy ==============
@@ -215,7 +211,7 @@ class MCPIntegrations:
         return {
             "status": "active",
             "modules": ["GeneratePlan", "CritiquePlan", "QueryRefiner"],
-            "mode": "microservice"
+            "mode": "microservice",
         }
 
     # ============== Reranker ==============
@@ -250,7 +246,7 @@ class MCPIntegrations:
         return {
             "status": "pending_migration",
             "model": "BAAI/bge-reranker-base",
-            "note": "Awaiting HTTP API exposure"
+            "note": "Awaiting HTTP API exposure",
         }
 
     # ============== Kagent ==============
@@ -379,9 +375,9 @@ class MCPIntegrations:
 
             # إثراء بالسياق من LlamaIndex (إذا متوفر)
             with contextlib.suppress(Exception):
-                 # Use search client if possible, but profile enrichment might be specific logic
-                 # For now, suppressing import error
-                 pass
+                # Use search client if possible, but profile enrichment might be specific logic
+                # For now, suppressing import error
+                pass
 
             return {
                 "success": True,

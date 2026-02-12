@@ -70,7 +70,7 @@ class PerformanceProfiler(BaseMiddleware):
         """يحدّث المدة الكلية والمؤشرات المئوية بعد إتمام الطلب."""
 
         start_time_raw = ctx.get_metadata("profiler_start")
-        start_time = float(start_time_raw) if isinstance(start_time_raw, (int, float)) else None
+        start_time = float(start_time_raw) if isinstance(start_time_raw, int | float) else None
         if start_time is None:
             return
 

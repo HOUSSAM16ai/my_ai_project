@@ -118,7 +118,7 @@ def _extract_metadata(item: dict[str, object]) -> dict[str, object]:
     """
     metadata: dict[str, object] = {}
     score = item.get("score")
-    if isinstance(score, (int, float)):
+    if isinstance(score, int | float):
         metadata["score"] = score
     source = item.get("source")
     if isinstance(source, str):

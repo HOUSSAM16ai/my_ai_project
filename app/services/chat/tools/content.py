@@ -10,11 +10,11 @@
 import difflib
 
 from app.core.logging import get_logger
-from app.services.chat.tools.schemas import SearchContentSchema
-from app.infrastructure.clients.http_research_client import HttpResearchClient
 from app.core.settings.base import get_settings
-from app.domain.models.agents import SearchRequest, SearchFilters
 from app.domain.constants import BRANCH_MAP
+from app.domain.models.agents import SearchRequest
+from app.infrastructure.clients.http_research_client import HttpResearchClient
+from app.services.chat.tools.schemas import SearchContentSchema
 
 logger = get_logger("content-tools")
 
@@ -127,7 +127,11 @@ async def search_content(
         client = HttpResearchClient(settings.RESEARCH_AGENT_URL)
 
         # Normalize branch if provided
-        normalized_branch = _normalize_branch(validated_data.branch) if validated_data.branch else validated_data.branch
+        normalized_branch = (
+            _normalize_branch(validated_data.branch)
+            if validated_data.branch
+            else validated_data.branch
+        )
 
         # Build query context (mimicking original logic)
         context_parts = []
@@ -183,7 +187,7 @@ async def get_content_raw(
             # Verify if result seems to match (optional)
             return {
                 "content": res.content or "",
-                "solution": "", # Solution not exposed via search result model yet
+                "solution": "",  # Solution not exposed via search result model yet
             }
         return None
     except Exception as e:

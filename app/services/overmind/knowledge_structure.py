@@ -61,7 +61,7 @@ def _analyze_python_file(file_path: Path) -> dict[str, object]:
                         "methods": methods[:10],  # أول 10 methods فقط
                     }
                 )
-            elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            elif isinstance(node, ast.Import | ast.ImportFrom):
                 if isinstance(node, ast.Import):
                     for alias in node.names:
                         imports.append(alias.name)

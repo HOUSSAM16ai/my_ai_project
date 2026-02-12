@@ -58,7 +58,7 @@ class AnomalyInspector(BaseMiddleware):
     def _get_request_duration(self, ctx: RequestContext) -> float | None:
         """يعيد مدة الطلب بالملّي ثانية أو None عند غياب البيانات."""
         start_time = ctx.get_metadata(self._START_TIME_KEY)
-        if not isinstance(start_time, (int, float)):
+        if not isinstance(start_time, int | float):
             return None
         return (perf_counter() - float(start_time)) * 1000
 

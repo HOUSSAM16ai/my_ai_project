@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 # Lazy import to avoid hard dependency on llama_index if possible, but keeping strictly for now
 from llama_index.core.schema import NodeWithScore
@@ -17,7 +17,7 @@ class IReasoningStrategy(ABC):
         pass
 
     @abstractmethod
-    async def expand(self, parent: ReasoningNode, context: str) -> List[ReasoningNode]:
+    async def expand(self, parent: ReasoningNode, context: str) -> list[ReasoningNode]:
         pass
 
     @abstractmethod

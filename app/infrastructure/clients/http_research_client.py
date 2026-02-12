@@ -1,23 +1,21 @@
+from typing import Any
+
 import httpx
-from typing import List, Any, Dict, Optional
+
 from app.core.interfaces.services import IResearchService
-from app.domain.models.agents import SearchRequest, SearchResult
 from app.core.logging import get_logger
+from app.domain.models.agents import SearchRequest, SearchResult
 
 logger = get_logger(__name__)
+
 
 class HttpResearchClient(IResearchService):
     def __init__(self, base_url: str):
         self.base_url = base_url
         self.client = httpx.AsyncClient(base_url=base_url, timeout=30.0)
 
-    async def search(self, request: SearchRequest) -> List[SearchResult]:
+    async def search(self, request: SearchRequest) -> list[SearchResult]:
         try:
-            payload = {
-                "caller_id": "app-core",
-                "action": "search",
-                "payload": request.model_dump(exclude_none=True)
-            }
             # The agent expects filters inside 'payload' to be a dict, but SearchRequest puts them there.
             # Let's adjust payload matching the agent's expectation:
             # Agent expects: query, filters, limit.
@@ -30,15 +28,18 @@ class HttpResearchClient(IResearchService):
             actual_payload = {
                 "query": request.q,
                 "filters": request.filters.model_dump(exclude_none=True),
-                "limit": request.limit
+                "limit": request.limit,
             }
 
-            response = await self.client.post("/execute", json={
-                "caller_id": "app-core",
-                "target_service": "research_agent",
-                "action": "search",
-                "payload": actual_payload
-            })
+            response = await self.client.post(
+                "/execute",
+                json={
+                    "caller_id": "app-core",
+                    "target_service": "research_agent",
+                    "action": "search",
+                    "payload": actual_payload,
+                },
+            )
             response.raise_for_status()
             data = response.json()
 
@@ -53,18 +54,18 @@ class HttpResearchClient(IResearchService):
             logger.error(f"Failed to call Research Agent: {e}")
             raise
 
-    async def refine_query(self, query: str, api_key: Optional[str] = None) -> Dict[str, Any]:
+    async def refine_query(self, query: str, api_key: str | None = None) -> dict[str, Any]:
         try:
-            payload = {
-                "query": query,
-                "api_key": api_key
-            }
-            response = await self.client.post("/execute", json={
-                "caller_id": "app-core",
-                "target_service": "research_agent",
-                "action": "refine",
-                "payload": payload
-            })
+            payload = {"query": query, "api_key": api_key}
+            response = await self.client.post(
+                "/execute",
+                json={
+                    "caller_id": "app-core",
+                    "target_service": "research_agent",
+                    "action": "refine",
+                    "payload": payload,
+                },
+            )
             response.raise_for_status()
             data = response.json()
 
@@ -78,16 +79,16 @@ class HttpResearchClient(IResearchService):
 
     async def deep_research(self, query: str) -> str:
         try:
-            payload = {
-                "query": query,
-                "deep_dive": True
-            }
-            response = await self.client.post("/execute", json={
-                "caller_id": "app-core",
-                "target_service": "research_agent",
-                "action": "deep_research",
-                "payload": payload
-            })
+            payload = {"query": query, "deep_dive": True}
+            response = await self.client.post(
+                "/execute",
+                json={
+                    "caller_id": "app-core",
+                    "target_service": "research_agent",
+                    "action": "deep_research",
+                    "payload": payload,
+                },
+            )
             response.raise_for_status()
             data = response.json()
 

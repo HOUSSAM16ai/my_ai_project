@@ -7,11 +7,10 @@
 from langgraph.graph import END, StateGraph
 
 from app.core.di import get_kagent_mesh
-from app.core.settings.base import get_settings
-from app.services.kagent.adapters import RemoteAgentAdapter
 
 # DIP: Use the Interface, not the concrete implementation or legacy facade
 from app.core.interfaces.llm import LLMClient
+from app.core.settings.base import get_settings
 from app.services.chat.graph.nodes.planner import planner_node
 from app.services.chat.graph.nodes.procedural_auditor import procedural_auditor_node
 from app.services.chat.graph.nodes.researcher import researcher_node
@@ -21,6 +20,7 @@ from app.services.chat.graph.nodes.supervisor import supervisor_node
 from app.services.chat.graph.nodes.writer import writer_node
 from app.services.chat.graph.state import AgentState
 from app.services.chat.tools import ToolRegistry
+from app.services.kagent.adapters import RemoteAgentAdapter
 
 
 def create_multi_agent_graph(ai_client: LLMClient, tools: ToolRegistry) -> object:
@@ -38,24 +38,21 @@ def create_multi_agent_graph(ai_client: LLMClient, tools: ToolRegistry) -> objec
     kagent.register_service(
         "reasoning_agent",
         RemoteAgentAdapter(settings.REASONING_AGENT_URL),
-        capabilities=["reason", "solve_deeply"]
+        capabilities=["reason", "solve_deeply"],
     )
     # Alias 'reasoning_engine' to 'reasoning_agent' logic if needed, or update callers
-    kagent.register_service(
-        "reasoning_engine",
-        RemoteAgentAdapter(settings.REASONING_AGENT_URL)
-    )
+    kagent.register_service("reasoning_engine", RemoteAgentAdapter(settings.REASONING_AGENT_URL))
 
     kagent.register_service(
         "research_agent",
         RemoteAgentAdapter(settings.RESEARCH_AGENT_URL),
-        capabilities=["search", "retrieve"]
+        capabilities=["search", "retrieve"],
     )
 
     kagent.register_service(
         "planning_agent",
         RemoteAgentAdapter(settings.PLANNING_AGENT_URL),
-        capabilities=["generate_plan"]
+        capabilities=["generate_plan"],
     )
 
     workflow = StateGraph(AgentState)

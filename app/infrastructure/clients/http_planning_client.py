@@ -1,23 +1,22 @@
+
 import httpx
-from typing import List, Optional
+
 from app.core.interfaces.services import IPlanningService
-from app.domain.models.agents import Plan
 from app.core.logging import get_logger
+from app.domain.models.agents import Plan
 
 logger = get_logger(__name__)
+
 
 class HttpPlanningClient(IPlanningService):
     def __init__(self, base_url: str):
         self.base_url = base_url
         self.client = httpx.AsyncClient(base_url=base_url, timeout=60.0)
 
-    async def generate_plan(self, goal: str, context: Optional[List[str]] = None) -> Plan:
+    async def generate_plan(self, goal: str, context: list[str] | None = None) -> Plan:
         try:
             # The Planning Agent has a specific /plans endpoint
-            payload = {
-                "goal": goal,
-                "context": context or []
-            }
+            payload = {"goal": goal, "context": context or []}
             response = await self.client.post("/plans", json=payload)
             response.raise_for_status()
             data = response.json()

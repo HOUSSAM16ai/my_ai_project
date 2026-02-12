@@ -696,7 +696,7 @@ def _format_brain_event(event_name: str, data: dict[str, object] | object) -> st
 
 def _format_tool_result_data(data: object) -> str:
     """Format tool result data for display."""
-    if not isinstance(data, (dict, list)):
+    if not isinstance(data, dict | list):
         return str(data)
 
     # Handle ToolResult structure (only if dict)
@@ -733,7 +733,7 @@ def _format_inner_data(data: object) -> str:
 
         return "\n".join(lines)
 
-    if isinstance(data, (dict, list)):
+    if isinstance(data, dict | list):
         # Return summary instead of full JSON dump
         return "📄 (بيانات مهيكلة)"
     return str(data)

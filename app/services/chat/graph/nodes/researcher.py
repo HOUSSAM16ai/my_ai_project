@@ -9,11 +9,11 @@ import contextlib
 import logging
 import re
 
+from app.domain.constants import BRANCH_MAP, SUBJECT_MAP
 from app.services.chat.graph.search import build_graph_search_plan
 from app.services.chat.graph.state import AgentState
 from app.services.kagent.domain import AgentRequest
 from app.services.kagent.interface import KagentMesh
-from app.domain.constants import BRANCH_MAP, SUBJECT_MAP
 
 logger = logging.getLogger(__name__)
 

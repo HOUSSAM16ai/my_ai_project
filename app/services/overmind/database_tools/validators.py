@@ -67,7 +67,7 @@ async def ensure_table_exists(session: AsyncSession, table_name: str) -> None:
         """
     )
     result = await session.execute(query, {"table_name": table_name})
-    if isinstance(result, (AsyncMock, MagicMock)):
+    if isinstance(result, AsyncMock | MagicMock):
         return
     scalar_value = _resolve_scalar_value(result)
     if inspect.isawaitable(scalar_value):
@@ -98,7 +98,7 @@ async def ensure_columns_exist(
         """
     )
     result = await session.execute(query, {"table_name": table_name})
-    if isinstance(result, (AsyncMock, MagicMock)):
+    if isinstance(result, AsyncMock | MagicMock):
         return
     rows = _resolve_all_rows(result)
     if inspect.isawaitable(rows):

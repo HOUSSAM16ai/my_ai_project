@@ -111,7 +111,7 @@ class TelemetryBridge(BaseMiddleware):
         """يحول بيانات السياق والنتيجة إلى لقطة قياس متجانسة."""
 
         start_time_raw = ctx.get_metadata("telemetry_bridge_start")
-        start_time = float(start_time_raw) if isinstance(start_time_raw, (int, float)) else None
+        start_time = float(start_time_raw) if isinstance(start_time_raw, int | float) else None
         timestamp = time.time()
         duration = timestamp - start_time if start_time else 0.0
 

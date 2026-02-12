@@ -89,7 +89,7 @@ class CodeArtVisualizer:
         max_radius = min(width, height) // 3
         avg_radius = int(max_radius * (avg / max_val)) if max_val > 0 else 0
 
-        return f'''<svg width="{width}" height="{height}"
+        return f"""<svg width="{width}" height="{height}"
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
 
@@ -128,7 +128,7 @@ class CodeArtVisualizer:
                 Functions: {count} | Avg: {avg:.1f} | Max: {max_val:.0f}
             </text>
 
-        </svg>'''
+        </svg>"""
 
     def create_metrics_dashboard(
         self, metrics: dict[str, object], title: str = "Code Metrics Art"
@@ -253,7 +253,7 @@ class MissionFlowArtist:
         events = mission_data.get("events", [])
         width, height = 800, 300
 
-        svg = f'''<svg width="{width}" height="{height}"
+        svg = f"""<svg width="{width}" height="{height}"
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
 
@@ -268,7 +268,7 @@ class MissionFlowArtist:
                   x2="{width - 50}" y2="{height // 2}"
                   stroke="{self.palette.primary}"
                   stroke-width="4"/>
-        '''
+        """
 
         # إضافة نقاط الأحداث
         if events:
@@ -280,7 +280,7 @@ class MissionFlowArtist:
                 event_name = event.get("name", f"Event {i + 1}")
                 event_color = self._get_event_color(event.get("type", "info"))
 
-                svg += f'''
+                svg += f"""
                 <!-- Event Point -->
                 <circle cx="{x}" cy="{y}"
                         r="10"
@@ -293,7 +293,7 @@ class MissionFlowArtist:
                       text-anchor="middle"
                       fill="{self.palette.text}"
                       font-size="12">{event_name}</text>
-                '''
+                """
 
         svg += "</svg>"
         return svg
@@ -345,10 +345,10 @@ class DataArtGenerator:
         lines = code_data.get("lines", 0)
 
         # توليد نمط فريد بناءً على البيانات
-        svg = f'''<svg width="{width}" height="{height}"
+        svg = f"""<svg width="{width}" height="{height}"
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
-        '''
+        """
 
         # إنشاء نمط هندسي
         grid_size = 20
@@ -363,13 +363,13 @@ class DataArtGenerator:
 
                 # رسم مربع صغير
                 opacity = 0.3 + (lines % 7) / 10
-                svg += f'''
+                svg += f"""
                 <rect x="{i}" y="{j}"
                       width="{grid_size - 2}"
                       height="{grid_size - 2}"
                       fill="{color}"
                       opacity="{opacity}"/>
-                '''
+                """
 
         svg += "</svg>"
         return svg
@@ -390,7 +390,7 @@ class DataArtGenerator:
         width, height = 500, 500
         center_x, center_y = width // 2, height // 2
 
-        svg = f'''<svg width="{width}" height="{height}"
+        svg = f"""<svg width="{width}" height="{height}"
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
 
@@ -399,7 +399,7 @@ class DataArtGenerator:
                   fill="{self.palette.text}"
                   font-size="20"
                   font-weight="bold">{title}</text>
-        '''
+        """
 
         # إنشاء طبقات متعددة تمثل البيانات
         max_value = max(data.values()) if data else 1
@@ -417,7 +417,7 @@ class DataArtGenerator:
 
             # رسم دائرة تمثل القيمة
             opacity = 0.3 + normalized_value * 0.5
-            svg += f'''
+            svg += f"""
             <circle cx="{center_x}" cy="{center_y}"
                     r="{radius}"
                     fill="{color}"
@@ -428,7 +428,7 @@ class DataArtGenerator:
             <text x="{center_x + radius}" y="{center_y}"
                   fill="{self.palette.text}"
                   font-size="12">{key}: {value:.2f}</text>
-            '''
+            """
 
         svg += "</svg>"
         return svg

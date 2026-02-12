@@ -121,7 +121,8 @@ class LogicRuleProtocol(Protocol):
     بروتوكول للقواعد المنطقية التي تقوم بفحص الرسم البياني.
     """
 
-    def __call__(self, nodes: list[KnowledgeNode], relations: list[Relation]) -> AuditResult: ...
+    def __call__(self, nodes: list[KnowledgeNode], relations: list[Relation]) -> AuditResult:
+        ...
 
 
 class ProceduralGraph(BaseModel):

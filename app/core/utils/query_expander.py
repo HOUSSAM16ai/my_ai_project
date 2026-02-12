@@ -1,5 +1,5 @@
 import re
-from typing import ClassVar, List
+from typing import ClassVar
 
 from app.core.logging import get_logger
 
@@ -141,23 +141,69 @@ class FallbackQueryExpander:
 
     # Stop words that cause strict keyword search to fail
     STOP_WORDS: ClassVar[set[str]] = {
-        "في", "على", "من", "إلى", "عن",
-        "لسنة", "سنة", "عام", "للعام",
-        "شعبة", "الشعبة", "لشعبة", "مادة", "المادة",
-        "و", "أو", "مع",
-        "هل", "كيف", "ما", "ماذا",
-        "اريد", "أريد", "ابحث", "أبحث", "اعطني", "أعطني", "هات", "قدم",
-        "شوف", "تشوفلي", "ممكن",
-        "نتاع", "تاع", "لي", "اللي", "ديال",
-        "جا", "جاء",
-        "الماضي", "المقبل", "القادم",
-        "اسئلة", "أسئلة", "امتحان", "بكالوريا", "البكالوريا", "bac", "الباك", "باك",
-        "1", "01",
-        "تقني", "تسيير", "اقتصاد", "لغات", "أجنبية", "آداب", "فلسفة",
+        "في",
+        "على",
+        "من",
+        "إلى",
+        "عن",
+        "لسنة",
+        "سنة",
+        "عام",
+        "للعام",
+        "شعبة",
+        "الشعبة",
+        "لشعبة",
+        "مادة",
+        "المادة",
+        "و",
+        "أو",
+        "مع",
+        "هل",
+        "كيف",
+        "ما",
+        "ماذا",
+        "اريد",
+        "أريد",
+        "ابحث",
+        "أبحث",
+        "اعطني",
+        "أعطني",
+        "هات",
+        "قدم",
+        "شوف",
+        "تشوفلي",
+        "ممكن",
+        "نتاع",
+        "تاع",
+        "لي",
+        "اللي",
+        "ديال",
+        "جا",
+        "جاء",
+        "الماضي",
+        "المقبل",
+        "القادم",
+        "اسئلة",
+        "أسئلة",
+        "امتحان",
+        "بكالوريا",
+        "البكالوريا",
+        "bac",
+        "الباك",
+        "باك",
+        "1",
+        "01",
+        "تقني",
+        "تسيير",
+        "اقتصاد",
+        "لغات",
+        "أجنبية",
+        "آداب",
+        "فلسفة",
     }
 
     @classmethod
-    def generate_variations(cls, q: str | None) -> List[str]:
+    def generate_variations(cls, q: str | None) -> list[str]:
         if not q:
             return []
 
@@ -227,7 +273,11 @@ class FallbackQueryExpander:
         clean_words = []
         has_stop_word = False
         for word in base_for_stop.split():
-            if (word.isdigit() and len(word) == 4 and (word.startswith("20") or word.startswith("19"))):
+            if (
+                word.isdigit()
+                and len(word) == 4
+                and (word.startswith("20") or word.startswith("19"))
+            ):
                 has_stop_word = True
                 continue
             if word in cls.STOP_WORDS:

@@ -44,10 +44,10 @@ class CodePatternArtist:
         width, height = 600, 600
         start_x, start_y = width // 2, height - 50
 
-        svg = f'''<svg width="{width}" height="{height}"
+        svg = f"""<svg width="{width}" height="{height}"
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
-        '''
+        """
 
         # Draw fractal tree
         branches = self._draw_branch(
@@ -60,13 +60,13 @@ class CodePatternArtist:
         )
         svg += branches
 
-        svg += f'''
+        svg += f"""
             <text x="10" y="30"
                   fill="{self.palette.text}"
                   font-size="16"
                   font-weight="bold">Fractal Code Tree</text>
         </svg>
-        '''
+        """
 
         return svg
 
@@ -92,13 +92,13 @@ class CodePatternArtist:
         branch_color = gradient[color_index]
 
         # Draw branch
-        svg = f'''
+        svg = f"""
         <line x1="{x}" y1="{y}"
               x2="{end_x}" y2="{end_y}"
               stroke="{branch_color}"
               stroke-width="{depth}"
               opacity="0.8"/>
-        '''
+        """
 
         # Recursive branches
         new_length = length * 0.7
@@ -134,10 +134,10 @@ class CodePatternArtist:
         width, height = 600, 600
         center_x, center_y = width // 2, height // 2
 
-        svg = f'''<svg width="{width}" height="{height}"
+        svg = f"""<svg width="{width}" height="{height}"
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
-        '''
+        """
 
         # Calculate spiral points
         points = []
@@ -159,20 +159,20 @@ class CodePatternArtist:
             x2, y2 = points[i + 1]
             color = gradient[i]
 
-            svg += f'''
+            svg += f"""
             <line x1="{x1}" y1="{y1}"
                   x2="{x2}" y2="{y2}"
                   stroke="{color}"
                   stroke-width="2"
                   opacity="0.8"/>
-            '''
+            """
 
-        svg += f'''
+        svg += f"""
             <text x="10" y="30"
                   fill="{self.palette.text}"
                   font-size="16"
                   font-weight="bold">Code Evolution Spiral</text>
         </svg>
-        '''
+        """
 
         return svg

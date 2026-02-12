@@ -61,7 +61,7 @@ class NetworkArtist:
 
     def _create_network_header(self, width: int, height: int, title: str) -> str:
         """Create network header."""
-        return f'''<svg width="{width}" height="{height}"
+        return f"""<svg width="{width}" height="{height}"
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
 
@@ -70,7 +70,7 @@ class NetworkArtist:
                   fill="{self.palette.text}"
                   font-size="20"
                   font-weight="bold">{title}</text>
-        '''
+        """
 
     def _calculate_node_positions(
         self, nodes: list[dict[str, object]], center_x: int, center_y: int, radius: int
@@ -102,13 +102,13 @@ class NetworkArtist:
                 x1, y1 = node_positions[source]
                 x2, y2 = node_positions[target]
 
-                svg += f'''
+                svg += f"""
                 <line x1="{x1}" y1="{y1}"
                       x2="{x2}" y2="{y2}"
                       stroke="{self.palette.secondary}"
                       stroke-width="1"
                       opacity="0.3"/>
-                '''
+                """
         return svg
 
     def _draw_nodes(
@@ -130,7 +130,7 @@ class NetworkArtist:
             color = gradient[i]
             label = node.get("label", node_id)
 
-            svg += f'''
+            svg += f"""
             <circle cx="{x}" cy="{y}"
                     r="20"
                     fill="{color}"
@@ -141,6 +141,6 @@ class NetworkArtist:
                   text-anchor="middle"
                   fill="{self.palette.text}"
                   font-size="11">{label}</text>
-            '''
+            """
 
         return svg

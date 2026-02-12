@@ -136,9 +136,15 @@ class AppSettings(BaseServiceSettings):
 
     # Service URLs
     USER_SERVICE_URL: str | None = Field(None, description="User service base URL")
-    PLANNING_AGENT_URL: str = Field(default="http://planning-agent:8001", description="Planning Agent URL")
-    RESEARCH_AGENT_URL: str = Field(default="http://research-agent:8000", description="Research Agent URL")
-    REASONING_AGENT_URL: str = Field(default="http://reasoning-agent:8000", description="Reasoning Agent URL")
+    PLANNING_AGENT_URL: str = Field(
+        default="http://planning-agent:8001", description="Planning Agent URL"
+    )
+    RESEARCH_AGENT_URL: str = Field(
+        default="http://research-agent:8000", description="Research Agent URL"
+    )
+    REASONING_AGENT_URL: str = Field(
+        default="http://reasoning-agent:8000", description="Reasoning Agent URL"
+    )
 
     # AI (Missing fields restored)
     OPENAI_API_KEY: str | None = Field(None, description="OpenAI API Key")
@@ -201,11 +207,11 @@ class AppSettings(BaseServiceSettings):
     def validate_production_security(self) -> "AppSettings":
         """ضوابط صارمة لأمان بيئات الإنتاج."""
         if self.ENVIRONMENT in ("production", "staging"):
-            if self.ALLOWED_HOSTS == ["*"]:
+            if ["*"] == self.ALLOWED_HOSTS:
                 raise ValueError(
                     "SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production/staging."
                 )
-            if self.BACKEND_CORS_ORIGINS == ["*"]:
+            if ["*"] == self.BACKEND_CORS_ORIGINS:
                 raise ValueError(
                     "SECURITY RISK: BACKEND_CORS_ORIGINS cannot be '*' in production/staging."
                 )

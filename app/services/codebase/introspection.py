@@ -107,7 +107,7 @@ class CodeSearchService:
 
                     for node in ast.walk(tree):
                         if (
-                            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+                            isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef)
                             and node.name == symbol_name
                         ):
                             results.append(

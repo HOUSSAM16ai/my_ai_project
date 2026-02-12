@@ -140,6 +140,4 @@ def _create_kagent_mesh() -> KagentMesh:
     return KagentMesh()
 
 
-from app.services.kagent.interface import KagentMesh
-
 Container.register_singleton_factory(KagentMesh, _create_kagent_mesh)

@@ -90,7 +90,7 @@ class DecisionSynthesizer:
             else:
                 value = getattr(consultation, "confidence", None)
 
-            if isinstance(value, (int, float)):
+            if isinstance(value, int | float):
                 confidences.append(float(value))
 
         if not confidences:
@@ -308,7 +308,7 @@ class DecisionSynthesizer:
     @staticmethod
     def _coerce_numeric(value: object) -> float | None:
         """يحول القيمة إلى رقم عشري عند الإمكان أو يعيد None."""
-        if isinstance(value, (int, float)):
+        if isinstance(value, int | float):
             return float(value)
         return None
 

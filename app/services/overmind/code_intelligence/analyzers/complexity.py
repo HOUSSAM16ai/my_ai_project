@@ -12,7 +12,7 @@ class ComplexityAnalyzer(ast.NodeVisitor):
         self.imports: list[str] = []
         self.max_nesting = 0
 
-    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:  # noqa: N802
         """Analyze classes"""
         self.current_class = node.name
         self.classes.append(
@@ -26,7 +26,7 @@ class ComplexityAnalyzer(ast.NodeVisitor):
         self.generic_visit(node)
         self.current_class = None
 
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:  # noqa: N802
         """Analyze functions"""
         complexity = self._calculate_complexity(node)
         nesting = self._calculate_nesting(node)
@@ -47,17 +47,17 @@ class ComplexityAnalyzer(ast.NodeVisitor):
         self.file_complexity += complexity
         self.max_nesting = max(self.max_nesting, nesting)
 
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:  # noqa: N802
         """Analyze async functions"""
         self.visit_FunctionDef(node)  # type: ignore
 
-    def visit_Import(self, node: ast.Import) -> None:
+    def visit_Import(self, node: ast.Import) -> None:  # noqa: N802
         """Track imports"""
         for alias in node.names:
             self.imports.append(alias.name)
         self.generic_visit(node)
 
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:  # noqa: N802
         """Track from imports"""
         if node.module:
             self.imports.append(node.module)
@@ -71,22 +71,14 @@ class ComplexityAnalyzer(ast.NodeVisitor):
             # Decision points
             if isinstance(
                 child,
-                (
-                    ast.If,
-                    ast.While,
-                    ast.For,
-                    ast.AsyncFor,
-                    ast.ExceptHandler,
-                    ast.With,
-                    ast.AsyncWith,
-                ),
+                ast.If | ast.While | ast.For | ast.AsyncFor | ast.ExceptHandler | ast.With | ast.AsyncWith,
             ):
                 complexity += 1
             # Boolean operators
             elif isinstance(child, ast.BoolOp):
                 complexity += len(child.values) - 1
             # Comprehensions
-            elif isinstance(child, (ast.ListComp, ast.DictComp, ast.SetComp, ast.GeneratorExp)):
+            elif isinstance(child, ast.ListComp | ast.DictComp | ast.SetComp | ast.GeneratorExp):
                 complexity += 1
 
         return complexity
@@ -100,7 +92,7 @@ class ComplexityAnalyzer(ast.NodeVisitor):
             max_depth = max(max_depth, depth)
 
             for child in ast.iter_child_nodes(n):
-                if isinstance(child, (ast.If, ast.While, ast.For, ast.AsyncFor, ast.Try, ast.With)):
+                if isinstance(child, ast.If | ast.While | ast.For | ast.AsyncFor | ast.Try | ast.With):
                     visit_node(child, depth + 1)
                 else:
                     visit_node(child, depth)

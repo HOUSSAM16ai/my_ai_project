@@ -57,7 +57,7 @@ class MetricsArtist:
 
     def _create_svg_header(self, width: int, height: int, title: str) -> str:
         """Create SVG header with title."""
-        return f'''<svg width="{width}" height="{height}"
+        return f"""<svg width="{width}" height="{height}"
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
 
@@ -66,21 +66,21 @@ class MetricsArtist:
                   fill="{self.palette.text}"
                   font-size="20"
                   font-weight="bold">{title}</text>
-        '''
+        """
 
     def _create_circular_grid(self, center_x: int, center_y: int, max_radius: int) -> str:
         """Create circular grid background."""
         grid_svg = ""
         for i in range(1, 5):
             radius = (max_radius / 4) * i
-            grid_svg += f'''
+            grid_svg += f"""
             <circle cx="{center_x}" cy="{center_y}"
                     r="{radius}"
                     fill="none"
                     stroke="{self.palette.secondary}"
                     stroke-width="1"
                     opacity="0.2"/>
-            '''
+            """
         return grid_svg
 
     def _create_metric_points(
@@ -129,7 +129,7 @@ class MetricsArtist:
         x = center_x + radius * math.cos(angle_rad)
         y = center_y + radius * math.sin(angle_rad)
 
-        svg = f'''
+        svg = f"""
             <line x1="{center_x}" y1="{center_y}"
                   x2="{x}" y2="{y}"
                   stroke="{color}"
@@ -144,7 +144,7 @@ class MetricsArtist:
             <text x="{x + 15}" y="{y}"
                   fill="{self.palette.text}"
                   font-size="12">{key}: {value:.1f}</text>
-        '''
+        """
 
         return (x, y), svg
 
@@ -154,13 +154,13 @@ class MetricsArtist:
             return ""
 
         polygon_points = " ".join([f"{x},{y}" for x, y in points])
-        return f'''
+        return f"""
             <polygon points="{polygon_points}"
                      fill="{self.palette.primary}"
                      opacity="0.2"
                      stroke="{self.palette.primary}"
                      stroke-width="2"/>
-        '''
+        """
 
     def create_bar_art(self, data: dict[str, float], title: str = "Artistic Bar Chart") -> str:
         """
@@ -192,7 +192,7 @@ class MetricsArtist:
 
     def _create_bar_chart_header(self, width: int, height: int, title: str) -> str:
         """Create bar chart header."""
-        return f'''<svg width="{width}" height="{height}"
+        return f"""<svg width="{width}" height="{height}"
                        xmlns="http://www.w3.org/2000/svg"
                        style="background: {self.palette.background};">
 
@@ -201,7 +201,7 @@ class MetricsArtist:
                   fill="{self.palette.text}"
                   font-size="20"
                   font-weight="bold">{title}</text>
-        '''
+        """
 
     def _calculate_bar_dimensions(
         self, data: dict[str, float], chart_width: int, chart_height: int
@@ -266,7 +266,7 @@ class MetricsArtist:
         margin: int,
     ) -> str:
         """Draw a single bar with gradient and labels."""
-        return f'''
+        return f"""
             <rect x="{x}" y="{y}"
                   width="{bar_width}"
                   height="{bar_height}"
@@ -295,4 +295,4 @@ class MetricsArtist:
                   transform="rotate(-45 {x + bar_width / 2} {height - margin + 20})">
                 {key}
             </text>
-        '''
+        """

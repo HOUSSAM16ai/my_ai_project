@@ -23,8 +23,11 @@ logger = logging.getLogger(__name__)
 class MCPService(Protocol):
     """Protocol for MCP Integrations to avoid hard dependency here."""
 
-    async def semantic_search(self, query: str, top_k: int = 5) -> dict[str, object]: ...
-    async def run_langgraph_workflow(self, goal: str) -> dict[str, object]: ...
+    async def semantic_search(self, query: str, top_k: int = 5) -> dict[str, object]:
+        ...
+
+    async def run_langgraph_workflow(self, goal: str) -> dict[str, object]:
+        ...
 
 
 class AdminRouter(IntentRouter):

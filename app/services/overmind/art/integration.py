@@ -83,7 +83,7 @@ class OvermindArtIntegration:
             )
 
         # 2. Metrics Dashboard
-        metrics = {k: v for k, v in analysis_result.items() if isinstance(v, (int, float))}
+        metrics = {k: v for k, v in analysis_result.items() if isinstance(v, int | float)}
         if metrics:
             visualizations["metrics_dashboard"] = self.code_visualizer.create_metrics_dashboard(
                 metrics, title="Code Metrics Art"

@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.services.chat.graph.state import AgentState
 from app.core.utils.query_expander import FallbackQueryExpander
+from app.services.chat.graph.state import AgentState
 
 
 @dataclass(frozen=True)
