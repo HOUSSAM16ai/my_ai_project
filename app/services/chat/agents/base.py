@@ -11,8 +11,7 @@ class AgentResponse(BaseModel):
 
 @runtime_checkable
 class AgentProtocol(Protocol):
-    async def process(self, input_data: object) -> AgentResponse:
-        ...
+    async def process(self, input_data: object) -> AgentResponse: ...
 
 
 FORMAL_ARABIC_STYLE_PROMPT = """

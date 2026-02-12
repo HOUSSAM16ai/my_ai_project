@@ -14,8 +14,7 @@ from app.services.overmind.domain.enums import CognitivePhase
 
 # Protocol for event logging
 class EventLogger(Protocol):
-    async def __call__(self, event_type: str, payload: dict[str, object]) -> None:
-        ...
+    async def __call__(self, event_type: str, payload: dict[str, object]) -> None: ...
 
 
 class AgentUnitOfWork(BaseModel):

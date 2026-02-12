@@ -193,11 +193,9 @@ class CollaborationContext(Protocol):
 
     shared_memory: dict[str, object]
 
-    def update(self, key: str, value: dict[str, str | int | bool]) -> None:
-        ...
+    def update(self, key: str, value: dict[str, str | int | bool]) -> None: ...
 
-    def get(self, key: str) -> object | None:
-        ...
+    def get(self, key: str) -> object | None: ...
 
 
 @runtime_checkable
@@ -206,8 +204,9 @@ class AgentPlanner(Protocol):
     بروتوكول وكيل التخطيط الاستراتيجي (Strategist Agent).
     """
 
-    async def create_plan(self, objective: str, context: CollaborationContext) -> dict[str, object]:
-        ...
+    async def create_plan(
+        self, objective: str, context: CollaborationContext
+    ) -> dict[str, object]: ...
 
 
 @runtime_checkable
@@ -218,8 +217,7 @@ class AgentArchitect(Protocol):
 
     async def design_solution(
         self, plan: dict[str, object], context: CollaborationContext
-    ) -> dict[str, object]:
-        ...
+    ) -> dict[str, object]: ...
 
 
 @runtime_checkable
@@ -230,8 +228,7 @@ class AgentExecutor(Protocol):
 
     async def execute_tasks(
         self, design: dict[str, object], context: CollaborationContext
-    ) -> dict[str, object]:
-        ...
+    ) -> dict[str, object]: ...
 
 
 @runtime_checkable
@@ -242,8 +239,7 @@ class AgentReflector(Protocol):
 
     async def review_work(
         self, result: dict[str, object], original_objective: str, context: CollaborationContext
-    ) -> dict[str, object]:
-        ...
+    ) -> dict[str, object]: ...
 
 
 @runtime_checkable
@@ -258,8 +254,7 @@ class AgentMemory(Protocol):
         *,
         label: str,
         payload: dict[str, object],
-    ) -> dict[str, object]:
-        ...
+    ) -> dict[str, object]: ...
 
 
 @runtime_checkable
@@ -377,24 +372,20 @@ class AIClientProtocol(Protocol):
     بروتوكول عميل الذكاء الاصطناعي (AI Client Protocol).
     """
 
-    async def generate(self, prompt: str, **kwargs) -> str:
-        ...
+    async def generate(self, prompt: str, **kwargs) -> str: ...
 
-    async def stream(self, prompt: str, **kwargs) -> AsyncGenerator[str, None]:
-        ...
+    async def stream(self, prompt: str, **kwargs) -> AsyncGenerator[str, None]: ...
 
 
 @runtime_checkable
 class HealthCheckService(Protocol):
     """بروتوكول خدمة فحص الصحة."""
 
-    async def check_health(self) -> dict[str, object]:
-        ...
+    async def check_health(self) -> dict[str, object]: ...
 
 
 @runtime_checkable
 class SystemService(Protocol):
     """بروتوكول خدمة النظام."""
 
-    async def get_system_info(self) -> dict[str, object]:
-        ...
+    async def get_system_info(self) -> dict[str, object]: ...

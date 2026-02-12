@@ -1,4 +1,3 @@
-
 import httpx
 
 from app.core.interfaces.services import IPlanningService

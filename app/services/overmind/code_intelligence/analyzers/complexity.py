@@ -71,7 +71,13 @@ class ComplexityAnalyzer(ast.NodeVisitor):
             # Decision points
             if isinstance(
                 child,
-                ast.If | ast.While | ast.For | ast.AsyncFor | ast.ExceptHandler | ast.With | ast.AsyncWith,
+                ast.If
+                | ast.While
+                | ast.For
+                | ast.AsyncFor
+                | ast.ExceptHandler
+                | ast.With
+                | ast.AsyncWith,
             ):
                 complexity += 1
             # Boolean operators
@@ -92,7 +98,9 @@ class ComplexityAnalyzer(ast.NodeVisitor):
             max_depth = max(max_depth, depth)
 
             for child in ast.iter_child_nodes(n):
-                if isinstance(child, ast.If | ast.While | ast.For | ast.AsyncFor | ast.Try | ast.With):
+                if isinstance(
+                    child, ast.If | ast.While | ast.For | ast.AsyncFor | ast.Try | ast.With
+                ):
                     visit_node(child, depth + 1)
                 else:
                     visit_node(child, depth)
