@@ -16,11 +16,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ai_gateway import get_ai_client
 from app.core.protocols import MissionStateManagerProtocol
+from app.infrastructure.clients.auditor_client import AuditorClient
 
 # استيراد الأدوات (يجب ضمان وجود هذا المسار أو استخدام واجهة بديلة)
 from app.services.agent_tools import get_registry
 from app.services.overmind.agents.architect import ArchitectAgent
-from app.services.overmind.agents.auditor import AuditorAgent
+
+# from app.services.overmind.agents.auditor import AuditorAgent  # Removed: Now using Microservice
 from app.services.overmind.agents.operator import OperatorAgent
 from app.services.overmind.agents.strategist import StrategistAgent
 from app.services.overmind.executor import TaskExecutor
@@ -65,7 +67,9 @@ def _build_engine_with_components(
     strategist = StrategistAgent(ai_client)
     architect = ArchitectAgent(ai_client)
     operator = OperatorAgent(executor, ai_client=ai_client)
-    auditor = AuditorAgent(ai_client)
+
+    # Use Microservice Client (Decoupled Architecture)
+    auditor = AuditorClient()
 
     context_enricher = ContextEnricher()
 
