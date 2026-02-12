@@ -119,7 +119,9 @@ class MCPIntegrations:
             dict: نتائج البحث
         """
         try:
-            results = await self.research_gateway.semantic_search(query, top_k=top_k, filters=filters)
+            results = await self.research_gateway.semantic_search(
+                query, top_k=top_k, filters=filters
+            )
 
             return {
                 "success": True,
