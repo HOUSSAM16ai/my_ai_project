@@ -37,7 +37,7 @@ def test_app_does_not_import_microservices_logic():
                 continue
 
             try:
-                with open(filepath, "r", encoding="utf-8") as f:
+                with open(filepath, encoding="utf-8") as f:
                     content = f.read()
                     # Basic check first to avoid parsing everything
                     if "microservices" not in content:
@@ -53,7 +53,11 @@ def test_app_does_not_import_microservices_logic():
                                     violations.append(f"{filepath}: import {alias.name}")
 
                         # Check from ... import ...
-                        elif isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("microservices"):
+                        elif (
+                            isinstance(node, ast.ImportFrom)
+                            and node.module
+                            and node.module.startswith("microservices")
+                        ):
                             violations.append(f"{filepath}: from {node.module} import ...")
 
             except Exception as e:

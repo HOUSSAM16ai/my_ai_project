@@ -1,10 +1,12 @@
-import httpx
 import logging
 import os
-from typing import Dict, Any
+
+import httpx
+
 from app.core.protocols import AgentReflector, CollaborationContext
 
 logger = logging.getLogger(__name__)
+
 
 class AuditorClient(AgentReflector):
     """
@@ -18,8 +20,8 @@ class AuditorClient(AgentReflector):
         self.timeout = float(os.environ.get("AUDITOR_TIMEOUT", "60.0"))
 
     async def review_work(
-        self, result: Dict[str, object], original_objective: str, context: CollaborationContext
-    ) -> Dict[str, object]:
+        self, result: dict[str, object], original_objective: str, context: CollaborationContext
+    ) -> dict[str, object]:
         """
         Remote call to Auditor Service for work review.
         """
@@ -29,7 +31,7 @@ class AuditorClient(AgentReflector):
         payload = {
             "result": result,
             "original_objective": original_objective,
-            "context": context.shared_memory  # Extract dict from context object
+            "context": context.shared_memory,  # Extract dict from context object
         }
 
         try:
@@ -45,29 +47,26 @@ class AuditorClient(AgentReflector):
             # Fallback for resilience (Circuit Breaker logic could go here)
             return {
                 "approved": False,
-                "feedback": f"Service Error: {str(e)}",
+                "feedback": f"Service Error: {e!s}",
                 "score": 0.0,
-                "final_response": "**System Error:** Auditor Service is offline."
+                "final_response": "**System Error:** Auditor Service is offline.",
             }
         except Exception as e:
             logger.error(f"Auditor Client Error: {e}")
             return {
                 "approved": False,
-                "feedback": f"Client Error: {str(e)}",
+                "feedback": f"Client Error: {e!s}",
                 "score": 0.0,
-                "final_response": "**System Error:** Client failure."
+                "final_response": "**System Error:** Client failure.",
             }
 
-    async def consult(self, situation: str, analysis: Dict[str, object]) -> Dict[str, object]:
+    async def consult(self, situation: str, analysis: dict[str, object]) -> dict[str, object]:
         """
         Remote call to Auditor Service for consultation.
         """
         url = f"{self.base_url}/consult"
 
-        payload = {
-            "situation": situation,
-            "analysis": analysis
-        }
+        payload = {"situation": situation, "analysis": analysis}
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -79,7 +78,7 @@ class AuditorClient(AgentReflector):
             logger.error(f"Auditor Service Consultation Failed: {e}")
             return {
                 "recommendation": "Service unavailable. Proceed with caution.",
-                "confidence": 0.0
+                "confidence": 0.0,
             }
 
     def detect_loop(self, history_hashes: list[str], current_plan: dict[str, object]) -> None:
@@ -94,8 +93,8 @@ class AuditorClient(AgentReflector):
         Let's keep a simple local implementation to avoid network overhead for hash checks.
         """
         # Re-implement basic check locally to satisfy protocol
-        import json
         import hashlib
+        import json
 
         try:
             encoded = json.dumps(current_plan, sort_keys=True, default=str).encode("utf-8")
@@ -103,6 +102,7 @@ class AuditorClient(AgentReflector):
 
             if history_hashes.count(current_hash) >= 2:
                 from app.services.overmind.domain.exceptions import StalemateError
+
                 raise StalemateError("Infinite loop detected by Client.")
         except Exception as e:
             logger.warning(f"Loop detection failed: {e}")
@@ -111,8 +111,9 @@ class AuditorClient(AgentReflector):
         """
         Compute hash locally.
         """
-        import json
         import hashlib
+        import json
+
         try:
             encoded = json.dumps(plan, sort_keys=True, default=str).encode("utf-8")
             return hashlib.sha256(encoded).hexdigest()
