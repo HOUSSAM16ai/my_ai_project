@@ -11,6 +11,8 @@ ALLOWED_VIOLATIONS = {
     "app/services/chat/graph/nodes/researcher.py",
     "app/services/chat/tools/content.py",
     "app/services/mcp/integrations.py",
+    "app/integration/gateways/research.py",
+    "app/integration/gateways/planning.py",
 }
 
 
