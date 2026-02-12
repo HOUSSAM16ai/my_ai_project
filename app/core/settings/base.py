@@ -207,11 +207,11 @@ class AppSettings(BaseServiceSettings):
     def validate_production_security(self) -> "AppSettings":
         """ضوابط صارمة لأمان بيئات الإنتاج."""
         if self.ENVIRONMENT in ("production", "staging"):
-            if ["*"] == self.ALLOWED_HOSTS:
+            if self.ALLOWED_HOSTS == ["*"]:
                 raise ValueError(
                     "SECURITY RISK: ALLOWED_HOSTS cannot be '*' in production/staging."
                 )
-            if ["*"] == self.BACKEND_CORS_ORIGINS:
+            if self.BACKEND_CORS_ORIGINS == ["*"]:
                 raise ValueError(
                     "SECURITY RISK: BACKEND_CORS_ORIGINS cannot be '*' in production/staging."
                 )

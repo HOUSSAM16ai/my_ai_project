@@ -12,7 +12,7 @@ class ComplexityAnalyzer(ast.NodeVisitor):
         self.imports: list[str] = []
         self.max_nesting = 0
 
-    def visit_ClassDef(self, node: ast.ClassDef) -> None:  # noqa: N802
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
         """Analyze classes"""
         self.current_class = node.name
         self.classes.append(
@@ -26,7 +26,7 @@ class ComplexityAnalyzer(ast.NodeVisitor):
         self.generic_visit(node)
         self.current_class = None
 
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:  # noqa: N802
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         """Analyze functions"""
         complexity = self._calculate_complexity(node)
         nesting = self._calculate_nesting(node)
@@ -47,17 +47,17 @@ class ComplexityAnalyzer(ast.NodeVisitor):
         self.file_complexity += complexity
         self.max_nesting = max(self.max_nesting, nesting)
 
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:  # noqa: N802
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         """Analyze async functions"""
         self.visit_FunctionDef(node)  # type: ignore
 
-    def visit_Import(self, node: ast.Import) -> None:  # noqa: N802
+    def visit_Import(self, node: ast.Import) -> None:
         """Track imports"""
         for alias in node.names:
             self.imports.append(alias.name)
         self.generic_visit(node)
 
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:  # noqa: N802
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         """Track from imports"""
         if node.module:
             self.imports.append(node.module)
