@@ -121,7 +121,7 @@ async def test_overmind_factory_assembly(mock_db_session):
         patch("app.services.overmind.factory.StrategistAgent") as mock_strat,
         patch("app.services.overmind.factory.ArchitectAgent"),
         patch("app.services.overmind.factory.OperatorAgent"),
-        patch("app.services.overmind.factory.AuditorAgent"),
+        patch("app.services.overmind.factory.AuditorClient"),
         patch("app.services.overmind.factory.LangGraphOvermindEngine") as mock_brain_cls,
         patch("app.services.chat.tools.content.register_content_tools"),
     ):
