@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.services.chat.graph.state import AgentState
-from microservices.research_agent.src.search_engine.fallback_expander import FallbackQueryExpander
+from app.core.utils.query_expander import FallbackQueryExpander
 
 
 @dataclass(frozen=True)

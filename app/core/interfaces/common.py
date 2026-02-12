@@ -1,14 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 # Lazy import to avoid hard dependency on llama_index if possible, but keeping strictly for now
 from llama_index.core.schema import NodeWithScore
 
-# Note: This might cause circular imports if reasoning_agent imports interfaces.
-# Check imports carefully.
-# microservices.reasoning_agent.src.models imports ...?
-# Proceeding with copy.
-from microservices.reasoning_agent.src.models import EvaluationResult, ReasoningNode
+# Decoupled from microservices - now using domain models
+from app.domain.models.agents import EvaluationResult, ReasoningNode
 
 if TYPE_CHECKING:
     from app.services.chat.graph.domain import StudentProfile, WriterIntent
@@ -20,7 +17,7 @@ class IReasoningStrategy(ABC):
         pass
 
     @abstractmethod
-    async def expand(self, parent: ReasoningNode, context: str) -> list[ReasoningNode]:
+    async def expand(self, parent: ReasoningNode, context: str) -> List[ReasoningNode]:
         pass
 
     @abstractmethod

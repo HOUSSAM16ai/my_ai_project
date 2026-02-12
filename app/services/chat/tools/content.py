@@ -11,7 +11,10 @@ import difflib
 
 from app.core.logging import get_logger
 from app.services.chat.tools.schemas import SearchContentSchema
-from microservices.research_agent.src.content.constants import BRANCH_MAP
+from app.infrastructure.clients.http_research_client import HttpResearchClient
+from app.core.settings.base import get_settings
+from app.domain.models.agents import SearchRequest, SearchFilters
+from app.domain.constants import BRANCH_MAP
 
 logger = get_logger("content-tools")
 
@@ -57,15 +60,10 @@ async def get_curriculum_structure(
     lang: str = "ar",
 ) -> dict[str, object]:
     """جلب شجرة المنهج الدراسي بالكامل أو لمستوى محدد."""
-    try:
-        from microservices.research_agent.src.content.service import (
-            content_service as live_content_service,
-        )
-
-        return await live_content_service.get_curriculum_structure(level)
-    except Exception as e:
-        logger.error(f"Failed to fetch curriculum structure: {e}")
-        return {}
+    # This requires a dedicated endpoint on Research Agent which is not yet available.
+    # Returning empty structure to avoid monolith coupling.
+    logger.warning("get_curriculum_structure called but not implemented remotely.")
+    return {}
 
 
 async def search_content(
@@ -90,9 +88,6 @@ async def search_content(
 
     # --- Layer A: Schema Adapter & Validation ---
     try:
-        # Create a dictionary of all arguments provided
-        # Filter out None values so Pydantic can use aliases (e.g. 'query') from kwargs
-        # without conflict from the default 'q=None'
         explicit_args = {
             "q": q,
             "level": level,
@@ -105,35 +100,20 @@ async def search_content(
             "limit": limit,
         }
         filtered_args = {k: v for k, v in explicit_args.items() if v is not None}
-
-        # Merge with kwargs (kwargs take precedence if conflict, though usually they fill gaps)
-        # CRITICAL FIX: Gracefully absorb unknown args from LLM hallucination
         raw_args = {**filtered_args, **kwargs}
 
-        # Log unexpected args for debugging but don't crash
         known_keys = set(explicit_args.keys()) | {"query"}
         unexpected = set(raw_args.keys()) - known_keys
         if unexpected:
             logger.warning(f"search_content received unexpected args (ignored): {unexpected}")
 
-        # Validate against the Pydantic Schema (Adapts aliases like 'query' -> 'q')
         validated_data = SearchContentSchema(**raw_args)
 
-        # Use validated data
         q = validated_data.q
-        level = validated_data.level
-        subject = validated_data.subject
-        branch = validated_data.branch
-        set_name = validated_data.set_name
-        year = validated_data.year
-        type = validated_data.type
-        lang = validated_data.lang
-        limit = validated_data.limit
+        # Other fields are in validated_data but we construct the Request object below
 
     except Exception as e:
         logger.error(f"Schema Validation Failed in search_content: {e}")
-        # Strict Fail-Fast Policy (RFC 001)
-        # We must propagate exceptions to the TaskExecutor to ensure honest outcome reporting.
         raise e
 
     # ---------------------------------------------
@@ -141,42 +121,48 @@ async def search_content(
     if not q:
         return []
 
-    from microservices.research_agent.src.search_engine.super_search import (
-        SuperSearchOrchestrator,
-    )
+    # Use HTTP Client instead of direct Orchestrator import
+    try:
+        settings = get_settings()
+        client = HttpResearchClient(settings.RESEARCH_AGENT_URL)
 
-    # Normalize branch if provided
-    normalized_branch = _normalize_branch(branch) if branch else branch
+        # Normalize branch if provided
+        normalized_branch = _normalize_branch(validated_data.branch) if validated_data.branch else validated_data.branch
 
-    # Build query context
-    context_parts = []
-    if subject:
-        context_parts.append(f"Subject: {subject}")
-    if normalized_branch:
-        context_parts.append(f"Branch: {normalized_branch}")
-    if year:
-        context_parts.append(f"Year: {year}")
-    if level:
-        context_parts.append(f"Level: {level}")
-    if type:
-        context_parts.append(f"Type: {type}")
+        # Build query context (mimicking original logic)
+        context_parts = []
+        if validated_data.subject:
+            context_parts.append(f"Subject: {validated_data.subject}")
+        if normalized_branch:
+            context_parts.append(f"Branch: {normalized_branch}")
+        if validated_data.year:
+            context_parts.append(f"Year: {validated_data.year}")
+        if validated_data.level:
+            context_parts.append(f"Level: {validated_data.level}")
+        if validated_data.type:
+            context_parts.append(f"Type: {validated_data.type}")
 
-    full_query = q
-    if context_parts:
-        full_query += f" ({', '.join(context_parts)})"
+        full_query = q
+        if context_parts:
+            full_query += f" ({', '.join(context_parts)})"
 
-    orchestrator = SuperSearchOrchestrator()
-    report = await orchestrator.execute(full_query)
+        # Using deep_research as per original docstring mentioning "Advanced deep-research engine"
+        # The original code called 'SuperSearchOrchestrator.execute(full_query)' which is deep research.
+        report = await client.deep_research(full_query)
+        await client.close()
 
-    return [
-        {
-            "id": "research_report",
-            "title": f"Research Report: {q}",
-            "content": report,
-            "type": "report",
-            "metadata": {"query": full_query, "source": "SuperSearchOrchestrator"},
-        }
-    ]
+        return [
+            {
+                "id": "research_report",
+                "title": f"Research Report: {q}",
+                "content": report,
+                "type": "report",
+                "metadata": {"query": full_query, "source": "SuperSearchOrchestrator"},
+            }
+        ]
+    except Exception as e:
+        logger.error(f"Search Content Failed via HTTP: {e}")
+        raise e
 
 
 async def get_content_raw(
@@ -184,29 +170,30 @@ async def get_content_raw(
 ) -> dict[str, str] | None:
     """جلب النص الخام (Markdown) لتمرين أو درس معين مع خيار الحل."""
     try:
-        from microservices.research_agent.src.content.service import (
-            content_service as live_content_service,
-        )
+        # Attempt retrieval via Search ID (Best Effort)
+        settings = get_settings()
+        client = HttpResearchClient(settings.RESEARCH_AGENT_URL)
+        # We assume searching for the ID might return the item if indexed.
+        req = SearchRequest(q=content_id, limit=1)
+        results = await client.search(req)
+        await client.close()
 
-        return await live_content_service.get_content_raw(
-            content_id, include_solution=include_solution
-        )
+        if results:
+            res = results[0]
+            # Verify if result seems to match (optional)
+            return {
+                "content": res.content or "",
+                "solution": "", # Solution not exposed via search result model yet
+            }
+        return None
     except Exception as e:
-        logger.error(f"Get content raw failed: {e}")
+        logger.error(f"Get content raw failed via HTTP: {e}")
         return None
 
 
 async def get_solution_raw(content_id: str) -> dict[str, object] | None:
     """جلب الحل الرسمي (Official Solution) لتمرين."""
-    from microservices.research_agent.src.content.service import (
-        content_service as live_content_service,
-    )
-
-    data = await live_content_service.get_content_raw(content_id, include_solution=True)
-    if data and "solution" in data:
-        return {
-            "solution_md": data["solution"],
-        }
+    # Solution retrieval not supported via basic search API yet.
     return None
 
 

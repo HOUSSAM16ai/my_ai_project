@@ -136,6 +136,9 @@ class AppSettings(BaseServiceSettings):
 
     # Service URLs
     USER_SERVICE_URL: str | None = Field(None, description="User service base URL")
+    PLANNING_AGENT_URL: str = Field(default="http://planning-agent:8001", description="Planning Agent URL")
+    RESEARCH_AGENT_URL: str = Field(default="http://research-agent:8000", description="Research Agent URL")
+    REASONING_AGENT_URL: str = Field(default="http://reasoning-agent:8000", description="Reasoning Agent URL")
 
     # AI (Missing fields restored)
     OPENAI_API_KEY: str | None = Field(None, description="OpenAI API Key")
