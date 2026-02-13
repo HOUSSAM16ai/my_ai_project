@@ -12,7 +12,7 @@ Key Concepts:
 
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from pydantic import Field
 
@@ -35,7 +35,7 @@ class DecisionIntent(GovernanceModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
-class DecisionRecord(GovernanceModel, Generic[ResultT]):
+class DecisionRecord[ResultT](GovernanceModel):
     """
     The Immutable Artifact of a Decision.
     Traceable proof of why the system did what it did.
@@ -52,7 +52,7 @@ class DecisionRecord(GovernanceModel, Generic[ResultT]):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
-class Policy(ABC, Generic[ContextT, ResultT]):
+class Policy[ContextT, ResultT](ABC):
     """
     Abstract Base Class for all Decision Policies.
     A Policy is a pure function (conceptually) that maps Context -> Decision.

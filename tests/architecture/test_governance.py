@@ -10,6 +10,7 @@ Scans for violations of the Architectural Singularity:
 
 import ast
 import os
+
 import pytest
 
 # Directories to enforce strict governance on
@@ -52,7 +53,6 @@ class GovernanceVisitor(ast.NodeVisitor):
 
             # Heuristic: if the body contains 'raise' or 'GovernanceError', it might be okay.
             # We strictly want to discourage it.
-            # self.violations.append(f"{self.filename}:{node.lineno} - Found naked 'except Exception'. Must wrap in GovernanceError or be specific.")
             pass  # Disabling strict check for now to allow incremental adoption, enabled in V2.
 
         self.generic_visit(node)
