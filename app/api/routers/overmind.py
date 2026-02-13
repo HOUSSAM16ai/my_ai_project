@@ -62,15 +62,28 @@ async def get_orchestrator(db: AsyncSession = Depends(get_db)) -> OvermindOrches
     return await create_overmind(db)
 
 
+def _get_mission_status_payload(status: str) -> dict:
+    """
+    Helper to map internal status to API lifecycle status and semantic outcome.
+    Implements Phase 0 mapping: partial_success -> success + outcome=partial_success
+    """
+    if status == "partial_success":
+        return {"status": "success", "outcome": "partial_success"}
+    return {"status": status, "outcome": None}
+
+
 def _serialize_mission(mission: Mission) -> MissionResponse:
     """تحويل كيان المهمة إلى نموذج استجابة آمن بدون عمليات Lazy Loading."""
 
     status_value = mission.status.value if hasattr(mission.status, "value") else mission.status
+    payload = _get_mission_status_payload(status_value)
+
     return MissionResponse.model_validate(
         {
             "id": mission.id,
             "objective": mission.objective,
-            "status": status_value,
+            "status": payload["status"],
+            "outcome": payload["outcome"],
             "created_at": mission.created_at,
             "updated_at": mission.updated_at,
             "result": getattr(mission, "result", None),
@@ -189,9 +202,8 @@ async def stream_mission_ws(
             status_value = (
                 mission.status.value if hasattr(mission.status, "value") else mission.status
             )
-            await websocket.send_json(
-                {"type": "mission_status", "payload": {"status": status_value}}
-            )
+            payload = _get_mission_status_payload(status_value)
+            await websocket.send_json({"type": "mission_status", "payload": payload})
             if not user.is_admin and mission.initiator_id != user.id:
                 await websocket.send_json(
                     {
@@ -237,8 +249,9 @@ async def stream_mission_ws(
                             if hasattr(mission.status, "value")
                             else mission.status
                         )
+                        payload = _get_mission_status_payload(status_value)
                         await websocket.send_json(
-                            {"type": "mission_status", "payload": {"status": status_value}}
+                            {"type": "mission_status", "payload": payload}
                         )
                         await websocket.close()
                         return
@@ -269,8 +282,9 @@ async def stream_mission_ws(
                         if mission and hasattr(mission.status, "value")
                         else (mission.status if mission else event.event_type.value)
                     )
+                    payload = _get_mission_status_payload(status_value)
                     await websocket.send_json(
-                        {"type": "mission_status", "payload": {"status": status_value}}
+                        {"type": "mission_status", "payload": payload}
                     )
                 await websocket.close()
                 return

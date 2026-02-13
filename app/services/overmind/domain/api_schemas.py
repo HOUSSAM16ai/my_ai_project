@@ -100,6 +100,7 @@ class MissionResponse(RobustBaseModel):
     id: int = Field(..., description="معرف المهمة الفريد")
     objective: str = Field(..., description="الهدف الرئيسي")
     status: MissionStatusEnum = Field(..., description="الحالة العامة للمهمة")
+    outcome: str | None = Field(None, description="نتيجة المهمة الدلالية (outcome)")
     created_at: datetime = Field(..., description="توقيت الإنشاء")
     updated_at: datetime = Field(..., description="آخر تحديث")
     result: dict[str, str | int | float | bool | None] | None = Field(
