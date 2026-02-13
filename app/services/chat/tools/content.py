@@ -10,8 +10,9 @@
 import difflib
 
 from app.core.logging import get_logger
+from app.domain.constants import BRANCH_MAP
+from app.infrastructure.clients.research_client import research_client
 from app.services.chat.tools.schemas import SearchContentSchema
-from microservices.research_agent.src.content.constants import BRANCH_MAP
 
 logger = get_logger("content-tools")
 
@@ -58,11 +59,7 @@ async def get_curriculum_structure(
 ) -> dict[str, object]:
     """جلب شجرة المنهج الدراسي بالكامل أو لمستوى محدد."""
     try:
-        from microservices.research_agent.src.content.service import (
-            content_service as live_content_service,
-        )
-
-        return await live_content_service.get_curriculum_structure(level)
+        return await research_client.get_curriculum_structure(level)
     except Exception as e:
         logger.error(f"Failed to fetch curriculum structure: {e}")
         return {}
@@ -141,10 +138,6 @@ async def search_content(
     if not q:
         return []
 
-    from microservices.research_agent.src.search_engine.super_search import (
-        SuperSearchOrchestrator,
-    )
-
     # Normalize branch if provided
     normalized_branch = _normalize_branch(branch) if branch else branch
 
@@ -165,8 +158,11 @@ async def search_content(
     if context_parts:
         full_query += f" ({', '.join(context_parts)})"
 
-    orchestrator = SuperSearchOrchestrator()
-    report = await orchestrator.execute(full_query)
+    try:
+        report = await research_client.deep_research(full_query)
+    except Exception as e:
+        logger.error(f"Research client failed: {e}")
+        return []
 
     return [
         {
@@ -184,13 +180,7 @@ async def get_content_raw(
 ) -> dict[str, str] | None:
     """جلب النص الخام (Markdown) لتمرين أو درس معين مع خيار الحل."""
     try:
-        from microservices.research_agent.src.content.service import (
-            content_service as live_content_service,
-        )
-
-        return await live_content_service.get_content_raw(
-            content_id, include_solution=include_solution
-        )
+        return await research_client.get_content_raw(content_id, include_solution=include_solution)
     except Exception as e:
         logger.error(f"Get content raw failed: {e}")
         return None
@@ -198,11 +188,7 @@ async def get_content_raw(
 
 async def get_solution_raw(content_id: str) -> dict[str, object] | None:
     """جلب الحل الرسمي (Official Solution) لتمرين."""
-    from microservices.research_agent.src.content.service import (
-        content_service as live_content_service,
-    )
-
-    data = await live_content_service.get_content_raw(content_id, include_solution=True)
+    data = await research_client.get_content_raw(content_id, include_solution=True)
     if data and "solution" in data:
         return {
             "solution_md": data["solution"],
