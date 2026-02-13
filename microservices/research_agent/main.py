@@ -172,7 +172,9 @@ def _build_router() -> APIRouter:
                 top_n = request.payload.get("top_n", 5)
 
                 if not query or not documents:
-                    return AgentResponse(status="error", error="Missing query or documents for reranking.")
+                    return AgentResponse(
+                        status="error", error="Missing query or documents for reranking."
+                    )
 
                 from microservices.research_agent.src.search_engine.reranker import (
                     get_reranker,
