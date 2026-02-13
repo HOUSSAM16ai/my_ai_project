@@ -2,6 +2,7 @@
 Research Agent Client.
 Provides a typed interface to the Research Agent Service.
 """
+
 from __future__ import annotations
 
 from typing import Final
