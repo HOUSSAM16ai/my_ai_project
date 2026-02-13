@@ -1,11 +1,9 @@
-
-import pytest
 from datetime import datetime
 from unittest.mock import MagicMock
 
-from app.core.domain.mission import Mission, MissionStatus
-from app.services.overmind.domain.api_schemas import MissionResponse
 from app.api.routers.overmind import _get_mission_status_payload, _serialize_mission
+from app.core.domain.mission import Mission, MissionStatus
+
 
 def test_get_mission_status_payload_partial_success():
     """Test that partial_success is mapped correctly."""
