@@ -6,14 +6,13 @@ Replaces ad-hoc logic in OvermindOrchestrator.
 """
 
 import logging
-from typing import List, Optional
 
 from pydantic import Field
 
+from app.core.domain.mission import MissionStatus
 from app.core.governance.contracts import GovernanceModel
 from app.core.governance.decision import DecisionRecord, Policy
 from app.core.governance.errors import FailureClass
-from app.core.domain.mission import MissionStatus
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +23,8 @@ class MissionContext(GovernanceModel):
     """
 
     mission_id: int
-    execution_status: Optional[str] = None  # From OperatorAgent (failed, partial_failure, etc)
-    tool_results: List[dict] = Field(default_factory=list)  # Raw tool outputs
+    execution_status: str | None = None  # From OperatorAgent (failed, partial_failure, etc)
+    tool_results: list[dict] = Field(default_factory=list)  # Raw tool outputs
     has_empty_search: bool = False
 
 

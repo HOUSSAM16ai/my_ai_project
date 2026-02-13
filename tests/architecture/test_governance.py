@@ -47,15 +47,12 @@ class GovernanceVisitor(ast.NodeVisitor):
 
         if is_bare or is_exception:
             # Check for comments? (AST doesn't preserve comments easily without tokenizing)
-            # For now, we flag it unless it raises a GovernanceException or similar.
+            # For now, we flag it unless it raises a GovernanceError or similar.
             # This is a strict linter.
 
-            # Heuristic: if the body contains 'raise' or 'GovernanceException', it might be okay.
-            has_raise = any(isinstance(child, ast.Raise) for child in node.body)
-            # has_log = ... (logging is not enough, we want structured error)
-
+            # Heuristic: if the body contains 'raise' or 'GovernanceError', it might be okay.
             # We strictly want to discourage it.
-            # self.violations.append(f"{self.filename}:{node.lineno} - Found naked 'except Exception'. Must wrap in GovernanceException or be specific.")
+            # self.violations.append(f"{self.filename}:{node.lineno} - Found naked 'except Exception'. Must wrap in GovernanceError or be specific.")
             pass  # Disabling strict check for now to allow incremental adoption, enabled in V2.
 
         self.generic_visit(node)
@@ -110,14 +107,14 @@ def test_governance_contracts_any():
         if "errors.py" in file_path:
             continue  # errors.py imports Any for type hinting the exception context
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             tree = ast.parse(f.read())
             visitor.filename = file_path
             visitor.violations = []
             visitor.visit(tree)
             all_violations.extend(visitor.violations)
 
-    assert len(all_violations) == 0, f"Found Governance Violations:\n" + "\n".join(all_violations)
+    assert len(all_violations) == 0, "Found Governance Violations:\n" + "\n".join(all_violations)
 
 
 @pytest.mark.architecture
@@ -127,6 +124,4 @@ def test_decision_record_immutability():
     """
     from app.core.governance.decision import DecisionRecord
 
-    assert DecisionRecord.model_config.get("frozen") == True, (
-        "DecisionRecord must be frozen/immutable."
-    )
+    assert DecisionRecord.model_config.get("frozen"), "DecisionRecord must be frozen/immutable."
