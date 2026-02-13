@@ -51,10 +51,10 @@ from app.core.openapi_contracts import (
     default_contract_path,
     load_contract_operations,
 )
+from app.core.redis_bus import get_redis_bridge
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.static_files_middleware import StaticFilesConfig, setup_static_files_middleware
 from app.services.bootstrap import bootstrap_admin_account
-from app.core.redis_bus import get_redis_bridge
 
 logger = logging.getLogger(__name__)
 

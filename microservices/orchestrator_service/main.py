@@ -3,8 +3,8 @@ Orchestrator Service API.
 Microservices Architecture: REST + Async Events (Redis).
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession

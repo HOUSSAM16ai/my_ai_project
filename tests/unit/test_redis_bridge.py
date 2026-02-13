@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.core.redis_bus import RedisEventBridge
 
+
 class TestRedisBridge(unittest.IsolatedAsyncioTestCase):
     async def test_bridge_flow(self):
         # 1. Mock Redis

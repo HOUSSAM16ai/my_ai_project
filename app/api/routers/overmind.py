@@ -6,24 +6,18 @@ Delegates all logic to the Orchestrator Microservice.
 
 import asyncio
 import logging
-from typing import Any
 
 import httpx
 from fastapi import (
     APIRouter,
     BackgroundTasks,
-    Depends,
     HTTPException,
     WebSocket,
     WebSocketDisconnect,
 )
-from sqlalchemy import select
 
 from app.api.routers.ws_auth import extract_websocket_auth
 from app.core.config import get_settings
-from app.core.database import async_session_factory
-from app.core.domain.mission import Mission, MissionEvent, MissionEventType, MissionStatus
-from app.core.domain.user import User
 from app.core.event_bus import get_event_bus
 from app.services.auth.token_decoder import decode_user_id
 from app.services.overmind.domain.api_schemas import (
@@ -55,10 +49,10 @@ async def _call_orchestrator(method: str, path: str, json_data: dict | None = No
             return resp.json()
         except httpx.HTTPStatusError as e:
             logger.error(f"Orchestrator Service Error: {e.response.text}")
-            raise HTTPException(status_code=e.response.status_code, detail="Orchestrator Error")
+            raise HTTPException(status_code=e.response.status_code, detail="Orchestrator Error") from e
         except Exception as e:
             logger.error(f"Orchestrator Connection Failed: {e}")
-            raise HTTPException(status_code=503, detail="Orchestrator Unavailable")
+            raise HTTPException(status_code=503, detail="Orchestrator Unavailable") from e
 
 
 def _get_mission_status_payload(status: str) -> dict:
@@ -111,7 +105,7 @@ async def stream_mission_ws(
         return
 
     try:
-        user_id = decode_user_id(token, get_settings().SECRET_KEY)
+        decode_user_id(token, get_settings().SECRET_KEY)
     except HTTPException:
         await websocket.close(code=4401)
         return
@@ -145,8 +139,7 @@ async def stream_mission_ws(
             events_data = await _call_orchestrator("GET", f"/missions/{mission_id}/events")
             for evt in events_data:
                 evt_id = evt.get("id", 0)
-                if evt_id > last_event_id:
-                    last_event_id = evt_id
+                last_event_id = max(last_event_id, evt_id)
 
                 await websocket.send_json({
                     "type": "mission_event",
@@ -204,7 +197,7 @@ async def stream_mission_ws(
                         status = mission_data.get("status")
                         payload = _get_mission_status_payload(status)
                         await websocket.send_json({"type": "mission_status", "payload": payload})
-                    except:
+                    except Exception:
                         pass
                     await websocket.close()
                     return

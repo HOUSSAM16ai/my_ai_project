@@ -9,7 +9,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from microservices.orchestrator_service.events import EventPublisher, get_event_publisher
+from microservices.orchestrator_service.events import get_event_publisher
 from microservices.orchestrator_service.logging import get_logger
 from microservices.orchestrator_service.models import (
     Mission,
@@ -32,6 +32,7 @@ class MissionManager:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.publisher = get_event_publisher()
+        self._tasks = set()
 
     async def create_mission(self, payload: MissionCreate) -> Mission:
         """
@@ -55,7 +56,9 @@ class MissionManager:
         # Start background execution
         # In a real system, this would be a separate task queue (Celery/Arq)
         # For now, we use asyncio.create_task within the service process
-        asyncio.create_task(self._run_mission_loop(mission.id))
+        task = asyncio.create_task(self._run_mission_loop(mission.id))
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
 
         return mission
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import enum
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import Text, TypeDecorator
 from sqlalchemy.engine.interfaces import Dialect
@@ -20,7 +20,7 @@ def utc_now() -> datetime:
     Returns:
         datetime: Current UTC datetime
     """
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class CaseInsensitiveEnum(enum.StrEnum):

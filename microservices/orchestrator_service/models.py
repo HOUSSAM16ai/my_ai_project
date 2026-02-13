@@ -7,7 +7,6 @@ Strictly decoupled from 'app.core'.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text, func
 from sqlalchemy.orm import relationship
@@ -100,19 +99,19 @@ class Mission(SQLModel, table=True):
     )
 
     # Relationships
-    tasks: list["Task"] = Relationship(
+    tasks: list[Task] = Relationship(
         sa_relationship=relationship(
             "Task",
             back_populates="mission",
             foreign_keys=lambda: [Task.mission_id],
         )
     )
-    mission_plans: list["MissionPlan"] = Relationship(
+    mission_plans: list[MissionPlan] = Relationship(
         sa_relationship=relationship(
             "MissionPlan", back_populates="mission", foreign_keys="[MissionPlan.mission_id]"
         )
     )
-    events: list["MissionEvent"] = Relationship(
+    events: list[MissionEvent] = Relationship(
         sa_relationship=relationship("MissionEvent", back_populates="mission")
     )
 
@@ -145,7 +144,7 @@ class MissionPlan(SQLModel, table=True):
             "Mission", back_populates="mission_plans", foreign_keys="[MissionPlan.mission_id]"
         )
     )
-    tasks: list["Task"] = Relationship(
+    tasks: list[Task] = Relationship(
         sa_relationship=relationship("Task", back_populates="plan")
     )
 

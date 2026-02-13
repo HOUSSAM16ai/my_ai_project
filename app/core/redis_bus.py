@@ -5,14 +5,13 @@ Implements the 'Streaming BFF' pattern where the Gateway subscribes to backend e
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 
 import redis.asyncio as redis
 
-from app.core.config import get_settings
 from app.core.event_bus import get_event_bus
-from app.core.domain.mission import MissionEventType
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +48,8 @@ class RedisEventBridge:
         """Stop the bridge."""
         if self._listen_task:
             self._listen_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._listen_task
-            except asyncio.CancelledError:
-                pass
 
         if self._pubsub:
             await self._pubsub.close()
