@@ -137,6 +137,8 @@ class AppSettings(BaseServiceSettings):
     # Service URLs
     USER_SERVICE_URL: str | None = Field(None, description="User service base URL")
     RESEARCH_AGENT_URL: str | None = Field(None, description="Research Agent URL")
+    PLANNING_AGENT_URL: str | None = Field(None, description="Planning Agent URL")
+    REASONING_AGENT_URL: str | None = Field(None, description="Reasoning Agent URL")
 
     # AI (Missing fields restored)
     OPENAI_API_KEY: str | None = Field(None, description="OpenAI API Key")
@@ -168,32 +170,50 @@ class AppSettings(BaseServiceSettings):
             return bool(v)
         return os.getenv("CODESPACES") == "true"
 
-    @field_validator("USER_SERVICE_URL", mode="before")
+    @field_validator(
+        "USER_SERVICE_URL",
+        "RESEARCH_AGENT_URL",
+        "PLANNING_AGENT_URL",
+        "REASONING_AGENT_URL",
+        mode="before",
+    )
     @classmethod
-    def default_user_service_url(cls, v: str | None, info: ValidationInfo) -> str:
+    def default_service_urls(cls, v: str | None, info: ValidationInfo) -> str:
         """
-        ضمان عنوان خدمة المستخدمين الافتراضي وفق بيئة التشغيل.
-
-        يعتمد على قيمة CODESPACES لتجنب مشاكل DNS في البيئات المستضافة.
+        Ensure default service URLs based on the environment (Codespaces vs Docker).
         """
         if v:
             return v
+
+        field_name = info.field_name
         is_codespaces = info.data.get("CODESPACES")
         if is_codespaces is None:
             is_codespaces = os.getenv("CODESPACES") == "true"
-        return cls._default_user_service_url(is_codespaces=bool(is_codespaces))
+
+        return cls._resolve_service_url(field_name, bool(is_codespaces))
 
     @staticmethod
-    def _default_user_service_url(*, is_codespaces: bool) -> str:
+    def _resolve_service_url(field_name: str, is_codespaces: bool) -> str:
         """
-        تحديد عنوان خدمة المستخدمين الافتراضي وفق بيئة التشغيل.
+        Resolves the default URL for a service based on the environment.
+        """
+        # Map field names to (localhost_port, docker_host, docker_port)
+        service_map = {
+            "USER_SERVICE_URL": ("8003", "user-service", "8000"),
+            "RESEARCH_AGENT_URL": ("8006", "research-agent", "8000"),
+            "PLANNING_AGENT_URL": ("8001", "planning-agent", "8000"),
+            "REASONING_AGENT_URL": ("8007", "reasoning-agent", "8000"),
+        }
 
-        يتم توجيه بيئات Codespaces إلى localhost لتفادي مشاكل DNS،
-        بينما تستخدم البيئات الأخرى اسم خدمة الشبكة الداخلية.
-        """
+        if field_name not in service_map:
+            return "http://localhost:8000"
+
+        local_port, host, docker_port = service_map[field_name]
+
         if is_codespaces:
-            return "http://localhost:8003"
-        return "http://user-service:8003"
+            return f"http://localhost:{local_port}"
+
+        return f"http://{host}:{docker_port}"
 
     @model_validator(mode="after")
     def validate_production_security(self) -> "AppSettings":
