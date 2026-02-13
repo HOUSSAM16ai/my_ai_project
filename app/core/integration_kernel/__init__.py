@@ -1,13 +1,29 @@
-from app.core.integration_kernel.ir import (
-    WorkflowPlan, RetrievalQuery, PromptProgram, ScoringSpec, AgentAction
-)
 from app.core.integration_kernel.contracts import (
-    WorkflowEngine, RetrievalEngine, PromptEngine, RankingEngine, ActionEngine
+    ActionEngine,
+    PromptEngine,
+    RankingEngine,
+    RetrievalEngine,
+    WorkflowEngine,
+)
+from app.core.integration_kernel.ir import (
+    AgentAction,
+    PromptProgram,
+    RetrievalQuery,
+    ScoringSpec,
+    WorkflowPlan,
 )
 from app.core.integration_kernel.runtime import IntegrationKernel
 
 __all__ = [
-    "WorkflowPlan", "RetrievalQuery", "PromptProgram", "ScoringSpec", "AgentAction",
-    "WorkflowEngine", "RetrievalEngine", "PromptEngine", "RankingEngine", "ActionEngine",
+    "ActionEngine",
+    "AgentAction",
     "IntegrationKernel",
+    "PromptEngine",
+    "PromptProgram",
+    "RankingEngine",
+    "RetrievalEngine",
+    "RetrievalQuery",
+    "ScoringSpec",
+    "WorkflowEngine",
+    "WorkflowPlan",
 ]
