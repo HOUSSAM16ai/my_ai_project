@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 from app.core.domain.mission import Mission, MissionEventType, MissionStatus
 from app.core.protocols import MissionStateManagerProtocol, TaskExecutorProtocol
 from app.services.overmind.domain.enums import OvermindMessage
+from app.core.governance.policies import MissionOutcomePolicy, MissionContext
 
 if TYPE_CHECKING:
     from app.services.overmind.domain.cognitive import SuperBrain
@@ -212,35 +213,20 @@ class OvermindOrchestrator:
         self, result: dict[str, object], mission_id: int
     ) -> MissionStatus:
         """
-        Arbiter: Decides the final mission status based on evidence.
-        Enforces "Outcome/Progress Divergence" prevention.
+        Arbiter: Decides the final mission status using the Decision Kernel.
         """
-        execution = result.get("execution")
+        execution = result.get("execution") or {}
 
-        # Default assumption
-        status = MissionStatus.SUCCESS
+        # Extract signals for the Policy
+        exec_status = execution.get("status") if isinstance(execution, dict) else None
 
-        # 1. Check for explicit OperatorAgent failure flags
-        if isinstance(execution, dict):
-            exec_status = execution.get("status")
-            if exec_status == "failed":
-                logger.error(f"Mission {mission_id} FAILED: Operator reported total failure.")
-                return MissionStatus.FAILED
-            if exec_status == "partial_failure":
-                logger.warning(
-                    f"Mission {mission_id} PARTIAL_SUCCESS: Operator reported partial failures."
-                )
-                status = MissionStatus.PARTIAL_SUCCESS
-
-        # 2. Check for Empty Search Results (Crucial for "No Tavily" scenarios)
-        # If the plan involved search, but we got no results, it's not a full success.
-        # We inspect the execution results for search tool calls that returned empty lists/strings.
+        # Check for empty search results
+        has_empty_search = False
         if isinstance(execution, dict) and "results" in execution:
             results_list = execution.get("results", [])
             for task_res in results_list:
                 if isinstance(task_res, dict):
                     tool_name = task_res.get("tool")
-                    # If search was attempted
                     if tool_name in (
                         "search_content",
                         "search_educational_content",
@@ -248,15 +234,25 @@ class OvermindOrchestrator:
                     ):
                         tool_output = task_res.get("result", {})
                         if isinstance(tool_output, dict):
-                            # Executor wrapper format
                             raw_data = tool_output.get("result_data")
                             if not raw_data or (isinstance(raw_data, list) and len(raw_data) == 0):
-                                logger.warning(
-                                    f"Mission {mission_id} PARTIAL_SUCCESS: Search tool '{tool_name}' returned empty results."
-                                )
-                                status = MissionStatus.PARTIAL_SUCCESS
+                                has_empty_search = True
+                                break
 
-        return status
+        # Construct Context
+        context = MissionContext(
+            mission_id=mission_id,
+            execution_status=exec_status,
+            has_empty_search=has_empty_search
+        )
+
+        # Consult the Policy (The Kernel)
+        policy = MissionOutcomePolicy()
+        decision = policy.evaluate(context)
+
+        logger.info(f"Mission {mission_id} Outcome Decision: {decision.result.final_status} | Reason: {decision.reasoning}")
+
+        return decision.result.final_status
 
     def _extract_summary(self, result: dict[str, object]) -> str:
         """
