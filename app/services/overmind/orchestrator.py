@@ -241,16 +241,16 @@ class OvermindOrchestrator:
 
         # Construct Context
         context = MissionContext(
-            mission_id=mission_id,
-            execution_status=exec_status,
-            has_empty_search=has_empty_search
+            mission_id=mission_id, execution_status=exec_status, has_empty_search=has_empty_search
         )
 
         # Consult the Policy (The Kernel)
         policy = MissionOutcomePolicy()
         decision = policy.evaluate(context)
 
-        logger.info(f"Mission {mission_id} Outcome Decision: {decision.result.final_status} | Reason: {decision.reasoning}")
+        logger.info(
+            f"Mission {mission_id} Outcome Decision: {decision.result.final_status} | Reason: {decision.reasoning}"
+        )
 
         return decision.result.final_status
 
