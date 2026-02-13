@@ -100,6 +100,109 @@ class ResearchClient:
             logger.error(f"Failed to get content raw: {e}", exc_info=True)
             return None
 
+    async def semantic_search(
+        self, query: str, top_k: int = 5, filters: dict[str, object] | None = None
+    ) -> list[dict[str, object]]:
+        """
+        Execute semantic search via the agent's execute endpoint.
+        """
+        url = f"{self.base_url}/execute"
+        payload = {
+            "caller_id": "app-backend",
+            "action": "search",
+            "payload": {
+                "query": query,
+                "limit": top_k,
+                "filters": filters or {},
+            },
+        }
+
+        client = await self._get_client()
+        try:
+            response = await client.post(url, json=payload)
+            response.raise_for_status()
+            data = response.json()
+
+            if data.get("status") != "success":
+                raise ValueError(f"Research agent error: {data.get('error')}")
+
+            # Extract 'results' list from the data object
+            return data.get("data", {}).get("results", [])
+
+        except Exception as e:
+            logger.error(f"Semantic search failed: {e}", exc_info=True)
+            raise
+
+    async def refine_query(
+        self, query: str, api_key: str | None = None
+    ) -> dict[str, object]:
+        """
+        Refine a query using the agent's logic.
+        """
+        url = f"{self.base_url}/execute"
+        payload = {
+            "caller_id": "app-backend",
+            "action": "refine",
+            "payload": {"query": query, "api_key": api_key},
+        }
+
+        client = await self._get_client()
+        try:
+            response = await client.post(url, json=payload)
+            response.raise_for_status()
+            data = response.json()
+
+            if data.get("status") != "success":
+                raise ValueError(f"Refinement error: {data.get('error')}")
+
+            return data.get("data", {})
+
+        except Exception as e:
+            logger.error(f"Query refinement failed: {e}", exc_info=True)
+            raise
+
+    async def rerank_results(
+        self, query: str, documents: list[str] | list[dict], top_n: int = 5
+    ) -> list[object]:
+        """
+        Rerank documents using the agent's reranker.
+        """
+        url = f"{self.base_url}/execute"
+        payload = {
+            "caller_id": "app-backend",
+            "action": "rerank",
+            "payload": {
+                "query": query,
+                "documents": documents,
+                "top_n": top_n,
+            },
+        }
+
+        client = await self._get_client()
+        try:
+            response = await client.post(url, json=payload)
+            response.raise_for_status()
+            data = response.json()
+
+            if data.get("status") != "success":
+                raise ValueError(f"Reranking error: {data.get('error')}")
+
+            return data.get("data", [])
+
+        except Exception as e:
+            logger.error(f"Reranking failed: {e}", exc_info=True)
+            raise
+
+    async def check_health(self) -> bool:
+        """Check if the service is healthy."""
+        url = f"{self.base_url}/health"
+        client = await self._get_client()
+        try:
+            response = await client.get(url)
+            return response.status_code == 200
+        except Exception:
+            return False
+
 
 # Singleton
 research_client = ResearchClient()

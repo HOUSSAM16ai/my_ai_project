@@ -195,6 +195,66 @@ services:
       start_period: 15s
 
 
+  # Research Agent - Search and Retrieval
+  research-agent:
+    build:
+      context: ./microservices/research_agent
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+    container_name: cogniforge-research-agent
+    restart: unless-stopped
+
+    ports:
+      - "8006:8000"
+
+    networks:
+      - appnet
+
+    environment:
+      RESEARCH_DATABASE_URL: ${RESEARCH_DATABASE_URL:-sqlite+aiosqlite:///./research_agent.db}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+
+  # Reasoning Agent - Deep Thinking
+  reasoning-agent:
+    build:
+      context: ./microservices/reasoning_agent
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+    container_name: cogniforge-reasoning-agent
+    restart: unless-stopped
+
+    ports:
+      - "8007:8000"
+
+    networks:
+      - appnet
+
+    environment:
+      REASONING_DATABASE_URL: ${REASONING_DATABASE_URL:-sqlite+aiosqlite:///./reasoning_agent.db}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+
 networks:
   appnet:
     driver: bridge

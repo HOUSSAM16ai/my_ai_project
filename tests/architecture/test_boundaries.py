@@ -1,73 +1,40 @@
-import ast
 import os
-from pathlib import Path
+import ast
+import pytest
 
-# List of known violations to be grandfathered in temporarily.
-# Ideally, this list should be empty.
-ALLOWED_VIOLATIONS = {
-    "app/core/interfaces/common.py",
-    "app/services/chat/graph/workflow.py",
-    "app/services/chat/graph/search.py",
-    "app/services/chat/graph/nodes/researcher.py",
-    "app/services/chat/tools/content.py",
-    "app/services/mcp/integrations.py",
-    "app/integration/gateways/research.py",
-    "app/integration/gateways/planning.py",
-}
+APP_ROOT = "app"
 
+def get_python_files(root_dir):
+    for root, _, files in os.walk(root_dir):
+        for file in files:
+            if file.endswith(".py"):
+                yield os.path.join(root, file)
 
-def test_app_does_not_import_microservices_logic():
+def test_no_microservice_imports_in_app():
     """
-    Enforce architectural boundary: 'app' (Monolith/Orchestrator) must NOT import
-    internal logic from 'microservices'. It should only communicate via HTTP/gRPC.
-
-    Allowed exceptions (if any) would be strict type definitions or client wrappers
-    if they are packaged separately (but here we assume strict separation).
+    Rule 1: Hard Boundary.
+    The 'app' layer MUST NOT import from 'microservices'.
+    Communication must be via Network Contracts (HTTP Clients).
     """
-    app_dir = Path("app")
     violations = []
 
-    for root, _, files in os.walk(app_dir):
-        for file in files:
-            if not file.endswith(".py"):
-                continue
+    for file_path in get_python_files(APP_ROOT):
+        # Skip this test file itself if it were in app, but it's in tests.
 
-            filepath = Path(root) / file
-
-            # Skip allowed violations for now (Technical Debt)
-            if str(filepath) in ALLOWED_VIOLATIONS:
-                continue
-
+        with open(file_path, "r", encoding="utf-8") as f:
             try:
-                with open(filepath, encoding="utf-8") as f:
-                    content = f.read()
-                    # Basic check first to avoid parsing everything
-                    if "microservices" not in content:
-                        continue
-                    tree = ast.parse(content, filename=str(filepath))
+                tree = ast.parse(f.read(), filename=file_path)
+            except SyntaxError:
+                continue # Skip files with syntax errors
 
-                for node in ast.walk(tree):
-                    if isinstance(node, (ast.Import, ast.ImportFrom)):
-                        # Check direct imports
-                        if isinstance(node, ast.Import):
-                            for alias in node.names:
-                                if alias.name.startswith("microservices"):
-                                    violations.append(f"{filepath}: import {alias.name}")
-
-                        # Check from ... import ...
-                        elif (
-                            isinstance(node, ast.ImportFrom)
-                            and node.module
-                            and node.module.startswith("microservices")
-                        ):
-                            violations.append(f"{filepath}: from {node.module} import ...")
-
-            except Exception as e:
-                # Skip files that can't be parsed (shouldn't happen in valid python code)
-                print(f"Skipping {filepath}: {e}")
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        if alias.name.startswith("microservices"):
+                            violations.append(f"{file_path}: import {alias.name}")
+                elif isinstance(node, ast.ImportFrom):
+                    if node.module and node.module.startswith("microservices"):
+                        violations.append(f"{file_path}: from {node.module} import ...")
 
     if violations:
-        error_msg = "\n".join(violations)
-        raise AssertionError(
-            f"Architecture Violation: 'app' imports from 'microservices':\n{error_msg}"
-        )
+        pytest.fail(f"Architecture Violation: 'app' layer imports 'microservices' code directly.\nFound {len(violations)} violations:\n" + "\n".join(violations))

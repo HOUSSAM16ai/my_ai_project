@@ -7,9 +7,8 @@
 from langgraph.graph import END, StateGraph
 
 from app.core.di import get_kagent_mesh
-
-# DIP: Use the Interface, not the concrete implementation or legacy facade
 from app.core.interfaces.llm import LLMClient
+from app.core.settings.base import get_settings
 from app.services.chat.graph.nodes.planner import planner_node
 from app.services.chat.graph.nodes.procedural_auditor import procedural_auditor_node
 from app.services.chat.graph.nodes.researcher import researcher_node
@@ -19,32 +18,52 @@ from app.services.chat.graph.nodes.supervisor import supervisor_node
 from app.services.chat.graph.nodes.writer import writer_node
 from app.services.chat.graph.state import AgentState
 from app.services.chat.tools import ToolRegistry
+from app.services.kagent.adapters import RemoteAgentAdapter
 
 
 def create_multi_agent_graph(ai_client: LLMClient, tools: ToolRegistry) -> object:
     """
     بناء الرسم البياني للوكلاء المتعددين.
     """
-    # Defer import to prevent circular dependency / eager loading issues
-    # from microservices.reasoning_agent.src.service import ReasoningService # Legacy
-
-    # Import Microservice Apps for Local Adapter Registration
-    from microservices.planning_agent.main import app as planning_app
-    from microservices.reasoning_agent.main import app as reasoning_app
-    from microservices.research_agent.main import app as research_app
+    settings = get_settings()
 
     # Initialize Kagent Mesh and Register Services
     kagent = get_kagent_mesh()
 
-    # Register Agents as Services (The Mesh will wrap them in LocalAgentAdapter)
-    kagent.register_service(
-        "reasoning_agent", reasoning_app, capabilities=["reason", "solve_deeply"]
-    )
-    # Alias 'reasoning_engine' to 'reasoning_agent' logic if needed, or update callers
-    kagent.register_service("reasoning_engine", reasoning_app)
+    # Register Remote Agents (Microservices)
+    # This enforces "Hard Boundaries" and "Network Contracts" (Rule 1 & 2)
 
-    kagent.register_service("research_agent", research_app, capabilities=["search", "retrieve"])
-    kagent.register_service("planning_agent", planning_app, capabilities=["generate_plan"])
+    kagent.register_service(
+        "reasoning_agent",
+        RemoteAgentAdapter(
+            base_url=settings.REASONING_AGENT_URL,
+            api_key=settings.OPENROUTER_API_KEY,  # Pass relevant key if needed
+        ),
+        capabilities=["reason", "solve_deeply"],
+    )
+    # Alias 'reasoning_engine' to 'reasoning_agent' logic if needed
+    kagent.register_service(
+        "reasoning_engine",
+        RemoteAgentAdapter(base_url=settings.REASONING_AGENT_URL),
+    )
+
+    kagent.register_service(
+        "research_agent",
+        RemoteAgentAdapter(
+            base_url=settings.RESEARCH_AGENT_URL,
+            api_key=settings.OPENROUTER_API_KEY,
+        ),
+        capabilities=["search", "retrieve"],
+    )
+
+    kagent.register_service(
+        "planning_agent",
+        RemoteAgentAdapter(
+            base_url=settings.PLANNING_AGENT_URL,
+            api_key=settings.OPENROUTER_API_KEY,
+        ),
+        capabilities=["generate_plan"],
+    )
 
     workflow = StateGraph(AgentState)
 

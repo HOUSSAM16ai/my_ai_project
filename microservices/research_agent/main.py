@@ -166,6 +166,23 @@ def _build_router() -> APIRouter:
                 refined = await asyncio.to_thread(get_refined_query, query, api_key)
                 return AgentResponse(status="success", data=refined, metrics={})
 
+            if request.action == "rerank":
+                query = request.payload.get("query", "")
+                documents = request.payload.get("documents", [])
+                top_n = request.payload.get("top_n", 5)
+
+                if not query or not documents:
+                    return AgentResponse(status="error", error="Missing query or documents for reranking.")
+
+                from microservices.research_agent.src.search_engine.reranker import (
+                    get_reranker,
+                )
+
+                reranker = get_reranker()
+                # Run rerank in thread pool
+                reranked = await asyncio.to_thread(reranker.rerank, query, documents, top_n)
+                return AgentResponse(status="success", data=reranked, metrics={})
+
             return AgentResponse(
                 status="error", error=f"Action '{request.action}' not supported by Research Agent."
             )
