@@ -110,8 +110,10 @@ class RedisEventBridge:
                 except Exception as e:
                     logger.error(f"Error processing Redis message: {e}")
 
+
 # Singleton
 _bridge: RedisEventBridge | None = None
+
 
 def get_redis_bridge() -> RedisEventBridge:
     global _bridge

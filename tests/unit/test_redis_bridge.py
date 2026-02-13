@@ -2,6 +2,7 @@
 Unit Test for Redis Event Bridge (Streaming BFF).
 Mocks Redis and Internal EventBus to verify flow.
 """
+
 import asyncio
 import json
 import unittest
@@ -23,7 +24,7 @@ class TestRedisBridge(unittest.IsolatedAsyncioTestCase):
         message = {
             "type": "pmessage",
             "channel": "mission:123",
-            "data": json.dumps({"event_type": "test", "data": "hello"})
+            "data": json.dumps({"event_type": "test", "data": "hello"}),
         }
 
         # Mock pubsub.listen() as async generator
@@ -37,9 +38,10 @@ class TestRedisBridge(unittest.IsolatedAsyncioTestCase):
         # 2. Mock Internal EventBus
         mock_internal_bus = AsyncMock()
 
-        with patch("app.core.redis_bus.redis.from_url", return_value=mock_redis_client), \
-             patch("app.core.redis_bus.get_event_bus", return_value=mock_internal_bus):
-
+        with (
+            patch("app.core.redis_bus.redis.from_url", return_value=mock_redis_client),
+            patch("app.core.redis_bus.get_event_bus", return_value=mock_internal_bus),
+        ):
             bridge = RedisEventBridge("redis://mock:6379")
             await bridge.start()
 

@@ -51,7 +51,9 @@ class MissionManager:
         await self.session.refresh(mission)
 
         # Log creation event
-        await self._log_event(mission.id, MissionEventType.CREATED, {"objective": mission.objective})
+        await self._log_event(
+            mission.id, MissionEventType.CREATED, {"objective": mission.objective}
+        )
 
         # Start background execution
         # In a real system, this would be a separate task queue (Celery/Arq)
@@ -70,11 +72,17 @@ class MissionManager:
 
     async def get_mission_events(self, mission_id: int) -> list[MissionEvent]:
         """Retrieve events for a mission."""
-        stmt = select(MissionEvent).where(MissionEvent.mission_id == mission_id).order_by(MissionEvent.id)
+        stmt = (
+            select(MissionEvent)
+            .where(MissionEvent.mission_id == mission_id)
+            .order_by(MissionEvent.id)
+        )
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def _log_event(self, mission_id: int, event_type: MissionEventType, payload: dict[str, Any]) -> None:
+    async def _log_event(
+        self, mission_id: int, event_type: MissionEventType, payload: dict[str, Any]
+    ) -> None:
         """Log event to DB and Publish to Redis."""
         # 1. DB Log
         event = MissionEvent(
@@ -99,7 +107,7 @@ class MissionManager:
             "mission_id": mission_id,
             "event_type": event_type.value,
             "payload_json": payload,
-            "created_at": event.created_at.isoformat() if event.created_at else None
+            "created_at": event.created_at.isoformat() if event.created_at else None,
         }
         # We publish the FULL event structure, not just the data payload
         await self.publisher.publish(mission_id, event_type.value, full_payload)
@@ -121,11 +129,17 @@ class MissionManager:
 
         # Simulating steps
         await asyncio.sleep(1)
-        await self.publisher.publish(mission_id, MissionEventType.STATUS_CHANGE.value, {"status": "running"})
+        await self.publisher.publish(
+            mission_id, MissionEventType.STATUS_CHANGE.value, {"status": "running"}
+        )
 
         await asyncio.sleep(2)
-        await self.publisher.publish(mission_id, MissionEventType.PLAN_SELECTED.value, {"plan": "Mock Plan"})
+        await self.publisher.publish(
+            mission_id, MissionEventType.PLAN_SELECTED.value, {"plan": "Mock Plan"}
+        )
 
         await asyncio.sleep(2)
-        await self.publisher.publish(mission_id, MissionEventType.MISSION_COMPLETED.value, {"result": "Success (Mock)"})
+        await self.publisher.publish(
+            mission_id, MissionEventType.MISSION_COMPLETED.value, {"result": "Success (Mock)"}
+        )
         logger.info(f"Mission {mission_id} completed")
