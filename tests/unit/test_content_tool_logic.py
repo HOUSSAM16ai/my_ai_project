@@ -1,7 +1,7 @@
-"""Unit tests for content tool logic - aligned with refactored super_search_orchestrator."""
+"""Unit tests for content tool logic - aligned with ResearchClient decoupling."""
 
 import sys
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 # Mock external modules BEFORE importing app modules
 sys.modules["dspy"] = MagicMock()
@@ -11,73 +11,63 @@ sys.modules["llama_index.core.schema"] = MagicMock()
 sys.modules["llama_index.core.vector_stores"] = MagicMock()
 sys.modules["llama_index.embeddings.huggingface"] = MagicMock()
 sys.modules["llama_index.vector_stores.supabase"] = MagicMock()
-sys.modules["microservices.research_agent.src.search_engine.query_refiner"] = MagicMock()
 
 import pytest
 
-# Mock content service module
-mock_content_service_module = MagicMock()
-mock_content_service_instance = AsyncMock()
-mock_content_service_module.content_service = mock_content_service_instance
-sys.modules["microservices.research_agent.src.content.service"] = mock_content_service_module
-
-# Mock super search module (new location)
-mock_super_search_module = MagicMock()
-mock_orchestrator_instance = AsyncMock()
-mock_super_search_module.SuperSearchOrchestrator.return_value = mock_orchestrator_instance
-sys.modules["microservices.research_agent.src.search_engine.super_search"] = (
-    mock_super_search_module
-)
-
-# Now import the tool safely
+# Import the module under test
 from app.services.chat.tools import content as content_module
 
 
 @pytest.fixture(autouse=True)
-def reset_mocks():
-    """Reset mocks before each test."""
-    mock_orchestrator_instance.reset_mock()
-    mock_content_service_instance.reset_mock()
+def mock_research_client():
+    """Mock the research_client instance in the content module."""
+    with patch("app.services.chat.tools.content.research_client", autospec=True) as mock_client:
+        # Setup AsyncMocks for async methods
+        mock_client.deep_research = AsyncMock()
+        mock_client.get_curriculum_structure = AsyncMock()
+        mock_client.get_content_raw = AsyncMock()
+        yield mock_client
 
 
 @pytest.mark.asyncio
-async def test_search_content_uses_super_orchestrator():
-    """Verify that search_content uses super_search_orchestrator."""
+async def test_search_content_uses_research_client(mock_research_client):
+    """Verify that search_content uses ResearchClient."""
     # Setup mock result
-    mock_orchestrator_instance.execute.return_value = "Detailed Report Content"
+    mock_research_client.deep_research.return_value = "Detailed Report Content"
 
     results = await content_module.search_content(q="Test Query")
 
     assert len(results) == 1
     assert results[0]["id"] == "research_report"
     assert results[0]["content"] == "Detailed Report Content"
-    mock_orchestrator_instance.execute.assert_called_once()
+    mock_research_client.deep_research.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_search_content_error_handling():
-    """Verify search_content propagates exceptions (fail-fast)."""
-    mock_orchestrator_instance.execute.side_effect = Exception("Network error")
+async def test_search_content_error_handling(mock_research_client):
+    """Verify search_content handles client failures gracefully."""
+    # Updated expectation: The code now catches exceptions and returns []
+    mock_research_client.deep_research.side_effect = Exception("Network error")
 
-    with pytest.raises(Exception, match="Network error"):
-        await content_module.search_content(q="Error Query")
+    results = await content_module.search_content(q="Error Query")
+    assert results == []
 
 
 @pytest.mark.asyncio
-async def test_get_curriculum_structure():
+async def test_get_curriculum_structure(mock_research_client):
     """Test curriculum structure retrieval."""
-    mock_content_service_instance.get_curriculum_structure.return_value = {"3as": {"subjects": []}}
+    mock_research_client.get_curriculum_structure.return_value = {"3as": {"subjects": []}}
 
     result = await content_module.get_curriculum_structure(level="3as")
 
     assert "3as" in result
-    mock_content_service_instance.get_curriculum_structure.assert_called_with("3as")
+    mock_research_client.get_curriculum_structure.assert_called_with("3as")
 
 
 @pytest.mark.asyncio
-async def test_get_content_raw():
+async def test_get_content_raw(mock_research_client):
     """Test raw content retrieval."""
-    mock_content_service_instance.get_content_raw.return_value = {
+    mock_research_client.get_content_raw.return_value = {
         "content": "# Exercise",
         "solution": "# Solution",
     }
@@ -86,12 +76,15 @@ async def test_get_content_raw():
 
     assert result is not None
     assert "content" in result
+    mock_research_client.get_content_raw.assert_called_with(
+        "ex-123", include_solution=True
+    )
 
 
 @pytest.mark.asyncio
-async def test_get_solution_raw():
+async def test_get_solution_raw(mock_research_client):
     """Test solution retrieval."""
-    mock_content_service_instance.get_content_raw.return_value = {
+    mock_research_client.get_content_raw.return_value = {
         "content": "# Exercise",
         "solution": "# Official Solution",
     }
@@ -100,6 +93,10 @@ async def test_get_solution_raw():
 
     assert result is not None
     assert result["solution_md"] == "# Official Solution"
+    # Note: get_solution_raw calls get_content_raw with include_solution=True
+    mock_research_client.get_content_raw.assert_called_with(
+        "ex-123", include_solution=True
+    )
 
 
 @pytest.mark.asyncio
