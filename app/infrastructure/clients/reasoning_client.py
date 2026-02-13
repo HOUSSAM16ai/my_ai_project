@@ -65,14 +65,14 @@ class ReasoningClient:
             # If the service returns a ReasoningNode structure, we parse it directly.
             # Otherwise, we wrap the result in a node.
             if "id" in result_data and "content" in result_data:
-                 return ReasoningNode(**result_data)
+                return ReasoningNode(**result_data)
 
             # Stub mapping
             return ReasoningNode(
                 id=str(uuid.uuid4()),
                 content=result_data.get("answer", "Reasoning completed."),
                 step_type="solution",
-                children=[]
+                children=[],
             )
 
         except Exception as e:

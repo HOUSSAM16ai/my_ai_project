@@ -133,9 +133,7 @@ class ResearchClient:
             logger.error(f"Semantic search failed: {e}", exc_info=True)
             raise
 
-    async def refine_query(
-        self, query: str, api_key: str | None = None
-    ) -> dict[str, object]:
+    async def refine_query(self, query: str, api_key: str | None = None) -> dict[str, object]:
         """
         Refine a query using the agent's logic.
         """
