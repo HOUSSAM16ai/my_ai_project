@@ -76,9 +76,7 @@ async def test_get_content_raw(mock_research_client):
 
     assert result is not None
     assert "content" in result
-    mock_research_client.get_content_raw.assert_called_with(
-        "ex-123", include_solution=True
-    )
+    mock_research_client.get_content_raw.assert_called_with("ex-123", include_solution=True)
 
 
 @pytest.mark.asyncio
@@ -94,9 +92,7 @@ async def test_get_solution_raw(mock_research_client):
     assert result is not None
     assert result["solution_md"] == "# Official Solution"
     # Note: get_solution_raw calls get_content_raw with include_solution=True
-    mock_research_client.get_content_raw.assert_called_with(
-        "ex-123", include_solution=True
-    )
+    mock_research_client.get_content_raw.assert_called_with("ex-123", include_solution=True)
 
 
 @pytest.mark.asyncio
