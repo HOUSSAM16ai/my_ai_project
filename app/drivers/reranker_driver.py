@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from app.core.integration_kernel.contracts import RankingEngine
 from app.core.integration_kernel.ir import ScoringSpec
@@ -11,7 +11,7 @@ class RerankerDriver(RankingEngine):
     Driver for Reranker operations.
     Currently delegates to the LocalResearchGateway.
     """
-    async def rank(self, spec: ScoringSpec) -> Dict[str, Any]:
+    async def rank(self, spec: ScoringSpec) -> dict[str, Any]:
         """
         Ranks a list of documents against a query using a CrossEncoder or similar.
         """
@@ -30,7 +30,7 @@ class RerankerDriver(RankingEngine):
             logger.error(f"Reranking error: {e}")
             return {"success": False, "error": str(e)}
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """
         Returns the health status of the ranking engine.
         """

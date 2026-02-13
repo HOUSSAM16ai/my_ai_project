@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from app.core.integration_kernel.contracts import PromptEngine
 from app.core.integration_kernel.ir import PromptProgram
@@ -11,7 +11,7 @@ class DSPyDriver(PromptEngine):
     Driver for DSPy prompt optimization.
     Currently delegates to the LocalResearchGateway.
     """
-    async def optimize(self, program: PromptProgram) -> Dict[str, Any]:
+    async def optimize(self, program: PromptProgram) -> dict[str, Any]:
         """
         Runs a DSPy program or prompt optimization.
         """
@@ -37,7 +37,7 @@ class DSPyDriver(PromptEngine):
             logger.error(f"DSPy optimization error: {e}")
             return {"success": False, "error": str(e)}
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """
         Returns the health status of the DSPy engine.
         """

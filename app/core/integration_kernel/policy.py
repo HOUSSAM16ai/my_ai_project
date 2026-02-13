@@ -1,7 +1,11 @@
-from typing import Dict, Any, Type
 from app.core.integration_kernel.contracts import (
-    WorkflowEngine, RetrievalEngine, PromptEngine, RankingEngine, ActionEngine
+    ActionEngine,
+    PromptEngine,
+    RankingEngine,
+    RetrievalEngine,
+    WorkflowEngine,
 )
+
 
 class PolicyConfig:
     """
@@ -14,17 +18,18 @@ class PolicyConfig:
     DEFAULT_RANKING_ENGINE: str = "reranker"
     DEFAULT_ACTION_ENGINE: str = "kagent"
 
+
 class PolicyManager:
     """
     Manages execution policies (latency, quality, cost).
     Currently implemented as a simple registry/factory.
     """
     def __init__(self):
-        self._workflow_drivers: Dict[str, WorkflowEngine] = {}
-        self._retrieval_drivers: Dict[str, RetrievalEngine] = {}
-        self._prompt_drivers: Dict[str, PromptEngine] = {}
-        self._ranking_drivers: Dict[str, RankingEngine] = {}
-        self._action_drivers: Dict[str, ActionEngine] = {}
+        self._workflow_drivers: dict[str, WorkflowEngine] = {}
+        self._retrieval_drivers: dict[str, RetrievalEngine] = {}
+        self._prompt_drivers: dict[str, PromptEngine] = {}
+        self._ranking_drivers: dict[str, RankingEngine] = {}
+        self._action_drivers: dict[str, ActionEngine] = {}
 
     def register_workflow_driver(self, name: str, driver: WorkflowEngine):
         self._workflow_drivers[name] = driver

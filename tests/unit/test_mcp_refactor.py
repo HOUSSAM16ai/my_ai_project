@@ -1,7 +1,16 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
+from app.core.integration_kernel import (
+    AgentAction,
+    PromptProgram,
+    RetrievalQuery,
+    ScoringSpec,
+    WorkflowPlan,
+)
 from app.services.mcp.integrations import MCPIntegrations
-from app.core.integration_kernel import WorkflowPlan, RetrievalQuery, PromptProgram, ScoringSpec, AgentAction
+
 
 @pytest.fixture
 def mcp():

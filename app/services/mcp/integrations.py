@@ -15,21 +15,21 @@
 import contextlib
 from pathlib import Path
 
-from app.core.logging import get_logger
 from app.core.integration_kernel import (
+    AgentAction,
     IntegrationKernel,
-    WorkflowPlan,
-    RetrievalQuery,
     PromptProgram,
+    RetrievalQuery,
     ScoringSpec,
-    AgentAction
+    WorkflowPlan,
 )
+from app.core.logging import get_logger
 from app.drivers import (
+    DSPyDriver,
+    KagentDriver,
     LangGraphDriver,
     LlamaIndexDriver,
-    DSPyDriver,
     RerankerDriver,
-    KagentDriver
 )
 
 logger = get_logger(__name__)
@@ -83,8 +83,7 @@ class MCPIntegrations:
         """
         try:
             plan = WorkflowPlan(goal=goal, context=context or {})
-            result = await self.kernel.run_workflow(plan, engine="langgraph")
-            return result
+            return await self.kernel.run_workflow(plan, engine="langgraph")
         except Exception as e:
             logger.error(f"Kernel Workflow Error: {e}")
             return {"success": False, "error": str(e)}
@@ -107,8 +106,7 @@ class MCPIntegrations:
         """
         try:
             q = RetrievalQuery(query=query, top_k=top_k, filters=filters)
-            result = await self.kernel.search(q, engine="llamaindex")
-            return result
+            return await self.kernel.search(q, engine="llamaindex")
         except Exception as e:
             logger.error(f"Kernel Search Error: {e}")
             return {"success": False, "error": str(e)}
@@ -134,8 +132,7 @@ class MCPIntegrations:
                 input_text=query,
                 api_key=api_key
             )
-            result = await self.kernel.optimize(program, engine="dspy")
-            return result
+            return await self.kernel.optimize(program, engine="dspy")
         except Exception as e:
             logger.error(f"Kernel Optimization Error: {e}")
             return {"success": False, "error": str(e)}
@@ -179,8 +176,7 @@ class MCPIntegrations:
         """
         try:
             spec = ScoringSpec(query=query, documents=documents, top_n=top_n)
-            result = await self.kernel.rank(spec, engine="reranker")
-            return result
+            return await self.kernel.rank(spec, engine="reranker")
         except Exception as e:
             logger.error(f"Kernel Reranking Error: {e}")
             return {"success": False, "error": str(e)}
@@ -207,8 +203,7 @@ class MCPIntegrations:
                 capability=capability,
                 payload=payload or {}
             )
-            result = await self.kernel.act(act_req, engine="kagent")
-            return result
+            return await self.kernel.act(act_req, engine="kagent")
         except Exception as e:
             logger.error(f"Kernel Action Error: {e}")
             return {"success": False, "error": str(e)}

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from app.core.integration_kernel.contracts import ActionEngine
 from app.core.integration_kernel.ir import AgentAction
@@ -10,7 +10,7 @@ class KagentDriver(ActionEngine):
     """
     Driver for executing actions using Kagent.
     """
-    async def execute(self, action: AgentAction) -> Dict[str, Any]:
+    async def execute(self, action: AgentAction) -> dict[str, Any]:
         """
         Executes a defined action via KagentMesh.
         """
@@ -35,7 +35,7 @@ class KagentDriver(ActionEngine):
             logger.error(f"Kagent execution error: {e}")
             return {"success": False, "error": str(e)}
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """
         Returns the health status of the Kagent engine.
         """

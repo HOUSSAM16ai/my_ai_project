@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from app.core.integration_kernel.contracts import RetrievalEngine
 from app.core.integration_kernel.ir import RetrievalQuery
@@ -15,7 +15,7 @@ class LlamaIndexDriver(RetrievalEngine):
         # We initialize the gateway lazily or during registration to avoid circular imports
         pass
 
-    async def search(self, query: RetrievalQuery) -> Dict[str, Any]:
+    async def search(self, query: RetrievalQuery) -> dict[str, Any]:
         """
         Executes a semantic search using LlamaIndex.
         """
@@ -37,7 +37,7 @@ class LlamaIndexDriver(RetrievalEngine):
             logger.error(f"LlamaIndex search error: {e}")
             return {"success": False, "error": str(e)}
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """
         Returns the health status of the LlamaIndex engine.
         """
