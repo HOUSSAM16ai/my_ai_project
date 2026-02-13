@@ -54,6 +54,7 @@ from app.core.openapi_contracts import (
 from app.middleware.fastapi_error_handlers import add_error_handlers
 from app.middleware.static_files_middleware import StaticFilesConfig, setup_static_files_middleware
 from app.services.bootstrap import bootstrap_admin_account
+from app.core.redis_bus import get_redis_bridge
 
 logger = logging.getLogger(__name__)
 
@@ -215,8 +216,15 @@ class RealityKernel:
         except Exception as exc:
             logger.error(f"❌ Failed to bootstrap admin account: {exc}")
 
+        # Start Redis Event Bridge (Streaming BFF)
+        redis_bridge = get_redis_bridge()
+        await redis_bridge.start()
+
         logger.info("✅ System Ready")
         yield
+
+        # Shutdown Redis Event Bridge
+        await redis_bridge.stop()
         logger.info("👋 CogniForge System Shutting Down...")
 
 

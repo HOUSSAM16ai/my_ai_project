@@ -255,6 +255,22 @@ services:
       start_period: 15s
 
 
+  # Redis - Event Backbone
+  redis:
+    image: redis:7.2-alpine
+    container_name: cogniforge-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - appnet
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
 networks:
   appnet:
     driver: bridge

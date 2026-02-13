@@ -33,6 +33,11 @@ class OrchestratorSettings(BaseSettings):
         description="رابط قاعدة البيانات الخاصة بالخدمة",
     )
 
+    REDIS_URL: str = Field(
+        "redis://redis:6379",
+        description="رابط خدمة Redis للأحداث",
+    )
+
     PLANNING_AGENT_URL: str = Field(
         "http://planning-agent:8001",
         description="عنوان خدمة التخطيط",
