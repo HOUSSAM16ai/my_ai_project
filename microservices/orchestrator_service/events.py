@@ -7,8 +7,8 @@ import json
 from contextlib import asynccontextmanager
 
 import redis.asyncio as redis
+
 from microservices.orchestrator_service.logging import get_logger
-from microservices.orchestrator_service.models import MissionEventType
 from microservices.orchestrator_service.settings import get_settings
 
 logger = get_logger("event-publisher")
