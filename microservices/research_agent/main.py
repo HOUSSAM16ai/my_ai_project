@@ -9,9 +9,10 @@ import asyncio
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from microservices.research_agent.src.content.service import content_service
 from microservices.research_agent.src.search_engine.models import SearchFilters, SearchRequest
 from microservices.research_agent.src.search_engine.orchestrator import search_orchestrator
 from microservices.research_agent.src.search_engine.super_search import SuperSearchOrchestrator
@@ -64,6 +65,29 @@ def _build_router() -> APIRouter:
     def health_check() -> dict[str, str]:
         """فحص الحالة."""
         return {"status": "healthy", "service": "research-agent"}
+
+    @router.get("/content/curriculum", tags=["Content"])
+    async def get_curriculum(level: str | None = None) -> dict[str, object]:
+        """Fetch curriculum structure."""
+        return await content_service.get_curriculum_structure(level)
+
+    @router.get("/content/{content_id}", tags=["Content"])
+    async def get_content(content_id: str, include_solution: bool = False) -> dict[str, str]:
+        """Fetch raw content markdown."""
+        data = await content_service.get_content_raw(content_id, include_solution=include_solution)
+        if not data:
+            raise HTTPException(status_code=404, detail="Content not found")
+        return data
+
+    @router.get("/content/{content_id}/solution", tags=["Content"])
+    async def get_solution(content_id: str) -> dict[str, str]:
+        """Fetch solution markdown."""
+        data = await content_service.get_content_raw(content_id, include_solution=True)
+        if not data:
+            raise HTTPException(status_code=404, detail="Content not found")
+        if "solution" not in data:
+            raise HTTPException(status_code=404, detail="Solution not found")
+        return {"solution_md": data["solution"]}
 
     @router.post("/execute", response_model=AgentResponse, tags=["Agent"])
     async def execute(request: AgentRequest) -> AgentResponse:

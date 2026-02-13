@@ -136,6 +136,7 @@ class AppSettings(BaseServiceSettings):
 
     # Service URLs
     USER_SERVICE_URL: str | None = Field(None, description="User service base URL")
+    RESEARCH_AGENT_URL: str | None = Field(None, description="Research Agent URL")
 
     # AI (Missing fields restored)
     OPENAI_API_KEY: str | None = Field(None, description="OpenAI API Key")
