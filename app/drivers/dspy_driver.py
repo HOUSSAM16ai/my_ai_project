@@ -6,17 +6,20 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+
 class DSPyDriver(PromptEngine):
     """
     Driver for DSPy prompt optimization.
     Currently delegates to the LocalResearchGateway.
     """
+
     async def optimize(self, program: PromptProgram) -> dict[str, Any]:
         """
         Runs a DSPy program or prompt optimization.
         """
         try:
             from app.integration.gateways.research import LocalResearchGateway
+
             gateway = LocalResearchGateway()
 
             # The current integration specifically uses 'refine_query'
@@ -43,6 +46,7 @@ class DSPyDriver(PromptEngine):
         """
         try:
             from app.integration.gateways.research import LocalResearchGateway
+
             return LocalResearchGateway().get_dspy_status()
         except ImportError:
             return {"status": "unavailable", "error": "ResearchGateway missing"}

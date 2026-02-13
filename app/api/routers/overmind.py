@@ -250,9 +250,7 @@ async def stream_mission_ws(
                             else mission.status
                         )
                         payload = _get_mission_status_payload(status_value)
-                        await websocket.send_json(
-                            {"type": "mission_status", "payload": payload}
-                        )
+                        await websocket.send_json({"type": "mission_status", "payload": payload})
                         await websocket.close()
                         return
                 continue
@@ -283,9 +281,7 @@ async def stream_mission_ws(
                         else (mission.status if mission else event.event_type.value)
                     )
                     payload = _get_mission_status_payload(status_value)
-                    await websocket.send_json(
-                        {"type": "mission_status", "payload": payload}
-                    )
+                    await websocket.send_json({"type": "mission_status", "payload": payload})
                 await websocket.close()
                 return
     except WebSocketDisconnect:

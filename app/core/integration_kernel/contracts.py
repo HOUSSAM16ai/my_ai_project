@@ -14,6 +14,7 @@ class WorkflowEngine(ABC):
     """
     Interface for executing agent workflows (e.g., LangGraph).
     """
+
     @abstractmethod
     async def run(self, plan: WorkflowPlan) -> dict[str, Any]:
         """
@@ -33,6 +34,7 @@ class RetrievalEngine(ABC):
     """
     Interface for semantic retrieval (e.g., LlamaIndex).
     """
+
     @abstractmethod
     async def search(self, query: RetrievalQuery) -> dict[str, Any]:
         """
@@ -52,6 +54,7 @@ class PromptEngine(ABC):
     """
     Interface for prompt optimization and reasoning (e.g., DSPy).
     """
+
     @abstractmethod
     async def optimize(self, program: PromptProgram) -> dict[str, Any]:
         """
@@ -71,6 +74,7 @@ class RankingEngine(ABC):
     """
     Interface for re-ranking documents (e.g., CrossEncoder, Cohere).
     """
+
     @abstractmethod
     async def rank(self, spec: ScoringSpec) -> dict[str, Any]:
         """
@@ -90,6 +94,7 @@ class ActionEngine(ABC):
     """
     Interface for executing agent actions (e.g., Kagent).
     """
+
     @abstractmethod
     async def execute(self, action: AgentAction) -> dict[str, Any]:
         """

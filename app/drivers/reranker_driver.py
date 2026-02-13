@@ -6,17 +6,20 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+
 class RerankerDriver(RankingEngine):
     """
     Driver for Reranker operations.
     Currently delegates to the LocalResearchGateway.
     """
+
     async def rank(self, spec: ScoringSpec) -> dict[str, Any]:
         """
         Ranks a list of documents against a query using a CrossEncoder or similar.
         """
         try:
             from app.integration.gateways.research import LocalResearchGateway
+
             gateway = LocalResearchGateway()
 
             reranked = await gateway.rerank_results(spec.query, spec.documents, top_n=spec.top_n)
@@ -36,6 +39,7 @@ class RerankerDriver(RankingEngine):
         """
         try:
             from app.integration.gateways.research import LocalResearchGateway
+
             return LocalResearchGateway().get_reranker_status()
         except ImportError:
             return {"status": "unavailable", "error": "ResearchGateway missing"}

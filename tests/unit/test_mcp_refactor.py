@@ -14,14 +14,17 @@ from app.services.mcp.integrations import MCPIntegrations
 
 @pytest.fixture
 def mcp():
-    with patch("app.integration.gateways.planning.LocalPlanningGateway"), \
-         patch("app.integration.gateways.research.LocalResearchGateway"), \
-         patch("app.drivers.LangGraphDriver"), \
-         patch("app.drivers.LlamaIndexDriver"), \
-         patch("app.drivers.DSPyDriver"), \
-         patch("app.drivers.RerankerDriver"), \
-         patch("app.drivers.KagentDriver"):
+    with (
+        patch("app.integration.gateways.planning.LocalPlanningGateway"),
+        patch("app.integration.gateways.research.LocalResearchGateway"),
+        patch("app.drivers.LangGraphDriver"),
+        patch("app.drivers.LlamaIndexDriver"),
+        patch("app.drivers.DSPyDriver"),
+        patch("app.drivers.RerankerDriver"),
+        patch("app.drivers.KagentDriver"),
+    ):
         return MCPIntegrations()
+
 
 @pytest.mark.asyncio
 async def test_run_langgraph_workflow_delegates_to_kernel(mcp):
@@ -36,6 +39,7 @@ async def test_run_langgraph_workflow_delegates_to_kernel(mcp):
     assert args[0].goal == "test"
     assert kwargs["engine"] == "langgraph"
 
+
 @pytest.mark.asyncio
 async def test_semantic_search_delegates_to_kernel(mcp):
     mcp.kernel.search = MagicMock()
@@ -48,6 +52,7 @@ async def test_semantic_search_delegates_to_kernel(mcp):
     assert isinstance(args[0], RetrievalQuery)
     assert args[0].query == "test"
     assert kwargs["engine"] == "llamaindex"
+
 
 @pytest.mark.asyncio
 async def test_refine_query_delegates_to_kernel(mcp):
@@ -62,6 +67,7 @@ async def test_refine_query_delegates_to_kernel(mcp):
     assert args[0].input_text == "test"
     assert kwargs["engine"] == "dspy"
 
+
 @pytest.mark.asyncio
 async def test_rerank_results_delegates_to_kernel(mcp):
     mcp.kernel.rank = MagicMock()
@@ -74,6 +80,7 @@ async def test_rerank_results_delegates_to_kernel(mcp):
     assert isinstance(args[0], ScoringSpec)
     assert args[0].query == "test"
     assert kwargs["engine"] == "reranker"
+
 
 @pytest.mark.asyncio
 async def test_execute_action_delegates_to_kernel(mcp):

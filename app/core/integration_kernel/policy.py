@@ -12,6 +12,7 @@ class PolicyConfig:
     Configuration for the integration kernel.
     Can be loaded from environment variables or a config file.
     """
+
     DEFAULT_WORKFLOW_ENGINE: str = "langgraph"
     DEFAULT_RETRIEVAL_ENGINE: str = "llamaindex"
     DEFAULT_PROMPT_ENGINE: str = "dspy"
@@ -24,6 +25,7 @@ class PolicyManager:
     Manages execution policies (latency, quality, cost).
     Currently implemented as a simple registry/factory.
     """
+
     def __init__(self):
         self._workflow_drivers: dict[str, WorkflowEngine] = {}
         self._retrieval_drivers: dict[str, RetrievalEngine] = {}
@@ -46,10 +48,14 @@ class PolicyManager:
     def register_action_driver(self, name: str, driver: ActionEngine):
         self._action_drivers[name] = driver
 
-    def get_workflow_driver(self, name: str = PolicyConfig.DEFAULT_WORKFLOW_ENGINE) -> WorkflowEngine:
+    def get_workflow_driver(
+        self, name: str = PolicyConfig.DEFAULT_WORKFLOW_ENGINE
+    ) -> WorkflowEngine:
         return self._workflow_drivers.get(name)
 
-    def get_retrieval_driver(self, name: str = PolicyConfig.DEFAULT_RETRIEVAL_ENGINE) -> RetrievalEngine:
+    def get_retrieval_driver(
+        self, name: str = PolicyConfig.DEFAULT_RETRIEVAL_ENGINE
+    ) -> RetrievalEngine:
         return self._retrieval_drivers.get(name)
 
     def get_prompt_driver(self, name: str = PolicyConfig.DEFAULT_PROMPT_ENGINE) -> PromptEngine:

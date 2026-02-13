@@ -15,6 +15,7 @@ class IntegrationKernel:
     The Micro-Kernel for Agent Integrations.
     Orchestrates execution across different technologies (drivers) based on IR and Policies.
     """
+
     _instance = None
 
     def __new__(cls):
