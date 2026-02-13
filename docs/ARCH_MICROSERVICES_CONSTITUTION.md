@@ -1,0 +1,37 @@
+# Microservices Constitution
+
+**Version:** 1.0.0
+**Status:** ENFORCED
+
+This document defines the non-negotiable architectural invariants for the system. Violations of these rules will cause CI failures.
+
+## 1. Process Independence
+*   **Rule:** No service may import code from another service.
+*   **Constraint:** `app/*` (Monolith/Gateway) must NOT import `microservices/*`.
+*   **Constraint:** `microservices/service_a` must NOT import `microservices/service_b`.
+*   **Reasoning:** Sharing code in-process creates a Distributed Monolith, leading to tight coupling, dependency hell, and "Split-Brain" state management issues.
+
+## 2. Network-Only Integration
+*   **Rule:** All cross-service communication must occur over the network (HTTP/gRPC) or via an event bus (Redis/Kafka).
+*   **Mechanism:** Use `httpx.AsyncClient` or generated SDKs. Never instantiate a service class directly in another service's memory space.
+
+## 3. Single External Entrypoint (Gateway Pattern)
+*   **Rule:** The Frontend (Next.js) must ONLY communicate with the API Gateway (`app`).
+*   **Constraint:** No direct calls from UI to internal microservices.
+*   **Reasoning:** Centralizes auth, rate limiting, and API composition. Decouples frontend from backend topology.
+
+## 4. Contract-First Development
+*   **Rule:** Every service must expose a clear API contract (OpenAPI/Swagger).
+*   **Policy:** Changes to APIs must be backwards-compatible or versioned.
+
+## 5. Data Ownership (Database per Service)
+*   **Rule:** Services must not share database tables.
+*   **Constraint:** `orchestrator_service` owns the `missions` table. The Gateway (`app`) must not write to `missions` directly; it must call the Orchestrator API.
+
+## 6. Observability
+*   **Rule:** Trace context (Correlation IDs) must be propagated across service calls.
+*   **Mechanism:** Pass `X-Correlation-ID` headers in all HTTP requests and include `trace_id` in event payloads.
+
+## 7. Event-Driven Backbone
+*   **Rule:** State changes should be broadcast as events.
+*   **Mechanism:** Use Redis Pub/Sub for real-time updates. The Gateway subscribes to events to stream to the frontend (BFF pattern).

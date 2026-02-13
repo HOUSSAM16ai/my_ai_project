@@ -6,12 +6,14 @@ Delegates all logic to the Orchestrator Microservice.
 
 import asyncio
 import logging
+import uuid
 
 import httpx
 from fastapi import (
     APIRouter,
     BackgroundTasks,
     HTTPException,
+    Request,
     WebSocket,
     WebSocketDisconnect,
 )
@@ -35,15 +37,25 @@ router = APIRouter(
 ORCHESTRATOR_URL = "http://orchestrator-service:8000"
 
 
-async def _call_orchestrator(method: str, path: str, json_data: dict | None = None) -> dict:
-    """Helper to call the orchestrator service."""
+async def _call_orchestrator(
+    method: str, path: str, json_data: dict | None = None, correlation_id: str | None = None
+) -> dict:
+    """
+    Helper to call the orchestrator service with network contracts.
+    Enforces Observability: Propagates X-Correlation-ID.
+    """
+    headers = {
+        "X-Correlation-ID": correlation_id or str(uuid.uuid4()),
+        "Content-Type": "application/json",
+    }
+
     async with httpx.AsyncClient() as client:
         try:
             url = f"{ORCHESTRATOR_URL}{path}"
             if method == "POST":
-                resp = await client.post(url, json=json_data, timeout=30.0)
+                resp = await client.post(url, json=json_data, headers=headers, timeout=30.0)
             else:
-                resp = await client.get(url, timeout=30.0)
+                resp = await client.get(url, headers=headers, timeout=30.0)
 
             resp.raise_for_status()
             return resp.json()
@@ -67,10 +79,15 @@ def _get_mission_status_payload(status: str) -> dict:
 async def create_mission(
     request: MissionCreate,
     background_tasks: BackgroundTasks,
+    req: Request,
 ) -> MissionResponse:
     """
     Delegate mission creation to Orchestrator Service.
     """
+    # Extract or generate correlation ID
+    correlation_id = req.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+    logger.info(f"Gateway: Creating mission with Correlation ID: {correlation_id}")
+
     # Forward the request payload directly
     payload = {
         "objective": request.objective,
@@ -78,16 +95,17 @@ async def create_mission(
         "initiator_id": 1,  # System/Admin
     }
 
-    data = await _call_orchestrator("POST", "/missions", payload)
+    data = await _call_orchestrator("POST", "/missions", payload, correlation_id)
     return MissionResponse(**data)
 
 
 @router.get("/missions/{mission_id}", response_model=MissionResponse, summary="Get Mission")
-async def get_mission(mission_id: int) -> MissionResponse:
+async def get_mission(mission_id: int, req: Request) -> MissionResponse:
     """
     Delegate mission retrieval to Orchestrator Service.
     """
-    data = await _call_orchestrator("GET", f"/missions/{mission_id}")
+    correlation_id = req.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+    data = await _call_orchestrator("GET", f"/missions/{mission_id}", correlation_id=correlation_id)
     return MissionResponse(**data)
 
 
