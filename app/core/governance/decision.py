@@ -11,8 +11,8 @@ Key Concepts:
 """
 
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
-from typing import Generic, List, Optional, TypeVar
+from datetime import UTC, datetime
+from typing import Generic, TypeVar
 
 from pydantic import Field
 
@@ -20,9 +20,9 @@ from app.core.governance.contracts import GovernanceModel
 from app.core.governance.errors import FailureClass
 
 # Generic Input Type (The Context)
-I = TypeVar("I", bound=GovernanceModel)
+ContextT = TypeVar("ContextT", bound=GovernanceModel)
 # Generic Output Type (The Action/Result)
-O = TypeVar("O", bound=GovernanceModel)
+ResultT = TypeVar("ResultT", bound=GovernanceModel)
 
 
 class DecisionIntent(GovernanceModel):
@@ -32,10 +32,10 @@ class DecisionIntent(GovernanceModel):
 
     intent_key: str = Field(..., description="Unique key for this intent type")
     source: str = Field(..., description="Who requested this?")
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
-class DecisionRecord(GovernanceModel, Generic[O]):
+class DecisionRecord(GovernanceModel, Generic[ResultT]):
     """
     The Immutable Artifact of a Decision.
     Traceable proof of why the system did what it did.
@@ -44,15 +44,15 @@ class DecisionRecord(GovernanceModel, Generic[O]):
     decision_id: str = Field(..., description="Unique ID for this specific decision instance")
     policy_name: str = Field(..., description="Name of the policy that made this decision")
     status: str = Field(..., description="Outcome status (e.g. SUCCESS, FAILED)")
-    failure_class: Optional[FailureClass] = Field(
+    failure_class: FailureClass | None = Field(
         None, description="Taxonomy of failure if applicable"
     )
-    result: Optional[O] = Field(None, description="The resulting action/value")
+    result: ResultT | None = Field(None, description="The resulting action/value")
     reasoning: str = Field(..., description="Human-readable explanation of the choice")
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
-class Policy(ABC, Generic[I, O]):
+class Policy(ABC, Generic[ContextT, ResultT]):
     """
     Abstract Base Class for all Decision Policies.
     A Policy is a pure function (conceptually) that maps Context -> Decision.
@@ -65,7 +65,7 @@ class Policy(ABC, Generic[I, O]):
         pass
 
     @abstractmethod
-    def evaluate(self, context: I) -> DecisionRecord[O]:
+    def evaluate(self, context: ContextT) -> DecisionRecord[ResultT]:
         """
         Execute the policy logic.
         MUST NOT raise naked exceptions.

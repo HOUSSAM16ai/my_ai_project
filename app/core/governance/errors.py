@@ -12,7 +12,7 @@ Philosophy:
 """
 
 from enum import StrEnum
-from typing import Any, Optional
+from typing import Any
 
 
 class FailureClass(StrEnum):
@@ -43,7 +43,7 @@ class FailureClass(StrEnum):
     UNKNOWN = "unknown"  # Unhandled exceptions caught at boundary
 
 
-class GovernanceException(Exception):
+class GovernanceError(Exception):
     """
     Base class for all Governed Exceptions.
     Wraps an underlying exception with semantic context.
@@ -53,8 +53,8 @@ class GovernanceException(Exception):
         self,
         message: str,
         failure_class: FailureClass,
-        context: Optional[dict[str, Any]] = None,
-        cause: Optional[Exception] = None,
+        context: dict[str, Any] | None = None,
+        cause: Exception | None = None,
     ) -> None:
         super().__init__(message)
         self.failure_class = failure_class
@@ -70,28 +70,28 @@ class GovernanceException(Exception):
         }
 
 
-class ContractError(GovernanceException):
+class ContractError(GovernanceError):
     """Input/Output schema violations."""
 
-    def __init__(self, message: str, context: Optional[dict] = None):
+    def __init__(self, message: str, context: dict | None = None) -> None:
         super().__init__(message, FailureClass.CONTRACT_VIOLATION, context)
 
 
-class PolicyError(GovernanceException):
+class PolicyError(GovernanceError):
     """Guardrail/Policy violations."""
 
-    def __init__(self, message: str, context: Optional[dict] = None):
+    def __init__(self, message: str, context: dict | None = None) -> None:
         super().__init__(message, FailureClass.POLICY_VIOLATION, context)
 
 
-class OperationalError(GovernanceException):
+class OperationalError(GovernanceError):
     """System/Infrastructure failures."""
 
     def __init__(
         self,
         message: str,
         failure_class: FailureClass = FailureClass.UNKNOWN,
-        context: Optional[dict] = None,
-        cause: Optional[Exception] = None,
-    ):
+        context: dict | None = None,
+        cause: Exception | None = None,
+    ) -> None:
         super().__init__(message, failure_class, context, cause)

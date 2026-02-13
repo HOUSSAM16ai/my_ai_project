@@ -22,9 +22,9 @@ import logging
 from typing import TYPE_CHECKING
 
 from app.core.domain.mission import Mission, MissionEventType, MissionStatus
+from app.core.governance.policies import MissionContext, MissionOutcomePolicy
 from app.core.protocols import MissionStateManagerProtocol, TaskExecutorProtocol
 from app.services.overmind.domain.enums import OvermindMessage
-from app.core.governance.policies import MissionOutcomePolicy, MissionContext
 
 if TYPE_CHECKING:
     from app.services.overmind.domain.cognitive import SuperBrain
