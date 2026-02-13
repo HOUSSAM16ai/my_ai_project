@@ -127,11 +127,7 @@ class MCPIntegrations:
         تحسين استعلام باستخدام DSPy via Kernel.
         """
         try:
-            program = PromptProgram(
-                program_name="refine_query",
-                input_text=query,
-                api_key=api_key
-            )
+            program = PromptProgram(program_name="refine_query", input_text=query, api_key=api_key)
             return await self.kernel.optimize(program, engine="dspy")
         except Exception as e:
             logger.error(f"Kernel Optimization Error: {e}")
@@ -198,11 +194,7 @@ class MCPIntegrations:
         تنفيذ إجراء عبر Kagent via Kernel.
         """
         try:
-            act_req = AgentAction(
-                action_name=action,
-                capability=capability,
-                payload=payload or {}
-            )
+            act_req = AgentAction(action_name=action, capability=capability, payload=payload or {})
             return await self.kernel.act(act_req, engine="kagent")
         except Exception as e:
             logger.error(f"Kernel Action Error: {e}")

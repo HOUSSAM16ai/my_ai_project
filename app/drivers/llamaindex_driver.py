@@ -6,11 +6,13 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+
 class LlamaIndexDriver(RetrievalEngine):
     """
     Driver for LlamaIndex retrieval.
     Currently delegates to the LocalResearchGateway.
     """
+
     def __init__(self):
         # We initialize the gateway lazily or during registration to avoid circular imports
         pass
@@ -21,6 +23,7 @@ class LlamaIndexDriver(RetrievalEngine):
         """
         try:
             from app.integration.gateways.research import LocalResearchGateway
+
             gateway = LocalResearchGateway()
 
             results = await gateway.semantic_search(
@@ -43,6 +46,7 @@ class LlamaIndexDriver(RetrievalEngine):
         """
         try:
             from app.integration.gateways.research import LocalResearchGateway
+
             return LocalResearchGateway().get_llamaindex_status()
         except ImportError:
             return {"status": "unavailable", "error": "ResearchGateway missing"}

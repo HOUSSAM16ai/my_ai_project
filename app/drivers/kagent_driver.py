@@ -6,10 +6,12 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+
 class KagentDriver(ActionEngine):
     """
     Driver for executing actions using Kagent.
     """
+
     async def execute(self, action: AgentAction) -> dict[str, Any]:
         """
         Executes a defined action via KagentMesh.

@@ -10,6 +10,7 @@ def test_get_mission_status_payload_partial_success():
     result = _get_mission_status_payload("partial_success")
     assert result == {"status": "success", "outcome": "partial_success"}
 
+
 def test_get_mission_status_payload_normal():
     """Test that normal statuses are passed through."""
     result = _get_mission_status_payload("running")
@@ -17,6 +18,7 @@ def test_get_mission_status_payload_normal():
 
     result = _get_mission_status_payload("failed")
     assert result == {"status": "failed", "outcome": None}
+
 
 def test_serialize_mission_partial_success():
     """Test full serialization of a partial_success mission."""
@@ -34,5 +36,5 @@ def test_serialize_mission_partial_success():
     response = _serialize_mission(mission)
 
     assert response.id == 123
-    assert response.status == "success" # Lifecycle status
-    assert response.outcome == "partial_success" # Semantic outcome
+    assert response.status == "success"  # Lifecycle status
+    assert response.outcome == "partial_success"  # Semantic outcome

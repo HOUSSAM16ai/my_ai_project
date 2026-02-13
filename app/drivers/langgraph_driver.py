@@ -6,10 +6,12 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+
 class LangGraphDriver(WorkflowEngine):
     """
     Driver for LangGraph workflow execution.
     """
+
     async def run(self, plan: WorkflowPlan) -> dict[str, Any]:
         """
         Executes a workflow plan using LangGraph.
