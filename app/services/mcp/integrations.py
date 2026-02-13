@@ -16,6 +16,21 @@ import contextlib
 from pathlib import Path
 
 from app.core.logging import get_logger
+from app.core.integration_kernel import (
+    IntegrationKernel,
+    WorkflowPlan,
+    RetrievalQuery,
+    PromptProgram,
+    ScoringSpec,
+    AgentAction
+)
+from app.drivers import (
+    LangGraphDriver,
+    LlamaIndexDriver,
+    DSPyDriver,
+    RerankerDriver,
+    KagentDriver
+)
 
 logger = get_logger(__name__)
 
@@ -24,19 +39,28 @@ class MCPIntegrations:
     """
     تكاملات MCP مع التقنيات المتقدمة.
 
-    يوفر واجهة موحدة للتفاعل مع:
-    - LangGraph: تشغيل سير العمل المتعدد الوكلاء
-    - LlamaIndex: البحث الدلالي واسترجاع السياق
-    - DSPy: تحسين الاستعلامات والتفكير
-    - Reranker: إعادة ترتيب النتائج
-    - Kagent: تنفيذ الإجراءات عبر الوكلاء
+    Refactored to use the Integration Micro-Kernel Architecture.
     """
 
     def __init__(self, project_root: Path | None = None) -> None:
         self.project_root = project_root or Path.cwd()
 
+        # Initialize the Kernel
+        self.kernel = IntegrationKernel()
+
+        # Register Drivers (Bootstrap Phase)
+        # Note: In a production DI system, this should be handled by a bootstrapper.
+        try:
+            self.kernel.register_driver("workflow", "langgraph", LangGraphDriver())
+            self.kernel.register_driver("retrieval", "llamaindex", LlamaIndexDriver())
+            self.kernel.register_driver("prompt", "dspy", DSPyDriver())
+            self.kernel.register_driver("ranking", "reranker", RerankerDriver())
+            self.kernel.register_driver("action", "kagent", KagentDriver())
+        except Exception as e:
+            logger.error(f"Failed to register drivers: {e}")
+
         # Initialize Integration Plane Gateways (Local Adapters)
-        # In a future iteration, these could be injected or switched to Remote Gateways.
+        # Kept for backward compatibility for methods not yet migrated to Kernel.
         from app.integration.gateways.planning import LocalPlanningGateway
         from app.integration.gateways.research import LocalResearchGateway
 
@@ -55,49 +79,20 @@ class MCPIntegrations:
         context: dict[str, object] | None = None,
     ) -> dict[str, object]:
         """
-        تشغيل سير عمل LangGraph.
-
-        Args:
-            goal: الهدف المطلوب تحقيقه
-            context: سياق إضافي (اختياري)
-
-        Returns:
-            dict: نتيجة سير العمل
+        تشغيل سير عمل LangGraph via Kernel.
         """
         try:
-            from app.services.overmind.domain.api_schemas import LangGraphRunRequest
-            from app.services.overmind.factory import create_langgraph_service
-
-            service = create_langgraph_service()
-            request = LangGraphRunRequest(
-                goal=goal,
-                context=context or {},
-            )
-
-            result = await service.run(request)
-
-            return {
-                "success": True,
-                "run_id": result.run_id,
-                "final_answer": result.final_answer,
-                "steps": result.steps,
-            }
+            plan = WorkflowPlan(goal=goal, context=context or {})
+            result = await self.kernel.run_workflow(plan, engine="langgraph")
+            return result
         except Exception as e:
-            logger.error(f"خطأ في LangGraph: {e}")
+            logger.error(f"Kernel Workflow Error: {e}")
             return {"success": False, "error": str(e)}
 
     def get_langgraph_status(self) -> dict[str, object]:
         """حالة LangGraph."""
-        try:
-            from app.services.overmind.langgraph import LangGraphAgentService  # noqa: F401
-
-            return {
-                "status": "active",
-                "agents": ["contextualizer", "strategist", "architect", "operator", "auditor"],
-                "supervisor": "active",
-            }
-        except ImportError:
-            return {"status": "unavailable", "error": "LangGraph غير متوفر"}
+        status = self.kernel.get_system_status()
+        return status.get("workflow", {"status": "unavailable"})
 
     # ============== LlamaIndex (Research Gateway) ==============
 
@@ -108,34 +103,20 @@ class MCPIntegrations:
         filters: dict[str, object] | None = None,
     ) -> dict[str, object]:
         """
-        بحث دلالي باستخدام LlamaIndex عبر ResearchGateway.
-
-        Args:
-            query: نص البحث
-            top_k: عدد النتائج
-            filters: فلاتر البحث (السنة، الموضوع، الفرع)
-
-        Returns:
-            dict: نتائج البحث
+        بحث دلالي باستخدام LlamaIndex via Kernel.
         """
         try:
-            results = await self.research_gateway.semantic_search(
-                query, top_k=top_k, filters=filters
-            )
-
-            return {
-                "success": True,
-                "query": query,
-                "results": results,
-                "count": len(results),
-            }
+            q = RetrievalQuery(query=query, top_k=top_k, filters=filters)
+            result = await self.kernel.search(q, engine="llamaindex")
+            return result
         except Exception as e:
-            logger.error(f"خطأ في LlamaIndex (Gateway): {e}")
+            logger.error(f"Kernel Search Error: {e}")
             return {"success": False, "error": str(e)}
 
     def get_llamaindex_status(self) -> dict[str, object]:
-        """حالة LlamaIndex عبر Gateway."""
-        return self.research_gateway.get_llamaindex_status()
+        """حالة LlamaIndex via Gateway."""
+        status = self.kernel.get_system_status()
+        return status.get("retrieval", {"status": "unavailable"})
 
     # ============== DSPy (Research Gateway) ==============
 
@@ -145,30 +126,18 @@ class MCPIntegrations:
         api_key: str | None = None,
     ) -> dict[str, object]:
         """
-        تحسين استعلام باستخدام DSPy عبر ResearchGateway.
-
-        Args:
-            query: الاستعلام الأصلي
-            api_key: مفتاح API (اختياري)
-
-        Returns:
-            dict: الاستعلام المحسن مع الفلاتر
+        تحسين استعلام باستخدام DSPy via Kernel.
         """
         try:
-            result = await self.research_gateway.refine_query(query, api_key)
-
-            return {
-                "success": True,
-                "original_query": query,
-                "refined_query": result.get("refined_query", query),
-                "extracted_filters": {
-                    "year": result.get("year"),
-                    "subject": result.get("subject"),
-                    "branch": result.get("branch"),
-                },
-            }
+            program = PromptProgram(
+                program_name="refine_query",
+                input_text=query,
+                api_key=api_key
+            )
+            result = await self.kernel.optimize(program, engine="dspy")
+            return result
         except Exception as e:
-            logger.error(f"خطأ في DSPy (Gateway): {e}")
+            logger.error(f"Kernel Optimization Error: {e}")
             return {"success": False, "error": str(e)}
 
     async def generate_plan(
@@ -178,13 +147,7 @@ class MCPIntegrations:
     ) -> dict[str, object]:
         """
         توليد خطة باستخدام PlanningGateway.
-
-        Args:
-            goal: الهدف المطلوب
-            context: السياق
-
-        Returns:
-            dict: خطوات الخطة
+        (Legacy - Not yet migrated to WorkflowEngine as it maps to PlanningGateway)
         """
         try:
             result = await self.planning_gateway.generate_plan(goal, context=context)
@@ -199,8 +162,9 @@ class MCPIntegrations:
             return {"success": False, "error": str(e)}
 
     def get_dspy_status(self) -> dict[str, object]:
-        """حالة DSPy عبر Gateway."""
-        return self.research_gateway.get_dspy_status()
+        """حالة DSPy via Gateway."""
+        status = self.kernel.get_system_status()
+        return status.get("prompt", {"status": "unavailable"})
 
     # ============== Reranker (Research Gateway) ==============
 
@@ -211,31 +175,20 @@ class MCPIntegrations:
         top_n: int = 5,
     ) -> dict[str, object]:
         """
-        إعادة ترتيب النتائج باستخدام Reranker عبر ResearchGateway.
-
-        Args:
-            query: نص الاستعلام
-            documents: قائمة المستندات
-            top_n: عدد النتائج المطلوبة
-
-        Returns:
-            dict: النتائج المرتبة
+        إعادة ترتيب النتائج باستخدام Reranker via Kernel.
         """
         try:
-            reranked = await self.research_gateway.rerank_results(query, documents, top_n=top_n)
-
-            return {
-                "success": True,
-                "query": query,
-                "reranked_results": reranked,
-            }
+            spec = ScoringSpec(query=query, documents=documents, top_n=top_n)
+            result = await self.kernel.rank(spec, engine="reranker")
+            return result
         except Exception as e:
-            logger.error(f"خطأ في Reranker (Gateway): {e}")
+            logger.error(f"Kernel Reranking Error: {e}")
             return {"success": False, "error": str(e)}
 
     def get_reranker_status(self) -> dict[str, object]:
-        """حالة Reranker عبر Gateway."""
-        return self.research_gateway.get_reranker_status()
+        """حالة Reranker via Gateway."""
+        status = self.kernel.get_system_status()
+        return status.get("ranking", {"status": "unavailable"})
 
     # ============== Kagent ==============
 
@@ -246,48 +199,24 @@ class MCPIntegrations:
         payload: dict[str, object] | None = None,
     ) -> dict[str, object]:
         """
-        تنفيذ إجراء عبر Kagent.
-
-        Args:
-            action: اسم الإجراء
-            capability: القدرة المطلوبة
-            payload: بيانات الإجراء
-
-        Returns:
-            dict: نتيجة التنفيذ
+        تنفيذ إجراء عبر Kagent via Kernel.
         """
         try:
-            from app.services.kagent import AgentRequest, KagentMesh
-
-            mesh = KagentMesh()
-            request = AgentRequest(
-                action=action,
+            act_req = AgentAction(
+                action_name=action,
                 capability=capability,
-                payload=payload or {},
+                payload=payload or {}
             )
-
-            response = await mesh.execute_action(request)
-
-            return {
-                "success": response.success,
-                "result": response.result,
-                "error": response.error,
-            }
+            result = await self.kernel.act(act_req, engine="kagent")
+            return result
         except Exception as e:
-            logger.error(f"خطأ في Kagent: {e}")
+            logger.error(f"Kernel Action Error: {e}")
             return {"success": False, "error": str(e)}
 
     def get_kagent_status(self) -> dict[str, object]:
         """حالة Kagent."""
-        try:
-            from app.services.kagent import KagentMesh  # noqa: F401
-
-            return {
-                "status": "active",
-                "components": ["ServiceRegistry", "SecurityMesh", "LocalAdapter"],
-            }
-        except ImportError:
-            return {"status": "unavailable"}
+        status = self.kernel.get_system_status()
+        return status.get("action", {"status": "unavailable"})
 
     # ============== ملخص الحالة ==============
 
@@ -306,8 +235,8 @@ class MCPIntegrations:
             healing_stats = {"status": "module_not_found"}
 
         return {
-            "langgraph": self._check_langgraph_status(),
-            "kagent": self._check_kagent_status(),
+            "langgraph": self.get_langgraph_status(),
+            "kagent": self.get_kagent_status(),
             "learning": self.get_learning_status(),
             "knowledge": self.get_knowledge_status(),
             "analytics_dashboard": {
@@ -319,31 +248,12 @@ class MCPIntegrations:
             "collaboration": self.get_collaboration_status(),
         }
 
+    # Internal checks are now delegated to drivers via get_*_status methods
     def _check_langgraph_status(self) -> dict[str, object]:
-        try:
-            from app.services.overmind.langgraph import LangGraphAgentService
-
-            # Verify availability
-            if LangGraphAgentService:
-                return {"status": "active", "version": "0.1.0", "service": "LangGraphAgentService"}
-            return {"status": "unknown"}
-        except ImportError:
-            return {"status": "unavailable", "error": "Module not found"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
+        return self.get_langgraph_status()
 
     def _check_kagent_status(self) -> dict[str, object]:
-        try:
-            from app.services.kagent import KagentMesh
-
-            # Verify availability
-            if KagentMesh:
-                return {"status": "active", "mesh": "KagentMesh"}
-            return {"status": "unknown"}
-        except ImportError:
-            return {"status": "unavailable", "error": "Module not found"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
+        return self.get_kagent_status()
 
     # ============== Learning Services ==============
 
@@ -361,8 +271,8 @@ class MCPIntegrations:
 
             profile = await get_student_profile(student_id)
 
-            # إثراء بالسياق من LlamaIndex عبر Gateway (إذا متوفر)
-            status = self.research_gateway.get_llamaindex_status()
+            # إثراء بالسياق من LlamaIndex عبر Kernel
+            status = self.get_llamaindex_status()
             if status.get("status") == "active":
                 # Placeholder for future logic
                 pass
@@ -467,7 +377,7 @@ class MCPIntegrations:
             checker = get_prerequisite_checker()
             report = checker.check_readiness(profile, concept_id)
 
-            # استخدام Reranker لترتيب المتطلبات حسب الأهمية (عبر Gateway)
+            # استخدام Reranker لترتيب المتطلبات حسب الأهمية (عبر Kernel)
             missing = report.missing_prerequisites
             if missing and len(missing) > 1:
                 try:
@@ -526,7 +436,7 @@ class MCPIntegrations:
 
             graph = get_concept_graph()
 
-            # تحسين البحث بـ DSPy (عبر Gateway)
+            # تحسين البحث بـ DSPy (عبر Kernel)
             refined = await self.refine_query(topic)
             search_term = refined.get("refined_query", topic) if refined.get("success") else topic
 
@@ -651,7 +561,7 @@ class MCPIntegrations:
             processor = get_multimodal_processor()
             result = await processor.extract_exercise_from_image(image_path)
 
-            # ربط بالمحتوى الموجود (LlamaIndex)
+            # ربط بالمحتوى الموجود (LlamaIndex via Kernel)
             if result.get("success") and result.get("type"):
                 search_result = await self.semantic_search(
                     query=result["type"],
