@@ -59,16 +59,14 @@ def create_app(settings: OrchestratorSettings | None = None) -> FastAPI:
     # Mission Endpoints
     @app.post("/missions", response_model=MissionResponse, tags=["Missions"])
     async def create_mission(
-        payload: MissionCreate,
-        manager: MissionManager = Depends(get_manager)
+        payload: MissionCreate, manager: MissionManager = Depends(get_manager)
     ) -> Mission:
         """Create a new mission and start execution."""
         return await manager.create_mission(payload)
 
     @app.get("/missions/{mission_id}", response_model=MissionResponse, tags=["Missions"])
     async def get_mission(
-        mission_id: int,
-        manager: MissionManager = Depends(get_manager)
+        mission_id: int, manager: MissionManager = Depends(get_manager)
     ) -> Mission:
         """Retrieve mission details."""
         mission = await manager.get_mission(mission_id)
@@ -78,8 +76,7 @@ def create_app(settings: OrchestratorSettings | None = None) -> FastAPI:
 
     @app.get("/missions/{mission_id}/events", tags=["Missions"])
     async def get_mission_events(
-        mission_id: int,
-        manager: MissionManager = Depends(get_manager)
+        mission_id: int, manager: MissionManager = Depends(get_manager)
     ) -> list[dict]:
         """Retrieve mission events."""
         events = await manager.get_mission_events(mission_id)
@@ -89,7 +86,7 @@ def create_app(settings: OrchestratorSettings | None = None) -> FastAPI:
                 "id": e.id,
                 "event_type": e.event_type.value,
                 "payload_json": e.payload_json,
-                "created_at": e.created_at
+                "created_at": e.created_at,
             }
             for e in events
         ]

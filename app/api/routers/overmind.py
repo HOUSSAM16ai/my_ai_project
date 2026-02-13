@@ -49,7 +49,9 @@ async def _call_orchestrator(method: str, path: str, json_data: dict | None = No
             return resp.json()
         except httpx.HTTPStatusError as e:
             logger.error(f"Orchestrator Service Error: {e.response.text}")
-            raise HTTPException(status_code=e.response.status_code, detail="Orchestrator Error") from e
+            raise HTTPException(
+                status_code=e.response.status_code, detail="Orchestrator Error"
+            ) from e
         except Exception as e:
             logger.error(f"Orchestrator Connection Failed: {e}")
             raise HTTPException(status_code=503, detail="Orchestrator Unavailable") from e
@@ -73,7 +75,7 @@ async def create_mission(
     payload = {
         "objective": request.objective,
         "context": request.context,
-        "initiator_id": 1  # System/Admin
+        "initiator_id": 1,  # System/Admin
     }
 
     data = await _call_orchestrator("POST", "/missions", payload)
@@ -141,13 +143,15 @@ async def stream_mission_ws(
                 evt_id = evt.get("id", 0)
                 last_event_id = max(last_event_id, evt_id)
 
-                await websocket.send_json({
-                    "type": "mission_event",
-                    "payload": {
-                        "event_type": evt.get("event_type"),
-                        "data": evt.get("payload_json")
+                await websocket.send_json(
+                    {
+                        "type": "mission_event",
+                        "payload": {
+                            "event_type": evt.get("event_type"),
+                            "data": evt.get("payload_json"),
+                        },
                     }
-                })
+                )
 
             if status in terminal_statuses:
                 await websocket.close()
@@ -191,7 +195,7 @@ async def stream_mission_ws(
 
                 # Check Terminal State
                 if event_type in ("mission_completed", "mission_failed"):
-                     # Fetch final status
+                    # Fetch final status
                     try:
                         mission_data = await _call_orchestrator("GET", f"/missions/{mission_id}")
                         status = mission_data.get("status")
