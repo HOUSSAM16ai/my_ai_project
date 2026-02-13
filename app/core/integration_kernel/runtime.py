@@ -1,12 +1,14 @@
-from typing import Dict, Any, Optional
+from typing import Any
 
 from app.core.integration_kernel.ir import (
-    WorkflowPlan, RetrievalQuery, PromptProgram, ScoringSpec, AgentAction
+    AgentAction,
+    PromptProgram,
+    RetrievalQuery,
+    ScoringSpec,
+    WorkflowPlan,
 )
 from app.core.integration_kernel.policy import PolicyManager
-from app.core.integration_kernel.contracts import (
-    WorkflowEngine, RetrievalEngine, PromptEngine, RankingEngine, ActionEngine
-)
+
 
 class IntegrationKernel:
     """
@@ -17,7 +19,7 @@ class IntegrationKernel:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(IntegrationKernel, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance.policy_manager = PolicyManager()
             cls._instance._initialized = False
         return cls._instance
@@ -46,42 +48,42 @@ class IntegrationKernel:
         else:
             raise ValueError(f"Unknown driver category: {category}")
 
-    async def run_workflow(self, plan: WorkflowPlan, engine: str = "langgraph") -> Dict[str, Any]:
+    async def run_workflow(self, plan: WorkflowPlan, engine: str = "langgraph") -> dict[str, Any]:
         """Executes a workflow plan using the specified engine."""
         driver = self.policy_manager.get_workflow_driver(engine)
         if not driver:
             raise RuntimeError(f"Workflow engine '{engine}' not registered.")
         return await driver.run(plan)
 
-    async def search(self, query: RetrievalQuery, engine: str = "llamaindex") -> Dict[str, Any]:
+    async def search(self, query: RetrievalQuery, engine: str = "llamaindex") -> dict[str, Any]:
         """Executes a semantic search using the specified engine."""
         driver = self.policy_manager.get_retrieval_driver(engine)
         if not driver:
             raise RuntimeError(f"Retrieval engine '{engine}' not registered.")
         return await driver.search(query)
 
-    async def optimize(self, program: PromptProgram, engine: str = "dspy") -> Dict[str, Any]:
+    async def optimize(self, program: PromptProgram, engine: str = "dspy") -> dict[str, Any]:
         """Executes a prompt optimization or program using the specified engine."""
         driver = self.policy_manager.get_prompt_driver(engine)
         if not driver:
             raise RuntimeError(f"Prompt engine '{engine}' not registered.")
         return await driver.optimize(program)
 
-    async def rank(self, spec: ScoringSpec, engine: str = "reranker") -> Dict[str, Any]:
+    async def rank(self, spec: ScoringSpec, engine: str = "reranker") -> dict[str, Any]:
         """Ranks documents using the specified engine."""
         driver = self.policy_manager.get_ranking_driver(engine)
         if not driver:
             raise RuntimeError(f"Ranking engine '{engine}' not registered.")
         return await driver.rank(spec)
 
-    async def act(self, action: AgentAction, engine: str = "kagent") -> Dict[str, Any]:
+    async def act(self, action: AgentAction, engine: str = "kagent") -> dict[str, Any]:
         """Executes an action using the specified engine."""
         driver = self.policy_manager.get_action_driver(engine)
         if not driver:
             raise RuntimeError(f"Action engine '{engine}' not registered.")
         return await driver.execute(action)
 
-    def get_system_status(self) -> Dict[str, Any]:
+    def get_system_status(self) -> dict[str, Any]:
         """Aggregates status from all registered drivers."""
         status = {}
         # This implementation is simplified; a real one would iterate over all registered drivers.

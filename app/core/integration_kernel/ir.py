@@ -1,5 +1,7 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
+
 
 # ==============================================================================
 # Canonical Intermediate Representations (IR)
@@ -11,8 +13,9 @@ class WorkflowPlan(BaseModel):
     Target: LangGraph / Planning Gateway
     """
     goal: str = Field(..., description="The primary objective of the workflow")
-    context: Dict[str, Any] = Field(default_factory=dict, description="Contextual data for execution")
-    workflow_id: Optional[str] = Field(None, description="Optional ID for resume/track")
+    context: dict[str, Any] = Field(default_factory=dict, description="Contextual data for execution")
+    workflow_id: str | None = Field(None, description="Optional ID for resume/track")
+
 
 class RetrievalQuery(BaseModel):
     """
@@ -21,7 +24,8 @@ class RetrievalQuery(BaseModel):
     """
     query: str = Field(..., description="The search query text")
     top_k: int = Field(default=5, ge=1, description="Number of results to retrieve")
-    filters: Optional[Dict[str, Any]] = Field(None, description="Metadata filters (year, subject, etc.)")
+    filters: dict[str, Any] | None = Field(None, description="Metadata filters (year, subject, etc.)")
+
 
 class PromptProgram(BaseModel):
     """
@@ -30,8 +34,9 @@ class PromptProgram(BaseModel):
     """
     program_name: str = Field(..., description="Name of the DSPy program/module")
     input_text: str = Field(..., description="Primary input text (e.g., query to refine)")
-    config: Dict[str, Any] = Field(default_factory=dict, description="Configuration overrides")
-    api_key: Optional[str] = Field(None, description="Optional API key override")
+    config: dict[str, Any] = Field(default_factory=dict, description="Configuration overrides")
+    api_key: str | None = Field(None, description="Optional API key override")
+
 
 class ScoringSpec(BaseModel):
     """
@@ -39,8 +44,9 @@ class ScoringSpec(BaseModel):
     Target: Reranker / Research Gateway
     """
     query: str = Field(..., description="The reference query")
-    documents: List[str] = Field(..., description="List of document texts to score")
+    documents: list[str] = Field(..., description="List of document texts to score")
     top_n: int = Field(default=5, ge=1, description="Number of top results to return")
+
 
 class AgentAction(BaseModel):
     """
@@ -49,4 +55,4 @@ class AgentAction(BaseModel):
     """
     action_name: str = Field(..., description="Name of the action to execute")
     capability: str = Field(..., description="Required capability (e.g., 'filesystem', 'browser')")
-    payload: Dict[str, Any] = Field(default_factory=dict, description="Action parameters")
+    payload: dict[str, Any] = Field(default_factory=dict, description="Action parameters")

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from app.core.integration_kernel.contracts import WorkflowEngine
 from app.core.integration_kernel.ir import WorkflowPlan
@@ -10,7 +10,7 @@ class LangGraphDriver(WorkflowEngine):
     """
     Driver for LangGraph workflow execution.
     """
-    async def run(self, plan: WorkflowPlan) -> Dict[str, Any]:
+    async def run(self, plan: WorkflowPlan) -> dict[str, Any]:
         """
         Executes a workflow plan using LangGraph.
         """
@@ -37,7 +37,7 @@ class LangGraphDriver(WorkflowEngine):
             logger.error(f"LangGraph execution error: {e}")
             return {"success": False, "error": str(e)}
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """
         Returns the health status of the LangGraph engine.
         """
