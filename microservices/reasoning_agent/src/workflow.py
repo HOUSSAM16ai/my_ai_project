@@ -1,3 +1,4 @@
+from microservices.reasoning_agent.src.ai_client import SimpleAIClient
 from microservices.reasoning_agent.src.compat import (
     Context,
     Event,
@@ -7,8 +8,6 @@ from microservices.reasoning_agent.src.compat import (
     Workflow,
     step,
 )
-
-from microservices.reasoning_agent.src.ai_client import SimpleAIClient
 from microservices.reasoning_agent.src.interfaces import IKnowledgeRetriever, IReasoningStrategy
 from microservices.reasoning_agent.src.logging import get_logger
 from microservices.reasoning_agent.src.remote_retriever import RemoteKnowledgeGraphRetriever

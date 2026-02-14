@@ -8,8 +8,8 @@ Allows the Reasoning Engine to be exposed as a service on the Mesh.
 from microservices.reasoning_agent.src.ai_client import SimpleAIClient
 from microservices.reasoning_agent.src.interfaces import IKnowledgeRetriever
 from microservices.reasoning_agent.src.logging import get_logger
-from microservices.reasoning_agent.src.search_strategy import MathReasoningStrategy, RMCTSStrategy
 from microservices.reasoning_agent.src.remote_retriever import RemoteKnowledgeGraphRetriever
+from microservices.reasoning_agent.src.search_strategy import MathReasoningStrategy, RMCTSStrategy
 from microservices.reasoning_agent.src.workflow import SuperReasoningWorkflow
 
 logger = get_logger("reasoning-service")
