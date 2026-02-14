@@ -38,8 +38,8 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages/ /usr/local/lib/pyth
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 # Fix: Copy only the planning agent service to ensure independence
-# We assume the build context is still the repo root, so we copy the specific folder.
-COPY microservices/planning_agent /app/microservices/planning_agent
+# The build context is the service directory, so we copy the content to reconstruct the package.
+COPY . /app/microservices/planning_agent
 
 RUN chown -R appuser:appuser /app
 
