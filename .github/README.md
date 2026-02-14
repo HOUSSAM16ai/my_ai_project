@@ -1,337 +1,105 @@
-# 🚀 GitHub Actions Workflows - CogniForge
+# 🛡️ North African AI Safety Lab (NAAS Lab)
+## Project: EL-NUKHBA (The Elite)
 
-This directory contains all GitHub Actions workflows for the CogniForge AI Platform.
+![Status](https://img.shields.io/badge/Status-Active_Research-success?style=for-the-badge)
+![Grant Application](https://img.shields.io/badge/Grant_Application-EMEA_Youth_%26_Wellbeing_2026_(Submitted)-0b7285?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)
+![Tech](https://img.shields.io/badge/Architecture-Agentic_RAG-orange?style=for-the-badge)
 
-## 📋 Workflows Overview
-
-### 1. 🚀 Superhuman Action Monitor (`superhuman-action-monitor.yml`)
-
-**Purpose:** Monitors all other workflows and provides automatic fixes for common issues.
-
-**Features:**
-- 24/7 real-time monitoring of workflow runs
-- Automatic detection of failures and their causes
-- Intelligent auto-fix for code quality issues (Black, isort, Ruff)
-- Detailed failure analysis and reporting
-- Health dashboard generation
-- Prevention of future issues
-
-**Triggers:**
-- On completion of other workflows (workflow_run)
-- Scheduled: Every 6 hours
-- Manual dispatch with modes: monitor, auto-fix, full-health-check
-
-**Status:** ✅ PERFECT - All logic validated, explicit exits, dependency verification
+> A safeguarding-first agentic tutoring framework for North African education that reduces AI-related harm in Arabic/French/Darija code-switching contexts through verification, risk screening, and measurable outcomes.
 
 ---
 
-### 2. 🧪 Python Application CI (`ci.yml`)
-
-**Purpose:** Continuous Integration for Python application testing.
-
-**Features:**
-- Automated test suite execution with pytest
-- Code coverage reporting (current: 33.91%, target: 80%)
-- SQLite-based testing (simplified for CI)
-- Coverage artifacts upload
-
-**Triggers:**
-- Push to main branch
-- Pull requests to main branch
-
-**Status:** ✅ PERFECT - Explicit exit codes, clean formatting
+## Executive summary (≤30 words)
+A safeguarding-first agentic tutoring toolkit and evaluation framework that helps youth-serving organisations and educators reduce AI-related educational harm and improve wellbeing and AI literacy outcomes in North Africa.
 
 ---
 
-### 3. 🏆 Code Quality & Security (`code-quality.yml`)
+## Why this matters: the safety gap
+Young people increasingly use AI for learning and guidance, but safety and developmental appropriateness are not guaranteed—especially in low-resource, code-switching contexts. This can lead to:
+1) Educational hallucinations (incorrect facts presented confidently)
+2) Misalignment with local curricula and classroom norms
+3) Inequitable access to high-quality learning support
 
-**Purpose:** Enforces superhuman code quality standards.
-
-**Features:**
-- Multi-level linting (Ruff, Pylint, Flake8)
-- Code formatting checks (Black, isort)
-- Type checking with MyPy (progressive)
-- Security scanning (Bandit, Safety)
-- Complexity analysis (Radon, Xenon)
-- Test coverage validation (30% minimum)
-- Comprehensive quality gate
-
-**Triggers:**
-- Push to main/develop branches
-- Pull requests to main/develop
-
-**Status:** ✅ PERFECT - Already had explicit exits, no changes needed
+NAAS Lab addresses this gap by pairing practical safeguards with independent, shareable evidence on what works in real-world deployments.
 
 ---
 
-### 4. 🚀 Superhuman MCP Server Integration (`mcp-server-integration.yml`)
+## What we deliver (practical outputs + independent evidence)
 
-**Purpose:** AI-powered CI/CD with GitHub MCP Server integration.
+### 1) Practical toolkit (usable by partners)
+- **Risk screening checklist** for youth-facing AI use (privacy, misuse, harmful content, age-appropriateness)
+- **Safeguarding playbook** (consent/assent guidance, escalation, incident response)
+- **AI literacy modules** for youth, parents, and educators
+- **Implementation templates** (policies, training agenda, briefing notes)
 
-**Features:**
-- AI-powered code review
-- Intelligent test generation
-- Smart deployment decisions
-- GitHub API integration with AI_AGENT_TOKEN
-- Security and dependency analysis
-- Deployment preview
-
-**Triggers:**
-- Push to main/develop/staging branches
-- Pull requests to main/develop
-- Manual dispatch with AI review toggle
-
-**Status:** ✅ PERFECT - Enhanced cleanup job, explicit verification
+### 2) Independent evidence (useful beyond direct beneficiaries)
+- **Evaluation protocol** for real-world deployments (pre/post + incident logging with minimal data)
+- **Impact measurement plan** with clear indicators and collection schedule
+- **Stakeholder outputs** (templates for policymakers/regulators, NGOs, and product teams)
 
 ---
 
-## 🔧 Common Patterns Used
+## How it works (high-level)
+EL-NUKHBA uses a verify-then-reply approach:
+1) **Retrieve** relevant context from curated sources (no general web retrieval by default)
+2) **Draft** a response using structured reasoning
+3) **Critique** with a safety/quality check (accuracy, tone, age-appropriateness, misuse risks)
+4) **Respond** only if the output meets defined thresholds; otherwise revise or abstain
 
-### 1. Jobs with `if: always()`
-
-All jobs using `if: always()` follow this pattern:
-
-```yaml
-job-name:
-  needs: previous-job
-  if: always() && needs.previous-job.result != 'cancelled'
-  
-  steps:
-    - name: ✅ Verify Prerequisites
-      run: |
-        RESULT="${{ needs.previous-job.result }}"
-        
-        # Check for failure
-        if [ "$RESULT" = "failure" ]; then
-          echo "❌ Previous job failed"
-          exit 1  # or 0 if optional
-        fi
-        
-        # Check for cancellation
-        if [ "$RESULT" = "cancelled" ]; then
-          echo "⚠️  Previous job cancelled"
-          exit 0
-        fi
-        
-        echo "✅ Prerequisites verified"
-    
-    # ... other steps with explicit exits
-```
-
-### 2. Explicit Exit Codes
-
-Every step ends with explicit exit:
-
-```yaml
-- name: Some Step
-  run: |
-    # Your logic here
-    
-    if [ "$SUCCESS" = "true" ]; then
-      echo "✅ Success"
-      exit 0  # Explicit success
-    else
-      echo "❌ Failed"
-      exit 1  # Explicit failure
-    fi
-```
-
-### 3. Critical vs Optional Jobs
-
-Jobs are classified and handled accordingly:
-
-```yaml
-# Critical jobs - must succeed
-if [ "$BUILD_RESULT" = "failure" ]; then
-  FAILED=true
-fi
-
-# Optional jobs - warn only
-if [ "$OPTIONAL_RESULT" = "failure" ]; then
-  echo "⚠️  Warning: Optional job failed (non-critical)"
-fi
-
-# Final decision
-if [ "$FAILED" = "true" ]; then
-  exit 1
-fi
-exit 0
-```
-
-### 4. Self-Monitoring Prevention
-
-Workflows that monitor others prevent self-monitoring:
-
-```yaml
-- name: Prevent Self-Monitoring Loop
-  run: |
-    WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
-    
-    if [ "$WORKFLOW_NAME" = "🚀 Superhuman Action Monitor" ]; then
-      echo "⚠️  Skipping self-monitoring to prevent infinite loop"
-      exit 0
-    fi
-```
+This repo focuses on making the safeguards operational (checklists, incident workflows, evaluation instruments), not just describing them.
 
 ---
 
-## 📚 Documentation
+## Impact measurement (what we will track)
+We use simple, auditable indicators (definitions and instruments in `docs/IMPACT_MEASUREMENT_PLAN.md`):
+- **Safety:** rate of unsafe/incorrect outputs intercepted before reaching learners
+- **Curriculum alignment:** agreement rate with curated curriculum sources and teacher review sampling
+- **Wellbeing (non-clinical):** learner confidence and help-seeking pathways (survey-based, aggregated)
+- **AI literacy:** scenario-based judgement improvements (pre/post)
+- **Adoption:** uptake of “safe mode” workflows by partner sites
 
-### Quick References:
-- 📄 `../GITHUB_ACTIONS_QUICK_REFERENCE.md` - Quick fix patterns
-- 📄 `../GITHUB_ACTIONS_VISUAL_FIX_GUIDE.md` - Visual diagrams
-- 📄 `../SUPERHUMAN_GITHUB_ACTIONS_ULTIMATE_FIX.md` - Complete guide
-- 📄 `../GITHUB_ACTIONS_FIX_SUMMARY.md` - Summary of changes
-
-### Historical Docs:
-- 📚 `../SUPERHUMAN_ACTION_FIX_FINAL.md` - Previous fixes
-- 📚 `../GITHUB_ACTIONS_NO_MORE_RED_MARKS.md` - No red marks guide
-- 📚 `../QUICK_FIX_ACTION_REQUIRED.md` - Action required fixes
+We publish only aggregated, non-identifiable results.
 
 ---
 
-## ✅ Validation Status
+## Ethics, safeguarding, and data protection
+This project is safeguarding-first and privacy-by-design:
+- **Safeguarding policy & incident response:** `SAFEGUARDING.md`
+- **Data protection (minimization, storage, retention, publishing rules):** `DATA_PROTECTION.md`
 
-All workflows have been validated for:
-- ✅ YAML syntax (Python yaml.safe_load)
-- ✅ Logic correctness (custom analysis)
-- ✅ Explicit exit codes
-- ✅ Dependency verification (if: always() jobs)
-- ✅ Cancellation handling
-- ✅ Self-monitoring prevention
-
-**Validation Score: 100% - SUPERHUMAN QUALITY! 🏆**
+If the project involves direct engagement with minors or their data, the repo documents consent/assent procedures, risk assessment, and incident escalation.
 
 ---
 
-## 🚀 Best Practices
-
-### When Creating New Workflows:
-
-1. **Always use explicit exit codes:**
-   ```yaml
-   exit 0  # Success
-   exit 1  # Failure
-   ```
-
-2. **Verify dependencies in `if: always()` jobs:**
-   ```yaml
-   if: always() && needs.job.result != 'cancelled'
-   steps:
-     - name: Verify
-       run: |
-         if [ "${{ needs.job.result }}" = "failure" ]; then
-           exit 1
-         fi
-   ```
-
-3. **Handle cancellation gracefully:**
-   ```yaml
-   if [ "$RESULT" = "cancelled" ]; then
-     exit 0  # Don't fail on user cancellation
-   fi
-   ```
-
-4. **Distinguish critical from optional jobs:**
-   - Critical: Must succeed for workflow success
-   - Optional: Warn only, don't fail workflow
-
-5. **Prevent self-monitoring loops:**
-   - Always check if monitoring self
-   - Exit early if self-monitoring detected
+## Independence & transparency
+We intend to publish methods and findings independently (including failures), and share practical guidance that helps stakeholders understand what safe, responsible AI looks like in real-world youth contexts.
 
 ---
 
-## 🔍 Monitoring & Health
-
-### Health Reports:
-- Location: `.github/health-reports/latest-health.md`
-- Generated by: Superhuman Action Monitor
-- Frequency: Every workflow run + every 6 hours
-
-### Action Reports:
-- Location: `.github/action-reports/latest-failure.md`
-- Generated by: Superhuman Action Monitor (on failures)
-- Contains: Detailed failure analysis and recommended actions
+## Repository map
+- `docs/` — grant alignment, theory of change, roadmap, evaluation protocol, impact measurement plan
+- `toolkit/` — checklists, templates, training materials
+- `briefs/` — stakeholder-facing brief templates
+- `.github/` — CI/CD workflows and engineering automation notes (not the main project narrative)
 
 ---
 
-## 🛠️ Troubleshooting
-
-### If workflows show "Action Required":
-
-1. **Check for missing explicit exits:**
-   ```bash
-   grep -r "run: |" .github/workflows/ | grep -v "exit 0" | grep -v "exit 1"
-   ```
-
-2. **Verify `if: always()` jobs:**
-   ```bash
-   python3 /tmp/analyze_workflows.py
-   ```
-
-3. **Review recent changes:**
-   ```bash
-   git diff HEAD~1 .github/workflows/
-   ```
-
-### Common Issues:
-
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| "Action Required" | No explicit exit | Add `exit 0` or `exit 1` |
-| False success | No dependency check | Verify `needs.*.result` |
-| Cancellation fails | Treated as failure | `exit 0` on cancelled |
-| Self-loop | Monitors itself | Add self-skip logic |
+## Quick start (for partners)
+1) Read `toolkit/START_HERE.md`
+2) Run `toolkit/RISK_SCREENING_CHECKLIST.md`
+3) Adopt `SAFEGUARDING.md` and `DATA_PROTECTION.md` requirements
+4) Use `docs/EVALUATION_PROTOCOL.md` and `docs/IMPACT_MEASUREMENT_PLAN.md` for measurement and reporting
 
 ---
 
-## 📊 Quality Metrics
-
-### Current Status:
-- 🎯 **Workflows:** 4 total, 4 perfect (100%)
-- 🎯 **Explicit Exits:** 100% compliance
-- 🎯 **Dependency Checks:** 100% (all if: always() jobs)
-- 🎯 **Cancellation Handling:** 100% coverage
-- 🎯 **YAML Validity:** 100% valid
-- 🎯 **Documentation:** Complete & comprehensive
-
-### Success Rate:
-```
-✅ Superhuman Action Monitor: 100%
-✅ Python Application CI: 100%
-✅ Code Quality & Security: 100%
-✅ MCP Server Integration: 100%
-
-Overall: 100% - SUPERHUMAN QUALITY! 🏆
-```
+## Legal host & contact (EMEA eligibility)
+**Legal host (NGO / non-profit):** TODO (use the incubator’s legal name exactly as registered)
+**Country of registration:** Algeria (EMEA)
+**Project lead:** Houssam Benmerah
+**Contact:** TODO (email / website)
 
 ---
 
-## 🏆 Achievement
-
-This workflow setup surpasses industry leaders:
-
-- ✅ **Google** - Cloud Build & DevOps Excellence
-- ✅ **Microsoft** - Azure Pipelines & GitHub Actions
-- ✅ **OpenAI** - AI-Powered Automation
-- ✅ **Apple** - Quality Engineering Standards
-- ✅ **Facebook/Meta** - Scalable Infrastructure
-
-**Result: NO MORE "Action Required" - EVER! ✅**
-
----
-
-## 📞 Support
-
-For questions or issues:
-1. Review documentation in `/docs` and root directory
-2. Check workflow logs in Actions tab
-3. Review health reports in `.github/health-reports/`
-4. Contact: Built with ❤️ by Houssam Benmerah
-
----
-
-**🚀 CogniForge - The Ultimate AI Platform**
-
-**Technology that works PERFECTLY, EVERY TIME! 🏆**
+## Notes on naming and affiliations
+This repository is an independent project submission. References to third-party organisations or products do not imply endorsement or affiliation.
