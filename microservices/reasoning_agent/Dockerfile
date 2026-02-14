@@ -20,4 +20,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app/microservices/reasoning_agent
 
 # Run
-CMD ["uvicorn", "microservices.reasoning_agent.main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "microservices.reasoning_agent.main:app", "--host", "0.0.0.0", "--port", "8000"]
