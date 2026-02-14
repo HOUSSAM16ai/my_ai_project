@@ -32,7 +32,7 @@ from app.core.patterns.strategy import Strategy
 from app.core.settings.base import get_settings
 from app.services.chat.context import ChatContext
 from app.services.chat.context_service import get_context_service
-from app.services.overmind.factory import create_overmind
+from app.services.overmind.entrypoint import start_mission
 from app.services.overmind.identity import OvermindIdentity
 
 logger = logging.getLogger(__name__)
@@ -225,41 +225,44 @@ class MissionComplexHandler(IntentHandler):
             ):
                 force_research = True
 
-            # 1. Initialize Mission in DB
+            # 1. Initialize Mission via Unified Entrypoint (Command Pattern)
             mission_id = 0
+            task = None
+
             try:
                 async with context.session_factory() as session:
                     # Self-healing: Ensure schema exists
                     await self._ensure_mission_schema(session)
 
-                    mission = Mission(
+                    # Use Unified Entrypoint (Handles DB Creation, Locking, Execution Trigger)
+                    mission = await start_mission(
+                        session=session,
                         objective=context.question,
-                        status=MissionStatus.PENDING,
-                        initiator_id=context.user_id or 1,  # Fallback if user_id missing
+                        initiator_id=context.user_id or 1,
+                        context={"chat_context": True},
+                        force_research=force_research
                     )
-                    session.add(mission)
-                    await session.commit()
-                    await session.refresh(mission)
                     mission_id = mission.id
+
                     yield {
                         "type": "assistant_delta",
                         "payload": {"content": f"🆔 رقم المهمة: `{mission.id}`\n⏳ البدء..."},
                     }
             except Exception as e:
-                logger.error(f"Failed to create mission: {e}", exc_info=True)
+                logger.error(f"Failed to dispatch mission: {e}", exc_info=True)
                 yield {
                     "type": "assistant_error",
                     "payload": {
-                        "content": "❌ **خطأ في قاعدة البيانات:** لم نتمكن من بدء المهمة. يرجى المحاولة لاحقاً."
+                        "content": "❌ **خطأ في النظام:** لم نتمكن من بدء المهمة (Dispatch Failed)."
                     },
                 }
                 return
 
-            # 2. Subscribe for mission events before launching background task
+            # 2. Subscribe for events (Gap-Free Strategy)
             event_bus = get_event_bus()
             event_queue = event_bus.subscribe_queue(f"mission:{mission_id}")
 
-            # ✅ CRITICAL FIX: Emit RUN_STARTED for iteration=0 immediately
+            # Emit RUN_STARTED for UI
             sequence_id = 0
             current_iteration = 0
             sequence_id += 1
@@ -276,12 +279,10 @@ class MissionComplexHandler(IntentHandler):
                 },
             }
 
-            # 3. Spawn Background Task (Non-Blocking) with Force Research Flag
-            task = asyncio.create_task(
-                self._run_mission_bg(mission_id, context.session_factory, force_research)
-            )
+            # 3. Stream Updates (Event-Driven)
+            # Since execution is already triggered by start_mission, we just listen.
+            # But to ensure we don't hang forever if it crashed immediately, we rely on events (Failed).
 
-            # 4. Stream Updates (Event-Driven)
             last_event_id = 0
             running = True
 
@@ -458,13 +459,6 @@ class MissionComplexHandler(IntentHandler):
             # Log error but attempt to continue, assuming tables might exist or partial failure
             logger.error(f"Schema self-healing failed: {e}")
 
-    async def _run_mission_bg(self, mission_id: int, session_factory, force_research: bool = False):
-        """
-        Runs the Overmind mission in a background task with its own session.
-        """
-        async with session_factory() as session:
-            overmind = await create_overmind(session)
-            await overmind.run_mission(mission_id, force_research=force_research)
 
     def _create_structured_event(
         self, event: MissionEvent, sequence_id: int, current_iteration: int
