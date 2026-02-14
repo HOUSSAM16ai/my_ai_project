@@ -4,10 +4,15 @@ CI Script to enforce Microservices Constitution (Boundary Checks).
 Ensures no forbidden cross-service imports.
 """
 
+import logging
 import os
 import re
 import sys
 from pathlib import Path
+
+# Configure logging to satisfy guardrails (no print statements allowed)
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
 
 # Define forbidden patterns
 # Format: (Scanning Directory, Forbidden Pattern in Import)
@@ -54,7 +59,7 @@ def main():
     root_dir = Path(".")
     all_errors = []
 
-    print("🔍 Scanning for boundary violations...")
+    logger.info("🔍 Scanning for boundary violations...")
 
     for scan_dir, _ in CHECKS:
         start_path = root_dir / scan_dir
@@ -70,13 +75,15 @@ def main():
                     all_errors.extend(errors)
 
     if all_errors:
-        print("❌ Boundary Violations Found:")
+        logger.error("❌ Boundary Violations Found:")
         for err in all_errors:
-            print(err)
-        print(f"\nFound {len(all_errors)} violations. See docs/ARCH_MICROSERVICES_CONSTITUTION.md")
+            logger.error(err)
+        logger.error(
+            f"\nFound {len(all_errors)} violations. See docs/ARCH_MICROSERVICES_CONSTITUTION.md"
+        )
         sys.exit(1)
     else:
-        print("✅ No boundary violations found.")
+        logger.info("✅ No boundary violations found.")
         sys.exit(0)
 
 

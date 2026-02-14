@@ -10,8 +10,6 @@ sys.modules["llama_index"] = MagicMock()
 sys.modules["llama_index.core"] = MagicMock()
 sys.modules["llama_index.core.schema"] = MagicMock()
 
-import pytest
-from sqlalchemy import select
 
 from app.core.domain.mission import MissionEvent, MissionEventType, MissionStatus
 from app.services.overmind.entrypoint import start_mission
