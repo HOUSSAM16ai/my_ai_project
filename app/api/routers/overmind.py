@@ -1,31 +1,36 @@
 # app/api/routers/overmind.py
 """
 Overmind Router (Gateway / BFF).
-Delegates all logic to the Orchestrator Microservice.
+Delegates all logic to the Unified Control Plane (Internal Overmind Service).
+Refactored to remove Split-Brain Orchestration.
 """
 
 import asyncio
 import logging
 import uuid
 
-import httpx
 from fastapi import (
     APIRouter,
     BackgroundTasks,
+    Depends,
     HTTPException,
     Request,
     WebSocket,
     WebSocketDisconnect,
 )
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routers.ws_auth import extract_websocket_auth
 from app.core.config import get_settings
+from app.core.database import get_db
 from app.core.event_bus import get_event_bus
 from app.services.auth.token_decoder import decode_user_id
 from app.services.overmind.domain.api_schemas import (
     MissionCreate,
     MissionResponse,
 )
+from app.services.overmind.entrypoint import start_mission
+from app.services.overmind.state import MissionStateManager
 
 logger = logging.getLogger(__name__)
 
@@ -34,79 +39,70 @@ router = APIRouter(
     tags=["Overmind (Super Agent)"],
 )
 
-ORCHESTRATOR_URL = "http://orchestrator-service:8000"
-
-
-async def _call_orchestrator(
-    method: str, path: str, json_data: dict | None = None, correlation_id: str | None = None
-) -> dict:
-    """
-    Helper to call the orchestrator service with network contracts.
-    Enforces Observability: Propagates X-Correlation-ID.
-    """
-    headers = {
-        "X-Correlation-ID": correlation_id or str(uuid.uuid4()),
-        "Content-Type": "application/json",
-    }
-
-    async with httpx.AsyncClient() as client:
-        try:
-            url = f"{ORCHESTRATOR_URL}{path}"
-            if method == "POST":
-                resp = await client.post(url, json=json_data, headers=headers, timeout=30.0)
-            else:
-                resp = await client.get(url, headers=headers, timeout=30.0)
-
-            resp.raise_for_status()
-            return resp.json()
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Orchestrator Service Error: {e.response.text}")
-            raise HTTPException(
-                status_code=e.response.status_code, detail="Orchestrator Error"
-            ) from e
-        except Exception as e:
-            logger.error(f"Orchestrator Connection Failed: {e}")
-            raise HTTPException(status_code=503, detail="Orchestrator Unavailable") from e
-
-
-def _get_mission_status_payload(status: str) -> dict:
-    if status == "partial_success":
-        return {"status": "success", "outcome": "partial_success"}
-    return {"status": status, "outcome": None}
-
 
 @router.post("/missions", response_model=MissionResponse, summary="Launch Mission")
-async def create_mission(
+async def create_mission_endpoint(
     request: MissionCreate,
     background_tasks: BackgroundTasks,
     req: Request,
+    db: AsyncSession = Depends(get_db),
 ) -> MissionResponse:
     """
-    Delegate mission creation to Orchestrator Service.
+    Launch a mission using the Unified Control Plane.
     """
-    # Extract or generate correlation ID
     correlation_id = req.headers.get("X-Correlation-ID") or str(uuid.uuid4())
     logger.info(f"Gateway: Creating mission with Correlation ID: {correlation_id}")
 
-    # Forward the request payload directly
-    payload = {
-        "objective": request.objective,
-        "context": request.context,
-        "initiator_id": 1,  # System/Admin
-    }
+    try:
+        # Use Unified Entrypoint
+        # Use correlation_id as idempotency_key for API requests if not provided in body (assuming body doesn't have it yet)
+        #Ideally request.idempotency_key if exists, else correlation_id
 
-    data = await _call_orchestrator("POST", "/missions", payload, correlation_id)
-    return MissionResponse(**data)
+        mission = await start_mission(
+            session=db,
+            objective=request.objective,
+            initiator_id=1,  # System/Admin default
+            context=request.context,
+            force_research=False,  # API default
+            idempotency_key=correlation_id
+        )
+
+        # Map domain model to API response
+        return MissionResponse(
+            id=mission.id,
+            objective=mission.objective,
+            status=mission.status.value,
+            created_at=mission.created_at,
+            result=mission.result_summary
+        )
+    except Exception as e:
+        logger.error(f"Failed to create mission: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/missions/{mission_id}", response_model=MissionResponse, summary="Get Mission")
-async def get_mission(mission_id: int, req: Request) -> MissionResponse:
+async def get_mission_endpoint(
+    mission_id: int,
+    req: Request,
+    db: AsyncSession = Depends(get_db)
+) -> MissionResponse:
     """
-    Delegate mission retrieval to Orchestrator Service.
+    Retrieve mission state from the Single Source of Truth.
     """
-    correlation_id = req.headers.get("X-Correlation-ID") or str(uuid.uuid4())
-    data = await _call_orchestrator("GET", f"/missions/{mission_id}", correlation_id=correlation_id)
-    return MissionResponse(**data)
+    state_manager = MissionStateManager(db)
+    mission = await state_manager.get_mission(mission_id)
+
+    if not mission:
+        raise HTTPException(status_code=404, detail="Mission not found")
+
+    return MissionResponse(
+        id=mission.id,
+        objective=mission.objective,
+        status=mission.status.value,
+        created_at=mission.created_at,
+        result=mission.result_summary,
+        # We could add output/json if schema supports it
+    )
 
 
 @router.websocket("/missions/{mission_id}/ws")
@@ -116,7 +112,7 @@ async def stream_mission_ws(
 ) -> None:
     """
     WebSocket Streaming BFF.
-    Subscribes to internal EventBus (fed by Redis Bridge).
+    Subscribes to internal EventBus (Unified Path).
     """
     # 1. Auth & Handshake
     token, selected_protocol = extract_websocket_auth(websocket)
@@ -132,117 +128,99 @@ async def stream_mission_ws(
 
     await websocket.accept(subprotocol=selected_protocol)
 
-    # 2. Subscribe to Event Bus (Local Queue fed by Redis)
+    # 2. Subscribe to Event Bus (Gap-Free)
+    # Since we are now in the SAME process as the execution (Control Plane),
+    # the internal EventBus receives events directly from StateManager.
+    # No need for Redis Bridge necessarily, but Redis Bridge might still pump events if scaled.
     event_bus = get_event_bus()
     channel = f"mission:{mission_id}"
     event_queue = event_bus.subscribe_queue(channel)
 
-    last_event_id = 0
-    terminal_statuses = {"success", "failed", "canceled", "partial_success"}
+    # We need a session to fetch initial state
+    from app.core.database import async_session_factory
 
     try:
-        # 3. Initial State (Snapshot)
-        # We fetch current state from Service via HTTP for consistency
-        try:
-            mission_data = await _call_orchestrator("GET", f"/missions/{mission_id}")
-            status = mission_data.get("status", "pending")
+        async with async_session_factory() as session:
+            state_manager = MissionStateManager(session)
 
-            payload = _get_mission_status_payload(status)
-            await websocket.send_json({"type": "mission_status", "payload": payload})
-
-            if status in terminal_statuses:
-                # Still send events just in case? Usually if terminal, we just close.
-                # But let's fetch events anyway to show history.
-                pass
-
-            # Fetch Historical Events
-            events_data = await _call_orchestrator("GET", f"/missions/{mission_id}/events")
-            for evt in events_data:
-                evt_id = evt.get("id", 0)
-                last_event_id = max(last_event_id, evt_id)
-
-                await websocket.send_json(
-                    {
-                        "type": "mission_event",
-                        "payload": {
-                            "event_type": evt.get("event_type"),
-                            "data": evt.get("payload_json"),
-                        },
-                    }
-                )
-
-            if status in terminal_statuses:
-                await websocket.close()
+            # 3. Initial State (Snapshot)
+            mission = await state_manager.get_mission(mission_id)
+            if not mission:
+                await websocket.close(code=4004) # Not Found
                 return
 
-        except Exception as e:
-            logger.error(f"Failed to fetch initial state: {e}")
-            await websocket.close(code=404)
-            return
+            status_payload = {"status": mission.status.value, "outcome": None}
+            if mission.status.value == "partial_success":
+                 status_payload = {"status": "success", "outcome": "partial_success"}
 
-        # 4. Event Loop
+            await websocket.send_json({"type": "mission_status", "payload": status_payload})
+
+            # Fetch Historical Events (Gap-Free Catchup)
+            events = await state_manager.get_mission_events(mission_id)
+            for evt in events:
+                # Format payload
+                evt_type = evt.event_type.value if hasattr(evt.event_type, "value") else str(evt.event_type)
+                payload = evt.payload_json or {}
+
+                await websocket.send_json({
+                    "type": "mission_event",
+                    "payload": {
+                        "event_type": evt_type,
+                        "data": payload
+                    }
+                })
+
+    except Exception as e:
+        logger.error(f"WS Init Error: {e}")
+        await websocket.close(code=1011)
+        return
+
+    # 4. Event Loop (Standard)
+    try:
         while True:
-            try:
-                # Wait for event from Redis Bridge
-                raw_event = await asyncio.wait_for(event_queue.get(), timeout=1.0)
-            except TimeoutError:
-                continue
+            # Wait for event
+            event = await event_queue.get()
 
-            # Handle Event
-            # Expecting Dict from Redis: {"id": 123, "event_type": "...", "payload_json": {...}}
-            if isinstance(raw_event, dict):
-                event_id = raw_event.get("id", 0)
-                event_type = raw_event.get("event_type")
-                event_payload = raw_event.get("payload_json", {})
+            # Format and Send
+            # The internal bus sends `MissionEvent` objects (SQLModel) usually.
+            # But Redis Bridge sends Dicts.
+            # We need to handle both.
 
-                # Check ordering
-                if event_id <= last_event_id:
-                    continue
-                last_event_id = event_id
+            payload = {}
+            evt_type = ""
 
-                # Forward to Frontend
-                await websocket.send_json(
-                    {
-                        "type": "mission_event",
-                        "payload": {
-                            "event_type": event_type,
-                            "data": event_payload,
-                        },
-                    }
-                )
+            if hasattr(event, "payload_json"):
+                # It's an Object
+                payload = event.payload_json
+                evt_type = event.event_type.value if hasattr(event.event_type, "value") else str(event.event_type)
+            elif isinstance(event, dict):
+                # It's a Dict (from Redis Bridge)
+                payload = event.get("payload_json", {}) or event.get("data", {})
+                evt_type = event.get("event_type", "")
 
-                # Check Terminal State
-                if event_type in ("mission_completed", "mission_failed"):
-                    # Fetch final status
-                    try:
-                        mission_data = await _call_orchestrator("GET", f"/missions/{mission_id}")
-                        status = mission_data.get("status")
-                        payload = _get_mission_status_payload(status)
-                        await websocket.send_json({"type": "mission_status", "payload": payload})
-                    except Exception:
-                        pass
-                    await websocket.close()
-                    return
+            await websocket.send_json({
+                "type": "mission_event",
+                "payload": {
+                    "event_type": evt_type,
+                    "data": payload
+                }
+            })
 
-            # Legacy support (if local events still happen)
-            elif hasattr(raw_event, "id"):
-                if raw_event.id <= last_event_id:
-                    continue
-                last_event_id = raw_event.id
-                await websocket.send_json(
-                    {
-                        "type": "mission_event",
-                        "payload": {
-                            "event_type": raw_event.event_type.value,
-                            "data": raw_event.payload_json,
-                        },
-                    }
-                )
+            # Check terminal
+            if evt_type in ("mission_completed", "mission_failed"):
+                 # Fetch final status
+                 async with async_session_factory() as final_session:
+                     sm = MissionStateManager(final_session)
+                     m = await sm.get_mission(mission_id)
+                     if m:
+                         status_p = {"status": m.status.value, "outcome": None}
+                         await websocket.send_json({"type": "mission_status", "payload": status_p})
+                 await websocket.close()
+                 return
 
     except WebSocketDisconnect:
         logger.info(f"WS Disconnected: {mission_id}")
     except Exception as e:
-        logger.error(f"WS Error: {e}")
-        await websocket.close(code=1011)
+        logger.error(f"WS Loop Error: {e}")
     finally:
         event_bus.unsubscribe_queue(channel, event_queue)

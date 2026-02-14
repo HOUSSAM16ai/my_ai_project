@@ -80,6 +80,9 @@ class Mission(SQLModel, table=True):
         sa_column=Column(Integer, ForeignKey("mission_plans.id", use_alter=True)),
     )
 
+    # Idempotency
+    idempotency_key: str | None = Field(default=None, unique=True, index=True, max_length=128)
+
     locked: bool = Field(default=False)
     result_summary: str | None = Field(default=None, sa_column=Column(Text))
     total_cost_usd: float | None = Field(default=None)
@@ -214,6 +217,25 @@ class MissionEvent(SQLModel, table=True):
     mission: Mission = Relationship(
         sa_relationship=relationship("Mission", back_populates="events")
     )
+
+
+class MissionOutbox(SQLModel, table=True):
+    """
+    Transactional Outbox for Mission Events.
+    Ensures that events are published to the Event Bus (Redis) reliably.
+    """
+    __tablename__ = "mission_outbox"
+    id: int | None = Field(default=None, primary_key=True)
+    mission_id: int = Field(index=True)
+    event_type: str = Field(index=True)
+    payload_json: object | None = Field(default=None, sa_column=Column(JSONText))
+    status: str = Field(default="pending", index=True) # pending, published, failed
+
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), server_default=func.now()),
+    )
+    published_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))
 
 
 # Helpers

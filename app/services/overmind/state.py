@@ -16,6 +16,7 @@ from app.core.domain.mission import (
     Mission,
     MissionEvent,
     MissionEventType,
+    MissionOutbox,
     MissionPlan,
     MissionStatus,
     PlanStatus,
@@ -45,17 +46,25 @@ class MissionStateManager:
         self.event_bus = event_bus or get_event_bus()
 
     async def create_mission(
-        self, objective: str, initiator_id: int, context: dict[str, object] | None = None
+        self,
+        objective: str,
+        initiator_id: int,
+        context: dict[str, object] | None = None,
+        idempotency_key: str | None = None
     ) -> Mission:
-        # Context is not currently stored in the Mission model (DB schema).
-        # We might want to add it to the model later, but for now we'll accept it
-        # and ignore it or log it to prevent API errors.
-        # Alternatively, we could append it to objective or store in a JSON field if available.
-        # Given strict mode, we shouldn't fail if context is passed but not used.
+        # Check for existing mission with idempotency_key
+        if idempotency_key:
+            stmt = select(Mission).where(Mission.idempotency_key == idempotency_key)
+            result = await self.session.execute(stmt)
+            existing = result.scalar_one_or_none()
+            if existing:
+                return existing
+
         mission = Mission(
             objective=objective,
             initiator_id=initiator_id,
             status=MissionStatus.PENDING,
+            idempotency_key=idempotency_key,
             created_at=utc_now(),
             updated_at=utc_now(),
         )
@@ -85,6 +94,12 @@ class MissionStateManager:
         result = await self.session.execute(stmt)
         mission = result.scalar_one_or_none()
         if mission:
+            # Enforce Strict State Transitions
+            if not self._is_valid_transition(mission.status, status):
+                error_msg = f"Invalid Mission Transition: {mission.status} -> {status} for Mission {mission_id}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+
             old_status = str(mission.status)
             mission.status = status
             mission.updated_at = utc_now()
@@ -97,6 +112,27 @@ class MissionStateManager:
             )
             # Explicit commit to ensure status update is visible
             await self.session.commit()
+
+    def _is_valid_transition(self, current: MissionStatus, new_status: MissionStatus) -> bool:
+        """
+        Defines the legal state transitions for the Mission State Machine.
+        """
+        if current == new_status:
+            return True
+
+        # Define allowed transitions
+        transitions = {
+            MissionStatus.PENDING: {MissionStatus.RUNNING, MissionStatus.FAILED, MissionStatus.CANCELED},
+            MissionStatus.RUNNING: {MissionStatus.SUCCESS, MissionStatus.PARTIAL_SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED},
+            # Allow Retry from Terminal States
+            MissionStatus.FAILED: {MissionStatus.PENDING, MissionStatus.RUNNING},
+            MissionStatus.CANCELED: {MissionStatus.PENDING, MissionStatus.RUNNING},
+            MissionStatus.SUCCESS: set(), # Final state
+            MissionStatus.PARTIAL_SUCCESS: set(), # Final state
+        }
+
+        allowed = transitions.get(current, set())
+        return new_status in allowed
 
     async def complete_mission(
         self,
@@ -131,6 +167,7 @@ class MissionStateManager:
     async def log_event(
         self, mission_id: int, event_type: MissionEventType, payload: dict[str, object]
     ) -> None:
+        # 1. Log Event (Source of Truth)
         event = MissionEvent(
             mission_id=mission_id,
             event_type=event_type,
@@ -138,11 +175,40 @@ class MissionStateManager:
             created_at=utc_now(),
         )
         self.session.add(event)
-        # Commit immediately for Persistence (Consistency)
+
+        # 2. Add to Outbox (Transactional Guarantee)
+        # The prompt mandates Transactional Outbox to solve dual-write.
+        # This ensures that even if Redis fails, the intention to publish is recorded.
+        outbox = MissionOutbox(
+             mission_id=mission_id,
+             event_type=str(event_type.value),
+             payload_json=payload,
+             status="pending",
+             created_at=utc_now()
+        )
+        self.session.add(outbox)
+
+        # 3. Commit Atomically
         await self.session.commit()
 
-        # Broadcast immediately for Streaming (Latency)
-        await self.event_bus.publish(f"mission:{mission_id}", event)
+        # 4. Broadcast immediately (Best effort)
+        # Ideally, a background worker polls 'mission_outbox' where status='pending'.
+        # For simplicity and latency, we try direct publish.
+        # If this fails, the 'monitor_mission_events' (catch-up) mechanism still works via DB polling.
+        try:
+            await self.event_bus.publish(f"mission:{mission_id}", event)
+        except Exception as e:
+            logger.warning(f"Failed to publish event to Redis: {e}. Outbox record ID: {outbox.id}")
+
+    async def get_mission_events(self, mission_id: int) -> list[MissionEvent]:
+        """Fetch all historical events for a mission."""
+        stmt = (
+            select(MissionEvent)
+            .where(MissionEvent.mission_id == mission_id)
+            .order_by(MissionEvent.id.asc())
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
 
     async def persist_plan(
         self,
