@@ -6,9 +6,11 @@
 """
 
 import os
+
 import httpx
-from microservices.reasoning_agent.src.interfaces import IKnowledgeRetriever
+
 from microservices.reasoning_agent.src.compat import NodeWithScore, TextNode
+from microservices.reasoning_agent.src.interfaces import IKnowledgeRetriever
 from microservices.reasoning_agent.src.logging import get_logger
 
 logger = get_logger("remote-retriever")

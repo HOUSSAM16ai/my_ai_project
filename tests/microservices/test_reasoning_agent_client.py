@@ -1,16 +1,17 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-import httpx
 
 # Import reasoning agent components
 from microservices.reasoning_agent.src.remote_retriever import RemoteKnowledgeGraphRetriever
 
+
 @pytest.mark.asyncio
 async def test_remote_retriever_calls_api():
     """Verify RemoteKnowledgeGraphRetriever makes correct API call."""
-    with patch("httpx.AsyncClient") as MockClient:
+    with patch("httpx.AsyncClient") as mock_client:
         # The instance returned by context manager
-        mock_instance = MockClient.return_value.__aenter__.return_value
+        mock_instance = mock_client.return_value.__aenter__.return_value
 
         # Setup the response object
         mock_response = MagicMock()
