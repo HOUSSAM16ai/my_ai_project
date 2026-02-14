@@ -8,23 +8,9 @@ from collections.abc import Callable
 from pathlib import Path
 
 from app.core.logging import get_logger
-from app.services.chat.tools.content import (
-    get_content_raw,
-    get_curriculum_structure,
-    get_solution_raw,
-    search_content,
-)
-from app.services.chat.tools.curriculum import (
-    adjust_difficulty_level,
-    get_learning_path_progress,
-    recommend_next_mission,
-)
-from app.services.chat.tools.reporting import (
-    analyze_learning_curve,
-    fetch_comprehensive_student_history,
-    get_student_diagnostic_report,
-)
-from app.services.chat.tools.retrieval import search_educational_content
+# Avoid importing specific tools at module level to prevent circular imports
+# with app.services.chat.handlers.strategy_handlers -> app.services.overmind.entrypoint
+# -> app.services.overmind.factory -> app.services.chat.tools
 from app.services.codebase.introspection import introspection_service
 from app.services.overmind.knowledge import DatabaseKnowledge, ProjectKnowledge
 from app.services.overmind.user_knowledge.service import UserKnowledge
@@ -43,6 +29,25 @@ class ToolRegistry:
         self._register_defaults()
 
     def _register_defaults(self) -> None:
+        # Avoid circular imports by importing locally
+        from app.services.chat.tools.content import (
+            get_content_raw,
+            get_curriculum_structure,
+            get_solution_raw,
+            search_content,
+        )
+        from app.services.chat.tools.curriculum import (
+            adjust_difficulty_level,
+            get_learning_path_progress,
+            recommend_next_mission,
+        )
+        from app.services.chat.tools.reporting import (
+            analyze_learning_curve,
+            fetch_comprehensive_student_history,
+            get_student_diagnostic_report,
+        )
+        from app.services.chat.tools.retrieval import search_educational_content
+
         # Admin / Core Tools
         self.register("get_user_count", self._get_user_count)
         self.register("list_users", self._list_users)
