@@ -27,12 +27,10 @@ from app.core.domain.mission import (
     MissionStatus,
     Task,
 )
-from app.core.event_bus import get_event_bus
 from app.core.patterns.strategy import Strategy
 from app.core.settings.base import get_settings
 from app.services.chat.context import ChatContext
 from app.services.chat.context_service import get_context_service
-from app.services.overmind.entrypoint import start_mission
 from app.services.overmind.identity import OvermindIdentity
 
 logger = logging.getLogger(__name__)
@@ -196,6 +194,10 @@ class MissionComplexHandler(IntentHandler):
         Creates a Mission DB entry and triggers the Overmind in background.
         Streams updates to the user using Strict Output Contract.
         """
+        # Defer imports to prevent circular dependency
+        from app.core.event_bus import get_event_bus
+        from app.services.overmind.entrypoint import start_mission
+
         # Global try-except to prevent stream crash
         try:
             yield {
