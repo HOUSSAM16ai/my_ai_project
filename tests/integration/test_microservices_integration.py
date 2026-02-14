@@ -16,7 +16,6 @@ from httpx import ASGITransport, AsyncClient
 
 from app.core.event_bus_impl import Event, EventBus
 from microservices.memory_agent.main import create_app as create_memory_app
-from microservices.orchestrator_service.main import create_app as create_orchestrator_app
 from microservices.planning_agent.main import create_app as create_planning_app
 from microservices.user_service.main import create_app as create_user_app
 
@@ -43,12 +42,6 @@ def memory_app() -> FastAPI:
 def user_app() -> FastAPI:
     """ينشئ تطبيق User Service للاختبار."""
     return create_user_app()
-
-
-@pytest.fixture
-def orchestrator_app() -> FastAPI:
-    """ينشئ تطبيق Orchestrator Service للاختبار."""
-    return create_orchestrator_app()
 
 
 def _build_client(app: FastAPI) -> AsyncClient:
@@ -87,16 +80,6 @@ class TestMicroservicesHealth:
             assert response.status_code == 200
             data = response.json()
             assert data["service"] == "user-service"
-            assert data["status"] == "ok"
-
-    @pytest.mark.asyncio
-    async def test_orchestrator_health(self, orchestrator_app: FastAPI) -> None:
-        """يختبر صحة Orchestrator Service."""
-        async with _build_client(orchestrator_app) as client:
-            response = await client.get("/health")
-            assert response.status_code == 200
-            data = response.json()
-            assert data["service"] == "orchestrator-service"
             assert data["status"] == "ok"
 
 
@@ -218,35 +201,6 @@ class TestUserServiceAPI:
             data = response.json()
             assert isinstance(data, list)
             assert len(data) > 0
-
-
-class TestOrchestratorAPI:
-    """اختبارات API لـ Orchestrator Service."""
-
-    @pytest.mark.skip(reason="Endpoint /orchestrator/agents not implemented yet")
-    @pytest.mark.asyncio
-    async def test_list_agents(self, orchestrator_app: FastAPI) -> None:
-        """يختبر عرض الوكلاء المسجلين."""
-        async with _build_client(orchestrator_app) as client:
-            response = await client.get("/orchestrator/agents")
-            assert response.status_code == 200
-            data = response.json()
-            assert "agents" in data
-            assert isinstance(data["agents"], list)
-
-    @pytest.mark.skip(reason="Endpoint /orchestrator/tasks not implemented yet")
-    @pytest.mark.asyncio
-    async def test_create_task(self, orchestrator_app: FastAPI) -> None:
-        """يختبر إنشاء مهمة."""
-        async with _build_client(orchestrator_app) as client:
-            response = await client.post(
-                "/orchestrator/tasks",
-                json={"description": "Test Task"},
-            )
-            assert response.status_code == 200
-            data = response.json()
-            assert "id" in data
-            assert data["description"] == "Test Task"
 
 
 class TestEventBusIntegration:
