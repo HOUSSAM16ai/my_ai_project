@@ -16,8 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy Code (Assuming build context is root)
-COPY . .
+# Copy Code (Constructing package structure from service context)
+COPY . /app/microservices/reasoning_agent
 
 # Run
 CMD ["uvicorn", "microservices.reasoning_agent.main:app", "--host", "0.0.0.0", "--port", "8001"]

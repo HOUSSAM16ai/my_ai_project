@@ -36,7 +36,8 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 COPY --from=builder /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
-COPY . .
+# Fix: Copy service to reconstructed package path
+COPY . /app/microservices/observability_service
 
 RUN chown -R appuser:appuser /app
 

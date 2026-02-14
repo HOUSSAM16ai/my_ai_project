@@ -18,8 +18,8 @@ COPY requirements.txt .
 # Install specific heavy dependencies if needed separately or rely on main requirements
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy Code (Assuming build context is root)
-COPY . .
+# Copy Code (Constructing package structure from service context)
+COPY . /app/microservices/research_agent
 
 # Run
 CMD ["uvicorn", "microservices.research_agent.main:app", "--host", "0.0.0.0", "--port", "8002"]
