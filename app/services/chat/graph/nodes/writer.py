@@ -69,7 +69,7 @@ async def writer_node(state: AgentState, ai_client: AIClient) -> dict:
     student_level = state.get("diagnosis", "Average")
     supervisor_instruction = state.get("supervisor_instruction", "")
 
-    # Locate the true User Question and Gather Reasoning Traces (Chain of Thought)
+    # Locate the true User Question and Gather Reasoning Traces (Structured Reasoning)
     last_user_msg = ""
     reasoning_traces = []
 

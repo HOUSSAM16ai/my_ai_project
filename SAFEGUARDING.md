@@ -26,7 +26,7 @@
 ## 3. Risk Assessment Checklist (Pre-Session)
 
 -   [ ] **Venue/Platform**: Is the physical space safe? Is the digital platform secure and private?
--   [ ] **Staffing**: Are there at least two vetted adults present for every session (Two-Adult Rule)?
+-   [ ] **Staffing**: Are there at least two vetted adults present for every session (**Two-Adult Rule**)?
 -   [ ] **Content**: Has the AI test dataset been pre-screened to remove illegal or strictly prohibited content (CSAM, extreme violence)?
 -   [ ] **Support**: Is there a designated "quiet space" or counselor available if a participant becomes distressed?
 -   [ ] **Emergency**: Do we have emergency contact details for all participants?

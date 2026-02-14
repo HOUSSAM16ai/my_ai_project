@@ -46,4 +46,4 @@
 -   [ ] Where is data stored? (Prefer EU/EEA or adequate adequacy decision countries).
 -   [ ] Is data encrypted?
 -   [ ] Can we delete data upon request?
--   [ ] Is the vendor compliant with GDPR/COPPA?
+-   [ ] Is the vendor compliant with **GDPR-aligned practices**?

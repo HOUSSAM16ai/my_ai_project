@@ -15,6 +15,8 @@
 
 ## 2. Measurable Indicators (KPIs)
 
+*Note: These match the KPIs in `docs/IMPACT_MEASUREMENT_PLAN.md`.*
+
 1.  **Youth Engagement**: Number of youth auditors completing the full training cycle (Target: TODO).
 2.  **Audit Volume**: Number of unique AI model interactions logged and analyzed (Target: TODO).
 3.  **Safety Efficacy**: Number of distinct safety vulnerabilities (failure modes) identified and reported (Target: TODO).
@@ -22,7 +24,7 @@
 5.  **Policy Reach**: Number of downloads/citations of the Policy Brief (Target: TODO).
 6.  **Product Impact**: Number of bug reports acknowledged or fixed by AI developers (Target: TODO).
 7.  **Partner Adoption**: Number of NGOs independently running the toolkit (Target: TODO).
-8.  **Scalability**: Cost per youth auditor trained (Target: <$X TODO).
+8.  **Stakeholder Engagement**: Number of meetings with policymakers or product teams (Target: TODO).
 
 ## 3. Critical Assumptions
 

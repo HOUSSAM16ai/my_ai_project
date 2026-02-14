@@ -5,13 +5,14 @@
 1.  **Safety Identification**: To what extent can youth participants accurately identify harmful outputs (bias, misinformation, toxicity) in generative AI models using the toolkit?
 2.  **Literacy Impact**: Does participation in a structured audit workshop significantly improve youth AI literacy and critical awareness scores?
 3.  **Risk Perception**: How do youth-identified safety priorities differ from standard industry benchmarks (e.g., adult-centric safety guidelines)?
+4.  **Toolkit Usability**: Is the toolkit accessible and effective for youth across different cultural and educational backgrounds?
 
 ## 2. Study Design
 
 We employ a **mixed-methods quasi-experimental design**:
--   **Quantitative**: Pre-test / Post-test comparison of participants' knowledge and skills.
--   **Qualitative**: Thematic analysis of the specific "harm scenarios" generated and flagged by youth during audit sessions.
--   *(Optional)*: A comparison group receiving standard lecture-based safety training (if resources allow).
+-   **Quantitative**: Pre-test / Post-test comparison of participants' knowledge and skills using standardized scales.
+-   **Qualitative**: Thematic analysis of the specific "harm scenarios" generated and flagged by youth during audit sessions, plus debrief interviews.
+-   **(Optional) Comparison Group**: A control group receiving standard lecture-based safety training to isolate the toolkit's impact (if resources allow).
 
 ## 3. Sampling Strategy
 
@@ -23,7 +24,7 @@ We employ a **mixed-methods quasi-experimental design**:
 -   **Exclusion Criteria**:
     -   History of severe trauma related to online harms (to prevent re-traumatization during testing).
     -   Inability to understand safety instructions.
--   **Recruitment**: Via partner NGOs, schools, and youth clubs.
+-   **Recruitment**: Via partner NGOs, schools, and youth clubs to ensure socio-economic diversity.
 
 ## 4. Procedures
 

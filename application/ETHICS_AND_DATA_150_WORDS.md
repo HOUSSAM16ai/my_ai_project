@@ -1,6 +1,6 @@
 # Ethics, Safeguarding & Data Protection (Draft)
 
-> **Operational Safeguards**: Strict compliance with GDPR/COPPA.
+> **Operational Safeguards**: Strict compliance with GDPR-aligned practices.
 
 **Consent & Safeguarding**
 We adhere to strict child protection protocols. All participation requires written parental/guardian consent and verbal assent from youth. Sessions operate under a "Two-Adult Rule" (minimum two vetted facilitators present) to ensure safety. Our Risk Register (see `SAFEGUARDING.md`) details mitigation strategies for potential exposure to harmful content, including real-time moderation and immediate psychosocial support ("cool-down" protocols) if distress occurs.
