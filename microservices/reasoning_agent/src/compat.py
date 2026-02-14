@@ -33,12 +33,14 @@ if _schema_module is None or _workflow_module is None:
     @dataclass
     class TextNode:
         """تمثيل مبسط لعقدة نصية."""
+
         text: str = ""
         metadata: dict[str, str] = field(default_factory=dict)
 
     @dataclass
     class NodeWithScore:
         """تمثيل مبسط لعقدة معرفة مع نص وبيانات وصفية."""
+
         node: TextNode
         score: float = 0.0
 
