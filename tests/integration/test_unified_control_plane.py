@@ -1,5 +1,8 @@
 import sys
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from sqlalchemy import select
 
 # Mock heavy dependencies BEFORE importing modules that use them
 sys.modules["app.services.overmind.factory"] = MagicMock()
@@ -9,9 +12,11 @@ sys.modules["llama_index.core.schema"] = MagicMock()
 
 import pytest
 from sqlalchemy import select
-from app.core.domain.mission import Mission, MissionStatus, MissionEvent, MissionEventType
+
+from app.core.domain.mission import MissionEvent, MissionEventType, MissionStatus
 from app.services.overmind.entrypoint import start_mission
 from app.services.overmind.state import MissionStateManager
+
 
 @pytest.mark.asyncio
 async def test_start_mission_success(db_session):
