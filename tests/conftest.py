@@ -224,10 +224,9 @@ def db_lifecycle(event_loop: asyncio.AbstractEventLoop) -> None:
             from app.core.domain import audit, chat, user  # noqa: F401
 
         # Conditionally import mission to avoid conflict with microservices tests
-        if "missions" not in SQLModel.metadata.tables:
+        if "missions" not in SQLModel.metadata.tables and "users" in SQLModel.metadata.tables:
             # Only import mission (monolith) if users table exists (monolith dependency)
-            if "users" in SQLModel.metadata.tables:
-                from app.core.domain import mission  # noqa: F401
+            from app.core.domain import mission  # noqa: F401
 
         engine = _get_engine()
 
