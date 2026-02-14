@@ -8,9 +8,6 @@ from collections.abc import Callable
 from pathlib import Path
 
 from app.core.logging import get_logger
-from app.services.codebase.introspection import introspection_service
-from app.services.overmind.knowledge import DatabaseKnowledge, ProjectKnowledge
-from app.services.overmind.user_knowledge.service import UserKnowledge
 
 # Avoid importing specific tools at module level to prevent circular imports
 # with app.services.chat.handlers.strategy_handlers -> app.services.overmind.entrypoint
@@ -97,55 +94,81 @@ class ToolRegistry:
     # --- Tool Implementations ---
 
     async def _get_user_count(self) -> int:
+        from app.services.overmind.user_knowledge.service import UserKnowledge
+
         async with UserKnowledge() as user_knowledge:
             return await user_knowledge.count_users()
 
     async def _list_users(self, limit: int = 20, offset: int = 0) -> list[dict[str, object]]:
+        from app.services.overmind.user_knowledge.service import UserKnowledge
+
         async with UserKnowledge() as user_knowledge:
             return await user_knowledge.list_all_users(limit=limit, offset=offset)
 
     async def _get_user_profile(self, user_id: int) -> dict[str, object]:
+        from app.services.overmind.user_knowledge.service import UserKnowledge
+
         async with UserKnowledge() as user_knowledge:
             return await user_knowledge.get_user_complete_profile(user_id=user_id)
 
     async def _get_user_statistics(self, user_id: int) -> dict[str, object]:
+        from app.services.overmind.user_knowledge.service import UserKnowledge
+
         async with UserKnowledge() as user_knowledge:
             return await user_knowledge.get_user_statistics(user_id=user_id)
 
     async def _get_project_overview(self) -> dict[str, object]:
+        from app.services.overmind.knowledge import ProjectKnowledge
+
         knowledge = ProjectKnowledge()
         return await knowledge.get_complete_knowledge()
 
     async def _get_microservices_overview(self) -> dict[str, object]:
+        from app.services.overmind.knowledge import ProjectKnowledge
+
         knowledge = ProjectKnowledge()
         return knowledge.get_microservices_info()
 
     async def _get_database_tables(self) -> list[str]:
+        from app.services.overmind.knowledge import DatabaseKnowledge
+
         async with DatabaseKnowledge() as db_knowledge:
             return await db_knowledge.get_all_tables()
 
     async def _get_table_schema(self, table_name: str) -> dict[str, object]:
+        from app.services.overmind.knowledge import DatabaseKnowledge
+
         async with DatabaseKnowledge() as db_knowledge:
             return await db_knowledge.get_table_schema(table_name=table_name)
 
     async def _get_table_count(self, table_name: str) -> int:
+        from app.services.overmind.knowledge import DatabaseKnowledge
+
         async with DatabaseKnowledge() as db_knowledge:
             return await db_knowledge.get_table_count(table_name=table_name)
 
     async def _get_database_map(self) -> dict[str, object]:
+        from app.services.overmind.knowledge import DatabaseKnowledge
+
         async with DatabaseKnowledge() as db_knowledge:
             return await db_knowledge.get_full_database_map()
 
     async def _search_codebase(self, query: str) -> list[dict[str, object]]:
+        from app.services.codebase.introspection import introspection_service
+
         # Map to CodeSearchService
         results = introspection_service.search_text(query)
         return [r.model_dump() for r in results]
 
     async def _find_symbol(self, symbol: str) -> list[dict[str, object]]:
+        from app.services.codebase.introspection import introspection_service
+
         results = introspection_service.find_symbol(symbol)
         return [r.model_dump() for r in results]
 
     async def _find_route(self, path_fragment: str) -> list[dict[str, object]]:
+        from app.services.codebase.introspection import introspection_service
+
         results = introspection_service.find_route(path_fragment)
         return [r.model_dump() for r in results]
 

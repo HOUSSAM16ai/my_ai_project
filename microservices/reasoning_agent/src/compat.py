@@ -13,7 +13,11 @@ from dataclasses import dataclass, field
 def _load_llama_index() -> tuple[object | None, object | None]:
     """يحاول تحميل وحدات LlamaIndex اللازمة لسير العمل عند توفرها."""
 
-    if importlib.util.find_spec("llama_index") is None:
+    try:
+        if importlib.util.find_spec("llama_index") is None:
+            return None, None
+    except ValueError:
+        # Happens if llama_index namespace is present but module is invalid/missing spec
         return None, None
 
     schema_spec = importlib.util.find_spec("llama_index.core.schema")
