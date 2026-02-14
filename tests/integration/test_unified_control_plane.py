@@ -39,7 +39,7 @@ async def test_start_mission_success(db_session):
                 objective="Test Unified Control Plane",
                 initiator_id=1,
                 context={"test": True},
-                idempotency_key="unique-key-123"
+                idempotency_key="unique-key-123",
             )
 
             # 1. Verify DB Creation
@@ -63,6 +63,7 @@ async def test_start_mission_success(db_session):
             # Verify Redis Lock Release
             mock_lock.release.assert_called_once()
             mock_client.close.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_start_mission_idempotency(db_session):
@@ -111,6 +112,7 @@ async def test_start_mission_idempotency(db_session):
             # So call count should be 2.
             assert mock_task.call_count == 2
 
+
 @pytest.mark.asyncio
 async def test_strict_state_transitions(db_session):
     """
@@ -128,6 +130,7 @@ async def test_strict_state_transitions(db_session):
     with pytest.raises(ValueError, match="Invalid Mission Transition"):
         await sm.update_mission_status(mission.id, MissionStatus.PENDING)
 
+
 @pytest.mark.asyncio
 async def test_start_mission_locked(db_session):
     """
@@ -139,17 +142,13 @@ async def test_start_mission_locked(db_session):
         mock_client.close = AsyncMock()
 
         mock_lock = AsyncMock()
-        mock_lock.acquire.return_value = False # Simulate Locked
+        mock_lock.acquire.return_value = False  # Simulate Locked
         mock_client.lock.return_value = mock_lock
         mock_redis.return_value = mock_client
 
         with patch("app.services.overmind.entrypoint.asyncio.create_task") as mock_task:
-             mission = await start_mission(
-                 session=session,
-                 objective="Test Locked",
-                 initiator_id=1
-             )
+            mission = await start_mission(session=session, objective="Test Locked", initiator_id=1)
 
-             assert mission.id is not None
-             mock_task.assert_not_called()
-             mock_client.close.assert_called_once()
+            assert mission.id is not None
+            mock_task.assert_not_called()
+            mock_client.close.assert_called_once()

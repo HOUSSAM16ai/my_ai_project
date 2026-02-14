@@ -50,10 +50,7 @@ async def start_mission(
     state_manager = MissionStateManager(session)
     # Check if mission already exists (Idempotency) happens inside create_mission
     mission = await state_manager.create_mission(
-        objective,
-        initiator_id,
-        context,
-        idempotency_key=idempotency_key
+        objective, initiator_id, context, idempotency_key=idempotency_key
     )
 
     # If the mission was already created and is running/terminal, we return it.
@@ -62,8 +59,10 @@ async def start_mission(
     # For now, we rely on the Lock. If we can't acquire lock, we assume it's running.
     # Better: check status.
     if mission.status != MissionStatus.PENDING:
-         logger.info(f"Mission {mission.id} already exists with status {mission.status}. Returning existing instance.")
-         return mission
+        logger.info(
+            f"Mission {mission.id} already exists with status {mission.status}. Returning existing instance."
+        )
+        return mission
 
     # 2. Acquire Lock (Optimistic)
     # We use a lock to ensure that if we add retry logic later, we don't spawn doubles.
@@ -127,7 +126,9 @@ async def _run_mission_task(mission_id: int, force_research: bool = False) -> No
             await overmind.run_mission(mission_id, force_research=force_research)
 
         except Exception as e:
-            logger.critical(f"FATAL: Mission {mission_id} background task crashed: {e}", exc_info=True)
+            logger.critical(
+                f"FATAL: Mission {mission_id} background task crashed: {e}", exc_info=True
+            )
 
             # Attempt to record failure
             try:
