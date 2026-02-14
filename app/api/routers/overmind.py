@@ -55,7 +55,7 @@ async def create_mission_endpoint(
     try:
         # Use Unified Entrypoint
         # Use correlation_id as idempotency_key for API requests if not provided in body (assuming body doesn't have it yet)
-        #Ideally request.idempotency_key if exists, else correlation_id
+        # Ideally request.idempotency_key if exists, else correlation_id
 
         mission = await start_mission(
             session=db,
@@ -63,7 +63,7 @@ async def create_mission_endpoint(
             initiator_id=1,  # System/Admin default
             context=request.context,
             force_research=False,  # API default
-            idempotency_key=correlation_id
+            idempotency_key=correlation_id,
         )
 
         # Map domain model to API response
@@ -72,7 +72,7 @@ async def create_mission_endpoint(
             objective=mission.objective,
             status=mission.status.value,
             created_at=mission.created_at,
-            result=mission.result_summary
+            result=mission.result_summary,
         )
     except Exception as e:
         logger.error(f"Failed to create mission: {e}")
@@ -81,9 +81,7 @@ async def create_mission_endpoint(
 
 @router.get("/missions/{mission_id}", response_model=MissionResponse, summary="Get Mission")
 async def get_mission_endpoint(
-    mission_id: int,
-    req: Request,
-    db: AsyncSession = Depends(get_db)
+    mission_id: int, req: Request, db: AsyncSession = Depends(get_db)
 ) -> MissionResponse:
     """
     Retrieve mission state from the Single Source of Truth.
@@ -145,12 +143,12 @@ async def stream_mission_ws(
             # 3. Initial State (Snapshot)
             mission = await state_manager.get_mission(mission_id)
             if not mission:
-                await websocket.close(code=4004) # Not Found
+                await websocket.close(code=4004)  # Not Found
                 return
 
             status_payload = {"status": mission.status.value, "outcome": None}
             if mission.status.value == "partial_success":
-                 status_payload = {"status": "success", "outcome": "partial_success"}
+                status_payload = {"status": "success", "outcome": "partial_success"}
 
             await websocket.send_json({"type": "mission_status", "payload": status_payload})
 
@@ -158,16 +156,16 @@ async def stream_mission_ws(
             events = await state_manager.get_mission_events(mission_id)
             for evt in events:
                 # Format payload
-                evt_type = evt.event_type.value if hasattr(evt.event_type, "value") else str(evt.event_type)
+                evt_type = (
+                    evt.event_type.value
+                    if hasattr(evt.event_type, "value")
+                    else str(evt.event_type)
+                )
                 payload = evt.payload_json or {}
 
-                await websocket.send_json({
-                    "type": "mission_event",
-                    "payload": {
-                        "event_type": evt_type,
-                        "data": payload
-                    }
-                })
+                await websocket.send_json(
+                    {"type": "mission_event", "payload": {"event_type": evt_type, "data": payload}}
+                )
 
     except Exception as e:
         logger.error(f"WS Init Error: {e}")
@@ -191,31 +189,31 @@ async def stream_mission_ws(
             if hasattr(event, "payload_json"):
                 # It's an Object
                 payload = event.payload_json
-                evt_type = event.event_type.value if hasattr(event.event_type, "value") else str(event.event_type)
+                evt_type = (
+                    event.event_type.value
+                    if hasattr(event.event_type, "value")
+                    else str(event.event_type)
+                )
             elif isinstance(event, dict):
                 # It's a Dict (from Redis Bridge)
                 payload = event.get("payload_json", {}) or event.get("data", {})
                 evt_type = event.get("event_type", "")
 
-            await websocket.send_json({
-                "type": "mission_event",
-                "payload": {
-                    "event_type": evt_type,
-                    "data": payload
-                }
-            })
+            await websocket.send_json(
+                {"type": "mission_event", "payload": {"event_type": evt_type, "data": payload}}
+            )
 
             # Check terminal
             if evt_type in ("mission_completed", "mission_failed"):
-                 # Fetch final status
-                 async with async_session_factory() as final_session:
-                     sm = MissionStateManager(final_session)
-                     m = await sm.get_mission(mission_id)
-                     if m:
-                         status_p = {"status": m.status.value, "outcome": None}
-                         await websocket.send_json({"type": "mission_status", "payload": status_p})
-                 await websocket.close()
-                 return
+                # Fetch final status
+                async with async_session_factory() as final_session:
+                    sm = MissionStateManager(final_session)
+                    m = await sm.get_mission(mission_id)
+                    if m:
+                        status_p = {"status": m.status.value, "outcome": None}
+                        await websocket.send_json({"type": "mission_status", "payload": status_p})
+                await websocket.close()
+                return
 
     except WebSocketDisconnect:
         logger.info(f"WS Disconnected: {mission_id}")

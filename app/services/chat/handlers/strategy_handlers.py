@@ -240,7 +240,7 @@ class MissionComplexHandler(IntentHandler):
                         objective=context.question,
                         initiator_id=context.user_id or 1,
                         context={"chat_context": True},
-                        force_research=force_research
+                        force_research=force_research,
                     )
                     mission_id = mission.id
 
@@ -458,7 +458,6 @@ class MissionComplexHandler(IntentHandler):
         except Exception as e:
             # Log error but attempt to continue, assuming tables might exist or partial failure
             logger.error(f"Schema self-healing failed: {e}")
-
 
     def _create_structured_event(
         self, event: MissionEvent, sequence_id: int, current_iteration: int

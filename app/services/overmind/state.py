@@ -50,7 +50,7 @@ class MissionStateManager:
         objective: str,
         initiator_id: int,
         context: dict[str, object] | None = None,
-        idempotency_key: str | None = None
+        idempotency_key: str | None = None,
     ) -> Mission:
         # Check for existing mission with idempotency_key
         if idempotency_key:
@@ -122,13 +122,22 @@ class MissionStateManager:
 
         # Define allowed transitions
         transitions = {
-            MissionStatus.PENDING: {MissionStatus.RUNNING, MissionStatus.FAILED, MissionStatus.CANCELED},
-            MissionStatus.RUNNING: {MissionStatus.SUCCESS, MissionStatus.PARTIAL_SUCCESS, MissionStatus.FAILED, MissionStatus.CANCELED},
+            MissionStatus.PENDING: {
+                MissionStatus.RUNNING,
+                MissionStatus.FAILED,
+                MissionStatus.CANCELED,
+            },
+            MissionStatus.RUNNING: {
+                MissionStatus.SUCCESS,
+                MissionStatus.PARTIAL_SUCCESS,
+                MissionStatus.FAILED,
+                MissionStatus.CANCELED,
+            },
             # Allow Retry from Terminal States
             MissionStatus.FAILED: {MissionStatus.PENDING, MissionStatus.RUNNING},
             MissionStatus.CANCELED: {MissionStatus.PENDING, MissionStatus.RUNNING},
-            MissionStatus.SUCCESS: set(), # Final state
-            MissionStatus.PARTIAL_SUCCESS: set(), # Final state
+            MissionStatus.SUCCESS: set(),  # Final state
+            MissionStatus.PARTIAL_SUCCESS: set(),  # Final state
         }
 
         allowed = transitions.get(current, set())
@@ -180,11 +189,11 @@ class MissionStateManager:
         # The prompt mandates Transactional Outbox to solve dual-write.
         # This ensures that even if Redis fails, the intention to publish is recorded.
         outbox = MissionOutbox(
-             mission_id=mission_id,
-             event_type=str(event_type.value),
-             payload_json=payload,
-             status="pending",
-             created_at=utc_now()
+            mission_id=mission_id,
+            event_type=str(event_type.value),
+            payload_json=payload,
+            status="pending",
+            created_at=utc_now(),
         )
         self.session.add(outbox)
 

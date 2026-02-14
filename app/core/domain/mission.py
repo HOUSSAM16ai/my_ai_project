@@ -224,12 +224,13 @@ class MissionOutbox(SQLModel, table=True):
     Transactional Outbox for Mission Events.
     Ensures that events are published to the Event Bus (Redis) reliably.
     """
+
     __tablename__ = "mission_outbox"
     id: int | None = Field(default=None, primary_key=True)
     mission_id: int = Field(index=True)
     event_type: str = Field(index=True)
     payload_json: object | None = Field(default=None, sa_column=Column(JSONText))
-    status: str = Field(default="pending", index=True) # pending, published, failed
+    status: str = Field(default="pending", index=True)  # pending, published, failed
 
     created_at: datetime = Field(
         default_factory=utc_now,
