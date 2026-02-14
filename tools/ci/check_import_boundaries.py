@@ -19,8 +19,8 @@ APP_DIR = "app"
 
 
 def get_microservice_name(filepath: Path) -> str | None:
-    """
-    Extracts the microservice name from the file path.
+    """Extracts the microservice name from the file path.
+
     Returns None if the file is not inside a microservice.
     """
     parts = filepath.parts
@@ -41,9 +41,7 @@ def check_import_violation(
     is_app: bool,
     current_service: str | None,
 ) -> str | None:
-    """
-    Checks if an imported module violates boundary rules.
-    """
+    """Checks if an imported module violates boundary rules."""
     if not module:
         return None
 
@@ -62,7 +60,8 @@ def check_import_violation(
         if module == APP_DIR or module.startswith(f"{APP_DIR}."):
             return (
                 f"{filepath}:{lineno}: 🚨 Microservice Violation: "
-                f"'{current_service}' cannot import '{module}'. Microservices must be decoupled from App core."
+                f"'{current_service}' cannot import '{module}'. "
+                "Microservices must be decoupled from App core."
             )
 
         # 2b: Must not import Sibling Microservices
@@ -79,14 +78,15 @@ def check_import_violation(
                 return (
                     f"{filepath}:{lineno}: 🚨 Microservice Isolation Violation: "
                     f"'{current_service}' cannot import '{target_service}' via '{module}'. "
-                    f"Communication must be via HTTP contracts only."
+                    "Communication must be via HTTP contracts only."
                 )
 
         # 2c: Must not import 'microservices' root package directly to avoid 'microservices.other_service' usage
         if module == MICROSERVICES_DIR:
             return (
                 f"{filepath}:{lineno}: 🚨 Ambiguous Import Violation: "
-                f"'{current_service}' cannot import '{module}' root. Import specific modules from your own service instead."
+                f"'{current_service}' cannot import '{module}' root. "
+                "Import specific modules from your own service instead."
             )
 
     return None
