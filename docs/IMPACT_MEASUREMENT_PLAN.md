@@ -8,16 +8,18 @@
 | **Indirect Beneficiaries** | Users of AI products improved by our findings. | Estimated user base of audited models (cautious estimate). |
 | **Partner Organizations** | NGOs/Schools adopting the toolkit. | Number of verified downloads/installations + active pilots. |
 
-## 2. Baseline & Targets
+## 2. Key Performance Indicators (KPIs)
 
-*Note: Baselines to be established in Pilot Phase 1.*
+*Baselines to be established in Pilot Phase 1.*
 
--   **Metric**: Youth AI Literacy Score (0-100 scale).
-    -   *Baseline*: TODO: Establish via pre-survey.
-    -   *Target*: +20% improvement post-workshop.
--   **Metric**: Safety Incidents Detected per Model (Count).
-    -   *Baseline*: N/A (New metric).
-    -   *Target*: >5 actionable vulnerabilities reported per audit cycle.
+1.  **Youth Auditors Trained**: Number of participants completing safety evaluation training (Target: TODO).
+2.  **Models Audited**: Number of unique AI models tested for safety risks (Target: TODO).
+3.  **Vulnerabilities Identified**: Distinct safety flaws found and reported (Target: TODO).
+4.  **Policy Briefs Published**: Number of technical reports released (Target: TODO).
+5.  **Toolkit Adoption**: Number of partner NGOs using the toolkit (Target: TODO).
+6.  **Literacy Improvement**: Percentage increase in pre/post-workshop scores (Target: TODO%).
+7.  **Harm Reduction**: Decrease in exposure to harmful content in controlled tests (Target: TODO%).
+8.  **Stakeholder Engagement**: Number of meetings with policymakers or product teams (Target: TODO).
 
 ## 3. Measurement Instruments
 

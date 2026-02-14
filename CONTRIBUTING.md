@@ -5,7 +5,7 @@ Thank you for your interest in contributing to the Youth AI Safety Toolkit! We w
 ## Getting Started
 
 1.  **Fork the Repository**: Create your own copy of the project.
-2.  **Clone the Repo**: `git clone https://github.com/NorthAfricanAISafetyLab/youth-ai-safety-toolkit.git`
+2.  **Clone the Repo**: `git clone https://github.com/HOUSSAM16ai/NAAS-Agentic-Core.git`
 3.  **Create a Branch**: `git checkout -b feature/your-feature-name`
 
 ## Pull Request Process
@@ -27,4 +27,4 @@ By contributing, you certify that you wrote the code or have the right to submit
 
 ## Community
 
-Join our discussions in the [GitHub Issues](https://github.com/NorthAfricanAISafetyLab/youth-ai-safety-toolkit/issues) tab.
+Join our discussions in the [GitHub Issues](https://github.com/HOUSSAM16ai/NAAS-Agentic-Core/issues) tab.
