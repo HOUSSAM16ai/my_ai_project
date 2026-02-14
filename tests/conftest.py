@@ -113,7 +113,13 @@ async def _ensure_schema() -> None:
     from app.core.db_schema import validate_and_fix_schema
 
     # Explicitly import models to ensure registration
-    from app.core.domain import audit, chat, mission, user  # noqa: F401
+    from app.core.domain import audit, chat, user  # noqa: F401
+
+    # Conditionally import mission to avoid conflict with microservices tests
+    if "missions" not in SQLModel.metadata.tables:
+        from app.core.domain import mission  # noqa: F401
+    else:
+        print("DEBUG: Skipping app.core.domain.mission import as 'missions' table exists.")
 
     engine = _get_engine()
     async with engine.begin() as connection:
@@ -208,7 +214,15 @@ def db_lifecycle(event_loop: asyncio.AbstractEventLoop) -> None:
         from app.core.db_schema import validate_and_fix_schema
 
         # Ensure models are loaded so metadata is complete
-        from app.core.domain import audit, chat, mission, user  # noqa: F401
+
+        # Conditionally import user/audit/chat to avoid conflict with microservices tests
+        # If "user" table (singular, microservice) exists, skip monolith "users" models
+        if "user" not in SQLModel.metadata.tables:
+            from app.core.domain import audit, chat, user  # noqa: F401
+
+        # Conditionally import mission to avoid conflict with microservices tests
+        if "missions" not in SQLModel.metadata.tables:
+            from app.core.domain import mission  # noqa: F401
 
         engine = _get_engine()
 
