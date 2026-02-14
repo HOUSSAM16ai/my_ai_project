@@ -46,9 +46,7 @@ def check_import_violation(
         return None
 
     # Rule 1: App must not import Microservices
-    if is_app and (
-        module == MICROSERVICES_DIR or module.startswith(f"{MICROSERVICES_DIR}.")
-    ):
+    if is_app and (module == MICROSERVICES_DIR or module.startswith(f"{MICROSERVICES_DIR}.")):
         return (
             f"{filepath}:{lineno}: 🚨 App Code Violation: "
             f"Cannot import '{module}'. App must treat microservices as external systems."
