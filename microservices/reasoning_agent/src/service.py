@@ -9,8 +9,8 @@ from microservices.reasoning_agent.src.ai_client import SimpleAIClient
 from microservices.reasoning_agent.src.interfaces import IKnowledgeRetriever
 from microservices.reasoning_agent.src.logging import get_logger
 from microservices.reasoning_agent.src.search_strategy import MathReasoningStrategy, RMCTSStrategy
+from microservices.reasoning_agent.src.remote_retriever import RemoteKnowledgeGraphRetriever
 from microservices.reasoning_agent.src.workflow import SuperReasoningWorkflow
-from microservices.research_agent.src.search_engine.llama_retriever import KnowledgeGraphRetriever
 
 logger = get_logger("reasoning-service")
 
@@ -23,7 +23,7 @@ class ReasoningService:
 
     def __init__(self, ai_client: SimpleAIClient, retriever: IKnowledgeRetriever | None = None):
         self.ai_client = ai_client
-        self.retriever = retriever or KnowledgeGraphRetriever(top_k=5)
+        self.retriever = retriever or RemoteKnowledgeGraphRetriever(top_k=5)
 
     async def solve_deeply(self, query: str, strategy_type: str = "auto") -> str:
         """

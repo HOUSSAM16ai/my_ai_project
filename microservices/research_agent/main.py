@@ -185,6 +185,36 @@ def _build_router() -> APIRouter:
                 reranked = await asyncio.to_thread(reranker.rerank, query, documents, top_n)
                 return AgentResponse(status="success", data=reranked, metrics={})
 
+            if request.action == "retrieve_knowledge_graph":
+                query = request.payload.get("query")
+                limit = request.payload.get("limit", 5)
+                if not isinstance(limit, int):
+                    limit = 5
+
+                if not isinstance(query, str) or not query:
+                    return AgentResponse(status="error", error="Missing query for retrieval.")
+
+                from microservices.research_agent.src.search_engine.llama_retriever import (
+                    KnowledgeGraphRetriever,
+                )
+
+                retriever = KnowledgeGraphRetriever(top_k=limit)
+                nodes = await retriever.aretrieve(query)
+
+                # Serialize nodes
+                data_results = []
+                for node_with_score in nodes:
+                    # node_with_score is NodeWithScore object
+                    # We need to extract data manually as it might not be Pydantic serializable directly
+                    node = node_with_score.node
+                    data_results.append({
+                        "text": node.text,
+                        "metadata": node.metadata,
+                        "score": node_with_score.score,
+                    })
+
+                return AgentResponse(status="success", data=data_results, metrics={})
+
             return AgentResponse(
                 status="error", error=f"Action '{request.action}' not supported by Research Agent."
             )
