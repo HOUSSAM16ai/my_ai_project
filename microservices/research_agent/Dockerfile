@@ -22,4 +22,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app/microservices/research_agent
 
 # Run
-CMD ["uvicorn", "microservices.research_agent.main:app", "--host", "0.0.0.0", "--port", "8002"]
+CMD ["uvicorn", "microservices.research_agent.main:app", "--host", "0.0.0.0", "--port", "8000"]
