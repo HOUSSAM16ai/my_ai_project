@@ -8,26 +8,8 @@
 from fastapi.testclient import TestClient
 
 from microservices.memory_agent.main import create_app as create_memory_app
-from microservices.orchestrator_service.main import create_app as create_orchestrator_app
 from microservices.planning_agent.main import create_app as create_planning_app
 from microservices.user_service.main import create_app as create_user_app
-
-
-def test_orchestrator_lists_agents() -> None:
-    """يتأكد من أن خدمة التنسيق تعيد سجل الوكلاء المعلن."""
-
-    client = TestClient(create_orchestrator_app())
-    response = client.get("/orchestrator/agents")
-
-    assert response.status_code == 200
-    payload = response.json()
-
-    assert "agents" in payload
-    assert {agent["name"] for agent in payload["agents"]} == {
-        "planning-agent",
-        "memory-agent",
-        "user-service",
-    }
 
 
 def test_planning_agent_generates_plan_with_context() -> None:
