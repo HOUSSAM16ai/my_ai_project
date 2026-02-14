@@ -78,10 +78,6 @@ DEFAULT_GATEWAY_CONFIG: Final[GatewayConfig] = GatewayConfig(
             base_url="http://localhost:8003",
         ),
         ServiceEndpoint(
-            name="orchestrator-service",
-            base_url="http://localhost:8004",
-        ),
-        ServiceEndpoint(
             name="observability-service",
             base_url="http://localhost:8005",
         ),
@@ -98,10 +94,6 @@ DEFAULT_GATEWAY_CONFIG: Final[GatewayConfig] = GatewayConfig(
         RouteRule(
             path_prefix="/api/v1/users",
             service_name="user-service",
-        ),
-        RouteRule(
-            path_prefix="/api/v1/orchestrator",
-            service_name="orchestrator-service",
         ),
         RouteRule(
             path_prefix="/api/v1/observability",

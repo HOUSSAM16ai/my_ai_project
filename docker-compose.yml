@@ -16,14 +16,11 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://user:pass@db:5432/cogniforge}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       # Point to microservices
-      ORCHESTRATOR_URL: http://orchestrator-service:8000
       # External API Keys (Passed from Host/Secrets)
       TAVILY_API_KEY: ${TAVILY_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-    depends_on:
-      - orchestrator-service
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
@@ -47,46 +44,6 @@ services:
       API_URL: http://core-kernel:8000
     depends_on:
       - core-kernel
-
-  # Orchestrator Service - Coordinates agents
-  orchestrator-service:
-    build:
-      context: ./microservices/orchestrator_service
-      dockerfile: Dockerfile
-      args:
-        BUILDKIT_INLINE_CACHE: "1"
-    container_name: cogniforge-orchestrator
-    restart: unless-stopped
-
-    ports:
-      - "8004:8000"
-
-    networks:
-      - appnet
-
-    environment:
-      ORCHESTRATOR_DATABASE_URL: ${ORCHESTRATOR_DATABASE_URL:-sqlite+aiosqlite:///./orchestrator.db}
-      ORCHESTRATOR_PLANNING_AGENT_URL: ${ORCHESTRATOR_PLANNING_AGENT_URL:-http://planning-agent:8000}
-      ORCHESTRATOR_MEMORY_AGENT_URL: ${ORCHESTRATOR_MEMORY_AGENT_URL:-http://memory-agent:8000}
-      ORCHESTRATOR_USER_SERVICE_URL: ${ORCHESTRATOR_USER_SERVICE_URL:-http://user-service:8000}
-      # Propagate API Keys to Orchestrator (it might need them for tools)
-      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:-}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-
-    depends_on:
-      - planning-agent
-      - memory-agent
-      - user-service
-
-    healthcheck:
-      test: ["CMD", "bash", "-c", "curl -f http://localhost:8000/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-
 
   # Observability Service - AIOps and Monitoring
   observability-service:
