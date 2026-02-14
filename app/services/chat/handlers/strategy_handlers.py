@@ -30,8 +30,6 @@ from app.core.domain.mission import (
 from app.core.patterns.strategy import Strategy
 from app.core.settings.base import get_settings
 from app.services.chat.context import ChatContext
-from app.services.chat.context_service import get_context_service
-from app.services.overmind.identity import OvermindIdentity
 
 logger = logging.getLogger(__name__)
 
@@ -766,6 +764,10 @@ class DefaultChatHandler(IntentHandler):
 
     def __init__(self):
         super().__init__("DEFAULT", priority=-1)
+        # Deferred imports to avoid circular dependency
+        from app.services.chat.context_service import get_context_service
+        from app.services.overmind.identity import OvermindIdentity
+
         self._identity = OvermindIdentity()
         self._context_service = get_context_service()
 
