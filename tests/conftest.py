@@ -112,8 +112,17 @@ async def _ensure_schema() -> None:
 
     from app.core.db_schema import validate_and_fix_schema
 
-    # Explicitly import models to ensure registration
-    from app.core.domain import audit, chat, mission, user  # noqa: F401
+    # Conditionally import models to ensure registration, avoiding conflicts
+    # with microservices tests where tables might already be defined by other models.
+
+    # Check if 'missions' table exists (proxy for microservices env)
+    if "missions" not in SQLModel.metadata.tables:
+        from app.core.domain import audit, chat, mission, user  # noqa: F401
+    else:
+        # If missions table exists, we assume we are in a microservices test context
+        # where we shouldn't load the monolithic models that might conflict or define relationships
+        # to the now-different 'Mission' model.
+        pass
 
     engine = _get_engine()
     async with engine.begin() as connection:
@@ -208,7 +217,15 @@ def db_lifecycle(event_loop: asyncio.AbstractEventLoop) -> None:
         from app.core.db_schema import validate_and_fix_schema
 
         # Ensure models are loaded so metadata is complete
-        from app.core.domain import audit, chat, mission, user  # noqa: F401
+
+        # Conditionally import user/audit/chat to avoid conflict with microservices tests
+        # If "user" table (singular, microservice) exists, skip monolith "users" models
+        if "user" not in SQLModel.metadata.tables:
+            from app.core.domain import audit, chat, user  # noqa: F401
+
+        # Conditionally import mission to avoid conflict with microservices tests
+        if "missions" not in SQLModel.metadata.tables:
+            from app.core.domain import mission  # noqa: F401
 
         engine = _get_engine()
 
