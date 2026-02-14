@@ -8,12 +8,13 @@ from collections.abc import Callable
 from pathlib import Path
 
 from app.core.logging import get_logger
-# Avoid importing specific tools at module level to prevent circular imports
-# with app.services.chat.handlers.strategy_handlers -> app.services.overmind.entrypoint
-# -> app.services.overmind.factory -> app.services.chat.tools
 from app.services.codebase.introspection import introspection_service
 from app.services.overmind.knowledge import DatabaseKnowledge, ProjectKnowledge
 from app.services.overmind.user_knowledge.service import UserKnowledge
+
+# Avoid importing specific tools at module level to prevent circular imports
+# with app.services.chat.handlers.strategy_handlers -> app.services.overmind.entrypoint
+# -> app.services.overmind.factory -> app.services.chat.tools
 
 logger = get_logger("tool-registry")
 
