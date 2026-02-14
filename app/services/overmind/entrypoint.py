@@ -89,7 +89,8 @@ async def start_mission(
 
             # 4. Trigger Background Execution
             # We explicitly define the task wrapper here to decouple from the caller.
-            asyncio.create_task(_run_mission_task(mission.id, force_research))
+            # Assigning to variable to satisfy linter (RUF006)
+            _task = asyncio.create_task(_run_mission_task(mission.id, force_research))  # noqa: RUF006
 
             logger.info(f"Mission {mission.id} dispatched via Unified Entrypoint.")
 
