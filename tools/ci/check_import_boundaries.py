@@ -8,7 +8,6 @@ import ast
 import logging
 import sys
 from pathlib import Path
-from typing import Optional, List, Tuple
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -19,7 +18,7 @@ MICROSERVICES_DIR = "microservices"
 APP_DIR = "app"
 
 
-def get_microservice_name(filepath: Path) -> Optional[str]:
+def get_microservice_name(filepath: Path) -> str | None:
     """
     Extracts the microservice name from the file path.
     Returns None if the file is not inside a microservice.
@@ -40,8 +39,8 @@ def check_import_violation(
     module: str,
     lineno: int,
     is_app: bool,
-    current_service: Optional[str],
-) -> Optional[str]:
+    current_service: str | None,
+) -> str | None:
     """
     Checks if an imported module violates boundary rules.
     """
@@ -49,12 +48,13 @@ def check_import_violation(
         return None
 
     # Rule 1: App must not import Microservices
-    if is_app:
-        if module == MICROSERVICES_DIR or module.startswith(f"{MICROSERVICES_DIR}."):
-            return (
-                f"{filepath}:{lineno}: 🚨 App Code Violation: "
-                f"Cannot import '{module}'. App must treat microservices as external systems."
-            )
+    if is_app and (
+        module == MICROSERVICES_DIR or module.startswith(f"{MICROSERVICES_DIR}.")
+    ):
+        return (
+            f"{filepath}:{lineno}: 🚨 App Code Violation: "
+            f"Cannot import '{module}'. App must treat microservices as external systems."
+        )
 
     # Rule 2: Microservices Isolation
     if current_service:
@@ -84,7 +84,7 @@ def check_import_violation(
 
         # 2c: Must not import 'microservices' root package directly to avoid 'microservices.other_service' usage
         if module == MICROSERVICES_DIR:
-             return (
+            return (
                 f"{filepath}:{lineno}: 🚨 Ambiguous Import Violation: "
                 f"'{current_service}' cannot import '{module}' root. Import specific modules from your own service instead."
             )
@@ -93,11 +93,11 @@ def check_import_violation(
 
 
 class ImportVisitor(ast.NodeVisitor):
-    def __init__(self, filepath: Path, is_app: bool, current_service: Optional[str]):
+    def __init__(self, filepath: Path, is_app: bool, current_service: str | None):
         self.filepath = filepath
         self.is_app = is_app
         self.current_service = current_service
-        self.errors: List[str] = []
+        self.errors: list[str] = []
 
     def visit_Import(self, node):
         for alias in node.names:
@@ -132,7 +132,7 @@ class ImportVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-def check_file(filepath: Path) -> List[str]:
+def check_file(filepath: Path) -> list[str]:
     """Parses a file and checks imports using AST."""
     errors = []
     is_app = is_app_file(filepath)
@@ -142,7 +142,7 @@ def check_file(filepath: Path) -> List[str]:
         return []  # File is neither app nor microservice (e.g. tools, root scripts)
 
     try:
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             tree = ast.parse(f.read(), filename=str(filepath))
 
         visitor = ImportVisitor(filepath, is_app, current_service)
