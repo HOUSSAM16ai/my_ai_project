@@ -207,11 +207,13 @@ def _build_router() -> APIRouter:
                     # node_with_score is NodeWithScore object
                     # We need to extract data manually as it might not be Pydantic serializable directly
                     node = node_with_score.node
-                    data_results.append({
-                        "text": node.text,
-                        "metadata": node.metadata,
-                        "score": node_with_score.score,
-                    })
+                    data_results.append(
+                        {
+                            "text": node.text,
+                            "metadata": node.metadata,
+                            "score": node_with_score.score,
+                        }
+                    )
 
                 return AgentResponse(status="success", data=data_results, metrics={})
 

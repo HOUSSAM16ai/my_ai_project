@@ -18,9 +18,7 @@ async def test_remote_retriever_calls_api():
         mock_response.status_code = 200
         mock_response.json.return_value = {
             "status": "success",
-            "data": [
-                {"text": "Test Node", "metadata": {"id": "1"}, "score": 0.9}
-            ]
+            "data": [{"text": "Test Node", "metadata": {"id": "1"}, "score": 0.9}],
         }
 
         # Configure post to be an async method that returns the response
